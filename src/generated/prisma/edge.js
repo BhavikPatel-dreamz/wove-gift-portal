@@ -379,7 +379,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/media/drive/Rushali_project/wove-gift-portal/src/generated/prisma",
+      "value": "/media/drive/Project/wove-gift-portal/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -393,12 +393,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/media/drive/Rushali_project/wove-gift-portal/prisma/schema.prisma",
+    "sourceFilePath": "/media/drive/Project/wove-gift-portal/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
-    "schemaEnvPath": "../../../.env"
+    "rootEnvPath": null
   },
   "relativePath": "../../../prisma",
   "clientVersion": "6.16.0",
@@ -407,6 +406,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
+  "postinstall": true,
   "inlineDatasources": {
     "db": {
       "url": {
