@@ -1,0 +1,277 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  phone     String
+  firstName String
+  lastName  String
+  password  String
+  avatar    String?
+  role      String?
+  sessions  Session[]
+  order     Order[]
+  isActive  Boolean   @default(false)
+  isVerify  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Brand {
+  id            String          @id @default(uuid())
+  brandName     String          @unique
+  logo          String
+  description   String
+  website       String
+  contact       String
+  tagline       String
+  color         String
+  categoryId    String
+  categories    Categories      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  isActive      Boolean         @default(false)
+  isFeature     Boolean         @default(false)
+  notes         String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  brandcontacts BrandContacts[]
+  brandTerms    BrandTerms[]
+  brandBankings BrandBanking[]
+  vouchers      Vouchers[]
+  order         Order[]
+  settlements   Settlements[]
+}
+
+model BrandContacts {
+  id        String   @id @default(uuid())
+  name      String
+  role      String
+  email     String
+  phone     String
+  brandId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  brands    Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
+
+model BrandTerms {
+  id                 String           @id @default(uuid())
+  settelementTrigger SettelmentStatus @default(onRedemption)
+  commissionType     CommissionStatus @default(Percentage)
+  commissionValue    Int              @default(0)
+  currency           String
+  discount           Int?             @default(0)
+  orderValue         Int?             @default(0)
+  contractStart      DateTime
+  contractEnd        DateTime
+  goLiveDate         DateTime
+  renewContract      Boolean          @default(false)
+  brackingPolicy     PolicyStatus     @default(Retain)
+  brackingShare      Int?             @default(0)
+  vatRate            Int?             @default(0)
+  internalNotes      String
+  brandId            String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  brands             Brand            @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
+
+model Vouchers {
+  id                 String             @id @default(uuid())
+  denominationype    DenominationStatus @default(staticDenominations)
+  addDenomination    Json?
+  maxAmount          Int?               @default(0)
+  minAmount          Int?               @default(0)
+  expiryPolicy       expiryPolicyStatus @default(fixedDay)
+  expiryValue        String
+  graceDays          Int?               @default(0)
+  redemptionChannels String?
+  partialRedemption  Boolean            @default(false)
+  Stackable          Boolean            @default(false)
+  userPerDay         Int?
+  termsConditionsURL String?
+  brandId            String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  brands             Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
+
+model BrandBanking {
+  id                  String                    @id @default(uuid())
+  settlementFrequency SettlementFrequencyStatus @default(monthly)
+  dayOfMonth          Int?                      @default(0)
+  payoutMethod        payoutMethodStatus        @default(EFT)
+  invoiceRequired     Boolean                   @default(false)
+  remittanceEmail     String
+  accountHolder       String
+  accountNumber       String
+  branchCode          String
+  bankName            String
+  SWIFTCode           String
+  country             String
+  brandId             String
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  brands              Brand                     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
+
+model Occasion {
+  id               String             @id @default(uuid())
+  name             String
+  emoji            String
+  description      String
+  isActive         Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  occasionCategory OccasionCategory[]
+  order            Order[]
+}
+
+model OccasionCategory {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  emoji       String
+  image       String
+  isActive    Boolean  @default(false)
+  occasionId  String
+  occasions   Occasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+}
+
+model Categories {
+  id     String  @id @default(uuid())
+  name   String
+  brands Brand[]
+}
+
+model ReceiverDetail {
+  id    String  @id @default(uuid())
+  name  String
+  phone String
+  email String
+  order Order[]
+}
+
+model Order {
+  id               String               @id @default(uuid())
+  brandId          String
+  occasionId       String
+  amount           Int
+  message          String
+  isActive         Boolean              @default(false)
+  sendType         SendStatus           @default(sendImmediately)
+  deliveryMethod   deliveryMethodStatus @default(whatsup)
+  receiverId       String
+  senderId         String
+  giftCode         String
+  orderNumber      String
+  paymentMethod    paymentStatus        @default(COD)
+  totalAmount      Int?                 @default(0)
+  redemptionStatus RedemptionStatus     @default(Issued)
+  timeStemp        DateTime
+  receiverDetails  ReceiverDetail       @relation(fields: [receiverId], references: [id], onDelete: Cascade)
+  occasions        Occasion             @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  brands           Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  user             User                 @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model Settlements {
+  id              String   @id @default(uuid())
+  brandId         String
+  totalSold       Int
+  Redeemed        String
+  Outstanding     Int?
+  settlementTerms String
+  Amount          Int?
+  lastPayment     DateTime
+  status          Status   @default(Pending)
+  brands          Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
+
+enum Status {
+  Pending
+  Paid
+  InReview
+}
+
+enum deliveryMethodStatus {
+  whatsup
+  email
+  print
+}
+
+enum RedemptionStatus {
+  Issued
+  Redeemed
+  Exparied
+  NotRedeemed
+}
+
+enum paymentStatus {
+  COD
+  Stripe
+}
+
+enum SendStatus {
+  sendImmediately
+  scheduleLater
+}
+
+enum SettelmentStatus {
+  onRedemption
+  onPurchase
+}
+
+enum CommissionStatus {
+  Fixed
+  Percentage
+}
+
+enum PolicyStatus {
+  Retain
+  Share
+}
+
+enum DenominationStatus {
+  staticDenominations
+  amountRange
+}
+
+enum expiryPolicyStatus {
+  fixedDay
+  endOfMonth
+  absoluteDate
+}
+
+enum SettlementFrequencyStatus {
+  monthly
+  weekly
+}
+
+enum payoutMethodStatus {
+  EFT
+  ManualProcessing
+}
