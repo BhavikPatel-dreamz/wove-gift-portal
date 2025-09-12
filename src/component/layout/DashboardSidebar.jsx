@@ -1,4 +1,4 @@
-const { X, LogOut } = require("lucide-react");
+import { X, LogOut } from "lucide-react";
 
 const DashboardSidebar = ({ 
   isMobileMenuOpen, 

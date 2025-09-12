@@ -50,7 +50,7 @@ const AppLayout = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="h-screen flex flex-col bg-gray-50 text-gray-900">
       
       {/* Header */}
       <PageHeader
@@ -62,7 +62,7 @@ const AppLayout = ({
       />
 
       {/* Main Layout */}
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
         {sidebarPosition === 'left' && (
           <DashboardSidebar
@@ -75,7 +75,7 @@ const AppLayout = ({
         )}
 
         {/* Main Content */}
-        <main className={`flex-1`}>
+        <main className={`flex-1 overflow-y-auto`}>
           {/* Top Navigation (when sidebar is on top) */}
           {sidebarPosition === 'top' && (
             <TopNavigation

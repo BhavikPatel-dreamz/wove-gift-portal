@@ -16,7 +16,7 @@ const PageHeader = ({
   toggleSidebar 
 }) => {
   return (
-    <header className="bg-white border-gray-200 border-b px-4 lg:px-6 h-16 flex items-center justify-between sticky top-0 z-40 backdrop-blur-sm bg-opacity-95">
+    <header className="bg-white border-gray-200 z-9999 border-b px-4 lg:px-6 h-16 flex items-center justify-between sticky top-0 backdrop-blur-sm bg-opacity-95">
       <div className="flex items-center space-x-4">
         <button
           onClick={toggleSidebar}
