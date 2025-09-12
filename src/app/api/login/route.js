@@ -13,6 +13,14 @@ export async function POST(req, res) {
                 },
                 { status: 200 }
             );
+        } else {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: response.message,
+                },
+                { status: response.status || 400 }
+            );
         }
     } catch (error) {
         console.log(error);

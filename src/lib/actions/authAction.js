@@ -10,28 +10,30 @@ export async function login(req) {
         if (!email || !password) {
             return {
                 success: false,
-                message: "All fields are required"
+                message: "All fields are required",
+                status: 400
             }
         }
+
+        // Use a generic error message to prevent user enumeration attacks.
+        const invalidCredentialsResponse = {
+            success: false,
+            message: "Invalid email or password",
+            status: 401
+        };
+
         const user = await prisma.user.findUnique({
             where: {
                 email: email
             }
         });
+
         if (!user) {
-            return {
-                success: false,
-                message: "User not found"
-            }
+            return invalidCredentialsResponse;
         }
-        // Use a generic error message to prevent user enumeration attacks.
-        const invalidCredentialsResponse = {
-            success: false,
-            message: "Invalid email or password"
-        };
 
         const comparePassword = await bcrypt.compare(password, user.password);
-        if (!user || !comparePassword) {
+        if (!comparePassword) {
             return invalidCredentialsResponse;
         }
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '24h' });
@@ -58,7 +60,8 @@ export async function login(req) {
         console.error("Login error:", error.message);
         return {
             success: false,
-            message: "Internal server error"
+            message: "Internal server error",
+            status: 500
         }
     }
 }

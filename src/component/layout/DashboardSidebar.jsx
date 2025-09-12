@@ -1,4 +1,5 @@
 import { X, LogOut } from "lucide-react";
+import { useRouter } from 'next/navigation';
 
 const DashboardSidebar = ({ 
   isMobileMenuOpen, 
@@ -7,6 +8,9 @@ const DashboardSidebar = ({
   activeTab, 
   onTabClick 
 }) => {
+    const router = useRouter()
+  
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -66,7 +70,7 @@ const DashboardSidebar = ({
 
         {/* Sidebar Footer - Fixed at bottom */}
         <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors text-gray-700 hover:bg-gray-100 hover:text-gray-900">
+          <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors text-gray-700 hover:bg-gray-100 hover:text-gray-900" onClick={() => router.push('/login')}>
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Logout</span>
           </button>

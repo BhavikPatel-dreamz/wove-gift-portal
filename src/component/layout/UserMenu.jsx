@@ -1,8 +1,10 @@
 const { User, ChevronDown } = require("lucide-react");
 const { useState } = require("react");
+import { useRouter } from 'next/navigation';
 
 const UserMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter()
 
   return (
     <div className="relative">
@@ -24,16 +26,16 @@ const UserMenu = () => {
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg z-20 bg-white border border-gray-200">
             <div className="py-1">
-              <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <div href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 Profile
-              </a>
-              <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              </div>
+              <div href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 Settings
-              </a>
+              </div>
               <hr className="my-1 border-gray-200" />
-              <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+              <div href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"  onClick={() => router.push('/login')}>
                 Logout
-              </a>
+              </div>
             </div>
           </div>
         </>

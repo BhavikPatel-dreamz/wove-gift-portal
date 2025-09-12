@@ -1,24 +1,47 @@
 "use client"
 import { Shield, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     remember: false
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    const toastId = toast.loading('Signing in...');
+
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success('Signed in successfully!', { id: toastId });
+        localStorage.setItem('token', data.token);
+        router.push('/dashboard');
+      } else {
+        throw new Error(data.message || 'An error occurred.');
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to connect to the server.', { id: toastId });
+    } finally {
       setIsLoading(false);
-      console.log('Login attempt:', formData);
-    }, 2000);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -31,6 +54,7 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
+      <Toaster position="bottom-right" reverseOrder={false} />
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-r from-blue-100/20 to-transparent rounded-full transform rotate-12"></div>
