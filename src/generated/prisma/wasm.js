@@ -35,11 +35,11 @@ exports.Prisma = Prisma
 exports.$Enums = {}
 
 /**
- * Prisma Client JS version: 6.16.0
+ * Prisma Client JS version: 6.16.1
  * Query Engine version: 1c57fdcd7e44b29b9313256c76699e91c3ac3c43
  */
 Prisma.prismaVersion = {
-  client: "6.16.0",
+  client: "6.16.1",
   engine: "1c57fdcd7e44b29b9313256c76699e91c3ac3c43"
 }
 
@@ -379,7 +379,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/media/drive/Project/wove-gift-portal/src/generated/prisma",
+      "value": "/media/drive/Rushali_project/wove-gift-portal/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -393,20 +393,21 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/media/drive/Project/wove-gift-portal/prisma/schema.prisma",
+    "sourceFilePath": "/media/drive/Rushali_project/wove-gift-portal/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null
+    "rootEnvPath": "../../../.env",
+    "schemaEnvPath": "../../../.env"
   },
   "relativePath": "../../../prisma",
-  "clientVersion": "6.16.0",
+  "clientVersion": "6.16.1",
   "engineVersion": "1c57fdcd7e44b29b9313256c76699e91c3ac3c43",
   "datasourceNames": [
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": true,
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {
