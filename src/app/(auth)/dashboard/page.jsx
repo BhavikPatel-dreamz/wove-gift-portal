@@ -1,6 +1,5 @@
 import { validateSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
-import LogoutButton from '@/components/LogoutButton'
 
 export default async function DashboardPage() {
   const session = await validateSession()
@@ -44,10 +43,6 @@ export default async function DashboardPage() {
               {new Date(user.createdAt).toLocaleDateString()}
             </p>
           </div>
-        </div>
-
-        <div className="mt-8 flex justify-center">
-          <LogoutButton />
         </div>
       </div>
     </main>
