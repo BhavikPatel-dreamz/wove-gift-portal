@@ -1,7 +1,7 @@
 // src/lib/session.js
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
-import prisma from './db'
+import prisma from '../../db'
 
 const sessionOptions = {
   password: process.env.SESSION_SECRET,
@@ -50,7 +50,10 @@ export async function createSession(userId) {
   session.user = {
     id: dbSession.user.id,
     email: dbSession.user.email,
-    name: dbSession.user.name,
+    firstName: dbSession.user.firstName,
+    lastName: dbSession.user.lastName,
+    phone: dbSession.user.phone,
+    role: dbSession.user.role,
     createdAt: dbSession.user.createdAt,
     updatedAt: dbSession.user.updatedAt,
   }
@@ -103,7 +106,10 @@ export async function validateSession() {
     user: {
       id: dbSession.user.id,
       email: dbSession.user.email,
-      name: dbSession.user.name,
+      firstName: dbSession.user.firstName,
+      lastName: dbSession.user.lastName,
+      phone: dbSession.user.phone,
+      role: dbSession.user.role,
       createdAt: dbSession.user.createdAt,
       updatedAt: dbSession.user.updatedAt,
     },

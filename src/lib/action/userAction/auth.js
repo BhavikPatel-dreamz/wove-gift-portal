@@ -1,4 +1,4 @@
-import prisma from './db'
+import prisma from '../../db'
 import { hashPassword, verifyPassword } from './password'
 
 export async function createUser(data) {
@@ -16,12 +16,18 @@ export async function createUser(data) {
     data: {
       email: data.email,
       password: hashedPassword,
-      name: data.name || null,
+      firstName: data.firstName || null,
+      lastName: data.lastName || null,
+      phone: data.phone || null,
+      role: "customer"
     },
     select: {
       id: true,
       email: true,
-      name: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      role: true,
       createdAt: true,
     },
   })
@@ -47,7 +53,8 @@ export async function authenticateUser(data) {
   return {
     id: user.id,
     email: user.email,
-    name: user.name,
+    firstName: user.firstName || null,
+    lastName: user.lastName || null,
   }
 }
 
@@ -57,7 +64,10 @@ export async function getUserById(userId) {
     select: {
       id: true,
       email: true,
-      name: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      role: true,
       createdAt: true,
     },
   })
