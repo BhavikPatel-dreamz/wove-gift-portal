@@ -10,38 +10,52 @@ import {
 import Button from '../forms/Button';
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useSession } from '@/contexts/SessionContext'
 
-const Header = ({ onMenuClick, user }) => {
-    const [loading, setLoading] = useState(false)
-    const router = useRouter()
-  
-    const handleLogout = async () => {
-      setLoading(true)
-  
-      try {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-        })
-  
-        router.push('/')
-        router.refresh()
-      } catch (error) {
-        console.error('Logout error:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+const Header = ({ onMenuClick }) => {
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const { user, logout } = useSession()
 
-    // Get display name - prioritize name, fallback to email first part, then default to Admin
-    const getDisplayName = () => {
-      if (user?.name) {
-        return user.name;
-      }
-      if (user?.email) {
-        return user.email.split('@')[0];
-      }
-      return 'Admin';
+  const handleLogout = async () => {
+    setLoading(true)
+
+    try {
+      await logout() // Use the logout from SessionContext
+      router.push('/')
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  // Get display name - prioritize name, fallback to email first part, then default to Admin
+  const getDisplayName = () => {
+    if (user?.name) {
+      return user.name;
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return 'Admin';
+  }
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (user?.name) {
+      return user.name
+        .split(' ')
+        .map(name => name[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return 'A';
+  }
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
@@ -70,10 +84,17 @@ const Header = ({ onMenuClick, user }) => {
           </button>
           
           <div className="flex items-center space-x-3">
-            <span className="text-sm font-medium text-gray-700">Welcome, {getDisplayName()}</span>
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-gray-600" />
+            <div className="text-right">
+              <span className="text-sm font-medium text-gray-700 block">
+                Welcome, {getDisplayName()}
+              </span>
             </div>
+            
+            {/* User Avatar */}
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+              {user ? getUserInitials() : <User className="w-4 h-4" />}
+            </div>
+            
             <Button 
               variant="ghost" 
               size="sm" 

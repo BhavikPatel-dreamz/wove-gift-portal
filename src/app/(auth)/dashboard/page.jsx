@@ -1,14 +1,14 @@
-import { validateSession } from '@/lib/session'
+'use client'
+
+import { useSession } from '@/contexts/SessionContext'
 import { redirect } from 'next/navigation'
 
-export default async function DashboardPage() {
-  const session = await validateSession()
+export default function DashboardPage() {
+  const session = useSession()
 
   if (!session) {
     redirect('/login')
   }
-
-  console.log("session", session);
 
   // Use session.user directly
   const user = session.user
@@ -37,12 +37,7 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          <div>
-            <p className="text-sm text-gray-500">Member Since</p>
-            <p className="text-lg font-medium text-gray-800">
-              {new Date(user.createdAt).toLocaleDateString()}
-            </p>
-          </div>
+         
         </div>
       </div>
     </main>
