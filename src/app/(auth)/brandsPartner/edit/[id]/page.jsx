@@ -72,7 +72,7 @@ const BrandEdit = () => {
     }, // Changed from string to object
     partialRedemption: false,
     stackable: false,
-    minPerUsePerDays: 1, // Changed from maxUserPerDay
+    maxUserPerDay: 1, // Changed from maxUserPerDay
     termsConditionsURL: '',
 
     // Banking
@@ -184,7 +184,10 @@ const BrandEdit = () => {
           minAmount: brand.vouchers?.[0]?.minAmount || 0,
           expiryPolicy: brand.vouchers?.[0]?.expiryPolicy || 'fixedDay',
           expiryValue: brand.vouchers?.[0]?.expiryValue || '365',
+          expiresAt: brand.vouchers?.[0]?.expiresAt || '',
+          fixedDays: brand.vouchers?.[0]?.fixedDays || 365,
           graceDays: brand.vouchers?.[0]?.graceDays || 0,
+          maxUserPerDay: brand.vouchers?.[0]?.maxUserPerDay || 1,
           redemptionChannels: brand.vouchers?.[0]?.redemptionChannels || 'online,instore',
           partialRedemption: brand.vouchers?.[0]?.partialRedemption || false,
           stackable: brand.vouchers?.[0]?.Stackable || false,

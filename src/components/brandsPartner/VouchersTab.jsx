@@ -3,7 +3,7 @@ import React from 'react';
 const VouchersTab = ({ formData, updateFormData }) => {
   // Ensure redemptionChannels is always an object
   const redemptionChannels = formData.redemptionChannels || {};
-  
+
   return (
     <div className="space-y-8">
       {/* Denomination Setup */}
@@ -82,16 +82,40 @@ const VouchersTab = ({ formData, updateFormData }) => {
               <option value="periodAfterPurchase">Period After Purchase</option>
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Fixed Days</label>
-            <input
-              type="number"
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-              placeholder="365"
-              value={formData.fixedDays || ''}
-              onChange={(e) => updateFormData('fixedDays', parseInt(e.target.value) || 0)}
-            />
-          </div>
+          {formData.expiryPolicy === 'fixedDay' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Fixed Days</label>
+              <input
+                type="number"
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                placeholder="365"
+                value={formData.fixedDays || ''}
+                onChange={(e) => updateFormData('fixedDays', parseInt(e.target.value) || 0)}
+              />
+            </div>
+          )}
+          {formData.expiryPolicy === 'periodAfterPurchase' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+              <input
+                type="date"
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                value={formData.expiresAt || ''}
+                onChange={(e) => updateFormData('expiresAt', e.target.value)}
+              />
+            </div>
+          )}
+          {formData.expiryPolicy === 'months' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Months</label>
+              <input
+                type="month"
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                value={formData.expiryMonth || ''}
+                onChange={(e) => updateFormData('expiryMonth', e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -188,13 +212,13 @@ const VouchersTab = ({ formData, updateFormData }) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Min Per Use Per Days</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Max Per Use Per Days</label>
           <input
             type="number"
             className="w-full border border-gray-300 rounded-md px-3 py-2"
             placeholder="1"
-            value={formData.minPerUsePerDays || ''}
-            onChange={(e) => updateFormData('minPerUsePerDays', parseInt(e.target.value) || 0)}
+            value={formData.maxUserPerDay || ''}
+            onChange={(e) => updateFormData('maxUserPerDay', parseInt(e.target.value) || 0)}
           />
         </div>
       </div>

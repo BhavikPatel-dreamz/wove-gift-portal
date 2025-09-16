@@ -105,6 +105,7 @@ model Vouchers {
   maxAmount               Int?               @default(0)
   minAmount               Int?               @default(0)
   expiryPolicy            expiryPolicyStatus @default(fixedDay)
+  expiresAt               String
   expiryValue             String
   graceDays               Int?               @default(0)
   redemptionChannels      Json?
@@ -281,8 +282,8 @@ enum DenominationStatus {
 
 enum expiryPolicyStatus {
   fixedDay
-  neverExpires
-  periodAfterPurchase
+  endOfTheMonths
+  absoluteDate
 }
 
 enum IntegrationType {
