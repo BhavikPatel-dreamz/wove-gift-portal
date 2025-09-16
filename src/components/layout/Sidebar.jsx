@@ -19,8 +19,8 @@ const Sidebar = ({ isOpen, onClose }) => {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
     { name: 'Orders', icon: ShoppingCart, href: '/orders' },
-    { name: 'Brands', icon: Store, href: '/brands' },
-    { name: 'New Brands', icon: Plus, href: '/brandsPartner' },
+    // { name: 'Brands', icon: Store, href: '/brands' },
+    { name: 'Brands', icon: Store, href: '/brandsPartner' },
     { name: 'Occasions', icon: Calendar, href: '/occasions' },
     { name: 'Data', icon: BarChart3, href: '/data' },
     { name: 'Settlements', icon: FileText, href: '/settlements' },
