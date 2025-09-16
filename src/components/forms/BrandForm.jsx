@@ -1,6 +1,7 @@
 "use client"
 import React, { useRef } from 'react';
 import { Upload, Globe, Loader, X } from 'lucide-react';
+import { categories } from '../../lib/resourses';
 
 const BrandForm = ({ 
   formData, 
@@ -15,18 +16,7 @@ const BrandForm = ({
 }) => {
   const fileInputRef = useRef(null);
 
-  const categories = [
-    'Fashion & Footwear',
-    'Clothing',
-    'Fashion',
-    'Footwear',
-    'Sports',
-    'Accessories',
-    'Beauty & Cosmetics',
-    'Technology',
-    'Food & Beverage',
-    'Other'
-  ];
+
 
   const handleFileClick = () => {
     fileInputRef.current?.click();

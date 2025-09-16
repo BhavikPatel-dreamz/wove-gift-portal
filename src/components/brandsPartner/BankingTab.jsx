@@ -24,8 +24,8 @@ const BankingTab = ({ formData, updateFormData }) => {
               type="text"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="Account holder name"
-              value={formData.accountHolderName}
-              onChange={(e) => updateFormData('accountHolderName', e.target.value)}
+              value={formData.accountHolder || ''}
+              onChange={(e) => updateFormData('accountHolder', e.target.value)}
             />
           </div>
           <div>
@@ -34,8 +34,8 @@ const BankingTab = ({ formData, updateFormData }) => {
               type="text"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="Bank name"
-              value={formData.bankNameDetails}
-              onChange={(e) => updateFormData('bankNameDetails', e.target.value)}
+              value={formData.bankName || ''}
+              onChange={(e) => updateFormData('bankName', e.target.value)}
             />
           </div>
           <div>
@@ -44,8 +44,8 @@ const BankingTab = ({ formData, updateFormData }) => {
               type="text"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="Account number"
-              value={formData.accountNumberDetails}
-              onChange={(e) => updateFormData('accountNumberDetails', e.target.value)}
+              value={formData.accountNumber || ''}
+              onChange={(e) => updateFormData('accountNumber', e.target.value)}
             />
             <button className="text-blue-600 text-sm mt-1 hover:text-blue-800">Show</button>
           </div>
@@ -55,8 +55,8 @@ const BankingTab = ({ formData, updateFormData }) => {
               type="text"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="Branch code"
-              value={formData.branchCodeDetails}
-              onChange={(e) => updateFormData('branchCodeDetails', e.target.value)}
+              value={formData.branchCode || ''}
+              onChange={(e) => updateFormData('branchCode', e.target.value)}
             />
           </div>
           <div>
@@ -65,7 +65,7 @@ const BankingTab = ({ formData, updateFormData }) => {
               type="text"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="SWIFT/BIC (for international transfers)"
-              value={formData.swiftCode}
+              value={formData.swiftCode || ''}
               onChange={(e) => updateFormData('swiftCode', e.target.value)}
             />
             <p className="text-xs text-gray-500 mt-1">Required for international transfers</p>
@@ -74,7 +74,7 @@ const BankingTab = ({ formData, updateFormData }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
             <select
               className="w-full border border-gray-300 rounded-md px-3 py-2"
-              value={formData.country}
+              value={formData.country || 'South Africa'}
               onChange={(e) => updateFormData('country', e.target.value)}
             >
               <option value="South Africa (ZA)">South Africa (ZA)</option>
@@ -97,19 +97,19 @@ const BankingTab = ({ formData, updateFormData }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
           <div>
             <span className="text-gray-600">Frequency:</span>
-            <span className="ml-2 font-medium">Monthly</span>
+            <span className="ml-2 font-medium">{formData.settlementFrequency || 'Monthly'}</span>
           </div>
           <div>
             <span className="text-gray-600">Method:</span>
-            <span className="ml-2 font-medium">EFT</span>
+            <span className="ml-2 font-medium">{formData.payoutMethod || 'EFT'}</span>
           </div>
           <div>
             <span className="text-gray-600">Invoice Required:</span>
-            <span className="ml-2 font-medium">Yes</span>
+            <span className="ml-2 font-medium">{formData.invoiceRequired ? 'Yes' : 'No'}</span>
           </div>
           <div>
             <span className="text-gray-600">Bank Verified:</span>
-            <span className="ml-2 font-medium text-red-600">No</span>
+            <span className="ml-2 font-medium text-red-600">{formData.accountVerification ? 'Yes' : 'No'}</span>
           </div>
         </div>
       </div>

@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model Session {
   id        String   @id @default(cuid())
   userId    String
@@ -20,9 +19,9 @@ model Session {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique 
-  phone String?
+  id        String    @id @default(cuid())
+  email     String    @unique
+  phone     String?
   firstName String
   lastName  String
   password  String
@@ -30,181 +29,207 @@ model User {
   role      String?
   sessions  Session[]
   order     Order[]
-  isActive  Boolean  @default(false)
-  isVerify  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive  Boolean   @default(false)
+  isVerify  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@map("users")
 }
 
 model Brand {
-  id             String          @id @default(cuid())
-  brandName      String          @unique
-  logo           String   
-  description    String
-  website        String
-  contact        String
-  tagline        String
-  color          String
-  categorieName  String
-  isActive       Boolean        @default(false)
-  isFeature      Boolean        @default(false)
-  notes          String
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  brandcontacts  BrandContacts[]
-  brandTerms     BrandTerms[]
-  brandBankings  BrandBanking[]
-  vouchers       Vouchers[]
-  order          Order[]
-  settlements    Settlements[]
-  }
+  id            String          @id @default(cuid())
+  brandName     String          @unique
+  logo          String
+  description   String
+  website       String
+  contact       String
+  tagline       String
+  color         String
+  categorieName String
+  isPrimary     Boolean         @default(false)
+  isActive      Boolean         @default(false)
+  isFeature     Boolean         @default(false)
+  notes         String
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  brandcontacts BrandContacts[]
+  brandTerms    BrandTerms[]
+  brandBankings BrandBanking[]
+  vouchers      Vouchers[]
+  order         Order[]
+  settlements   Settlements[]
+  integrations  Integration[]
+}
 
 model BrandContacts {
-    id        String @id @default(cuid())
-    name      String
-    role      String
-    email     String
-    phone     String
-    brandId   String
-    createdAt DateTime       @default(now())
-    updatedAt DateTime       @updatedAt
-    brands    Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  }
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  email     String
+  phone     String
+  notes     String?
+  isPrimary Boolean  @default(false)
+  brandId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  brands    Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
 
 model BrandTerms {
-  id                  String                @id @default(cuid())
-  settelementTrigger  SettelmentStatus      @default(onRedemption)
-  commissionType      CommissionStatus      @default(Percentage)
-  commissionValue     Int                   @default(0) 
-  currency            String               
-  discount            Int?                  @default(0) 
-  orderValue          Int?                  @default(0)
-  contractStart       DateTime              
-  contractEnd         DateTime              
-  goLiveDate          DateTime
-  renewContract       Boolean               @default(false)
-  brackingPolicy      PolicyStatus          @default(Retain)
-  brackingShare       Int?                  @default(0)
-  vatRate             Int?                  @default(0)
-  internalNotes       String
-  brandId             String
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  brands              Brand                 @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  }
+  id                 String           @id @default(cuid())
+  settelementTrigger SettelmentStatus @default(onRedemption)
+  commissionType     String?
+  commissionValue    Int              @default(0)
+  maxDiscount        Int?             @default(0)
+  minOrderValue      Int?             @default(0)
+  currency           String?
+  brackingPolicy     PolicyStatus     @default(Retain)
+  brackingShare      Int?             @default(0)
+  contractStart      DateTime
+  contractEnd        DateTime
+  goLiveDate         DateTime
+  renewContract      Boolean          @default(false)
+  vatRate            Int?             @default(0)
+  internalNotes      String
+  brandId            String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  brands             Brand            @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
 
 model Vouchers {
-  id                 String              @id @default(cuid())
-  denominationype    DenominationStatus  @default(staticDenominations)
-  addDenomination    Json?
-  maxAmount          Int?                @default(0)
-  minAmount          Int?                @default(0)
-  expiryPolicy       expiryPolicyStatus  @default(fixedDay)
-  expiryValue        String              
-  graceDays          Int?                @default(0)
-  redemptionChannels String? 
-  partialRedemption  Boolean             @default(false)
-  Stackable          Boolean             @default(false)
-  userPerDay         Int?
-  termsConditionsURL String?
-  brandId            String
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  brands              Brand               @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  id                      String             @id @default(cuid())
+  denominationype         String?
+  denominationValue Int?   
+  maxAmount               Int?               @default(0)
+  minAmount               Int?               @default(0)
+  expiryPolicy            expiryPolicyStatus @default(fixedDay)
+  expiryValue             String
+  graceDays               Int?               @default(0)
+  redemptionChannels      Json?
+  partialRedemption       Boolean            @default(false)
+  Stackable               Boolean            @default(false)
+  maxUserPerDay           Int?
+  termsConditionsURL      String?
+  brandId                 String
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  brands                  Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
 }
 
 model BrandBanking {
   id                  String                    @id @default(cuid())
   settlementFrequency SettlementFrequencyStatus @default(monthly)
   dayOfMonth          Int?                      @default(0)
-  payoutMethod        payoutMethodStatus        @default(EFT)
+  payoutMethod        PayoutMethodStatus        @default(EFT)
   invoiceRequired     Boolean                   @default(false)
-  remittanceEmail     String
+  remittanceEmail     String?
   accountHolder       String
   accountNumber       String
   branchCode          String
   bankName            String
   SWIFTCode           String
   country             String
+  accountVerification Boolean                   @default(false)
   brandId             String
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
   brands              Brand                     @relation(fields: [brandId], references: [id], onDelete: Cascade)
 }
 
-model Occasion {
-  id                  String            @id @default(cuid())
-  name                String            @unique 
-  emoji               String
-  description         String
-  image               String?
-  isActive            Boolean            @default(false)
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  occasionCategory    OccasionCategory[]
-  order               Order[]
+model Integration {
+  id       String  @id @default(cuid())
+  platform String // e.g. Shopify, WooCommerce, Magento, Custom API
+  storeUrl String? // Shopify/WooCommerce/Magento store URL
 
+  // 🔐 Sensitive fields - must be hashed/encrypted before save
+  apiKey         String? @db.Text
+  apiSecret      String? @db.Text
+  accessToken    String? @db.Text
+  consumerKey    String? @db.Text
+  consumerSecret String? @db.Text
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
+
+model Occasion {
+  id               String             @id @default(cuid())
+  name             String             @unique
+  emoji            String
+  description      String
+  image            String?
+  isActive         Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  occasionCategory OccasionCategory[]
+  order            Order[]
 }
 
 model OccasionCategory {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String
   emoji       String
   image       String
-  isActive    Boolean   @default(false)
+  isActive    Boolean  @default(false)
   occasionId  String
-  occasions   Occasion  @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  occasions   Occasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
 }
 
 model Categories {
-  id          String @id @default(cuid())
-  name        String
+  id   String @id @default(cuid())
+  name String
 }
+
 model ReceiverDetail {
-  id         String @id @default(cuid())
-  name       String
-  phone      String
-  email      String
-  order      Order[]
+  id    String  @id @default(cuid())
+  name  String
+  phone String
+  email String
+  order Order[]
 }
 
 model Order {
-  id                  String @id @default(cuid())
-  brandId             String
-  occasionId          String
-  amount              Int
-  message             String
-  isActive            Boolean             @default(false)
-  sendType            SendStatus          @default(sendImmediately)
-  deliveryMethod      deliveryMethodStatus @default(whatsup)
-  receiverId          String
-  senderId            String    
-  giftCode            String
-  orderNumber         String
-  paymentMethod       paymentStatus       @default(COD)
-  totalAmount         Int?                @default(0)
-  redemptionStatus    RedemptionStatus    @default(Issued)
-  timeStemp           DateTime
-  receiverDetails     ReceiverDetail      @relation(fields: [receiverId], references: [id], onDelete: Cascade)
-  occasions           Occasion            @relation(fields: [occasionId], references: [id], onDelete: Cascade)
-  brands              Brand               @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  user                User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  id               String               @id @default(cuid())
+  brandId          String
+  occasionId       String
+  amount           Int
+  message          String
+  isActive         Boolean              @default(false)
+  sendType         SendStatus           @default(sendImmediately)
+  deliveryMethod   deliveryMethodStatus @default(whatsup)
+  receiverId       String
+  senderId         String
+  giftCode         String
+  orderNumber      String
+  paymentMethod    paymentStatus        @default(COD)
+  totalAmount      Int?                 @default(0)
+  redemptionStatus RedemptionStatus     @default(Issued)
+  timeStemp        DateTime
+  receiverDetails  ReceiverDetail       @relation(fields: [receiverId], references: [id], onDelete: Cascade)
+  occasions        Occasion             @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  brands           Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  user             User                 @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }
+
 model Settlements {
-  id                  String      @id @default(cuid())
-  brandId             String
-  totalSold           Int
-  Redeemed            String
-  Outstanding         Int?  
-  settlementTerms     String
-  Amount 	            Int?
-  lastPayment         DateTime
-  status              Status       @default(Pending)
-  brands              Brand        @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  brandId         String
+  totalSold       Int
+  Redeemed        String
+  Outstanding     Int?
+  settlementTerms String
+  Amount          Int?
+  lastPayment     DateTime
+  status          Status   @default(Pending)
+  brands          Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
 }
+
 enum Status {
   Pending
   Paid
@@ -212,28 +237,33 @@ enum Status {
 }
 
 enum deliveryMethodStatus {
- whatsup 
- email
- print
+  whatsup
+  email
+  print
 }
+
 enum RedemptionStatus {
- Issued 
- Redeemed
- Exparied
- NotRedeemed
+  Issued
+  Redeemed
+  Exparied
+  NotRedeemed
 }
+
 enum paymentStatus {
- COD
- Stripe
+  COD
+  Stripe
 }
+
 enum SendStatus {
- sendImmediately 
- scheduleLater
+  sendImmediately
+  scheduleLater
 }
+
 enum SettelmentStatus {
- onRedemption
- onPurchase
+  onRedemption
+  onPurchase
 }
+
 enum CommissionStatus {
   Fixed
   Percentage
@@ -251,15 +281,43 @@ enum DenominationStatus {
 
 enum expiryPolicyStatus {
   fixedDay
-  endOfMonth
-  absoluteDate
+  neverExpires
+  periodAfterPurchase
+}
+
+enum IntegrationType {
+  shopify
+  woocommerce
+  magento
+  custom_api
+  other
+}
+
+enum IntegrationStatus {
+  active
+  inactive
+  pending
+  error
+}
+
+enum SyncStatus {
+  success
+  failed
+  partial
+  in_progress
+}
+
+enum PayoutMethodStatus {
+  EFT
+  wire_transfer
+  paypal
+  stripe
+  manual
 }
 
 enum SettlementFrequencyStatus {
-  monthly
+  daily
   weekly
-}
-enum payoutMethodStatus {
-  EFT
-  ManualProcessing
+  monthly
+  quarterly
 }

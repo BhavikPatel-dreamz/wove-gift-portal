@@ -1,6 +1,9 @@
 import React from 'react';
 
 const VouchersTab = ({ formData, updateFormData }) => {
+  // Ensure redemptionChannels is always an object
+  const redemptionChannels = formData.redemptionChannels || {};
+  
   return (
     <div className="space-y-8">
       {/* Denomination Setup */}
@@ -51,7 +54,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
               type="number"
               className="flex-1 border border-gray-300 rounded-md px-3 py-2"
               placeholder="100"
-              value={formData.denominationValue}
+              value={formData.denominationValue || ''}
               onChange={(e) => updateFormData('denominationValue', e.target.value)}
             />
             <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
@@ -71,12 +74,12 @@ const VouchersTab = ({ formData, updateFormData }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Policy</label>
             <select
               className="w-full border border-gray-300 rounded-md px-3 py-2"
-              value={formData.expiryPolicy}
+              value={formData.expiryPolicy || 'neverExpires'}
               onChange={(e) => updateFormData('expiryPolicy', e.target.value)}
             >
-              <option>Never</option>
-              <option>Fixed Date</option>
-              <option>Period After Purchase</option>
+              <option value="neverExpires">Never</option>
+              <option value="fixedDay">Fixed Date</option>
+              <option value="periodAfterPurchase">Period After Purchase</option>
             </select>
           </div>
           <div>
@@ -85,7 +88,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
               type="number"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="365"
-              value={formData.fixedDays}
+              value={formData.fixedDays || ''}
               onChange={(e) => updateFormData('fixedDays', parseInt(e.target.value) || 0)}
             />
           </div>
@@ -98,7 +101,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
               type="text"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="Never"
-              value={formData.expiryValue}
+              value={formData.expiryValue || ''}
               onChange={(e) => updateFormData('expiryValue', e.target.value)}
             />
           </div>
@@ -108,7 +111,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
               type="number"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="0"
-              value={formData.graceDays}
+              value={formData.graceDays || ''}
               onChange={(e) => updateFormData('graceDays', parseInt(e.target.value) || 0)}
             />
           </div>
@@ -130,8 +133,11 @@ const VouchersTab = ({ formData, updateFormData }) => {
               <input
                 type="checkbox"
                 className="rounded border-gray-300 mr-3"
-                checked={formData.redemptionChannels.online}
-                onChange={(e) => updateFormData('redemptionChannels', { ...formData.redemptionChannels, online: e.target.checked })}
+                checked={redemptionChannels.online || false}
+                onChange={(e) => updateFormData('redemptionChannels', {
+                  ...redemptionChannels,
+                  online: e.target.checked
+                })}
               />
               <span>Online</span>
             </label>
@@ -139,8 +145,11 @@ const VouchersTab = ({ formData, updateFormData }) => {
               <input
                 type="checkbox"
                 className="rounded border-gray-300 mr-3"
-                checked={formData.redemptionChannels.inStore}
-                onChange={(e) => updateFormData('redemptionChannels', { ...formData.redemptionChannels, inStore: e.target.checked })}
+                checked={redemptionChannels.inStore || false}
+                onChange={(e) => updateFormData('redemptionChannels', {
+                  ...redemptionChannels,
+                  inStore: e.target.checked
+                })}
               />
               <span>In-Store</span>
             </label>
@@ -148,8 +157,11 @@ const VouchersTab = ({ formData, updateFormData }) => {
               <input
                 type="checkbox"
                 className="rounded border-gray-300 mr-3"
-                checked={formData.redemptionChannels.phone}
-                onChange={(e) => updateFormData('redemptionChannels', { ...formData.redemptionChannels, phone: e.target.checked })}
+                checked={redemptionChannels.phone || false}
+                onChange={(e) => updateFormData('redemptionChannels', {
+                  ...redemptionChannels,
+                  phone: e.target.checked
+                })}
               />
               <span>Phone</span>
             </label>
@@ -165,11 +177,13 @@ const VouchersTab = ({ formData, updateFormData }) => {
             <input
               type="checkbox"
               className="sr-only peer"
-              checked={formData.partialRedemption}
+              checked={formData.partialRedemption || false}
               onChange={(e) => updateFormData('partialRedemption', e.target.checked)}
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            <span className="ml-3 text-sm font-medium text-gray-900">Enabled</span>
+            <span className="ml-3 text-sm font-medium text-gray-900">
+              {formData.partialRedemption ? 'Enabled' : 'Disabled'}
+            </span>
           </label>
         </div>
 
@@ -179,7 +193,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
             type="number"
             className="w-full border border-gray-300 rounded-md px-3 py-2"
             placeholder="1"
-            value={formData.minPerUsePerDays}
+            value={formData.minPerUsePerDays || ''}
             onChange={(e) => updateFormData('minPerUsePerDays', parseInt(e.target.value) || 0)}
           />
         </div>
