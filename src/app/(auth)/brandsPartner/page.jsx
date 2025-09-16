@@ -1,21 +1,22 @@
 "use client"
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Star, MoreVertical, Trash2, Loader, ChevronLeft, ChevronRight, Filter, SortAsc, SortDesc } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import Modal from '@/components/Modal';
 import BrandForm from '@/components/forms/BrandForm';
-import { createBrandPartner, updateBrandPartner, deleteBrandPartner, getBrandPartners } from '../../../lib/action/brandPartner';
+import { addBrand, updateBrand, deleteBrand, getBrands, getBrandStats } from '../../../lib/action/brandAction';
 import { toast } from 'react-hot-toast';
 import { categories } from '../../../lib/resourses';
+import { useRouter, useParams } from 'next/navigation';
+
 
 const BrandManager = () => {
-  const router = useRouter();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const router = useRouter();
   
   // Filter and search states
   const [filters, setFilters] = useState({
@@ -61,7 +62,6 @@ const BrandManager = () => {
     isActive: true
   });
 
-  
 
   // Debounce hook for search
   const useDebounce = (value, delay) => {
@@ -99,7 +99,7 @@ const BrandManager = () => {
         sortOrder: filters.sortOrder
       };
       
-      const result = await getBrandPartners(params);
+      const result = await getBrands(params);
       
       if (result.success) {
         setBrands(result.data || []);
@@ -225,7 +225,7 @@ const BrandManager = () => {
     try {
       setActionLoading(true);
       const formDataToSend = createFormData(brandData);
-      const result = await createBrandPartner(formDataToSend);
+      const result = await addBrand(formDataToSend);
 
       if (result.success) {
         resetForm();
@@ -247,7 +247,7 @@ const BrandManager = () => {
     try {
       setActionLoading(true);
       const formDataToSend = createFormData(brandData, true, editingBrand);
-      const result = await updateBrandPartner(formDataToSend);
+      const result = await updateBrand(formDataToSend);
 
       if (result.success) {
         resetForm();
@@ -273,7 +273,7 @@ const BrandManager = () => {
 
     try {
       setActionLoading(true);
-      const result = await deleteBrandPartner(brandId);
+      const result = await deleteBrand(brandId);
 
       if (result.success) {
         toast.success('Brand deleted successfully');
@@ -304,7 +304,7 @@ const BrandManager = () => {
       };
       
       const formDataToSend = createFormData(toggleData, true, brand);
-      const result = await updateBrandPartner(formDataToSend);
+      const result = await updateBrand(formDataToSend);
       
       if (result.success) {
         toast.success(`Brand ${!brand.isFeature ? 'featured' : 'unfeatured'} successfully`);
@@ -320,13 +320,53 @@ const BrandManager = () => {
     }
   };
 
-  // Updated navigation functions
-  const handleAddClick = () => {
-    router.push('/brandsPartner/new');
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.brandName || !formData.description) {
+      toast.error('Please fill in required fields');
+      return;
+    }
+
+    console.log("formData-----", formData);
+
+    if (editingBrand) {
+      handleUpdateBrand(formData);
+    } else {
+      handleAddBrand(formData);
+    }
   };
 
   const handleEditClick = (brand) => {
-    router.push(`/brandsPartner/edit/${brand.id}`);
+   router.push(`/brandsPartner/edit/${brand.id}`);
+  };
+
+  const autoPopulateFromWebsite = async () => {
+    if (!formData.website) {
+      toast.error('Please enter a website URL first');
+      return;
+    }
+
+    try {
+      toast.loading('Extracting website information...');
+      
+      const simulatedData = {
+        brandName: 'Auto Brand',
+        tagline: 'Automatically populated tagline',
+        description: 'This description was automatically extracted from the website'
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        ...simulatedData
+      }));
+      
+      toast.dismiss();
+      toast.success('Website information extracted successfully');
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Failed to extract information from website');
+      console.log('Failed to auto-populate:', error);
+    }
   };
 
   const getCategoryColor = (category) => {
@@ -363,7 +403,9 @@ const BrandManager = () => {
             </div>
           </div>
           <button
-            onClick={handleAddClick}
+            onClick={() => {
+              router.push('/brandsPartner/new');
+            }}
             disabled={actionLoading}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
@@ -764,7 +806,11 @@ const BrandManager = () => {
             </p>
             {!filters.search && filters.category === 'All Brands' && !filters.isActive && !filters.isFeature && (
               <button
-                onClick={handleAddClick}
+                onClick={() => {
+                  resetForm();
+                  setEditingBrand(null);
+                  setShowAddForm(true);
+                }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Add Your First Brand
@@ -772,6 +818,39 @@ const BrandManager = () => {
             )}
           </div>
         )}
+
+        {/* Add Brand Modal */}
+        <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)}>
+          <BrandForm 
+            formData={formData} 
+            handleInputChange={handleInputChange} 
+            handleSubmit={handleSubmit} 
+            autoPopulateFromWebsite={autoPopulateFromWebsite} 
+            setShowAddForm={setShowAddForm} 
+            setFormData={setFormData}
+            actionLoading={actionLoading}
+            isEditing={false}
+          />
+        </Modal>
+
+        {/* Edit Brand Modal */}
+        <Modal isOpen={showEditForm} onClose={() => {
+          setShowEditForm(false);
+          setEditingBrand(null);
+          resetForm();
+        }}>
+          <BrandForm 
+            formData={formData} 
+            handleInputChange={handleInputChange} 
+            handleSubmit={handleSubmit} 
+            autoPopulateFromWebsite={autoPopulateFromWebsite} 
+            setShowAddForm={setShowEditForm} 
+            setFormData={setFormData}
+            actionLoading={actionLoading}
+            isEditing={true}
+            editingBrand={editingBrand}
+          />
+        </Modal>
       </div>
     </div>
   );

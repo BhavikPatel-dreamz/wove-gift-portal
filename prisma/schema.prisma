@@ -104,7 +104,7 @@ model Vouchers {
   denominationValue Int?   
   maxAmount               Int?               @default(0)
   minAmount               Int?               @default(0)
-  expiryPolicy            expiryPolicyStatus @default(fixedDay)
+  expiryPolicy            String
   expiresAt               String
   expiryValue             String
   graceDays               Int?               @default(0)
@@ -280,11 +280,6 @@ enum DenominationStatus {
   amountRange
 }
 
-enum expiryPolicyStatus {
-  fixedDay
-  endOfTheMonths
-  absoluteDate
-}
 
 enum IntegrationType {
   shopify
