@@ -60,6 +60,7 @@ const [formData, setFormData] = useState({
   expiryPolicy: 'neverExpires',
   expiryValue: '365',
   fixedDays: 365,
+  expiresAt: '',
   graceDays: 0,
   redemptionChannels: {
     online: false,
@@ -69,6 +70,7 @@ const [formData, setFormData] = useState({
   partialRedemption: false,
   stackable: false,
   minPerUsePerDays: 1, // Changed from maxUserPerDay
+  maxUserPerDay: 1, // Changed from maxUserPerDay
   termsConditionsURL: '',
 
   // Banking

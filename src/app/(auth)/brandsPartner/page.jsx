@@ -320,22 +320,6 @@ const BrandManager = () => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.brandName || !formData.description) {
-      toast.error('Please fill in required fields');
-      return;
-    }
-
-    console.log("formData-----", formData);
-
-    if (editingBrand) {
-      handleUpdateBrand(formData);
-    } else {
-      handleAddBrand(formData);
-    }
-  };
-
   // Updated navigation functions
   const handleAddClick = () => {
     router.push('/brandsPartner/new');
@@ -343,35 +327,6 @@ const BrandManager = () => {
 
   const handleEditClick = (brand) => {
     router.push(`/brandsPartner/edit/${brand.id}`);
-  };
-
-  const autoPopulateFromWebsite = async () => {
-    if (!formData.website) {
-      toast.error('Please enter a website URL first');
-      return;
-    }
-
-    try {
-      toast.loading('Extracting website information...');
-      
-      const simulatedData = {
-        brandName: 'Auto Brand',
-        tagline: 'Automatically populated tagline',
-        description: 'This description was automatically extracted from the website'
-      };
-
-      setFormData(prev => ({
-        ...prev,
-        ...simulatedData
-      }));
-      
-      toast.dismiss();
-      toast.success('Website information extracted successfully');
-    } catch (error) {
-      toast.dismiss();
-      toast.error('Failed to extract information from website');
-      console.log('Failed to auto-populate:', error);
-    }
   };
 
   const getCategoryColor = (category) => {
