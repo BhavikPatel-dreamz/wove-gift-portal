@@ -1,5 +1,5 @@
 import AppLayout from "../../components/layout/AppLayout";
-import { validateSession } from "@/lib/session";
+import { validateSession } from '@/lib/action/userAction/session'
 import { SessionProvider } from "@/contexts/SessionContext";
 import { redirect } from "next/navigation";
 

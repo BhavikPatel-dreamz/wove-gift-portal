@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { validateSession } from '@/lib/session'
+import { validateSession } from '@/lib/action/userAction/session'
 import { redirect } from 'next/navigation'
 
 export default async function Home() {

@@ -1,30 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createUser } from '@/lib/auth'
-import { createSession } from '@/lib/session'
 import { signupSchema } from '@/lib/validation'
+import { createUser } from '../../../../lib/action/userAction/auth'
+import { createSession } from '../../../../lib/action/userAction/session'
 
 export async function POST(request) {
   try {
     const body = await request.json()
-    
+
     // Validate input
     const validatedData = signupSchema.parse(body)
-    
-    console.log("body",body);
-    
+
     // Create user
     const user = await createUser(validatedData)
-    
+
     // Create session
     await createSession(user.id)
-    
+
     return NextResponse.json(
-      { 
+      {
         message: 'User created successfully',
         user: {
           id: user.id,
           email: user.email,
-          name: user.name,
+          firstName: user.firstName || null,
+          lastName: user.lastName || null,
+          phone: user.phone || null,
         }
       },
       { status: 201 }
@@ -36,7 +36,7 @@ export async function POST(request) {
         { status: 400 }
       )
     }
-    
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

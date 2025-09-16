@@ -7,7 +7,9 @@ export function middleware(request) {
   if (
     pathname.startsWith('/api/auth/signup') ||
     pathname.startsWith('/api/auth/login')||
-     pathname.startsWith('/api/auth/logout')
+     pathname.startsWith('/api/auth/logout')||
+     pathname.startsWith('/api/brand')||
+     pathname.startsWith('/api/occasion')
   ) {
     return NextResponse.next()
   }
