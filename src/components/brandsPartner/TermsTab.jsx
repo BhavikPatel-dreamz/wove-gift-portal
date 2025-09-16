@@ -16,9 +16,9 @@ const TermsTab = ({ formData, updateFormData }) => {
             <input
               type="radio"
               name="settlementTrigger"
-              value="redemption"
+              value="onRedemption"
               className="mt-1"
-              checked={formData.settlementTrigger === 'redemption'}
+              checked={formData.settlementTrigger === 'onRedemption'}
               onChange={(e) => updateFormData('settlementTrigger', e.target.value)}
             />
             <div>
@@ -31,13 +31,13 @@ const TermsTab = ({ formData, updateFormData }) => {
             <input
               type="radio"
               name="settlementTrigger"
-              value="purchase"
-              checked={formData.settlementTrigger === 'purchase'}
+              value="onPurchase"
+              checked={formData.settlementTrigger === 'onPurchase'}
               onChange={(e) => updateFormData('settlementTrigger', e.target.value)}
             />
             <div>
-              <div className="font-medium">Amount Range</div>
-              <div className="text-sm text-gray-500">If a customer is over a certain amount within a range</div>
+              <div className="font-medium">On Purchase</div>
+              <div className="text-sm text-gray-500">Settle when customers purchase vouchers</div>
             </div>
           </label>
         </div>
@@ -52,7 +52,7 @@ const TermsTab = ({ formData, updateFormData }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Commission Type</label>
             <select
               className="w-full border border-gray-300 rounded-md px-3 py-2"
-              value={formData.commissionType}
+              value={formData.commissionType || 'Percentage'}
               onChange={(e) => updateFormData('commissionType', e.target.value)}
             >
               <option value="Percentage">Percentage</option>
@@ -66,11 +66,12 @@ const TermsTab = ({ formData, updateFormData }) => {
                 type="number"
                 className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
                 placeholder="0.00"
-                value={formData.commissionValue}
+                step="0.01"
+                value={formData.commissionValue || 0}
                 onChange={(e) => updateFormData('commissionValue', parseFloat(e.target.value) || 0)}
               />
               <span className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2 text-gray-500">
-                %
+                {formData.commissionType === 'Fixed Amount' ? formData.currency || 'USD' : '%'}
               </span>
             </div>
           </div>
@@ -81,7 +82,7 @@ const TermsTab = ({ formData, updateFormData }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
             <select
               className="w-full border border-gray-300 rounded-md px-3 py-2"
-              value={formData.currency}
+              value={formData.currency || 'USD'}
               onChange={(e) => updateFormData('currency', e.target.value)}
             >
               <option value="USD">USD</option>
@@ -95,8 +96,9 @@ const TermsTab = ({ formData, updateFormData }) => {
               type="number"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="0"
-              value={formData.minimumOrderValue || 0} // Fallback to 0 if undefined
-              onChange={(e) => updateFormData('minimumOrderValue', parseFloat(e.target.value) || 0)}
+              step="0.01"
+              value={formData.minOrderValue || 0}
+              onChange={(e) => updateFormData('minOrderValue', parseFloat(e.target.value) || 0)}
             />
           </div>
         </div>
@@ -107,7 +109,8 @@ const TermsTab = ({ formData, updateFormData }) => {
             type="number"
             className="w-full border border-gray-300 rounded-md px-3 py-2"
             placeholder="0"
-            value={formData.maxDiscount}
+            step="0.01"
+            value={formData.maxDiscount || 0}
             onChange={(e) => updateFormData('maxDiscount', parseFloat(e.target.value) || 0)}
           />
         </div>
@@ -123,25 +126,25 @@ const TermsTab = ({ formData, updateFormData }) => {
             <label className="flex items-start space-x-3">
               <input
                 type="radio"
-                name="breakagePolicy"
-                value="none"
+                name="brackingPolicy"
+                value="Retain"
                 className="mt-1"
-                checked={formData.breakagePolicy === 'none'}
-                onChange={(e) => updateFormData('breakagePolicy', e.target.value)}
+                checked={formData.brackingPolicy === 'Retain'}
+                onChange={(e) => updateFormData('brackingPolicy', e.target.value)}
               />
               <div>
-                <div className="font-medium">None</div>
-                <div className="text-sm text-gray-500">No base commission breakage rules or policy.</div>
+                <div className="font-medium">Retain</div>
+                <div className="text-sm text-gray-500">Retain all breakage with no sharing policy.</div>
               </div>
             </label>
 
             <label className="flex items-start space-x-3">
               <input
                 type="radio"
-                name="breakagePolicy"
-                value="percentage"
-                checked={formData.breakagePolicy === 'percentage'}
-                onChange={(e) => updateFormData('breakagePolicy', e.target.value)}
+                name="brackingPolicy"
+                value="Share"
+                checked={formData.brackingPolicy === 'Share'}
+                onChange={(e) => updateFormData('brackingPolicy', e.target.value)}
               />
               <div>
                 <div className="font-medium">Share</div>
@@ -149,6 +152,22 @@ const TermsTab = ({ formData, updateFormData }) => {
               </div>
             </label>
           </div>
+          
+          {formData.brackingPolicy === 'Share' && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Breakage Share (%)</label>
+              <input
+                type="number"
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                placeholder="50"
+                step="0.01"
+                min="0"
+                max="100"
+                value={formData.brackingShare || 0}
+                onChange={(e) => updateFormData('brackingShare', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -166,24 +185,24 @@ const TermsTab = ({ formData, updateFormData }) => {
               <input
                 type="date"
                 className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
-                value={formData.contractStart}
+                value={formData.contractStart || ''}
                 onChange={(e) => updateFormData('contractStart', e.target.value)}
               />
-              <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2">
+              <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2" type="button">
                 📅
               </button>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Contract End</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Contract End *</label>
             <div className="flex">
               <input
                 type="date"
                 className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
-                value={formData.contractEnd}
+                value={formData.contractEnd || ''}
                 onChange={(e) => updateFormData('contractEnd', e.target.value)}
               />
-              <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2">
+              <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2" type="button">
                 📅
               </button>
             </div>
@@ -192,36 +211,36 @@ const TermsTab = ({ formData, updateFormData }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">End Date Type (Optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Go Live Date</label>
             <div className="flex">
               <input
                 type="date"
                 className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
-                value={formData.endDateType}
-                onChange={(e) => updateFormData('endDateType', e.target.value)}
+                value={formData.goLiveDate || ''}
+                onChange={(e) => updateFormData('goLiveDate', e.target.value)}
               />
-              <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2">
+              <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2" type="button">
                 📅
               </button>
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Auto-Renew Contract</label>
-            <select
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-              value={formData.autoRenew}
-              onChange={(e) => updateFormData('autoRenew', e.target.value)}
-            >
-              <option value="Automatically renewal contract (default)">Automatically renewal contract (default)</option>
-              <option value="Manual renewal required">Manual renewal required</option>
-            </select>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={formData.renewContract || false}
+                onChange={(e) => updateFormData('renewContract', e.target.checked)}
+              />
+              <span className="text-sm">Automatically renew contract</span>
+            </label>
           </div>
         </div>
       </div>
 
-      {/* VAT & Notice */}
+      {/* VAT & Internal Notes */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">VAT & Notice</h3>
+        <h3 className="text-lg font-medium mb-4">VAT & Internal Notes</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -231,29 +250,26 @@ const TermsTab = ({ formData, updateFormData }) => {
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               placeholder="15"
               step="0.01"
-              value={formData.vatRate}
+              min="0"
+              max="100"
+              value={formData.vatRate || 15}
               onChange={(e) => updateFormData('vatRate', parseFloat(e.target.value) || 0)}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notice Period (Days)</label>
-            <input
-              type="number"
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-              placeholder="30"
-              value={formData.noticePeriod}
-              onChange={(e) => updateFormData('noticePeriod', parseInt(e.target.value) || 0)}
-            />
+          <div className="flex items-end">
+            <div className="text-sm text-gray-500">
+              <p>Standard VAT rate applies to all transactions</p>
+            </div>
           </div>
         </div>
 
         <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Special Notes</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Internal Notes</label>
           <textarea
             className="w-full border border-gray-300 rounded-md px-3 py-2 h-24"
-            placeholder="Any special terms about commercial terms..."
-            value={formData.specialNotes}
-            onChange={(e) => updateFormData('specialNotes', e.target.value)}
+            placeholder="Any internal notes about commercial terms..."
+            value={formData.internalNotes || ''}
+            onChange={(e) => updateFormData('internalNotes', e.target.value)}
           />
         </div>
 
@@ -261,7 +277,7 @@ const TermsTab = ({ formData, updateFormData }) => {
           <div className="flex items-start space-x-2">
             <div className="text-blue-500 mt-1">ℹ️</div>
             <p className="text-sm text-blue-800">
-              When adding a brand commercial terms, a new contract will be created which existing the references for both payments.
+              When updating brand commercial terms, the contract will be modified which affects existing payment references.
             </p>
           </div>
         </div>

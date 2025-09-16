@@ -4,23 +4,6 @@ import { X } from 'lucide-react';
 const ReviewTab = ({ formData, validationErrors }) => {
   return (
     <div className="space-y-8">
-      {/* Validation Status */}
-      {validationErrors.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-start space-x-2">
-            <X className="text-red-500 mt-0.5" size={16} />
-            <div>
-              <h4 className="font-medium text-red-800">Please complete the following required fields:</h4>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {validationErrors.map((error, index) => (
-                  <span key={index} className="bg-red-100 text-red-700 px-2 py-1 rounded text-xs">{error}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Brand Summary */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-medium mb-4">Brand Summary</h3>

@@ -5,6 +5,7 @@ import Modal from '@/components/Modal';
 import BrandForm from '@/components/forms/BrandForm';
 import { addBrand, updateBrand, deleteBrand, getBrands, getBrandStats } from '../../../lib/action/brandAction';
 import { toast } from 'react-hot-toast';
+import { categories } from '../../../lib/resourses';
 
 const BrandManager = () => {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -58,7 +59,6 @@ const BrandManager = () => {
     isActive: true
   });
 
-  const categories = ['All Brands', 'Fashion & Footwear', 'Clothing', 'Fashion', 'Footwear', 'Sports', 'Accessories', 'Beauty & Cosmetics', 'Technology', 'Food & Beverage'];
 
   // Debounce hook for search
   const useDebounce = (value, delay) => {
