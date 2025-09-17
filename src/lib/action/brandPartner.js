@@ -63,17 +63,15 @@ const BrandPartnerSchema = z
     maxDiscount: z.number().min(0).optional().nullable(),
     minOrderValue: z.number().min(0).optional().nullable(),
     currency: z.string().optional().nullable(),
-    brackingPolicy: z.enum(["Retain", "Share", "Forfeit"]).default("Retain"),
+    brackingPolicy: z.enum(["Retain", "Share", "Forfeit"]).default("Retain").optional().nullable(),
     brackingShare: z.number().min(0).max(100).optional().nullable(),
-    contractStart: z.preprocess(
-      (val) => (val === "" ? undefined : val),
-      z
-        .string()
-        .refine((date) => !isNaN(Date.parse(date)), {
-          message: "Invalid contract end date",
-        })
-        .optional()
-    ),
+    contractStart: z
+      .string()
+      .refine(
+        (date) => !isNaN(Date.parse(date)),
+        "Invalid contract start date"
+      ),
+      
     contractEnd: z.preprocess(
       (val) => (val === "" ? undefined : val),
       z
@@ -83,15 +81,10 @@ const BrandPartnerSchema = z
         })
         .optional()
     ),
-     goLiveDate: z.preprocess(
-      (val) => (val === "" ? undefined : val),
-      z
-        .string()
-        .refine((date) => !isNaN(Date.parse(date)), {
-          message: "Invalid contract end date",
-        })
-        .optional()
-    ),
+    goLiveDate: z
+      .string()
+      .refine((date) => !isNaN(Date.parse(date)), "Invalid go live date")
+      .optional(),
     renewContract: z.boolean().default(false),
     vatRate: z.number().min(0).max(100).optional().nullable(),
     internalNotes: z.string().optional(),
@@ -138,7 +131,7 @@ const BrandPartnerSchema = z
   .refine(
     (data) => {
       // If contractEnd is not provided, skip validation
-      if (data.settlementTrigger === "onPurchase") return true;
+      if (data?.settlementTrigger === "onPurchase") return true;
 
       const startDate = new Date(data.contractStart);
       const endDate = new Date(data.contractEnd);
@@ -150,10 +143,9 @@ const BrandPartnerSchema = z
     }
   );
 
-// Solution 1: Increase Transaction Timeout
 export async function createBrandPartner(formData) {
   try {
-    // Parse and validate data (same as before)
+    // Parse form data
     let parsedData;
     if (formData instanceof FormData) {
       const dataString = formData.get("data");
@@ -174,6 +166,7 @@ export async function createBrandPartner(formData) {
         typeof formData === "string" ? JSON.parse(formData) : formData;
     }
 
+    // Validate data with Zod
     const validationResult = BrandPartnerSchema.safeParse(parsedData);
 
     if (!validationResult.success) {
@@ -192,7 +185,7 @@ export async function createBrandPartner(formData) {
     const validatedData = validationResult.data;
     let logoPath = "";
 
-    // Handle logo upload BEFORE transaction
+    // Handle logo upload
     if (parsedData.logoFile && parsedData.logoFile.size > 0) {
       try {
         const uploadDir = join(process.cwd(), "public", "uploads", "brands");
@@ -219,410 +212,150 @@ export async function createBrandPartner(formData) {
       }
     }
 
-    // Pre-hash sensitive data BEFORE transaction
-    const hashedIntegrations = [];
-    for (const integration of validatedData.integrations || []) {
-      const hashedIntegration = {
-        ...integration,
-        apiKey: integration.apiKey
-          ? await hashSensitiveData(integration.apiKey)
-          : null,
-        apiSecret: integration.apiSecret
-          ? await hashSensitiveData(integration.apiSecret)
-          : null,
-        accessToken: integration.accessToken
-          ? await hashSensitiveData(integration.accessToken)
-          : null,
-        consumerKey: integration.consumerKey
-          ? await hashSensitiveData(integration.consumerKey)
-          : null,
-        consumerSecret: integration.consumerSecret
-          ? await hashSensitiveData(integration.consumerSecret)
-          : null,
-      };
-      hashedIntegrations.push(hashedIntegration);
-    }
+    // Use transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // Create brand
+      const brand = await tx.brand.create({
+        data: {
+          brandName: validatedData.brandName,
+          logo: logoPath,
+          description: validatedData.description,
+          website: validatedData.website,
+          contact: validatedData.contact || "",
+          tagline: validatedData.tagline || "",
+          color: validatedData.color,
+          categorieName: validatedData.categorieName,
+          notes: validatedData.notes || "",
+          isActive: validatedData.isActive,
+          isFeature: validatedData.isFeature,
+        },
+      });
 
-    // Use transaction with increased timeout and optimized operations
-    const result = await prisma.$transaction(
-      async (tx) => {
-        // Create brand
-        const brand = await tx.brand.create({
+      // Create brand terms
+      await tx.brandTerms.create({
+        data: {
+          brands: {
+            connect: { id: brand.id },
+          },
+          settelementTrigger: validatedData.settlementTrigger,
+          commissionType: validatedData.commissionType,
+          commissionValue: validatedData.commissionValue,
+          maxDiscount: validatedData.maxDiscount,
+          minOrderValue: validatedData.minOrderValue,
+          currency: validatedData.currency,
+          brackingPolicy: validatedData.brackingPolicy,
+          brackingShare: validatedData.brackingShare,
+          contractStart: new Date(validatedData.contractStart),
+          contractEnd: new Date(validatedData.contractEnd),
+          goLiveDate: validatedData.goLiveDate
+            ? new Date(validatedData.goLiveDate)
+            : new Date(),
+          renewContract: validatedData.renewContract,
+          vatRate: validatedData.vatRate,
+          internalNotes: validatedData.internalNotes || "",
+        },
+      });
+
+      // Create voucher settings
+      const denominationValue =
+        validatedData.denominationValue != null &&
+        validatedData.denominationValue !== ""
+          ? parseInt(validatedData.denominationValue, 10)
+          : null;
+      await tx.vouchers.create({
+        data: {
+          brands: {
+            connect: { id: brand.id },
+          },
+          denominationype: validatedData.denominationType,
+          denominations: validatedData.denominations,
+          denominationCurrency: validatedData.denominationCurrency,
+          denominationValue: denominationValue,
+          maxAmount: validatedData.maxAmount,
+          minAmount: validatedData.minAmount,
+          expiryPolicy: validatedData.expiryPolicy,
+          expiryValue:
+            validatedData.expiryPolicy === "neverExpires"
+              ? null
+              : validatedData.expiryValue, // Handle no expiry case
+          expiresAt: validatedData.expiresAt || null, // Keep as string
+          graceDays: validatedData.graceDays,
+          redemptionChannels: validatedData.redemptionChannels,
+          partialRedemption: validatedData.partialRedemption,
+          Stackable: validatedData.stackable,
+          maxUserPerDay: validatedData.maxUserPerDay,
+          termsConditionsURL: validatedData.termsConditionsURL,
+        },
+      });
+
+      // Create banking details
+      await tx.brandBanking.create({
+        data: {
+          brands: {
+            connect: { id: brand.id },
+          },
+          settlementFrequency: validatedData.settlementFrequency,
+          dayOfMonth: validatedData.dayOfMonth,
+          payoutMethod: validatedData.payoutMethod,
+          invoiceRequired: validatedData.invoiceRequired,
+          remittanceEmail: validatedData.remittanceEmail || "",
+          accountHolder: validatedData.accountHolder,
+          accountNumber: validatedData.accountNumber,
+          branchCode: validatedData.branchCode,
+          bankName: validatedData.bankName,
+          SWIFTCode: validatedData.swiftCode || "",
+          country: validatedData.country,
+          accountVerification: validatedData.accountVerification,
+        },
+      });
+
+      // Create contacts
+      for (const contact of validatedData.contacts) {
+        await tx.brandContacts.create({
           data: {
-            brandName: validatedData.brandName,
-            logo: logoPath,
-            description: validatedData.description,
-            website: validatedData.website,
-            contact: validatedData.contact || "",
-            tagline: validatedData.tagline || "",
-            color: validatedData.color,
-            categorieName: validatedData.categorieName,
-            notes: validatedData.notes || "",
-            isActive: validatedData.isActive,
-            isFeature: validatedData.isFeature,
-          },
-        });
-
-        // Prepare denomination value
-        const denominationValue =
-          validatedData.denominationValue != null &&
-          validatedData.denominationValue !== ""
-            ? parseInt(validatedData.denominationValue, 10)
-            : null;
-
-        // Create all related records in parallel using Promise.all
-        await Promise.all([
-          // Create brand terms
-          tx.brandTerms.create({
-            data: {
-              brandId: brand.id,
-              settelementTrigger: validatedData.settlementTrigger,
-              commissionType: validatedData.commissionType,
-              commissionValue: validatedData.commissionValue,
-              maxDiscount: validatedData.maxDiscount,
-              minOrderValue: validatedData.minOrderValue,
-              currency: validatedData.currency,
-              brackingPolicy: validatedData.brackingPolicy,
-              brackingShare: validatedData.brackingShare,
-              contractStart: validatedData.contractStart
-                ? new Date(validatedData.contractStart)
-                : new Date(),
-              contractEnd: validatedData.contractEnd
-                ? new Date(validatedData.contractEnd)
-                : new Date(),
-              goLiveDate: validatedData.goLiveDate
-                ? new Date(validatedData.goLiveDate)
-                : new Date(),
-              renewContract: validatedData.renewContract,
-              vatRate: validatedData.vatRate,
-              internalNotes: validatedData.internalNotes || "",
+            brands: {
+              connect: { id: brand.id },
             },
-          }),
-
-          // Create voucher settings
-          tx.vouchers.create({
-            data: {
-              brandId: brand.id,
-              denominationype: validatedData.denominationType,
-              denominations: validatedData.denominations,
-              denominationCurrency: validatedData.denominationCurrency,
-              denominationValue: denominationValue,
-              maxAmount: validatedData.maxAmount,
-              minAmount: validatedData.minAmount,
-              expiryPolicy: validatedData.expiryPolicy,
-              expiryValue:
-                validatedData.expiryPolicy === "neverExpires"
-                  ? null
-                  : validatedData.expiryValue,
-              expiresAt: validatedData.expiresAt || null,
-              graceDays: validatedData.graceDays,
-              redemptionChannels: validatedData.redemptionChannels,
-              partialRedemption: validatedData.partialRedemption,
-              Stackable: validatedData.stackable,
-              maxUserPerDay: validatedData.maxUserPerDay,
-              termsConditionsURL: validatedData.termsConditionsURL,
-            },
-          }),
-
-          // Create banking details
-          tx.brandBanking.create({
-            data: {
-              brandId: brand.id,
-              settlementFrequency: validatedData.settlementFrequency,
-              dayOfMonth: validatedData.dayOfMonth,
-              payoutMethod: validatedData.payoutMethod,
-              invoiceRequired: validatedData.invoiceRequired,
-              remittanceEmail: validatedData.remittanceEmail || "",
-              accountHolder: validatedData.accountHolder,
-              accountNumber: validatedData.accountNumber,
-              branchCode: validatedData.branchCode,
-              bankName: validatedData.bankName,
-              SWIFTCode: validatedData.swiftCode || "",
-              country: validatedData.country,
-              accountVerification: validatedData.accountVerification,
-            },
-          }),
-        ]);
-
-        // Create contacts using createMany for better performance
-        if (validatedData.contacts.length > 0) {
-          await tx.brandContacts.createMany({
-            data: validatedData.contacts.map((contact) => ({
-              brandId: brand.id,
-              name: contact.name,
-              role: contact.role,
-              email: contact.email,
-              phone: contact.phone,
-              notes: contact.notes,
-              isPrimary: contact.isPrimary,
-            })),
-          });
-        }
-
-        // Create integrations using createMany for better performance
-        if (hashedIntegrations.length > 0) {
-          await tx.integration.createMany({
-            data: hashedIntegrations.map((integration) => ({
-              brandId: brand.id,
-              platform: integration.platform,
-              storeUrl: integration.storeUrl,
-              apiKey: integration.apiKey,
-              apiSecret: integration.apiSecret,
-              accessToken: integration.accessToken,
-              consumerKey: integration.consumerKey,
-              consumerSecret: integration.consumerSecret,
-              isActive: integration.status === "active",
-            })),
-          });
-        }
-
-        return brand;
-      },
-      {
-        maxWait: 10000, // 10 seconds max wait time
-        timeout: 15000, // 15 seconds timeout
-      }
-    );
-
-    return {
-      success: true,
-      message: "Brand partner created successfully",
-      data: result,
-      status: 201,
-    };
-  } catch (error) {
-    console.error("Error creating brand partner:", error);
-
-    if (error.code === "P2002") {
-      return {
-        success: false,
-        message: "Brand name already exists",
-        status: 400,
-      };
-    }
-
-    return {
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-      status: 500,
-    };
-  }
-}
-
-// Solution 2: Alternative approach using nested creates (more efficient)
-export async function createBrandPartnerNested(formData) {
-  try {
-    // Parse and validate data (same as before)
-    let parsedData;
-    if (formData instanceof FormData) {
-      const dataString = formData.get("data");
-      const logoFile = formData.get("logo");
-
-      if (dataString) {
-        parsedData = JSON.parse(dataString);
-        parsedData.logoFile = logoFile;
-      } else {
-        return {
-          success: false,
-          message: "No data provided",
-          status: 400,
-        };
-      }
-    } else {
-      parsedData =
-        typeof formData === "string" ? JSON.parse(formData) : formData;
-    }
-
-    const validationResult = BrandPartnerSchema.safeParse(parsedData);
-
-    if (!validationResult.success) {
-      const errorMessages = validationResult.error.issues.map(
-        (issue) => `${issue.path.join(".")}: ${issue.message}`
-      );
-
-      return {
-        success: false,
-        message: "Validation failed",
-        errors: errorMessages,
-        status: 400,
-      };
-    }
-
-    const validatedData = validationResult.data;
-    let logoPath = "";
-
-    // Handle logo upload BEFORE transaction
-    if (parsedData.logoFile && parsedData.logoFile.size > 0) {
-      try {
-        const uploadDir = join(process.cwd(), "public", "uploads", "brands");
-        await mkdir(uploadDir, { recursive: true });
-
-        const timestamp = Date.now();
-        const extension = parsedData.logoFile.name.split(".").pop();
-        const filename = `${validatedData.brandName
-          .toLowerCase()
-          .replace(/\s+/g, "_")}_${timestamp}.${extension}`;
-
-        const filePath = join(uploadDir, filename);
-        const bytes = await parsedData.logoFile.arrayBuffer();
-        await writeFile(filePath, Buffer.from(bytes));
-
-        logoPath = `/uploads/brands/${filename}`;
-      } catch (fileError) {
-        console.error("File upload error:", fileError);
-        return {
-          success: false,
-          message: "Failed to upload logo",
-          status: 500,
-        };
-      }
-    }
-
-    // Pre-hash sensitive data
-    const hashedIntegrations = [];
-    for (const integration of validatedData.integrations || []) {
-      const hashedIntegration = {
-        platform: integration.platform,
-        storeUrl: integration.storeUrl,
-        apiKey: integration.apiKey
-          ? await hashSensitiveData(integration.apiKey)
-          : null,
-        apiSecret: integration.apiSecret
-          ? await hashSensitiveData(integration.apiSecret)
-          : null,
-        accessToken: integration.accessToken
-          ? await hashSensitiveData(integration.accessToken)
-          : null,
-        consumerKey: integration.consumerKey
-          ? await hashSensitiveData(integration.consumerKey)
-          : null,
-        consumerSecret: integration.consumerSecret
-          ? await hashSensitiveData(integration.consumerSecret)
-          : null,
-        isActive: integration.status === "active",
-      };
-      hashedIntegrations.push(hashedIntegration);
-    }
-
-    const denominationValue =
-      validatedData.denominationValue != null &&
-      validatedData.denominationValue !== ""
-        ? parseInt(validatedData.denominationValue, 10)
-        : null;
-
-    // Create brand with all nested relations in a single operation
-    const result = await prisma.brand.create({
-      data: {
-        brandName: validatedData.brandName,
-        logo: logoPath,
-        description: validatedData.description,
-        website: validatedData.website,
-        contact: validatedData.contact || "",
-        tagline: validatedData.tagline || "",
-        color: validatedData.color,
-        categorieName: validatedData.categorieName,
-        notes: validatedData.notes || "",
-        isActive: validatedData.isActive,
-        isFeature: validatedData.isFeature,
-
-        // Create nested relations
-        brandTerms: {
-          create: {
-            settelementTrigger: validatedData.settlementTrigger,
-            commissionType: validatedData.commissionType,
-            commissionValue: validatedData.commissionValue,
-            maxDiscount: validatedData.maxDiscount,
-            minOrderValue: validatedData.minOrderValue,
-            currency: validatedData.currency,
-            brackingPolicy: validatedData.brackingPolicy,
-            brackingShare: validatedData.brackingShare,
-            contractStart: validatedData.contractStart
-              ? new Date(validatedData.contractStart)
-              : new Date(),
-            contractEnd: validatedData.contractEnd
-              ? new Date(validatedData.contractEnd)
-              : new Date(),
-            goLiveDate: validatedData.goLiveDate
-              ? new Date(validatedData.goLiveDate)
-              : new Date(),
-            renewContract: validatedData.renewContract,
-            vatRate: validatedData.vatRate,
-            internalNotes: validatedData.internalNotes || "",
-          },
-        },
-
-        vouchers: {
-          create: {
-            denominationype: validatedData.denominationType,
-            denominations: validatedData.denominations,
-            denominationCurrency: validatedData.denominationCurrency,
-            denominationValue: denominationValue,
-            maxAmount: validatedData.maxAmount,
-            minAmount: validatedData.minAmount,
-            expiryPolicy: validatedData.expiryPolicy,
-            expiryValue:
-              validatedData.expiryPolicy === "neverExpires"
-                ? null
-                : validatedData.expiryValue,
-            expiresAt: validatedData.expiresAt || null,
-            graceDays: validatedData.graceDays,
-            redemptionChannels: validatedData.redemptionChannels,
-            partialRedemption: validatedData.partialRedemption,
-            Stackable: validatedData.stackable,
-            maxUserPerDay: validatedData.maxUserPerDay,
-            termsConditionsURL: validatedData.termsConditionsURL,
-          },
-        },
-
-        brandBankings: {
-          create: {
-            settlementFrequency: validatedData.settlementFrequency,
-            dayOfMonth: validatedData.dayOfMonth,
-            payoutMethod: validatedData.payoutMethod,
-            invoiceRequired: validatedData.invoiceRequired,
-            remittanceEmail: validatedData.remittanceEmail || "",
-            accountHolder: validatedData.accountHolder,
-            accountNumber: validatedData.accountNumber,
-            branchCode: validatedData.branchCode,
-            bankName: validatedData.bankName,
-            SWIFTCode: validatedData.swiftCode || "",
-            country: validatedData.country,
-            accountVerification: validatedData.accountVerification,
-          },
-        },
-
-        brandcontacts: {
-          create: validatedData.contacts.map((contact) => ({
             name: contact.name,
             role: contact.role,
             email: contact.email,
             phone: contact.phone,
             notes: contact.notes,
             isPrimary: contact.isPrimary,
-          })),
-        },
-
-        integrations: {
-          create: hashedIntegrations,
-        },
-      },
-      include: {
-        brandcontacts: true,
-        brandTerms: true,
-        brandBankings: true,
-        vouchers: true,
-        integrations: {
-          select: {
-            id: true,
-            platform: true,
-            storeUrl: true,
-            isActive: true,
-            createdAt: true,
-            updatedAt: true,
           },
-        },
-      },
+        });
+      }
+
+      // Create integrations with encrypted sensitive data
+      for (const integration of validatedData.integrations || []) {
+        await tx.integration.create({
+          data: {
+            brands: {
+              connect: { id: brand.id },
+            },
+            platform: integration.platform,
+            storeUrl: integration.storeUrl,
+            apiKey: integration.apiKey
+              ? await hashSensitiveData(integration.apiKey)
+              : null,
+            apiSecret: integration.apiSecret
+              ? await hashSensitiveData(integration.apiSecret)
+              : null,
+            accessToken: integration.accessToken
+              ? await hashSensitiveData(integration.accessToken)
+              : null,
+            consumerKey: integration.consumerKey
+              ? await hashSensitiveData(integration.consumerKey)
+              : null,
+            consumerSecret: integration.consumerSecret
+              ? await hashSensitiveData(integration.consumerSecret)
+              : null,
+            isActive: integration.status === "active",
+          },
+        });
+      }
+
+      return brand;
     });
 
     return {
@@ -831,7 +564,6 @@ export async function getBrandPartners(params = {}) {
   }
 }
 
-// Fixed version of the updateBrandPartner function
 export async function updateBrandPartner(brandId, formData) {
   try {
     if (!brandId) {
@@ -934,15 +666,6 @@ export async function updateBrandPartner(brandId, formData) {
       }
     }
 
-    // Helper function to safely convert date strings
-    const safeDate = (dateString) => {
-      if (!dateString || dateString === "" || dateString === null || dateString === undefined) {
-        return new Date(); // Return current date as fallback
-      }
-      const parsedDate = new Date(dateString);
-      return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
-    };
-
     // Update with transaction
     const result = await prisma.$transaction(async (tx) => {
       // Update brand
@@ -978,10 +701,11 @@ export async function updateBrandPartner(brandId, formData) {
             currency: validatedData.currency,
             brackingPolicy: validatedData.brackingPolicy,
             brackingShare: validatedData.brackingShare,
-            // Use the helper function for safe date conversion
-            contractStart: safeDate(validatedData.contractStart),
-            contractEnd: safeDate(validatedData.contractEnd),
-            goLiveDate: safeDate(validatedData.goLiveDate),
+            contractStart: new Date(validatedData.contractStart),
+            contractEnd: new Date(validatedData.contractEnd),
+            goLiveDate: validatedData.goLiveDate
+              ? new Date(validatedData.goLiveDate)
+              : new Date(),
             renewContract: validatedData.renewContract,
             vatRate: validatedData.vatRate,
             internalNotes: validatedData.internalNotes || "",
@@ -1000,9 +724,11 @@ export async function updateBrandPartner(brandId, formData) {
             currency: validatedData.currency,
             brackingPolicy: validatedData.brackingPolicy,
             brackingShare: validatedData.brackingShare,
-            contractStart: safeDate(validatedData.contractStart),
-            contractEnd: safeDate(validatedData.contractEnd),
-            goLiveDate: safeDate(validatedData.goLiveDate),
+            contractStart: new Date(validatedData.contractStart),
+            contractEnd: new Date(validatedData.contractEnd),
+            goLiveDate: validatedData.goLiveDate
+              ? new Date(validatedData.goLiveDate)
+              : new Date(),
             renewContract: validatedData.renewContract,
             vatRate: validatedData.vatRate,
             internalNotes: validatedData.internalNotes || "",
@@ -1032,8 +758,8 @@ export async function updateBrandPartner(brandId, formData) {
             expiryValue:
               validatedData.expiryPolicy === "neverExpires"
                 ? null
-                : validatedData.expiryValue,
-            expiresAt: validatedData.expiresAt || null,
+                : validatedData.expiryValue, // Handle no expiry case
+            expiresAt: validatedData.expiresAt || null, // Keep as string
             graceDays: validatedData.graceDays,
             redemptionChannels: validatedData.redemptionChannels,
             partialRedemption: validatedData.partialRedemption,
@@ -1057,8 +783,8 @@ export async function updateBrandPartner(brandId, formData) {
             expiryValue:
               validatedData.expiryPolicy === "neverExpires"
                 ? null
-                : validatedData.expiryValue,
-            expiresAt: validatedData.expiresAt || null,
+                : validatedData.expiryValue, // Handle no expiry case
+            expiresAt: validatedData.expiresAt || null, // Keep as string
             graceDays: validatedData.graceDays,
             redemptionChannels: validatedData.redemptionChannels,
             partialRedemption: validatedData.partialRedemption,
