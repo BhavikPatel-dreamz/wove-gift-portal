@@ -4,283 +4,365 @@ import prisma from '../db'
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { z } from 'zod';
+
+// ============================================================================
+// ZOD SCHEMAS
+// ============================================================================
+
+const OccasionSchema = z.object({
+    name: z.string()
+        .min(1, "Name is required")
+        .max(100, "Name must be less than 100 characters")
+        .trim(),
+    emoji: z.string()
+        .min(1, "Emoji is required")
+        .max(10, "Emoji must be less than 10 characters")
+        .default('🎉'),
+    description: z.string()
+        .max(500, "Description must be less than 500 characters")
+        .default('')
+        .transform(val => val?.trim() || ''),
+    isActive: z.boolean().default(false),
+    image: z.string().optional(),
+});
+
+const UpdateOccasionSchema = OccasionSchema.partial().extend({
+    id: z.string().min(1, "Occasion ID is required").trim(),
+});
+
+const OccasionCategorySchema = z.object({
+    name: z.string()
+        .min(1, "Name is required")
+        .max(100, "Name must be less than 100 characters")
+        .trim(),
+    description: z.string()
+        .min(1, "Description is required")
+        .max(500, "Description must be less than 500 characters")
+        .trim(),
+    emoji: z.string()
+        .min(1, "Emoji is required")
+        .max(10, "Emoji must be less than 10 characters"),
+    isActive: z.boolean().default(false),
+    occasionId: z.string().min(1, "Occasion ID is required").trim(),
+    image: z.string().optional(),
+});
+
+const UpdateOccasionCategorySchema = OccasionCategorySchema.partial().extend({
+    id: z.string().min(1, "Category ID is required").trim(),
+});
+
+const GetOccasionsSchema = z.object({
+    id: z.string().optional(),
+    search: z.string().optional(),
+    isActive: z.boolean().optional(),
+    page: z.number().int().min(1).default(1),
+    limit: z.number().int().min(1).max(100).default(12),
+    sortBy: z.enum(['name', 'createdAt', 'updatedAt']).default('createdAt'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+const IdSchema = z.string().min(1, "ID is required").trim();
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+function handleValidationError(validationResult) {
+    if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(err => 
+            `${err.path.join('.')}: ${err.message}`
+        ).join(', ');
+        
+        return {
+            success: false,
+            message: `Validation error: ${errors}`,
+            status: 400,
+            errors: validationResult.error.errors
+        };
+    }
+    return null;
+}
+
+function createStandardResponse(success, message, status, data = null, meta = null) {
+    const response = { success, message, status };
+    if (data !== null) response.data = data;
+    if (meta !== null) response.meta = meta;
+    return response;
+}
+
+async function handleImageUpload(imageFile, uploadPath, namePrefix) {
+    if (!imageFile || typeof imageFile === 'string' || imageFile.size === 0) {
+        return typeof imageFile === 'string' && imageFile.trim() ? imageFile.trim() : '';
+    }
+
+    const uploadDir = join(process.cwd(), 'public', 'uploads', uploadPath);
+    await mkdir(uploadDir, { recursive: true });
+
+    const timestamp = Date.now();
+    const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const filename = `${namePrefix.toLowerCase().replace(/\s+/g, '_')}_${timestamp}.${extension}`;
+
+    const filePath = join(uploadDir, filename);
+    const bytes = await imageFile.arrayBuffer();
+    await writeFile(filePath, Buffer.from(bytes));
+
+    return `/uploads/${uploadPath}/${filename}`;
+}
+
+async function deleteImageFile(imagePath) {
+    if (!imagePath || imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+        return;
+    }
+
+    try {
+        const filePath = join(process.cwd(), 'public', imagePath);
+        if (existsSync(filePath)) {
+            await unlink(filePath);
+        }
+    } catch (error) {
+        console.warn(`Failed to delete image file: ${error.message}`);
+    }
+}
+
+function parseFormData(formData, fields) {
+    const result = {};
+    for (const [key, parser] of Object.entries(fields)) {
+        const value = formData.get(key);
+        result[key] = parser ? parser(value) : value;
+    }
+    return result;
+}
+
+// ============================================================================
+// OCCASION ACTIONS
+// ============================================================================
 
 export async function addOccasion(formData) {
     try {
-        const name = formData.get('name');
-        const emoji = formData.get('emoji');
-        const description = formData.get('description');
-        const isActive = formData.get('isActive') === 'true';
-        const imageFile = formData.get('image');
+        const parsedData = parseFormData(formData, {
+            name: (val) => val?.toString().trim() || '',
+            emoji: (val) => val?.toString() || '🎉',
+            description: (val) => val?.toString().trim() || '',
+            isActive: (val) => val === 'true' || val === 'on'
+        });
 
-        // Validate required fields
-        if (!name || !name.trim()) {
-            return {
-                success: false,
-                message: "Occasion name is required",
-                status: 400
-            };
-        }
+        const validationResult = OccasionSchema.safeParse(parsedData);
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
 
-        // Check if occasion already exists
+        const { name, emoji, description, isActive } = validationResult.data;
+
+        // Check for existing occasion
         const existingOccasion = await prisma.occasion.findUnique({
-            where: { name: name.trim() },
+            where: { name }
         });
 
         if (existingOccasion) {
-            return {
-                success: false,
-                message: "Occasion with this name already exists",
-                status: 409
-            };
+            return createStandardResponse(
+                false,
+                "Occasion with this name already exists",
+                409
+            );
         }
 
-        let imagePath = "";
-        
         // Handle image upload
-        if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
-            const uploadDir = join(process.cwd(), 'public', 'uploads', 'occasions');
-            await mkdir(uploadDir, { recursive: true });
-
-            const timestamp = Date.now();
-            const extension = imageFile.name.split('.').pop();
-            const filename = `${name.toLowerCase().replace(/\s+/g, '_')}_${timestamp}.${extension}`;
-
-            const filePath = join(uploadDir, filename);
-            const bytes = await imageFile.arrayBuffer();
-            await writeFile(filePath, Buffer.from(bytes));
-
-            imagePath = `/uploads/occasions/${filename}`;
-        } else if (typeof imageFile === 'string' && imageFile.trim()) {
-            // Handle case where image is a URL string
-            imagePath = imageFile.trim();
-        }
+        const imageFile = formData.get('image');
+        const imagePath = await handleImageUpload(imageFile, 'occasions', name);
 
         const newOccasion = await prisma.occasion.create({
             data: {
-                name: name.trim(),
-                emoji: emoji || '🎉',
-                image: imagePath,
-                description: description?.trim() || '',
+                name,
+                emoji,
+                description,
                 isActive,
+                image: imagePath,
             }
         });
 
-        return {
-            success: true,
-            message: "Occasion created successfully",
-            data: newOccasion,
-            status: 201
-        };
+        return createStandardResponse(
+            true,
+            "Occasion created successfully",
+            201,
+            newOccasion
+        );
 
     } catch (error) {
         console.error("addOccasion error:", error);
-        return {
-            success: false,
-            message: "Failed to create occasion. Please try again.",
-            status: 500
-        };
+        return createStandardResponse(
+            false,
+            "Failed to create occasion. Please try again.",
+            500
+        );
     }
 }
 
 export async function updateOccasion(formData) {
     try {
-        const id = formData.get('id');
+        const parsedData = parseFormData(formData, {
+            id: (val) => val?.toString().trim() || '',
+            name: (val) => val?.toString().trim(),
+            emoji: (val) => val?.toString(),
+            description: (val) => val?.toString().trim(),
+            isActive: (val) => val === 'true' || val === 'on' ? true : val === 'false' ? false : undefined
+        });
 
-        if (!id || !id.trim()) {
-            return { 
-                success: false, 
-                message: "Occasion ID is required", 
-                status: 400 
-            };
-        }
+        // Remove undefined values so Zod can handle partial updates properly
+        Object.keys(parsedData).forEach(key => {
+            if (parsedData[key] === undefined || parsedData[key] === null) {
+                delete parsedData[key];
+            }
+        });
+
+        const validationResult = UpdateOccasionSchema.safeParse(parsedData);
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
+
+        const { id, ...updateData } = validationResult.data;
 
         // Find existing occasion
-        const existingOccasion = await prisma.occasion.findUnique({ 
-            where: { id: id.trim() } 
+        const existingOccasion = await prisma.occasion.findUnique({
+            where: { id }
         });
 
         if (!existingOccasion) {
-            return { 
-                success: false, 
-                message: "Occasion not found", 
-                status: 404 
-            };
+            return createStandardResponse(false, "Occasion not found", 404);
         }
 
-        const name = formData.get('name');
-        
-        // Check for name conflicts if name is being updated
-        if (name && name.trim() && name.trim() !== existingOccasion.name) {
+        // Check for name conflicts
+        if (updateData.name && updateData.name !== existingOccasion.name) {
             const nameConflict = await prisma.occasion.findFirst({
                 where: {
-                    name: name.trim(),
-                    id: { not: id.trim() },
-                },
+                    name: updateData.name,
+                    id: { not: id }
+                }
             });
 
             if (nameConflict) {
-                return {
-                    success: false,
-                    message: "An occasion with this name already exists",
-                    status: 409,
-                };
+                return createStandardResponse(
+                    false,
+                    "An occasion with this name already exists",
+                    409
+                );
             }
         }
 
-        let imagePath = existingOccasion.image;
+        // Handle image upload
         const imageFile = formData.get('image');
+        let imagePath = existingOccasion.image;
 
-        // Handle new image upload
         if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
-            const uploadDir = join(process.cwd(), "public", "uploads", "occasions");
-            await mkdir(uploadDir, { recursive: true });
-
-            const timestamp = Date.now();
-            const extension = imageFile.name.split(".").pop();
-            const occasionName = (name && name.trim()) || existingOccasion.name;
-            const filename = `${occasionName.toLowerCase().replace(/\s+/g, "_")}_${timestamp}.${extension}`;
-            const newFilePath = join(uploadDir, filename);
-
-            const bytes = await imageFile.arrayBuffer();
-            await writeFile(newFilePath, Buffer.from(bytes));
-
-            // Delete old image file if it exists and is not a URL
-            if (existingOccasion.image && 
-                !existingOccasion.image.startsWith('http') && 
-                !existingOccasion.image.startsWith('data:')) {
-                try {
-                    const oldFilePath = join(process.cwd(), "public", existingOccasion.image);
-                    if (existsSync(oldFilePath)) {
-                        await unlink(oldFilePath);
-                    }
-                } catch (e) {
-                    console.warn(`Failed to delete old image: ${e.message}`);
-                }
-            }
+            // Delete old image
+            await deleteImageFile(existingOccasion.image);
             
-            imagePath = `/uploads/occasions/${filename}`;
+            // Upload new image
+            const occasionName = updateData.name || existingOccasion.name;
+            imagePath = await handleImageUpload(imageFile, 'occasions', occasionName);
         } else if (typeof imageFile === 'string' && imageFile.trim()) {
             imagePath = imageFile.trim();
         }
 
-        // Build update data
-        const updateData = {
+        const finalUpdateData = {
+            ...updateData,
             image: imagePath,
-            updatedAt: new Date(),
+            updatedAt: new Date()
         };
-
-        // Only update fields that are provided
-        if (name && name.trim()) updateData.name = name.trim();
-        if (formData.get('emoji')) updateData.emoji = formData.get('emoji');
-        if (formData.get('description') !== null) updateData.description = formData.get('description')?.trim() || '';
-        if (formData.get('isActive') !== null) updateData.isActive = formData.get('isActive') === 'true';
 
         const updatedOccasion = await prisma.occasion.update({
-            where: { id: id.trim() },
-            data: updateData,
+            where: { id },
+            data: finalUpdateData
         });
 
-        return {
-            success: true,
-            message: "Occasion updated successfully",
-            data: updatedOccasion,
-            status: 200
-        };
+        return createStandardResponse(
+            true,
+            "Occasion updated successfully",
+            200,
+            updatedOccasion
+        );
 
     } catch (error) {
         console.error("updateOccasion error:", error);
-        return {
-            success: false,
-            message: "Failed to update occasion. Please try again.",
-            status: 500
-        };
+        return createStandardResponse(
+            false,
+            "Failed to update occasion. Please try again.",
+            500
+        );
     }
 }
 
 export async function deleteOccasion(id) {
     try {
-        if (!id || !id.trim()) {
-            return { 
-                success: false, 
-                message: "Occasion ID is required", 
-                status: 400 
-            };
-        }
+        const validationResult = IdSchema.safeParse(id);
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
+
+        const validId = validationResult.data;
 
         const occasionData = await prisma.occasion.findUnique({
-            where: { id: id.trim() },
+            where: { id: validId }
         });
 
         if (!occasionData) {
-            return {
-                success: false,
-                message: "Occasion not found",
-                status: 404
-            };
+            return createStandardResponse(false, "Occasion not found", 404);
         }
 
-        // Delete associated image file if it exists and is not a URL
-        if (occasionData.image && 
-            !occasionData.image.startsWith('http') && 
-            !occasionData.image.startsWith('data:')) {
-            try {
-                const filePath = join(process.cwd(), "public", occasionData.image);
-                if (existsSync(filePath)) {
-                    await unlink(filePath);
-                }
-            } catch (e) {
-                console.warn(`Failed to delete image file: ${e.message}`);
-            }
-        }
+        // Delete associated image
+        await deleteImageFile(occasionData.image);
 
-        // Delete occasion and related records in a transaction
+        // Delete occasion and related records in transaction
         await prisma.$transaction(async (tx) => {
-            // Try to delete related occasion categories - using multiple possible field names
-            try {
-                await tx.occasionCategory.deleteMany({
-                    where: { occasionId: id.trim() },
-                });
-            } catch (e) {
-                console.warn("No related occasion categories to delete or different field name");
-            }
+            // Delete related occasion categories
+            await tx.occasionCategory.deleteMany({
+                where: { occasionId: validId }
+            });
 
             // Delete the occasion
             await tx.occasion.delete({
-                where: { id: id.trim() },
+                where: { id: validId }
             });
         });
 
-        return {
-            success: true,
-            message: "Occasion deleted successfully",
-            status: 200
-        };
+        return createStandardResponse(
+            true,
+            "Occasion deleted successfully",
+            200
+        );
 
     } catch (error) {
         console.error("deleteOccasion error:", error);
-        return {
-            success: false,
-            message: "Failed to delete occasion. Please try again.",
-            status: 500
-        };
+        return createStandardResponse(
+            false,
+            "Failed to delete occasion. Please try again.",
+            500
+        );
     }
 }
 
 export async function getOccasions(params = {}) {
     try {
+        // Convert string parameters to appropriate types
+        const processedParams = {
+            ...params,
+            page: params.page ? parseInt(params.page, 10) : undefined,
+            limit: params.limit ? parseInt(params.limit, 10) : undefined,
+            isActive: params.isActive !== undefined ? String(params.isActive) === 'true' : undefined
+        };
+
+        const validationResult = GetOccasionsSchema.safeParse(processedParams);
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
+
         const {
             id,
             search,
             isActive,
-            page = 1,
-            limit = 12,
-            sortBy = 'createdAt',
-            sortOrder = 'desc'
-        } = params;
+            page,
+            limit,
+            sortBy,
+            sortOrder
+        } = validationResult.data;
 
         const where = {};
-
         if (id) where.id = id;
         if (search) {
             where.name = {
@@ -288,56 +370,29 @@ export async function getOccasions(params = {}) {
                 mode: 'insensitive'
             };
         }
-        if (isActive !== null && isActive !== undefined) {
-            where.isActive = String(isActive) === 'true';
-        }
+        if (isActive !== undefined) where.isActive = isActive;
 
-        const pageNum = parseInt(page, 10);
-        const limitNum = parseInt(limit, 10);
-        const skip = (pageNum - 1) * limitNum;
-
-        const validSortBy = ['name', 'createdAt', 'updatedAt'];
-        const orderByField = validSortBy.includes(sortBy) ? sortBy : 'createdAt';
-        const orderByDirection = sortOrder === 'asc' ? 'asc' : 'desc';
+        const skip = (page - 1) * limit;
 
         const [occasions, totalItems] = await Promise.all([
             prisma.occasion.findMany({
                 where,
-                orderBy: {
-                    [orderByField]: orderByDirection
-                },
+                orderBy: { [sortBy]: sortOrder },
                 skip,
-                take: limitNum,
+                take: limit,
             }),
-            prisma.occasion.count({
-                where
-            })
+            prisma.occasion.count({ where })
         ]);
 
-        const totalPages = Math.ceil(totalItems / limitNum);
-        const hasNextPage = pageNum < totalPages;
-        const hasPrevPage = pageNum > 1;
+        const totalPages = Math.ceil(totalItems / limit);
 
+        // Add card counts
         const occasionsWithCounts = await Promise.all(
             occasions.map(async (occasion) => {
-                let cardCount = 0;
-                try {
-                    cardCount = await prisma.occasionCategory.count({
-                        where: {
-                            occasionId: occasion.id
-                        }
-                    });
-                } catch (e) {
-                    try {
-                        cardCount = await prisma.card?.count({
-                            where: {
-                                occasionId: occasion.id
-                            }
-                        }) || 0;
-                    } catch (e2) {
-                        cardCount = 0;
-                    }
-                }
+                const cardCount = await prisma.occasionCategory.count({
+                    where: { occasionId: occasion.id }
+                }).catch(() => 0);
+
                 return {
                     ...occasion,
                     cardCount,
@@ -346,70 +401,55 @@ export async function getOccasions(params = {}) {
             })
         );
 
-        return {
-            success: true,
-            message: "Occasions fetched successfully",
-            data: occasionsWithCounts,
-            pagination: {
-                currentPage: pageNum,
-                totalPages,
-                totalItems,
-                itemsPerPage: limitNum,
-                hasNextPage,
-                hasPrevPage,
-                startIndex: skip + 1,
-                endIndex: Math.min(skip + limitNum, totalItems),
-            },
-            status: 200,
+        const pagination = {
+            currentPage: page,
+            totalPages,
+            totalItems,
+            itemsPerPage: limit,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            startIndex: skip + 1,
+            endIndex: Math.min(skip + limit, totalItems),
         };
+
+        return createStandardResponse(
+            true,
+            "Occasions fetched successfully",
+            200,
+            occasionsWithCounts,
+            { pagination }
+        );
 
     } catch (error) {
         console.error("getOccasions error:", error);
-        return {
-            success: false,
-            message: "Failed to fetch occasions. Please try again.",
-            status: 500,
-        };
+        return createStandardResponse(
+            false,
+            "Failed to fetch occasions. Please try again.",
+            500
+        );
     }
 }
 
 export async function getOccasionById(id) {
     try {
-        if (!id || !id.trim()) {
-            return {
-                success: false,
-                message: "Occasion ID is required",
-                status: 400
-            };
-        }
+        const validationResult = IdSchema.safeParse(id);
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
+
+        const validId = validationResult.data;
 
         const occasion = await prisma.occasion.findUnique({
-            where: { id: id.trim() },
+            where: { id: validId }
         });
 
         if (!occasion) {
-            return {
-                success: false,
-                message: "Occasion not found",
-                status: 404
-            };
+            return createStandardResponse(false, "Occasion not found", 404);
         }
 
-        // Get card count separately
-        let cardCount = 0;
-        try {
-            cardCount = await prisma.occasionCategory.count({
-                where: { occasionId: occasion.id }
-            });
-        } catch (e) {
-            try {
-                cardCount = await prisma.card?.count({
-                    where: { occasionId: occasion.id }
-                }) || 0;
-            } catch (e2) {
-                cardCount = 0;
-            }
-        }
+        // Get card count
+        const cardCount = await prisma.occasionCategory.count({
+            where: { occasionId: occasion.id }
+        }).catch(() => 0);
 
         const transformedOccasion = {
             ...occasion,
@@ -417,19 +457,377 @@ export async function getOccasionById(id) {
             active: occasion.isActive,
         };
 
-        return {
-            success: true,
-            message: "Occasion fetched successfully",
-            data: transformedOccasion,
-            status: 200
-        };
+        return createStandardResponse(
+            true,
+            "Occasion fetched successfully",
+            200,
+            transformedOccasion
+        );
 
     } catch (error) {
         console.error("getOccasionById error:", error);
-        return {
-            success: false,
-            message: "Failed to fetch occasion. Please try again.",
-            status: 500
+        return createStandardResponse(
+            false,
+            "Failed to fetch occasion. Please try again.",
+            500
+        );
+    }
+}
+
+// ============================================================================
+// OCCASION CATEGORY ACTIONS
+// ============================================================================
+
+export async function addOccasionCategory(req) {
+    try {
+        const formData = await req.formData();
+        
+        const parsedData = parseFormData(formData, {
+            name: (val) => val?.toString().trim() || '',
+            description: (val) => val?.toString().trim() || '',
+            emoji: (val) => val?.toString() || '',
+            isActive: (val) => val === 'true' || val === 'on',
+            occasionId: (val) => val?.toString().trim() || '',
+        });
+
+        const validationResult = OccasionCategorySchema.safeParse(parsedData);
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
+
+        const { name, description, emoji, isActive, occasionId } = validationResult.data;
+
+        // Check if category already exists
+        const existingCategory = await prisma.occasionCategory.findUnique({
+            where: { name }
+        });
+
+        if (existingCategory) {
+            return createStandardResponse(
+                false,
+                'Category with this name already exists!',
+                409
+            );
+        }
+
+        // Verify occasion exists
+        const occasion = await prisma.occasion.findUnique({
+            where: { id: occasionId }
+        });
+
+        if (!occasion) {
+            return createStandardResponse(false, "Occasion not found", 404);
+        }
+
+        // Handle image upload
+        const imageFile = formData.get('image');
+        const imagePath = await handleImageUpload(imageFile, 'occasion_categories', name);
+
+        const newOccasionCategory = await prisma.occasionCategory.create({
+            data: {
+                name,
+                description,
+                emoji,
+                image: imagePath,
+                isActive,
+                occasionId,
+            }
+        });
+
+        return createStandardResponse(
+            true,
+            "Occasion category created successfully",
+            201,
+            newOccasionCategory
+        );
+
+    } catch (error) {
+        console.error("Error adding occasion category:", error);
+        return createStandardResponse(
+            false,
+            "Failed to create occasion category. Please try again.",
+            500
+        );
+    }
+}
+
+export async function updateOccasionCategory(req) {
+    try {
+        const formData = await req.formData();
+        
+        const parsedData = parseFormData(formData, {
+            id: (val) => val?.toString().trim() || '',
+            name: (val) => val?.toString().trim(),
+            description: (val) => val?.toString().trim(),
+            emoji: (val) => val?.toString(),
+            isActive: (val) => val === 'true' || val === 'on' ? true : val === 'false' ? false : undefined,
+            occasionId: (val) => val?.toString().trim(),
+        });
+
+        // Remove undefined values
+        Object.keys(parsedData).forEach(key => {
+            if (parsedData[key] === undefined || parsedData[key] === null) {
+                delete parsedData[key];
+            }
+        });
+
+        const validationResult = UpdateOccasionCategorySchema.safeParse(parsedData);
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
+
+        const { id, ...updatePayload } = validationResult.data;
+
+        const existingCategory = await prisma.occasionCategory.findUnique({
+            where: { id }
+        });
+
+        if (!existingCategory) {
+            return createStandardResponse(
+                false,
+                "Occasion category not found",
+                404
+            );
+        }
+
+        // Check for name conflicts
+        if (updatePayload.name && updatePayload.name !== existingCategory.name) {
+            const duplicateCategory = await prisma.occasionCategory.findFirst({
+                where: {
+                    name: updatePayload.name,
+                    id: { not: id }
+                }
+            });
+
+            if (duplicateCategory) {
+                return createStandardResponse(
+                    false,
+                    "A category with this name already exists.",
+                    409
+                );
+            }
+        }
+
+        // Verify occasion exists if occasionId is being updated
+        if (updatePayload.occasionId) {
+            const occasion = await prisma.occasion.findUnique({
+                where: { id: updatePayload.occasionId }
+            });
+
+            if (!occasion) {
+                return createStandardResponse(false, "Occasion not found", 404);
+            }
+        }
+
+        // Handle image upload
+        const imageFile = formData.get('image');
+        let imagePath = existingCategory.image;
+
+        if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
+            // Delete old image
+            await deleteImageFile(existingCategory.image);
+            
+            // Upload new image
+            const categoryName = updatePayload.name || existingCategory.name;
+            imagePath = await handleImageUpload(imageFile, 'occasion_categories', categoryName);
+        } else if (typeof imageFile === 'string' && imageFile.trim()) {
+            imagePath = imageFile.trim();
+        }
+
+        const finalUpdateData = {
+            ...updatePayload,
+            image: imagePath,
+            updatedAt: new Date(),
         };
+
+        const updatedCategory = await prisma.occasionCategory.update({
+            where: { id },
+            data: finalUpdateData,
+        });
+
+        return createStandardResponse(
+            true,
+            "Occasion category updated successfully",
+            200,
+            updatedCategory
+        );
+
+    } catch (error) {
+        console.error("Error updating occasion category:", error);
+        return createStandardResponse(
+            false,
+            "Failed to update occasion category. Please try again.",
+            500
+        );
+    }
+}
+
+export async function deleteOccasionCategory(id) {
+    try {
+        const validationResult = IdSchema.safeParse(id);
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
+
+        const validId = validationResult.data;
+
+        const categoryData = await prisma.occasionCategory.findUnique({
+            where: { id: validId }
+        });
+
+        if (!categoryData) {
+            return createStandardResponse(
+                false,
+                "Occasion category not found",
+                404
+            );
+        }
+
+        // Delete associated image
+        await deleteImageFile(categoryData.image);
+
+        // Delete category
+        await prisma.occasionCategory.delete({
+            where: { id: validId }
+        });
+
+        return createStandardResponse(
+            true,
+            "Occasion category deleted successfully",
+            200
+        );
+
+    } catch (error) {
+        console.error("deleteOccasionCategory error:", error);
+        return createStandardResponse(
+            false,
+            "Failed to delete occasion category. Please try again.",
+            500
+        );
+    }
+}
+
+export async function getOccasionCategories(params = {}) {
+    try {
+        const processedParams = {
+            ...params,
+            page: params.page ? parseInt(params.page, 10) : undefined,
+            limit: params.limit ? parseInt(params.limit, 10) : undefined,
+            isActive: params.isActive !== undefined ? String(params.isActive) === 'true' : undefined
+        };
+
+        const validationResult = GetOccasionsSchema.extend({
+            occasionId: z.string().optional()
+        }).safeParse(processedParams);
+        
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
+
+        const {
+            id,
+            search,
+            isActive,
+            page,
+            limit,
+            sortBy,
+            sortOrder,
+            occasionId
+        } = validationResult.data;
+
+        const where = {};
+        if (id) where.id = id;
+        if (occasionId) where.occasionId = occasionId;
+        if (search) {
+            where.name = {
+                contains: search,
+                mode: 'insensitive'
+            };
+        }
+        if (isActive !== undefined) where.isActive = isActive;
+
+        const skip = (page - 1) * limit;
+
+        const [categories, totalItems] = await Promise.all([
+            prisma.occasionCategory.findMany({
+                where,
+                orderBy: { [sortBy]: sortOrder },
+                skip,
+                take: limit,
+                include: {
+                    occasion: {
+                        select: { name: true, emoji: true }
+                    }
+                }
+            }),
+            prisma.occasionCategory.count({ where })
+        ]);
+
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const pagination = {
+            currentPage: page,
+            totalPages,
+            totalItems,
+            itemsPerPage: limit,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            startIndex: skip + 1,
+            endIndex: Math.min(skip + limit, totalItems),
+        };
+
+        return createStandardResponse(
+            true,
+            "Occasion categories fetched successfully",
+            200,
+            categories,
+            { pagination }
+        );
+
+    } catch (error) {
+        console.error("getOccasionCategories error:", error);
+        return createStandardResponse(
+            false,
+            "Failed to fetch occasion categories. Please try again.",
+            500
+        );
+    }
+}
+
+export async function getOccasionCategoryById(id) {
+    try {
+        const validationResult = IdSchema.safeParse(id);
+        const validationError = handleValidationError(validationResult);
+        if (validationError) return validationError;
+
+        const validId = validationResult.data;
+
+        const category = await prisma.occasionCategory.findUnique({
+            where: { id: validId },
+            include: {
+                occasion: {
+                    select: { name: true, emoji: true }
+                }
+            }
+        });
+
+        if (!category) {
+            return createStandardResponse(
+                false,
+                "Occasion category not found",
+                404
+            );
+        }
+
+        return createStandardResponse(
+            true,
+            "Occasion category fetched successfully",
+            200,
+            category
+        );
+
+    } catch (error) {
+        console.error("getOccasionCategoryById error:", error);
+        return createStandardResponse(
+            false,
+            "Failed to fetch occasion category. Please try again.",
+            500
+        );
     }
 }

@@ -59,11 +59,11 @@ const OccasionsManager = () => {
   const fetchOccasions = async (resetPage = false) => {
     try {
       setLoading(true);
-      const currentPage = resetPage ? 1 : pagination.currentPage;
+      const currentPage = resetPage ? 1 : pagination?.currentPage;
       
       const params = {
         page: currentPage,
-        limit: pagination.itemsPerPage,
+        limit: pagination?.itemsPerPage,
         search: filters.search,
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder
@@ -90,10 +90,10 @@ const OccasionsManager = () => {
   }, [debouncedSearch, filters.sortBy, filters.sortOrder]);
 
   useEffect(() => {
-    if (pagination.currentPage > 1) {
+    if (pagination?.currentPage > 1) {
       fetchOccasions(false);
     }
-  }, [pagination.currentPage]);
+  }, [pagination?.currentPage]);
 
   const handleFilterChange = (key, value) => {
     setPagination(prev => ({ ...prev, currentPage: 1 }));
@@ -104,7 +104,7 @@ const OccasionsManager = () => {
   };
 
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages) {
+    if (newPage >= 1 && newPage <= pagination?.totalPages) {
       setPagination(prev => ({
         ...prev,
         currentPage: newPage
@@ -307,11 +307,11 @@ const OccasionsManager = () => {
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-semibold text-gray-900">Occasions List</h2>
             <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-              {pagination.totalItems} occasions
+              {pagination?.totalItems} occasions
             </span>
-            {pagination.totalItems > 0 && (
+            {pagination?.totalItems > 0 && (
               <span className="text-sm text-gray-600">
-                Showing {pagination.startIndex}-{pagination.endIndex} of {pagination.totalItems}
+                Showing {pagination?.startIndex}-{pagination?.endIndex} of {pagination?.totalItems}
               </span>
             )}
           </div>
@@ -320,7 +320,7 @@ const OccasionsManager = () => {
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Show:</span>
             <select
-              value={pagination.itemsPerPage}
+              value={pagination?.itemsPerPage}
               onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
               className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
@@ -359,16 +359,16 @@ const OccasionsManager = () => {
         </div>
 
         {/* Pagination */}
-        {pagination.totalPages > 1 && (
+        {pagination?.totalPages > 1 && (
           <div className="flex justify-between items-center bg-white rounded-lg shadow-sm p-4">
             <div className="text-sm text-gray-600">
-              Page {pagination.currentPage} of {pagination.totalPages}
+              Page {pagination?.currentPage} of {pagination?.totalPages}
             </div>
             
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handlePageChange(pagination.currentPage - 1)}
-                disabled={!pagination.hasPrevPage || loading}
+                onClick={() => handlePageChange(pagination?.currentPage - 1)}
+                disabled={!pagination?.hasPrevPage || loading}
                 className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 <ChevronLeft size={16} />
@@ -376,16 +376,16 @@ const OccasionsManager = () => {
               </button>
               
               <div className="flex gap-1">
-                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(5, pagination?.totalPages) }, (_, i) => {
                   let pageNum;
-                  if (pagination.totalPages <= 5) {
+                  if (pagination?.totalPages <= 5) {
                     pageNum = i + 1;
-                  } else if (pagination.currentPage <= 3) {
+                  } else if (pagination?.currentPage <= 3) {
                     pageNum = i + 1;
-                  } else if (pagination.currentPage >= pagination.totalPages - 2) {
-                    pageNum = pagination.totalPages - 4 + i;
+                  } else if (pagination?.currentPage >= pagination?.totalPages - 2) {
+                    pageNum = pagination?.totalPages - 4 + i;
                   } else {
-                    pageNum = pagination.currentPage - 2 + i;
+                    pageNum = pagination?.currentPage - 2 + i;
                   }
                   
                   return (
@@ -394,7 +394,7 @@ const OccasionsManager = () => {
                       onClick={() => handlePageChange(pageNum)}
                       disabled={loading}
                       className={`px-3 py-2 rounded-lg ${
-                        pageNum === pagination.currentPage
+                        pageNum === pagination?.currentPage
                           ? 'bg-blue-600 text-white'
                           : 'border border-gray-300 hover:bg-gray-50'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -406,8 +406,8 @@ const OccasionsManager = () => {
               </div>
               
               <button
-                onClick={() => handlePageChange(pagination.currentPage + 1)}
-                disabled={!pagination.hasNextPage || loading}
+                onClick={() => handlePageChange(pagination?.currentPage + 1)}
+                disabled={!pagination?.hasNextPage || loading}
                 className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 Next
