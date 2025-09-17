@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Image as ImageIcon, X, UploadCloud } from 'lucide-react';
 import Button from './Button';
 
@@ -6,7 +6,8 @@ const ImageUpload = ({
   label,
   required = false,
   className = '',
-  onFileSelect,
+  onFileChange,
+  currentImage,
   acceptedFormats = 'PNG, JPG, GIF up to 2MB',
   helperText = 'Your image will be resized to 800x600px.',
   ...props
@@ -15,6 +16,14 @@ const ImageUpload = ({
   const [fileName, setFileName] = useState('');
   const fileInputRef = useRef(null);
 
+  useEffect(() => {
+    if (currentImage) {
+      setImagePreview(currentImage);
+    } else {
+      setImagePreview(null);
+    }
+  }, [currentImage]);
+
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -22,8 +31,8 @@ const ImageUpload = ({
       reader.onloadend = () => {
         setImagePreview(reader.result);
         setFileName(file.name);
-        if (onFileSelect) {
-          onFileSelect(file);
+        if (onFileChange) {
+          onFileChange(file);
         }
       };
       reader.readAsDataURL(file);
@@ -36,8 +45,8 @@ const ImageUpload = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = null;
     }
-    if (onFileSelect) {
-      onFileSelect(null);
+    if (onFileChange) {
+      onFileChange(null);
     }
   };
 

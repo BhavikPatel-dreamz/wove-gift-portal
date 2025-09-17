@@ -24,6 +24,9 @@ const OccasionsManager = () => {
     sortOrder: 'desc'
   });
 
+  console.log("occasions",occasions);
+  
+
   // Pagination states
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -84,9 +87,13 @@ const OccasionsManager = () => {
 
   useEffect(() => {
     fetchOccasions(true);
-  }, []);
+  }, [debouncedSearch, filters.sortBy, filters.sortOrder]);
 
-  
+  useEffect(() => {
+    if (pagination.currentPage > 1) {
+      fetchOccasions(false);
+    }
+  }, [pagination.currentPage]);
 
   const handleFilterChange = (key, value) => {
     setPagination(prev => ({ ...prev, currentPage: 1 }));

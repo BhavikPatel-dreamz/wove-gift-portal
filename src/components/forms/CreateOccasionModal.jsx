@@ -17,6 +17,8 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
     image: null
   });
 
+  console.log("occasion",occasion);
+  
   useEffect(() => {
     if (occasion) {
       setFormData({
@@ -99,7 +101,7 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
           <ImageUpload
             label="Occasion Image"
             onFileChange={handleImageChange}
-            currentImage={typeof formData.image === 'string' ? formData.image : null}
+            currentImage={formData.image instanceof File ? URL.createObjectURL(formData.image) : formData.image}
           />
           
           <Toggle
