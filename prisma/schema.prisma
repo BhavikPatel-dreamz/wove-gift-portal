@@ -103,7 +103,7 @@ model Vouchers {
   denominationype         String?
   denominations           Json?
   denominationCurrency    String?
-  denominationValue Int?   
+  denominationValue       Int?   
   maxAmount               Int?               @default(0)
   minAmount               Int?               @default(0)
   expiryPolicy            String
@@ -175,7 +175,7 @@ model Occasion {
 
 model OccasionCategory {
   id          String   @id @default(cuid())
-  name        String
+  name        String   @unique
   description String
   emoji       String
   image       String
