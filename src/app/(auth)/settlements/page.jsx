@@ -5,6 +5,7 @@ import React from "react"
 import DynamicTable from "../../../components/forms/DynamicTable"
 import { createColumnHelper } from "@tanstack/react-table"
 import { Clock, CheckCircle, AlertTriangle, Eye, Download } from "lucide-react"
+import toast from "react-hot-toast"
 
 const Page = () => {
   const sampleData = [
@@ -187,15 +188,15 @@ const Page = () => {
   ]
 
   const handleView = (row) => {
-    alert(`Viewing details for: ${row.brandName}`)
+     toast.info(`Viewing details for: ${row.brandName}`)
   }
 
   const handleDownload = (row) => {
-    alert(`Downloading CSV for: ${row.brandName}`)
+    toast.info(`Downloading CSV for: ${row.brandName}`)
   }
 
   const handleMarkPaid = (row) => {
-    alert(`Marking as paid: ${row.brandName}`)
+    toast.info(`Marking as paid: ${row.brandName}`)
   }
 
   return (

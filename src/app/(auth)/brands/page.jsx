@@ -620,7 +620,8 @@ const BrandManager = () => {
               onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
               className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
-              <option value={6}>6</option>
+              <option value={4}>4</option>
+              <option value={8}>8</option>
               <option value={12}>12</option>
               <option value={24}>24</option>
               <option value={48}>48</option>

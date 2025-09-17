@@ -2,6 +2,7 @@
 import React, { useRef } from 'react';
 import { Upload, Globe, Loader, X } from 'lucide-react';
 import { categories } from '../../lib/resourses';
+import toast from 'react-hot-toast';
 
 const BrandForm = ({ 
   formData, 
@@ -28,13 +29,13 @@ const BrandForm = ({
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+        toast.error('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
         return;
       }
       
       // Validate file size (5MB max)
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
+        toast.error('File size must be less than 5MB');
         return;
       }
       

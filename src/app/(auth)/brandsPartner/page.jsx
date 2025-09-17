@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Star, MoreVertical, Trash2, Loader, ChevronLeft, ChevronRight, Filter, SortAsc, SortDesc } from 'lucide-react';
+import { Search, Plus, Edit, Star, MoreVertical, Trash2, Loader, ChevronLeft, ChevronRight, Filter, SortAsc, SortDesc, Power } from 'lucide-react';
 import Modal from '@/components/Modal';
 import BrandForm from '@/components/forms/BrandForm';
 import { addBrand, updateBrand, deleteBrand, getBrands, getBrandStats } from '../../../lib/action/brandAction';
@@ -636,7 +636,8 @@ const BrandManager = () => {
               onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
               className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             >
-              <option value={6}>6</option>
+              <option value={4}>4</option>
+              <option value={8}>8</option>
               <option value={12}>12</option>
               <option value={24}>24</option>
               <option value={48}>48</option>
@@ -658,120 +659,97 @@ const BrandManager = () => {
         {/* Brands Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
           {brands.map(brand => (
-            <div key={brand.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200 hover:-translate-y-1">
-              {brand.isFeature && (
-                <div className="bg-orange-400 text-white text-xs px-2 py-1 font-medium flex items-center gap-1">
-                  <Star size={12} fill="currentColor" />
-                  Featured
+            <div 
+              key={brand.id} 
+              className="group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col"
+            >
+              <div className="relative">
+                {/* Image container */}
+                <div 
+                  className="h-40 w-full flex items-center justify-center text-white font-bold text-3xl"
+                  style={{ backgroundColor: brand.color || '#000000' }}
+                >
+                  {brand.logo ? (
+                    <img src={brand.logo} alt={brand.brandName} className="w-full h-full object-cover" />
+                  ) : (
+                    brand.brandName?.charAt(0).toUpperCase() || 'B'
+                  )}
                 </div>
-              )}
+
+                {/* Featured Badge */}
+                {brand.isFeature && (
+                  <div className="absolute top-3 right-3 bg-orange-400 text-white text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1 shadow-md">
+                    <Star size={12} fill="currentColor" />
+                    Featured
+                  </div>
+                )}
+
+                {/* Status Indicator */}
+                <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-md ${
+                  brand.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${brand.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  {brand.isActive ? 'Active' : 'Inactive'}
+                </div>
+              </div>
               
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-4">
-                  <div 
-                    className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm"
-                    style={{ backgroundColor: brand.color || '#000000' }}
-                  >
-                    {brand.logo ? (
-                      <img src={brand.logo} alt={brand.brandName} className="w-full h-full object-cover rounded-xl" />
-                    ) : (
-                      brand.brandName?.charAt(0).toUpperCase() || 'B'
-                    )}
-                  </div>
-                  <div className="relative">
-                    <button className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded transition-colors">
-                      <MoreVertical size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                <h3 className="font-bold text-lg text-gray-900 mb-1 truncate">{brand.brandName}</h3>
-                <p className="text-gray-600 text-sm italic mb-3 line-clamp-1">"{brand.tagline}"</p>
+              {/* Content */}
+              <div className="p-5 flex-grow flex flex-col">
+                <h3 className="font-bold text-xl text-gray-900 mb-1 truncate group-hover:text-blue-600 transition-colors">{brand.brandName}</h3>
+                <p className="text-gray-500 text-sm italic mb-3 line-clamp-1">"{brand.tagline}"</p>
                 
-                <p className="text-gray-700 text-sm mb-4 line-clamp-2 min-h-[2.5rem]">{brand.description}</p>
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem] flex-grow">{brand.description}</p>
 
+                {/* Category */}
                 <div className="mb-4">
                   <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(brand.categorieName)}`}>
                     {brand.categorieName || 'Uncategorized'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between mb-4">
-                  <span className={`text-sm font-medium ${
-                    brand.isActive ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {brand.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => toggleFeatured(brand.id)}
-                      disabled={actionLoading}
-                      className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                        brand.isFeature 
-                          ? 'text-orange-500 hover:bg-orange-50' 
-                          : 'text-gray-400 hover:bg-gray-50 hover:text-orange-500'
-                      }`}
-                    >
-                      <Star size={16} fill={brand.isFeature ? 'currentColor' : 'none'} />
-                    </button>
-                    <button 
-                      onClick={() => handleEditClick(brand)}
-                      disabled={actionLoading}
-                      className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteBrand(brand.id)}
-                      disabled={actionLoading}
-                      className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end gap-2 mt-auto pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => toggleFeatured(brand.id)}
+                    disabled={actionLoading}
+                    title={brand.isFeature ? 'Unfeature Brand' : 'Feature Brand'}
+                    className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${
+                      brand.isFeature 
+                        ? 'text-orange-500 bg-orange-100 hover:bg-orange-200' 
+                        : 'text-gray-400 hover:bg-gray-100 hover:text-orange-500'
+                    }`}
+                  >
+                    <Star size={16} fill={brand.isFeature ? 'currentColor' : 'none'} />
+                  </button>
+                  <button
+                    onClick={() => toggleActive(brand.id)}
+                    disabled={actionLoading}
+                    title={brand.isActive ? 'Deactivate Brand' : 'Activate Brand'}
+                    className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${
+                      brand.isActive
+                        ? 'text-green-500 bg-green-100 hover:bg-green-200'
+                        : 'text-gray-400 hover:bg-gray-100 hover:text-green-500'
+                    }`}
+                  >
+                    <Power size={16} />
+                  </button>
+                  <button 
+                    onClick={() => handleEditClick(brand)}
+                    disabled={actionLoading}
+                    title="Edit Brand"
+                    className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteBrand(brand.id)}
+                    disabled={actionLoading}
+                    title="Delete Brand"
+                    className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-
-                <div className="pt-3 border-t border-gray-100">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Featured</span>
-                    <button
-                      onClick={() => toggleFeatured(brand.id)}
-                      disabled={actionLoading}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                        brand.isFeature ? 'bg-blue-600' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        brand.isFeature ? 'translate-x-6' : 'translate-x-1'
-                      }`} />
-                    </button>
-                  </div>
-
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm text-gray-600">Active</span>
-                    <button
-                      onClick={() => toggleActive(brand.id)}
-                      disabled={actionLoading}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                        brand.isActive ? 'bg-green-600' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        brand.isActive ? 'translate-x-6' : 'translate-x-1'
-                      }`} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Additional info if available */}
-                {brand._count && (
-                  <div className="pt-3 border-t border-gray-100 mt-3">
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Orders: {brand._count.order}</span>
-                      <span>Vouchers: {brand._count.vouchers}</span>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           ))}

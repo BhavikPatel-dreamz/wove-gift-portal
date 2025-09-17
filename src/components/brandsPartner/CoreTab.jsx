@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { AlertTriangle, Upload, X, Image } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const CoreTab = ({ formData, updateFormData }) => {
   const fileInputRef = useRef(null);
@@ -31,14 +32,14 @@ const CoreTab = ({ formData, updateFormData }) => {
       // Validate file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml', 'image/webp'];
       if (!validTypes.includes(file.type)) {
-        alert('Please select a valid image file (JPG, PNG, SVG, WebP)');
+         toast.error('Please select a valid image file (JPG, PNG, SVG, WebP)');
         return;
       }
 
       // Validate file size (max 5MB)
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.size > maxSize) {
-        alert('File size must be less than 5MB');
+        toast.error('File size must be less than 5MB');
         return;
       }
 

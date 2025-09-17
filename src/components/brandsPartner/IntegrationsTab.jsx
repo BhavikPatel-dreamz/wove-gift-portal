@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle, X, AlertTriangle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const IntegrationsTab = ({ formData, updateFormData, updateIntegration }) => {
   const [selectedPlatform, setSelectedPlatform] = useState('');
@@ -45,7 +46,7 @@ const IntegrationsTab = ({ formData, updateFormData, updateIntegration }) => {
     // Simulate API call
     setTimeout(() => {
       updateIntegration(integrationId, 'status', 'active');
-      alert('Connection test successful!');
+      toast.success('Connection test successful!');
     }, 1000);
   };
 
