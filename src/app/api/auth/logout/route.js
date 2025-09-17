@@ -1,5 +1,6 @@
+
 import { NextResponse } from 'next/server'
-import { destroySession } from '@/lib/session'
+import { destroySession } from '../../../../lib/action/userAction/session'
 
 export async function POST() {
   try {
