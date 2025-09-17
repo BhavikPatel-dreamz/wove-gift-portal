@@ -58,6 +58,7 @@ const BrandEdit = () => {
 
     // Vouchers - Fixed structure
     denominationType: 'fixed',
+    denominationCurrency: 'ZAR',
     denominationValue: '',
     maxAmount: 0,
     minAmount: 0,
@@ -179,6 +180,7 @@ const BrandEdit = () => {
 
           // Vouchers
           denominationType: brand.vouchers?.[0]?.denominationype || 'staticDenominations',
+          denominationCurrency: brand.vouchers?.[0]?.denominationCurrency || 'ZAR',
           denominationValue: brand.vouchers?.[0]?.denominationValue || null,
           maxAmount: brand.vouchers?.[0]?.maxAmount || 0,
           minAmount: brand.vouchers?.[0]?.minAmount || 0,

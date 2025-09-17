@@ -54,7 +54,7 @@ const [formData, setFormData] = useState({
   // Vouchers - Fixed structure
   denominationType: 'fixed',
   denominationValue: '',
-  denominationValue: null,
+  denominationCurrency: 'ZAR',
   maxAmount: 0,
   minAmount: 0,
   expiryPolicy: 'neverExpires',
