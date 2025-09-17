@@ -25,7 +25,7 @@ const BrandEdit = () => {
   const [validationErrors, setValidationErrors] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Replace the formData initialization in your main component
+  // Enhanced formData initialization with all banking fields
   const [formData, setFormData] = useState({
     // Core Information
     brandName: '',
@@ -58,8 +58,7 @@ const BrandEdit = () => {
 
     // Vouchers - Fixed structure
     denominationType: 'fixed',
-    denominationCurrency: 'ZAR',
-    denominationValue: '',
+    denominations: [],
     maxAmount: 0,
     minAmount: 0,
     expiryPolicy: 'neverExpires',
@@ -70,17 +69,19 @@ const BrandEdit = () => {
       online: false,
       inStore: false,
       phone: false
-    }, // Changed from string to object
+    },
     partialRedemption: false,
     stackable: false,
-    maxUserPerDay: 1, // Changed from maxUserPerDay
+    minPerUsePerDays: 1,
+    maxUserPerDay: 1,
     termsConditionsURL: '',
 
-    // Banking
+    // Banking & Settlement (Enhanced with new fields)
     settlementFrequency: 'monthly',
     dayOfMonth: 1,
     payoutMethod: 'EFT',
     invoiceRequired: false,
+    remittanceEmail: '',
     accountHolder: '',
     accountNumber: '',
     branchCode: '',
@@ -118,6 +119,23 @@ const BrandEdit = () => {
     { id: 'review', label: 'Review', completed: false }
   ];
 
+  // Helper functions for validation
+  const isValidUrl = (string) => {
+    if (!string) return true; // Empty URL is valid (optional field)
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const isValidEmail = (email) => {
+    if (!email) return true; // Empty email is valid (optional field)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   // Load brand data
   useEffect(() => {
     if (brandId) {
@@ -138,15 +156,30 @@ const BrandEdit = () => {
 
       if (result.success) {
         const brand = result.data;
-        console.log("brandbrandbrand",brand);
-        
+        console.log("brandData", brand);
 
-        // Map the brand data to form structure
+        // Enhanced mapping with proper handling of redemption channels
+        const parseRedemptionChannels = (channels) => {
+          if (typeof channels === 'object' && channels !== null) {
+            return channels;
+          }
+          if (typeof channels === 'string') {
+            const channelArray = channels.split(',').map(c => c.trim());
+            return {
+              online: channelArray.includes('online'),
+              inStore: channelArray.includes('instore') || channelArray.includes('inStore'),
+              phone: channelArray.includes('phone')
+            };
+          }
+          return { online: false, inStore: false, phone: false };
+        };
+
+        // Map the brand data to form structure with enhanced banking fields
         const mappedData = {
           // Core Information
           brandName: brand.brandName || '',
           description: brand.description || '',
-          logo: null, // Don't load existing file
+          logo: brand.logo || '',
           website: brand.website || '',
           autoGenUrl: brand.website || '',
           contact: brand.contact || '',
@@ -178,34 +211,34 @@ const BrandEdit = () => {
           vatRate: brand.brandTerms?.[0]?.vatRate || 15,
           internalNotes: brand.brandTerms?.[0]?.internalNotes || '',
 
-          // Vouchers
-          denominationType: brand.vouchers?.[0]?.denominationype || 'staticDenominations',
-          denominationCurrency: brand.vouchers?.[0]?.denominationCurrency || 'ZAR',
-          denominationValue: brand.vouchers?.[0]?.denominationValue || null,
+          // Vouchers (Enhanced handling)
+          denominationType: brand.vouchers?.[0]?.denominationtype || 'fixed',
+          denominations: brand.vouchers?.[0]?.denominations || [],
           maxAmount: brand.vouchers?.[0]?.maxAmount || 0,
           minAmount: brand.vouchers?.[0]?.minAmount || 0,
-          expiryPolicy: brand.vouchers?.[0]?.expiryPolicy || 'fixedDay',
+          expiryPolicy: brand.vouchers?.[0]?.expiryPolicy || 'neverExpires',
           expiryValue: brand.vouchers?.[0]?.expiryValue || '365',
           expiresAt: brand.vouchers?.[0]?.expiresAt || '',
           fixedDays: brand.vouchers?.[0]?.fixedDays || 365,
           graceDays: brand.vouchers?.[0]?.graceDays || 0,
+          minPerUsePerDays: brand.vouchers?.[0]?.minPerUsePerDays || 1,
           maxUserPerDay: brand.vouchers?.[0]?.maxUserPerDay || 1,
-          redemptionChannels: brand.vouchers?.[0]?.redemptionChannels || 'online,instore',
+          redemptionChannels: parseRedemptionChannels(brand.vouchers?.[0]?.redemptionChannels),
           partialRedemption: brand.vouchers?.[0]?.partialRedemption || false,
           stackable: brand.vouchers?.[0]?.Stackable || false,
-          maxUserPerDay: brand.vouchers?.[0]?.maxUserPerDay || 1,
           termsConditionsURL: brand.vouchers?.[0]?.termsConditionsURL || '',
 
-          // Banking
+          // Banking & Settlement (Enhanced with new fields)
           settlementFrequency: brand.brandBankings?.[0]?.settlementFrequency || 'monthly',
           dayOfMonth: brand.brandBankings?.[0]?.dayOfMonth || 1,
           payoutMethod: brand.brandBankings?.[0]?.payoutMethod || 'EFT',
           invoiceRequired: brand.brandBankings?.[0]?.invoiceRequired || false,
+          remittanceEmail: brand.brandBankings?.[0]?.remittanceEmail || '',
           accountHolder: brand.brandBankings?.[0]?.accountHolder || '',
           accountNumber: brand.brandBankings?.[0]?.accountNumber || '',
           branchCode: brand.brandBankings?.[0]?.branchCode || '',
           bankName: brand.brandBankings?.[0]?.bankName || '',
-          swiftCode: brand.brandBankings?.[0]?.SWIFTCode || '',
+          swiftCode: brand.brandBankings?.[0]?.SWIFTCode || brand.brandBankings?.[0]?.swiftCode || '',
           country: brand.brandBankings?.[0]?.country || 'South Africa',
           accountVerification: brand.brandBankings?.[0]?.accountVerification || false,
 
@@ -248,12 +281,12 @@ const BrandEdit = () => {
 
       } else {
         toast.error('Failed to load brand data');
-        router.push('/brands');
+        router.push('/brandsPartner');
       }
     } catch (error) {
       console.error('Error loading brand:', error);
       toast.error('Error loading brand data');
-      router.push('/brands');
+      router.push('/brandsPartner');
     } finally {
       setLoading(false);
     }
@@ -272,6 +305,20 @@ const BrandEdit = () => {
       integrations: prev.integrations.map(integration =>
         integration.id === id ? { ...integration, [field]: value } : integration
       )
+    }));
+  };
+
+  const addIntegration = (integrationData) => {
+    setFormData(prev => ({
+      ...prev,
+      integrations: [...prev.integrations, integrationData]
+    }));
+  };
+
+  const removeIntegration = (id) => {
+    setFormData(prev => ({
+      ...prev,
+      integrations: prev.integrations.filter(integration => integration.id !== id)
     }));
   };
 
@@ -311,6 +358,7 @@ const BrandEdit = () => {
 
   console.log("formData", formData);
 
+  // Enhanced validation with new banking fields
   const validateRequiredFields = () => {
     const errors = [];
 
@@ -320,11 +368,16 @@ const BrandEdit = () => {
     if (!formData.website?.trim()) errors.push('Website');
     if (!formData.categorieName?.trim()) errors.push('Category');
 
-    // Banking validations
+    // Banking validations (Enhanced)
     if (!formData.accountHolder?.trim()) errors.push('Account Holder');
     if (!formData.accountNumber?.trim()) errors.push('Account Number');
     if (!formData.branchCode?.trim()) errors.push('Branch Code');
     if (!formData.bankName?.trim()) errors.push('Bank Name');
+    if (!formData.settlementFrequency?.trim()) errors.push('Settlement Frequency');
+    if (formData.settlementFrequency === 'monthly' && !formData.dayOfMonth) {
+      errors.push('Day of Month');
+    }
+    if (!formData.payoutMethod?.trim()) errors.push('Payout Method');
 
     // Terms validations
     if (!formData.contractStart) errors.push('Contract Start Date');
@@ -336,6 +389,28 @@ const BrandEdit = () => {
     if (!primaryContact?.email?.trim()) errors.push('Primary Contact Email');
     if (!primaryContact?.role?.trim()) errors.push('Primary Contact Role');
 
+    // Email validation for remittance email if provided
+    if (formData.remittanceEmail && !isValidEmail(formData.remittanceEmail)) {
+      errors.push('Valid Remittance Email');
+    }
+
+    // URL validations for integrations
+    formData.integrations.forEach((integration, index) => {
+      if (integration.storeUrl && !isValidUrl(integration.storeUrl)) {
+        errors.push(`Integration ${index + 1} Store URL`);
+      }
+    });
+
+    // Terms & Conditions URL validation
+    if (formData.termsConditionsURL && !isValidUrl(formData.termsConditionsURL)) {
+      errors.push('Terms & Conditions URL');
+    }
+
+    // Website URL validation
+    if (formData.website && !isValidUrl(formData.website)) {
+      errors.push('Valid Website URL');
+    }
+
     setValidationErrors(errors);
     return errors.length === 0;
   };
@@ -344,13 +419,30 @@ const BrandEdit = () => {
     // Create FormData for file upload
     const submitData = new FormData();
 
+    // Clean up integrations data - ensure storeUrl is valid or empty
+    const cleanedIntegrations = formData.integrations.map(integration => ({
+      ...integration,
+      storeUrl: integration.storeUrl && isValidUrl(integration.storeUrl) ? integration.storeUrl : '',
+    }));
+
+    // Prepare the data object with cleaned data
+    const dataToSubmit = {
+      ...formData,
+      integrations: cleanedIntegrations,
+      termsConditionsURL: formData.termsConditionsURL && isValidUrl(formData.termsConditionsURL) ? formData.termsConditionsURL : '',
+      // Ensure remittance email is valid or empty
+      remittanceEmail: formData.remittanceEmail && isValidEmail(formData.remittanceEmail) ? formData.remittanceEmail : '',
+      // Ensure website URL is valid
+      website: formData.website && isValidUrl(formData.website) ? formData.website : '',
+    };
+
     // Add logo file if present
-    if (formData.logo) {
+    if (formData.logo && typeof formData.logo !== 'string') {
       submitData.append('logo', formData.logo);
     }
 
     // Add the JSON data
-    submitData.append('data', JSON.stringify(formData));
+    submitData.append('data', JSON.stringify(dataToSubmit));
 
     return submitData;
   };
@@ -374,7 +466,6 @@ const BrandEdit = () => {
       const result = await updateBrandPartner(brandId, submitData);
 
       console.log("result", result);
-
 
       if (result.success) {
         toast.success('Brand updated successfully');
@@ -401,12 +492,42 @@ const BrandEdit = () => {
   const handleCancel = () => {
     if (hasChanges) {
       if (confirm('You have unsaved changes. Are you sure you want to leave?')) {
-        router.push('/brands');
+        router.push('/brandsPartner');
       }
     } else {
-      router.push('/brands');
+      router.push('/brandsPartner');
     }
   };
+
+  // Tab completion checking
+  const checkTabCompletion = () => {
+    const completedTabs = [];
+    
+    // Core tab completion
+    if (formData.brandName && formData.description && formData.website && formData.categorieName) {
+      completedTabs.push('core');
+    }
+    
+    // Terms tab completion
+    if (formData.contractStart && formData.contractEnd && formData.commissionValue > 0) {
+      completedTabs.push('terms');
+    }
+    
+    // Banking tab completion
+    if (formData.accountHolder && formData.accountNumber && formData.branchCode && formData.bankName) {
+      completedTabs.push('banking');
+    }
+    
+    // Contacts tab completion
+    const primaryContact = formData.contacts.find(c => c.isPrimary);
+    if (primaryContact?.name && primaryContact?.email && primaryContact?.role) {
+      completedTabs.push('contacts');
+    }
+    
+    return completedTabs;
+  };
+
+  const completedTabs = checkTabCompletion();
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -421,6 +542,8 @@ const BrandEdit = () => {
           formData={formData}
           updateFormData={updateFormData}
           updateIntegration={updateIntegration}
+          addIntegration={addIntegration}
+          removeIntegration={removeIntegration}
         />;
       case 'banking':
         return <BankingTab formData={formData} updateFormData={updateFormData} />;
@@ -457,7 +580,7 @@ const BrandEdit = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+              className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 transition-colors duration-200"
               disabled={saving}
               onClick={handleCancel}
             >
@@ -475,6 +598,9 @@ const BrandEdit = () => {
                     Unsaved Changes
                   </span>
                 )}
+                <span className="text-xs text-gray-500">
+                  {completedTabs.length}/{tabs.length} sections completed
+                </span>
               </div>
             </div>
           </div>
@@ -482,7 +608,7 @@ const BrandEdit = () => {
             <button
               onClick={handleCancel}
               disabled={saving}
-              className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               <X size={16} />
               <span>Cancel</span>
@@ -490,7 +616,7 @@ const BrandEdit = () => {
             <button
               onClick={handleSave}
               disabled={saving || !hasChanges}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               <Save size={16} />
               <span>{saving ? 'Saving...' : 'Save Changes'}</span>
@@ -499,12 +625,10 @@ const BrandEdit = () => {
         </div>
       </div>
 
-
-
       {/* Loading Overlay */}
       {saving && (
         <div className="fixed inset-0 bg-black/50 bg-opacity-20 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
+          <div className="bg-white rounded-lg p-6 flex items-center space-x-3 shadow-lg">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
             <span className="text-gray-700">Updating brand partner...</span>
           </div>
@@ -519,14 +643,17 @@ const BrandEdit = () => {
               key={tab.id}
               onClick={() => !saving && setActiveTab(tab.id)}
               disabled={saving}
-              className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 ${activeTab === tab.id
+              className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 transition-colors duration-200 ${
+                activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+              }`}
             >
               <div className="flex items-center space-x-2">
                 <span>{tab.label}</span>
-                {tab.completed && <CheckCircle className="text-green-500" size={16} />}
+                {completedTabs.includes(tab.id) && (
+                  <CheckCircle className="text-green-500" size={16} />
+                )}
               </div>
             </button>
           ))}
@@ -535,7 +662,7 @@ const BrandEdit = () => {
 
       {/* Required Fields Warning */}
       {validationErrors.length > 0 && (
-        <div className="bg-red-50 border-b border-red-200 px-6 py-3">
+        <div className="bg-red-50 border-l-4 border-red-400 px-6 py-3">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="text-red-500" size={16} />
             <span className="text-sm font-medium text-red-800">Required Fields Missing</span>
@@ -551,7 +678,7 @@ const BrandEdit = () => {
 
       {/* Content */}
       <div className="px-6 py-8">
-        <div className={saving ? 'opacity-50 pointer-events-none' : ''}>
+        <div className={`transition-opacity duration-200 ${saving ? 'opacity-50 pointer-events-none' : ''}`}>
           {renderTabContent()}
         </div>
       </div>

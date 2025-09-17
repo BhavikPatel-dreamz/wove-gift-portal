@@ -84,6 +84,7 @@ const BrandPartnerSchema = z
 
     // Vouchers
     denominationType: z.any().default("staticDenominations"), // ← was enum
+    denominations: z.any().optional(),
     denominationValue: z.any().optional().nullable(),
     denominationCurrency: z.string().optional().nullable(),
     maxAmount: z.number().min(0).optional().nullable(),
@@ -103,8 +104,9 @@ const BrandPartnerSchema = z
       .enum(["daily", "weekly", "monthly", "quarterly"])
       .default("monthly"),
     dayOfMonth: z.number().min(1).max(31).optional().nullable(),
-    payoutMethod: z.enum(["EFT", "Wire", "Check"]).default("EFT"),
+    payoutMethod: z.enum(["EFT", "wire_transfer", "Manual","paypal","stripe"]).default("EFT"),
     invoiceRequired: z.boolean().default(false),
+    remittanceEmail: z.string().email("Invalid email format").optional(),
     accountHolder: z.string().min(1, "Account holder is required"),
     accountNumber: z.string().min(1, "Account number is required"),
     branchCode: z.string().min(1, "Branch code is required"),
@@ -253,6 +255,7 @@ export async function createBrandPartner(formData) {
         data: {
           brandId: brand.id,
           denominationype: validatedData.denominationType,
+          denominations: validatedData.denominations,
           denominationCurrency: validatedData.denominationCurrency,
           denominationValue: denominationValue,
           maxAmount: validatedData.maxAmount,
@@ -280,6 +283,7 @@ export async function createBrandPartner(formData) {
           dayOfMonth: validatedData.dayOfMonth,
           payoutMethod: validatedData.payoutMethod,
           invoiceRequired: validatedData.invoiceRequired,
+          remittanceEmail: validatedData.remittanceEmail || "",
           accountHolder: validatedData.accountHolder,
           accountNumber: validatedData.accountNumber,
           branchCode: validatedData.branchCode,
@@ -726,6 +730,7 @@ export async function updateBrandPartner(brandId, formData) {
           where: { id: existingVoucher.id },
           data: {
             denominationype: validatedData.denominationType,
+            denominations: validatedData.denominations,
             denominationCurrency: validatedData.denominationCurrency,
             denominationValue: denominationValue,
             maxAmount: validatedData.maxAmount,
@@ -750,6 +755,7 @@ export async function updateBrandPartner(brandId, formData) {
           data: {
             brandId,
             denominationype: validatedData.denominationType,
+            denominations: validatedData.denominations,
             denominationCurrency: validatedData.denominationCurrency,
             denominationValue: denominationValue,
             maxAmount: validatedData.maxAmount,
@@ -781,6 +787,7 @@ export async function updateBrandPartner(brandId, formData) {
             dayOfMonth: validatedData.dayOfMonth,
             payoutMethod: validatedData.payoutMethod,
             invoiceRequired: validatedData.invoiceRequired,
+            remittanceEmail: validatedData.remittanceEmail || "",
             accountHolder: validatedData.accountHolder,
             accountNumber: validatedData.accountNumber,
             branchCode: validatedData.branchCode,
@@ -799,6 +806,7 @@ export async function updateBrandPartner(brandId, formData) {
             dayOfMonth: validatedData.dayOfMonth,
             payoutMethod: validatedData.payoutMethod,
             invoiceRequired: validatedData.invoiceRequired,
+            remittanceEmail: validatedData.remittanceEmail || "",
             accountHolder: validatedData.accountHolder,
             accountNumber: validatedData.accountNumber,
             branchCode: validatedData.branchCode,
