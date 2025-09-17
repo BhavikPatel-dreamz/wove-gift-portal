@@ -269,53 +269,75 @@ export async function deleteOccasion(id) {
 
 export async function getOccasions(params = {}) {
     try {
-        const { id, name, isActive, page = 1, limit = 100 } = params;
+        const {
+            id,
+            search,
+            isActive,
+            page = 1,
+            limit = 12,
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = params;
 
-        let where = {};
-        
+        const where = {};
+
         if (id) where.id = id;
-        if (name) where.name = { contains: name, mode: "insensitive" };
+        if (search) {
+            where.name = {
+                contains: search,
+                mode: 'insensitive'
+            };
+        }
         if (isActive !== null && isActive !== undefined) {
-            where.isActive = String(isActive) === "true";
+            where.isActive = String(isActive) === 'true';
         }
 
-        // Calculate pagination
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const skip = (pageNum - 1) * limitNum;
 
-        // Get occasions without relation counting to avoid field errors
-        const [occasions, total] = await Promise.all([
+        const validSortBy = ['name', 'createdAt', 'updatedAt'];
+        const orderByField = validSortBy.includes(sortBy) ? sortBy : 'createdAt';
+        const orderByDirection = sortOrder === 'asc' ? 'asc' : 'desc';
+
+        const [occasions, totalItems] = await Promise.all([
             prisma.occasion.findMany({
                 where,
-                orderBy: { createdAt: "desc" },
+                orderBy: {
+                    [orderByField]: orderByDirection
+                },
                 skip,
-                take: parseInt(limit),
+                take: limitNum,
             }),
-            prisma.occasion.count({ where })
+            prisma.occasion.count({
+                where
+            })
         ]);
 
-        // Get card counts separately to avoid field name issues
+        const totalPages = Math.ceil(totalItems / limitNum);
+        const hasNextPage = pageNum < totalPages;
+        const hasPrevPage = pageNum > 1;
+
         const occasionsWithCounts = await Promise.all(
             occasions.map(async (occasion) => {
                 let cardCount = 0;
-                
-                // Try different possible relation names/table names
                 try {
-                    // Try occasionCategory first
                     cardCount = await prisma.occasionCategory.count({
-                        where: { occasionId: occasion.id }
+                        where: {
+                            occasionId: occasion.id
+                        }
                     });
                 } catch (e) {
                     try {
-                        // Try cards table if it exists
                         cardCount = await prisma.card?.count({
-                            where: { occasionId: occasion.id }
+                            where: {
+                                occasionId: occasion.id
+                            }
                         }) || 0;
                     } catch (e2) {
-                        // If both fail, default to 0
                         cardCount = 0;
                     }
                 }
-
                 return {
                     ...occasion,
                     cardCount,
@@ -329,10 +351,14 @@ export async function getOccasions(params = {}) {
             message: "Occasions fetched successfully",
             data: occasionsWithCounts,
             pagination: {
-                total,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                pages: Math.ceil(total / parseInt(limit))
+                currentPage: pageNum,
+                totalPages,
+                totalItems,
+                itemsPerPage: limitNum,
+                hasNextPage,
+                hasPrevPage,
+                startIndex: skip + 1,
+                endIndex: Math.min(skip + limitNum, totalItems),
             },
             status: 200,
         };

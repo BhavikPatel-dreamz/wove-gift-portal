@@ -1,33 +1,58 @@
 import { useState, useEffect } from "react";
-import Card from "./Card";
 import Input from "./Input";
 import TextArea from "./TextArea";
 import Toggle from "./Toggle";
 import Button from "./Button";
-import { Save } from "lucide-react";
+import { Save, Image as ImageIcon } from "lucide-react";
 import Modal from "../Modal";
 import EmojiPicker from "../occasions/EmojiPicker";
+import ImageUpload from "./ImageUpload";
 
-const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion }) => {
+const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading }) => {
   const [formData, setFormData] = useState({
     name: '',
     emoji: '🎉',
     description: '',
-    isActive: true
+    isActive: true,
+    image: null
   });
 
   useEffect(() => {
     if (occasion) {
-      setFormData(occasion);
+      setFormData({
+        name: occasion.name || '',
+        emoji: occasion.emoji || '🎉',
+        description: occasion.description || '',
+        isActive: occasion.isActive !== undefined ? occasion.isActive : true,
+        image: occasion.image || null
+      });
     } else {
       setFormData({
         name: '',
         emoji: '🎉',
         description: '',
-        isActive: true
+        isActive: true,
+        image: null
       });
     }
-  }, [occasion]);
+  }, [occasion, isOpen]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleToggleChange = (checked) => {
+    setFormData(prev => ({ ...prev, isActive: checked }));
+  };
+
+  const handleEmojiChange = (emoji) => {
+    setFormData(prev => ({ ...prev, emoji }));
+  };
+
+  const handleImageChange = (file) => {
+    setFormData(prev => ({ ...prev, image: file }));
+  };
 
   const handleSave = () => {
     onSave(formData);
@@ -38,51 +63,62 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion }) => {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <Card className="w-full max-w-lg p-6 sm:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+      <div className="bg-white rounded-xl w-full max-h-[80vh] overflow-y-scroll min-w-2xl p-6 sm:p-8 text-black">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+            <p className="text-gray-500 mt-1">Fill in the details below.</p>
+          </div>
+          <div className="text-4xl">{formData.emoji}</div>
         </div>
         
         <div className="space-y-6">
           <Input
             label="Occasion Name"
+            name="name"
             placeholder="e.g., Birthday Party"
             value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            onChange={handleInputChange}
             required
           />
           
           <EmojiPicker
             label="Select an Emoji"
             value={formData.emoji}
-            onChange={(emoji) => setFormData({ ...formData, emoji })}
-            required
+            onChange={handleEmojiChange}
           />
           
           <TextArea
             label="Description"
+            name="description"
             placeholder="A short description for this occasion."
             value={formData.description}
-            onChange={(e) => setFormData({...formData, description: e.target.value})}
+            onChange={handleInputChange}
+          />
+
+          <ImageUpload
+            label="Occasion Image"
+            onFileChange={handleImageChange}
+            currentImage={typeof formData.image === 'string' ? formData.image : null}
           />
           
           <Toggle
-            label="isActive"
+            label="Active Status"
             sublabel="Make this occasion visible to users."
             checked={formData.isActive}
-            onChange={(checked) => setFormData({...formData, isActive: checked})}
+            onChange={handleToggleChange}
           />
         </div>
         
-        <div className="flex justify-end space-x-4 mt-8">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
+          <Button variant="outline" onClick={onClose} disabled={actionLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSave} icon={Save}>
+          <Button onClick={handleSave} icon={Save} disabled={actionLoading} loading={actionLoading}>
             {buttonText}
           </Button>
         </div>
-      </Card>
+      </div>
     </Modal>
   );
 };

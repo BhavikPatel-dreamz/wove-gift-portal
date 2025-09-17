@@ -1,7 +1,4 @@
-import Badge from "./Badge";
-import Card from "./Card";
-import Button from "./Button";
-import { Edit3, Eye, Trash2 } from "lucide-react";
+import { Edit, Trash2, Eye } from 'lucide-react';
 
 const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = false }) => {
   const statusVariant = occasion.isActive || occasion.active ? 'success' : 'default';
@@ -27,77 +24,66 @@ const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = fals
   };
 
   return (
-    <Card className={`p-6 flex flex-col justify-between h-full hover:shadow-lg transition-shadow duration-300 ${
-      disabled ? 'opacity-50 cursor-not-allowed' : ''
-    }`}>
-      <div>
-        <div className="flex items-start justify-between mb-4">
-          <div className="text-5xl -mt-2">{occasion.emoji || '🎉'}</div>
-          <Badge variant={statusVariant}>{statusText}</Badge>
-        </div>
-        
-        <div className="space-y-2 mb-6">
-          <h3 className="text-xl font-bold text-gray-900 truncate" title={occasion.name}>
-            {occasion.name}
-          </h3>
-          <p className="text-gray-600 text-sm line-clamp-2 min-h-[2.5rem]" title={occasion.description}>
-            {occasion.description || 'No description available'}
-          </p>
+    <div 
+      className={`group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col ${
+        disabled ? 'opacity-50 cursor-not-allowed' : ''
+      }`}>
+      <div className="relative">
+        <div 
+          className="h-40 w-full flex items-center justify-center text-white font-bold text-5xl bg-blue-500"
+        >
+          {occasion.emoji || '🎉'}
         </div>
 
-        {/* Optional: Show image if available */}
-        {occasion.image && occasion.image.trim() && (
-          <div className="mb-4">
-            <img 
-              src={occasion.image} 
-              alt={occasion.name}
-              className="w-full h-32 object-cover rounded-lg"
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-          </div>
-        )}
-      </div>
-      
-      <div className="flex items-center justify-between mt-4">
-        <span className="text-sm font-medium text-gray-500">
-          {cardCount} {cardCount === 1 ? 'card' : 'cards'}
-        </span>
-        <div className="flex space-x-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleEdit}
-            disabled={disabled}
-            icon={Edit3}
-            className="hover:bg-blue-50 hover:text-blue-600"
-          >
-            Edit
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleDelete}
-            disabled={disabled}
-            icon={Trash2} 
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-          >
-            Delete
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleViewCards}
-            disabled={disabled}
-            icon={Eye}
-            className="hover:bg-gray-50"
-          >
-            View Cards
-          </Button>
+        <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-md ${
+          statusVariant === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          <div className={`w-2 h-2 rounded-full ${statusVariant === 'success' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+          {statusText}
         </div>
       </div>
-    </Card>
+      
+      <div className="p-5 flex-grow flex flex-col">
+        <h3 className="font-bold text-xl text-gray-900 mb-1 truncate group-hover:text-blue-600 transition-colors" title={occasion.name}>
+          {occasion.name}
+        </h3>
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem] flex-grow" title={occasion.description}>
+          {occasion.description || 'No description available'}
+        </p>
+
+        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+          <span className="text-sm font-medium text-gray-500">
+            {cardCount} {cardCount === 1 ? 'card' : 'cards'}
+          </span>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleViewCards}
+              disabled={disabled}
+              title="View Cards"
+              className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+            >
+              <Eye size={16} />
+            </button>
+            <button 
+              onClick={handleEdit}
+              disabled={disabled}
+              title="Edit Occasion"
+              className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+            >
+              <Edit size={16} />
+            </button>
+            <button 
+              onClick={handleDelete}
+              disabled={disabled}
+              title="Delete Occasion"
+              className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
