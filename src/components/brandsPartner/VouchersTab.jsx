@@ -4,6 +4,27 @@ const VouchersTab = ({ formData, updateFormData }) => {
   // Ensure redemptionChannels is always an object
   const redemptionChannels = formData.redemptionChannels || {};
 
+  // Handle denomination type change and reset related fields
+  const handleDenominationTypeChange = (type) => {
+    updateFormData('denominationType', type);
+    
+    // Reset related fields when switching types
+    if (type === 'fixed') {
+      updateFormData('minAmount', 0);
+      updateFormData('maxAmount', 0);
+      updateFormData('denominations', []); // Array to store multiple fixed denominations
+    } else if (type === 'amount') {
+      updateFormData('denominationValue', '');
+      updateFormData('denominations', []);
+    }
+  };
+
+  // Remove denomination
+  const removeDenomination = (id) => {
+    const updatedDenominations = (formData.denominations || []).filter(d => d.id !== id);
+    updateFormData('denominations', updatedDenominations);
+  };
+
   return (
     <div className="space-y-8">
       {/* Denomination Setup */}
@@ -23,11 +44,11 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 value="fixed"
                 className="mt-1"
                 checked={formData.denominationType === 'fixed'}
-                onChange={(e) => updateFormData('denominationType', e.target.value)}
+                onChange={(e) => handleDenominationTypeChange(e.target.value)}
               />
               <div>
-                <div className="font-medium">Fixed Denominations</div>
-                <div className="text-sm text-gray-500">Offer standard pre-determined voucher fixed</div>
+                <div className="font-medium">Static Denominations</div>
+                <div className="text-sm text-gray-500">Fixed amounts that customers can choose from</div>
               </div>
             </label>
 
@@ -37,32 +58,89 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 name="denominationType"
                 value="amount"
                 checked={formData.denominationType === 'amount'}
-                onChange={(e) => updateFormData('denominationType', e.target.value)}
+                onChange={(e) => handleDenominationTypeChange(e.target.value)}
               />
               <div>
                 <div className="font-medium">Amount Range</div>
-                <div className="text-sm text-gray-500">Let customers set the amount within a range</div>
+                <div className="text-sm text-gray-500">Let customers choose any amount within a range</div>
               </div>
             </label>
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Add Denomination</label>
-          <div className="flex space-x-2 mb-4">
-            <input
-              type="number"
-              className="flex-1 border border-gray-300 rounded-md px-3 py-2"
-              placeholder="100"
-              value={formData.denominationValue || ''}
-              onChange={(e) => updateFormData('denominationValue', e.target.value)}
-            />
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-              Add
-            </button>
+        {/* Fixed Denominations Section */}
+        {formData.denominationType === 'fixed' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Add Denomination</label>
+            <div className="flex space-x-2 mb-4">
+              <select className="border border-gray-300 rounded-md px-3 py-2">
+                <option value="ZAR">ZAR</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+              </select>
+              <input
+                type="number"
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2"
+                placeholder="Amount"
+                value={formData.denominationValue || ''}
+                onChange={(e) => updateFormData('denominationValue', e.target.value)}
+              />
+              {/* <button 
+                onClick={addDenomination}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
+              >
+                <span className="text-lg mr-1">+</span>
+              </button> */}
+            </div>
+            <p className="text-sm text-gray-500 mb-4">ZAR denominations must be multiples of 10</p>
+
+            {/* Display added denominations */}
+            {formData.denominations && formData.denominations.length > 0 && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Added Denominations</label>
+                <div className="flex flex-wrap gap-2">
+                  {formData.denominations.map((denom) => (
+                    <div key={denom.id} className="flex items-center bg-blue-50 border border-blue-200 rounded-md px-3 py-1">
+                      <span className="text-sm text-blue-800">{denom.currency} {denom.value}</span>
+                      <button
+                        onClick={() => removeDenomination(denom.id)}
+                        className="ml-2 text-blue-600 hover:text-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <p className="text-sm text-gray-500">Set denomination values for vouchers ($)</p>
-        </div>
+        )}
+
+        {/* Amount Range Section */}
+        {formData.denominationType === 'amount' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Amount</label>
+              <input
+                type="number"
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                placeholder="0"
+                value={formData.minAmount || ''}
+                onChange={(e) => updateFormData('minAmount', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Maximum Amount</label>
+              <input
+                type="number"
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                placeholder="0"
+                value={formData.maxAmount || ''}
+                onChange={(e) => updateFormData('maxAmount', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Expiry & Grace Period */}
@@ -102,17 +180,6 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
                 value={formData.expiresAt || ''}
                 onChange={(e) => updateFormData('expiresAt', e.target.value)}
-              />
-            </div>
-          )}
-          {formData.expiryPolicy === 'months' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Months</label>
-              <input
-                type="month"
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                value={formData.expiryMonth || ''}
-                onChange={(e) => updateFormData('expiryMonth', e.target.value)}
               />
             </div>
           )}
@@ -232,10 +299,20 @@ const VouchersTab = ({ formData, updateFormData }) => {
 
         <div className="bg-gray-50 rounded-lg p-8 text-center">
           <div className="w-16 h-16 bg-black rounded-lg mx-auto mb-4 flex items-center justify-center">
-            <span className="text-white font-bold text-xl">B</span>
+            <span className="text-white font-bold text-xl">
+              {formData.brandName ? formData.brandName.charAt(0).toUpperCase() : 'B'}
+            </span>
           </div>
-          <h4 className="font-medium text-lg mb-2">Brand Name</h4>
-          <p className="text-gray-600 text-sm mb-4">Gift Card • $100.00</p>
+          <h4 className="font-medium text-lg mb-2">
+            {formData.brandName || 'Brand Name'}
+          </h4>
+          <p className="text-gray-600 text-sm mb-4">
+            Gift Card • {formData.denominationType === 'fixed' && formData.denominations?.length > 0 
+              ? `ZAR ${formData.denominations[0].value}` 
+              : formData.denominationType === 'amount' && formData.minAmount && formData.maxAmount
+              ? `ZAR ${formData.minAmount} - ${formData.maxAmount}`
+              : 'ZAR 100.00'}
+          </p>
           <p className="text-xs text-gray-500 max-w-xs mx-auto">
             This is a preview of how vouchers will appear to customers.
           </p>

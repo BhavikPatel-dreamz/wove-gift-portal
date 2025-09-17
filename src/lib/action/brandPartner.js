@@ -85,6 +85,7 @@ const BrandPartnerSchema = z
     // Vouchers
     denominationType: z.any().default("staticDenominations"), // ← was enum
     denominationValue: z.any().optional().nullable(),
+    denominationCurrency: z.string().optional().nullable(),
     maxAmount: z.number().min(0).optional().nullable(),
     minAmount: z.number().min(0).optional().nullable(),
     expiryPolicy: z.any().default("fixedDay"), // ← was enum
@@ -170,6 +171,9 @@ export async function createBrandPartner(formData) {
     const validatedData = validationResult.data;
     let logoPath = "";
 
+    console.log("Validated data:", validatedData);
+    
+
     // Handle logo upload
     if (parsedData.logoFile && parsedData.logoFile.size > 0) {
       try {
@@ -249,6 +253,7 @@ export async function createBrandPartner(formData) {
         data: {
           brandId: brand.id,
           denominationype: validatedData.denominationType,
+          denominationCurrency: validatedData.denominationCurrency,
           denominationValue: denominationValue,
           maxAmount: validatedData.maxAmount,
           minAmount: validatedData.minAmount,
@@ -257,9 +262,7 @@ export async function createBrandPartner(formData) {
             validatedData.expiryPolicy === "neverExpires"
               ? null
               : validatedData.expiryValue, // Handle no expiry case
-          expiresAt: validatedData.expiresAt
-            ? new Date(validatedData.expiresAt)
-            : validatedData.expiresAt,
+          expiresAt: validatedData.expiresAt || null, // Keep as string
           graceDays: validatedData.graceDays,
           redemptionChannels: validatedData.redemptionChannels,
           partialRedemption: validatedData.partialRedemption,
@@ -723,6 +726,7 @@ export async function updateBrandPartner(brandId, formData) {
           where: { id: existingVoucher.id },
           data: {
             denominationype: validatedData.denominationType,
+            denominationCurrency: validatedData.denominationCurrency,
             denominationValue: denominationValue,
             maxAmount: validatedData.maxAmount,
             minAmount: validatedData.minAmount,
@@ -731,9 +735,7 @@ export async function updateBrandPartner(brandId, formData) {
             validatedData.expiryPolicy === "neverExpires"
               ? null
               : validatedData.expiryValue, // Handle no expiry case
-          expiresAt: validatedData.expiresAt
-            ? new Date(validatedData.expiresAt)
-            : validatedData.expiresAt,
+            expiresAt: validatedData.expiresAt || null, // Keep as string
             graceDays: validatedData.graceDays,
             redemptionChannels: validatedData.redemptionChannels,
             partialRedemption: validatedData.partialRedemption,
@@ -748,6 +750,7 @@ export async function updateBrandPartner(brandId, formData) {
           data: {
             brandId,
             denominationype: validatedData.denominationType,
+            denominationCurrency: validatedData.denominationCurrency,
             denominationValue: denominationValue,
             maxAmount: validatedData.maxAmount,
             minAmount: validatedData.minAmount,
@@ -756,9 +759,7 @@ export async function updateBrandPartner(brandId, formData) {
             validatedData.expiryPolicy === "neverExpires"
               ? null
               : validatedData.expiryValue, // Handle no expiry case
-          expiresAt: validatedData.expiresAt
-            ? new Date(validatedData.expiresAt)
-            : validatedData.expiresAt,
+            expiresAt: validatedData.expiresAt || null, // Keep as string
             graceDays: validatedData.graceDays,
             redemptionChannels: validatedData.redemptionChannels,
             partialRedemption: validatedData.partialRedemption,

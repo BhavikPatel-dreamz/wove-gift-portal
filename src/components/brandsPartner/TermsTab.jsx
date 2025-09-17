@@ -116,127 +116,124 @@ const TermsTab = ({ formData, updateFormData }) => {
         </div>
       </div>
 
-      {/* Breakage Policy */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Breakage Policy</h3>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Breakage Policy</label>
-          <div className="space-y-3">
-            <label className="flex items-start space-x-3">
-              <input
-                type="radio"
-                name="brackingPolicy"
-                value="Retain"
-                className="mt-1"
-                checked={formData.brackingPolicy === 'Retain'}
-                onChange={(e) => updateFormData('brackingPolicy', e.target.value)}
-              />
-              <div>
-                <div className="font-medium">Retain</div>
-                <div className="text-sm text-gray-500">Retain all breakage with no sharing policy.</div>
+      {formData.settlementTrigger === 'onPurchase' && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-medium mb-4">Breakage Policy</h3>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Breakage Policy</label>
+            <div className="space-y-3">
+              <label className="flex items-start space-x-3">
+                <input
+                  type="radio"
+                  name="brackingPolicy"
+                  value="Retain"
+                  className="mt-1"
+                  checked={formData.brackingPolicy === 'Retain'}
+                  onChange={(e) => updateFormData('brackingPolicy', e.target.value)}
+                />
+                <div>
+                  <div className="font-medium">Retain</div>
+                  <div className="text-sm text-gray-500">Keep the unredeemed voucher value at expiry.</div>
+                </div>
+              </label>
+              <label className="flex items-start space-x-3">
+                <input
+                  type="radio"
+                  name="brackingPolicy"
+                  value="Share"
+                  checked={formData.brackingPolicy === 'Share'}
+                  onChange={(e) => updateFormData('brackingPolicy', e.target.value)}
+                />
+                <div>
+                  <div className="font-medium">Share</div>
+                  <div className="text-sm text-gray-500">Split the unredeemed value with the brand.</div>
+                </div>
+              </label>
+            </div>
+            {(formData.brackingPolicy === "Share" || formData.brackingPolicy === "share" )&& (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Breakage Share (%)</label>
+                <input
+                  type="number"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="50"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={formData.brackingShare || 0}
+                  onChange={(e) => updateFormData('brackingShare', parseFloat(e.target.value) || 0)}
+                />
               </div>
-            </label>
+            )}
+          </div>
+        </div>
+      )}
 
-            <label className="flex items-start space-x-3">
-              <input
-                type="radio"
-                name="brackingPolicy"
-                value="Share"
-                checked={formData.brackingPolicy === 'Share'}
-                onChange={(e) => updateFormData('brackingPolicy', e.target.value)}
-              />
-              <div>
-                <div className="font-medium">Share</div>
-                <div className="text-sm text-gray-500">Split commissioning share with the brand.</div>
+      {formData.settlementTrigger === 'onRedemption' && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-medium mb-4 flex items-center">
+            <span className="mr-2">📋</span>
+            Contract Terms
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contract Start *</label>
+              <div className="flex">
+                <input
+                  type="date"
+                  className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
+                  value={formData.contractStart || ''}
+                  onChange={(e) => updateFormData('contractStart', e.target.value)}
+                />
+                <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2" type="button">
+                  📅
+                </button>
               </div>
-            </label>
-          </div>
-          
-          {formData.brackingPolicy === 'Share' && (
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Breakage Share (%)</label>
-              <input
-                type="number"
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                placeholder="50"
-                step="0.01"
-                min="0"
-                max="100"
-                value={formData.brackingShare || 0}
-                onChange={(e) => updateFormData('brackingShare', parseFloat(e.target.value) || 0)}
-              />
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Contract Terms */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4 flex items-center">
-          <span className="mr-2">📋</span>
-          Contract Terms
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Contract Start *</label>
-            <div className="flex">
-              <input
-                type="date"
-                className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
-                value={formData.contractStart || ''}
-                onChange={(e) => updateFormData('contractStart', e.target.value)}
-              />
-              <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2" type="button">
-                📅
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contract End *</label>
+              <div className="flex">
+                <input
+                  type="date"
+                  className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
+                  value={formData.contractEnd || ''}
+                  onChange={(e) => updateFormData('contractEnd', e.target.value)}
+                />
+                <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2" type="button">
+                  📅
+                </button>
+              </div>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Contract End *</label>
-            <div className="flex">
-              <input
-                type="date"
-                className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
-                value={formData.contractEnd || ''}
-                onChange={(e) => updateFormData('contractEnd', e.target.value)}
-              />
-              <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2" type="button">
-                📅
-              </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Go Live Date</label>
+              <div className="flex">
+                <input
+                  type="date"
+                  className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
+                  value={formData.goLiveDate || ''}
+                  onChange={(e) => updateFormData('goLiveDate', e.target.value)}
+                />
+                <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2" type="button">
+                  📅
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Auto-Renew Contract</label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={formData.renewContract || false}
+                  onChange={(e) => updateFormData('renewContract', e.target.checked)}
+                />
+                <span className="text-sm">Automatically renew contract</span>
+              </label>
             </div>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Go Live Date</label>
-            <div className="flex">
-              <input
-                type="date"
-                className="flex-1 border border-gray-300 rounded-l-md px-3 py-2"
-                value={formData.goLiveDate || ''}
-                onChange={(e) => updateFormData('goLiveDate', e.target.value)}
-              />
-              <button className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2" type="button">
-                📅
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Auto-Renew Contract</label>
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={formData.renewContract || false}
-                onChange={(e) => updateFormData('renewContract', e.target.checked)}
-              />
-              <span className="text-sm">Automatically renew contract</span>
-            </label>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* VAT & Internal Notes */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
