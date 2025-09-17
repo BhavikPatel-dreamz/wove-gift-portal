@@ -180,6 +180,8 @@ model OccasionCategory {
   emoji       String
   image       String
   isActive    Boolean  @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   occasionId  String
   occasions   Occasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
 }

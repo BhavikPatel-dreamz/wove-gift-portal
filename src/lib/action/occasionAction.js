@@ -34,6 +34,10 @@ const OccasionCategorySchema = z.object({
     occasionId: z.string().min(1, "Occasion ID is required"),
 });
 
+const UpdateOccasionCategorySchema = OccasionCategorySchema.partial().extend({
+    id: z.string().min(1, "Category ID is required"),
+});
+
 export function handleValidationError(validationResult) {
     if (validationResult.success) {
         return null; // No error
@@ -428,3 +432,92 @@ export async function addOccationCategory(req) {
     }
 }
 
+export async function updateOccationCategory(req){
+    try {
+        const formData = await req.formData();
+        const imageFile = formData.get('image');
+
+        const parsedData = {
+            id: formData.get('id'),
+            name: formData.get('name'),
+            description: formData.get('description'),
+            emoji: formData.get('emoji'),
+            isActive: formData.get('isActive') === 'true' || formData.get('isActive') === 'on' || undefined,
+            occasionId: formData.get('occasionId'),
+        };
+
+        // Filter out null/undefined values so Zod can apply defaults
+        Object.keys(parsedData).forEach(key => (parsedData[key] == null) && delete parsedData[key]);
+
+        const validationResult = UpdateOccasionCategorySchema.safeParse(parsedData);
+        
+        const validationError = handleValidationError(validationResult);
+        if (validationError) {
+            return validationError;
+        }
+
+        const { id, ...updatePayload } = validationResult.data;
+
+        const existingCategory = await prisma.occasionCategory.findUnique({ where: { id } });
+
+        if (!existingCategory) {
+            return { success: false, message: "Occasion category not found", status: 404 };
+        }
+
+        if (updatePayload.name && updatePayload.name !== existingCategory.name) {
+            const duplicateCategory = await prisma.occasionCategory.findFirst({
+                where: {
+                    name: updatePayload.name,
+                    id: { not: id },
+                },
+            });
+            if (duplicateCategory) {
+                return { success: false, message: "A category with this name already exists.", status: 409 };
+            }
+        }
+
+        let imagePath = existingCategory.image;
+        if (imageFile && typeof imageFile !== 'string' && imageFile.size > 0) {
+            const uploadDir = join(process.cwd(), "public", "uploads", "occasion_categories");
+            await mkdir(uploadDir, { recursive: true });
+
+            const timestamp = Date.now();
+            const extension = imageFile.name.split(".").pop();
+            const categoryName = updatePayload.name || existingCategory.name;
+            const filename = `${categoryName.toLowerCase().replace(/\s+/g, "_")}_${timestamp}.${extension}`;
+            const newFilePath = join(uploadDir, filename);
+
+            const bytes = await imageFile.arrayBuffer();
+            await writeFile(newFilePath, Buffer.from(bytes));
+
+            if (existingCategory.image && !existingCategory.image.startsWith('http')) {
+                try {
+                    const oldFilePath = join(process.cwd(), "public", existingCategory.image);
+                    if (existsSync(oldFilePath)) {
+                        await unlink(oldFilePath);
+                    }
+                } catch (e) {
+                    console.warn(`Failed to delete old image: ${e.message}`);
+                }
+            }
+            imagePath = `/uploads/occasion_categories/${filename}`;
+        }
+
+        const finalUpdateData = {
+            ...updatePayload,
+            image: imagePath,
+            updatedAt: new Date(),
+        };
+
+        const updatedCategory = await prisma.occasionCategory.update({
+            where: { id },
+            data: finalUpdateData,
+        });
+
+        return { success: true, message: "Occasion category updated successfully", data: updatedCategory, status: 200 };
+
+    } catch (error) {
+        console.error("Error updating occasion category:", error);
+        return { success: false, message: "Internal server error", status: 500 };
+    }
+}
