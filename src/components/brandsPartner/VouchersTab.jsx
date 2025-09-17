@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 
 const VouchersTab = ({ formData, updateFormData }) => {
   const [denominationValue, setDenominationValue] = useState('');
@@ -21,7 +22,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
 
   const addDenomination = () => {
     if (!denominationValue || isNaN(denominationValue)) {
-      alert('Please enter a valid number for the denomination.');
+      toast.error('Please enter a valid number for the denomination.');
       return;
     }
 

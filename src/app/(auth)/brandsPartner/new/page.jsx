@@ -12,6 +12,7 @@ import IntegrationsTab from '@/components/brandsPartner/IntegrationsTab';
 import BankingTab from '@/components/brandsPartner/BankingTab';
 import ContactsTab from '@/components/brandsPartner/ContactsTab';
 import ReviewTab from '@/components/brandsPartner/ReviewTab';
+import toast from 'react-hot-toast';
 
 const AddBrandPartner = () => {
   const [activeTab, setActiveTab] = useState('core');
@@ -334,20 +335,20 @@ const AddBrandPartner = () => {
         const result = await createBrandPartner(submitData);
         
         if (result.success) {
-          alert('Draft saved successfully!');
+           toast.success('Draft saved successfully!');
           router.push('/brandsPartner');
         } else {
           if (result.errors) {
             setValidationErrors(result.errors);
-            alert('Validation failed. Please check the form.');
+             toast.error('Validation failed. Please check the form.');
           } else {
-            alert(result.message || 'Failed to save draft');
+             toast.error(result.message || 'Failed to save draft');
           }
         }
       });
     } catch (error) {
       console.error('Error saving draft:', error);
-      alert('An error occurred while saving the draft');
+       toast.error('An error occurred while saving the draft');
     } finally {
       setIsLoading(false);
     }
@@ -356,7 +357,7 @@ const AddBrandPartner = () => {
   const handlePublish = async () => {
     // Validate required fields before publishing
     if (!validateRequiredFields()) {
-      alert('Please complete all required fields before publishing');
+       toast.error('Please complete all required fields before publishing');
       return;
     }
     
@@ -370,20 +371,20 @@ const AddBrandPartner = () => {
         const result = await createBrandPartner(submitData);
         
         if (result.success) {
-          alert('Brand partner published successfully!');
+           toast.success('Brand partner published successfully!');
           router.push('/brandsPartner');
         } else {
           if (result.errors) {
             setValidationErrors(result.errors);
-            alert('Validation failed. Please check the form.');
+             toast.error('Validation failed. Please check the form.');
           } else {
-            alert(result.message || 'Failed to publish brand partner');
+             toast.error(result.message || 'Failed to publish brand partner');
           }
         }
       });
     } catch (error) {
       console.error('Error publishing brand partner:', error);
-      alert('An error occurred while publishing the brand partner');
+       toast.error('An error occurred while publishing the brand partner');
     } finally {
       setIsLoading(false);
     }
