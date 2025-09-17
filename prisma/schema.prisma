@@ -86,9 +86,9 @@ model BrandTerms {
   currency           String?
   brackingPolicy     PolicyStatus     @default(Retain)
   brackingShare      Int?             @default(0)
-  contractStart      DateTime
-  contractEnd        DateTime
-  goLiveDate         DateTime
+  contractStart      DateTime?
+  contractEnd       DateTime?
+  goLiveDate         DateTime?
   renewContract      Boolean          @default(false)
   vatRate            Int?             @default(0)
   internalNotes      String
@@ -107,8 +107,8 @@ model Vouchers {
   maxAmount               Int?               @default(0)
   minAmount               Int?               @default(0)
   expiryPolicy            String
-  expiresAt               String
-  expiryValue             String
+  expiresAt               String?
+  expiryValue             String?
   graceDays               Int?               @default(0)
   redemptionChannels      Json?
   partialRedemption       Boolean            @default(false)

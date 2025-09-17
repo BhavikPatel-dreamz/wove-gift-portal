@@ -379,9 +379,6 @@ const BrandEdit = () => {
     }
     if (!formData.payoutMethod?.trim()) errors.push('Payout Method');
 
-    // Terms validations
-    if (!formData.contractStart) errors.push('Contract Start Date');
-    if (!formData.contractEnd) errors.push('Contract End Date');
 
     // Contact validations
     const primaryContact = formData.contacts.find(c => c.isPrimary);
@@ -509,13 +506,24 @@ const BrandEdit = () => {
     }
     
     // Terms tab completion
-    if (formData.contractStart && formData.contractEnd && formData.commissionValue > 0) {
+    if (formData.commissionValue > 0 && formData.settlementTrigger && formData.brackingPolicy) {
       completedTabs.push('terms');
     }
     
     // Banking tab completion
     if (formData.accountHolder && formData.accountNumber && formData.branchCode && formData.bankName) {
       completedTabs.push('banking');
+    }
+
+    // Vouchers tab completion
+    if (formData.denominationType && formData.expiryPolicy && 
+        (formData.redemptionChannels.online || formData.redemptionChannels.inStore || formData.redemptionChannels.phone)) {
+      completedTabs.push('vouchers');
+    }
+    
+    // Integrations tab completion
+    if (formData.integrations && formData.integrations.length > 0) {
+      completedTabs.push('integrations');
     }
     
     // Contacts tab completion
@@ -599,7 +607,7 @@ const BrandEdit = () => {
                   </span>
                 )}
                 <span className="text-xs text-gray-500">
-                  {completedTabs.length}/{tabs.length} sections completed
+                  {completedTabs.length}/{tabs.length-1} sections completed
                 </span>
               </div>
             </div>
