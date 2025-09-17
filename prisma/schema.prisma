@@ -175,11 +175,13 @@ model Occasion {
 
 model OccasionCategory {
   id          String   @id @default(cuid())
-  name        String
+  name        String   @unique
   description String
   emoji       String
   image       String
   isActive    Boolean  @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   occasionId  String
   occasions   Occasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
 }
