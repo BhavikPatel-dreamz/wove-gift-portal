@@ -37,7 +37,7 @@ export default function CreateNewCard({ occasion, onBack, onSave }) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto text-black">
         <div className="flex items-center space-x-4 mb-8">
             <Button 
               variant="ghost" 

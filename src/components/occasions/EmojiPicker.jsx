@@ -32,7 +32,7 @@ const EmojiPicker = ({
           </button>
         ))}
       </div>
-      <div className="text-3xl">
+      <div className="text-xl text-black">
         Selected: {value}
       </div>
     </div>
