@@ -84,7 +84,7 @@ model BrandTerms {
   maxDiscount        Int?             @default(0)
   minOrderValue      Int?             @default(0)
   currency           String?
-  brackingPolicy     PolicyStatus     @default(Retain)
+  brackingPolicy      String?
   brackingShare      Int?             @default(0)
   contractStart      DateTime?
   contractEnd       DateTime?
