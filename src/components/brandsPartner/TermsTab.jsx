@@ -1,6 +1,25 @@
 import React from 'react';
 
 const TermsTab = ({ formData, updateFormData }) => {
+  // Handle settlement trigger change and clear relevant fields
+  const handleSettlementTriggerChange = (value) => {
+    updateFormData('settlementTrigger', value);
+    
+    // Clear contract-related fields when switching to "On Purchase"
+    if (value === 'onPurchase') {
+      updateFormData('contractStart', '');
+      updateFormData('contractEnd', '');
+      updateFormData('goLiveDate', '');
+      updateFormData('renewContract', false);
+    }
+    
+    // Clear breakage-related fields when switching to "On Redemption"
+    if (value === 'onRedemption') {
+      updateFormData('brackingPolicy', '');
+      updateFormData('brackingShare', 0);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Settlement Trigger */}
@@ -19,7 +38,7 @@ const TermsTab = ({ formData, updateFormData }) => {
               value="onRedemption"
               className="mt-1"
               checked={formData.settlementTrigger === 'onRedemption'}
-              onChange={(e) => updateFormData('settlementTrigger', e.target.value)}
+              onChange={(e) => handleSettlementTriggerChange(e.target.value)}
             />
             <div>
               <div className="font-medium">On Redemption</div>
@@ -33,7 +52,7 @@ const TermsTab = ({ formData, updateFormData }) => {
               name="settlementTrigger"
               value="onPurchase"
               checked={formData.settlementTrigger === 'onPurchase'}
-              onChange={(e) => updateFormData('settlementTrigger', e.target.value)}
+              onChange={(e) => handleSettlementTriggerChange(e.target.value)}
             />
             <div>
               <div className="font-medium">On Purchase</div>
@@ -150,7 +169,7 @@ const TermsTab = ({ formData, updateFormData }) => {
                 </div>
               </label>
             </div>
-            {(formData.brackingPolicy === "Share" || formData.brackingPolicy === "share" )&& (
+            {(formData.brackingPolicy === "Share" || formData.brackingPolicy === "share") && (
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Breakage Share (%)</label>
                 <input
