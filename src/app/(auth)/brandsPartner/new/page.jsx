@@ -258,7 +258,7 @@ const AddBrandPartner = () => {
     
     
      // Terms tab completion
-    if (formData.commissionValue > 0 && formData.settlementTrigger && formData.brackingPolicy) {
+    if (formData.commissionValue > 0 && formData.settlementTrigger) {
       completedTabs.push('terms');
     }
     
