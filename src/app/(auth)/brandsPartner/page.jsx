@@ -320,6 +320,36 @@ const BrandManager = () => {
     }
   };
 
+  const toggleActive = async (id) => {
+    const brand = brands.find(b => b.id === id);
+    if (!brand) return;
+
+    try {
+      setActionLoading(true);
+      
+      const toggleData = {
+        ...brand,
+        isActive: !brand.isActive,
+        logo: null // Don't send file again
+      };
+      
+      const formDataToSend = createFormData(toggleData, true, brand);
+      const result = await updateBrand(formDataToSend);
+      
+      if (result.success) {
+        toast.success(`Brand ${!brand.isActive ? 'activated' : 'deactivated'} successfully`);
+        await fetchBrands(false);
+      } else {
+        toast.error('Failed to update brand');
+      }
+    } catch (error) {
+      toast.error('Failed to update brand');
+      console.log('Error toggling active:', error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.brandName || !formData.description) {
@@ -713,6 +743,21 @@ const BrandManager = () => {
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                         brand.isFeature ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-sm text-gray-600">Active</span>
+                    <button
+                      onClick={() => toggleActive(brand.id)}
+                      disabled={actionLoading}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
+                        brand.isActive ? 'bg-green-600' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        brand.isActive ? 'translate-x-6' : 'translate-x-1'
                       }`} />
                     </button>
                   </div>

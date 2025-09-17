@@ -4,7 +4,7 @@ const TermsTab = ({ formData, updateFormData }) => {
   // Handle settlement trigger change and clear relevant fields
   const handleSettlementTriggerChange = (value) => {
     updateFormData('settlementTrigger', value);
-    
+
     // Clear contract-related fields when switching to "On Purchase"
     if (value === 'onPurchase') {
       updateFormData('contractStart', '');
@@ -12,11 +12,11 @@ const TermsTab = ({ formData, updateFormData }) => {
       updateFormData('goLiveDate', '');
       updateFormData('renewContract', false);
     }
-    
+
     // Clear breakage-related fields when switching to "On Redemption"
     if (value === 'onRedemption') {
-      updateFormData('brackingPolicy', '');
-      updateFormData('brackingShare', 0);
+      updateFormData('breakagePolicy', '');
+      updateFormData('breakageShare', 0);
     }
   };
 
@@ -144,11 +144,11 @@ const TermsTab = ({ formData, updateFormData }) => {
               <label className="flex items-start space-x-3">
                 <input
                   type="radio"
-                  name="brackingPolicy"
+                  name="breakagePolicy"
                   value="Retain"
                   className="mt-1"
-                  checked={formData.brackingPolicy === 'Retain'}
-                  onChange={(e) => updateFormData('brackingPolicy', e.target.value)}
+                  checked={formData.breakagePolicy === 'Retain'}
+                  onChange={(e) => updateFormData('breakagePolicy', e.target.value)}
                 />
                 <div>
                   <div className="font-medium">Retain</div>
@@ -158,10 +158,10 @@ const TermsTab = ({ formData, updateFormData }) => {
               <label className="flex items-start space-x-3">
                 <input
                   type="radio"
-                  name="brackingPolicy"
+                  name="breakagePolicy"
                   value="Share"
-                  checked={formData.brackingPolicy === 'Share'}
-                  onChange={(e) => updateFormData('brackingPolicy', e.target.value)}
+                  checked={formData.breakagePolicy === 'Share'}
+                  onChange={(e) => updateFormData('breakagePolicy', e.target.value)}
                 />
                 <div>
                   <div className="font-medium">Share</div>
@@ -169,7 +169,7 @@ const TermsTab = ({ formData, updateFormData }) => {
                 </div>
               </label>
             </div>
-            {(formData.brackingPolicy === "Share" || formData.brackingPolicy === "share") && (
+            {(formData.breakagePolicy === "Share" || formData.breakagePolicy === "share") && (
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Breakage Share (%)</label>
                 <input
@@ -179,9 +179,13 @@ const TermsTab = ({ formData, updateFormData }) => {
                   step="0.01"
                   min="0"
                   max="100"
-                  value={formData.brackingShare || 0}
-                  onChange={(e) => updateFormData('brackingShare', parseFloat(e.target.value) || 0)}
+                  value={formData.breakageShare ?? ""}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    updateFormData("breakageShare", isNaN(val) ? null : val);
+                  }}
                 />
+
               </div>
             )}
           </div>
