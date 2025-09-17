@@ -8,34 +8,33 @@ import { Save } from "lucide-react";
 import Modal from "../Modal";
 import EmojiPicker from "../occasions/EmojiPicker";
 
-const CreateOccasionModal = ({ isOpen, onClose, onSave, occasionToEdit }) => {
+const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion }) => {
   const [formData, setFormData] = useState({
     name: '',
     emoji: '🎉',
     description: '',
-    active: true
+    isActive: true
   });
 
   useEffect(() => {
-    if (occasionToEdit) {
-      setFormData(occasionToEdit);
+    if (occasion) {
+      setFormData(occasion);
     } else {
       setFormData({
         name: '',
         emoji: '🎉',
         description: '',
-        active: true
+        isActive: true
       });
     }
-  }, [occasionToEdit, isOpen]);
+  }, [occasion]);
 
   const handleSave = () => {
     onSave(formData);
-    onClose();
   };
 
-  const title = occasionToEdit ? "Edit Occasion" : "Create New Occasion";
-  const buttonText = occasionToEdit ? "Save Changes" : "Save Occasion";
+  const title = occasion ? "Edit Occasion" : "Create New Occasion";
+  const buttonText = occasion ? "Save Changes" : "Save Occasion";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -68,10 +67,10 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasionToEdit }) => {
           />
           
           <Toggle
-            label="Active"
+            label="isActive"
             sublabel="Make this occasion visible to users."
-            checked={formData.active}
-            onChange={(checked) => setFormData({...formData, active: checked})}
+            checked={formData.isActive}
+            onChange={(checked) => setFormData({...formData, isActive: checked})}
           />
         </div>
         
