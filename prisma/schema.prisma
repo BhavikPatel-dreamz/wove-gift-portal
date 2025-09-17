@@ -101,6 +101,7 @@ model BrandTerms {
 model Vouchers {
   id                      String             @id @default(cuid())
   denominationype         String?
+  denominations           Json?
   denominationCurrency    String?
   denominationValue Int?   
   maxAmount               Int?               @default(0)

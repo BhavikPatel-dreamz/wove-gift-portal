@@ -1,10 +1,29 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { AlertTriangle, Upload, X, Image } from 'lucide-react';
 
 const CoreTab = ({ formData, updateFormData }) => {
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+
+  // Handle existing logo when component mounts or formData changes
+  useEffect(() => {
+    if (formData.logo) {
+      if (typeof formData.logo === 'string') {
+        // If logo is a string path, set it as preview
+        setImagePreview(formData.logo);
+      } else if (formData.logo instanceof File) {
+        // If logo is a File object, create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreview(e.target.result);
+        };
+        reader.readAsDataURL(formData.logo);
+      }
+    } else {
+      setImagePreview(null);
+    }
+  }, [formData.logo]);
 
   // Handle file selection
   const handleFileSelect = (file) => {
@@ -25,13 +44,6 @@ const CoreTab = ({ formData, updateFormData }) => {
 
       // Update form data
       updateFormData('logo', file);
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -71,6 +83,19 @@ const CoreTab = ({ formData, updateFormData }) => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  // Get display name for the logo
+  const getLogoDisplayName = () => {
+    if (formData.logo) {
+      if (typeof formData.logo === 'string') {
+        // Extract filename from path
+        return formData.logo.split('/').pop();
+      } else if (formData.logo instanceof File) {
+        return formData.logo.name;
+      }
+    }
+    return 'Logo uploaded';
   };
 
   return (
@@ -202,9 +227,16 @@ const CoreTab = ({ formData, updateFormData }) => {
                       src={imagePreview} 
                       alt="Logo preview" 
                       className="mx-auto mb-2 max-h-24 w-auto rounded"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
                     />
+                    <div style={{ display: 'none' }} className="text-red-500 text-sm">
+                      Failed to load image
+                    </div>
                     <p className="text-sm text-gray-600">
-                      {formData.logo?.name || 'Logo uploaded'}
+                      {getLogoDisplayName()}
                     </p>
                     <p className="text-xs text-gray-500">
                       Click to replace or drag new file

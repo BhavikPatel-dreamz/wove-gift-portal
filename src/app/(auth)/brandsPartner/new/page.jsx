@@ -20,88 +20,88 @@ const AddBrandPartner = () => {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-// Replace the formData initialization in your main component
-const [formData, setFormData] = useState({
-  // Core Information
-  brandName: '',
-  description: '',
-  logo: null,
-  website: '',
-  contact: '',
-  tagline: '',
-  color: '#000000',
-  categorieName: '',
-  notes: '',
-  isActive: false,
-  isFeature: false,
+  // Complete formData initialization with all fields
+  const [formData, setFormData] = useState({
+    // Core Information
+    brandName: '',
+    description: '',
+    logo: null,
+    website: '',
+    contact: '',
+    tagline: '',
+    color: '#000000',
+    categorieName: '',
+    notes: '',
+    isActive: false,
+    isFeature: false,
 
-  // Terms
-  settlementTrigger: 'onRedemption',
-  commissionType: 'Percentage',
-  commissionValue: 0,
-  maxDiscount: 0,
-  minOrderValue: 0,
-  currency: 'USD',
-  brackingPolicy: 'Retain',
-  brackingShare: 0,
-  contractStart: new Date().toISOString().split('T')[0],
-  contractEnd: '',
-  goLiveDate: new Date().toISOString().split('T')[0],
-  renewContract: false,
-  vatRate: 15,
-  internalNotes: '',
+    // Terms
+    settlementTrigger: 'onRedemption',
+    commissionType: 'Percentage',
+    commissionValue: 0,
+    maxDiscount: 0,
+    minOrderValue: 0,
+    currency: 'USD',
+    brackingPolicy: 'Retain',
+    brackingShare: 0,
+    contractStart: new Date().toISOString().split('T')[0],
+    contractEnd: '',
+    goLiveDate: new Date().toISOString().split('T')[0],
+    renewContract: false,
+    vatRate: 15,
+    internalNotes: '',
 
-  // Vouchers - Fixed structure
-  denominationType: 'fixed',
-  denominationValue: '',
-  denominationCurrency: 'ZAR',
-  maxAmount: 0,
-  minAmount: 0,
-  expiryPolicy: 'neverExpires',
-  expiryValue: '365',
-  fixedDays: 365,
-  expiresAt: '',
-  graceDays: 0,
-  redemptionChannels: {
-    online: false,
-    inStore: false,
-    phone: false
-  }, // Changed from string to object
-  partialRedemption: false,
-  stackable: false,
-  minPerUsePerDays: 1, // Changed from maxUserPerDay
-  maxUserPerDay: 1, // Changed from maxUserPerDay
-  termsConditionsURL: '',
+    // Vouchers - Fixed structure
+    denominations: [],
+    denominationType: 'fixed',
+    maxAmount: 0,
+    minAmount: 0,
+    expiryPolicy: 'neverExpires',
+    expiryValue: '365',
+    fixedDays: 365,
+    expiresAt: '',
+    graceDays: 0,
+    redemptionChannels: {
+      online: false,
+      inStore: false,
+      phone: false
+    },
+    partialRedemption: false,
+    stackable: false,
+    minPerUsePerDays: 1,
+    maxUserPerDay: 1,
+    termsConditionsURL: '',
 
-  // Banking
-  settlementFrequency: 'monthly',
-  dayOfMonth: 1,
-  payoutMethod: 'EFT',
-  invoiceRequired: false,
-  accountHolder: '',
-  accountNumber: '',
-  branchCode: '',
-  bankName: '',
-  swiftCode: '',
-  country: 'South Africa',
-  accountVerification: false,
+    // Banking & Settlement (Updated with new fields)
+    settlementFrequency: 'monthly',
+    dayOfMonth: 1,
+    payoutMethod: 'EFT',
+    invoiceRequired: false,
+    remittanceEmail: '',
+    accountHolder: '',
+    accountNumber: '',
+    branchCode: '',
+    bankName: '',
+    swiftCode: '',
+    country: 'South Africa',
+    accountVerification: false,
 
-  // Contacts
-  contacts: [
-    {
-      id: 1,
-      name: '',
-      email: '',
-      role: '',
-      phone: '',
-      notes: '',
-      isPrimary: true
-    }
-  ],
+    // Contacts
+    contacts: [
+      {
+        id: 1,
+        name: '',
+        email: '',
+        role: '',
+        phone: '',
+        notes: '',
+        isPrimary: true
+      }
+    ],
 
-  // Integrations
-  integrations: []
-});
+    // Integrations
+    integrations: []
+  });
 
   const tabs = [
     { id: 'core', label: 'Core', completed: false },
@@ -113,6 +113,24 @@ const [formData, setFormData] = useState({
     { id: 'review', label: 'Review', completed: false }
   ];
 
+  // Helper functions for validation
+  const isValidUrl = (string) => {
+    if (!string) return true; // Empty URL is valid (optional field)
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const isValidEmail = (email) => {
+    if (!email) return true; // Empty email is valid (optional field)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // State update functions
   const updateFormData = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -177,6 +195,7 @@ const [formData, setFormData] = useState({
     }
   };
 
+  // Enhanced validation function
   const validateRequiredFields = () => {
     const errors = [];
     
@@ -186,11 +205,16 @@ const [formData, setFormData] = useState({
     if (!formData.website?.trim()) errors.push('Website');
     if (!formData.categorieName?.trim()) errors.push('Category');
     
-    // Banking validations
+    // Banking validations (Enhanced)
     if (!formData.accountHolder?.trim()) errors.push('Account Holder');
     if (!formData.accountNumber?.trim()) errors.push('Account Number');
     if (!formData.branchCode?.trim()) errors.push('Branch Code');
     if (!formData.bankName?.trim()) errors.push('Bank Name');
+    if (!formData.settlementFrequency?.trim()) errors.push('Settlement Frequency');
+    if (formData.settlementFrequency === 'monthly' && !formData.dayOfMonth) {
+      errors.push('Day of Month');
+    }
+    if (!formData.payoutMethod?.trim()) errors.push('Payout Method');
     
     // Terms validations
     if (!formData.contractStart) errors.push('Contract Start Date');
@@ -201,6 +225,11 @@ const [formData, setFormData] = useState({
     if (!primaryContact?.name?.trim()) errors.push('Primary Contact Name');
     if (!primaryContact?.email?.trim()) errors.push('Primary Contact Email');
     if (!primaryContact?.role?.trim()) errors.push('Primary Contact Role');
+    
+    // Email validation for remittance email if provided
+    if (formData.remittanceEmail && !isValidEmail(formData.remittanceEmail)) {
+      errors.push('Valid Remittance Email');
+    }
     
     // URL validations for integrations
     formData.integrations.forEach((integration, index) => {
@@ -214,23 +243,45 @@ const [formData, setFormData] = useState({
       errors.push('Terms & Conditions URL');
     }
     
+    // Website URL validation
+    if (formData.website && !isValidUrl(formData.website)) {
+      errors.push('Valid Website URL');
+    }
+    
     setValidationErrors(errors);
     return errors.length === 0;
   };
 
-  const isValidUrl = (string) => {
-    if (!string) return true; // Empty URL is valid (optional field)
-    try {
-      new URL(string);
-      return true;
-    } catch (_) {
-      return false;
+  // Tab completion checking
+  const checkTabCompletion = () => {
+    const completedTabs = [];
+    
+    // Core tab completion
+    if (formData.brandName && formData.description && formData.website && formData.categorieName) {
+      completedTabs.push('core');
     }
+    
+    // Terms tab completion
+    if (formData.contractStart && formData.contractEnd && formData.commissionValue > 0) {
+      completedTabs.push('terms');
+    }
+    
+    // Banking tab completion
+    if (formData.accountHolder && formData.accountNumber && formData.branchCode && formData.bankName) {
+      completedTabs.push('banking');
+    }
+    
+    // Contacts tab completion
+    const primaryContact = formData.contacts.find(c => c.isPrimary);
+    if (primaryContact?.name && primaryContact?.email && primaryContact?.role) {
+      completedTabs.push('contacts');
+    }
+    
+    return completedTabs;
   };
 
+  const completedTabs = checkTabCompletion();
 
-  console.log("formData",formData);
-  
   const prepareFormDataForSubmission = (isDraft = false) => {
     // Create FormData for file upload
     const submitData = new FormData();
@@ -247,6 +298,10 @@ const [formData, setFormData] = useState({
       integrations: cleanedIntegrations,
       isActive: !isDraft, // Set isActive based on draft status
       termsConditionsURL: formData.termsConditionsURL && isValidUrl(formData.termsConditionsURL) ? formData.termsConditionsURL : '',
+      // Ensure remittance email is valid or empty
+      remittanceEmail: formData.remittanceEmail && isValidEmail(formData.remittanceEmail) ? formData.remittanceEmail : '',
+      // Ensure website URL is valid
+      website: formData.website && isValidUrl(formData.website) ? formData.website : '',
     };
     
     // Add logo file if present
@@ -266,15 +321,14 @@ const [formData, setFormData] = useState({
     try {
       const submitData = prepareFormDataForSubmission(true); // isDraft = true
 
-      console.log("submitData",submitData);
-      
+      console.log("submitData", submitData);
       
       startTransition(async () => {
         const result = await createBrandPartner(submitData);
         
         if (result.success) {
           alert('Draft saved successfully!');
-                   router.push('/brandsPartner');
+          router.push('/brandsPartner');
         } else {
           if (result.errors) {
             setValidationErrors(result.errors);
@@ -305,7 +359,7 @@ const [formData, setFormData] = useState({
       const submitData = prepareFormDataForSubmission(false); // isDraft = false
       
       startTransition(async () => {
-        console.log("submitData",submitData);
+        console.log("submitData", submitData);
         const result = await createBrandPartner(submitData);
         
         if (result.success) {
@@ -379,16 +433,21 @@ const [formData, setFormData] = useState({
             <div>
               <h1 className="text-xl font-semibold">Add Brand Partner</h1>
               <p className="text-sm text-gray-600">Complete brand setup with commercial terms and integrations</p>
-              <span className="inline-block bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs mt-1">
-                Draft
-              </span>
+              <div className="flex items-center space-x-2 mt-1">
+                <span className="inline-block bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs">
+                  Draft
+                </span>
+                <span className="text-xs text-gray-500">
+                  {completedTabs.length}/{tabs.length} sections completed
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-3">
             <button
               onClick={handleSaveDraft}
               disabled={isFormDisabled}
-              className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               <Save size={16} />
               <span>{isLoading && !isPending ? 'Saving...' : 'Save Draft'}</span>
@@ -396,7 +455,7 @@ const [formData, setFormData] = useState({
             <button
               onClick={handlePublish}
               disabled={isFormDisabled}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               <Eye size={16} />
               <span>{isPending ? 'Publishing...' : 'Publish Brand'}</span>
@@ -408,7 +467,7 @@ const [formData, setFormData] = useState({
       {/* Loading Overlay */}
       {isPending && (
         <div className="fixed inset-0 bg-black/50 bg-opacity-20 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
+          <div className="bg-white rounded-lg p-6 flex items-center space-x-3 shadow-lg">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
             <span className="text-gray-700">Processing brand partner...</span>
           </div>
@@ -423,7 +482,7 @@ const [formData, setFormData] = useState({
               key={tab.id}
               onClick={() => !isFormDisabled && setActiveTab(tab.id)}
               disabled={isFormDisabled}
-              className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 ${
+              className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 transition-colors duration-200 ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -431,7 +490,9 @@ const [formData, setFormData] = useState({
             >
               <div className="flex items-center space-x-2">
                 <span>{tab.label}</span>
-                {tab.completed && <CheckCircle className="text-green-500" size={16} />}
+                {completedTabs.includes(tab.id) && (
+                  <CheckCircle className="text-green-500" size={16} />
+                )}
               </div>
             </button>
           ))}
@@ -440,7 +501,7 @@ const [formData, setFormData] = useState({
       
       {/* Required Fields Warning */}
       {validationErrors.length > 0 && (
-        <div className="bg-red-50  px-6 py-3 mt-5">
+        <div className="bg-red-50 border-l-4 border-red-400 px-6 py-3">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="text-red-500" size={16} />
             <span className="text-sm font-medium text-red-800">Required Fields Missing</span>
@@ -456,7 +517,7 @@ const [formData, setFormData] = useState({
 
       {/* Content */}
       <div className="px-6 py-8">
-        <div className={isFormDisabled ? 'opacity-50 pointer-events-none' : ''}>
+        <div className={`transition-opacity duration-200 ${isFormDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
           {renderTabContent()}
         </div>
       </div>
