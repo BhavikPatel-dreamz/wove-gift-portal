@@ -1,80 +1,43 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SearchBar from './SearchBar';
 import SectionHeader from './SectionHeader';
 import CardGrid from './CardGrid';
 import BrandHeader from "./BrandHeader";
 import GiftCardSelector from "./GiftCardSelector";
+import { getBrandsForClient } from "@/lib/action/brandFetch";
 
 const BrandSelector = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [favorites, setFavorites] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState(null);
+  const [premiumBrands, setPremiumBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const { success, data, message } = await getBrandsForClient();
+        if (success) {
+          setPremiumBrands(data);
+        } else {
+          setError(message);
+        }
+      } catch (err) {
+        setError("An unexpected error occurred.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBrands();
+  }, []);
 
 
-  const categories = ['All Categories', 'Fashion', 'Footwear', 'Clothing', 'Fashion & Footwear'];
-
-  const premiumBrands = [
-    {
-      id: 1,
-      name: "Versus Socks",
-      category: "Fashion",
-      description: "Market leaders in performance socks.",
-      logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='16'%3EVS%3C/text%3E%3C/svg%3E"
-    },
-    {
-      id: 2,
-      name: "Kecks",
-      category: "Fashion",
-      description: "Sports underwear for anywhere",
-      logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='12'%3EKECKS%3C/text%3E%3C/svg%3E"
-    },
-    {
-      id: 3,
-      name: "Sealand",
-      category: "Fashion",
-      description: "Shop our range of up-cycled bags",
-      logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='10'%3Esealand%3C/text%3E%3C/svg%3E"
-    },
-    {
-      id: 4,
-      name: "Reebok South Africa",
-      category: "Footwear",
-      description: "Shop the newest selection of footwear and apparel",
-      logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='8'%3EReebok%3C/text%3E%3C/svg%3E"
-    },
-    {
-      id: 5,
-      name: "FOM",
-      category: "Fashion & Footwear",
-      description: "Freedom of Movement",
-      logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='16'%3EFOM%3C/text%3E%3C/svg%3E"
-    },
-    {
-      id: 6,
-      name: "PUMA",
-      category: "Footwear",
-      description: "Welcome to PUMA, the world",
-      logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='12'%3EPUMA%3C/text%3E%3C/svg%3E"
-    },
-    {
-      id: 7,
-      name: "Huxley",
-      category: "Clothing",
-      description: "Adventuring since 2024",
-      logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='12'%3EHUXLEY%3C/text%3E%3C/svg%3E"
-    },
-    {
-      id: 8,
-      name: "Bata SA",
-      category: "Fashion & Footwear",
-      description: "Crafting stylish, comfortable, and durable footwear",
-      logo: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='red'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='14'%3EBata%3C/text%3E%3C/svg%3E"
-    }
-  ];
-
+  const categories = ['All Categories', ...new Set(premiumBrands.map(brand => brand.category))];
 
   const handleToggleFavorite = (brandId) => {
     setFavorites(prev =>
@@ -97,12 +60,21 @@ const BrandSelector = () => {
     setSelectedBrand(null);
   };
 
+
   const filteredPremiumBrands = premiumBrands.filter(brand => {
-    const matchesSearch = brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      brand.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = brand.brandName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (brand.description && brand.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = selectedCategory === 'All Categories' || brand.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  if (loading) {
+    return <p>Loading...</p>;
+  }
+
+  if (error) {
+    return <p>Error: {error}</p>;
+  }
 
   if (selectedBrand) {
     return (
@@ -110,6 +82,7 @@ const BrandSelector = () => {
         <GiftCardSelector
           onBack={handleBack}
           brand={selectedBrand}
+          voucherData={selectedBrand?.vouchers[0]}
           onSelectGiftCard={handleSelectGiftCard}
         />
       </div>

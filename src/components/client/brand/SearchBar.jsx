@@ -18,9 +18,11 @@ const SearchBar = ({ placeholder, onSearch, selectedCategory, categories, onCate
         onChange={(e) => onCategoryChange(e.target.value)}
         className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-purple-500"
       >
-        {categories.map(category => (
-          <option key={category} value={category}>{category}</option>
-        ))}
+         {categories.map((category, index) => (
+    <option key={index} value={category}>
+      {category}
+    </option>
+  ))}
       </select>
       <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
     </div>
