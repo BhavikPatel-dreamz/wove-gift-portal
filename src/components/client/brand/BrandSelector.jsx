@@ -8,6 +8,7 @@ import BrandHeader from "./BrandHeader";
 import GiftCardSelector from "./GiftCardSelector";
 import { getBrandsForClient } from "@/lib/action/brandFetch";
 import OccasionSelector from "./OccasionSelector";
+import SubCategorySelector from "./SubCategorySelector";
 
 const BrandSelector = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +20,8 @@ const BrandSelector = () => {
   const [error, setError] = useState(null);
   const [selectedAmount, setSelectedAmount] = useState(null);
   const [selectedOccasion, setSelectedOccasion] = useState(null);
-  const [selectSubOccasionCategory, setSelectSubOccationCategory] = useState(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+  const [selectedSubSubCategory, setSelectedSubSubCategory] = useState(null);
 
 
   useEffect(() => {
@@ -67,13 +69,34 @@ const BrandSelector = () => {
     setSelectedOccasion(occasion);
   };
 
+  const handleSelectSubCategory = (subCategory) => {
+    setSelectedSubCategory(subCategory);
+  };
+
+  const handleSelectSubSubCategory = (subSubCategory) => {
+    setSelectedSubSubCategory(subSubCategory);
+    // Here you might want to proceed to the next step
+    // For now, we'll just log it.
+    console.log("Final selection:", {
+      occasion: selectedOccasion,
+      subCategory: selectedSubCategory,
+      subSubCategory: subSubCategory,
+    });
+  };
+
 
   const handleBack = () => {
-    setSelectedBrand(null);
-    setSelectedBrand(null);
-    setSelectedAmount(null);
-    setSelectedOccasion(null);
-    setSelectSubOccationCategory(null);
+    if (selectedSubSubCategory) {
+      setSelectedSubSubCategory(null);
+    } else if (selectedSubCategory) {
+      setSelectedSubCategory(null);
+    } else if (selectedOccasion) {
+      setSelectedOccasion(null);
+    } else if (selectedAmount) {
+      setSelectedAmount(null);
+    } else if (selectedBrand) {
+      setSelectedBrand(null);
+    }
   };
 
 
@@ -102,27 +125,31 @@ const BrandSelector = () => {
     );
   }
 
+  if (selectedOccasion) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <SubCategorySelector
+          onBack={handleBack}
+          selectedOccasion={selectedOccasion}
+          onSelectSubCategory={handleSelectSubCategory}
+          selectedSubCategory={selectedSubCategory}
+        />
+      </div>
+    )
+  }
+
   if (selectedAmount) {
     return (
       <div className="min-h-screen bg-gray-50">
         <OccasionSelector
           onBack={handleBack}
           selectedOccasion={selectedOccasion}
-          voucherData={selectedBrand?.vouchers[0]}
           onSelectGiftCard={handleSelectOccasion}
 
         />
       </div>
     )
   }
-
-  if(selectedOccasion){
-    return (
-      <div className="min-h-screen bg-gray-50">
-        hey
-      </div>
-      )
-    }
 
   return (
     <div className="min-h-screen bg-gray-50">
