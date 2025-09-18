@@ -7,6 +7,7 @@ import CardGrid from './CardGrid';
 import BrandHeader from "./BrandHeader";
 import GiftCardSelector from "./GiftCardSelector";
 import { getBrandsForClient } from "@/lib/action/brandFetch";
+import OccasionSelector from "./OccasionSelector";
 
 const BrandSelector = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +17,8 @@ const BrandSelector = () => {
   const [premiumBrands, setPremiumBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedAmount, setSelectedAmount] = useState(null);
+
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -51,9 +54,9 @@ const BrandSelector = () => {
     setSelectedBrand(brand);
   };
 
-  const handleSelectGiftCard = (brand) => {
+  const handleSelectGiftCard = (amount) => {
     setSelectedBrand(null);
-    console.log('Brand clicked:', brand);
+    setSelectedAmount(amount);
   };
 
   const handleBack = () => {
@@ -87,6 +90,20 @@ const BrandSelector = () => {
         />
       </div>
     );
+  }
+
+  if (selectedAmount) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <OccasionSelector
+          onBack={handleBack}
+          brand={selectedBrand}
+          voucherData={selectedBrand?.vouchers[0]}
+          selectedAmount={selectedAmount}
+          setSelectedAmount={setSelectedAmount}
+        />
+      </div>
+    )
   }
 
   return (

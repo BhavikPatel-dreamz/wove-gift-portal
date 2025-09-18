@@ -3,9 +3,7 @@ import React, { useState } from "react";
 import { ArrowLeft, Gift } from "lucide-react";
 
 const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
-  const [selectedAmount, setSelectedAmount] = useState(null);
   const [customAmount, setCustomAmount] = useState(voucherData?.minAmount || 50);
-  const [isCustomSelected, setIsCustomSelected] = useState(false);
   
   // Check denomination type and get appropriate data
   const isFixedDenomination = voucherData?.denominationype === "fixed";
@@ -14,12 +12,7 @@ const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
   const maxAmount = voucherData?.maxAmount || 10000;
   const currency = voucherData?.denominationCurrency || "ZAR";
 
-  console.log("voucherData",voucherData);
-  
-
   const handleAmountClick = (amount) => {
-    setSelectedAmount(amount);
-    setIsCustomSelected(false);
     onSelectGiftCard?.(amount);
   };
 
@@ -28,8 +21,6 @@ const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
       alert(`Amount must be between ${currency} ${minAmount} and ${currency} ${maxAmount}`);
       return;
     }
-    setIsCustomSelected(true);
-    setSelectedAmount(null);
     const customVoucher = { value: customAmount, currency: currency };
     onSelectGiftCard?.(customVoucher);
   };
@@ -75,11 +66,7 @@ const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
               {presetAmounts.map((amount) => (
                 <button
                   key={amount.id}
-                  className={`relative p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-md ${
-                    selectedAmount === amount && !isCustomSelected
-                      ? "border-orange-400 bg-orange-50"
-                      : "border-orange-200 hover:border-orange-300"
-                  }`}
+                  className={`relative p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-md border-orange-400 bg-orange-50`}
                   onClick={() => handleAmountClick(amount)}
                 >
                   <div className="text-center">
@@ -138,15 +125,6 @@ const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
             </button>
           </div>
         </div>
-
-        {/* Selected Amount Display */}
-        {(selectedAmount || isCustomSelected) && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-            <p className="text-green-800 font-semibold">
-              Selected Amount: {currency} {isCustomSelected ? customAmount : selectedAmount?.value}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
