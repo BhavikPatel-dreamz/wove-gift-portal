@@ -68,7 +68,7 @@ export default async function Home() {
     brands: brands
   };
 
-  console.log("occasionsData",occasionsData);
+  console.log("brandsData",brandsData);
   
 
   const testimonialsData = {
@@ -145,8 +145,7 @@ export default async function Home() {
       { icon: <Phone className="w-5 h-5" /> }
     ]
   };
-
-
+  
 
   return (
     <div className="min-h-screen bg-white">
