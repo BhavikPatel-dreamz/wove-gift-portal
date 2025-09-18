@@ -18,6 +18,8 @@ const BrandSelector = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedAmount, setSelectedAmount] = useState(null);
+  const [selectedOccasion, setSelectedOccasion] = useState(null);
+  const [selectSubOccasionCategory, setSelectSubOccationCategory] = useState(null);
 
 
   useEffect(() => {
@@ -59,8 +61,19 @@ const BrandSelector = () => {
     setSelectedAmount(amount);
   };
 
+  const handleSelectOccasion = (occasion) => {
+    setSelectedBrand(null);
+    setSelectedAmount(null);
+    setSelectedOccasion(occasion);
+  };
+
+
   const handleBack = () => {
     setSelectedBrand(null);
+    setSelectedBrand(null);
+    setSelectedAmount(null);
+    setSelectedOccasion(null);
+    setSelectSubOccationCategory(null);
   };
 
 
@@ -71,9 +84,6 @@ const BrandSelector = () => {
     return matchesSearch && matchesCategory;
   });
 
-  if (loading) {
-    return <p>Loading...</p>;
-  }
 
   if (error) {
     return <p>Error: {error}</p>;
@@ -97,14 +107,22 @@ const BrandSelector = () => {
       <div className="min-h-screen bg-gray-50">
         <OccasionSelector
           onBack={handleBack}
-          brand={selectedBrand}
+          selectedOccasion={selectedOccasion}
           voucherData={selectedBrand?.vouchers[0]}
-          selectedAmount={selectedAmount}
-          setSelectedAmount={setSelectedAmount}
+          onSelectGiftCard={handleSelectOccasion}
+
         />
       </div>
     )
   }
+
+  if(selectedOccasion){
+    return (
+      <div className="min-h-screen bg-gray-50">
+        hey
+      </div>
+      )
+    }
 
   return (
     <div className="min-h-screen bg-gray-50">
