@@ -9,9 +9,12 @@ import BrandsSection from '../../components/client/home/BrandsSection';
 import TestimonialsSection from '../../components/client/home/TestimonialsSection';
 import CTASection from '../../components/client/home/CTASection';
 import Footer from '../../components/client/home/Footer';
+import { getBrands, getOccasions } from '../../lib/action/data';
 
 
 export default async function Home() {
+  const brands = await getBrands();
+  const occasions = await getOccasions();
  const headerData = {
     logo: "Wave Gifts",
     navigation: ["Home", "About", "FAQ", "Send Gift Card", "Brands"],
@@ -56,41 +59,17 @@ export default async function Home() {
   const occasionsData = {
     title: "Perfect for Every Occasion",
     subtitle: "Find the right moment to spread joy",
-    occasions: [
-      {
-        title: "Birthdays",
-        description: "Celebrate your friends and family with the perfect birthday gift.",
-        bgColor: "bg-pink-100",
-        textColor: "text-pink-800",
-        buttonColor: "bg-pink-500"
-      },
-      {
-        title: "Anniversaries",
-        description: "Celebrate your favorite hospital moments with something special.",
-        bgColor: "bg-purple-100",
-        textColor: "text-purple-800",
-        buttonColor: "bg-purple-500"
-      },
-      {
-        title: "Thank You",
-        description: "Show your appreciation with meaningful gifts that make a difference.",
-        bgColor: "bg-green-100",
-        textColor: "text-green-800",
-        buttonColor: "bg-green-500"
-      }
-    ]
+    occasions: occasions
   };
 
   const brandsData = {
     title: "Featured Brands You'll Love",
     subtitle: "Curated partners, easy for you to give joy",
-    brands: [
-      { name: "TOM" },
-      { name: "Baskin" },
-      { name: "LV" },
-      { name: "MUGLER" }
-    ]
+    brands: brands
   };
+
+  console.log("occasionsData",occasionsData);
+  
 
   const testimonialsData = {
     title: "Loved by Gift Senders",
@@ -166,6 +145,8 @@ export default async function Home() {
       { icon: <Phone className="w-5 h-5" /> }
     ]
   };
+
+
 
   return (
     <div className="min-h-screen bg-white">
