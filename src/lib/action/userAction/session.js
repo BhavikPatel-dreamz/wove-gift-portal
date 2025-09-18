@@ -1,4 +1,5 @@
 // src/lib/session.js
+"use server"
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import prisma from '../../db'

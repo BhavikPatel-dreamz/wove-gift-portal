@@ -11,6 +11,7 @@ import Button from '../forms/Button';
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useSession } from '@/contexts/SessionContext'
+import { destroySession } from '../../lib/action/userAction/session'
 
 const Header = ({ onMenuClick }) => {
   const [loading, setLoading] = useState(false)
@@ -21,7 +22,7 @@ const Header = ({ onMenuClick }) => {
     setLoading(true)
 
     try {
-      await logout() // Use the logout from SessionContext
+      await destroySession() // Use the logout from SessionContext
       router.push('/')
     } catch (error) {
       console.error('Logout error:', error)

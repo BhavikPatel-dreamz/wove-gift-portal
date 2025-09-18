@@ -44,11 +44,7 @@ export default function AuthForm({ type }) {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg">
-      <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">
-        {type === 'login' ? 'Sign In' : 'Create Account'}
-      </h2>
-
+    <div className="max-w-md mx-auto bg-white p-4 rounded-2xl shadow-lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         {type === 'signup' && (
           <>
