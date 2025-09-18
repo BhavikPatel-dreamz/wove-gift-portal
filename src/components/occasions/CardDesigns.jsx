@@ -7,7 +7,7 @@ import { ArrowLeft, Edit3, Plus, MoreVertical, Trash2, Copy, Loader2, Search, Fi
 import CreateNewCard from "./CreateNewCard";
 import { getOccasionCategories, updateOccasionCategory, deleteOccasionCategory, getOccasionCategoryById } from "../../lib/action/occasionAction";
 
-const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
+const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCardCountChange }) => {
   const [occasion, setOccasion] = useState(initialOccasion);
   const [cards, setCards] = useState([]);
   const [isCreatingCard, setIsCreatingCard] = useState(false);
@@ -89,6 +89,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
       updatedAt: new Date().toISOString()
     };
     setCards(prevCards => [...prevCards, newCard]);
+    onCardCountChange();
   };
 
   const handleUpdateCard = (updatedCardData) => {
@@ -105,6 +106,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
     ));
     setEditingCardId(null);
     setCardToEdit(null);
+    onCardCountChange();
   };
 
   const handleDeleteCard = async (cardId) => {
@@ -114,6 +116,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
       if (result.success) {
         setCards(cards.filter(card => card.id !== cardId));
         console.log('Card deleted successfully');
+        onCardCountChange();
       } else {
         console.error('Failed to delete card:', result.message);
         setError(result.message || 'Failed to delete card');
@@ -134,6 +137,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
         card.id === cardId ? { ...card, active: !currentStatus } : card
       ));
       console.log('Card active status updated successfully');
+      onCardCountChange();
     } else {
       console.error('Failed to update card active status:', result.message);
       setError(result.message || 'Failed to update card status');

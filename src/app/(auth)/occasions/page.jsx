@@ -218,6 +218,10 @@ const OccasionsManager = () => {
     setSelectedOccasion(null);
   };
 
+  const handleCardCountChange = () => {
+    fetchOccasions(false); // Re-fetch occasions to update card counts
+  };
+
   if (loading && occasions.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -235,6 +239,7 @@ const OccasionsManager = () => {
         occasion={selectedOccasion}
         onBack={handleBackToOccasions}
         onEditOccasion={handleEditOccasion}
+        onCardCountChange={handleCardCountChange}
       />
     );
   }

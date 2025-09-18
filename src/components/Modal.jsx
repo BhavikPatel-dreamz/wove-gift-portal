@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 const Modal = ({ isOpen, onClose, children }) => {
@@ -35,7 +36,7 @@ const Modal = ({ isOpen, onClose, children }) => {
           onClick={onClose}
           className="absolute top-0 right-0 mt-4 mr-4 text-gray-500 hover:text-gray-800"
         >
-          &times;
+        <X className="w-4 h-4 text-gray-600 group-hover:text-gray-900 transition-colors" />
         </button>
         {children}
       </div>
