@@ -8,7 +8,7 @@ const ImageUpload = ({
   className = '',
   onFileChange,
   currentImage,
-  acceptedFormats = 'PNG, JPG, GIF up to 2MB',
+  acceptedFormats = 'SVG,PNG, JPG, GIF up to 2MB',
   helperText = 'Your image will be resized to 800x600px.',
   ...props
 }) => {
@@ -95,7 +95,7 @@ const ImageUpload = ({
             ref={fileInputRef}
             onChange={handleFileChange}
             className="hidden"
-            accept="image/png, image/jpeg, image/gif, image/webp"
+            accept="image/svg+xml, image/png, image/jpeg, image/gif, image/webp"
             {...props}
           />
         </div>
