@@ -7,6 +7,7 @@ import Toggle from '../forms/Toggle';
 import Button from '../forms/Button';
 import Card from '../forms/Card';
 import { addOccasionCategory, updateOccasionCategory } from '../../lib/action/occasionAction';
+import toast from 'react-hot-toast';
 
 export default function CreateNewCard({ occasion, onBack, onSave, initialCardData = null }) {
   const isEditing = Boolean(initialCardData);
@@ -64,21 +65,21 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
       data.append('image', formData.imageUrl);
     }
 
-    try {
+     try {
       const result = isEditing
         ? await updateOccasionCategory(data)
         : await addOccasionCategory(data);
 
       if (result.success) {
-        console.log(`Occasion category ${isEditing ? 'updated' : 'created'} successfully:`, result.data);
+        toast.success(`Occasion category ${isEditing ? 'updated' : 'created'} successfully!`);
         onSave(result.data);
         onBack();
       } else {
-        console.error(`Failed to ${isEditing ? 'update' : 'create'} occasion category:`, result.message);
-        // Optionally, display an error message to the user
+        toast.error(`Failed to ${isEditing ? 'update' : 'create'} occasion category: ${result.message}`);
       }
     } catch (error) {
       console.error('Error saving card:', error);
+      toast.error('An unexpected error occurred while saving the card.');
     }
   };
 
