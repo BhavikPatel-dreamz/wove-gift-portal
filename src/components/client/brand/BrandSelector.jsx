@@ -5,14 +5,17 @@ import SearchBar from './SearchBar';
 import SectionHeader from './SectionHeader';
 import CardGrid from './CardGrid';
 import BrandHeader from "./BrandHeader";
+import GiftCardSelector from "./GiftCardSelector";
 
 const BrandSelector = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [favorites, setFavorites] = useState([]);
+  const [selectedBrand, setSelectedBrand] = useState(null);
+
 
   const categories = ['All Categories', 'Fashion', 'Footwear', 'Clothing', 'Fashion & Footwear'];
-  
+
   const premiumBrands = [
     {
       id: 1,
@@ -72,43 +75,55 @@ const BrandSelector = () => {
     }
   ];
 
-  const user = {
-    name: "Alice Osborn",
-    description: "Amet id cupiditate",
-    badge: "Id cum molestiae re"
-  };
 
   const handleToggleFavorite = (brandId) => {
-    setFavorites(prev => 
-      prev.includes(brandId) 
+    setFavorites(prev =>
+      prev.includes(brandId)
         ? prev.filter(id => id !== brandId)
         : [...prev, brandId]
     );
   };
 
   const handleBrandClick = (brand) => {
+    setSelectedBrand(brand);
+  };
+
+  const handleSelectGiftCard = (brand) => {
+    setSelectedBrand(null);
     console.log('Brand clicked:', brand);
   };
 
   const handleBack = () => {
-    console.log('Back clicked');
+    setSelectedBrand(null);
   };
 
   const filteredPremiumBrands = premiumBrands.filter(brand => {
     const matchesSearch = brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         brand.description.toLowerCase().includes(searchTerm.toLowerCase());
+      brand.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'All Categories' || brand.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
+  if (selectedBrand) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <GiftCardSelector
+          onBack={handleBack}
+          brand={selectedBrand}
+          onSelectGiftCard={handleSelectGiftCard}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <BrandHeader 
+      <BrandHeader
         title="Pick Your Perfect Brand"
         subtitle="Choose from our curated brands to make their day unforgettable 👍"
         onBack={handleBack}
       />
-      
+
       <SearchBar
         placeholder="Search for your perfect brand..."
         onSearch={setSearchTerm}
