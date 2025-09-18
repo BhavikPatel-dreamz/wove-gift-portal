@@ -66,7 +66,7 @@ const ImageUpload = ({
       
       {imagePreview ? (
         <div className="relative group">
-          <img src={imagePreview} alt="Preview" className="w-full rounded-lg border border-gray-300" />
+          <img src={imagePreview} alt="Preview" className="w-100 h-100 object-coverrounded-lg border border-gray-300" />
           <div className="absolute top-2 right-2">
             <Button
               variant="danger"

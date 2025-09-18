@@ -1,41 +1,61 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "../forms/Button";
 import Badge from "../forms/Badge";
 import Card from "../forms/Card";
-import { ArrowLeft, Edit3, Plus, MoreVertical, Trash2, Copy } from "lucide-react";
+import { ArrowLeft, Edit3, Plus, MoreVertical, Trash2, Copy, Loader2 } from "lucide-react";
 import CreateNewCard from "./CreateNewCard";
-
-const initialCards = [
-  {
-    id: 1,
-    title: "Classic Birthday",
-    description: "A timeless design for all ages.",
-    preview: "🎂",
-    imageUrl: "/placeholders/card1.png",
-    active: true,
-  },
-  {
-    id: 2,
-    title: "Modern Celebration",
-    description: "A sleek and stylish design.",
-    preview: "🎉",
-    imageUrl: "/placeholders/card2.png",
-    active: true,
-  },
-  {
-    id: 3,
-    title: "Floral Thanks",
-    description: "A beautiful way to show gratitude.",
-    preview: "🙏",
-    imageUrl: "/placeholders/card3.png",
-    active: false,
-  },
-];
+import { getOccasionCategories } from "../../lib/action/occasionAction";
 
 const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
   const [occasion, setOccasion] = useState(initialOccasion);
-  const [cards, setCards] = useState([]); // Initially empty
+  const [cards, setCards] = useState([]);
   const [isCreatingCard, setIsCreatingCard] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch occasion categories when component mounts
+  useEffect(() => {
+    const fetchCards = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const result = await getOccasionCategories({
+          occasionId: occasion.id,
+          isActive: undefined, // Get both active and inactive
+          page: 1,
+          limit: 100 // Adjust as needed
+        });
+
+        if (result.success) {
+          // Transform the categories to match your card structure
+          const transformedCards = result.data.map(category => ({
+            id: category.id,
+            title: category.name,
+            description: category.description || `For ${occasion.name}`,
+            preview: category.emoji,
+            imageUrl: category.image,
+            active: category.isActive,
+            createdAt: category.createdAt,
+            updatedAt: category.updatedAt
+          }));
+          
+          setCards(transformedCards);
+        } else {
+          setError(result.message || 'Failed to fetch card designs');
+        }
+      } catch (err) {
+        console.error('Error fetching cards:', err);
+        setError('Failed to load card designs. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (occasion.id) {
+      fetchCards();
+    }
+  }, [occasion.id]);
 
   const handleAddCard = (newCard) => {
     const card = { ...newCard, id: Date.now() };
@@ -43,13 +63,16 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
   };
 
   const handleSaveNewCard = (newCardData) => {
+    // Transform the new card data to match your structure
     const newCard = {
-        id: Date.now(),
-        title: newCardData.cardName,
-        description: `For ${occasion.name}`,
-        preview: newCardData.previewEmoji,
-        imageUrl: newCardData.imageUrl,
+        id: newCardData.id, // This should come from the server response
+        title: newCardData.name,
+        description: newCardData.description || `For ${occasion.name}`,
+        preview: newCardData.emoji,
+        imageUrl: newCardData.image,
         active: newCardData.isActive,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
     };
     setCards([...cards, newCard]);
   };
@@ -97,17 +120,10 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
                 variant="outline" 
                 onClick={() => setIsCreatingCard(true)}
                 icon={Plus}
+                disabled={loading}
               >
                 Add Card
               </Button>
-            <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={onEditOccasion}
-                className="text-gray-600"
-            >
-                <Edit3 className="h-5 w-5"/>
-            </Button>
           </div>
         </div>
 
@@ -115,11 +131,34 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
-              Card Designs ({cards.length})
+              Card Designs ({loading ? '...' : cards.length})
             </h2>
           </div>
           
-          {cards.length === 0 ? (
+          {loading ? (
+            <div className="text-center px-6 py-24">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-indigo-600" />
+              <p className="text-gray-600">Loading card designs...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center px-6 py-24">
+              <div className="inline-block bg-red-100 p-5 rounded-full mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="15" y1="9" x2="9" y2="15"/>
+                  <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Error loading card designs</h3>
+              <p className="text-gray-600 mb-6">{error}</p>
+              <Button 
+                onClick={() => window.location.reload()}
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : cards.length === 0 ? (
             <div className="text-center px-6 py-24">
                 <div className="inline-block bg-indigo-100 p-5 rounded-full mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600"><path d="M20 12V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"/><path d="M18 4V2"/><path d="M10 4V2"/><path d="M18 18v-6"/><path d="M15 15h6"/></svg>
@@ -138,17 +177,29 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
             </div>
           ) : (
             <div className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {cards.map((card) => (
                   <Card key={card.id} className="group overflow-hidden">
                     <div className="aspect-[3/4] bg-gray-100 relative">
                         {card.imageUrl ? (
-                            <img src={card.imageUrl} alt={card.title} className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-3xl bg-indigo-50 text-indigo-300">{card.preview}</div>
-                        )}
-                        <div className="absolute top-2 right-2 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Badge variant={card.active ? 'success' : 'default'}>{card.active ? 'Active' : 'Inactive'}</Badge>
+                            <img 
+                              src={card.imageUrl} 
+                              alt={card.title} 
+                              className="w-full h-full object-cover" 
+                              onError={(e) => {
+                                // Fallback to emoji if image fails to load
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                        ) : null}
+                        <div className={`w-full h-full flex items-center justify-center text-3xl bg-indigo-50 text-indigo-600 ${card.imageUrl ? 'hidden' : 'flex'}`}>
+                          {card.preview}
+                        </div>
+                        <div className="absolute top-2 right-2 flex items-center space-x-1">
+                            <Badge variant={card.active ? 'success' : 'default'}>
+                              {card.active ? 'Active' : 'Inactive'}
+                            </Badge>
                         </div>
                     </div>
                     <div className="p-4 border-t border-gray-200">

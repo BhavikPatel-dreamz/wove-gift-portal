@@ -6,6 +6,7 @@ import EmojiPicker from './EmojiPicker';
 import Toggle from '../forms/Toggle';
 import Button from '../forms/Button';
 import Card from '../forms/Card';
+import { addOccasionCategory } from '../../lib/action/occasionAction';
 
 export default function CreateNewCard({ occasion, onBack, onSave }) {
   const [formData, setFormData] = useState({
@@ -14,19 +15,40 @@ export default function CreateNewCard({ occasion, onBack, onSave }) {
     isActive: true,
     previewEmoji: '🎁',
     imageUrl: null,
+    imageFile: null, // To store the actual File object
   });
 
-  const handleSaveCard = () => {
+  const handleSaveCard = async () => {
     console.log('Saving card...', formData);
-    onSave(formData); // This would be a real save function
-    onBack();
+
+    const data = new FormData();
+    data.append('name', formData.cardName);
+    data.append('description', formData.internalDescription);
+    data.append('emoji', formData.previewEmoji);
+    data.append('isActive', formData.isActive);
+    data.append('occasionId', occasion.id);
+
+    if (formData.imageFile) {
+      data.append('image', formData.imageFile);
+    }
+
+    const result = await addOccasionCategory(data);
+
+    if (result.success) {
+      console.log('Occasion category created successfully:', result.data);
+      onSave(result.data); // Pass the newly created category data
+      onBack();
+    } else {
+      console.error('Failed to create occasion category:', result.message);
+      // Optionally, display an error message to the user
+    }
   };
 
   const handleFileSelect = (file) => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, imageUrl: reader.result }));
+        setFormData(prev => ({ ...prev, imageUrl: reader.result, imageFile: file }));
       };
       reader.readAsDataURL(file);
     }
@@ -73,7 +95,7 @@ export default function CreateNewCard({ occasion, onBack, onSave }) {
                     <ImageUpload
                         label="Card Design Image"
                         required={true}
-                        onFileSelect={handleFileSelect}
+                        onFileChange={handleFileSelect}
                     />
 
                     <EmojiPicker

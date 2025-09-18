@@ -478,9 +478,9 @@ export async function getOccasionById(id) {
 // OCCASION CATEGORY ACTIONS
 // ============================================================================
 
-export async function addOccasionCategory(req) {
+export async function addOccasionCategory(formData) {
     try {
-        const formData = await req.formData();
+        // formData is already a FormData object, no need to await req.formData()
         
         const parsedData = parseFormData(formData, {
             name: (val) => val?.toString().trim() || '',
@@ -744,20 +744,43 @@ export async function getOccasionCategories(params = {}) {
 
         const skip = (page - 1) * limit;
 
+        // Remove the problematic include for now
         const [categories, totalItems] = await Promise.all([
             prisma.occasionCategory.findMany({
                 where,
                 orderBy: { [sortBy]: sortOrder },
                 skip,
                 take: limit,
-                include: {
-                    occasion: {
-                        select: { name: true, emoji: true }
-                    }
-                }
+                // Remove the include section that's causing the error
+                // include: {
+                //     occasion: {
+                //         select: { name: true, emoji: true }
+                //     }
+                // }
             }),
             prisma.occasionCategory.count({ where })
         ]);
+
+        // If you need occasion data, fetch it separately
+        let categoriesWithOccasion = categories;
+        if (categories.length > 0 && !occasionId) {
+            // Only fetch occasion data if we're not filtering by occasionId already
+            const occasionIds = [...new Set(categories.map(cat => cat.occasionId))];
+            const occasions = await prisma.occasion.findMany({
+                where: { id: { in: occasionIds } },
+                select: { id: true, name: true, emoji: true }
+            });
+            
+            const occasionMap = occasions.reduce((acc, occasion) => {
+                acc[occasion.id] = occasion;
+                return acc;
+            }, {});
+            
+            categoriesWithOccasion = categories.map(category => ({
+                ...category,
+                occasion: occasionMap[category.occasionId] || null
+            }));
+        }
 
         const totalPages = Math.ceil(totalItems / limit);
 
@@ -776,7 +799,7 @@ export async function getOccasionCategories(params = {}) {
             true,
             "Occasion categories fetched successfully",
             200,
-            categories,
+            categoriesWithOccasion,
             { pagination }
         );
 
