@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import Button from "../forms/Button";
 import Badge from "../forms/Badge";
 import Card from "../forms/Card";
+import Toggle from "../forms/Toggle";
 import { ArrowLeft, Edit3, Plus, MoreVertical, Trash2, Copy, Loader2 } from "lucide-react";
 import CreateNewCard from "./CreateNewCard";
-import { getOccasionCategories } from "../../lib/action/occasionAction";
+import { getOccasionCategories, updateOccasionCategory, deleteOccasionCategory, getOccasionCategoryById } from "../../lib/action/occasionAction";
 
 const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
   const [occasion, setOccasion] = useState(initialOccasion);
@@ -12,8 +13,11 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [editingCardId, setEditingCardId] = useState(null);
+  const [cardToEdit, setCardToEdit] = useState(null);
 
-  // Fetch occasion categories when component mounts
+  // Fetch occasion categories when component mounts or occasion.id changes
   useEffect(() => {
     const fetchCards = async () => {
       try {
@@ -22,13 +26,12 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
         
         const result = await getOccasionCategories({
           occasionId: occasion.id,
-          isActive: undefined, // Get both active and inactive
+          isActive: undefined,
           page: 1,
-          limit: 100 // Adjust as needed
+          limit: 100
         });
 
         if (result.success) {
-          // Transform the categories to match your card structure
           const transformedCards = result.data.map(category => ({
             id: category.id,
             title: category.name,
@@ -57,15 +60,9 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
     }
   }, [occasion.id]);
 
-  const handleAddCard = (newCard) => {
-    const card = { ...newCard, id: Date.now() };
-    setCards([...cards, card]);
-  };
-
   const handleSaveNewCard = (newCardData) => {
-    // Transform the new card data to match your structure
     const newCard = {
-        id: newCardData.id, // This should come from the server response
+        id: newCardData.id,
         title: newCardData.name,
         description: newCardData.description || `For ${occasion.name}`,
         preview: newCardData.emoji,
@@ -74,11 +71,103 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };
-    setCards([...cards, newCard]);
+    setCards(prevCards => [...prevCards, newCard]);
+  };
+
+  const handleUpdateCard = (updatedCardData) => {
+    setCards(prevCards => prevCards.map(card => 
+      card.id === updatedCardData.id ? {
+        ...card,
+        title: updatedCardData.name,
+        description: updatedCardData.description || `For ${occasion.name}`,
+        preview: updatedCardData.emoji,
+        imageUrl: updatedCardData.image,
+        active: updatedCardData.isActive,
+        updatedAt: new Date().toISOString()
+      } : card
+    ));
+    setEditingCardId(null);
+    setCardToEdit(null);
+  };
+
+  const handleDeleteCard = async (cardId) => {
+    if (window.confirm('Are you sure you want to delete this card design?')) {
+      setLoading(true);
+      const result = await deleteOccasionCategory(cardId);
+      if (result.success) {
+        setCards(cards.filter(card => card.id !== cardId));
+        console.log('Card deleted successfully');
+      } else {
+        console.error('Failed to delete card:', result.message);
+        setError(result.message || 'Failed to delete card');
+      }
+      setLoading(false);
+      setOpenDropdown(null);
+    }
+  };
+
+  const handleToggleCardActive = async (cardId, currentStatus) => {
+    const formData = new FormData();
+    formData.append('id', cardId);
+    formData.append('isActive', !currentStatus);
+
+    const result = await updateOccasionCategory(formData);
+    if (result.success) {
+      setCards(cards.map(card => 
+        card.id === cardId ? { ...card, active: !currentStatus } : card
+      ));
+      console.log('Card active status updated successfully');
+    } else {
+      console.error('Failed to update card active status:', result.message);
+      setError(result.message || 'Failed to update card status');
+    }
+  };
+
+  const handleEditCard = async (cardId) => {
+    try {
+      setLoading(true);
+      const result = await getOccasionCategoryById(cardId);
+      
+      if (result.success) {
+        const category = result.data;
+        const cardData = {
+          id: category.id,
+          title: category.name,
+          description: category.description,
+          preview: category.emoji,
+          imageUrl: category.image,
+          active: category.isActive,
+        };
+        
+        console.log('Setting card to edit:', cardData); // Debug log
+        setCardToEdit(cardData);
+        setEditingCardId(cardId);
+        setOpenDropdown(null);
+      } else {
+        console.error('Failed to fetch card for editing:', result.message);
+        setError(result.message || 'Failed to load card for editing');
+      }
+    } catch (err) {
+      console.error('Error in handleEditCard:', err);
+      setError('Failed to load card for editing');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackFromCreateEdit = () => {
+    setIsCreatingCard(false);
+    setEditingCardId(null);
+    setCardToEdit(null);
   };
 
   if (isCreatingCard) {
-    return <CreateNewCard occasion={occasion} onBack={() => setIsCreatingCard(false)} onSave={handleSaveNewCard} />;
+    return <CreateNewCard occasion={occasion} onBack={handleBackFromCreateEdit} onSave={handleSaveNewCard} />;
+  }
+
+  if (editingCardId && cardToEdit) {
+    console.log('Rendering edit mode with cardToEdit:', cardToEdit); // Debug log
+    return <CreateNewCard occasion={occasion} onBack={handleBackFromCreateEdit} onSave={handleUpdateCard} initialCardData={cardToEdit} />;
   }
 
   return (
@@ -179,7 +268,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
             <div className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {cards.map((card) => (
-                  <Card key={card.id} className="group overflow-hidden">
+                  <Card key={card.id} className="group overflow-hidden relative">
                     <div className="aspect-[3/4] bg-gray-100 relative">
                         {card.imageUrl ? (
                             <img 
@@ -187,7 +276,6 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
                               alt={card.title} 
                               className="w-full h-full object-cover" 
                               onError={(e) => {
-                                // Fallback to emoji if image fails to load
                                 e.target.style.display = 'none';
                                 e.target.nextSibling.style.display = 'flex';
                               }}
@@ -197,9 +285,37 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion }) => {
                           {card.preview}
                         </div>
                         <div className="absolute top-2 right-2 flex items-center space-x-1">
-                            <Badge variant={card.active ? 'success' : 'default'}>
-                              {card.active ? 'Active' : 'Inactive'}
-                            </Badge>
+                            <Toggle
+                                checked={card.active}
+                                onChange={() => handleToggleCardActive(card.id, card.active)}
+                                small
+                            />
+                            <div className="relative">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setOpenDropdown(openDropdown === card.id ? null : card.id)}
+                                    className="text-gray-600 hover:bg-gray-200"
+                                >
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                                {openDropdown === card.id && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                                        <button
+                                            onClick={() => handleEditCard(card.id)}
+                                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                        >
+                                            <Edit3 className="mr-2 h-4 w-4" /> Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteCard(card.id)}
+                                            className="flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-100 w-full text-left"
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="p-4 border-t border-gray-200">

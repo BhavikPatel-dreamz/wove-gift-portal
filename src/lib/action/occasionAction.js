@@ -550,9 +550,9 @@ export async function addOccasionCategory(formData) {
     }
 }
 
-export async function updateOccasionCategory(req) {
+export async function updateOccasionCategory(formData) {
     try {
-        const formData = await req.formData();
+        // formData is already a FormData object, no need to await req.formData()
         
         const parsedData = parseFormData(formData, {
             id: (val) => val?.toString().trim() || '',
@@ -823,11 +823,7 @@ export async function getOccasionCategoryById(id) {
 
         const category = await prisma.occasionCategory.findUnique({
             where: { id: validId },
-            include: {
-                occasion: {
-                    select: { name: true, emoji: true }
-                }
-            }
+            // Remove the problematic include section
         });
 
         if (!category) {
@@ -838,11 +834,25 @@ export async function getOccasionCategoryById(id) {
             );
         }
 
+        // If you need occasion data, fetch it separately
+        let categoryWithOccasion = category;
+        if (category.occasionId) {
+            const occasion = await prisma.occasion.findUnique({
+                where: { id: category.occasionId },
+                select: { id: true, name: true, emoji: true }
+            });
+            
+            categoryWithOccasion = {
+                ...category,
+                occasion: occasion || null
+            };
+        }
+
         return createStandardResponse(
             true,
             "Occasion category fetched successfully",
             200,
-            category
+            categoryWithOccasion
         );
 
     } catch (error) {
