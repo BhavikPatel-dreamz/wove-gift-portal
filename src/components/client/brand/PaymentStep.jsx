@@ -3,10 +3,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Shield, Check, CreditCard, Smartphone, Wallet, Building, Gift, Lock, Star } from "lucide-react";
 import { goBack, setSelectedPaymentMethod } from "../../../redux/giftFlowSlice";
 import ProgressIndicator from "./ProgressIndicator";
+import { createOrder } from "@/lib/action/orderAction";
+import toast, { Toaster } from 'react-hot-toast';
 
 const PaymentStep = () => {
   const dispatch = useDispatch();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [order, setOrder] = useState(null);
   
   const {
     selectedBrand,
@@ -108,28 +112,23 @@ const PaymentStep = () => {
   const handlePayment = async () => {
     if (!selectedPaymentMethod) return;
 
-    console.log("selectedBrand", selectedBrand);
-    console.log("selectedAmount", selectedAmount);
-    console.log("personalMessage", personalMessage);
-    console.log("deliveryMethod", deliveryMethod);
-    console.log("deliveryDetails", deliveryDetails);
-    console.log("selectedOccasion", selectedOccasion);
-    console.log("selectedSubCategory", selectedSubCategory);
-    console.log("selectedTiming", selectedTiming);
-    
-
-    console.log("selectedPaymentMethod", selectedPaymentMethod);
-    
     setIsProcessing(true);
-    
-    // Simulate payment processing
+    setError(null);
+    const toastId = toast.loading('Processing your order...');
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      // Here you would integrate with actual payment processors
-      console.log('Payment processed successfully',alldata);
-      setIsProcessing(false);
+      const result = await createOrder(alldata);
+      if (result.error) {
+        setError(result.error);
+        toast.error(result.error, { id: toastId });
+      } else {
+        setOrder(result.order);
+        toast.success('Order placed successfully!', { id: toastId });
+      }
     } catch (error) {
-      console.error('Payment failed:', error);
+      setError("An unexpected error occurred.");
+      toast.error('An unexpected error occurred.', { id: toastId });
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -142,8 +141,44 @@ const PaymentStep = () => {
     { name: 'Secure Payment', completed: false, current: true }
   ];
 
+  if (order) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50 p-4 md:p-6 flex items-center justify-center">
+        <Toaster />
+        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-12 h-12 text-green-500" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">Payment Successful!</h1>
+          <p className="text-gray-600 mb-6">Your order has been placed successfully.</p>
+          <div className="bg-gray-50 rounded-xl p-6 space-y-4 text-left">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Order Number:</span>
+              <span className="font-semibold text-gray-800">{order.orderNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Gift Code:</span>
+              <span className="font-semibold text-gray-800">{order.giftCode}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Amount:</span>
+              <span className="font-semibold text-gray-800">{order.currency} {order.totalAmount}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => window.location.reload()} // Or redirect to a different page
+            className="mt-8 w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200"
+          >
+            Send Another Gift
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 p-4 md:p-6">
+      <Toaster />
       <div className="max-w-7xl mx-auto">
         <ProgressIndicator />
         
@@ -366,6 +401,13 @@ const PaymentStep = () => {
               </div>
             </div>
 
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-relative" role="alert">
+                <strong className="font-bold">Error:</strong>
+                <span className="block sm:inline"> {error}</span>
+              </div>
+            )}
+
             {/* Payment Button */}
             <button
               onClick={handlePayment}
@@ -418,3 +460,4 @@ const PaymentStep = () => {
 };
 
 export default PaymentStep;
+

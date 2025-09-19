@@ -200,25 +200,30 @@ model ReceiverDetail {
 }
 
 model Order {
-  id               String               @id @default(cuid())
-  brandId          String
-  occasionId       String
-  amount           Int
-  message          String
-  isActive         Boolean              @default(false)
-  sendType         SendStatus           @default(sendImmediately)
-  deliveryMethod   deliveryMethodStatus @default(whatsup)
-  receiverDetails  Json
-  senderDetails         String
-  giftCode         String
-  orderNumber      String
-  paymentMethod    paymentStatus        @default(COD)
-  totalAmount      Int?                 @default(0)
-  redemptionStatus RedemptionStatus     @default(Issued)
-  timeStemp        DateTime
-  occasions        Occasion             @relation(fields: [occasionId], references: [id], onDelete: Cascade)
-  brands           Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  user             User                 @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  id                 String               @id @default(cuid())
+  brandId            String
+  occasionId         String
+  subCategoryId      String?
+  subSubCategoryId   String?
+  amount             Int
+  currency           String?
+  message            String
+  isActive           Boolean              @default(false)
+  sendType           SendStatus           @default(sendImmediately)
+  deliveryMethod     deliveryMethodStatus @default(whatsup)
+  senderDetails      String
+  giftCode           String
+  orderNumber        String
+  paymentMethod      paymentStatus        @default(COD)
+  totalAmount        Int?                 @default(0)
+  redemptionStatus   RedemptionStatus     @default(Issued)
+  timestamp          DateTime             @default(now())
+  userId             String
+  receiverDetailId   String
+  occasions          Occasion             @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  brands             Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receiverDetail     ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
 }
 
 model Settlements {
