@@ -53,7 +53,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
     let amountDisplay = 'ZAR 100.00';
     if (formData.denominationType === 'fixed' && formData.denominations?.length > 0) {
       const firstDenom = formData.denominations[0];
-      amountDisplay = `${firstDenom.currency} ${firstDenom.value.toFixed(2)}`;
+      amountDisplay = `${firstDenom.currency} ${firstDenom?.value?.toFixed(2)}`;
     } else if (formData.denominationType === 'amount' && formData.minAmount && formData.maxAmount) {
       amountDisplay = `${formData.minAmount.toFixed(2)} - ${formData.maxAmount.toFixed(2)}`;
     }

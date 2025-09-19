@@ -379,13 +379,6 @@ const BrandEdit = () => {
     }
     if (!formData.payoutMethod?.trim()) errors.push('Payout Method');
 
-
-    // Contact validations
-    const primaryContact = formData.contacts.find(c => c.isPrimary);
-    if (!primaryContact?.name?.trim()) errors.push('Primary Contact Name');
-    if (!primaryContact?.email?.trim()) errors.push('Primary Contact Email');
-    if (!primaryContact?.role?.trim()) errors.push('Primary Contact Role');
-
     // Email validation for remittance email if provided
     if (formData.remittanceEmail && !isValidEmail(formData.remittanceEmail)) {
       errors.push('Valid Remittance Email');
