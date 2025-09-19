@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, MessageCircle, Mail, Download, Info, Check } from "lucide-react";
@@ -60,7 +61,7 @@ const DeliveryMethodStep = () => {
     'Double-check the number to ensure your gift reaches the right recipient',
     'Include the country code in your numbers (like +91 for India)',
     'You will receive a preview message before sending',
-    'The gift code will be sent directly to the recipient\'s WhatsApp'
+    "The gift code will be sent directly to the recipient's WhatsApp"
   ];
 
   const handleMethodChange = (method) => {
@@ -101,8 +102,7 @@ const DeliveryMethodStep = () => {
     <div
       key={method.id}
       onClick={() => handleMethodChange(method.id)}
-      className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-        selectedMethod === method.id
+      className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-200 ${selectedMethod === method.id
           ? 'border-blue-500 bg-blue-50'
           : 'border-gray-200 bg-white hover:border-gray-300'
       }`}
@@ -237,9 +237,8 @@ const DeliveryMethodStep = () => {
           </div>
           <button
             onClick={() => handleInputChange('previewMessage', !formData.previewMessage)}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-              formData.previewMessage 
-                ? 'bg-blue-500 text-white' 
+            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${formData.previewMessage 
+                ? 'bg-blue-500 text-white'
                 : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
             }`}
           >
@@ -339,7 +338,14 @@ const DeliveryMethodStep = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-50 p-6">
       <div className="max-w-4xl mx-auto">
-          <ProgressIndicator />
+        <ProgressIndicator />
+        <button
+          onClick={handleBack}
+          className="flex items-center text-pink-500 hover:text-pink-600 transition-colors mb-8"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Previous
+        </button>
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
@@ -379,19 +385,10 @@ const DeliveryMethodStep = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={handleBack}
-            className="flex items-center text-pink-500 hover:text-pink-600 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Previous
-          </button>
-          
-          <div className="text-sm text-gray-500">
+        <div className="flex items-center justify-end">
+          <div className="text-sm text-gray-500 mr-8">
             Step your time - we're here to make this gift perfect
           </div>
-          
           <button
             onClick={handleContinue}
             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-8 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"

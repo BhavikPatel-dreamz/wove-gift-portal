@@ -247,14 +247,7 @@ const TimingSelectorStep = () => {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm text-gray-500 mt-8">
-          <button
-            onClick={() => dispatch(goBack())}
-            className="flex items-center text-orange-500 hover:text-orange-600 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Previous
-          </button>
+        <div className="flex items-center justify-center text-sm text-gray-500 mt-8">
           <div className="text-center">
             <span className="mr-2">💡</span>
             Take your time - we're here to make this perfect

@@ -208,15 +208,14 @@ model Order {
   isActive         Boolean              @default(false)
   sendType         SendStatus           @default(sendImmediately)
   deliveryMethod   deliveryMethodStatus @default(whatsup)
-  receiverId       String
-  senderId         String
+  receiverDetails  Json
+  senderDetails         String
   giftCode         String
   orderNumber      String
   paymentMethod    paymentStatus        @default(COD)
   totalAmount      Int?                 @default(0)
   redemptionStatus RedemptionStatus     @default(Issued)
   timeStemp        DateTime
-  receiverDetails  ReceiverDetail       @relation(fields: [receiverId], references: [id], onDelete: Cascade)
   occasions        Occasion             @relation(fields: [occasionId], references: [id], onDelete: Cascade)
   brands           Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
   user             User                 @relation(fields: [senderId], references: [id], onDelete: Cascade)

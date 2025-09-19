@@ -15,7 +15,9 @@ const PaymentStep = () => {
     personalMessage,
     deliveryMethod,
     deliveryDetails,
-    selectedOccasion
+    selectedOccasion,
+    selectedSubCategory,
+    selectedTiming
   } = useSelector((state) => state.giftFlowReducer);
 
   const paymentMethods = [
@@ -103,6 +105,18 @@ const PaymentStep = () => {
 
   const handlePayment = async () => {
     if (!selectedPaymentMethod) return;
+
+    console.log("selectedBrand", selectedBrand);
+    console.log("selectedAmount", selectedAmount);
+    console.log("personalMessage", personalMessage);
+    console.log("deliveryMethod", deliveryMethod);
+    console.log("deliveryDetails", deliveryDetails);
+    console.log("selectedOccasion", selectedOccasion);
+    console.log("selectedSubCategory", selectedSubCategory);
+    console.log("selectedTiming", selectedTiming);
+    
+
+    console.log("selectedPaymentMethod", selectedPaymentMethod);
     
     setIsProcessing(true);
     

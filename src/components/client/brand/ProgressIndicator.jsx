@@ -11,7 +11,7 @@ const STEPS = [
   { id: 7, name: 'Delivery Method', description: 'How to send your gift', component: 'DeliveryMethod' },
   { id: 8, name: 'Review & Confirm', description: 'Final review before payment', component: 'ReviewConfirm' },
   { id: 9, name: 'Secure Payment', description: 'Complete your purchase', component: 'Payment' },
-  { id: 10, name: 'Complete', description: 'Gift delivered successfully', component: 'FinalSelection' }
+  // { id: 10, name: 'Complete', description: 'Gift delivered successfully', component: 'FinalSelection' }
 ];
 
 // Progress indicator component

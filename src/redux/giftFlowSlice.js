@@ -11,7 +11,7 @@ const giftFlowSlice = createSlice({
     selectedSubSubCategory: null,
     selectedTiming: null, // Stores timing selection
     personalMessage: "", // Stores user's message
-    deliveryMethod: null, // 'whatsapp', 'email', 'print'
+    deliveryMethod: "email", // 'whatsapp', 'email', 'print'
     deliveryDetails: {
       // WhatsApp fields
       yourName: "",
