@@ -44,6 +44,7 @@ const giftFlowSlice = createSlice({
     subCategoriesPagination: null,
     currentOccasionPage: 1,
     currentSubCategoryPage: 1,
+    selectedPaymentMethod: null,
   },
   reducers: {
     updateState: (state, action) => {
@@ -276,6 +277,9 @@ const giftFlowSlice = createSlice({
     setError: (state, action) => {
       state.error = action.payload;
     },
+    setSelectedPaymentMethod: (state, action) => {
+      state.selectedPaymentMethod = action.payload;
+    },
   },
 });
 
@@ -302,6 +306,7 @@ export const {
   setSubCategories,
   setLoading,
   setError,
+  setSelectedPaymentMethod,
 } = giftFlowSlice.actions;
 
 export default giftFlowSlice.reducer;

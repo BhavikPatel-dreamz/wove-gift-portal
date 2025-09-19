@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Shield, Check, CreditCard, Smartphone, Wallet, Building, Gift, Lock, Star } from "lucide-react";
-import { goBack } from "../../../redux/giftFlowSlice";
+import { goBack, setSelectedPaymentMethod } from "../../../redux/giftFlowSlice";
 import ProgressIndicator from "./ProgressIndicator";
 
 const PaymentStep = () => {
   const dispatch = useDispatch();
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
   const {
@@ -17,8 +16,11 @@ const PaymentStep = () => {
     deliveryDetails,
     selectedOccasion,
     selectedSubCategory,
-    selectedTiming
+    selectedTiming,
+    selectedPaymentMethod,
   } = useSelector((state) => state.giftFlowReducer);
+
+  const alldata = useSelector((state) => state.giftFlowReducer);
 
   const paymentMethods = [
     {
@@ -100,7 +102,7 @@ const PaymentStep = () => {
   };
 
   const handlePaymentMethodSelect = (methodId) => {
-    setSelectedPaymentMethod(methodId);
+    dispatch(setSelectedPaymentMethod(methodId));
   };
 
   const handlePayment = async () => {
@@ -124,7 +126,7 @@ const PaymentStep = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 3000));
       // Here you would integrate with actual payment processors
-      console.log('Payment processed successfully');
+      console.log('Payment processed successfully',alldata);
       setIsProcessing(false);
     } catch (error) {
       console.error('Payment failed:', error);
