@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Shield, Check, CreditCard, Smartphone, Wallet, Building, Gift, Lock, Star } from "lucide-react";
 import { goBack, setSelectedPaymentMethod } from "../../../redux/giftFlowSlice";
 import ProgressIndicator from "./ProgressIndicator";
-import { createOrder } from "@/lib/action/orderAction";
+import { createOrder } from "../../../lib/action/orderAction";
 import toast, { Toaster } from 'react-hot-toast';
 
 const PaymentStep = () => {

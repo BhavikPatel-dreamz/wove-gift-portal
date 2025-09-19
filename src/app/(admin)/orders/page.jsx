@@ -1,54 +1,47 @@
 "use client"
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getOrders } from '@/lib/action/orderAction';
 import { Package, TrendingUp, CreditCard, Eye, Edit, Download, Filter, Search, Calendar, DollarSign, Users, ShoppingBag } from 'lucide-react';
 
 export default function GiftOrdersManagement() {
   const [activeTab, setActiveTab] = useState('orders');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({});
+  const [filters, setFilters] = useState({
+    search: '',
+    status: '',
+    brand: '',
+    dateFrom: '',
+    dateTo: '',
+  });
 
-  // Sample data for Order Management
-  const orders = [
-    {
-      id: 'GC-2024-001',
-      customer: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      amount: 250.00,
-      type: 'Physical Gift Card',
-      status: 'Delivered',
-      date: '2024-09-14',
-      recipient: 'Mike Johnson'
-    },
-    {
-      id: 'GC-2024-002',
-      customer: 'David Chen',
-      email: 'david.chen@email.com',
-      amount: 100.00,
-      type: 'Digital Gift Card',
-      status: 'Pending',
-      date: '2024-09-15',
-      recipient: 'Lisa Chen'
-    },
-    {
-      id: 'GC-2024-003',
-      customer: 'Emily Rodriguez',
-      email: 'emily.r@email.com',
-      amount: 500.00,
-      type: 'Corporate Bulk',
-      status: 'Processing',
-      date: '2024-09-13',
-      recipient: 'Team Holiday Gifts'
-    },
-    {
-      id: 'GC-2024-004',
-      customer: 'Alex Thompson',
-      email: 'alex.t@email.com',
-      amount: 75.00,
-      type: 'Digital Gift Card',
-      status: 'Redeemed',
-      date: '2024-09-12',
-      recipient: 'Jordan Thompson'
-    }
-  ];
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setLoading(true);
+      try {
+        const response = await getOrders({ ...filters, page: pagination.currentPage || 1 });
+        if (response.success) {
+          setOrders(response.data);
+          setPagination(response.pagination);
+        } else {
+          setError(response.message);
+        }
+      } catch (err) {
+        setError('An unexpected error occurred.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [filters, pagination.currentPage]);
 
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+  
   // Sample data for Analytics & Tracking
   const analytics = {
     summary: {
@@ -107,14 +100,14 @@ export default function GiftOrdersManagement() {
 
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
-      case 'delivered':
-      case 'completed':
       case 'redeemed':
         return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
+      case 'issued':
         return 'bg-blue-100 text-blue-800';
+      case 'exparied':
+        return 'bg-red-100 text-red-800';
+      case 'notredeemed':
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -128,19 +121,23 @@ export default function GiftOrdersManagement() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
+            name="search"
             placeholder="Search orders by ID, customer, or email..."
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={filters.search}
+            onChange={handleFilterChange}
           />
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-            <Filter className="w-4 h-4" />
-            Filter
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-            <Calendar className="w-4 h-4" />
-            Date Range
-          </button>
+          <select name="status" value={filters.status} onChange={handleFilterChange} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <option value="">All Statuses</option>
+            <option value="Issued">Issued</option>
+            <option value="Redeemed">Redeemed</option>
+            <option value="Exparied">Expired</option>
+            <option value="NotRedeemed">Not Redeemed</option>
+          </select>
+          <input type="date" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50" />
+          <input type="date" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50" />
           <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             <Download className="w-4 h-4" />
             Export
@@ -157,42 +154,48 @@ export default function GiftOrdersManagement() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{order.customer}</div>
-                      <div className="text-sm text-gray-500">{order.email}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.amount.toFixed(2)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.type}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.date}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <button className="text-blue-600 hover:text-blue-800">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="text-green-600 hover:text-green-800">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan="7" className="text-center py-4">Loading...</td></tr>
+              ) : error ? (
+                <tr><td colSpan="7" className="text-center py-4 text-red-500">{error}</td></tr>
+              ) : (
+                orders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.orderNumber}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{order.receiverDetail.name}</div>
+                        <div className="text-sm text-gray-500">{order.receiverDetail.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.amount}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.brands.brandName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.redemptionStatus)}`}>
+                        {order.redemptionStatus}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(order.timestamp).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <button className="text-blue-600 hover:text-blue-800">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button className="text-green-600 hover:text-green-800">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
