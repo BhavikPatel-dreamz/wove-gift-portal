@@ -227,9 +227,25 @@ export async function getOrderById(orderId) {
             };
         }
 
+        let subCategoryDetails = null;
+        if (order.subCategoryId) {
+            subCategoryDetails = await prisma.occasionCategory.findUnique({
+                where: { id: order.subCategoryId },
+                select: { name: true }
+            });
+        }
+
+        let subSubCategoryDetails = null;
+        if (order.subSubCategoryId) {
+            subSubCategoryDetails = await prisma.occasionCategory.findUnique({
+                where: { id: order.subSubCategoryId },
+                select: { name: true }
+            });
+        }
+
         return {
             success: true,
-            data: order
+            data: { ...order, subCategory: subCategoryDetails, subSubCategory: subSubCategoryDetails }
         };
 
     } catch (error) {

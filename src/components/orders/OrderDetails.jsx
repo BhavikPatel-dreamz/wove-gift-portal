@@ -30,8 +30,8 @@ const OrderDetails = ({ order }) => {
           <div className="space-y-3">
             <p><strong>Brand:</strong> {order.brands.brandName}</p>
             <p><strong>Occasion:</strong> {order.occasions.name}</p>
-            {order.subCategoryId && <p><strong>Category:</strong> {order.subCategoryId}</p>}
-            {order.subSubCategoryId && <p><strong>Sub-Category:</strong> {order.subSubCategoryId}</p>}
+            {order.subCategory && <p><strong>Category:</strong> {order.subCategory.name}</p>}
+            {order.subSubCategory && <p><strong>Sub-Category:</strong> {order.subSubCategory.name}</p>}
           </div>
         </div>
 
