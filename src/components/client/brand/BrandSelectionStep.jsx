@@ -91,13 +91,13 @@ const BrandSelectionStep = () => {
     <div className="space-y-6">
       <ProgressIndicator />
 
-      <button
+      {/* <button
         onClick={() => dispatch(goBack())}
         className="flex items-center text-purple-500 hover:text-purple-600 mb-8 transition-colors"
       >
         <ArrowLeft className="w-5 h-5 mr-2" />
         Back
-      </button>
+      </button> */}
 
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent mb-4">

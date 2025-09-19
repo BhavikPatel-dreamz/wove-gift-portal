@@ -210,7 +210,7 @@ model Order {
   message            String
   isActive           Boolean              @default(false)
   sendType           SendStatus           @default(sendImmediately)
-  deliveryMethod     deliveryMethodStatus @default(whatsup)
+  deliveryMethod     deliveryMethodStatus @default(whatsapp)
   senderDetails      String
   giftCode           String
   orderNumber        String
@@ -246,7 +246,7 @@ enum Status {
 }
 
 enum deliveryMethodStatus {
-  whatsup
+  whatsapp
   email
   print
 }
