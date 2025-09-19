@@ -10,16 +10,11 @@ import { getBrandsForClient } from "@/lib/action/brandFetch";
 import OccasionSelector from "./OccasionSelector";
 import SubCategorySelector from "./SubCategorySelector";
 import { useDispatch, useSelector } from "react-redux";
-import { goNext, setError, setLoading, setPremiumBrands, setSelectedBrand } from "../../../redux/giftFlowSlice";
+import { goNext, setError, setLoading, setPremiumBrands, setSearchTerm, setSelectedBrand, setSelectedCategory } from "../../../redux/giftFlowSlice";
 import ProgressIndicator from "./ProgressIndicator";
 
-const BrandSelector = () => {
+const BrandSelectionStep = () => {
   const dispatch = useDispatch();
-  const state = useSelector((state) => state);
-
-  console.log("state",state);
-
-
   const {
     searchTerm,
     selectedCategory,
@@ -28,7 +23,6 @@ const BrandSelector = () => {
     loading,
     error
   } = useSelector((state) => state.giftFlowReducer);
-
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -99,7 +93,7 @@ const BrandSelector = () => {
       <BrandHeader
         title="Pick Your Perfect Brand"
         subtitle="Choose from our curated brands to make their day unforgettable 👍"
-        onBack={handleBack}
+        onBack={()=>{}}
       />
 
       <SearchBar
@@ -129,4 +123,4 @@ const BrandSelector = () => {
   );
 };
 
-export default BrandSelector;
+export default BrandSelectionStep;

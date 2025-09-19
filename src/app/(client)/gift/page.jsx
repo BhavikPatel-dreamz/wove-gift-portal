@@ -1,11 +1,15 @@
-import React from 'react'
-import BrandSelector from '../../../components/client/brand/BrandSelector'
+"use client"
+import { Provider } from 'react-redux'
+import store from '../../../redux/store'
+import StepRenderer from '../../../components/client/brand/StepRenderer'
 
 const page = () => {
   return (
-    <div>
-        <BrandSelector/>
-    </div>
+    <Provider store={store}>
+      <div className="min-h-screen bg-gray-50">
+        <StepRenderer />
+      </div>
+    </Provider>
   )
 }
 

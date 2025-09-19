@@ -1,19 +1,26 @@
 "use client";
 import React, { useState } from "react";
 import { ArrowLeft, Gift } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import ProgressIndicator from "./ProgressIndicator";
+import { goBack, goNext, setSelectedAmount } from "../../../redux/giftFlowSlice";
 
-const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
-  const [customAmount, setCustomAmount] = useState(voucherData?.minAmount || 50);
+const GiftCardSelector = () => {
+ const dispatch = useDispatch();
+  const { selectedBrand } = useSelector((state) => state.giftFlowReducer);
   
-  // Check denomination type and get appropriate data
+  const voucherData = selectedBrand?.vouchers[0];
   const isFixedDenomination = voucherData?.denominationype === "fixed";
   const presetAmounts = isFixedDenomination ? voucherData?.denominations || [] : [];
   const minAmount = voucherData?.minAmount || 50;
   const maxAmount = voucherData?.maxAmount || 10000;
   const currency = voucherData?.denominationCurrency || "ZAR";
 
+  const [customAmount, setCustomAmount] = useState(minAmount);
+
   const handleAmountClick = (amount) => {
-    onSelectGiftCard?.(amount);
+    dispatch(setSelectedAmount(amount));
+    dispatch(goNext());
   };
 
   const handleCustomAmountSelect = () => {
@@ -22,36 +29,36 @@ const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
       return;
     }
     const customVoucher = { value: customAmount, currency: currency };
-    onSelectGiftCard?.(customVoucher);
+    dispatch(setSelectedAmount(customVoucher));
+    dispatch(goNext());
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-orange-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
+        <ProgressIndicator />
+        
         <button 
-          onClick={onBack}
+          onClick={() => dispatch(goBack())}
           className="flex items-center text-orange-500 hover:text-orange-600 mb-8 transition-colors"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
           Back to Brands
         </button>
 
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-800 mb-4 flex items-center justify-center">
             Choose Your Gift Amount
             <Gift className="w-10 h-10 ml-3 text-pink-500" />
           </h1>
           <p className="text-gray-600 text-lg">
-            Select the perfect amount for your {brand?.name || 'gift card'}
+            Select the perfect amount for your {selectedBrand?.brandName || 'gift card'}
           </p>
           <div className="mt-4 inline-flex items-center bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold">
             {isFixedDenomination ? "Fixed Denominations" : `Range: ${currency} ${minAmount} - ${currency} ${maxAmount}`}
           </div>
         </div>
 
-        {/* Amount Selection */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 mb-2 text-center">
             {isFixedDenomination ? "Select a Voucher" : "Choose Your Amount"}
@@ -60,13 +67,12 @@ const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
             {isFixedDenomination ? "Select from available voucher denominations" : `Enter any amount between ${currency} ${minAmount} - ${currency} ${maxAmount}`}
           </p>
 
-          {/* Fixed Denominations */}
           {isFixedDenomination && presetAmounts.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
               {presetAmounts.map((amount) => (
                 <button
                   key={amount.id}
-                  className={`relative p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-md border-orange-400 bg-orange-50`}
+                  className="relative p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-md border-orange-400 bg-orange-50"
                   onClick={() => handleAmountClick(amount)}
                 >
                   <div className="text-center">
@@ -83,7 +89,6 @@ const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
             </div>
           )}
 
-          {/* Variable Amount Input */}
           {!isFixedDenomination && (
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-4">
@@ -114,16 +119,6 @@ const GiftCardSelector = ({ brand, voucherData, onSelectGiftCard, onBack }) => {
               </p>
             </div>
           )}
-
-          {/* Cancel Button */}
-          <div className="text-center mt-8">
-            <button
-              onClick={onBack}
-              className="text-gray-500 hover:text-gray-700 px-6 py-2 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
         </div>
       </div>
     </div>
