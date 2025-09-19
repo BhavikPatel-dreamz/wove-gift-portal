@@ -5,11 +5,13 @@ import { ArrowLeft } from "lucide-react";
 
 const FinalSelectionStep = () => {
   const dispatch = useDispatch();
-  const { 
-    selectedBrand, 
-    selectedAmount, 
-    selectedOccasion, 
-    selectedSubCategory 
+  const {
+    selectedBrand,
+    selectedAmount,
+    selectedOccasion,
+    selectedSubCategory,
+    selectedTiming,
+    personalMessage
   } = useSelector((state) => state.giftFlowReducer);
 
   const handleComplete = () => {
@@ -27,7 +29,7 @@ const FinalSelectionStep = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-6">
       <div className="max-w-4xl mx-auto">
         <ProgressIndicator />
-        
+
         <button
           onClick={() => dispatch(goBack())}
           className="flex items-center text-purple-500 hover:text-purple-600 mb-8 transition-colors"
@@ -69,8 +71,8 @@ const FinalSelectionStep = () => {
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-800">Gift Amount</h3>
                 <p className="text-gray-600">
-                  {selectedAmount ? 
-                    `${selectedAmount.currency || 'USD'} ${selectedAmount.value}` : 
+                  {selectedAmount ?
+                    `${selectedAmount.currency || 'USD'} ${selectedAmount.value}` :
                     'Not selected'
                   }
                 </p>
@@ -102,6 +104,38 @@ const FinalSelectionStep = () => {
                 </p>
               </div>
             </div>
+
+            {/* Timing Selection */}
+            <div className="flex items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
+                5
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-800">Delivery Timing</h3>
+                <p className="text-gray-600">
+                  {selectedTiming
+                    ? (typeof selectedTiming === "object"
+                      ? JSON.stringify(selectedTiming)
+                      : selectedTiming)
+                    : "Not selected"}
+                </p>
+
+              </div>
+            </div>
+
+            {/* Personal Message */}
+            <div className="flex items-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
+              <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
+                6
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-800">Personal Message</h3>
+                <p className="text-gray-600">
+                  {personalMessage ? personalMessage : "No message added"}
+                </p>
+              </div>
+            </div>
+
           </div>
 
           <div className="flex gap-4 mt-8">

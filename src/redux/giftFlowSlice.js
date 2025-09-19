@@ -1,8 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-
 const giftFlowSlice = createSlice({
-  name: 'giftFlow',
+  name: "giftFlow",
   initialState: {
     currentStep: 1,
     selectedBrand: null,
@@ -10,8 +9,29 @@ const giftFlowSlice = createSlice({
     selectedOccasion: null,
     selectedSubCategory: null,
     selectedSubSubCategory: null,
-    searchTerm: '',
-    selectedCategory: 'All Categories',
+    selectedTiming: null, // Stores timing selection
+    personalMessage: "", // Stores user's message
+    deliveryMethod: null, // 'whatsapp', 'email', 'print'
+    deliveryDetails: {
+      // WhatsApp fields
+      yourName: "",
+      yourWhatsAppNumber: "",
+      recipientName: "",
+      recipientWhatsAppNumber: "",
+      deliveryTips: [],
+      previewMessage: false,
+      
+      // Email fields
+      yourFullName: "",
+      yourEmailAddress: "",
+      recipientFullName: "",
+      recipientEmailAddress: "",
+      
+      // Print fields
+      printDetails: {}
+    },
+    searchTerm: "",
+    selectedCategory: "All Categories",
     favorites: [],
     // Data states
     premiumBrands: [],
@@ -23,7 +43,7 @@ const giftFlowSlice = createSlice({
     occasionsPagination: null,
     subCategoriesPagination: null,
     currentOccasionPage: 1,
-    currentSubCategoryPage: 1
+    currentSubCategoryPage: 1,
   },
   reducers: {
     updateState: (state, action) => {
@@ -36,7 +56,7 @@ const giftFlowSlice = createSlice({
       const currentStep = state.currentStep;
       if (currentStep > 1) {
         state.currentStep = currentStep - 1;
-        
+
         // Clear relevant data when going back
         switch (currentStep) {
           case 2:
@@ -53,11 +73,33 @@ const giftFlowSlice = createSlice({
           case 5:
             state.selectedSubCategory = null;
             break;
+          case 6:
+            state.personalMessage = "";
+            break;
+          case 7:
+            state.selectedTiming = null;
+            break;
+          case 8:
+            state.deliveryMethod = null;
+            state.deliveryDetails = {
+              yourName: "",
+              yourWhatsAppNumber: "",
+              recipientName: "",
+              recipientWhatsAppNumber: "",
+              deliveryTips: [],
+              previewMessage: false,
+              yourFullName: "",
+              yourEmailAddress: "",
+              recipientFullName: "",
+              recipientEmailAddress: "",
+              printDetails: {}
+            };
+            break;
         }
       }
     },
     goNext: (state) => {
-      state.currentStep = Math.min(5, state.currentStep + 1);
+      state.currentStep = Math.min(10, state.currentStep + 1);
     },
     resetFlow: (state) => {
       return {
@@ -67,8 +109,24 @@ const giftFlowSlice = createSlice({
         selectedOccasion: null,
         selectedSubCategory: null,
         selectedSubSubCategory: null,
-        searchTerm: '',
-        selectedCategory: 'All Categories',
+        selectedTiming: null,
+        personalMessage: "",
+        deliveryMethod: null,
+        deliveryDetails: {
+          yourName: "",
+          yourWhatsAppNumber: "",
+          recipientName: "",
+          recipientWhatsAppNumber: "",
+          deliveryTips: [],
+          previewMessage: false,
+          yourFullName: "",
+          yourEmailAddress: "",
+          recipientFullName: "",
+          recipientEmailAddress: "",
+          printDetails: {}
+        },
+        searchTerm: "",
+        selectedCategory: "All Categories",
         favorites: [],
         premiumBrands: [],
         occasions: [],
@@ -78,7 +136,7 @@ const giftFlowSlice = createSlice({
         occasionsPagination: null,
         subCategoriesPagination: null,
         currentOccasionPage: 1,
-        currentSubCategoryPage: 1
+        currentSubCategoryPage: 1,
       };
     },
     setSelectedBrand: (state, action) => {
@@ -95,13 +153,17 @@ const giftFlowSlice = createSlice({
 
         // Serialize dates in the vouchers array
         if (brand.vouchers && Array.isArray(brand.vouchers)) {
-          brand.vouchers = brand.vouchers.map(voucher => {
+          brand.vouchers = brand.vouchers.map((voucher) => {
             const newVoucher = { ...voucher };
             if (newVoucher.createdAt) {
-              newVoucher.createdAt = new Date(newVoucher.createdAt).toISOString();
+              newVoucher.createdAt = new Date(
+                newVoucher.createdAt
+              ).toISOString();
             }
             if (newVoucher.updatedAt) {
-              newVoucher.updatedAt = new Date(newVoucher.updatedAt).toISOString();
+              newVoucher.updatedAt = new Date(
+                newVoucher.updatedAt
+              ).toISOString();
             }
             return newVoucher;
           });
@@ -109,6 +171,22 @@ const giftFlowSlice = createSlice({
       }
 
       state.selectedBrand = brand;
+    },
+    setSelectedTiming: (state, action) => {
+      state.selectedTiming = action.payload;
+    },
+    setPersonalMessage: (state, action) => {
+      state.personalMessage = action.payload;
+    },
+    setDeliveryMethod: (state, action) => {
+      state.deliveryMethod = action.payload;
+    },
+    setDeliveryDetails: (state, action) => {
+      state.deliveryDetails = { ...state.deliveryDetails, ...action.payload };
+    },
+    updateDeliveryDetail: (state, action) => {
+      const { field, value } = action.payload;
+      state.deliveryDetails[field] = value;
     },
     setSelectedAmount: (state, action) => {
       state.selectedAmount = action.payload;
@@ -128,13 +206,13 @@ const giftFlowSlice = createSlice({
     toggleFavorite: (state, action) => {
       const brandId = action.payload;
       if (state.favorites.includes(brandId)) {
-        state.favorites = state.favorites.filter(id => id !== brandId);
+        state.favorites = state.favorites.filter((id) => id !== brandId);
       } else {
         state.favorites.push(brandId);
       }
     },
     setPremiumBrands: (state, action) => {
-      const brands = action.payload.map(brand => {
+      const brands = action.payload.map((brand) => {
         const newBrand = { ...brand };
         if (newBrand.createdAt) {
           newBrand.createdAt = new Date(newBrand.createdAt).toISOString();
@@ -148,7 +226,7 @@ const giftFlowSlice = createSlice({
     },
     setOccasions: (state, action) => {
       const { data, page, pagination } = action.payload;
-      const serializedData = data.map(occasion => {
+      const serializedData = data.map((occasion) => {
         const newOccasion = { ...occasion };
         if (newOccasion.createdAt) {
           newOccasion.createdAt = new Date(newOccasion.createdAt).toISOString();
@@ -169,13 +247,17 @@ const giftFlowSlice = createSlice({
     },
     setSubCategories: (state, action) => {
       const { data, page, pagination } = action.payload;
-      const serializedData = data.map(subCategory => {
+      const serializedData = data.map((subCategory) => {
         const newSubCategory = { ...subCategory };
         if (newSubCategory.createdAt) {
-          newSubCategory.createdAt = new Date(newSubCategory.createdAt).toISOString();
+          newSubCategory.createdAt = new Date(
+            newSubCategory.createdAt
+          ).toISOString();
         }
         if (newSubCategory.updatedAt) {
-          newSubCategory.updatedAt = new Date(newSubCategory.updatedAt).toISOString();
+          newSubCategory.updatedAt = new Date(
+            newSubCategory.updatedAt
+          ).toISOString();
         }
         return newSubCategory;
       });
@@ -193,8 +275,8 @@ const giftFlowSlice = createSlice({
     },
     setError: (state, action) => {
       state.error = action.payload;
-    }
-  }
+    },
+  },
 });
 
 export const {
@@ -209,13 +291,17 @@ export const {
   setSelectedSubCategory,
   setSearchTerm,
   setSelectedCategory,
+  setSelectedTiming,
+  setPersonalMessage,
+  setDeliveryMethod,
+  setDeliveryDetails,
+  updateDeliveryDetail,
   toggleFavorite,
   setPremiumBrands,
   setOccasions,
   setSubCategories,
   setLoading,
-  setError
+  setError,
 } = giftFlowSlice.actions;
 
-export default giftFlowSlice.reducer
-
+export default giftFlowSlice.reducer;
