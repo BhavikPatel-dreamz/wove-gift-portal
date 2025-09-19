@@ -68,7 +68,7 @@ export const createOrder = async (orderData) => {
         }),
         giftCode: generateGiftCode(),
         orderNumber: generateOrderNumber(),
-        paymentMethod: selectedPaymentMethod === "card" ? "Stripe" : "COD",
+        paymentMethod: selectedPaymentMethod,
         totalAmount: selectedAmount.value,
         userId: String(userId),
         receiverDetailId: receiver.id,
@@ -192,6 +192,51 @@ export async function getOrders(params = {}) {
         return {
             success: false,
             message: 'Failed to fetch orders',
+            error: error.message,
+            status: 500
+        };
+    }
+}
+
+export async function getOrderById(orderId) {
+    try {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                brands: {
+                    select: {
+                        brandName: true,
+                        logo: true
+                    }
+                },
+                receiverDetail: true,
+                occasions: {
+                    include: {
+                        occasionCategory: true
+                    }
+                },
+                user: true
+            }
+        });
+
+        if (!order) {
+            return {
+                success: false,
+                message: 'Order not found',
+                status: 404
+            };
+        }
+
+        return {
+            success: true,
+            data: order
+        };
+
+    } catch (error) {
+        console.error(`Error fetching order with ID ${orderId}:`, error);
+        return {
+            success: false,
+            message: 'Failed to fetch order',
             error: error.message,
             status: 500
         };

@@ -214,7 +214,8 @@ model Order {
   senderDetails      String
   giftCode           String
   orderNumber        String
-  paymentMethod      paymentStatus        @default(COD)
+  paymentMethod       String              
+  paymentStatus      String?  
   totalAmount        Int?                 @default(0)
   redemptionStatus   RedemptionStatus     @default(Issued)
   timestamp          DateTime             @default(now())

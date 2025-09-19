@@ -1,7 +1,9 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { getOrders } from '@/lib/action/orderAction';
+import { getOrders, getOrderById } from '@/lib/action/orderAction';
 import { Package, TrendingUp, CreditCard, Eye, Edit, Download, Filter, Search, Calendar, DollarSign, Users, ShoppingBag } from 'lucide-react';
+import Modal from '@/components/Modal';
+import OrderDetails from '@/components/orders/OrderDetails';
 
 export default function GiftOrdersManagement() {
   const [activeTab, setActiveTab] = useState('orders');
@@ -16,6 +18,8 @@ export default function GiftOrdersManagement() {
     dateFrom: '',
     dateTo: '',
   });
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -40,6 +44,25 @@ export default function GiftOrdersManagement() {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleViewOrder = async (orderId) => {
+    try {
+      const response = await getOrderById(orderId);
+      if (response.success) {
+        setSelectedOrder(response.data);
+        setIsModalOpen(true);
+      } else {
+        setError(response.message);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.');
+    }
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedOrder(null);
   };
   
   // Sample data for Analytics & Tracking
@@ -185,7 +208,7 @@ export default function GiftOrdersManagement() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(order.timestamp).toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center gap-2">
-                        <button className="text-blue-600 hover:text-blue-800">
+                        <button onClick={() => handleViewOrder(order.id)} className="text-blue-600 hover:text-blue-800">
                           <Eye className="w-4 h-4" />
                         </button>
                         <button className="text-green-600 hover:text-green-800">
@@ -200,6 +223,9 @@ export default function GiftOrdersManagement() {
           </table>
         </div>
       </div>
+      <Modal isOpen={isModalOpen} onClose={closeModal}>
+        <OrderDetails order={selectedOrder} />
+      </Modal>
     </div>
   );
 
@@ -358,7 +384,7 @@ export default function GiftOrdersManagement() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6 text-black">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
