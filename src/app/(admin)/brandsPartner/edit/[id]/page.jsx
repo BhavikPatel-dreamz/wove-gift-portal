@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ChevronLeft, Save, X, Loader, AlertTriangle, CheckCircle } from 'lucide-react';
-import { getBrandPartner, updateBrandPartner } from '../../../../../lib/action/brandPartner';
+import { getBrandPartnerDetails, updateBrandPartner } from '../../../../../lib/action/brandPartner';
 import { toast } from 'react-hot-toast';
 
 // Import the tab components from your brand partner structure
@@ -152,7 +152,7 @@ const BrandEdit = () => {
   const loadBrandData = async () => {
     try {
       setLoading(true);
-      const result = await getBrandPartner(brandId);
+      const result = await getBrandPartnerDetails(brandId);
 
       if (result.success) {
         const brand = result.data;

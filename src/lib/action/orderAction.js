@@ -228,19 +228,30 @@ export async function getOrderById(orderId) {
         }
 
         let subCategoryDetails = null;
+        let subSubCategoryDetails = null;
+
+        const categoryIdsToFetch = [];
         if (order.subCategoryId) {
-            subCategoryDetails = await prisma.occasionCategory.findUnique({
-                where: { id: order.subCategoryId },
-                select: { name: true }
-            });
+            categoryIdsToFetch.push(order.subCategoryId);
+        }
+        if (order.subSubCategoryId) {
+            categoryIdsToFetch.push(order.subSubCategoryId);
         }
 
-        let subSubCategoryDetails = null;
-        if (order.subSubCategoryId) {
-            subSubCategoryDetails = await prisma.occasionCategory.findUnique({
-                where: { id: order.subSubCategoryId },
-                select: { name: true }
+        if (categoryIdsToFetch.length > 0) {
+            const fetchedCategories = await prisma.occasionCategory.findMany({
+                where: {
+                    id: { in: categoryIdsToFetch }
+                },
+                select: { id: true, name: true }
             });
+
+            if (order.subCategoryId) {
+                subCategoryDetails = fetchedCategories.find(cat => cat.id === order.subCategoryId);
+            }
+            if (order.subSubCategoryId) {
+                subSubCategoryDetails = fetchedCategories.find(cat => cat.id === order.subSubCategoryId);
+            }
         }
 
         return {

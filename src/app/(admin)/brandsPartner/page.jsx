@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Star, MoreVertical, Trash2, Loader, ChevronLeft, ChevronRight, Filter, SortAsc, SortDesc, Power } from 'lucide-react';
 import Modal from '@/components/Modal';
 import BrandForm from '@/components/forms/BrandForm';
-import { addBrand, updateBrand, deleteBrand, getBrands, getBrandStats } from '../../../lib/action/brandAction';
+import { createBrandPartner, updateBrand, deleteBrandPartner, getBrandPartner } from '../../../lib/action/brandPartner';
 import { toast } from 'react-hot-toast';
 import { categories } from '../../../lib/resourses';
 import { useRouter, useParams } from 'next/navigation';
@@ -99,7 +99,7 @@ const BrandManager = () => {
         sortOrder: filters.sortOrder
       };
       
-      const result = await getBrands(params);
+      const result = await getBrandPartner(params);
       
       if (result.success) {
         setBrands(result.data || []);
@@ -225,7 +225,7 @@ const BrandManager = () => {
     try {
       setActionLoading(true);
       const formDataToSend = createFormData(brandData);
-      const result = await addBrand(formDataToSend);
+      const result = await createBrandPartner(formDataToSend);
 
       if (result.success) {
         resetForm();
@@ -273,7 +273,7 @@ const BrandManager = () => {
 
     try {
       setActionLoading(true);
-      const result = await deleteBrand(brandId);
+      const result = await deleteBrandPartner(brandId);
 
       if (result.success) {
         toast.success('Brand deleted successfully');

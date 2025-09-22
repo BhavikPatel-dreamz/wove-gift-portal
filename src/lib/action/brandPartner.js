@@ -659,7 +659,8 @@ export async function updateBrandPartner(brandId, formData) {
   }
 }
 
-export async function getBrandPartner(brandId) {
+
+export async function getBrandPartnerDetails(brandId) {
   try {
     if (!brandId) {
       return {
@@ -716,128 +717,161 @@ export async function getBrandPartner(brandId) {
   }
 }
 
-export async function getBrandPartners(params = {}) {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      search = "",
-      category = "",
-      isActive = null,
-      isFeature = null,
-      sortBy = "createdAt",
-      sortOrder = "desc",
-    } = params;
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
+export async function getBrandPartner(params = {}) {
+   try {
+        const {
+            page = 1,
+            limit = 10,
+            search = '',
+            category = '',
+            isActive = null,
+            isFeature = null,
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = params;
 
-    const whereClause = {};
+        // Convert page and limit to numbers
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
 
-    // Search functionality
-    if (search) {
-      whereClause.OR = [
-        { brandName: { contains: search, mode: "insensitive" } },
-        { tagline: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { categorieName: { contains: search, mode: "insensitive" } },
-      ];
-    }
+        // Build where clause for filtering
+        const whereClause = {};
 
-    if (category && category !== "All Brands") {
-      whereClause.categorieName = category;
-    }
+        // Search functionality
+        if (search) {
+            whereClause.OR = [
+                {
+                    brandName: {
+                        contains: search,
+                        mode: 'insensitive'
+                    }
+                },
+                {
+                    tagline: {
+                        contains: search,
+                        mode: 'insensitive'
+                    }
+                },
+                {
+                    description: {
+                        contains: search,
+                        mode: 'insensitive'
+                    }
+                },
+                {
+                    categorieName: {
+                        contains: search,
+                        mode: 'insensitive'
+                    }
+                }
+            ];
+        }
 
-    if (isActive !== null) {
-      whereClause.isActive = isActive === "true";
-    }
+        // Category filter
+        if (category && category !== 'All Brands') {
+            whereClause.categorieName = category;
+        }
 
-    if (isFeature !== null) {
-      whereClause.isFeature = isFeature === "true";
-    }
+        // Active status filter
+        if (isActive !== null) {
+            whereClause.isActive = isActive === 'true';
+        }
 
-    const orderBy = {};
-    orderBy[sortBy] = sortOrder;
+        // Featured status filter
+        if (isFeature !== null) {
+            whereClause.isFeature = isFeature === 'true';
+        }
 
-    const [brandPartners, totalCount] = await Promise.all([
-      prisma.brand.findMany({
-        where: whereClause,
-        orderBy,
-        skip,
-        take: limitNum,
-        include: {
-          brandcontacts: {
-            where: { isPrimary: true },
-            take: 1,
-          },
-          brandTerms: {
-            select: {
-              commissionType: true,
-              commissionValue: true,
-              contractEnd: true,
+        // Build orderBy clause
+        const orderBy = {};
+        orderBy[sortBy] = sortOrder;
+
+        // Execute query with pagination
+        const [brands, totalCount] = await Promise.all([
+            prisma.brand.findMany({
+                where: whereClause,
+                orderBy,
+                skip,
+                take: limitNum,
+                include: {
+                    _count: {
+                        select: {
+                            order: true,
+                            vouchers: true
+                        }
+                    }
+                }
+            }),
+            prisma.brand.count({
+                where: whereClause
+            })
+        ]);
+
+        // Calculate pagination metadata
+        const totalPages = Math.ceil(totalCount / limitNum);
+        const hasNextPage = pageNum < totalPages;
+        const hasPrevPage = pageNum > 1;
+
+        // Get overall statistics
+        const stats = await prisma.brand.aggregate({
+            _count: {
+                id: true
             },
-          },
-          _count: {
-            select: {
-              order: true,
-              vouchers: true,
-              integrations: true,
+            where: {
+                isActive: true
+            }
+        });
+
+        const featuredCount = await prisma.brand.count({
+            where: {
+                isFeature: true
+            }
+        });
+
+        const totalBrands = await prisma.brand.count();
+
+        return {
+            success: true,
+            data: brands,
+            pagination: {
+                currentPage: pageNum,
+                totalPages,
+                totalItems: totalCount,
+                itemsPerPage: limitNum,
+                hasNextPage,
+                hasPrevPage,
+                startIndex: skip + 1,
+                endIndex: Math.min(skip + limitNum, totalCount)
             },
-          },
-        },
-      }),
-      prisma.brand.count({ where: whereClause }),
-    ]);
+            statistics: {
+                total: totalBrands,
+                active: stats._count.id,
+                featured: featuredCount,
+                activeRate: totalBrands > 0 ? Math.round((stats._count.id / totalBrands) * 100) : 0
+            },
+            filters: {
+                search,
+                category,
+                isActive,
+                isFeature,
+                sortBy,
+                sortOrder
+            }
+        };
 
-    const totalPages = Math.ceil(totalCount / limitNum);
-    const hasNextPage = pageNum < totalPages;
-    const hasPrevPage = pageNum > 1;
-
-    const stats = await prisma.brand.aggregate({
-      _count: { id: true },
-      where: { isActive: true },
-    });
-
-    const featuredCount = await prisma.brand.count({
-      where: { isFeature: true },
-    });
-
-    const totalBrands = await prisma.brand.count();
-
-    return {
-      success: true,
-      data: brandPartners,
-      pagination: {
-        currentPage: pageNum,
-        totalPages,
-        totalItems: totalCount,
-        itemsPerPage: limitNum,
-        hasNextPage,
-        hasPrevPage,
-        startIndex: skip + 1,
-        endIndex: Math.min(skip + limitNum, totalCount),
-      },
-      statistics: {
-        total: totalBrands,
-        active: stats._count.id,
-        featured: featuredCount,
-        activeRate:
-          totalBrands > 0
-            ? Math.round((stats._count.id / totalBrands) * 100)
-            : 0,
-      },
-    };
-  } catch (error) {
-    console.error("Error fetching brand partners:", error);
-    return {
-      success: false,
-      message: "Failed to fetch brand partners",
-      error: error.message,
-      status: 500,
-    };
-  }
+    } catch (error) {
+        console.error('Error fetching brands:', error);
+        return {
+            success: false,
+            message: 'Failed to fetch brands',
+            error: error.message,
+            status: 500
+        };
+    }
 }
+
 
 export async function deleteBrandPartner(brandId) {
   try {
@@ -901,353 +935,144 @@ export async function deleteBrandPartner(brandId) {
   }
 }
 
-export async function getBrandPartnerStats() {
-  try {
-    const [
-      totalBrands,
-      activeBrands,
-      featuredBrands,
-      categoryStats,
-      contractsExpiringSoon,
-      integrationsCount,
-    ] = await Promise.all([
-      prisma.brand.count(),
-      prisma.brand.count({ where: { isActive: true } }),
-      prisma.brand.count({ where: { isFeature: true } }),
-      prisma.brand.groupBy({
-        by: ["categorieName"],
-        _count: { categorieName: true },
-        where: { categorieName: { not: null } },
-      }),
-      prisma.brandTerms.count({
-        where: {
-          contractEnd: {
-            gte: new Date(),
-            lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-          },
-        },
-      }),
-      prisma.integration.count({ where: { isActive: true } }),
-    ]);
 
-    return {
-      success: true,
-      data: {
-        total: totalBrands,
-        active: activeBrands,
-        featured: featuredBrands,
-        inactive: totalBrands - activeBrands,
-        activeRate:
-          totalBrands > 0 ? Math.round((activeBrands / totalBrands) * 100) : 0,
-        featuredRate:
-          totalBrands > 0
-            ? Math.round((featuredBrands / totalBrands) * 100)
-            : 0,
-        contractsExpiringSoon,
-        activeIntegrations: integrationsCount,
-        categoryDistribution: categoryStats.map((stat) => ({
-          category: stat.categorieName,
-          count: stat._count.categorieName,
-          percentage:
-            totalBrands > 0
-              ? Math.round((stat._count.categorieName / totalBrands) * 100)
-              : 0,
-        })),
-      },
-    };
-  } catch (error) {
-    console.error("Error fetching brand partner stats:", error);
-    return {
-      success: false,
-      message: "Failed to fetch brand partner statistics",
-      error: error.message,
-      status: 500,
-    };
-  }
-}
+export async function updateBrand(formData) {
+    try {
+        // Get the brand ID
+        const id = formData.get('id');
+        
+        if (!id) {
+            return {
+                success: false,
+                message: "Brand ID is required",
+                status: 400
+            };
+        }
 
-export async function searchBrandPartners(searchTerm, options = {}) {
-  try {
-    const { limit = 5, includeInactive = false } = options;
+        // Get form fields
+        const brandName = formData.get('brandName');
+        const logoFile = formData.get('logo');
+        const description = formData.get('description') || "";
+        const website = formData.get('website') || "";
+        const contact = formData.get('contact') || "";
+        const tagline = formData.get('tagline') || "";
+        const color = formData.get('color') || "";
+        const categorieName = formData.get('categorieName') || "";
+        const notes = formData.get('notes') || "";
+        const isActive = formData.get('isActive') === 'true';
+        const isFeature = formData.get('isFeature') === 'true';
 
-    const whereClause = {
-      OR: [
-        { brandName: { contains: searchTerm, mode: "insensitive" } },
-        { tagline: { contains: searchTerm, mode: "insensitive" } },
-        { description: { contains: searchTerm, mode: "insensitive" } },
-        { categorieName: { contains: searchTerm, mode: "insensitive" } },
-      ],
-    };
+        // Get existing brand to check for logo updates
+        const existingBrand = await prisma.brand.findUnique({
+            where: { id }
+        });
 
-    if (!includeInactive) {
-      whereClause.isActive = true;
+        if (!existingBrand) {
+            return {
+                success: false,
+                message: "Brand not found",
+                status: 404
+            };
+        }
+
+        let logoPath = existingBrand.logo;
+
+        // Handle logo upload if new file provided
+        if (logoFile && logoFile.size > 0) {
+            try {
+                // Create upload directory
+                const uploadDir = join(process.cwd(), 'public', 'uploads', 'brands');
+                await mkdir(uploadDir, { recursive: true });
+
+                // Delete old logo if it exists
+                if (existingBrand.logo) {
+                    const oldLogoPath = join(process.cwd(), 'public', existingBrand.logo);
+                    try {
+                        await unlink(oldLogoPath);
+                    } catch (error) {
+                        // Ignore error if file doesn't exist
+                        console.log('Could not delete old logo:', error.message);
+                    }
+                }
+
+                // Generate new filename
+                const timestamp = Date.now();
+                const extension = logoFile.name.split('.').pop();
+                const filename = `${brandName?.toLowerCase().replace(/\s+/g, '_') || 'brand'}_${timestamp}.${extension}`;
+
+                // Save new file
+                const filePath = join(uploadDir, filename);
+                const bytes = await logoFile.arrayBuffer();
+                await writeFile(filePath, Buffer.from(bytes));
+
+                logoPath = `/uploads/brands/${filename}`;
+            } catch (fileError) {
+                console.error('File upload error:', fileError);
+                return {
+                    success: false,
+                    message: "Failed to upload logo",
+                    status: 500
+                };
+            }
+        }
+
+        // Prepare update data
+        const updateData = {
+            description,
+            website,
+            contact,
+            tagline,
+            color,
+            categorieName,
+            notes,
+            isActive,
+            isFeature,
+            logo: logoPath,
+        };
+
+        // Only update brandName if provided (since it's unique)
+        if (brandName && brandName !== existingBrand.brandName) {
+            updateData.brandName = brandName;
+        }
+
+        // Update brand
+        const updatedBrand = await prisma.brand.update({
+            where: { id },
+            data: updateData
+        });
+
+        return {
+            success: true,
+            message: "Brand updated successfully",
+            data: updatedBrand,
+            status: 200
+        };
+
+    } catch (error) {
+        console.error('Error updating brand:', error);
+        
+        // Handle specific Prisma errors
+        if (error.code === 'P2002') {
+            return {
+                success: false,
+                message: "Brand name already exists",
+                status: 400
+            };
+        }
+
+        if (error.code === 'P2025') {
+            return {
+                success: false,
+                message: "Brand not found",
+                status: 404
+            };
+        }
+
+        return {
+            success: false,
+            message: "Internal server error",
+            error: error.message,
+            status: 500
+        };
     }
-
-    const brandPartners = await prisma.brand.findMany({
-      where: whereClause,
-      take: limit,
-      orderBy: { brandName: "asc" },
-      select: {
-        id: true,
-        brandName: true,
-        tagline: true,
-        logo: true,
-        color: true,
-        categorieName: true,
-        isActive: true,
-        isFeature: true,
-        brandcontacts: {
-          where: { isPrimary: true },
-          take: 1,
-          select: { email: true, name: true },
-        },
-      },
-    });
-
-    return {
-      success: true,
-      data: brandPartners,
-      count: brandPartners.length,
-    };
-  } catch (error) {
-    console.error("Error searching brand partners:", error);
-    return {
-      success: false,
-      message: "Failed to search brand partners",
-      error: error.message,
-    };
-  }
-}
-
-export async function getBrandPartnersByCategory(category, options = {}) {
-  try {
-    const { limit = 10, page = 1, includeInactive = false } = options;
-    const skip = (page - 1) * limit;
-
-    const whereClause = { categorieName: category };
-    if (!includeInactive) {
-      whereClause.isActive = true;
-    }
-
-    const [brandPartners, totalCount] = await Promise.all([
-      prisma.brand.findMany({
-        where: whereClause,
-        skip,
-        take: limit,
-        orderBy: { brandName: "asc" },
-        include: {
-          brandcontacts: {
-            where: { isPrimary: true },
-            take: 1,
-          },
-          brandTerms: {
-            select: { contractEnd: true },
-          },
-        },
-      }),
-      prisma.brand.count({ where: whereClause }),
-    ]);
-
-    return {
-      success: true,
-      data: brandPartners,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(totalCount / limit),
-        totalItems: totalCount,
-        itemsPerPage: limit,
-      },
-    };
-  } catch (error) {
-    console.error("Error fetching brand partners by category:", error);
-    return {
-      success: false,
-      message: "Failed to fetch brand partners by category",
-      error: error.message,
-    };
-  }
-}
-
-export async function getBrandPartnerDashboard(brandId) {
-  try {
-    if (!brandId) {
-      return {
-        success: false,
-        message: "Brand ID is required",
-        status: 400,
-      };
-    }
-
-    const brandPartner = await prisma.brand.findUnique({
-      where: { id: brandId },
-      include: {
-        brandcontacts: true,
-        brandTerms: true,
-        brandBankings: true,
-        vouchers: true,
-        integrations: {
-          select: {
-            id: true,
-            platform: true,
-            isActive: true,
-          },
-        },
-        _count: {
-          select: {
-            order: true,
-            settlements: true,
-          },
-        },
-      },
-    });
-
-    if (!brandPartner) {
-      return {
-        success: false,
-        message: "Brand partner not found",
-        status: 404,
-      };
-    }
-
-    // Calculate additional metrics
-    const currentDate = new Date();
-    const contractEndDate = brandPartner.brandTerms?.[0]?.contractEnd;
-    const daysUntilExpiry = contractEndDate
-      ? Math.ceil((contractEndDate - currentDate) / (1000 * 60 * 60 * 24))
-      : null;
-
-    const dashboard = {
-      brandInfo: {
-        id: brandPartner.id,
-        name: brandPartner.brandName,
-        logo: brandPartner.logo,
-        isActive: brandPartner.isActive,
-        category: brandPartner.categorieName,
-      },
-      metrics: {
-        totalOrders: brandPartner._count.order,
-        totalSettlements: brandPartner._count.settlements,
-        activeIntegrations: brandPartner.integrations.filter((i) => i.isActive)
-          .length,
-        totalContacts: brandPartner.brandcontacts.length,
-        daysUntilContractExpiry: daysUntilExpiry,
-      },
-      status: {
-        contractStatus:
-          daysUntilExpiry > 30
-            ? "active"
-            : daysUntilExpiry > 0
-            ? "expiring_soon"
-            : "expired",
-        integrationStatus:
-          brandPartner.integrations.length > 0 ? "configured" : "pending",
-        bankingStatus:
-          brandPartner.brandBankings.length > 0 ? "verified" : "pending",
-      },
-    };
-
-    return {
-      success: true,
-      data: dashboard,
-      status: 200,
-    };
-  } catch (error) {
-    console.error("Error fetching brand partner dashboard:", error);
-    return {
-      success: false,
-      message: "Failed to fetch brand partner dashboard",
-      error: error.message,
-      status: 500,
-    };
-  }
-}
-
-export async function toggleBrandPartnerStatus(brandId, status) {
-  try {
-    if (!brandId) {
-      return {
-        success: false,
-        message: "Brand ID is required",
-        status: 400,
-      };
-    }
-
-    if (typeof status !== "boolean") {
-      return {
-        success: false,
-        message: "Valid status (true/false) is required",
-        status: 400,
-      };
-    }
-
-    const updatedBrand = await prisma.brand.update({
-      where: { id: brandId },
-      data: { isActive: status },
-    });
-
-    return {
-      success: true,
-      message: `Brand partner ${
-        status ? "activated" : "deactivated"
-      } successfully`,
-      data: updatedBrand,
-      status: 200,
-    };
-  } catch (error) {
-    console.error("Error toggling brand partner status:", error);
-
-    if (error.code === "P2025") {
-      return {
-        success: false,
-        message: "Brand partner not found",
-        status: 404,
-      };
-    }
-
-    return {
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-      status: 500,
-    };
-  }
-}
-
-export async function getBrandPartnerIntegrations(brandId) {
-  try {
-    if (!brandId) {
-      return {
-        success: false,
-        message: "Brand ID is required",
-        status: 400,
-      };
-    }
-
-    const integrations = await prisma.integration.findMany({
-      where: { brandId },
-      select: {
-        id: true,
-        platform: true,
-        storeUrl: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-        // Sensitive fields are excluded for security
-      },
-    });
-
-    return {
-      success: true,
-      data: integrations,
-      status: 200,
-    };
-  } catch (error) {
-    console.error("Error fetching brand partner integrations:", error);
-    return {
-      success: false,
-      message: "Failed to fetch integrations",
-      error: error.message,
-      status: 500,
-    };
-  }
 }
