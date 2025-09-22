@@ -1,4 +1,3 @@
-
 "use client"
 import { useState, useEffect, useCallback } from 'react';
 import { getOccasionCategories } from '@/lib/action/occasionAction';
@@ -19,13 +18,18 @@ export default function SubCategorySelector() {
   } = useSelector((state) => state.giftFlowReducer);
 
   const occasionColors = [
-    { bgColor: 'bg-orange-100', buttonColor: 'bg-orange-500 hover:bg-orange-600' },
-    { bgColor: 'bg-blue-100', buttonColor: 'bg-gradient-to-r from-orange-400 to-pink-500 hover:from-orange-500 hover:to-pink-600' },
-    { bgColor: 'bg-yellow-100', buttonColor: 'bg-yellow-500 hover:bg-yellow-600' },
-    { bgColor: 'bg-red-100', buttonColor: 'bg-red-500 hover:bg-red-600' },
-    { bgColor: 'bg-pink-100', buttonColor: 'bg-pink-500 hover:bg-pink-600' },
-    { bgColor: 'bg-purple-100', buttonColor: 'bg-purple-500 hover:bg-purple-600' },
+    { bgColor: 'bg-orange-100', buttonColor: 'bg-orange-500 hover:bg-orange-600', accent: 'border-orange-200' },
+    { bgColor: 'bg-blue-100', buttonColor: 'bg-gradient-to-r from-orange-400 to-pink-500 hover:from-orange-500 hover:to-pink-600', accent: 'border-blue-200' },
+    { bgColor: 'bg-yellow-100', buttonColor: 'bg-yellow-500 hover:bg-yellow-600', accent: 'border-yellow-200' },
+    { bgColor: 'bg-red-100', buttonColor: 'bg-red-500 hover:bg-red-600', accent: 'border-red-200' },
+    { bgColor: 'bg-pink-100', buttonColor: 'bg-pink-500 hover:bg-pink-600', accent: 'border-pink-200' },
+    { bgColor: 'bg-purple-100', buttonColor: 'bg-purple-500 hover:bg-purple-600', accent: 'border-purple-200' },
+    { bgColor: 'bg-green-100', buttonColor: 'bg-green-500 hover:bg-green-600', accent: 'border-green-200' },
+    { bgColor: 'bg-indigo-100', buttonColor: 'bg-indigo-500 hover:bg-indigo-600', accent: 'border-indigo-200' },
   ];
+
+  // Consistent height for all cards
+  const cardHeight = 'h-100';
 
   const fetchSubCategories = async (page) => {
     if (!selectedOccasion) return;
@@ -96,7 +100,7 @@ export default function SubCategorySelector() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <ProgressIndicator />
         
         <button
@@ -116,34 +120,79 @@ export default function SubCategorySelector() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Grid with consistent card heights */}
+        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 mb-8">
           {subCategories.map((subCategory, index) => {
             const colorScheme = occasionColors[index % occasionColors.length];
+            
             return (
               <div
                 key={`${subCategory.id}-${index}`}
-                className={`${colorScheme.bgColor} rounded-2xl p-6 text-center transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer border-2 relative overflow-hidden group border-transparent`}
+                className={`bg-white rounded-2xl mb-6 break-inside-avoid ${cardHeight}
+                transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer 
+                shadow-lg relative overflow-hidden group flex flex-col`}
                 onClick={() => handleSubCategorySelect(subCategory.id)}
               >
-                <div className="text-6xl mb-4 transition-transform duration-300 group-hover:-translate-y-1">
-                  {subCategory.emoji}
+                {/* Category tag - positioned absolutely on the image */}
+                <div className="absolute top-4 left-4 z-20">
+                  <span className="bg-gray-100/90 backdrop-blur-sm text-xs font-semibold px-3 py-1 rounded-full text-gray-700 border border-white/50">
+                    {subCategory.type || 'Artistic'}
+                  </span>
                 </div>
-                <h3 className="font-bold text-lg text-gray-800 mb-2 transition-transform duration-300 group-hover:-translate-y-1">
-                  {subCategory.name}
-                </h3>
-                <p className="text-sm text-gray-600 mb-3 leading-relaxed transition-transform duration-300 group-hover:-translate-y-1 h-10 overflow-hidden text-ellipsis">
-                  {subCategory.description}
-                </p>
-                <button
-                  className={`w-full py-2.5 px-4 rounded-lg text-white font-medium text-sm transition-all duration-300 transform ${colorScheme.buttonColor} 
-                  translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 group-hover:scale-105`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSubCategorySelect(subCategory.id);
-                  }}
-                >
-                  Select
-                </button>
+
+                {/* Image section - takes up most of the space */}
+                <div className="relative flex-1 overflow-hidden rounded-t-2xl">
+                  {subCategory.image ? (
+                    <img 
+                      src={subCategory.image} 
+                      alt={subCategory.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                  ) : null}
+                  
+                  {/* Fallback with emoji and gradient */}
+                  <div 
+                    className="w-full h-full bg-gradient-to-br from-pink-200 via-blue-200 to-green-200 flex items-center justify-center"
+                    style={{ display: subCategory.image ? 'none' : 'flex' }}
+                  >
+                    <span className="text-6xl opacity-80">{subCategory.emoji || '🎁'}</span>
+                  </div>
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+                    <button
+                      className={`py-2 px-6 rounded-full text-white font-semibold text-sm transition-all duration-300 transform scale-90 group-hover:scale-100 ${colorScheme.buttonColor} shadow-lg`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSubCategorySelect(subCategory.id);
+                      }}
+                    >
+                      Select
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content section - white background at bottom with fixed height */}
+                <div className="p-5 bg-white rounded-b-2xl h-35 flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-900 mb-2 leading-tight line-clamp-1">
+                      {subCategory.name}
+                    </h3>
+                    
+                    <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+                      {subCategory.description}
+                    </p>
+                  </div>
+                  
+                  {/* Heart icons like in the birthday card */}
+                  <div className="flex items-center space-x-1 mt-2">
+                    <span className="text-pink-400 text-lg"> {subCategory.emoji}</span>
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -151,7 +200,7 @@ export default function SubCategorySelector() {
 
         <div className="text-center mb-8">
           {loading && currentSubCategoryPage > 1 && (
-            <div className="inline-flex items-center text-gray-600">
+            <div className="inline-flex items-center text-gray-600 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-white/50">
               <div className="w-5 h-5 border-2 border-dashed rounded-full animate-spin border-teal-500 mr-2"></div>
               Loading more...
             </div>
@@ -159,7 +208,7 @@ export default function SubCategorySelector() {
           {!loading && subCategoriesPagination?.hasNextPage && (
             <button
               onClick={handleLoadMore}
-              className="bg-white text-teal-600 px-8 py-3 rounded-lg font-medium border border-teal-200 hover:bg-teal-50 transition-all duration-200 transform hover:scale-105"
+              className="bg-white/80 backdrop-blur-sm text-teal-600 px-8 py-4 rounded-xl font-semibold border border-white/50 hover:bg-white hover:shadow-lg transition-all duration-200 transform hover:scale-105"
             >
               Show More Categories
             </button>

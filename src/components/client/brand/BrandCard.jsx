@@ -51,7 +51,7 @@ const randomGradient = gradients[brand.id % gradients.length];
           <img
             src={brand.logo}
             alt={brand.name}
-            className="w-10 h-10 object-contain"
+            className="w-15 h-15 object-contain"
           />
         </div>
       </div>
