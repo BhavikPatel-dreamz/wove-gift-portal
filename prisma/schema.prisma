@@ -203,33 +203,53 @@ model ReceiverDetail {
 }
 
 model Order {
-  id                 String   @id @default(cuid())
+  id                 String             @id @default(cuid())
   brandId            String
   occasionId         String
-  subCategoryId      String?           // predefined category
-  customCardId       String?           // custom card
+  subCategoryId      String?           
+  customCardId       String?           
   amount             Int
   currency           String?
   message            String
-  isActive           Boolean           @default(false)
-  sendType           SendStatus        @default(sendImmediately)
+  isActive           Boolean            @default(false)
+  sendType           SendStatus         @default(sendImmediately)
   deliveryMethod     deliveryMethodStatus @default(whatsapp)
   senderDetails      String
-  giftCode           String
-  orderNumber        String
+  orderNumber        String             @unique
   paymentMethod      String
   paymentStatus      String?
-  totalAmount        Int?              @default(0)
-  redemptionStatus   RedemptionStatus  @default(Issued)
-  timestamp          DateTime          @default(now())
+  totalAmount        Int?               @default(0)
+  redemptionStatus   RedemptionStatus   @default(Issued) // summary of all codes
+  timestamp          DateTime           @default(now())
   userId             String
   receiverDetailId   String
-  occasions          Occasion          @relation(fields: [occasionId], references: [id], onDelete: Cascade)
-  brands             Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  receiverDetail     ReceiverDetail    @relation(fields: [receiverDetailId], references: [id])
-  occasionCategory   OccasionCategory? @relation(fields: [subCategoryId], references: [id])
-  customCard         CustomCard?       @relation(fields: [customCardId], references: [id])
+
+  // Relations
+  occasions          Occasion           @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  brands             Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receiverDetail     ReceiverDetail     @relation(fields: [receiverDetailId], references: [id])
+  occasionCategory   OccasionCategory?  @relation(fields: [subCategoryId], references: [id])
+  customCard         CustomCard?        @relation(fields: [customCardId], references: [id])
+  voucherCodes       VoucherCode[]      // 👈 NEW: one order can generate many voucher codes
+}
+
+
+model VoucherCode {
+  id             String      @id @default(cuid())
+  code           String      @unique               // Unique voucher code
+  orderId        String                                 // Links to the order
+  giftCardId     String                                 // Links to the voucher type (Vouchers.id)
+  isRedeemed     Boolean     @default(false)          // Fully redeemed or not
+  redeemedAt     DateTime?                                // Timestamp of full redemption
+  originalValue  Int                                  // Initial amount of the voucher
+  remainingValue Int                                  // Tracks partial redemption
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  order          Order       @relation(fields: [orderId], references: [id])
+  giftCard       Vouchers    @relation(fields: [giftCardId], references: [id])
 }
 
 
