@@ -136,7 +136,7 @@ export default function SubCategorySelector() {
                 {/* Category tag - positioned absolutely on the image */}
                 <div className="absolute top-4 left-4 z-20">
                   <span className="bg-gray-100/90 backdrop-blur-sm text-xs font-semibold px-3 py-1 rounded-full text-gray-700 border border-white/50">
-                    {subCategory.type || 'Artistic'}
+                    {subCategory.category || 'Artistic'}
                   </span>
                 </div>
 

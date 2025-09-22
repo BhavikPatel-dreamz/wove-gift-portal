@@ -55,6 +55,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
             description: category.description || `For ${occasion.name}`,
             preview: category.emoji,
             imageUrl: category.image,
+            category: category.category,
             active: category.isActive,
             createdAt: category.createdAt,
             updatedAt: category.updatedAt
@@ -84,6 +85,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
       description: newCardData.description || `For ${occasion.name}`,
       preview: newCardData.emoji,
       imageUrl: newCardData.image,
+      category: newCardData.category,
       active: newCardData.isActive,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -100,6 +102,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
         description: updatedCardData.description || `For ${occasion.name}`,
         preview: updatedCardData.emoji,
         imageUrl: updatedCardData.image,
+        category: updatedCardData.category,
         active: updatedCardData.isActive,
         updatedAt: new Date().toISOString()
       } : card
@@ -157,6 +160,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
           description: category.description,
           preview: category.emoji,
           imageUrl: category.image,
+          category: category.category,
           active: category.isActive,
         };
 
@@ -497,6 +501,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
                         />
                       </div>
                       <p className="text-sm text-gray-600 truncate mb-3">{card.description}</p>
+                      <p className="text-sm text-gray-600 truncate mb-3">Category: {card.category}</p>
 
                       {/* Metadata */}
                       <div className="flex items-center justify-between text-xs text-gray-500">

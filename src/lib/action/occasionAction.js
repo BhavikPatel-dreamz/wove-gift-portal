@@ -23,6 +23,10 @@ const OccasionSchema = z.object({
         .max(500, "Description must be less than 500 characters")
         .default('')
         .transform(val => val?.trim() || ''),
+    type: z.string()
+        .min(1, "Type is required")
+        .max(100, "Type must be less than 100 characters")
+        .trim(),
     isActive: z.boolean().default(false),
     image: z.string().optional(),
 });
@@ -43,6 +47,10 @@ const OccasionCategorySchema = z.object({
     emoji: z.string()
         .min(1, "Emoji is required")
         .max(10, "Emoji must be less than 10 characters"),
+    category: z.string()
+        .min(1, "Category is required")
+        .max(100, "Category must be less than 100 characters")
+        .trim(),
     isActive: z.boolean().default(false),
     occasionId: z.string().min(1, "Occasion ID is required").trim(),
     image: z.string().optional(),
@@ -144,6 +152,7 @@ export async function addOccasion(formData) {
             name: (val) => val?.toString().trim() || '',
             emoji: (val) => val?.toString() || '🎉',
             description: (val) => val?.toString().trim() || '',
+            type: (val) => val?.toString().trim() || '',
             isActive: (val) => val === 'true' || val === 'on'
         });
 
@@ -151,7 +160,7 @@ export async function addOccasion(formData) {
         const validationError = handleValidationError(validationResult);
         if (validationError) return validationError;
 
-        const { name, emoji, description, isActive } = validationResult.data;
+        const { name, emoji, description, type, isActive } = validationResult.data;
 
         // Check for existing occasion
         const existingOccasion = await prisma.occasion.findUnique({
@@ -175,6 +184,7 @@ export async function addOccasion(formData) {
                 name,
                 emoji,
                 description,
+                type,
                 isActive,
                 image: imagePath,
             }
@@ -204,6 +214,7 @@ export async function updateOccasion(formData) {
             name: (val) => val?.toString().trim(),
             emoji: (val) => val?.toString(),
             description: (val) => val?.toString().trim(),
+            type: (val) => val?.toString().trim(),
             isActive: (val) => val === 'true' || val === 'on' ? true : val === 'false' ? false : undefined
         });
 
@@ -486,6 +497,7 @@ export async function addOccasionCategory(formData) {
             name: (val) => val?.toString().trim() || '',
             description: (val) => val?.toString().trim() || '',
             emoji: (val) => val?.toString() || '',
+            category: (val) => val?.toString().trim() || '',
             isActive: (val) => val === 'true' || val === 'on',
             occasionId: (val) => val?.toString().trim() || '',
         });
@@ -494,7 +506,7 @@ export async function addOccasionCategory(formData) {
         const validationError = handleValidationError(validationResult);
         if (validationError) return validationError;
 
-        const { name, description, emoji, isActive, occasionId } = validationResult.data;
+        const { name, description, emoji, category, isActive, occasionId } = validationResult.data;
 
         // Check if category already exists
         const existingCategory = await prisma.occasionCategory.findUnique({
@@ -527,6 +539,7 @@ export async function addOccasionCategory(formData) {
                 name,
                 description,
                 emoji,
+                category,
                 image: imagePath,
                 isActive,
                 occasionId,
@@ -559,6 +572,7 @@ export async function updateOccasionCategory(formData) {
             name: (val) => val?.toString().trim(),
             description: (val) => val?.toString().trim(),
             emoji: (val) => val?.toString(),
+            category: (val) => val?.toString().trim(),
             isActive: (val) => val === 'true' || val === 'on' ? true : val === 'false' ? false : undefined,
             occasionId: (val) => val?.toString().trim(),
         });

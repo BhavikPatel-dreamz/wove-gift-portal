@@ -13,6 +13,7 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
     name: '',
     emoji: '🎉',
     description: '',
+    type: '',
     isActive: true,
     image: null
   });
@@ -25,6 +26,7 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
         name: occasion.name || '',
         emoji: occasion.emoji || '🎉',
         description: occasion.description || '',
+        type: occasion.type || '',
         isActive: occasion.isActive !== undefined ? occasion.isActive : true,
         image: occasion.image || null
       });
@@ -33,6 +35,7 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
         name: '',
         emoji: '🎉',
         description: '',
+        type: '',
         isActive: true,
         image: null
       });
@@ -102,6 +105,18 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
                 name="name"
                 placeholder="e.g., Birthday Party, Wedding Anniversary"
                 value={formData.name}
+                onChange={handleInputChange}
+                required
+                className="text-base"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Input
+                label="Type"
+                name="type"
+                placeholder="e.g., Holiday, Celebration"
+                value={formData.type}
                 onChange={handleInputChange}
                 required
                 className="text-base"

@@ -50,6 +50,7 @@ const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = fals
         <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem] flex-grow" title={occasion.description}>
           {occasion.description || 'No description available'}
         </p>
+        <p className="text-gray-500 text-xs mb-4">Type: {occasion.type}</p>
 
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
           <span className="text-sm font-medium text-gray-500">

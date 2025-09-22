@@ -17,6 +17,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
   const [formData, setFormData] = useState({
     cardName: '',
     internalDescription: '',
+    category: '',
     isActive: true,
     previewEmoji: '🎁',
     imageUrl: null,
@@ -31,6 +32,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
       const newFormData = {
         cardName: initialCardData.title || '',
         internalDescription: initialCardData.description || '',
+        category: initialCardData.category || '',
         isActive: initialCardData.active ?? true,
         previewEmoji: initialCardData.preview || '🎁',
         imageUrl: initialCardData.imageUrl || null,
@@ -54,6 +56,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
 
     data.append('name', formData.cardName);
     data.append('description', formData.internalDescription);
+    data.append('category', formData.category);
     data.append('emoji', formData.previewEmoji);
     data.append('isActive', formData.isActive);
     data.append('occasionId', occasion.id);
@@ -135,6 +138,14 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
               value={formData.internalDescription}
               onChange={(e) => updateFormData('internalDescription', e.target.value)}
               rows={3}
+            />
+
+            <Input
+              label="Category"
+              placeholder="e.g., Funny, Romantic"
+              value={formData.category}
+              onChange={(e) => updateFormData('category', e.target.value)}
+              required
             />
 
             <ImageUpload
