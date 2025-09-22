@@ -12,8 +12,6 @@ import ReviewConfirmStep from "./ReviewConfirmStep";
 import PaymentStep from "./PaymentStep";
 
 const StepRenderer = () => {
-  const state = useSelector((state) => state);
-  console.log("state", state);
   const { currentStep } = useSelector((state) => state.giftFlowReducer);
 
   switch (currentStep) {

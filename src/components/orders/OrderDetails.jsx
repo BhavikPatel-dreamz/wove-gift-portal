@@ -17,7 +17,6 @@ const OrderDetails = ({ order }) => {
           <h3 className="text-xl font-semibold mb-4 text-gray-700">Basic Information</h3>
           <div className="space-y-3">
             <p><strong>Order ID:</strong> {order.orderNumber}</p>
-            <p><strong>Gift Code:</strong> <span className="font-mono bg-gray-100 p-1 rounded">{order.giftCode}</span></p>
             <p><strong>Status:</strong> <span className={`px-2 py-1 text-sm font-semibold rounded-full ${getStatusColor(order.redemptionStatus)}`}>{order.redemptionStatus}</span></p>
             <p><strong>Order Date:</strong> {new Date(order.timestamp).toLocaleString()}</p>
             <p><strong>Amount:</strong> <span className="font-bold text-green-600">${order.amount} {order.currency}</span></p>
@@ -59,11 +58,28 @@ const OrderDetails = ({ order }) => {
           <h3 className="text-xl font-semibold mb-4 text-gray-700">Payment & Delivery</h3>
           <div className="space-y-3">
             <p><strong>Payment Method:</strong> {order.paymentMethod}</p>
-            <p><strong>Total Amount:</strong> <span className="font-bold text-green-600">${order.totalAmount}</span></p>
+            <p><strong>Total Amount:</strong> <span className="font-bold text-green-.600">${order.totalAmount}</span></p>
             <p><strong>Delivery Method:</strong> {order.deliveryMethod}</p>
             <p><strong>Send Type:</strong> {order.sendType === 'sendImmediately' ? 'Sent Immediately' : 'Scheduled'}</p>
           </div>
         </div>
+
+        {/* Voucher Codes */}
+        {order.voucherCodes && order.voucherCodes.length > 0 && (
+          <div className="md:col-span-2 bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="text-xl font-semibold mb-4 text-gray-700">Voucher Codes</h3>
+            <div className="space-y-4">
+              {order.voucherCodes.map((voucher) => (
+                <div key={voucher.id} className="p-4 border rounded-lg bg-gray-50">
+                  <p><strong>Code:</strong> <span className="font-mono bg-gray-200 p-1 rounded">{voucher.code}</span></p>
+                  <p><strong>Original Value:</strong> ${voucher.originalValue}</p>
+                  <p><strong>Remaining Value:</strong> ${voucher.remainingValue}</p>
+                  <p><strong>Status:</strong> {voucher.isRedeemed ? 'Redeemed' : 'Not Redeemed'}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Personal Message */}
         <div className="md:col-span-2 bg-white p-6 rounded-lg shadow-sm">

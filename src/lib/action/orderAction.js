@@ -65,7 +65,6 @@ export const createOrder = async (orderData) => {
           yourFullName: deliveryDetails.yourFullName,
           yourEmailAddress: deliveryDetails.yourEmailAddress,
         }),
-        giftCode: generateGiftCode(),
         orderNumber: generateOrderNumber(),
         paymentMethod: selectedPaymentMethod,
         totalAmount: selectedAmount.value,
@@ -75,6 +74,16 @@ export const createOrder = async (orderData) => {
         timestamp: new Date(),
       },
     });
+
+     await prisma.voucherCode.create({
+        data: {
+            code: generateGiftCode(),
+            orderId: order.id,
+            giftCardId: selectedBrand.vouchers[0].id,
+            originalValue: selectedAmount.value,
+            remainingValue: selectedAmount.value,
+        }
+    })
 
     return {
       success: true,
@@ -111,9 +120,9 @@ export async function getOrders(params = {}) {
         if (search) {
             whereClause.OR = [
                 { orderNumber: { contains: search, mode: 'insensitive' } },
-                { giftCode: { contains: search, mode: 'insensitive' } },
                 { senderDetails: { contains: search, mode: 'insensitive' } },
                 { message: { contains: search, mode: 'insensitive' } },
+                { voucherCodes: { some: { code: { contains: search, mode: 'insensitive' } } } },
             ];
         }
 
@@ -212,7 +221,8 @@ export async function getOrderById(orderId) {
                 occasions: true,
                 user: true,
                 occasionCategory: true,
-                customCard: true
+                customCard: true,
+                voucherCodes: true,
             }
         });
 
