@@ -203,35 +203,35 @@ model ReceiverDetail {
 }
 
 model Order {
-  id                 String               @id @default(cuid())
+  id                 String   @id @default(cuid())
   brandId            String
   occasionId         String
-  occasionCategoryId String?
-  customCardId       String?
-  subSubCategoryId   String?
+  subCategoryId      String?           // predefined category
+  customCardId       String?           // custom card
   amount             Int
   currency           String?
   message            String
-  isActive           Boolean              @default(false)
-  sendType           SendStatus           @default(sendImmediately)
+  isActive           Boolean           @default(false)
+  sendType           SendStatus        @default(sendImmediately)
   deliveryMethod     deliveryMethodStatus @default(whatsapp)
   senderDetails      String
   giftCode           String
   orderNumber        String
-  paymentMethod       String
+  paymentMethod      String
   paymentStatus      String?
-  totalAmount        Int?                 @default(0)
-  redemptionStatus   RedemptionStatus     @default(Issued)
-  timestamp          DateTime             @default(now())
+  totalAmount        Int?              @default(0)
+  redemptionStatus   RedemptionStatus  @default(Issued)
+  timestamp          DateTime          @default(now())
   userId             String
   receiverDetailId   String
-  occasions          Occasion             @relation(fields: [occasionId], references: [id], onDelete: Cascade)
-  brands             Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  receiverDetail     ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
-  occasionCategory   OccasionCategory?    @relation(fields: [occasionCategoryId], references: [id])
-  customCard         CustomCard?          @relation(fields: [customCardId], references: [id])
+  occasions          Occasion          @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  brands             Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receiverDetail     ReceiverDetail    @relation(fields: [receiverDetailId], references: [id])
+  occasionCategory   OccasionCategory? @relation(fields: [subCategoryId], references: [id])
+  customCard         CustomCard?       @relation(fields: [customCardId], references: [id])
 }
+
 
 model Settlements {
   id              String   @id @default(cuid())

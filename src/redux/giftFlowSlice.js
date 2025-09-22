@@ -8,7 +8,6 @@ const giftFlowSlice = createSlice({
     selectedAmount: null,
     selectedOccasion: null,
     selectedSubCategory: null,
-    selectedSubSubCategory: null,
     selectedTiming: null, // Stores timing selection
     personalMessage: "", // Stores user's message
     deliveryMethod: "email", // 'whatsapp', 'email', 'print'
@@ -109,7 +108,6 @@ const giftFlowSlice = createSlice({
         selectedAmount: null,
         selectedOccasion: null,
         selectedSubCategory: null,
-        selectedSubSubCategory: null,
         selectedTiming: null,
         personalMessage: "",
         deliveryMethod: null,

@@ -36,7 +36,6 @@ export const createOrder = async (orderData) => {
     selectedAmount,
     selectedOccasion,
     selectedSubCategory,
-    selectedSubSubCategory,
     personalMessage,
     deliveryMethod,
     deliveryDetails,
@@ -56,8 +55,8 @@ export const createOrder = async (orderData) => {
       data: {
         brandId: selectedBrand.id,
         occasionId: selectedOccasion,
-        subCategoryId: selectedSubCategory,
-        subSubCategoryId: selectedSubSubCategory,
+        subCategoryId: selectedSubCategory.isCustom ? null : selectedSubCategory.id,
+        customCardId: selectedSubCategory.isCustom ? selectedSubCategory.id : null,
         amount: selectedAmount.value,
         currency: selectedAmount.currency,
         message: personalMessage,
@@ -210,12 +209,10 @@ export async function getOrderById(orderId) {
                     }
                 },
                 receiverDetail: true,
-                occasions: {
-                    include: {
-                        occasionCategory: true
-                    }
-                },
-                user: true
+                occasions: true,
+                user: true,
+                occasionCategory: true,
+                customCard: true
             }
         });
 
@@ -227,36 +224,9 @@ export async function getOrderById(orderId) {
             };
         }
 
-        let subCategoryDetails = null;
-        let subSubCategoryDetails = null;
-
-        const categoryIdsToFetch = [];
-        if (order.subCategoryId) {
-            categoryIdsToFetch.push(order.subCategoryId);
-        }
-        if (order.subSubCategoryId) {
-            categoryIdsToFetch.push(order.subSubCategoryId);
-        }
-
-        if (categoryIdsToFetch.length > 0) {
-            const fetchedCategories = await prisma.occasionCategory.findMany({
-                where: {
-                    id: { in: categoryIdsToFetch }
-                },
-                select: { id: true, name: true }
-            });
-
-            if (order.subCategoryId) {
-                subCategoryDetails = fetchedCategories.find(cat => cat.id === order.subCategoryId);
-            }
-            if (order.subSubCategoryId) {
-                subSubCategoryDetails = fetchedCategories.find(cat => cat.id === order.subSubCategoryId);
-            }
-        }
-
         return {
             success: true,
-            data: { ...order, subCategory: subCategoryDetails, subSubCategory: subSubCategoryDetails }
+            data: order
         };
 
     } catch (error) {
