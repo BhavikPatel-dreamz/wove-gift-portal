@@ -103,7 +103,7 @@ model Vouchers {
   denominationype         String?
   denominations           Json?
   denominationCurrency    String?
-  denominationValue Int?   
+  denominationValue Int?
   maxAmount               Int?               @default(0)
   minAmount               Int?               @default(0)
   expiryPolicy            String
@@ -186,6 +186,7 @@ model OccasionCategory {
   updatedAt        DateTime           @updatedAt
   occasionId  String
   occasions   Occasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  orders      Order[]
 }
 
 model Categories {
@@ -205,7 +206,8 @@ model Order {
   id                 String               @id @default(cuid())
   brandId            String
   occasionId         String
-  subCategoryId      String?
+  occasionCategoryId String?
+  customCardId       String?
   subSubCategoryId   String?
   amount             Int
   currency           String?
@@ -216,8 +218,8 @@ model Order {
   senderDetails      String
   giftCode           String
   orderNumber        String
-  paymentMethod       String              
-  paymentStatus      String?  
+  paymentMethod       String
+  paymentStatus      String?
   totalAmount        Int?                 @default(0)
   redemptionStatus   RedemptionStatus     @default(Issued)
   timestamp          DateTime             @default(now())
@@ -227,6 +229,8 @@ model Order {
   brands             Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
   user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   receiverDetail     ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
+  occasionCategory   OccasionCategory?    @relation(fields: [occasionCategoryId], references: [id])
+  customCard         CustomCard?          @relation(fields: [customCardId], references: [id])
 }
 
 model Settlements {
@@ -327,4 +331,16 @@ enum SettlementFrequencyStatus {
   weekly
   monthly
   quarterly
+}
+
+model CustomCard {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  bgColor     String?
+  bgImage     String?  @db.Text
+  emoji       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      Order[]
 }
