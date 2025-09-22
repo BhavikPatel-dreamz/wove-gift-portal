@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   ShoppingCart, 
   Store, 
-  Plus, 
   Calendar, 
   BarChart3, 
   FileText, 
@@ -13,13 +13,11 @@ import {
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const router = useRouter();
   const pathname = usePathname();
   
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
     { name: 'Orders', icon: ShoppingCart, href: '/orders' },
-    // { name: 'Brands', icon: Store, href: '/brands' },
     { name: 'Brands', icon: Store, href: '/brandsPartner' },
     { name: 'Occasions', icon: Calendar, href: '/occasions' },
     { name: 'Data', icon: BarChart3, href: '/data' },
@@ -27,14 +25,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Reports', icon: FileText, href: '/reports' },
     { name: 'Controls', icon: Settings, href: '/controls' },
   ];
-
-  const handleNavigation = (href) => {
-    router.push(href);
-    // Close sidebar on mobile after navigation
-    if (onClose) {
-      onClose();
-    }
-  };
 
   // Check if the current path matches the menu item
   const isActiveItem = (href) => {
@@ -81,8 +71,9 @@ const Sidebar = ({ isOpen, onClose }) => {
           <ul className="space-y-2">
             {menuItems.map((item) => (
               <li key={item.name}>
-                <button
-                  onClick={() => handleNavigation(item.href)}
+                <Link
+                  href={item.href}
+                  onClick={onClose}
                   className={`
                     w-full flex items-center px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors cursor-pointer
                     ${isActiveItem(item.href)
@@ -93,7 +84,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 >
                   <item.icon className="w-5 h-5 mr-3" />
                   {item.name}
-                </button>
+                </Link>
               </li>
             ))}
           </ul>
