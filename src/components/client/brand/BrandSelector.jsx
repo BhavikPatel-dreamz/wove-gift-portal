@@ -15,11 +15,6 @@ import ProgressIndicator from "./ProgressIndicator";
 
 const BrandSelector = () => {
   const dispatch = useDispatch();
-  const state = useSelector((state) => state);
-
-  console.log("state",state);
-
-
   const {
     searchTerm,
     selectedCategory,
