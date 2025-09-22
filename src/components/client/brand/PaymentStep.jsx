@@ -156,10 +156,10 @@ const PaymentStep = () => {
               <span className="text-gray-500">Order Number:</span>
               <span className="font-semibold text-gray-800">{order.orderNumber}</span>
             </div>
-            <div className="flex justify-between">
+            {/* <div className="flex justify-between">
               <span className="text-gray-500">Gift Code:</span>
               <span className="font-semibold text-gray-800">{order.giftCode}</span>
-            </div>
+            </div> */}
             <div className="flex justify-between">
               <span className="text-gray-500">Amount:</span>
               <span className="font-semibold text-gray-800">{order.currency} {order.totalAmount}</span>
