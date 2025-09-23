@@ -70,8 +70,8 @@ const BrandSelectionStep = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-orange-500 mx-auto"></div>
-          <h2 className="text-2xl font-semibold text-gray-700 mt-4">Loading Brands...</h2>
+          <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-wave-orange mx-auto"></div>
+          <h2 className="text-2xl font-semibold text-wave-green mt-4">Loading Brands...</h2>
         </div>
       </div>
     );
@@ -80,7 +80,7 @@ const BrandSelectionStep = () => {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md">
+        <div className="text-center p-8 bg-wave-cream rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-red-600">Error: {error}</h2>
         </div>
       </div>
@@ -100,10 +100,10 @@ const BrandSelectionStep = () => {
       </button> */}
 
       <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent mb-4">
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-wave-orange to-wave-orange-dark bg-clip-text text-transparent mb-4">
           Pick Your Perfect Brand
         </h1>
-        <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+        <p className="text-wave-green text-lg max-w-2xl mx-auto">
           Choose from our curated brands to make their day unforgettable 👍
         </p>
       </div>
@@ -121,7 +121,7 @@ const BrandSelectionStep = () => {
           icon={<span>💎</span>}
           title="Premium Collection"
           subtitle="Luxury brands for those special moments"
-          bgColor="bg-purple-500"
+          bgColor="bg-wave-orange"
         />
         <CardGrid
           brands={filteredPremiumBrands}

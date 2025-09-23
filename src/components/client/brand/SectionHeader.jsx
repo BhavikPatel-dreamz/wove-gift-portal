@@ -6,7 +6,7 @@ const SectionHeader = ({ icon, title, subtitle, bgColor = "bg-purple-500" }) => 
       {icon}
       <h2 className="text-lg font-semibold">{title}</h2>
     </div>
-    <p className="text-purple-100 text-sm">{subtitle}</p>
+    <p className="text-wave-cream-dark text-sm">{subtitle}</p>
   </div>
 );
 

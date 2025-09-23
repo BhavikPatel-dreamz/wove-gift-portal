@@ -84,7 +84,7 @@ const PersonalMessageStep = () => {
               <span className="mr-2">✨</span>
               <span className="text-sm">💡 Tip: Be genuine and speak from the heart</span>
             </div>
-            <div className={`text-sm font-medium ${message.length > maxChars * 0.9 ? 'text-red-500' : 'text-gray-500'}`}>
+            <div className={`text-sm font-medium ${message.length > maxChars * 0.9 ? 'text-red-500' : 'text-wave-brown'}`}>
               {message.length}/{maxChars}
             </div>
           </div>

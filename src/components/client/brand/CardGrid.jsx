@@ -19,16 +19,16 @@ const CardGrid = ({
         {Array.from({ length: 8 }).map((_, index) => (
           <div
             key={index}
-            className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-6 animate-pulse"
+            className="bg-gradient-to-br from-wave-cream to-wave-cream-dark rounded-2xl p-6 animate-pulse"
           >
             <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 bg-gray-300 rounded-2xl"></div>
+              <div className="w-20 h-20 bg-wave-cream-dark rounded-2xl"></div>
             </div>
             <div className="text-center space-y-3">
-              <div className="h-6 bg-gray-300 rounded-full w-20 mx-auto"></div>
-              <div className="h-5 bg-gray-300 rounded w-32 mx-auto"></div>
-              <div className="h-4 bg-gray-300 rounded w-full"></div>
-              <div className="h-4 bg-gray-300 rounded w-3/4 mx-auto"></div>
+              <div className="h-6 bg-wave-cream-dark rounded-full w-20 mx-auto"></div>
+              <div className="h-5 bg-wave-cream-dark rounded w-32 mx-auto"></div>
+              <div className="h-4 bg-wave-cream-dark rounded w-full"></div>
+              <div className="h-4 bg-wave-cream-dark rounded w-3/4 mx-auto"></div>
             </div>
           </div>
         ))}
@@ -40,11 +40,11 @@ const CardGrid = ({
   if (!brands || brands.length === 0) {
     return (
       <div className="text-center py-16">
-        <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <Sparkles className="w-12 h-12 text-gray-400" />
+        <div className="w-24 h-24 bg-gradient-to-br from-wave-cream to-wave-cream-dark rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <Sparkles className="w-12 h-12 text-wave-brown" />
         </div>
-        <h3 className="text-xl font-semibold text-gray-600 mb-2">No brands available</h3>
-        <p className="text-gray-500">Check back later for new gift card options.</p>
+        <h3 className="text-xl font-semibold text-wave-green mb-2">No brands available</h3>
+        <p className="text-wave-brown">Check back later for new gift card options.</p>
       </div>
     );
   }

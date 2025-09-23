@@ -1,3 +1,4 @@
+"use client"
 import { useState } from "react";
 import { ArrowRight, ExternalLink, Star, Grid3X3, List } from 'lucide-react';
 
