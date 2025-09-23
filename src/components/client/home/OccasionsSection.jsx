@@ -24,14 +24,14 @@ const OccasionsSection = ({ occasions = [] }) => {
 
   if (!occasions.length) {
     return (
-      <section className="py-20 bg-gradient-to-br from-purple-50 via-white to-pink-50">
+      <section className="py-20 bg-wave-cream">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-white rounded-2xl p-12 shadow-lg">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Sparkles className="w-10 h-10 text-gray-400" />
+          <div className="bg-wave-cream rounded-2xl p-12 shadow-lg">
+            <div className="w-20 h-20 bg-wave-cream-dark rounded-full flex items-center justify-center mx-auto mb-6">
+              <Sparkles className="w-10 h-10 text-wave-brown" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">No Occasions Available</h3>
-            <p className="text-gray-500">Check back later for amazing occasions to celebrate!</p>
+            <h3 className="text-xl font-semibold text-wave-green mb-2">No Occasions Available</h3>
+            <p className="text-wave-brown">Check back later for amazing occasions to celebrate!</p>
           </div>
         </div>
       </section>
@@ -39,26 +39,26 @@ const OccasionsSection = ({ occasions = [] }) => {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-br from-purple-50 via-white to-pink-50 relative overflow-hidden">
+    <section className="min-h-screen flex items-center justify-center py-20 bg-wave-cream relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-purple-300 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-40 h-40 bg-pink-300 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-blue-200 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 left-20 w-32 h-32 bg-wave-orange-light rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-wave-green-light rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-wave-cream-dark rounded-full blur-3xl"></div>
       </div>
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-white px-6 py-2 rounded-full shadow-lg mb-6">
-            <Sparkles className="w-5 h-5 text-purple-500" />
-            <span className="text-purple-600 font-semibold">Special Occasions</span>
+          <div className="inline-flex items-center gap-2 bg-wave-cream px-6 py-2 rounded-full shadow-lg mb-6">
+            <Sparkles className="w-5 h-5 text-wave-orange" />
+            <span className="text-wave-orange font-semibold">Special Occasions</span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-wave-green mb-4">
             Choose Your Perfect
-            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"> Occasion</span>
+            <span className="bg-gradient-to-r from-wave-orange to-wave-orange-dark bg-clip-text text-transparent"> Occasion</span>
           </h2>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+          <p className="text-wave-green text-lg max-w-2xl mx-auto leading-relaxed">
             Discover the perfect way to celebrate life's special moments with our curated collection of occasions
           </p>
         </div>
@@ -68,10 +68,10 @@ const OccasionsSection = ({ occasions = [] }) => {
           <div className="flex justify-center items-center gap-4 mb-8">
             <button
               onClick={prevSlide}
-              className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl transition-all duration-300 group border border-gray-200"
+              className="p-3 rounded-full bg-wave-cream shadow-lg hover:shadow-xl transition-all duration-300 group border border-wave-cream"
               disabled={occasions.length <= itemsPerPage}
             >
-              <ChevronLeft className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors" />
+              <ChevronLeft className="w-5 h-5 text-wave-green group-hover:text-wave-orange transition-colors" />
             </button>
             
             <div className="flex gap-2">
@@ -81,8 +81,8 @@ const OccasionsSection = ({ occasions = [] }) => {
                   onClick={() => setCurrentIndex(index)}
                   className={`w-3 h-3 rounded-full transition-all duration-300 ${
                     index === currentIndex 
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 w-8' 
-                      : 'bg-gray-300 hover:bg-gray-400'
+                      ? 'bg-gradient-to-r from-wave-orange to-wave-orange-dark w-8' 
+                      : 'bg-wave-cream-dark hover:bg-wave-cream'
                   }`}
                 />
               ))}
@@ -90,10 +90,10 @@ const OccasionsSection = ({ occasions = [] }) => {
             
             <button
               onClick={nextSlide}
-              className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl transition-all duration-300 group border border-gray-200"
+              className="p-3 rounded-full bg-wave-cream shadow-lg hover:shadow-xl transition-all duration-300 group border border-wave-cream"
               disabled={occasions.length <= itemsPerPage}
             >
-              <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-purple-600 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-wave-green group-hover:text-wave-orange transition-colors" />
             </button>
           </div>
         )}
@@ -106,21 +106,21 @@ const OccasionsSection = ({ occasions = [] }) => {
         </div>
 
         {/* Stats */}
-        <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+        <div className="bg-wave-cream rounded-2xl p-8 shadow-lg border border-wave-cream">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-purple-600 mb-2">{occasions.length}</div>
-              <div className="text-gray-600 font-medium">Total Occasions</div>
+              <div className="text-3xl font-bold text-wave-orange mb-2">{occasions.length}</div>
+              <div className="text-wave-green font-medium">Total Occasions</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-pink-600 mb-2">
+              <div className="text-3xl font-bold text-wave-orange mb-2">
                 {occasions.filter(o => o.isActive).length}
               </div>
-              <div className="text-gray-600 font-medium">Active Occasions</div>
+              <div className="text-wave-green font-medium">Active Occasions</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-blue-600 mb-2">100%</div>
-              <div className="text-gray-600 font-medium">Customer Satisfaction</div>
+              <div className="text-3xl font-bold text-wave-green mb-2">100%</div>
+              <div className="text-wave-green font-medium">Customer Satisfaction</div>
             </div>
           </div>
         </div>

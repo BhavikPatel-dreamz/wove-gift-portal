@@ -1,0 +1,322 @@
+/* Wave Gifts Brand Override CSS */
+/* Import this file after Tailwind CSS to override default styles */
+
+:root {
+  /* Primary Brand Colors */
+  --wave-orange-primary: #FF6B35;
+  --wave-orange-light: #FF8A5C;
+  --wave-orange-dark: #E55A2B;
+  
+  /* Secondary Colors */
+  --wave-cream: #F5F3E7;
+  --wave-cream-dark: #EBE7D4;
+  --wave-green-primary: #2D5A3D;
+  --wave-green-light: #3B6B4F;
+  --wave-green-dark: #1F3D2A;
+  
+  /* Neutral Colors */
+  --wave-brown: #8B4513;
+  --wave-brown-light: #A0522D;
+  --wave-white: #FFFFFF;
+  --wave-black: #1A1A1A;
+  
+  /* Typography */
+  --wave-font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --wave-font-heading: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Override Tailwind's primary colors */
+.bg-primary,
+.bg-orange-500 {
+  background-color: var(--wave-orange-primary) !important;
+}
+
+.bg-primary-light,
+.bg-orange-400 {
+  background-color: var(--wave-orange-light) !important;
+}
+
+.bg-primary-dark,
+.bg-orange-600 {
+  background-color: var(--wave-orange-dark) !important;
+}
+
+.bg-secondary,
+.bg-green-700 {
+  background-color: var(--wave-green-primary) !important;
+}
+
+.bg-green-600 {
+  background-color: var(--wave-green-light) !important;
+}
+
+.bg-green-800 {
+  background-color: var(--wave-green-dark) !important;
+}
+
+.bg-cream,
+.bg-yellow-50 {
+  background-color: var(--wave-cream) !important;
+}
+
+.bg-cream-dark,
+.bg-yellow-100 {
+  background-color: var(--wave-cream-dark) !important;
+}
+
+/* Text Colors */
+.text-primary,
+.text-orange-500 {
+  color: var(--wave-orange-primary) !important;
+}
+
+.text-primary-dark,
+.text-orange-600 {
+  color: var(--wave-orange-dark) !important;
+}
+
+.text-secondary,
+.text-green-700 {
+  color: var(--wave-green-primary) !important;
+}
+
+.text-green-800 {
+  color: var(--wave-green-dark) !important;
+}
+
+.text-brown {
+  color: var(--wave-brown) !important;
+}
+
+/* Border Colors */
+.border-primary,
+.border-orange-500 {
+  border-color: var(--wave-orange-primary) !important;
+}
+
+.border-secondary,
+.border-green-700 {
+  border-color: var(--wave-green-primary) !important;
+}
+
+.border-cream {
+  border-color: var(--wave-cream-dark) !important;
+}
+
+/* Button Overrides */
+.btn-primary,
+.bg-blue-500,
+.bg-blue-600 {
+  background-color: var(--wave-orange-primary) !important;
+  border-color: var(--wave-orange-primary) !important;
+  color: white !important;
+}
+
+.btn-primary:hover,
+.bg-blue-500:hover,
+.bg-blue-600:hover,
+.hover\:bg-blue-600:hover {
+  background-color: var(--wave-orange-dark) !important;
+  border-color: var(--wave-orange-dark) !important;
+}
+
+.btn-secondary {
+  background-color: var(--wave-green-primary) !important;
+  border-color: var(--wave-green-primary) !important;
+  color: white !important;
+}
+
+.btn-secondary:hover {
+  background-color: var(--wave-green-dark) !important;
+  border-color: var(--wave-green-dark) !important;
+}
+
+.btn-outline {
+  background-color: transparent !important;
+  border: 2px solid var(--wave-orange-primary) !important;
+  color: var(--wave-orange-primary) !important;
+}
+
+.btn-outline:hover {
+  background-color: var(--wave-orange-primary) !important;
+  color: white !important;
+}
+
+/* Card Components */
+.card {
+  background-color: var(--wave-cream) !important;
+  border: 1px solid var(--wave-cream-dark) !important;
+  border-radius: 12px !important;
+}
+
+.card-header {
+  background-color: var(--wave-orange-primary) !important;
+  color: white !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 1rem 1.5rem !important;
+}
+
+.card-body {
+  padding: 1.5rem !important;
+}
+
+/* Form Elements */
+.form-input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  border: 2px solid var(--wave-cream-dark) !important;
+  background-color: var(--wave-white) !important;
+  border-radius: 8px !important;
+  padding: 0.75rem 1rem !important;
+  font-family: var(--wave-font-primary) !important;
+}
+
+.form-input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--wave-orange-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1) !important;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--wave-font-heading) !important;
+  font-weight: 600 !important;
+  color: var(--wave-green-primary) !important;
+}
+
+.heading-primary {
+  color: var(--wave-orange-primary) !important;
+  font-weight: 700 !important;
+}
+
+.text-muted {
+  color: var(--wave-brown) !important;
+}
+
+/* Navigation */
+.navbar {
+  background-color: var(--wave-cream) !important;
+  border-bottom: 1px solid var(--wave-cream-dark) !important;
+}
+
+.nav-link {
+  color: var(--wave-green-primary) !important;
+  font-weight: 500 !important;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--wave-orange-primary) !important;
+}
+
+/* Alert/Notification Components */
+.alert-success {
+  background-color: rgba(45, 90, 61, 0.1) !important;
+  border-color: var(--wave-green-primary) !important;
+  color: var(--wave-green-dark) !important;
+}
+
+.alert-warning {
+  background-color: rgba(255, 107, 53, 0.1) !important;
+  border-color: var(--wave-orange-primary) !important;
+  color: var(--wave-orange-dark) !important;
+}
+
+.alert-info {
+  background-color: var(--wave-cream) !important;
+  border-color: var(--wave-cream-dark) !important;
+  color: var(--wave-brown) !important;
+}
+
+/* Badge/Tag Components */
+.badge {
+  background-color: var(--wave-orange-primary) !important;
+  color: white !important;
+  border-radius: 20px !important;
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+
+.badge-secondary {
+  background-color: var(--wave-green-primary) !important;
+}
+
+.badge-outline {
+  background-color: transparent !important;
+  border: 1px solid var(--wave-orange-primary) !important;
+  color: var(--wave-orange-primary) !important;
+}
+
+/* Loading States */
+.loading-spinner {
+  border-color: var(--wave-cream-dark) !important;
+  border-top-color: var(--wave-orange-primary) !important;
+}
+
+/* Shadows */
+.shadow-brand {
+  box-shadow: 0 4px 6px rgba(255, 107, 53, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+.shadow-brand-lg {
+  box-shadow: 0 10px 15px rgba(255, 107, 53, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Utility Classes for Brand Colors */
+.bg-wave-orange { background-color: var(--wave-orange-primary) !important; }
+.bg-wave-orange-light { background-color: var(--wave-orange-light) !important; }
+.bg-wave-orange-dark { background-color: var(--wave-orange-dark) !important; }
+.bg-wave-green { background-color: var(--wave-green-primary) !important; }
+.bg-wave-green-light { background-color: var(--wave-green-light) !important; }
+.bg-wave-green-dark { background-color: var(--wave-green-dark) !important; }
+.bg-wave-cream { background-color: var(--wave-cream) !important; }
+.bg-wave-cream-dark { background-color: var(--wave-cream-dark) !important; }
+.bg-wave-brown { background-color: var(--wave-brown) !important; }
+
+.text-wave-orange { color: var(--wave-orange-primary) !important; }
+.text-wave-orange-dark { color: var(--wave-orange-dark) !important; }
+.text-wave-green { color: var(--wave-green-primary) !important; }
+.text-wave-green-dark { color: var(--wave-green-dark) !important; }
+.text-wave-brown { color: var(--wave-brown) !important; }
+
+.border-wave-orange { border-color: var(--wave-orange-primary) !important; }
+.border-wave-green { border-color: var(--wave-green-primary) !important; }
+.border-wave-cream { border-color: var(--wave-cream-dark) !important; }
+
+/* Responsive Design Helpers */
+@media (max-width: 768px) {
+  .card {
+    margin: 0.5rem !important;
+    border-radius: 8px !important;
+  }
+  
+  .card-header {
+    padding: 0.75rem 1rem !important;
+    border-radius: 8px 8px 0 0 !important;
+  }
+  
+  .card-body {
+    padding: 1rem !important;
+  }
+}
+
+/* Override any remaining blue colors that might appear */
+.bg-blue-50 { background-color: var(--wave-cream) !important; }
+.bg-blue-100 { background-color: var(--wave-cream-dark) !important; }
+.bg-blue-500 { background-color: var(--wave-orange-primary) !important; }
+.bg-blue-600 { background-color: var(--wave-orange-dark) !important; }
+.bg-blue-700 { background-color: var(--wave-green-primary) !important; }
+
+.text-blue-500 { color: var(--wave-orange-primary) !important; }
+.text-blue-600 { color: var(--wave-orange-dark) !important; }
+.text-blue-700 { color: var(--wave-green-primary) !important; }
+
+.border-blue-500 { border-color: var(--wave-orange-primary) !important; }
+.border-blue-600 { border-color: var(--wave-orange-dark) !important; }
