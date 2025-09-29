@@ -1,8 +1,55 @@
 import { NextResponse } from 'next/server'
 
 export function middleware(request) {
-  const { pathname } = request.nextUrl
+  const { pathname,search} = request.nextUrl
 
+   const urlSearchParams = new URLSearchParams(search);
+  const params = Object.fromEntries(urlSearchParams.entries());
+
+  if (
+    pathname.startsWith('/shopify/install') ||
+    pathname.startsWith('/api/shopify/auth') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon')
+  ) {
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith('/shopify')) {
+    const token = request.cookies.get('shopify_session')?.value;
+    const shop = request.nextUrl.searchParams.get('shop');
+    
+    // If no token or shop parameter, redirect to install
+    if (!token || !shop) {
+      const installUrl = new URL('/shopify/install', request.url);
+      if (shop) installUrl.searchParams.set('shop', shop);
+      return NextResponse.redirect(installUrl);
+    }
+    
+    try {
+      // Verify the JWT token
+      const decoded = jwt.verify(token, process.env.SHOPIFY_SECRET_KEY);
+      
+      // Check if token is for the correct shop
+      if (decoded.shop !== shop) {
+        const installUrl = new URL('/shopify/install', request.url);
+        installUrl.searchParams.set('shop', shop);
+        return NextResponse.redirect(installUrl);
+      }
+      
+      // Add shop info to headers for use in pages
+      const response = NextResponse.next();
+      response.headers.set('x-shopify-shop', decoded.shop);
+      response.headers.set('x-shopify-token', decoded.accessToken);
+      return response;
+      
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      const installUrl = new URL('/shopify/install', request.url);
+      if (shop) installUrl.searchParams.set('shop', shop);
+      return NextResponse.redirect(installUrl);
+    }
+  }
   // Skip auth for public routes (signup & login)
   if (
     pathname.startsWith('/api/auth/signup') ||
@@ -30,5 +77,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/api/:path*'], // applies to all API routes
+  matcher: ['/api/:path*','/shopify/:path*','/((?!api|_next/static|_next/image|favicon.ico).*)',], // applies to all API routes
 }

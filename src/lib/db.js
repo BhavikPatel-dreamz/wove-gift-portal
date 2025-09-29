@@ -5,7 +5,8 @@ let prisma
 if (process.env.NODE_ENV === 'production') {
   prisma = new PrismaClient({ log: ['query'] })
 } else {
-  if (!global.prisma) {
+  // Force refresh in development if shopifySession is not available
+  if (!global.prisma || !global.prisma.shopifySession) {
     global.prisma = new PrismaClient({ log: ['query'] })
   }
   prisma = global.prisma
