@@ -15,7 +15,6 @@ const hashCache = new Map();
 async function hashSensitiveData(data) {
   if (!data) return null;
   
-  // Use cache to avoid rehashing same values
   if (hashCache.has(data)) {
     return hashCache.get(data);
   }
@@ -25,7 +24,7 @@ async function hashSensitiveData(data) {
   return hashed;
 }
 
-// Schemas remain the same...
+// Updated Schemas
 const ContactSchema = z.object({
   id: z.union([z.number(), z.string()]).optional(),
   name: z.string().min(1, "Name is required"),
@@ -38,95 +37,91 @@ const ContactSchema = z.object({
 
 const IntegrationSchema = z.object({
   id: z.union([z.number(), z.string()]).optional(),
-  name: z.string().min(1, "Integration name is required"),
-  platform: z.string().min(1, "Platform is required"),
-  type: z.string().optional(),
-  status: z.enum(["active", "inactive"]).default("inactive"),
+  platform: z.string(),
   storeUrl: z.string().url("Invalid store URL").optional().nullable(),
+  storeName: z.string().optional().nullable(),
   apiKey: z.string().optional().nullable(),
   apiSecret: z.string().optional().nullable(),
   accessToken: z.string().optional().nullable(),
   consumerKey: z.string().optional().nullable(),
   consumerSecret: z.string().optional().nullable(),
-  testConnection: z.boolean().default(false),
+  isActive: z.boolean().default(true),
 });
 
 const BrandPartnerSchema = z.object({
-  // Core
+  // Core Brand Info
   brandName: z.string().min(1, "Brand name is required"),
+  slug: z.string().optional(), // Auto-generated from brandName
   description: z.string().min(1, "Description is required"),
   website: z.string().url("Invalid website URL"),
   contact: z.string().optional(),
-  tagline: z.string().optional(),
-  color: z.string().default("#000000"),
-  categorieName: z.string().min(1, "Category is required"),
-  notes: z.string().optional(),
+  tagline: z.string().optional().nullable(),
+  color: z.string().optional().nullable(),
+  categoryName: z.string().min(1, "Category is required"),
+  notes: z.string().optional().nullable(),
   isActive: z.boolean().default(false),
   isFeature: z.boolean().default(false),
 
-  // Terms
+  // Brand Terms
   settlementTrigger: z.enum(["onRedemption", "onPurchase"]).default("onRedemption"),
-  commissionType: z.any().default("Percentage"),
+  commissionType: z.enum(["Fixed", "Percentage"]).default("Percentage"),
   commissionValue: z.number().min(0, "Commission value must be positive"),
   maxDiscount: z.number().min(0).optional().nullable(),
   minOrderValue: z.number().min(0).optional().nullable(),
-  currency: z.string().optional().nullable(),
-  brackingPolicy: z.string().optional().nullable(),
-  brackingShare: z.number().min(0).max(100).optional().nullable(),
-
+  currency: z.string().default("USD"),
+  breakagePolicy:z.string().optional(),
+  breakageShare: z.number().min(0).max(100).optional().nullable(),
   contractStart: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.string().refine((date) => !isNaN(Date.parse(date)), {
       message: "Invalid contract start date",
     }).optional()
   ),
-
   contractEnd: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.string().refine((date) => !isNaN(Date.parse(date)), {
       message: "Invalid contract end date",
     }).optional()
   ),
-
   goLiveDate: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.string().refine((date) => !isNaN(Date.parse(date)), {
       message: "Invalid go live date",
     }).optional()
   ),
-
   renewContract: z.boolean().default(false),
   vatRate: z.number().min(0).max(100).optional().nullable(),
-  internalNotes: z.string().optional(),
+  internalNotes: z.string().optional().nullable(),
 
-  // Vouchers
-  denominationType: z.any().default("staticDenominations"),
-  denominations: z.any().optional(),
+  // Voucher Configuration
+  denominationType: z.enum(["fixed", "amount"]).default("fixed"),
+  denominations: z.any().optional().nullable(),
   denominationValue: z.any().optional().nullable(),
-  denominationCurrency: z.string().optional().nullable(),
+  denominationCurrency: z.string().default("USD"),
   maxAmount: z.number().min(0).optional().nullable(),
   minAmount: z.number().min(0).optional().nullable(),
-  expiryPolicy: z.any().default("fixedDay"),
-  expiryValue: z.string().min(1, "Expiry value is required"),
-  expiresAt: z.string().optional(),
+  expiryPolicy: z.string().default("fixedDate"),
+  expiryValue: z.string().optional().nullable(),
+  expiresAt: z.string().optional().nullable(),
   graceDays: z.number().min(0).optional().nullable(),
   redemptionChannels: z.any().optional().nullable(),
   partialRedemption: z.boolean().default(false),
   stackable: z.boolean().default(false),
   maxUserPerDay: z.number().min(1).optional().nullable(),
-  termsConditionsURL: z.any().optional().nullable(),
+  termsConditionsURL: z.string().optional().nullable(),
+  productSku: z.string().optional().nullable(),
 
-  // Banking
+  // Banking Details
   settlementFrequency: z.enum(["daily", "weekly", "monthly", "quarterly"]).default("monthly"),
   dayOfMonth: z.number().min(1).max(31).optional().nullable(),
-  payoutMethod: z.enum(["EFT", "wire_transfer", "Manual", "paypal", "stripe"]).default("EFT"),
+  payoutMethod: z.enum(["EFT", "wire_transfer", "paypal", "stripe", "manual"]).default("EFT"),
   invoiceRequired: z.boolean().default(false),
-  remittanceEmail: z.string().email("Invalid email format").optional(),
+  remittanceEmail: z.string().email("Invalid email format").optional().nullable(),
   accountHolder: z.string().min(1, "Account holder is required"),
   accountNumber: z.string().min(1, "Account number is required"),
   branchCode: z.string().min(1, "Branch code is required"),
   bankName: z.string().min(1, "Bank name is required"),
-  swiftCode: z.string().optional(),
+  swiftCode: z.string().optional().nullable(),
   country: z.string().min(1, "Country is required"),
   accountVerification: z.boolean().default(false),
 
@@ -136,6 +131,7 @@ const BrandPartnerSchema = z.object({
 }).refine(
   (data) => {
     if (data?.settlementTrigger === "onPurchase") return true;
+    if (!data.contractStart || !data.contractEnd) return true;
     const startDate = new Date(data.contractStart);
     const endDate = new Date(data.contractEnd);
     return startDate < endDate;
@@ -146,18 +142,27 @@ const BrandPartnerSchema = z.object({
   }
 );
 
+// Helper to generate slug from brand name
+function generateSlug(brandName) {
+  return brandName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 // Helper function to prepare integration data with hashing
 async function prepareIntegrationData(integration, brandId) {
   return {
     brandId,
     platform: integration.platform,
-    storeUrl: integration.storeUrl,
+    storeUrl: integration.storeUrl || null,
+    storeName: integration.storeName || null,
     apiKey: integration.apiKey ? await hashSensitiveData(integration.apiKey) : null,
     apiSecret: integration.apiSecret ? await hashSensitiveData(integration.apiSecret) : null,
     accessToken: integration.accessToken ? await hashSensitiveData(integration.accessToken) : null,
     consumerKey: integration.consumerKey ? await hashSensitiveData(integration.consumerKey) : null,
     consumerSecret: integration.consumerSecret ? await hashSensitiveData(integration.consumerSecret) : null,
-    isActive: integration.status === "active",
+    isActive: integration.isActive ?? true,
   };
 }
 
@@ -210,9 +215,7 @@ export async function createBrandPartner(formData) {
 
         const timestamp = Date.now();
         const extension = parsedData.logoFile.name.split(".").pop();
-        const filename = `${validatedData.brandName
-          .toLowerCase()
-          .replace(/\s+/g, "_")}_${timestamp}.${extension}`;
+        const filename = `${generateSlug(validatedData.brandName)}_${timestamp}.${extension}`;
 
         const filePath = join(uploadDir, filename);
         const bytes = await parsedData.logoFile.arrayBuffer();
@@ -231,93 +234,100 @@ export async function createBrandPartner(formData) {
 
     // Pre-hash sensitive data for integrations
     const integrationDataPromises = (validatedData.integrations || []).map(integration => 
-      prepareIntegrationData(integration, null) // brandId will be set later
+      prepareIntegrationData(integration, null)
     );
     const integrationsData = await Promise.all(integrationDataPromises);
 
-    // Prepare all data before transaction
+    // Prepare denomination value
     const denominationValue = validatedData.denominationValue != null && 
       validatedData.denominationValue !== "" 
       ? parseInt(validatedData.denominationValue, 10) 
       : null;
 
     const currentDate = new Date();
+    const slug = generateSlug(validatedData.brandName);
 
-    // Use transaction with increased timeout and batch operations
+    // Use transaction with increased timeout
     const result = await prisma.$transaction(async (tx) => {
-      // Create brand
+      // Create brand with all nested relations
       const brand = await tx.brand.create({
         data: {
           brandName: validatedData.brandName,
+          slug,
           logo: logoPath,
           description: validatedData.description,
           website: validatedData.website,
           contact: validatedData.contact || "",
-          tagline: validatedData.tagline || "",
+          tagline: validatedData.tagline,
           color: validatedData.color,
-          categorieName: validatedData.categorieName,
-          notes: validatedData.notes || "",
+          categoryName: validatedData.categoryName,
+          notes: validatedData.notes,
           isActive: validatedData.isActive,
           isFeature: validatedData.isFeature,
 
-          // Create all related records in single operations using nested writes
+          // Nested create for BrandTerms (one-to-one)
           brandTerms: {
             create: {
-              settelementTrigger: validatedData.settlementTrigger,
+              settlementTrigger: validatedData.settlementTrigger,
               commissionType: validatedData.commissionType,
               commissionValue: validatedData.commissionValue,
               maxDiscount: validatedData.maxDiscount,
               minOrderValue: validatedData.minOrderValue,
               currency: validatedData.currency,
-              brackingPolicy: validatedData.brackingPolicy,
-              brackingShare: validatedData.brackingShare,
-              contractStart: validatedData.contractStart ? new Date(validatedData.contractStart) : currentDate,
-              contractEnd: validatedData.contractEnd ? new Date(validatedData.contractEnd) : currentDate,
-              goLiveDate: validatedData.goLiveDate ? new Date(validatedData.goLiveDate) : currentDate,
+              breakagePolicy: validatedData.breakagePolicy,
+              breakageShare: validatedData.breakageShare,
+              contractStart: validatedData.contractStart ? new Date(validatedData.contractStart) : null,
+              contractEnd: validatedData.contractEnd ? new Date(validatedData.contractEnd) : null,
+              goLiveDate: validatedData.goLiveDate ? new Date(validatedData.goLiveDate) : null,
               renewContract: validatedData.renewContract,
               vatRate: validatedData.vatRate,
               internalNotes: validatedData.internalNotes || "",
             }
           },
 
+          // Nested create for Vouchers
           vouchers: {
             create: {
-              denominationype: validatedData.denominationType,
+              denominationType: validatedData.denominationType,
               denominations: validatedData.denominations,
               denominationCurrency: validatedData.denominationCurrency,
               denominationValue: denominationValue,
               maxAmount: validatedData.maxAmount,
               minAmount: validatedData.minAmount,
               expiryPolicy: validatedData.expiryPolicy,
-              expiryValue: validatedData.expiryPolicy === "neverExpires" ? null : validatedData.expiryValue,
+              expiryValue: validatedData.expiryPolicy === "noExpiry" ? null : validatedData.expiryValue,
               expiresAt: validatedData.expiresAt || null,
               graceDays: validatedData.graceDays,
               redemptionChannels: validatedData.redemptionChannels,
               partialRedemption: validatedData.partialRedemption,
-              Stackable: validatedData.stackable,
+              stackable: validatedData.stackable,
               maxUserPerDay: validatedData.maxUserPerDay,
               termsConditionsURL: validatedData.termsConditionsURL,
+              productSku: validatedData.productSku,
+              isActive: true,
             }
           },
 
+          // Nested create for BrandBanking (one-to-one)
           brandBankings: {
             create: {
               settlementFrequency: validatedData.settlementFrequency,
               dayOfMonth: validatedData.dayOfMonth,
               payoutMethod: validatedData.payoutMethod,
               invoiceRequired: validatedData.invoiceRequired,
-              remittanceEmail: validatedData.remittanceEmail || "",
+              remittanceEmail: validatedData.remittanceEmail,
               accountHolder: validatedData.accountHolder,
-              accountNumber: validatedData.accountNumber,
+              accountNumber: await hashSensitiveData(validatedData.accountNumber), // Hash account number
               branchCode: validatedData.branchCode,
               bankName: validatedData.bankName,
-              SWIFTCode: validatedData.swiftCode || "",
+              swiftCode: validatedData.swiftCode,
               country: validatedData.country,
               accountVerification: validatedData.accountVerification,
             }
           },
 
-          brandcontacts: {
+          // Nested create for BrandContacts
+          brandContacts: {
             create: validatedData.contacts.map(contact => ({
               name: contact.name,
               role: contact.role,
@@ -330,7 +340,7 @@ export async function createBrandPartner(formData) {
         }
       });
 
-      // Create integrations if any (separate operation to avoid complexity)
+      // Create integrations separately if any
       if (integrationsData.length > 0) {
         await tx.integration.createMany({
           data: integrationsData.map(integration => ({
@@ -357,7 +367,7 @@ export async function createBrandPartner(formData) {
     if (error.code === "P2002") {
       return {
         success: false,
-        message: "Brand name already exists",
+        message: "Brand name or slug already exists",
         status: 400,
       };
     }
@@ -413,12 +423,12 @@ export async function updateBrandPartner(brandId, formData) {
 
     const validatedData = validationResult.data;
 
-    // Get existing brand data in a single query
+    // Get existing brand data
     const existingBrand = await prisma.brand.findUnique({
       where: { id: brandId },
       include: {
-        brandTerms: { take: 1 },
-        brandBankings: { take: 1 },
+        brandTerms: true,
+        brandBankings: true,
         vouchers: { take: 1 },
       },
     });
@@ -451,9 +461,7 @@ export async function updateBrandPartner(brandId, formData) {
 
         const timestamp = Date.now();
         const extension = parsedData.logoFile.name.split(".").pop();
-        const filename = `${validatedData.brandName
-          .toLowerCase()
-          .replace(/\s+/g, "_")}_${timestamp}.${extension}`;
+        const filename = `${generateSlug(validatedData.brandName)}_${timestamp}.${extension}`;
 
         const filePath = join(uploadDir, filename);
         const bytes = await parsedData.logoFile.arrayBuffer();
@@ -481,53 +489,54 @@ export async function updateBrandPartner(brandId, formData) {
       ? parseInt(validatedData.denominationValue, 10) 
       : null;
 
-    const currentDate = new Date();
+    const slug = generateSlug(validatedData.brandName);
 
-    // Use transaction with batch operations
+    // Use transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Update brand and upsert related records
+      // Update brand
       const updatedBrand = await tx.brand.update({
         where: { id: brandId },
         data: {
           brandName: validatedData.brandName,
+          slug,
           logo: logoPath,
           description: validatedData.description,
           website: validatedData.website,
           contact: validatedData.contact || "",
-          tagline: validatedData.tagline || "",
+          tagline: validatedData.tagline,
           color: validatedData.color,
-          categorieName: validatedData.categorieName,
-          notes: validatedData.notes || "",
+          categoryName: validatedData.categoryName,
+          notes: validatedData.notes,
           isActive: validatedData.isActive,
           isFeature: validatedData.isFeature,
         },
       });
 
-      // Batch update/create operations
+      // Batch update operations
       const operations = [];
 
-      // Brand Terms
+      // Brand Terms (one-to-one)
       const brandTermsData = {
-        settelementTrigger: validatedData.settlementTrigger,
+        settlementTrigger: validatedData.settlementTrigger,
         commissionType: validatedData.commissionType,
         commissionValue: validatedData.commissionValue,
         maxDiscount: validatedData.maxDiscount,
         minOrderValue: validatedData.minOrderValue,
         currency: validatedData.currency,
-        brackingPolicy: validatedData.brackingPolicy,
-        brackingShare: validatedData.brackingShare,
-        contractStart: validatedData.contractStart ? new Date(validatedData.contractStart) : currentDate,
-        contractEnd: validatedData.contractEnd ? new Date(validatedData.contractEnd) : currentDate,
-        goLiveDate: validatedData.goLiveDate ? new Date(validatedData.goLiveDate) : currentDate,
+        breakagePolicy: validatedData.breakagePolicy,
+        breakageShare: validatedData.breakageShare,
+        contractStart: validatedData.contractStart ? new Date(validatedData.contractStart) : null,
+        contractEnd: validatedData.contractEnd ? new Date(validatedData.contractEnd) : null,
+        goLiveDate: validatedData.goLiveDate ? new Date(validatedData.goLiveDate) : null,
         renewContract: validatedData.renewContract,
         vatRate: validatedData.vatRate,
         internalNotes: validatedData.internalNotes || "",
       };
 
-      if (existingBrand.brandTerms[0]) {
+      if (existingBrand.brandTerms) {
         operations.push(
           tx.brandTerms.update({
-            where: { id: existingBrand.brandTerms[0].id },
+            where: { brandId },
             data: brandTermsData,
           })
         );
@@ -541,21 +550,22 @@ export async function updateBrandPartner(brandId, formData) {
 
       // Vouchers
       const voucherData = {
-        denominationype: validatedData.denominationType,
+        denominationType: validatedData.denominationType,
         denominations: validatedData.denominations,
         denominationCurrency: validatedData.denominationCurrency,
         denominationValue: denominationValue,
         maxAmount: validatedData.maxAmount,
         minAmount: validatedData.minAmount,
         expiryPolicy: validatedData.expiryPolicy,
-        expiryValue: validatedData.expiryPolicy === "neverExpires" ? null : validatedData.expiryValue,
+        expiryValue: validatedData.expiryPolicy === "noExpiry" ? null : validatedData.expiryValue,
         expiresAt: validatedData.expiresAt || null,
         graceDays: validatedData.graceDays,
         redemptionChannels: validatedData.redemptionChannels,
         partialRedemption: validatedData.partialRedemption,
-        Stackable: validatedData.stackable,
+        stackable: validatedData.stackable,
         maxUserPerDay: validatedData.maxUserPerDay,
         termsConditionsURL: validatedData.termsConditionsURL,
+        productSku: validatedData.productSku,
       };
 
       if (existingBrand.vouchers[0]) {
@@ -573,26 +583,26 @@ export async function updateBrandPartner(brandId, formData) {
         );
       }
 
-      // Banking
+      // Banking (one-to-one)
       const bankingData = {
         settlementFrequency: validatedData.settlementFrequency,
         dayOfMonth: validatedData.dayOfMonth,
         payoutMethod: validatedData.payoutMethod,
         invoiceRequired: validatedData.invoiceRequired,
-        remittanceEmail: validatedData.remittanceEmail || "",
+        remittanceEmail: validatedData.remittanceEmail,
         accountHolder: validatedData.accountHolder,
-        accountNumber: validatedData.accountNumber,
+        accountNumber: await hashSensitiveData(validatedData.accountNumber),
         branchCode: validatedData.branchCode,
         bankName: validatedData.bankName,
-        SWIFTCode: validatedData.swiftCode || "",
+        swiftCode: validatedData.swiftCode,
         country: validatedData.country,
         accountVerification: validatedData.accountVerification,
       };
 
-      if (existingBrand.brandBankings[0]) {
+      if (existingBrand.brandBankings) {
         operations.push(
           tx.brandBanking.update({
-            where: { id: existingBrand.brandBankings[0].id },
+            where: { brandId },
             data: bankingData,
           })
         );
@@ -604,10 +614,10 @@ export async function updateBrandPartner(brandId, formData) {
         );
       }
 
-      // Execute all update operations in parallel
+      // Execute all update operations
       await Promise.all(operations);
 
-      // Handle contacts and integrations with delete + recreate (faster than individual updates)
+      // Handle contacts and integrations with delete + recreate
       await Promise.all([
         tx.brandContacts.deleteMany({ where: { brandId } }),
         tx.integration.deleteMany({ where: { brandId } }),
@@ -645,7 +655,7 @@ export async function updateBrandPartner(brandId, formData) {
     if (error.code === "P2002") {
       return {
         success: false,
-        message: "Brand name already exists",
+        message: "Brand name or slug already exists",
         status: 400,
       };
     }
@@ -658,7 +668,6 @@ export async function updateBrandPartner(brandId, formData) {
     };
   }
 }
-
 
 export async function getBrandPartnerDetails(brandId) {
   try {
@@ -673,7 +682,7 @@ export async function getBrandPartnerDetails(brandId) {
     const brandPartner = await prisma.brand.findUnique({
       where: { id: brandId },
       include: {
-        brandcontacts: {
+        brandContacts: {
           orderBy: { isPrimary: "desc" },
         },
         brandTerms: true,
@@ -684,10 +693,13 @@ export async function getBrandPartnerDetails(brandId) {
             id: true,
             platform: true,
             storeUrl: true,
+            storeName: true,
             isActive: true,
+            lastSyncAt: true,
+            syncStatus: true,
             createdAt: true,
             updatedAt: true,
-            // Exclude sensitive fields in read operations
+            // Exclude all sensitive fields
           },
         },
       },
@@ -717,159 +729,122 @@ export async function getBrandPartnerDetails(brandId) {
   }
 }
 
-
 export async function getBrandPartner(params = {}) {
-   try {
-        const {
-            page = 1,
-            limit = 10,
-            search = '',
-            category = '',
-            isActive = null,
-            isFeature = null,
-            sortBy = 'createdAt',
-            sortOrder = 'desc'
-        } = params;
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      category = '',
+      isActive = null,
+      isFeature = null,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = params;
 
-        // Convert page and limit to numbers
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        const skip = (pageNum - 1) * limitNum;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
 
-        // Build where clause for filtering
-        const whereClause = {};
+    // Build where clause
+    const whereClause = {};
 
-        // Search functionality
-        if (search) {
-            whereClause.OR = [
-                {
-                    brandName: {
-                        contains: search,
-                        mode: 'insensitive'
-                    }
-                },
-                {
-                    tagline: {
-                        contains: search,
-                        mode: 'insensitive'
-                    }
-                },
-                {
-                    description: {
-                        contains: search,
-                        mode: 'insensitive'
-                    }
-                },
-                {
-                    categorieName: {
-                        contains: search,
-                        mode: 'insensitive'
-                    }
-                }
-            ];
-        }
-
-        // Category filter
-        if (category && category !== 'All Brands') {
-            whereClause.categorieName = category;
-        }
-
-        // Active status filter
-        if (isActive !== null) {
-            whereClause.isActive = isActive === 'true';
-        }
-
-        // Featured status filter
-        if (isFeature !== null) {
-            whereClause.isFeature = isFeature === 'true';
-        }
-
-        // Build orderBy clause
-        const orderBy = {};
-        orderBy[sortBy] = sortOrder;
-
-        // Execute query with pagination
-        const [brands, totalCount] = await Promise.all([
-            prisma.brand.findMany({
-                where: whereClause,
-                orderBy,
-                skip,
-                take: limitNum,
-                include: {
-                    _count: {
-                        select: {
-                            order: true,
-                            vouchers: true
-                        }
-                    }
-                }
-            }),
-            prisma.brand.count({
-                where: whereClause
-            })
-        ]);
-
-        // Calculate pagination metadata
-        const totalPages = Math.ceil(totalCount / limitNum);
-        const hasNextPage = pageNum < totalPages;
-        const hasPrevPage = pageNum > 1;
-
-        // Get overall statistics
-        const stats = await prisma.brand.aggregate({
-            _count: {
-                id: true
-            },
-            where: {
-                isActive: true
-            }
-        });
-
-        const featuredCount = await prisma.brand.count({
-            where: {
-                isFeature: true
-            }
-        });
-
-        const totalBrands = await prisma.brand.count();
-
-        return {
-            success: true,
-            data: brands,
-            pagination: {
-                currentPage: pageNum,
-                totalPages,
-                totalItems: totalCount,
-                itemsPerPage: limitNum,
-                hasNextPage,
-                hasPrevPage,
-                startIndex: skip + 1,
-                endIndex: Math.min(skip + limitNum, totalCount)
-            },
-            statistics: {
-                total: totalBrands,
-                active: stats._count.id,
-                featured: featuredCount,
-                activeRate: totalBrands > 0 ? Math.round((stats._count.id / totalBrands) * 100) : 0
-            },
-            filters: {
-                search,
-                category,
-                isActive,
-                isFeature,
-                sortBy,
-                sortOrder
-            }
-        };
-
-    } catch (error) {
-        console.error('Error fetching brands:', error);
-        return {
-            success: false,
-            message: 'Failed to fetch brands',
-            error: error.message,
-            status: 500
-        };
+    if (search) {
+      whereClause.OR = [
+        { brandName: { contains: search, mode: 'insensitive' } },
+        { tagline: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { categoryName: { contains: search, mode: 'insensitive' } }
+      ];
     }
+
+    if (category && category !== 'All Brands') {
+      whereClause.categoryName = category;
+    }
+
+    if (isActive !== null) {
+      whereClause.isActive = isActive === 'true';
+    }
+
+    if (isFeature !== null) {
+      whereClause.isFeature = isFeature === 'true';
+    }
+
+    const orderBy = {};
+    orderBy[sortBy] = sortOrder;
+
+    // Execute query
+    const [brands, totalCount] = await Promise.all([
+      prisma.brand.findMany({
+        where: whereClause,
+        orderBy,
+        skip,
+        take: limitNum,
+        include: {
+          _count: {
+            select: {
+              orders: true,
+              vouchers: true
+            }
+          }
+        }
+      }),
+      prisma.brand.count({ where: whereClause })
+    ]);
+
+    // Calculate statistics
+    const totalPages = Math.ceil(totalCount / limitNum);
+    const hasNextPage = pageNum < totalPages;
+    const hasPrevPage = pageNum > 1;
+
+    const stats = await prisma.brand.aggregate({
+      _count: { id: true },
+      where: { isActive: true }
+    });
+
+    const featuredCount = await prisma.brand.count({
+      where: { isFeature: true }
+    });
+
+    const totalBrands = await prisma.brand.count();
+
+    return {
+      success: true,
+      data: brands,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalItems: totalCount,
+        itemsPerPage: limitNum,
+        hasNextPage,
+        hasPrevPage,
+        startIndex: skip + 1,
+        endIndex: Math.min(skip + limitNum, totalCount)
+      },
+      statistics: {
+        total: totalBrands,
+        active: stats._count.id,
+        featured: featuredCount,
+        activeRate: totalBrands > 0 ? Math.round((stats._count.id / totalBrands) * 100) : 0
+      },
+      filters: {
+        search,
+        category,
+        isActive,
+        isFeature,
+        sortBy,
+        sortOrder
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching brands:', error);
+    return {
+      success: false,
+      message: 'Failed to fetch brands',
+      error: error.message,
+      status: 500
+    };
+  }
 }
 
 
@@ -935,144 +910,155 @@ export async function deleteBrandPartner(brandId) {
   }
 }
 
-
 export async function updateBrand(formData) {
-    try {
-        // Get the brand ID
-        const id = formData.get('id');
-        
-        if (!id) {
-            return {
-                success: false,
-                message: "Brand ID is required",
-                status: 400
-            };
-        }
-
-        // Get form fields
-        const brandName = formData.get('brandName');
-        const logoFile = formData.get('logo');
-        const description = formData.get('description') || "";
-        const website = formData.get('website') || "";
-        const contact = formData.get('contact') || "";
-        const tagline = formData.get('tagline') || "";
-        const color = formData.get('color') || "";
-        const categorieName = formData.get('categorieName') || "";
-        const notes = formData.get('notes') || "";
-        const isActive = formData.get('isActive') === 'true';
-        const isFeature = formData.get('isFeature') === 'true';
-
-        // Get existing brand to check for logo updates
-        const existingBrand = await prisma.brand.findUnique({
-            where: { id }
-        });
-
-        if (!existingBrand) {
-            return {
-                success: false,
-                message: "Brand not found",
-                status: 404
-            };
-        }
-
-        let logoPath = existingBrand.logo;
-
-        // Handle logo upload if new file provided
-        if (logoFile && logoFile.size > 0) {
-            try {
-                // Create upload directory
-                const uploadDir = join(process.cwd(), 'public', 'uploads', 'brands');
-                await mkdir(uploadDir, { recursive: true });
-
-                // Delete old logo if it exists
-                if (existingBrand.logo) {
-                    const oldLogoPath = join(process.cwd(), 'public', existingBrand.logo);
-                    try {
-                        await unlink(oldLogoPath);
-                    } catch (error) {
-                        // Ignore error if file doesn't exist
-                        console.log('Could not delete old logo:', error.message);
-                    }
-                }
-
-                // Generate new filename
-                const timestamp = Date.now();
-                const extension = logoFile.name.split('.').pop();
-                const filename = `${brandName?.toLowerCase().replace(/\s+/g, '_') || 'brand'}_${timestamp}.${extension}`;
-
-                // Save new file
-                const filePath = join(uploadDir, filename);
-                const bytes = await logoFile.arrayBuffer();
-                await writeFile(filePath, Buffer.from(bytes));
-
-                logoPath = `/uploads/brands/${filename}`;
-            } catch (fileError) {
-                console.error('File upload error:', fileError);
-                return {
-                    success: false,
-                    message: "Failed to upload logo",
-                    status: 500
-                };
-            }
-        }
-
-        // Prepare update data
-        const updateData = {
-            description,
-            website,
-            contact,
-            tagline,
-            color,
-            categorieName,
-            notes,
-            isActive,
-            isFeature,
-            logo: logoPath,
-        };
-
-        // Only update brandName if provided (since it's unique)
-        if (brandName && brandName !== existingBrand.brandName) {
-            updateData.brandName = brandName;
-        }
-
-        // Update brand
-        const updatedBrand = await prisma.brand.update({
-            where: { id },
-            data: updateData
-        });
-
-        return {
-            success: true,
-            message: "Brand updated successfully",
-            data: updatedBrand,
-            status: 200
-        };
-
-    } catch (error) {
-        console.error('Error updating brand:', error);
-        
-        // Handle specific Prisma errors
-        if (error.code === 'P2002') {
-            return {
-                success: false,
-                message: "Brand name already exists",
-                status: 400
-            };
-        }
-
-        if (error.code === 'P2025') {
-            return {
-                success: false,
-                message: "Brand not found",
-                status: 404
-            };
-        }
-
-        return {
-            success: false,
-            message: "Internal server error",
-            error: error.message,
-            status: 500
-        };
+  try {
+    const id = formData.get('id');
+    
+    if (!id) {
+      return {
+        success: false,
+        message: "Brand ID is required",
+        status: 400
+      };
     }
+
+    // Get form fields
+    const brandName = formData.get('brandName');
+    const logoFile = formData.get('logo');
+    const description = formData.get('description') || "";
+    const website = formData.get('website') || "";
+    const contact = formData.get('contact') || "";
+    const tagline = formData.get('tagline') || "";
+    const color = formData.get('color') || "";
+    const categoryName = formData.get('categoryName') || "";
+    const notes = formData.get('notes') || "";
+    const isActive = formData.get('isActive') === 'true';
+    const isFeature = formData.get('isFeature') === 'true';
+
+    // Get existing brand
+    const existingBrand = await prisma.brand.findUnique({
+      where: { id }
+    });
+
+    if (!existingBrand) {
+      return {
+        success: false,
+        message: "Brand not found",
+        status: 404
+      };
+    }
+
+    let logoPath = existingBrand.logo;
+
+    // Handle logo upload
+    if (logoFile && logoFile.size > 0) {
+      try {
+        const uploadDir = join(process.cwd(), 'public', 'uploads', 'brands');
+        await mkdir(uploadDir, { recursive: true });
+
+        // Delete old logo
+        if (existingBrand.logo) {
+          const oldLogoPath = join(process.cwd(), 'public', existingBrand.logo);
+          try {
+            await unlink(oldLogoPath);
+          } catch (error) {
+            console.log('Could not delete old logo:', error.message);
+          }
+        }
+
+        const timestamp = Date.now();
+        const extension = logoFile.name.split('.').pop();
+        const filename = `${generateSlug(brandName || 'brand')}_${timestamp}.${extension}`;
+
+        const filePath = join(uploadDir, filename);
+        const bytes = await logoFile.arrayBuffer();
+        await writeFile(filePath, Buffer.from(bytes));
+
+        logoPath = `/uploads/brands/${filename}`;
+      } catch (fileError) {
+        console.error('File upload error:', fileError);
+        return {
+          success: false,
+          message: "Failed to upload logo",
+          status: 500
+        };
+      }
+    }
+
+    // Prepare update data
+    const updateData = {
+      description,
+      website,
+      contact,
+      tagline,
+      color,
+      categoryName,
+      notes,
+      isActive,
+      isFeature,
+      logo: logoPath,
+    };
+
+    // Update brandName and slug if provided
+    if (brandName && brandName !== existingBrand.brandName) {
+      updateData.brandName = brandName;
+      updateData.slug = generateSlug(brandName);
+    }
+
+    // Update brand
+    const updatedBrand = await prisma.brand.update({
+      where: { id },
+      data: updateData
+    });
+
+    return {
+      success: true,
+      message: "Brand updated successfully",
+      data: updatedBrand,
+      status: 200
+    };
+  } catch (error) {
+    console.error('Error updating brand:', error);
+    
+    if (error.code === 'P2002') {
+      return {
+        success: false,
+        message: "Brand name or slug already exists",
+        status: 400
+      };
+    }
+
+    if (error.code === 'P2025') {
+      return {
+        success: false,
+        message: "Brand not found",
+        status: 404
+      };
+    }
+
+    return {
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+      status: 500
+    };
+  }
+}
+
+// New helper function for audit logging
+export async function createAuditLog(userId, action, entity, entityId, changes = null) {
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action,
+        entity,
+        entityId,
+        changes,
+      }
+    });
+  } catch (error) {
+    console.error('Error creating audit log:', error);
+    // Don't throw error - audit logging should not break main operations
+  }
 }

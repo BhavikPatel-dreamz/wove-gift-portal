@@ -35,7 +35,7 @@ const BrandEdit = () => {
     contact: '',
     tagline: '',
     color: '#000000',
-    categorieName: '',
+    categoryName: '',
     notes: '',
     isActive: false,
     isFeature: false,
@@ -185,7 +185,7 @@ const BrandEdit = () => {
           contact: brand.contact || '',
           tagline: brand.tagline || '',
           color: brand.color || '#000000',
-          categorieName: brand.categorieName || '',
+          categoryName: brand.categoryName || '',
           notes: brand.notes || '',
           isActive: brand.isActive || false,
           isFeature: brand.isFeature || false,
@@ -212,7 +212,7 @@ const BrandEdit = () => {
           internalNotes: brand.brandTerms?.[0]?.internalNotes || '',
 
           // Vouchers (Enhanced handling)
-          denominationType: brand.vouchers?.[0]?.denominationtype || 'fixed',
+          denominationType: brand.vouchers?.[0]?.denominationType || 'fixed',
           denominations: brand.vouchers?.[0]?.denominations || [],
           maxAmount: brand.vouchers?.[0]?.maxAmount || 0,
           minAmount: brand.vouchers?.[0]?.minAmount || 0,
@@ -243,7 +243,7 @@ const BrandEdit = () => {
           accountVerification: brand.brandBankings?.[0]?.accountVerification || false,
 
           // Contacts
-          contacts: brand.brandcontacts?.map(contact => ({
+          contacts: brand.brandContacts?.map(contact => ({
             id: contact.id,
             name: contact.name || '',
             email: contact.email || '',
@@ -366,7 +366,7 @@ const BrandEdit = () => {
     if (!formData.brandName?.trim()) errors.push('Brand Name');
     if (!formData.description?.trim()) errors.push('Description');
     if (!formData.website?.trim()) errors.push('Website');
-    if (!formData.categorieName?.trim()) errors.push('Category');
+    if (!formData.categoryName?.trim()) errors.push('Category');
 
     // Banking validations (Enhanced)
     if (!formData.accountHolder?.trim()) errors.push('Account Holder');
@@ -465,6 +465,8 @@ const BrandEdit = () => {
         router.push('/brandsPartner');
       } else {
         if (result.errors) {
+            console.log("result.errors", result.errors);
+
           setValidationErrors(result.errors);
           toast.error('Validation failed. Please check the form.');
         } else {
@@ -494,7 +496,7 @@ const BrandEdit = () => {
     const completedTabs = [];
     
     // Core tab completion
-    if (formData.brandName && formData.description && formData.website && formData.categorieName) {
+    if (formData.brandName && formData.description && formData.website && formData.categoryName) {
       completedTabs.push('core');
     }
     

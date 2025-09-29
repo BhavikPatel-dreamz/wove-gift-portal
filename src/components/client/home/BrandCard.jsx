@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { ArrowRight, ExternalLink, Star, Grid3X3, List } from 'lucide-react';
 
-const BrandCard = ({ brandName, logo, website, categorieName, description, tagline, isFeature }) => {
+const BrandCard = ({ brandName, logo, website, categoryName, description, tagline, isFeature }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -58,7 +58,7 @@ const BrandCard = ({ brandName, logo, website, categorieName, description, tagli
           </div>
           
           <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-wave-green text-white border border-wave-green">
-            {categorieName}
+            {categoryName}
           </div>
           
           {tagline && (

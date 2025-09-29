@@ -31,7 +31,7 @@ const AddBrandPartner = () => {
     contact: '',
     tagline: '',
     color: '#000000',
-    categorieName: '',
+    categoryName: '',
     notes: '',
     isActive: false,
     isFeature: false,
@@ -196,6 +196,10 @@ const AddBrandPartner = () => {
     }
   };
 
+
+  console.log("formData", formData);
+  
+
   // Enhanced validation function
   const validateRequiredFields = () => {
     const errors = [];
@@ -204,7 +208,7 @@ const AddBrandPartner = () => {
     if (!formData.brandName?.trim()) errors.push('Brand Name');
     if (!formData.description?.trim()) errors.push('Description');
     if (!formData.website?.trim()) errors.push('Website');
-    if (!formData.categorieName?.trim()) errors.push('Category');
+    if (!formData.categoryName?.trim()) errors.push('Category');
     
     // Banking validations (Enhanced)
     if (!formData.accountHolder?.trim()) errors.push('Account Holder');
@@ -253,7 +257,7 @@ const AddBrandPartner = () => {
   const checkTabCompletion = () => {
     const completedTabs = [];
      // Core tab completion
-    if (formData.brandName && formData.description && formData.website && formData.categorieName) {
+    if (formData.brandName && formData.description && formData.website && formData.categoryName) {
       completedTabs.push('core');
     }
     
@@ -339,6 +343,8 @@ const AddBrandPartner = () => {
           router.push('/brandsPartner');
         } else {
           if (result.errors) {
+            console.log("result.errors", result.errors);
+            
             setValidationErrors(result.errors);
              toast.error('Validation failed. Please check the form.');
           } else {

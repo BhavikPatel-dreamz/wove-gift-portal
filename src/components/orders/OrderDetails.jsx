@@ -4,8 +4,6 @@ import React from 'react';
 const OrderDetails = ({ order }) => {
   if (!order) return null;
 
-  const senderDetails = JSON.parse(order.senderDetails);
-
   return (
     <div className="p-6 bg-gray-50 rounded-lg max-w-4xl mx-auto">
       <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">Order Details</h2>
@@ -27,8 +25,8 @@ const OrderDetails = ({ order }) => {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-xl font-semibold mb-4 text-gray-700">Brand & Occasion</h3>
           <div className="space-y-3">
-            <p><strong>Brand:</strong> {order.brands.brandName}</p>
-            <p><strong>Occasion:</strong> {order.occasions.name}</p>
+            <p><strong>Brand:</strong> {order.brand.brandName}</p>
+            <p><strong>Occasion:</strong> {order.occasion.name}</p>
             {order.subCategory && <p><strong>Category:</strong> {order.subCategory.name}</p>}
             {order.subSubCategory && <p><strong>Sub-Category:</strong> {order.subSubCategory.name}</p>}
           </div>
@@ -48,8 +46,8 @@ const OrderDetails = ({ order }) => {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-xl font-semibold mb-4 text-gray-700">Sender Details</h3>
           <div className="space-y-3">
-            <p><strong>Name:</strong> {senderDetails.yourFullName}</p>
-            <p><strong>Email:</strong> {senderDetails.yourEmailAddress}</p>
+            <p><strong>Name:</strong> {order.senderName}</p>
+            <p><strong>Email:</strong> {order.senderEmail}</p>
           </div>
         </div>
 

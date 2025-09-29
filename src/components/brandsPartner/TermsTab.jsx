@@ -75,7 +75,7 @@ const TermsTab = ({ formData, updateFormData }) => {
               onChange={(e) => updateFormData('commissionType', e.target.value)}
             >
               <option value="Percentage">Percentage</option>
-              <option value="Fixed Amount">Fixed Amount</option>
+              <option value="Fixed">Fixed Amount</option>
             </select>
           </div>
           <div>

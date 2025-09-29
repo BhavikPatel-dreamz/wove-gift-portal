@@ -102,7 +102,7 @@ const BrandCard = ({
       <div className="text-center space-y-3">
         <div className="flex justify-center">
           <span className="badge badge-outline text-xs px-3 py-1.5 rounded-full font-medium">
-            {brand.categorieName}
+            {brand.categoryName}
           </span>
         </div>
         

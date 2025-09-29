@@ -48,7 +48,7 @@ const BrandManager = () => {
   const [formData, setFormData] = useState({
     brandName: '',
     tagline: '',
-    categorieName: '',
+    categoryName: '',
     website: '',
     description: '',
     contact: '',
@@ -158,7 +158,7 @@ const BrandManager = () => {
     setFormData({
       brandName: '',
       tagline: '',
-      categorieName: '',
+      categoryName: '',
       website: '',
       description: '',
       contact: '',
@@ -191,7 +191,7 @@ const BrandManager = () => {
     const fieldsToAppend = {
       brandName: brandData.brandName || (existingBrand?.brandName || ''),
       tagline: brandData.tagline || (existingBrand?.tagline || ''),
-      categorieName: brandData.categorieName || (existingBrand?.categorieName || ''),
+      categoryName: brandData.categoryName || (existingBrand?.categoryName || ''),
       website: brandData.website || (existingBrand?.website || ''),
       description: brandData.description || (existingBrand?.description || ''),
       contact: brandData.contact || (existingBrand?.contact || ''),
@@ -339,7 +339,7 @@ const BrandManager = () => {
     setFormData({
       brandName: brand.brandName || '',
       tagline: brand.tagline || '',
-      categorieName: brand.categorieName || '',
+      categoryName: brand.categoryName || '',
       website: brand.website || '',
       description: brand.description || '',
       contact: brand.contact || '',
@@ -535,7 +535,7 @@ const BrandManager = () => {
               >
                 <option value="createdAt">Created Date</option>
                 <option value="brandName">Name</option>
-                <option value="categorieName">Category</option>
+                <option value="categoryName">Category</option>
                 <option value="updatedAt">Updated Date</option>
               </select>
               <button
@@ -676,8 +676,8 @@ const BrandManager = () => {
                 <p className="text-gray-700 text-sm mb-4 line-clamp-2 min-h-[2.5rem]">{brand.description}</p>
 
                 <div className="mb-4">
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(brand.categorieName)}`}>
-                    {brand.categorieName || 'Uncategorized'}
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(brand.categoryName)}`}>
+                    {brand.categoryName || 'Uncategorized'}
                   </span>
                 </div>
 

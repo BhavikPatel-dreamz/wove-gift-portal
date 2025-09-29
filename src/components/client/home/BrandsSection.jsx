@@ -11,10 +11,10 @@ const BrandsSection = ({
   const [viewMode, setViewMode] = useState('grid');
   const [selectedCategory, setSelectedCategory] = useState('all');
   
-  const categories = ['all', ...new Set(brands.map(brand => brand.categorieName))];
+  const categories = ['all', ...new Set(brands.map(brand => brand.categoryName))];
   const filteredBrands = selectedCategory === 'all' 
     ? brands 
-    : brands.filter(brand => brand.categorieName === selectedCategory);
+    : brands.filter(brand => brand.categoryName === selectedCategory);
 
   return (
     <section className="py-20 bg-wave-cream min-h-screen">

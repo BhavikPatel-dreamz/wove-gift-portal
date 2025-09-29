@@ -21,6 +21,9 @@ export default function GiftOrdersManagement() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  console.log("orders", orders);
+  
+
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);
@@ -199,7 +202,7 @@ export default function GiftOrdersManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.amount}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.brands.brandName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.brand.brandName}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.redemptionStatus)}`}>
                         {order.redemptionStatus}
