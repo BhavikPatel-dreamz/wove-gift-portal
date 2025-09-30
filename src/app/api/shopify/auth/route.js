@@ -14,7 +14,7 @@ export async function GET(request) {
     // Create authorization URL manually for App Router compatibility
     const authQuery = new URLSearchParams({
       client_id: process.env.SHOPIFY_API_KEY,
-      scope: 'read_products,write_products,read_orders,write_orders',
+      scope: 'read_products,write_products,read_orders,write_orders,read_gift_cards,write_gift_cards',
       redirect_uri: `${process.env.SHOPIFY_APP_URL}api/shopify/auth/callback`,
       state: shop, // Use shop as state for simplicity
       response_type: 'code',

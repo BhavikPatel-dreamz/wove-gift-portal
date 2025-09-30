@@ -9,6 +9,8 @@ const requiredEnvVars = {
   SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
 };
 
+console.log("requiredEnvVars",requiredEnvVars);
+
 const missingVars = Object.entries(requiredEnvVars)
   .filter(([, value]) => !value)
   .map(([key]) => key);
@@ -25,12 +27,18 @@ const sessionStorage = new PrismaSessionStorage();
 
 const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
-  apiSecretKey: process.env.SHOPIFY_SECRET_KEY,
-  scopes: ['read_products', 'write_products', 'read_orders', 'write_orders'],
-  hostName: process.env.SHOPIFY_APP_URL,
-  apiVersion: ApiVersion.October25,
+  apiSecretKey: process.env.SHOPIFY_SECRET_KEY, // or SHOPIFY_API_SECRET if you rename env
+  scopes: [
+    'read_products',
+    'write_products',
+    'read_orders',
+    'write_orders',
+    'read_gift_cards',
+    'write_gift_cards',
+  ],
+  hostName: process.env.SHOPIFY_APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, ''), // strip protocol + trailing slash
+  apiVersion: ApiVersion.April24,
   isEmbeddedApp: true,
-  restResources: {},
   sessionStorage,
 });
 

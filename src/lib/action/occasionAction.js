@@ -758,6 +758,18 @@ export async function getOccasionCategories(params = {}) {
 
         const skip = (page - 1) * limit;
 
+        // Fetch selected occasion details if occasionId is provided
+        let selectedOccasion = null;
+        if (occasionId) {
+            selectedOccasion = await prisma.occasion.findUnique({
+                where: { id: occasionId },
+                select: { id: true, name: true, emoji: true, description: true, type: true }
+            });
+            if (!selectedOccasion) {
+                return createStandardResponse(false, "Occasion not found", 404);
+            }
+        }
+
         // Remove the problematic include for now
         const [categories, totalItems] = await Promise.all([
             prisma.occasionCategory.findMany({
@@ -809,12 +821,17 @@ export async function getOccasionCategories(params = {}) {
             endIndex: Math.min(skip + limit, totalItems),
         };
 
+        const meta = { pagination };
+        if (selectedOccasion) {
+            meta.occasion = selectedOccasion;
+        }
+
         return createStandardResponse(
             true,
             "Occasion categories fetched successfully",
             200,
             categoriesWithOccasion,
-            { pagination }
+            meta
         );
 
     } catch (error) {

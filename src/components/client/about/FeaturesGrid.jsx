@@ -1,79 +1,43 @@
-
-
 import React from 'react';
-import { Gift, Users, Zap, Heart, CheckCircle, Star, Globe, ArrowRight, Play } from 'lucide-react';
+import { Settings, Zap, Heart } from 'lucide-react';
 
-
-const FeaturesGrid = ({ features = [] }) => {
-  const defaultFeatures = [
-    {
-      icon: Users,
-      title: "Access to Brands",
-      description: "A curated catalog of trusted favorites and global names.",
-      color: "#FF6B35",
-      bgColor: "#FFF4F1"
-    },
-    {
-      icon: Zap,
-      title: "Instant & Delightful",
-      description: "Wow-thing, weird, or practical—delivered in moments.",
-      color: "#2D5A3D",
-      bgColor: "#F0F4F1"
-    },
-    {
-      icon: Heart,
-      title: "For Everyone",
-      description: "One gift that fits every taste, budget, and occasion.",
-      color: "#8B4513",
-      bgColor: "#F7E6D8"
-    }
-  ];
-
-  const featuresToRender = features.length > 0 ? features : defaultFeatures;
-
+const Features = () => {
   return (
-    <div className="py-16 px-6" style={{ backgroundColor: '#EBE7D4' }}>
-      <div className="max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-8">
-          {featuresToRender.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <div 
-                key={index} 
-                className="text-center p-8 rounded-2xl transition-all duration-300 hover:transform hover:scale-105"
-                style={{ 
-                  backgroundColor: 'white',
-                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                }}
-              >
-                <div 
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-                  style={{ backgroundColor: feature.bgColor }}
-                >
-                  <Icon 
-                    className="w-8 h-8" 
-                    style={{ color: feature.color }}
-                  />
-                </div>
-                <h3 
-                  className="text-xl font-semibold mb-3"
-                  style={{ color: '#2D5A3D' }}
-                >
-                  {feature.title}
-                </h3>
-                <p 
-                  className="leading-relaxed"
-                  style={{ color: '#8B4513' }}
-                >
-                  {feature.description}
-                </p>
-              </div>
-            );
-          })}
+    <section className="w-full my-8 flex divide-x divide-gray-200 max-w-screen-xl mx-auto">
+      {/* Feature 1 */}
+      <div className="flex-1 flex flex-col items-center py-6 px-8 text-left">
+        <div className="bg-purple-100 rounded-md p-2 mb-3 inline-flex">
+          <Settings className="w-10 h-10 text-purple-600" />
         </div>
+        <h4 className="font-semibold text-2xl mb-1 text-gray-900">Access to Brands</h4>
+        <p className="text-sm text-center text-gray-600 max-w-[14rem]">
+          A curated catalog of local favorites and global names.
+        </p>
       </div>
-    </div>
+
+      {/* Feature 2 */}
+      <div className="flex-1 flex flex-col items-center py-6 px-8 text-left">
+        <div className="bg-purple-100 rounded-md p-2 mb-3 inline-flex">
+          <Zap className="w-10 h-10 text-purple-600" />
+        </div>
+        <h4 className="font-semibold text-2xl mb-1 text-gray-900">Instant & Delightful</h4>
+        <p className="text-sm text-center text-gray-600 max-w-[14rem]">
+          WhatsApp, email, or print—delivered in moments.
+        </p>
+      </div>
+
+      {/* Feature 3 */}
+      <div className="flex-1 flex flex-col items-center py-6 px-8 text-left">
+        <div className="bg-purple-100 rounded-md p-2 mb-3 inline-flex">
+          <Heart className="w-10 h-10 text-purple-600" />
+        </div>
+        <h4 className="font-semibold text-2xl mb-1 text-gray-900">For Everyone</h4>
+        <p className="text-sm text-center text-gray-600 max-w-[14rem]">
+          One gift that fits every taste, budget, and occasion.
+        </p>
+      </div>
+    </section>
   );
 };
 
-export default FeaturesGrid;
+export default Features;

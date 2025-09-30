@@ -56,7 +56,9 @@ export function middleware(request) {
     pathname.startsWith('/api/auth/login')||
      pathname.startsWith('/api/auth/logout')||
      pathname.startsWith('/api/brand')||
-     pathname.startsWith('/api/occasion')
+     pathname.startsWith('/api/occasion') ||
+     pathname.startsWith('/api/giftcard') ||
+     pathname.startsWith('/api/shopify/products')
   ) {
     return NextResponse.next()
   }

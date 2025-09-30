@@ -1,128 +1,212 @@
 "use client"
-import { useState } from 'react';
-import { Star, Grid3X3, List, ArrowRight } from 'lucide-react';
-import BrandCard from './BrandCard';
+import { useState, useEffect } from 'react';
 
-const BrandsSection = ({ 
+const FeaturedBrands = ({
   brands = [],
-  title = "Our Brand Partners", 
-  subtitle = "Discover amazing brands and services from our trusted partners" 
+  title = "Featured Brands You'll Love",
+  subtitle = "Curated partners, ready for your next gift."
 }) => {
-  const [viewMode, setViewMode] = useState('grid');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  
-  const categories = ['all', ...new Set(brands.map(brand => brand.categoryName))];
-  const filteredBrands = selectedCategory === 'all' 
-    ? brands 
-    : brands.filter(brand => brand.categoryName === selectedCategory);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  const mockBrands = [
+    {
+      id: "mock-1",
+      brandName: "Woolworths",
+      logo: "https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=200&h=100&fit=crop",
+      slug: "woolworths",
+      isFeature: true
+    },
+    {
+      id: "mock-2",
+      brandName: "Pick n Pay",
+      logo: "https://images.unsplash.com/photo-1557821552-17105176677c?w=200&h=100&fit=crop",
+      slug: "pick-n-pay",
+      isFeature: true
+    },
+    {
+      id: "mock-3",
+      brandName: "Checkers",
+      logo: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=200&h=100&fit=crop",
+      slug: "checkers",
+      isFeature: true
+    },
+    {
+      id: "mock-4",
+      brandName: "Makro",
+      logo: "https://images.unsplash.com/photo-1556740758-90de374c12ad?w=200&h=100&fit=crop",
+      slug: "makro",
+      isFeature: true
+    },
+    {
+      id: "mock-5",
+      brandName: "Showmax",
+      logo: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=200&h=100&fit=crop",
+      slug: "showmax",
+      isFeature: true
+    },
+    {
+      id: "mock-6",
+      brandName: "Cotton On",
+      logo: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200&h=100&fit=crop",
+      slug: "cotton-on",
+      isFeature: true
+    },
+    {
+      id: "mock-7",
+      brandName: "Netflix",
+      logo: "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=200&h=100&fit=crop",
+      slug: "netflix",
+      isFeature: true
+    },
+    {
+      id: "mock-8",
+      brandName: "Spotify",
+      logo: "https://images.unsplash.com/photo-1614680376593-902f74cf0d41?w=200&h=100&fit=crop",
+      slug: "spotify",
+      isFeature: true
+    },
+    {
+      id: "mock-9",
+      brandName: "Takealot",
+      logo: "https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?w=200&h=100&fit=crop",
+      slug: "takealot",
+      isFeature: true
+    },
+    {
+      id: "mock-10",
+      brandName: "Mr Price",
+      logo: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=200&h=100&fit=crop",
+      slug: "mr-price",
+      isFeature: true
+    },
+    {
+      id: "mock-11",
+      brandName: "Superbalist",
+      logo: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=200&h=100&fit=crop",
+      slug: "superbalist",
+      isFeature: true
+    },
+    {
+      id: "mock-12",
+      brandName: "Game",
+      logo: "https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=200&h=100&fit=crop",
+      slug: "game",
+      isFeature: true
+    }
+  ];
+
+  // const displayBrands = brands.length > 0 ? brands : [];
+  const displayBrands = mockBrands;
+
+
+  // Split brands into two rows and duplicate for seamless loop
+  const halfLength = Math.ceil(displayBrands.length / 2);
+  const firstRowBrands = displayBrands.slice(0, halfLength);
+  const secondRowBrands = displayBrands.slice(halfLength);
+
+  const firstRow = [...firstRowBrands, ...firstRowBrands];
+  const secondRow = [...secondRowBrands, ...secondRowBrands];
+
+  const BrandCard = ({ brand, index }) => (
+    <div className="bg-white rounded-[1.25rem] p-8 flex items-center justify-center hover:shadow-md transition-shadow duration-300 cursor-pointer flex-shrink-0" style={{ width: '180px', height: '130px' }}>
+      <div className="flex items-center justify-center w-full h-full">
+        {brand.logo ? (
+          <img
+            src={brand.logo}
+            alt={brand.brandName}
+            className="max-w-full max-h-full object-contain"
+          />
+        ) : (
+          <span className="text-[0.95rem] font-medium tracking-tight text-[#c7c7c7]">
+            {brand.brandName}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <section className="py-20 bg-wave-cream min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-20 bg-gradient-to-b from-[#FEF8F6] to-[#FDF7F8] overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-wave-orange text-white px-4 py-2 rounded-full text-sm font-medium mb-4 shadow-brand">
-            <Star className="w-4 h-4" />
-            Trusted Partners
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-wave-green mb-4 leading-tight">
+          <h2 className="text-[2.75rem] font-bold text-black mb-2 leading-tight tracking-tight">
             {title}
           </h2>
-          <p className="text-xl text-wave-brown max-w-3xl mx-auto leading-relaxed">
+          <p className="text-[1.05rem] text-[#6d6d6d]">
             {subtitle}
           </p>
         </div>
 
-        {/* Filters and View Toggle */}
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-12 gap-4">
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                  selectedCategory === category
-                    ? 'bg-wave-orange text-white shadow-brand'
-                    : 'bg-white text-wave-green hover:bg-wave-cream-dark border-2 border-wave-cream'
-                }`}
-              >
-                {category === 'all' ? 'All Categories' : category}
-              </button>
-            ))}
+        {/* First Row - Continuous Scroll Left */}
+        {firstRow.length > 0 && (
+          <div className="mb-5 pause-on-hover">
+            <div className="flex gap-5 animate-scroll-left">
+              {firstRow.map((brand, index) => (
+                <BrandCard key={`row1-${brand.id}-${index}`} brand={brand} index={index} />
+              ))}
+            </div>
           </div>
-          
-          <div className="flex items-center gap-1 bg-white rounded-lg p-1 border-2 border-wave-cream">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md transition-colors duration-200 ${
-                viewMode === 'grid' ? 'bg-wave-cream text-wave-green' : 'text-wave-brown hover:text-wave-green'
-              }`}
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors duration-200 ${
-                viewMode === 'list' ? 'bg-wave-cream text-wave-green' : 'text-wave-brown hover:text-wave-green'
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        )}
 
-        {/* Brands Grid */}
-        <div className={`grid gap-6 mb-12 ${
-          viewMode === 'grid' 
-            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-            : 'grid-cols-1 max-w-4xl mx-auto'
-        }`}>
-          {filteredBrands.map((brand) => (
-            <BrandCard key={brand.id} {...brand} />
-          ))}
-        </div>
+        {/* Second Row - Continuous Scroll Right */}
+        {secondRow.length > 0 && (
+          <div className="mb-12 pause-on-hover">
+            <div className="flex gap-5 animate-scroll-right">
+              {secondRow.map((brand, index) => (
+                <BrandCard key={`row2-${brand.id}-${index}`} brand={brand} index={index} />
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* CTA Section */}
-        <div className="text-center bg-wave-green rounded-2xl p-12 shadow-brand-lg">
-          <h3 className="text-2xl font-bold text-white mb-4">
-            Want to partner with us?
-          </h3>
-          <p className="text-wave-cream mb-8 text-lg">
-            Join our growing network of trusted brands and reach new audiences
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button className="bg-wave-orange hover:bg-wave-orange-dark text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 shadow-brand hover:shadow-brand-lg hover:transform hover:scale-105">
-              Become a Partner
-            </button>
-            <button className="text-white hover:text-wave-cream font-semibold px-6 py-4 rounded-xl border-2 border-white hover:border-wave-cream hover:bg-wave-green-light transition-all duration-300 flex items-center gap-2">
-              View All Brands
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 text-center">
-          <div className="bg-white rounded-xl p-6 shadow-brand hover:shadow-brand-lg transition-all duration-300">
-            <div className="text-3xl font-bold text-wave-orange mb-2">{brands.length}+</div>
-            <div className="text-wave-brown">Trusted Brands</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-brand hover:shadow-brand-lg transition-all duration-300">
-            <div className="text-3xl font-bold text-wave-orange mb-2">{categories.length - 1}</div>
-            <div className="text-wave-brown">Categories</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-brand hover:shadow-brand-lg transition-all duration-300">
-            <div className="text-3xl font-bold text-wave-orange mb-2">100%</div>
-            <div className="text-wave-brown">Satisfaction</div>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-brand hover:shadow-brand-lg transition-all duration-300">
-            <div className="text-3xl font-bold text-wave-orange mb-2">24/7</div>
-            <div className="text-wave-brown">Support</div>
-          </div>
+        {/* CTA Button */}
+        <div className="text-center">
+         <button className="hero-cta">
+            See all Brands
+            <span className='pl-2'>▸</span>
+          </button>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes scroll-left {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        @keyframes scroll-right {
+          0% {
+            transform: translateX(-50%);
+          }
+          100% {
+            transform: translateX(0);
+          }
+        }
+
+        .animate-scroll-left {
+          animation: scroll-left 30s linear infinite;
+        }
+
+        .animate-scroll-right {
+          animation: scroll-right 30s linear infinite;
+        }
+
+        .pause-on-hover:hover .animate-scroll-left,
+        .pause-on-hover:hover .animate-scroll-right {
+          animation-play-state: paused;
+        }
+      `}</style>
     </section>
   );
 };
 
-export default BrandsSection;
+export default FeaturedBrands;

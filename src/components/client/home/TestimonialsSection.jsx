@@ -1,71 +1,117 @@
-import { Star } from "lucide-react";
-import TestimonialCard from "./TestimonialCard";
+"use client"
+import React, { useState, useEffect } from 'react';
 
+const TestimonialsSection = () => {
+  const [activeSlide, setActiveSlide] = useState(0);
+  
+  const testimonials = [
+    {
+      text: "Beautiful Cards.",
+      description: "Best gifting experience ever. The card designs are beautiful! 🌸",
+      author: "Michael P."
+    },
+    {
+      text: "Never miss a moment",
+      description: "Saved me when I forgot my anniversary. Wife was so happy!",
+      author: "Thabo K."
+    },
+    {
+      text: "Make them cry happy tears",
+      description: "I sent a gift card in 2 minutes and she cried happy tears! 😊💕",
+      author: "Naledi R."
+    },
+    {
+      text: "Still feels personal.",
+      description: "Perfect for last-minute gifts! My mom loved the personalized message 🎉",
+      author: "Michael P."
+    },
+    {
+      text: "Beautiful Cards.",
+      description: "Best gifting experience ever. The card designs are beautiful! 🌸",
+      author: "Michael P."
+    },
+    {
+      text: "Never miss a moment",
+      description: "Saved me when I forgot my anniversary. Wife was so happy!",
+      author: "Thabo K."
+    },
+    {
+      text: "Make them cry happy tears",
+      description: "I sent a gift card in 2 minutes and she cried happy tears! 😊💕",
+      author: "Naledi R."
+    },
+    {
+      text: "Still feels personal.",
+      description: "Perfect for last-minute gifts! My mom loved the personalized message 🎉",
+      author: "Michael P."
+    }
+  ];
 
-const TestimonialsSection = ({ title, subtitle, testimonials }) => (
- <section className="py-20 bg-wave-cream-dark">
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 bg-wave-orange text-white px-4 py-2 rounded-full text-sm font-medium mb-4 shadow-brand">
-          <Star className="w-4 h-4" />
-          Customer Reviews
+  const totalSlides = Math.ceil(testimonials.length / 4);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % totalSlides);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [totalSlides]);
+
+  const goToSlide = (index) => {
+    setActiveSlide(index);
+  };
+
+  const getCurrentTestimonials = () => {
+    const startIndex = activeSlide * 4;
+    return testimonials.slice(startIndex, startIndex + 4);
+  };
+
+  return (
+    <section className="testimonials-section">
+      <div className="testimonials-container">
+        <div className="testimonials-header">
+          <h2 className="testimonials-title">Loved by Gift Senders</h2>
+          <p className="testimonials-subtitle">Real stories from real people spreading joy</p>
         </div>
-        <h2 className="text-4xl font-bold text-wave-green mb-4">{title}</h2>
-        <p className="text-wave-brown text-lg max-w-2xl mx-auto">{subtitle}</p>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {testimonials.map((testimonial, index) => (
-          <TestimonialCard key={index} {...testimonial} />
-        ))}
-      </div>
 
-      {/* Additional Trust Indicators */}
-      <div className="mt-16 text-center">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          <div className="bg-white rounded-xl p-6 shadow-brand">
-            <div className="flex justify-center mb-2">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 text-wave-orange fill-current" />
-              ))}
-            </div>
-            <div className="text-2xl font-bold text-wave-green">4.9/5</div>
-            <div className="text-sm text-wave-brown">Average Rating</div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 shadow-brand">
-            <div className="text-2xl font-bold text-wave-green mb-1">10K+</div>
-            <div className="text-sm text-wave-brown">Happy Customers</div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 shadow-brand">
-            <div className="text-2xl font-bold text-wave-green mb-1">50K+</div>
-            <div className="text-sm text-wave-brown">Gifts Sent</div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-6 shadow-brand">
-            <div className="text-2xl font-bold text-wave-green mb-1">99%</div>
-            <div className="text-sm text-wave-brown">Satisfaction</div>
+        <div className="testimonials-slider-wrapper">
+          <div 
+            className="testimonials-slider"
+            style={{ transform: `translateX(-${activeSlide * 100}%)` }}
+          >
+            {Array.from({ length: totalSlides }).map((_, slideIndex) => (
+              <div key={slideIndex} className="testimonials-slide">
+                <div className="testimonials-grid">
+                  {testimonials.slice(slideIndex * 4, slideIndex * 4 + 4).map((testimonial, index) => (
+                    <div key={index} className="testimonial-card">
+                      <div className="stars">
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} className="star">⭐</span>
+                        ))}
+                      </div>
+                      <h3 className="testimonial-text">{testimonial.text}</h3>
+                      <p className="testimonial-description">{testimonial.description}</p>
+                      <p className="testimonial-author">-{testimonial.author}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Call to Action */}
-      <div className="mt-12 text-center">
-        <div className="bg-white rounded-2xl p-8 shadow-brand-lg max-w-2xl mx-auto">
-          <h3 className="text-2xl font-bold text-wave-green mb-3">
-            Join thousands of satisfied customers
-          </h3>
-          <p className="text-wave-brown mb-6">
-            Experience the joy of effortless gifting with Wave Gifts today
-          </p>
-          <button className="btn-primary shadow-brand hover:shadow-brand-lg transition-all duration-300 transform hover:scale-105">
-            Send Your First Gift
-          </button>
+        <div className="carousel-dots">
+          {Array.from({ length: totalSlides }).map((_, index) => (
+            <button
+              key={index}
+              className={`dot ${index === activeSlide ? 'active' : ''}`}
+              onClick={() => goToSlide(index)}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default TestimonialsSection;

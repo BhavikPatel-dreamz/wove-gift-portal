@@ -1,81 +1,87 @@
-import { Gift } from "lucide-react";
+import { Instagram, Facebook, Twitter, Linkedin } from "lucide-react"; // assuming appropriate icons
 
+const Footer = () => {
+  return (
+    <footer className="bg-[#FFF5F5] text-black py-12 border-t border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+          {/* Branding + Social */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-md bg-gradient-to-r from-pink-500 to-orange-400 flex items-center justify-center">
+                {/* Assuming Gift icon or custom logo */}
+                <span aria-label="gift" className="text-white font-bold text-xl">🎁</span>
+              </div>
+              <h3 className="font-bold text-pink-600 text-lg">Wove Gifts</h3>
+            </div>
+            <p className="font-semibold mb-1 text-base">South Africa's #1 Gift Card Platform</p>
+            <p className="text-gray-600 mb-6">Making gifting magical, one card at a time</p>
+            <div className="flex gap-3">
+              {[Instagram, Facebook, Twitter, Linkedin].map((Icon, idx) => (
+                <a 
+                  href="#"
+                  key={idx}
+                  aria-label="Social Link"
+                  className="social-icon"
+                >
+                  <Icon className="w-5 h-5" />
+                </a>
+              ))}
+            </div>
+          </div>
 
-const Footer = ({ newsletter, links, social }) => (
-  <footer className="bg-wave-green text-white py-12">
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Newsletter Section */}
-      <div className="text-center mb-12 pb-8 border-b border-wave-green-light">
-        <h3 className="text-lg font-semibold mb-2">{newsletter.title}</h3>
-        <p className="text-wave-cream text-sm mb-6">{newsletter.subtitle}</p>
-        <div className="flex max-w-md mx-auto gap-2">
-          <input
-            type="email"
-            placeholder="your@email.com"
-            className="flex-1 px-4 py-3 rounded-l-full text-wave-green bg-white focus:outline-none focus:ring-2 focus:ring-wave-orange"
-          />
-          <button className="bg-wave-orange hover:bg-wave-orange-dark px-6 py-3 rounded-r-full font-medium transition-colors">
-            Subscribe
-          </button>
-        </div>
-      </div>
-
-      {/* Links Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-        {links.map((section, index) => (
-          <div key={index}>
-            <h4 className="font-semibold mb-4 text-white">{section.title}</h4>
-            <ul className="space-y-3">
-              {section.items.map((item, itemIndex) => (
-                <li key={itemIndex}>
-                  <a href="#" className="text-wave-cream hover:text-white text-sm transition-colors duration-200">
-                    {item}
-                  </a>
+          {/* Quick Links */}
+          <div>
+            <h4 className="font-bold text-black mb-4 text-sm tracking-wider uppercase">Quick Links</h4>
+            <ul className="space-y-3 text-gray-800 text-sm">
+              {["Home", "How It Works", "Brands", "Reviews"].map((item, idx) => (
+                <li key={idx}>
+                  <a href="#" className="hover:text-pink-600 transition-colors">{item}</a>
                 </li>
               ))}
             </ul>
           </div>
-        ))}
-      </div>
 
-      {/* Bottom Section */}
-      <div className="border-t border-wave-green-light pt-8">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          {/* Social Links */}
-          <div className="flex items-center space-x-6 mb-4 md:mb-0">
-            {social.map((item, index) => (
-              <a
-                key={index}
-                href="#"
-                className="text-wave-cream hover:text-white transition-colors duration-200"
-                aria-label={item.name}
+          {/* Legal & Support */}
+          <div>
+            <h4 className="font-bold text-black mb-4 text-sm tracking-wider uppercase">Legal & Support</h4>
+            <ul className="space-y-3 text-gray-800 text-sm">
+              {["Terms & Conditions", "Privacy Policy", "FAQs / Help Center", "Contact Us"].map((item, idx) => (
+                <li key={idx}>
+                  <a href="#" className="hover:text-pink-600 transition-colors">{item}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Newsletter */}
+          <div>
+            <h4 className="font-bold text-black mb-3 text-sm tracking-wider uppercase">Stay in the Loop</h4>
+            <p className="text-gray-600 mb-3">Get updates and special gifting moments</p>
+            <form className="flex gap-4">
+              <input
+                type="email"
+                placeholder="Enter your mail"
+                className="input-rounded"
+                aria-label="Email address"
+              />
+              <button
+                type="submit"
+                className="btn-gradient text-white px-5 rounded-full font-semibold flex items-center gap-1"
               >
-                {item.icon}
-              </a>
-            ))}
-          </div>
-
-          {/* Brand & Copyright */}
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-wave-orange rounded-lg flex items-center justify-center">
-                <Gift className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold text-lg">Wave Gifts</span>
-            </div>
-            <p className="text-wave-cream text-sm">© 2024 Wave Gifts. All rights reserved.</p>
+                Subscribe <span>▶</span>
+              </button>
+            </form>
           </div>
         </div>
 
-        {/* Additional Info */}
-        <div className="text-center mt-6 pt-6 border-t border-wave-green-light">
-          <p className="text-wave-cream text-sm">
-            South Africa's #1 Gift Card Platform - Making gifting magical and smart at a time
-          </p>
+        {/* Bottom copyright */}
+        <div className="mt-12 pt-6 border-t border-gray-200 text-center text-gray-600 text-sm">
+          © 2025 Wove Gift. All rights reserved.
         </div>
       </div>
-    </div>
-  </footer>
-);
+    </footer>
+  );
+};
 
 export default Footer;

@@ -1,10 +1,9 @@
 "use client"
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getOccasionCategories } from '@/lib/action/occasionAction';
-import { ArrowLeft, X, Image, Smile, Palette, Sparkles } from 'lucide-react';
+import { ArrowLeft, X, Image, Palette, Sparkles, Upload } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { goBack, goNext, setLoading, setSelectedSubCategory, setSubCategories, setError } from '../../../redux/giftFlowSlice';
-import ProgressIndicator from './ProgressIndicator';
 import EmojiPicker from '../../occasions/EmojiPicker';
 import { createCustomCard } from '@/lib/action/customCardAction';
 
@@ -28,150 +27,99 @@ const CustomCardCreator = ({ onSave, onCancel }) => {
   };
 
   const handleSave = async () => {
-  if (!title.trim()) return alert("Title is required");
-  if (!description.trim()) return alert("Description is required");
-  if (!bgColor && !bgImage) return alert("Choose a color or upload an image");
+    if (!title.trim()) return alert("Title is required");
+    if (!description.trim()) return alert("Description is required");
+    if (!bgColor && !bgImage) return alert("Choose a color or upload an image");
 
-  try {
-    const result = await createCustomCard({
-      title: title.trim(),
-      description: description.trim(),
-      bgColor: bgImage ? undefined : bgColor,
-      bgImage,
-      emoji,
-    });
+    try {
+      const result = await createCustomCard({
+        title: title.trim(),
+        description: description.trim(),
+        bgColor: bgImage ? undefined : bgColor,
+        bgImage,
+        emoji,
+      });
 
-    if (!result.success) throw new Error(result.message || "Validation error");
+      if (!result.success) throw new Error(result.message || "Validation error");
 
-    onSave({
-      id: result.data.id,
-      name: result.data.title,
-      description: result.data.description,
-      image: result.data.bgImage,
-      bgColor: result.data.bgColor,
-      emoji: result.data.emoji,
-      isCustom: true,
-    });
-  } catch (error) {
-    console.error(error);
-    alert(error.message || "Validation error");
-  }
-};
+      onSave({
+        id: result.data.id,
+        name: result.data.title,
+        description: result.data.description,
+        image: result.data.bgImage,
+        bgColor: result.data.bgColor,
+        emoji: result.data.emoji,
+        isCustom: true,
+      });
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Validation error");
+    }
+  };
 
-  // Brand colors for the color picker
   const colors = ['#FF6B35', '#FF8A5C', '#E55A2B', '#2D5A3D', '#3B6B4F', '#F5F3E7', '#8B4513', '#A0522D'];
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 text-black">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] max-h-[720px] flex overflow-hidden relative">
-        
-        {/* Close Button */}
-        <button
-          onClick={onCancel}
-          className="absolute top-4 right-4 text-wave-brown hover:text-wave-green transition-colors z-20"
-        >
+        <button onClick={onCancel} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors z-20">
           <X size={24} />
         </button>
 
-        {/* Customization Panel */}
-        <div className="w-full md:w-2/3 p-6 flex flex-col space-y-6 border-r border-wave-cream">
-          <h2 className="text-2xl font-bold text-wave-green">Customize Card</h2>
+        <div className="w-full md:w-2/3 p-6 flex flex-col space-y-6 border-r border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900">Customize Card</h2>
 
-          {/* Title & Message */}
           <div className="space-y-4">
             <div>
-              <label className="font-semibold text-wave-brown mb-1 block text-sm">Title</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="form-input w-full"
-                maxLength={30}
-              />
+              <label className="font-semibold text-gray-700 mb-1 block text-sm">Title</label>
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" maxLength={30} />
             </div>
 
             <div>
-              <label className="font-semibold text-wave-brown mb-1 block text-sm">Message</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="form-input w-full"
-                rows={3}
-                maxLength={100}
-              ></textarea>
+              <label className="font-semibold text-gray-700 mb-1 block text-sm">Message</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500" rows={3} maxLength={100}></textarea>
             </div>
           </div>
 
-          {/* Emoji Picker */}
-          <div className="bg-wave-cream p-4 rounded-2xl border border-wave-cream-dark">
-            <label className="font-semibold text-wave-brown mb-2 block text-sm">Emoji</label>
+          <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+            <label className="font-semibold text-gray-700 mb-2 block text-sm">Emoji</label>
             <EmojiPicker value={emoji} onChange={setEmoji} />
           </div>
 
-          {/* Background Picker */}
           <div>
-            <label className="font-semibold text-wave-brown mb-2 block text-sm">Background</label>
+            <label className="font-semibold text-gray-700 mb-2 block text-sm">Background</label>
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowColorPicker(!showColorPicker)}
-                className="flex-1 p-2 border border-wave-cream rounded-xl flex items-center justify-center space-x-2 bg-white hover:bg-wave-cream transition-colors"
-              >
-                <Palette size={20} className="text-wave-brown" />
-                <span className="text-sm font-medium text-wave-green">Color</span>
+              <button onClick={() => setShowColorPicker(!showColorPicker)} className="flex-1 p-2 border border-gray-300 rounded-xl flex items-center justify-center space-x-2 bg-white hover:bg-gray-50 transition-colors">
+                <Palette size={20} className="text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Color</span>
               </button>
-              <button
-                onClick={() => imageInputRef.current?.click()}
-                className="flex-1 p-2 border border-wave-cream rounded-xl flex items-center justify-center space-x-2 bg-white hover:bg-wave-cream transition-colors"
-              >
-                <Image size={20} className="text-wave-brown" />
-                <span className="text-sm font-medium text-wave-green">Image</span>
+              <button onClick={() => imageInputRef.current?.click()} className="flex-1 p-2 border border-gray-300 rounded-xl flex items-center justify-center space-x-2 bg-white hover:bg-gray-50 transition-colors">
+                <Image size={20} className="text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Image</span>
               </button>
-              <input
-                type="file"
-                ref={imageInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
+              <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
             </div>
 
             {showColorPicker && (
               <div className="mt-3 grid grid-cols-8 gap-2">
                 {colors.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => {
-                      setBgColor(color);
-                      setBgImage(null);
-                    }}
-                    className={`w-8 h-8 rounded-full transition-transform hover:scale-110 ${bgColor === color && !bgImage ? 'ring-2 ring-offset-2 ring-wave-orange' : ''}`}
-                    style={{ backgroundColor: color }}
-                  />
+                  <button key={color} onClick={() => { setBgColor(color); setBgImage(null); }} className={`w-8 h-8 rounded-full transition-transform hover:scale-110 ${bgColor === color && !bgImage ? 'ring-2 ring-offset-2 ring-pink-500' : ''}`} style={{ backgroundColor: color }} />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Save Button */}
           <div className="mt-auto">
-            <button
-              onClick={handleSave}
-              className="btn-primary w-full font-bold py-3 rounded-xl shadow-brand hover:shadow-brand-lg transition-all duration-300 transform hover:-translate-y-0.5"
-            >
+            <button onClick={handleSave} className="w-full bg-gradient-to-r from-pink-500 to-orange-400 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
               Save & Continue
             </button>
           </div>
         </div>
 
-        {/* Live Preview */}
-        <div className="hidden md:flex w-1/3 p-8 bg-wave-cream items-center justify-center">
-          <div
-            className="w-[280px] h-[440px] rounded-3xl shadow-brand-lg flex flex-col justify-between p-6 text-white relative overflow-hidden transition-all duration-300"
-            style={{ backgroundColor: bgImage ? 'transparent' : bgColor }}
-          >
+        <div className="hidden md:flex w-1/3 p-8 bg-gray-50 items-center justify-center">
+          <div className="w-[280px] h-[440px] rounded-3xl shadow-2xl flex flex-col justify-between p-6 text-white relative overflow-hidden transition-all duration-300" style={{ backgroundColor: bgImage ? 'transparent' : bgColor }}>
             {bgImage && <img src={bgImage} className="absolute inset-0 w-full h-full object-cover" alt="background" />}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-3xl"></div>
-
             <div className="relative z-10 text-center pt-10">
               <span className="text-6xl drop-shadow-lg">{emoji}</span>
             </div>
@@ -198,32 +146,22 @@ export default function SubCategorySelector() {
   } = useSelector((state) => state.giftFlowReducer);
 
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const [selectedOccasionName,setSelectedOccationName] = useState(null);
 
-  // Brand color schemes for occasion cards
-  const occasionColors = [
-    { bgColor: 'bg-wave-cream', buttonColor: 'btn-primary', accent: 'border-wave-orange' },
-    { bgColor: 'bg-wave-cream-dark', buttonColor: 'btn-primary', accent: 'border-wave-orange' },
-    { bgColor: 'bg-wave-cream', buttonColor: 'btn-secondary', accent: 'border-wave-green' },
-    { bgColor: 'bg-wave-cream-dark', buttonColor: 'btn-secondary', accent: 'border-wave-green' },
-    { bgColor: 'bg-wave-cream', buttonColor: 'btn-primary', accent: 'border-wave-orange' },
-    { bgColor: 'bg-wave-cream-dark', buttonColor: 'btn-primary', accent: 'border-wave-orange' },
-    { bgColor: 'bg-wave-cream', buttonColor: 'btn-secondary', accent: 'border-wave-green' },
-    { bgColor: 'bg-wave-cream-dark', buttonColor: 'btn-secondary', accent: 'border-wave-green' },
-  ];
-
-  const cardHeight = 'h-96';
 
   const fetchSubCategories = useCallback(async (page) => {
     if (!selectedOccasion) return;
     try {
       dispatch(setLoading(true));
       const response = await getOccasionCategories({ occasionId: selectedOccasion, limit: 8, page });
+
       if (response.success) {
         dispatch(setSubCategories({
           data: response.data,
           page: page,
           pagination: response.meta.pagination
         }));
+        setSelectedOccationName(response.meta.occasion.name);
       } else {
         dispatch(setError(response.message || "Failed to fetch sub-categories."));
       }
@@ -259,11 +197,11 @@ export default function SubCategorySelector() {
 
   if (loading && currentSubCategoryPage === 1) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-wave-cream">
+      <div className="min-h-screen flex items-center justify-center bg-[#FBF9F4]">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-wave-orange mx-auto loading-spinner"></div>
-          <h2 className="text-2xl font-semibold text-wave-green mt-4">Loading Designs...</h2>
-          <p className="text-wave-brown">Getting things ready for you!</p>
+          <div className="w-12 h-12 border-3 border-dashed rounded-full animate-spin border-pink-500 mx-auto"></div>
+          <h2 className="text-xl font-medium text-gray-900 mt-4">Loading Designs...</h2>
+          <p className="text-gray-600 text-sm">Getting things ready for you!</p>
         </div>
       </div>
     );
@@ -271,14 +209,11 @@ export default function SubCategorySelector() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-wave-cream">
-        <div className="text-center p-8 bg-white rounded-lg shadow-brand">
-          <h2 className="text-2xl font-bold text-red-600">Oops! Something went wrong.</h2>
-          <p className="text-wave-brown mt-2">{error}</p>
-          <button
-            onClick={() => fetchSubCategories(1)}
-            className="mt-4 btn-primary px-6 py-2 rounded-lg font-medium transition-colors"
-          >
+      <div className="min-h-screen flex items-center justify-center bg-[#FBF9F4]">
+        <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+          <h2 className="text-xl font-semibold text-red-600">Oops! Something went wrong.</h2>
+          <p className="text-gray-600 mt-2 text-sm">{error}</p>
+          <button onClick={() => fetchSubCategories(1)} className="mt-4 bg-gradient-to-r from-pink-500 to-orange-400 text-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm hover:from-pink-600 hover:to-orange-500">
             Try Again
           </button>
         </div>
@@ -287,133 +222,110 @@ export default function SubCategorySelector() {
   }
 
   return (
-    <div className="min-h-screen bg-wave-cream p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        <ProgressIndicator />
-
-        <button
-          onClick={() => dispatch(goBack())}
-          className="flex items-center text-wave-green hover:text-wave-orange mb-6 transition-colors font-medium"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Back
+    <div className="min-h-screen bg-[#FFF] py-8">
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Back Button */}
+        <button onClick={() => dispatch(goBack())}  className="flex items-center gap-2 rounded-full text-gray-700 hover:text-gray-900 mb-12 px-4 py-2 border border-gray-300 hover:border-gray-400 transition-all">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Previous
         </button>
 
-        <div className="text-center mb-8 md:mb-12">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold heading-primary mb-4">
-            Choose a Design
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+          Pick a {selectedOccasionName} Design They'll Love
           </h1>
-          <p className="text-wave-brown text-base md:text-lg max-w-2xl mx-auto">
-            Select a pre-made design or create your own.
+          <p className="text-gray-600 text-base max-w-2xl mx-auto">
+            Select from our curated collection of beautiful, emotionally engaging {selectedOccasionName} cards
           </p>
         </div>
 
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 md:gap-6 mb-8">
-          {/* Custom Design Card */}
+        {/* Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+          {/* Upload Custom Design Card */}
           <div
-            className={`bg-gradient-to-br from-wave-cream to-white rounded-2xl mb-4 md:mb-6 break-inside-avoid ${cardHeight}
-            transition-all duration-300 hover:scale-[1.02] hover:shadow-brand-lg cursor-pointer 
-            shadow-brand relative overflow-hidden group flex flex-col border-2 border-dashed border-wave-orange hover:ring-2 hover:ring-wave-orange`}
+            className="bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer border-2 border-dashed border-pink-300 group flex flex-col"
             onClick={() => setIsCustomizing(true)}
           >
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-wave-cream">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-wave-orange flex items-center justify-center mb-4 shadow-brand">
-                <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
+            {/* Content Area */}
+            <div className="flex-1 flex flex-col items-center justify-center p-8 min-h-[280px]">
+              <div className="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center mb-4">
+                <Upload className="w-8 h-8 text-pink-500" />
               </div>
-              <h3 className="font-bold text-base md:text-lg text-wave-green mb-1">Create Your Own</h3>
-              <p className="text-xs md:text-sm text-wave-brown">Design a unique card from scratch.</p>
-            </div>
-            <div className="p-4 md:p-5 bg-white rounded-b-2xl flex flex-col justify-center items-center">
-              <button
-                className="btn-primary py-2 px-4 md:px-6 rounded-full text-white font-semibold text-xs md:text-sm shadow-brand group-hover:scale-105 transition-transform"
-              >
-                Customize
-              </button>
+              <h3 className="font-bold text-lg text-gray-900 mb-2 text-center">
+                Upload your Own Design
+              </h3>
+              <p className="text-gray-600 text-sm text-center mb-2">
+                Use your own design or photo
+              </p>
+              <p className="text-gray-500 text-xs text-center">
+                JPG or PNG
+              </p>
+              <p className="text-gray-500 text-xs text-center">
+                Max 5MB Vertical layout preferred
+              </p>
             </div>
           </div>
 
           {/* Existing SubCategory Cards */}
-          {subCategories.map((subCategory, index) => {
-            const colorScheme = occasionColors[index % occasionColors.length];
-
-            return (
-              <div
-                key={`${subCategory.id}-${index}`}
-                className={`bg-white rounded-2xl mb-4 md:mb-6 break-inside-avoid ${cardHeight}
-                transition-all duration-300 hover:scale-[1.02] hover:shadow-brand-lg cursor-pointer 
-                shadow-brand relative overflow-hidden group flex flex-col border border-wave-cream-dark`}
-                onClick={() => handleSubCategorySelect(subCategory)}
-              >
-                <div className="absolute top-3 left-3 z-20">
-                  <span className="badge badge-outline text-xs font-semibold">
-                    {subCategory.category || 'Artistic'}
-                  </span>
-                </div>
-
-                <div className="relative flex-1 overflow-hidden rounded-t-2xl h-48">
-                  {subCategory.image ? (
-                    <img
-                      src={subCategory.image}
-                      alt={subCategory.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-
-                  <div
-                    className={`w-full h-full bg-wave-cream flex items-center justify-center`}
-                    style={{ display: subCategory.image ? 'none' : 'flex' }}
-                  >
-                    <span className="text-5xl opacity-80">{subCategory.emoji || '🎁'}</span>
-                  </div>
-
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
-                    <button
-                      className={`btn-primary py-2 px-4 rounded-full text-white font-semibold text-sm transition-all duration-300 transform scale-90 group-hover:scale-100 shadow-brand`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSubCategorySelect(subCategory);
-                      }}
-                    >
-                      Select
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-4 md:p-5 bg-white rounded-b-2xl flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold text-base md:text-lg text-wave-green mb-2 leading-tight line-clamp-1">
-                      {subCategory.name}
-                    </h3>
-
-                    <p className="text-xs md:text-sm text-wave-brown leading-relaxed line-clamp-2">
-                      {subCategory.description}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center space-x-1 mt-2">
-                    <span className="text-wave-orange text-lg">{subCategory.emoji}</span>
-                  </div>
+          {subCategories.map((subCategory, index) => (
+            <div
+              key={`${subCategory.id}-${index}`}
+              className="bg-white rounded-2xl p-2 overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer border border-gray-200 group flex flex-col"
+              onClick={() => handleSubCategorySelect(subCategory)}
+            >
+             {/* Image Container with rounded corners */}
+              <div className="w-full">
+                <div className="w-full h-80 overflow-hidden rounded-2xl bg-gray-200">
+                {subCategory.image ? (
+                  <img 
+                    src={subCategory.image} 
+                    alt={subCategory.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+              </div>
+                
+                <div
+                  className="w-full h-full bg-gradient-to-br from-pink-100 to-orange-100 flex items-center justify-center"
+                  style={{ display: subCategory.image ? 'none' : 'flex' }}
+                >
+                  <span className="text-6xl opacity-80">{subCategory.emoji || '🎁'}</span>
                 </div>
               </div>
-            );
-          })}
+              
+              {/* Card Content */}
+              <div className="p-5">
+                {/* Title */}
+                <h3 className="font-bold text-lg text-gray-900 mb-2">
+                  {subCategory.name}
+                </h3>
+                
+                {/* Description */}
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {subCategory.description}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="text-center mb-8">
+        {/* Load More Button */}
+        <div className="text-center">
           {loading && currentSubCategoryPage > 1 && (
-            <div className="inline-flex items-center text-wave-brown bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-wave-cream">
-              <div className="w-5 h-5 border-2 border-dashed rounded-full animate-spin border-wave-orange mr-2 loading-spinner"></div>
-              Loading more...
+            <div className="inline-flex items-center text-gray-600">
+              <div className="w-4 h-4 border-2 border-dashed rounded-full animate-spin border-pink-500 mr-2"></div>
+              <span className="text-sm">Loading more...</span>
             </div>
           )}
           {!loading && subCategoriesPagination?.hasNextPage && (
             <button
               onClick={handleLoadMore}
-              className="bg-white/80 backdrop-blur-sm text-wave-green px-6 py-3 md:px-8 md:py-4 rounded-xl font-semibold border border-wave-cream hover:bg-white hover:shadow-brand transition-all duration-200 transform hover:scale-105"
+              className="bg-white text-gray-700 px-8 py-3 rounded-lg font-medium border border-gray-300 hover:bg-gray-50 hover:border-pink-300 transition-all duration-200 text-sm"
             >
               Show More Categories
             </button>

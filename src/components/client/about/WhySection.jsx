@@ -1,54 +1,39 @@
+import React from "react";
 
-const WhySection = ({ 
-  title = "Why Wave exists",
-  description = "Gifting should feel joyful, not stressful. We built Wave to turn \"What do I buy?\" into \"That was easy.\" With access to trusted brands and instant delivery, you choose the vibe—fashion, food, wellness, travel—and we deliver a beautiful gift card that always fits.",
-  primaryButtonText = "Start Gifting",
-  secondaryButtonText = "Explore Bulk Gifting"
-}) => {
+const WhyWoveExists = () => {
   return (
-    <div className="py-20 px-6" style={{ backgroundColor: '#F5F3E7' }}>
-      <div className="max-w-4xl mx-auto text-center">
-        <h2 
-          className="text-4xl md:text-5xl font-bold mb-8"
-          style={{ color: '#2D5A3D' }}
-        >
-          {title}
-        </h2>
-        <p 
-          className="text-lg mb-12 max-w-3xl mx-auto leading-relaxed"
-          style={{ color: '#8B4513' }}
-        >
-          {description}
-        </p>
-        <p 
-          className="text-2xl font-semibold mb-8"
-          style={{ color: '#FF6B35' }}
-        >
-          Give freedom to choose, and the gift always fits.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button 
-            className="px-8 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 text-white"
-            style={{ 
-              background: 'linear-gradient(135deg, #FF6B35 0%, #E55A2B 100%)'
-            }}
-          >
-            {primaryButtonText}
-          </button>
-          <button 
-            className="px-8 py-3 rounded-full font-semibold transition-all duration-300 border-2"
-            style={{ 
-              backgroundColor: 'white',
-              color: '#FF6B35',
-              borderColor: '#FF6B35'
-            }}
-          >
-            {secondaryButtonText}
-          </button>
+    <section className="max-w-7xl mx-auto px-6 py-12">
+      <div className="flex flex-col md:flex-row items-center gap-10 md:gap-20">
+        {/* Left content */}
+        <div className="flex-1 max-w-xl">
+          <h2 className="font-bold text-3xl md:text-4xl mb-4 leading-tight">
+            Why Wove exists
+          </h2>
+          <p className="text-gray-700 text-base md:text-lg mb-8 leading-relaxed">
+            Gifting should feel joyful, not stressful. We built Wove to turn "What do I buy?" into "That was easy." With access to trusted brands and instant delivery, you choose the vibe fashion, food, wellness, travel and we deliver a beautiful gift card that always fits.
+          </p>
+
+          <div className="flex flex-wrap gap-4">
+            <button className="bg-gradient-to-r from-pink-500 to-orange-400 text-white font-medium rounded-full px-6 py-3 hover:brightness-110 transition ">
+              Start Gifting <span className='pl-2'>▸</span>
+            </button>
+            <button className="border border-pink-500 text-pink-500 font-medium rounded-full px-6 py-3 hover:bg-pink-50 transition">
+              Explore Bulk Gifting <span className='pl-2'>▸</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Right image and quote */}
+        <div className="flex-1 w-full max-w-md md:max-w-lg rounded-xl overflow-hidden shadow-lg relative">
+          <img
+            src="/why.png"
+            alt="Person showing Wove Gifts mobile app"
+            className="w-full h-auto block object-cover rounded-xl"
+          />
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
-export default WhySection;
+export default WhyWoveExists;

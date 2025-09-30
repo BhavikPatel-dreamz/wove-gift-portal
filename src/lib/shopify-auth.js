@@ -14,17 +14,12 @@ export async function getShopifyClient(shop) {
   if (!session) {
     throw new Error(`No session found for shop: ${shop}`);
   }
-  
-  // Check if session is expired
-  if (session.expires && new Date() > new Date(session.expires)) {
-    await sessionStorage.deleteSession(shop);
-    throw new Error(`Session expired for shop: ${shop}`);
-  }
-  
+
+  // The key part: create a new GraphQL client instance with the session
   return {
     rest: new shopify.clients.Rest({ session }),
-    graphql: new shopify.clients.Graphql({ session }),
-    session
+    graphql: new shopify.clients.Graphql({ session }), // Note: 'Graphql' with lowercase 'l'
+    session,
   };
 }
 

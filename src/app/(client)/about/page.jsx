@@ -1,15 +1,12 @@
 import React from 'react'
-import HeroSection from '../../../components/client/about/HeroSection';
+import GiftBanner from '../../../components/client/about/GiftBanner';
 import WhySection from '../../../components/client/about/WhySection';
 import FeaturesGrid from '../../../components/client/about/FeaturesGrid';
 import HowItWorks from '../../../components/client/about/HowItWorks';
 import RewardsSection from '../../../components/client/about/RewardsSection';
-import CountrySelector from '../../../components/client/about/CountrySelector';
-import CTASection from '../../../components/client/about/CTASection';
 import Header from '../../../components/client/home/Header';
 import Footer from '../../../components/client/home/Footer';
 
-import Newsletter from '../../../components/client/about/Newsletter';
 import { CheckCircle } from 'lucide-react';
 import { Star } from 'lucide-react';
 import { Globe } from 'lucide-react';
@@ -73,21 +70,16 @@ const page = () => {
         <div className="min-h-screen bg-white">
             <Header {...headerData} />
 
-            <HeroSection />
+            <GiftBanner />
 
             <WhySection />
 
-            <FeaturesGrid features={customFeatures} />
+            <FeaturesGrid  />
 
             <HowItWorks />
 
             <RewardsSection />
 
-            <CountrySelector />
-
-            <CTASection />
-
-            <Newsletter />
             <Footer {...footerData} />
 
         </div>

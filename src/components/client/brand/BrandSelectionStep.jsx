@@ -89,7 +89,7 @@ const BrandSelectionStep = () => {
 
   return (
     <div className="space-y-6">
-      <ProgressIndicator />
+      {/* <ProgressIndicator /> */}
 
       {/* <button
         onClick={() => dispatch(goBack())}
@@ -98,15 +98,6 @@ const BrandSelectionStep = () => {
         <ArrowLeft className="w-5 h-5 mr-2" />
         Back
       </button> */}
-
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-wave-orange to-wave-orange-dark bg-clip-text text-transparent mb-4">
-          Pick Your Perfect Brand
-        </h1>
-        <p className="text-wave-green text-lg max-w-2xl mx-auto">
-          Choose from our curated brands to make their day unforgettable 👍
-        </p>
-      </div>
 
       <SearchBar
         placeholder="Search for your perfect brand..."
@@ -117,18 +108,11 @@ const BrandSelectionStep = () => {
       />
 
       <div className="p-6 max-w-7xl mx-auto">
-        <SectionHeader
-          icon={<span>💎</span>}
-          title="Premium Collection"
-          subtitle="Luxury brands for those special moments"
-          bgColor="bg-wave-orange"
-        />
         <CardGrid
           brands={filteredPremiumBrands}
           favorites={favorites}
           onToggleFavorite={handleToggleFavorite}
           onBrandClick={handleBrandClick}
-          premiumBrands={premiumBrands.map(b => b.id)}
         />
       </div>
     </div>
