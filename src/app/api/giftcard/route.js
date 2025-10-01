@@ -96,9 +96,32 @@ export async function POST(req) {
     const codeData = await codeResponse.json();
     const maskedCode = codeData?.data?.giftCard?.maskedCode || null;
 
+    // Store the gift card in the local database
+    if (giftCard && maskedCode) {
+      try {
+        await prisma.giftCard.create({
+          data: {
+            shop: shop,
+            shopifyId: giftCard.id,
+            code: maskedCode, // TODO: This is the masked code, not the full code.
+            initialValue: parseFloat(giftCard.initialValue.amount),
+            balance: parseFloat(giftCard.balance.amount),
+            note: giftCard.note,
+            expiresAt: giftCard.expiresOn ? new Date(giftCard.expiresOn) : null,
+            isVirtual: true,
+            isActive: true,
+          },
+        });
+      } catch (dbError) {
+        console.error("Error saving gift card to DB:", dbError);
+        // Decide if you want to return an error to the user if DB save fails
+        // For now, we'll just log it and still return success for the Shopify creation
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      gift_card: { ...giftCard, maskedCode }
+      gift_card: { ...giftCard, maskedCode },
     });
 
   } catch (error) {
@@ -107,6 +130,34 @@ export async function POST(req) {
       success: false,
       error: error.message,
       stack: error.stack
+    }, { status: 500 });
+  }
+}
+
+export async function GET(req) {
+  try {
+    const url = new URL(req.url);
+    const shop = url.searchParams.get("shop");
+
+    if (!shop) {
+      return NextResponse.json({ error: "Shop parameter is required" }, { status: 400 });
+    }
+
+    const giftCards = await prisma.giftCard.findMany({
+      where: {
+        shop: shop,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return NextResponse.json({ success: true, giftCards });
+  } catch (error) {
+    console.error("Error fetching gift cards:", error);
+    return NextResponse.json({
+      success: false,
+      error: error.message,
     }, { status: 500 });
   }
 }

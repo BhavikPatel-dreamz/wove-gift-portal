@@ -72,7 +72,7 @@ export default function ShopifyMainPage() {
   const fetchGiftCards = async (shopDomain = shop) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/shopify/gift-cards?shop=${shopDomain}`);
+      const response = await fetch(`/api/giftcard?shop=${shopDomain}`);
       if (response.ok) {
         const data = await response.json();
         setGiftCards(data.giftCards || []);
@@ -109,10 +109,9 @@ export default function ShopifyMainPage() {
       });
 
       if (response.ok) {
-        const newGiftCard = await response.json();
-        setGiftCards(prev => [newGiftCard?.giftCard, ...prev]);
         setShowCreateModal(false);
         alert('Gift card created successfully!');
+        fetchGiftCards(currentShop);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to create gift card');
@@ -126,7 +125,7 @@ export default function ShopifyMainPage() {
   const filteredGiftCards = giftCards.filter(card => {
     const matchesSearch = card?.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          card?.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || card.status === filterStatus;
+    const matchesFilter = filterStatus === 'all' || (filterStatus === 'active' && card.isActive) || (filterStatus === 'inactive' && !card.isActive);
     return matchesSearch && matchesFilter;
   });
 
@@ -213,8 +212,7 @@ export default function ShopifyMainPage() {
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
-                  <option value="used">Used</option>
-                  <option value="expired">Expired</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
 
@@ -296,11 +294,9 @@ export default function ShopifyMainPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          giftCard?.status === 'active' ? 'bg-green-100 text-green-800' :
-                          giftCard?.status === 'used' ? 'bg-gray-100 text-gray-800' :
-                          'bg-red-100 text-red-800'
+                          giftCard.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {giftCard?.status}
+                          {giftCard.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
