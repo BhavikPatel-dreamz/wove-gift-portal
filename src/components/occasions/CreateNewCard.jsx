@@ -12,7 +12,6 @@ import toast from 'react-hot-toast';
 export default function CreateNewCard({ occasion, onBack, onSave, initialCardData = null }) {
   const isEditing = Boolean(initialCardData);
 
-  console.log('CreateNewCard rendered with:', { isEditing, initialCardData }); // Debug log
 
   const [formData, setFormData] = useState({
     cardName: '',
@@ -26,7 +25,6 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
 
   // Load initial data when editing
   useEffect(() => {
-    console.log('useEffect triggered with initialCardData:', initialCardData); // Debug log
 
     if (initialCardData) {
       const newFormData = {
@@ -39,13 +37,11 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
         imageFile: null,
       };
 
-      console.log('Setting form data:', newFormData); // Debug log
       setFormData(newFormData);
     }
   }, [initialCardData]);
 
   const handleSaveCard = async () => {
-    console.log('Saving card...', formData);
 
     const data = new FormData();
 

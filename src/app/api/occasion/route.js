@@ -64,7 +64,6 @@ export async function DELETE(req) {
         );
 
     } catch (error) {
-        console.log(error, "error")
         return NextResponse.json(
             {
                 success: false,

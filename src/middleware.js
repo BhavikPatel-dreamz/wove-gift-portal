@@ -34,18 +34,10 @@ export function middleware(request) {
     // For shopify/main and other protected routes, check authentication
     if (pathname.startsWith('/shopify/main') || shop) 
     {
-      console.log("Middleware - Processing Shopify route:", pathname);
-      console.log("Middleware - Shop:", shop);
-      console.log("Middleware - Embedded:", embedded);
-      console.log("Middleware - Session param:", session);
-      console.log("Middleware - ID Token present:", !!idToken);
-
       const token = request.cookies.get('shopify_session')?.value;
-      console.log("Middleware - shopify_session cookie:", token);
 
       // For embedded apps, we might have session in URL params instead of cookies
       if (!token && (session || idToken)) {
-        console.log("Middleware - No cookie but have URL session/token, allowing through");
         const response = NextResponse.next();
         if (shop) response.headers.set('x-shopify-shop', shop);
         if (session) response.headers.set('x-shopify-session', session);
@@ -60,7 +52,6 @@ export function middleware(request) {
           
           // Check if token is for the correct shop
           if (decoded.shop !== shop) {
-            console.log("Middleware - Shop mismatch, redirecting to install");
             const installUrl = new URL('/shopify/install', request.url);
             installUrl.searchParams.set('shop', shop);
             return NextResponse.redirect(installUrl);
@@ -76,7 +67,6 @@ export function middleware(request) {
           console.error('Middleware - Token verification failed:', error);
           // For embedded apps, don't redirect if we have URL params
           if (session || idToken) {
-            console.log("Middleware - Token verification failed but have URL session, allowing through");
             const response = NextResponse.next();
             if (shop) response.headers.set('x-shopify-shop', shop);
             return response;
@@ -90,7 +80,6 @@ export function middleware(request) {
 
       // No authentication found
       if (!token && !session && !idToken) {
-        console.log("Middleware - No authentication found, redirecting to install");
         const installUrl = new URL('/shopify/install', request.url);
         if (shop) installUrl.searchParams.set('shop', shop);
         return NextResponse.redirect(installUrl);

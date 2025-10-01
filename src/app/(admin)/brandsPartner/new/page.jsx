@@ -197,9 +197,6 @@ const AddBrandPartner = () => {
   };
 
 
-  console.log("formData", formData);
-  
-
   // Enhanced validation function
   const validateRequiredFields = () => {
     const errors = [];
@@ -333,8 +330,6 @@ const AddBrandPartner = () => {
     try {
       const submitData = prepareFormDataForSubmission(true); // isDraft = true
 
-      console.log("submitData", submitData);
-      
       startTransition(async () => {
         const result = await createBrandPartner(submitData);
         
@@ -343,8 +338,6 @@ const AddBrandPartner = () => {
           router.push('/brandsPartner');
         } else {
           if (result.errors) {
-            console.log("result.errors", result.errors);
-            
             setValidationErrors(result.errors);
              toast.error('Validation failed. Please check the form.');
           } else {
@@ -373,7 +366,6 @@ const AddBrandPartner = () => {
       const submitData = prepareFormDataForSubmission(false); // isDraft = false
       
       startTransition(async () => {
-        console.log("submitData", submitData);
         const result = await createBrandPartner(submitData);
         
         if (result.success) {

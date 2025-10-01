@@ -156,8 +156,6 @@ const BrandEdit = () => {
 
       if (result.success) {
         const brand = result.data;
-        console.log("brandData", brand);
-
         // Enhanced mapping with proper handling of redemption channels
         const parseRedemptionChannels = (channels) => {
           if (typeof channels === 'object' && channels !== null) {
@@ -356,8 +354,6 @@ const BrandEdit = () => {
     }
   };
 
-  console.log("formData", formData);
-
   // Enhanced validation with new banking fields
   const validateRequiredFields = () => {
     const errors = [];
@@ -455,8 +451,6 @@ const BrandEdit = () => {
       const submitData = prepareFormDataForSubmission();
       const result = await updateBrandPartner(brandId, submitData);
 
-      console.log("result", result);
-
       if (result.success) {
         toast.success('Brand updated successfully');
         setOriginalData(JSON.parse(JSON.stringify(formData)));
@@ -465,8 +459,6 @@ const BrandEdit = () => {
         router.push('/brandsPartner');
       } else {
         if (result.errors) {
-            console.log("result.errors", result.errors);
-
           setValidationErrors(result.errors);
           toast.error('Validation failed. Please check the form.');
         } else {

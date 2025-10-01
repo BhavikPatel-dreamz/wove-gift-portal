@@ -32,8 +32,6 @@ export async function createCustomCard(data) {
       data: newCustomCard,
     };
   } catch (error) {
-    console.log("error",error);
-    
     return {
       success: false,
       message: "Failed to create custom card",

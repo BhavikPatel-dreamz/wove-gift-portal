@@ -118,7 +118,6 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
       const result = await deleteOccasionCategory(cardId);
       if (result.success) {
         setCards(cards.filter(card => card.id !== cardId));
-        console.log('Card deleted successfully');
         onCardCountChange();
       } else {
         console.error('Failed to delete card:', result.message);
@@ -139,7 +138,6 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
       setCards(cards.map(card =>
         card.id === cardId ? { ...card, active: !currentStatus } : card
       ));
-      console.log('Card active status updated successfully');
       onCardCountChange();
     } else {
       console.error('Failed to update card active status:', result.message);
@@ -164,7 +162,6 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
           active: category.isActive,
         };
 
-        console.log('Setting card to edit:', cardData); // Debug log
         setCardToEdit(cardData);
         setEditingCardId(cardId);
         setOpenDropdown(null);
@@ -216,7 +213,6 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
   }
 
   if (editingCardId && cardToEdit) {
-    console.log('Rendering edit mode with cardToEdit:', cardToEdit); // Debug log
     return <CreateNewCard occasion={occasion} onBack={handleBackFromCreateEdit} onSave={handleUpdateCard} initialCardData={cardToEdit} />;
   }
 

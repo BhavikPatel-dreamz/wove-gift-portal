@@ -10,9 +10,6 @@ const GiftCardSelector = () => {
   const dispatch = useDispatch();
   const { selectedBrand } = useSelector((state) => state.giftFlowReducer);
 
-  console.log("selectedBrand", selectedBrand);
-  
-
   const voucherData = selectedBrand?.vouchers[0];
   const isFixedDenomination = voucherData?.denominationType === "fixed";
   const presetAmounts = isFixedDenomination ? voucherData?.denominations || [] : [];

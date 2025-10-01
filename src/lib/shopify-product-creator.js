@@ -18,8 +18,6 @@ export async function createShopifyProduct(shopDomain, productData) {
       throw new Error(`No session found for shop: ${shopDomain}`);
     }
 
-    console.log(`Creating product for shop: ${shopDomain}`);
-
     // Create a GraphQL client instance
     const client = new shopify.clients.Graphql({ session });
 
@@ -149,7 +147,6 @@ export async function createShopifyProduct(shopDomain, productData) {
       },
     });
 
-    console.log('Shopify API Response:', JSON.stringify(response.body, null, 2));
 
     if (response.body.data.productCreate.userErrors.length > 0) {
       throw new Error(
@@ -160,7 +157,6 @@ export async function createShopifyProduct(shopDomain, productData) {
     }
 
     const createdProduct = response.body.data.productCreate.product;
-    console.log(`Product created successfully with ID: ${createdProduct.id}`);
 
     return createdProduct;
 

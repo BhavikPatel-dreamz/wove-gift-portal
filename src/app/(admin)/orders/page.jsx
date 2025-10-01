@@ -21,9 +21,6 @@ export default function GiftOrdersManagement() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  console.log("orders", orders);
-  
-
   useEffect(() => {
     const fetchOrders = async () => {
       setLoading(true);

@@ -14,8 +14,6 @@ export default function ShopifyAppDashboard() {
   const fetchShopData = async (shopDomain) => {
     try {
       const response = await fetch(`/api/shopify/shop?shop=${shopDomain}`);
-      console.log("response",response);
-      
       if (response.status === 401) {
         // Redirect to install if unauthorized
         router.push(`/shopify/install?shop=${shopDomain}`);

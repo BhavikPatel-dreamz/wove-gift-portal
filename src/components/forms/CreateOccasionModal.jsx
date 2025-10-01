@@ -18,8 +18,6 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
     image: null
   });
 
-  console.log("occasion", occasion);
-
   useEffect(() => {
     if (occasion) {
       setFormData({

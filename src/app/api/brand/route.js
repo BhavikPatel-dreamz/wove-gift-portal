@@ -48,7 +48,6 @@ export async function PATCH(req) {
             );
         }
     } catch (error) {
-        console.log(error, "error")
         return NextResponse.json(
             {
                 success: false,
@@ -83,7 +82,6 @@ export async function DELETE(req) {
             );
         }
     } catch (error) {
-        console.log(error, "error")
         return NextResponse.json(
             {
                 success: false,

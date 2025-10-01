@@ -104,12 +104,10 @@ const BrandManager = () => {
         setStatistics(result.statistics);
         setCategoryStats(result.categoryStats || []);
       } else {
-        console.log('Failed to fetch brands:', result.message);
         toast.error('Failed to load brands');
         setBrands([]);
       }
     } catch (error) {
-      console.log('Error fetching brands:', error);
       toast.error('Error loading brands');
       setBrands([]);
     } finally {
@@ -234,7 +232,6 @@ const BrandManager = () => {
       }
     } catch (error) {
       toast.error('Failed to add brand');
-      console.log('Error adding brand:', error);
     } finally {
       setActionLoading(false);
     }
@@ -257,7 +254,6 @@ const BrandManager = () => {
       }
     } catch (error) {
       toast.error('Failed to update brand');
-      console.log('Error updating brand:', error);
     } finally {
       setActionLoading(false);
     }
@@ -280,7 +276,6 @@ const BrandManager = () => {
       }
     } catch (error) {
       toast.error('Failed to delete brand');
-      console.log('Error deleting brand:', error);
     } finally {
       setActionLoading(false);
     }
@@ -311,7 +306,6 @@ const BrandManager = () => {
       }
     } catch (error) {
       toast.error('Failed to update brand');
-      console.log('Error toggling featured:', error);
     } finally {
       setActionLoading(false);
     }
@@ -323,8 +317,6 @@ const BrandManager = () => {
       toast.error('Please fill in required fields');
       return;
     }
-
-    console.log("formData-----", formData);
 
     if (editingBrand) {
       handleUpdateBrand(formData);
@@ -377,7 +369,6 @@ const BrandManager = () => {
     } catch (error) {
       toast.dismiss();
       toast.error('Failed to extract information from website');
-      console.log('Failed to auto-populate:', error);
     }
   };
 

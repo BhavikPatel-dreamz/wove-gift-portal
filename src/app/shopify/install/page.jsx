@@ -38,7 +38,6 @@ export default function InstallPage() {
       : `${cleanShop}.myshopify.com`;
 
     try {
-    //  console.log('Redirecting to install for shop:', shopDomain);
       window.location.href = `/api/shopify/auth?shop=${shopDomain}`;
 
     } catch (error) {

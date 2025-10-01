@@ -44,13 +44,6 @@ export default function ShopifyMainPage() {
     const sessionParam = urlParams.get('session');
     const idToken = urlParams.get('id_token');
     
-    console.log('Main page - URL params:', {
-      shop: shopParam,
-      embedded,
-      session: sessionParam,
-      idToken: !!idToken
-    });
-    
     if (shopParam) {
       //setShop(shopParam);
       fetchShopData(shopParam);

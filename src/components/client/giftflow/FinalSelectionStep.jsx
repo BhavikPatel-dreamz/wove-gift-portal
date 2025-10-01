@@ -15,12 +15,6 @@ const FinalSelectionStep = () => {
   } = useSelector((state) => state.giftFlowReducer);
 
   const handleComplete = () => {
-    console.log("Final selection:", {
-      brand: selectedBrand,
-      amount: selectedAmount,
-      occasion: selectedOccasion,
-      subCategory: selectedSubCategory,
-    });
     // Here you can add your completion logic
     alert("Selection completed! Check console for details.");
   };

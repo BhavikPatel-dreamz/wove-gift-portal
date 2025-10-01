@@ -73,6 +73,5 @@ function generateGiftCardCode() {
 async function sendGiftCardEmail(email, giftCard) {
   // Implement email sending logic here
   // You can use services like SendGrid, Nodemailer, etc.
-  console.log(`Sending gift card ${giftCard.code} to ${email}`);
   // TODO: Implement actual email sending
 }

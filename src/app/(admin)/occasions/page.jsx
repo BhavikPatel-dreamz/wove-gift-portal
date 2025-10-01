@@ -24,9 +24,6 @@ const OccasionsManager = () => {
     sortOrder: 'desc'
   });
 
-  console.log("occasions",occasions);
-  
-
   // Pagination states
   const [pagination, setPagination] = useState({
     currentPage: 1,

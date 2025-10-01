@@ -63,8 +63,6 @@ export async function POST(req) {
     });
 
     const createData = await createResponse.json();
-    console.log("Gift card create response:", JSON.stringify(createData, null, 2));
-
     const giftCard = createData?.data?.giftCardCreate?.giftCard;
     const userErrors = createData?.data?.giftCardCreate?.userErrors || [];
 

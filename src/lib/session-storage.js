@@ -3,7 +3,6 @@ import prisma from './db.js';
 export class PrismaSessionStorage {
   async storeSession(session) {
     try {
-      console.log('Storing session for shop:', session.shop);
       
       await prisma.shopifySession.upsert({
         where: { shop: session.shop },
@@ -22,7 +21,6 @@ export class PrismaSessionStorage {
           expiresAt: session.expires ? new Date(session.expires) : null,
         },
       });
-      console.log('Session stored successfully');
       return true;
     } catch (error) {
       console.error('Error storing session:', error);
