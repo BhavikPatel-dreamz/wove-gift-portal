@@ -477,6 +477,26 @@ model AppInstallation {
   isActive    Boolean  @default(true)
 }
 
+model GiftCard {
+  id            String    @id @default(cuid())
+  shop          String
+  shopifyId     String?   @unique
+  code          String    @unique
+  initialValue  Float
+  balance       Float
+  customerEmail String?
+  note          String?
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  isVirtual     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([shop])
+  @@index([code])
+  @@index([customerEmail])
+}
+
 
 // ==================== ENUMS ====================
 
