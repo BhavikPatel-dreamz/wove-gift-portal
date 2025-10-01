@@ -17,7 +17,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "initialValue is required" }, { status: 400 });
     }
 
-    const amount = parseFloat(input.initialValue.amount);
+    const amount = parseFloat(input.initialValue);
     if (isNaN(amount) || amount <= 0) {
       return NextResponse.json({ error: "Invalid amount value" }, { status: 400 });
     }
@@ -32,7 +32,7 @@ export async function POST(req) {
     const formattedInput = {
       initialValue: parseFloat(amount.toFixed(2)), // Decimal
       note: input.note || null,
-      expiresOn: input.expiresOn || null
+      expiresOn: input.expiresAt || null
     };
 
     // Create gift card

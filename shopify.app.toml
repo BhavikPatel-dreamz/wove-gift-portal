@@ -1,8 +1,8 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "dab2f2e7aa2b4d58c460497b419c974d"
+client_id = "c9f2dae08ce0d37db022b21b202c7e9d"
 name = "test-new-app"
-application_url = "https://bhavik.dynamicdreamz.com/shopify/main"
+application_url = "https://1e4bb29bf7aa.ngrok-free.app/shopify/main"
 embedded = true
 
 [build]
@@ -17,18 +17,18 @@ embedded_app_direct_api_access = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_gift_cards,read_gift_cards,write_orders,read_orders,write_products,read_products"
 
+scopes = "read_gift_cards,read_orders,read_products,write_gift_cards,write_orders,write_products"
 use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://bhavik.dynamicdreamz.com/auth/callback",
-  "https://bhavik.dynamicdreamz.com/auth/shopify/callback",
-  "https://bhavik.dynamicdreamz.com/api/auth/callback",
-  "https://bhavik.dynamicdreamz.com/api/shopify/auth/callback",
-  "https://bhavik.dynamicdreamz.com/shopify/main",
-  "https://bhavik.dynamicdreamz.com/shopify"
+  "https://1e4bb29bf7aa.ngrok-free.app/auth/callback",
+  "https://1e4bb29bf7aa.ngrok-free.app/auth/shopify/callback",
+  "https://1e4bb29bf7aa.ngrok-free.app/api/auth/callback",
+  "https://1e4bb29bf7aa.ngrok-free.app/api/shopify/auth/callback",
+  "https://1e4bb29bf7aa.ngrok-free.app/shopify/main",
+  "https://1e4bb29bf7aa.ngrok-free.app/shopify"
 ]
 
 [pos]

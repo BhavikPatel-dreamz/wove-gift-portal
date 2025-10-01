@@ -11,6 +11,7 @@ export function middleware(request) {
     pathname.startsWith('/shopify/install') ||
     pathname.startsWith('/api/shopify/auth') ||
     pathname.startsWith('/api/shopify/gift-cards') ||
+    pathname.startsWith('/api/giftcard') ||
     pathname.startsWith('/api/shopify/shop') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon')

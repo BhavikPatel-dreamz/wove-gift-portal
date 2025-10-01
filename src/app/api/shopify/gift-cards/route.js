@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '../../../../lib/db.js';
+import prisma from '../../../../lib/db';
 
 export async function GET(request) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request) {
     }
 
     // Get Shopify session
-    const session = await prisma.shopifySession.findUnique({
+    const session = await prisma.appInstallation.findUnique({
       where: { shop }
     });
 
@@ -23,7 +23,7 @@ export async function GET(request) {
     const shopifyGiftCards = await fetchShopifyGiftCards(shop, session.accessToken);
     
     // Also fetch our internal gift cards for this shop
-    const internalGiftCards = await prisma.giftCard.findMany({
+    const internalGiftCards = await prisma.GiftCard.findMany({
       where: { shop },
       orderBy: { createdAt: 'desc' }
     });

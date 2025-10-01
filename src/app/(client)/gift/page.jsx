@@ -1,7 +1,7 @@
 "use client"
 import { Provider } from 'react-redux'
 import store from '../../../redux/store'
-import StepRenderer from '../../../components/client/brand/StepRenderer'
+import StepRenderer from '../../../components/client/giftflow/StepRenderer'
 import Header from '../../../components/client/home/Header';
 
 const page = () => {

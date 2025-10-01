@@ -104,7 +104,7 @@ export default function ShopifyMainPage() {
     }
 
     try {
-      const response = await fetch('/api/shopify/gift-cards/create', {
+      const response = await fetch(`/api/giftcard?shop=${shop}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ export default function ShopifyMainPage() {
 
       if (response.ok) {
         const newGiftCard = await response.json();
-        setGiftCards(prev => [newGiftCard.giftCard, ...prev]);
+        setGiftCards(prev => [newGiftCard?.giftCard, ...prev]);
         setShowCreateModal(false);
         alert('Gift card created successfully!');
       } else {
@@ -131,8 +131,8 @@ export default function ShopifyMainPage() {
   };
 
   const filteredGiftCards = giftCards.filter(card => {
-    const matchesSearch = card.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         card.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = card?.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         card?.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || card.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -288,30 +288,30 @@ export default function ShopifyMainPage() {
                     <tr key={giftCard.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {giftCard.code}
+                          {giftCard?.code}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          ${giftCard.initialValue || giftCard.balance}
+                          ${giftCard?.initialValue || giftCard?.balance}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {giftCard.customerEmail || 'N/A'}
+                          {giftCard?.customerEmail || 'N/A'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          giftCard.status === 'active' ? 'bg-green-100 text-green-800' :
-                          giftCard.status === 'used' ? 'bg-gray-100 text-gray-800' :
+                          giftCard?.status === 'active' ? 'bg-green-100 text-green-800' :
+                          giftCard?.status === 'used' ? 'bg-gray-100 text-gray-800' :
                           'bg-red-100 text-red-800'
                         }`}>
-                          {giftCard.status}
+                          {giftCard?.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(giftCard.createdAt).toLocaleDateString()}
+                        {new Date(giftCard?.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">

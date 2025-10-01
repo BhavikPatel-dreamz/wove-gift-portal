@@ -5,8 +5,6 @@ import { PrismaSessionStorage } from '@/lib/session-storage';
 const sessionStorage = new PrismaSessionStorage();
 
 export async function GET(request) {
-  console.log('Shopify callback request:', request.url);
-  
   try {
     const url = new URL(request.url);
     const searchParams = url.searchParams;
@@ -17,15 +15,11 @@ export async function GET(request) {
     const host = searchParams.get('host');
     
     if (!code || !shop) {
-      console.error('Missing required parameters:', { code: !!code, shop: !!shop });
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
     
-    console.log('Processing callback for shop:', shop);
-    
     // Ensure shop domain is properly formatted
     const shopDomain = shop.endsWith('.myshopify.com') ? shop : `${shop}.myshopify.com`;
-    console.log('Shop domain:', shopDomain);
     
     try {
       // Exchange the authorization code for an access token
@@ -75,8 +69,6 @@ export async function GET(request) {
         },
       });
 
-      console.log('Session stored successfully for shop:', session.shop);
-      
       // Redirect to success page or app
       const redirectUrl = `/?shop=${session.shop}${host ? `&host=${host}` : ''}`;
       return NextResponse.redirect(new URL(redirectUrl, request.url));

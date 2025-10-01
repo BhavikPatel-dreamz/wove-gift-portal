@@ -8,8 +8,6 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Shop parameter is required' }, { status: 400 });
   }
 
-  console.log(shop);
-
   try {
     // Create authorization URL manually for App Router compatibility
     const authQuery = new URLSearchParams({

@@ -64,6 +64,7 @@ export default function InstallPage() {
                 onChange={(e) => setShop(e.target.value)}
                 placeholder="your-store.myshopify.com"
                 required
+                className='text-black'
                 disabled={installing}
               />
               <small>Enter your shop's .myshopify.com domain</small>
