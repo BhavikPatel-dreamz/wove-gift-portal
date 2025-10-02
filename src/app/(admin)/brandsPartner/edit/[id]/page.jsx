@@ -392,10 +392,10 @@ const BrandEdit = () => {
       errors.push('Terms & Conditions URL');
     }
 
-    // Website URL validation
-    if (formData.website && !isValidUrl(formData.website)) {
-      errors.push('Valid Website URL');
-    }
+    // // Website URL validation
+    // if (formData.website && !isValidUrl(formData.website)) {
+    //   errors.push('Valid Website URL');
+    // }
 
     setValidationErrors(errors);
     return errors.length === 0;

@@ -101,7 +101,7 @@ model BrandTerms {
   maxDiscount         Int?                @default(0)
   minOrderValue       Int?                @default(0)
   currency            String              @default("USD")
-  breakagePolicy      PolicyStatus?        @default(Retain)
+  breakagePolicy     String?             @db.Text
   breakageShare       Int?                @default(0)
   contractStart       DateTime?
   contractEnd         DateTime?
@@ -210,7 +210,6 @@ model VoucherCode {
  // Shopify integration
   shopifyGiftCardId String?             @unique
   shopifyShop       String?             // Which merchant's store
-  shopifySyncStatus SyncStatus?         @default(pending)
   shopifySyncError  String?             @db.Text
   shopifySyncedAt   DateTime?
 
@@ -485,17 +484,7 @@ model AppInstallation {
   isActive    Boolean  @default(true)
 }
 
-model ShopInfo {
-  id          String   @id @default(cuid())
-  shop        String   @unique
-  name        String
-  email       String
-  currency    String
-  countryName String
-  planName    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+
 
 model GiftCard {
   id            String    @id @default(cuid())

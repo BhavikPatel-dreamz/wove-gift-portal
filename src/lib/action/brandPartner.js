@@ -53,7 +53,7 @@ const BrandPartnerSchema = z.object({
   brandName: z.string().min(1, "Brand name is required"),
   slug: z.string().optional(), // Auto-generated from brandName
   description: z.string().min(1, "Description is required"),
-  website: z.string().url("Invalid website URL"),
+  website: z.string().optional(),
   contact: z.string().optional(),
   tagline: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
@@ -427,8 +427,6 @@ export async function updateBrandPartner(brandId, formData) {
     const existingBrand = await prisma.brand.findUnique({
       where: { id: brandId },
       include: {
-        brandTerms: true,
-        brandBankings: true,
         vouchers: { take: 1 },
       },
     });
@@ -533,20 +531,13 @@ export async function updateBrandPartner(brandId, formData) {
         internalNotes: validatedData.internalNotes || "",
       };
 
-      if (existingBrand.brandTerms) {
-        operations.push(
-          tx.brandTerms.update({
-            where: { brandId },
-            data: brandTermsData,
-          })
-        );
-      } else {
-        operations.push(
-          tx.brandTerms.create({
-            data: { ...brandTermsData, brandId },
-          })
-        );
-      }
+      operations.push(
+        tx.brandTerms.upsert({
+          where: { brandId },
+          update: brandTermsData,
+          create: { ...brandTermsData, brandId },
+        })
+      );
 
       // Vouchers
       const voucherData = {
@@ -599,20 +590,13 @@ export async function updateBrandPartner(brandId, formData) {
         accountVerification: validatedData.accountVerification,
       };
 
-      if (existingBrand.brandBankings) {
-        operations.push(
-          tx.brandBanking.update({
-            where: { brandId },
-            data: bankingData,
-          })
-        );
-      } else {
-        operations.push(
-          tx.brandBanking.create({
-            data: { ...bankingData, brandId },
-          })
-        );
-      }
+      operations.push(
+        tx.brandBanking.upsert({
+          where: { brandId },
+          update: bankingData,
+          create: { ...bankingData, brandId },
+        })
+      );
 
       // Execute all update operations
       await Promise.all(operations);

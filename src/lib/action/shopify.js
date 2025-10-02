@@ -1,7 +1,31 @@
 import prisma from '../db';
 
+const getShopifyDomain = (shop) => {
+  let domain = shop.trim();
+
+  // Remove http:// or https://
+  if (domain.startsWith('https://')) {
+    domain = domain.substring(8);
+  } else if (domain.startsWith('http://')) {
+    domain = domain.substring(7);
+  }
+
+  // Remove trailing /
+  if (domain.endsWith('/')) {
+    domain = domain.slice(0, -1);
+  }
+
+  // If it's not a FQDN, assume it's a .myshopify.com domain
+  if (!domain.includes('.')) {
+    domain = `${domain}.myshopify.com`;
+  }
+
+  return domain;
+};
+
 export const fetchShopInfo = async (accessToken, shopName) => {
-  const response = await fetch(`https://${shopName}/admin/api/2023-10/shop.json`, {
+  const shopDomain = getShopifyDomain(shopName);
+  const response = await fetch(`https://${shopDomain}/admin/api/2023-10/shop.json`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -15,41 +39,42 @@ export const fetchShopInfo = async (accessToken, shopName) => {
 
   const shopData = await response.json();
   console.log("Shop Information:", shopData.shop);
-  await saveShopInfo(shopData.shop);
+  await saveBrandFromShopify(shopData.shop);
   return shopData.shop;
 };
 
-export const saveShopInfo = async (shopData) => {
-  const { myshopify_domain, name, email, currency, country_name, plan_name } = shopData;
+export const saveBrandFromShopify = async (shopData) => {
+  const { myshopify_domain, name, email } = shopData;
+  const slug = name.toLowerCase().replace(/\s+/g, '-');
+
   try {
-    const shopInfo = await prisma.shopInfo.upsert({
-      where: { shop: myshopify_domain },
+    const brand = await prisma.brand.upsert({
+      where: { brandName: name },
       update: {
-        name,
-        email,
-        currency,
-        countryName: country_name,
-        planName: plan_name,
+        website: myshopify_domain,
+        contact: email,
       },
       create: {
-        shop: myshopify_domain,
-        name,
-        email,
-        currency,
-        countryName: country_name,
-        planName: plan_name,
+        brandName: name,
+        slug: slug,
+        logo: '/placeholder.png', // Placeholder logo
+        description: 'No description available.', // Placeholder description
+        website: myshopify_domain,
+        contact: email,
+        categoryName: 'Default', // Placeholder category
       },
     });
-    console.log(`Successfully saved/updated shop info for ${myshopify_domain}`);
-    return shopInfo;
+    console.log(`Successfully saved/updated brand info for ${name}`);
+    return brand;
   } catch (error) {
-    console.error(`Failed to save shop info for ${myshopify_domain}:`, error);
+    console.error(`Failed to save brand info for ${name}:`, error);
     throw error;
   }
 };
 
 
 export const fetchGiftCardProducts = async (accessToken, shopName) => {
+  const shopDomain = getShopifyDomain(shopName);
   let allGiftCardProducts = [];
   let cursor = null;
   let hasNextPage = true;
@@ -90,7 +115,7 @@ export const fetchGiftCardProducts = async (accessToken, shopName) => {
   `;
 
   while(hasNextPage) {
-    const response = await fetch(`https://${shopName}/admin/api/2023-10/graphql.json`, {
+    const response = await fetch(`https://${shopDomain}/admin/api/2023-10/graphql.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -123,6 +148,7 @@ export const fetchGiftCardProducts = async (accessToken, shopName) => {
 };
 
 export const fetchAllVendors = async (accessToken, shopName) => {
+  const shopDomain = getShopifyDomain(shopName);
   let allVendors = new Set();
   let cursor = null;
   let hasNextPage = true;
@@ -144,7 +170,7 @@ export const fetchAllVendors = async (accessToken, shopName) => {
   `;
 
   while(hasNextPage) {
-    const response = await fetch(`https://${shopName}/admin/api/2023-10/graphql.json`, {
+    const response = await fetch(`https://${shopDomain}/admin/api/2023-10/graphql.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -181,6 +207,7 @@ export const fetchAllVendors = async (accessToken, shopName) => {
 };
 
 export const fetchGiftCardInventory = async (accessToken, shopName) => {
+  const shopDomain = getShopifyDomain(shopName);
   let allGiftCards = [];
   let cursor = null;
   let hasNextPage = true;
@@ -207,7 +234,7 @@ export const fetchGiftCardInventory = async (accessToken, shopName) => {
   `;
 
   while(hasNextPage) {
-    const response = await fetch(`https://${shopName}/admin/api/2023-10/graphql.json`, {
+    const response = await fetch(`https://${shopDomain}/admin/api/2023-10/graphql.json`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

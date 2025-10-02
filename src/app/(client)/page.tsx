@@ -19,14 +19,14 @@ export default async function Home() {
   const occasions = await getOccasions();
 
   const occasionsData = {
-    title: "Perfect for Every Occasion",
-    subtitle: "Find the right moment to spread joy",
+    title: "Celebrate Every Day",
+    subtitle: "Because any day is a good day to make someone smile.",
     occasions: occasions
   };
 
   const brandsData = {
-    title: "Featured Brands You'll Love",
-    subtitle: "Curated partners, easy for you to give joy",
+    title: "Gifts From Brands People Love",
+    subtitle: "Give the gift of choice with brands you know and trust.",
     brands: brands
   };
   

@@ -241,10 +241,10 @@ const AddBrandPartner = () => {
       errors.push('Terms & Conditions URL');
     }
     
-    // Website URL validation
-    if (formData.website && !isValidUrl(formData.website)) {
-      errors.push('Valid Website URL');
-    }
+    // // Website URL validation
+    // if (formData.website && !isValidUrl(formData.website)) {
+    //   errors.push('Valid Website URL');
+    // }
     
     setValidationErrors(errors);
     return errors.length === 0;
@@ -276,7 +276,10 @@ const AddBrandPartner = () => {
     }
     
     // Integrations tab completion
-    if (formData.integrations && formData.integrations.length > 0) {
+    const areIntegrationsValid = formData.integrations.every(
+      integration => !integration.storeUrl || isValidUrl(integration.storeUrl)
+    );
+    if (areIntegrationsValid) {
       completedTabs.push('integrations');
     }
     

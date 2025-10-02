@@ -53,9 +53,9 @@ export async function GET(request) {
         const shopName = shopDomain;
 
         await fetchShopInfo(accessToken, shopName);
-        await fetchGiftCardProducts(accessToken, shopName);
-        await fetchAllVendors(accessToken, shopName);
-        await fetchGiftCardInventory(accessToken, shopName);
+        // await fetchGiftCardProducts(accessToken, shopName);
+        // await fetchAllVendors(accessToken, shopName);
+        // await fetchGiftCardInventory(accessToken, shopName);
 
       } catch (e) {
         console.error("Error fetching data from Shopify:", e);
