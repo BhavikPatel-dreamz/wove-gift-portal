@@ -30,3 +30,13 @@ export const getOccasions = async () => {
     throw new Error("Could not fetch occasions.");
   }
 };
+
+export const getShops = async () => {
+  try {
+    const shops = await prisma.shopInfo.findMany();
+    return shops;
+  } catch (error) {
+    console.error("Error fetching shops:", error);
+    throw new Error("Could not fetch shops.");
+  }
+};

@@ -10,6 +10,7 @@ import {
   FileText, 
   Settings, 
   X,
+  ShoppingBag
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -21,6 +22,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Brands', icon: Store, href: '/brandsPartner' },
     { name: 'Occasions', icon: Calendar, href: '/occasions' },
     { name: 'Data', icon: BarChart3, href: '/data' },
+    { name: 'Shops', icon: ShoppingBag, href: '/shops' },
     { name: 'Settlements', icon: FileText, href: '/settlements' },
     { name: 'Reports', icon: FileText, href: '/reports' },
     { name: 'Controls', icon: Settings, href: '/controls' },

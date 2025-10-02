@@ -206,6 +206,14 @@ model VoucherCode {
   code              String              @unique
   orderId           String
   voucherId         String
+
+ // Shopify integration
+  shopifyGiftCardId String?             @unique
+  shopifyShop       String?             // Which merchant's store
+  shopifySyncStatus SyncStatus?         @default(pending)
+  shopifySyncError  String?             @db.Text
+  shopifySyncedAt   DateTime?
+
   isRedeemed        Boolean             @default(false)
   redeemedAt        DateTime?
   originalValue     Int
@@ -217,7 +225,7 @@ model VoucherCode {
   linkExpiresAt     DateTime?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
-  
+  giftCard          GiftCard?   @relation(fields: [shopifyGiftCardId], references: [id])
   order             Order               @relation(fields: [orderId], references: [id])
   voucher           Vouchers            @relation(fields: [voucherId], references: [id])
   redemptions       VoucherRedemption[]
@@ -499,6 +507,7 @@ model GiftCard {
   customerEmail String?
   note          String?
   expiresAt     DateTime?
+  voucherCode  VoucherCode?
   isActive      Boolean   @default(true)
   isVirtual     Boolean   @default(false)
   createdAt     DateTime  @default(now())
@@ -544,7 +553,8 @@ enum SyncStatus {
   success
   failed
   partial
-  in_progress
+  syncing
+  pending
 }
 
 enum PayoutMethodStatus {
