@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { PrismaSessionStorage } from '@/lib/session-storage';
+import {
+  fetchShopInfo,
+  fetchGiftCardProducts,
+  fetchAllVendors,
+  fetchGiftCardInventory,
+} from '@/lib/action/shopify';
 
 const sessionStorage = new PrismaSessionStorage();
 
@@ -40,6 +46,24 @@ export async function GET(request) {
       }
 
       const tokenData = await tokenResponse.json();
+
+      // [Wove] Get all vendors on app install
+      try {
+        const accessToken = tokenData.access_token;
+        const shopName = shopDomain;
+
+        await fetchShopInfo(accessToken, shopName);
+        await fetchGiftCardProducts(accessToken, shopName);
+        await fetchAllVendors(accessToken, shopName);
+        await fetchGiftCardInventory(accessToken, shopName);
+
+      } catch (e) {
+        console.error("Error fetching data from Shopify:", e);
+      }
+      // [/Wove]
+
+      console.log("tokenData",tokenData);
+      
       
       // Create session object
       const session = {
