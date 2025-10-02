@@ -477,6 +477,18 @@ model AppInstallation {
   isActive    Boolean  @default(true)
 }
 
+model ShopInfo {
+  id          String   @id @default(cuid())
+  shop        String   @unique
+  name        String
+  email       String
+  currency    String
+  countryName String
+  planName    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model GiftCard {
   id            String    @id @default(cuid())
   shop          String

@@ -1,3 +1,5 @@
+import prisma from '../db';
+
 export const fetchShopInfo = async (accessToken, shopName) => {
   const response = await fetch(`https://${shopName}/admin/api/2023-10/shop.json`, {
     method: 'GET',
@@ -13,8 +15,39 @@ export const fetchShopInfo = async (accessToken, shopName) => {
 
   const shopData = await response.json();
   console.log("Shop Information:", shopData.shop);
+  await saveShopInfo(shopData.shop);
   return shopData.shop;
 };
+
+export const saveShopInfo = async (shopData) => {
+  const { myshopify_domain, name, email, currency, country_name, plan_name } = shopData;
+  try {
+    const shopInfo = await prisma.shopInfo.upsert({
+      where: { shop: myshopify_domain },
+      update: {
+        name,
+        email,
+        currency,
+        countryName: country_name,
+        planName: plan_name,
+      },
+      create: {
+        shop: myshopify_domain,
+        name,
+        email,
+        currency,
+        countryName: country_name,
+        planName: plan_name,
+      },
+    });
+    console.log(`Successfully saved/updated shop info for ${myshopify_domain}`);
+    return shopInfo;
+  } catch (error) {
+    console.error(`Failed to save shop info for ${myshopify_domain}:`, error);
+    throw error;
+  }
+};
+
 
 export const fetchGiftCardProducts = async (accessToken, shopName) => {
   let allGiftCardProducts = [];
