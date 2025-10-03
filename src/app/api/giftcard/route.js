@@ -25,19 +25,57 @@ export async function POST(req) {
       return NextResponse.json({ error: "Invalid amount value" }, { status: 400 });
     }
 
-   
-    
     // Fetch stored access token
     const session = await prisma.appInstallation.findUnique({ where: { shop } });
     if (!session?.accessToken) {
       return NextResponse.json({ error: "Shop not installed or access token missing" }, { status: 401 });
     }
 
-     console.log("***********",session);
+    // NEW: Fetch voucher expiry date based on shop domain
+    let voucherExpiryDate = null;
+    try {
+      // First, find the brand by domain (shop URL)
+      const brand = await prisma.brand.findUnique({
+        where: { domain: shop },
+        include: {
+          vouchers: {
+            where: { isActive: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          }
+        }
+      });
+
+      if (brand && brand.vouchers && brand.vouchers.length > 0) {
+        const voucher = brand.vouchers[0];
+        
+        // Handle expiry based on voucher settings
+        if (voucher.isExpiry) {
+          if (voucher.expiresAt) {
+            // Fixed expiry date
+            voucherExpiryDate = voucher.expiresAt;
+          } else if (voucher.expiryValue) {
+            // Dynamic expiry (days from now)
+            const daysToExpiry = parseInt(voucher.expiryValue);
+            if (!isNaN(daysToExpiry) && daysToExpiry > 0) {
+              voucherExpiryDate = new Date();
+              voucherExpiryDate.setDate(voucherExpiryDate.getDate() + daysToExpiry);
+            }
+          }
+        }
+        
+        console.log("Voucher expiry date:", voucherExpiryDate);
+      } else {
+        console.log("No active voucher found for domain:", shop);
+      }
+    } catch (voucherError) {
+      console.error("Error fetching voucher expiry:", voucherError);
+      // Continue without expiry date if there's an error
+    }
 
     let customerId = null;
 
-    // Step 1: Try to get customer by email (removed email from response)
+    // Step 1: Try to get customer by email
     const customerResponse = await fetch(`https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`, {
       method: "POST",
       headers: {
@@ -62,7 +100,6 @@ export async function POST(req) {
 
     const customerData = await customerResponse.json();
     
-    // Check for errors
     if (customerData.errors) {
       console.error("Customer query errors:", customerData.errors);
     }
@@ -100,7 +137,6 @@ export async function POST(req) {
 
       const createCustomerData = await createCustomerResponse.json();
       
-      // Check for errors
       if (createCustomerData.errors) {
         console.error("Customer creation errors:", createCustomerData.errors);
       }
@@ -120,15 +156,17 @@ export async function POST(req) {
 
     console.log("customerId", customerId);
     
-    // Step 3: Prepare input for gift card
+    // Step 3: Prepare input for gift card with expiry date
     const formattedInput = {
       initialValue: parseFloat(amount.toFixed(2)),
       note: input.note || null,
-      expiresOn: input.expiresAt || null,
+      expiresOn: voucherExpiryDate ? voucherExpiryDate.toISOString().split('T')[0] : (input.expiresAt || null),
       customerId: customerId,
     };
 
-    // Step 4: Create gift card in Shopify (removed email from response)
+    console.log("Gift card input with expiry:", formattedInput);
+
+    // Step 4: Create gift card in Shopify
     const createGiftCardResponse = await fetch(`https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`, {
       method: "POST",
       headers: {
@@ -161,10 +199,8 @@ export async function POST(req) {
 
     const createData = await createGiftCardResponse.json();
     
-    // Check for errors but don't fail if it's just the email warning
     if (createData.errors) {
       console.warn("Gift card creation warnings:", createData.errors);
-      // Only fail if there's no gift card data
       if (!createData?.data?.giftCardCreate?.giftCard) {
         return NextResponse.json({
           success: false,
@@ -186,7 +222,7 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
-    // Step 5: Save to local DB (store the customer email from input)
+    // Step 5: Save to local DB
     try {
       await prisma.giftCard.create({
         data: {
@@ -199,7 +235,6 @@ export async function POST(req) {
           expiresAt: giftCard.expiresOn ? new Date(giftCard.expiresOn) : null,
           isVirtual: true,
           isActive: true,
-          // Store customer email from input if you have this field in your schema
           customerEmail: input.customerEmail,
         },
       });
@@ -212,7 +247,6 @@ export async function POST(req) {
       message: "Gift card created and email sent to customer by Shopify",
       gift_card: {
         ...giftCard,
-        // Include customer email from input for response
         customerEmail: input.customerEmail,
       },
     });

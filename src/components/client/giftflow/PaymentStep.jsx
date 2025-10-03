@@ -24,8 +24,6 @@ const PaymentStep = () => {
     selectedPaymentMethod,
   } = useSelector((state) => state.giftFlowReducer);
 
-  const alldata = useSelector((state) => state.giftFlowReducer);
-
   const paymentMethods = [
     {
       id: 'card',
@@ -117,7 +115,18 @@ const PaymentStep = () => {
     const toastId = toast.loading('Processing your order...');
 
     try {
-      const result = await createOrder(alldata);
+      const orderData = {
+        selectedBrand,
+        selectedAmount,
+        personalMessage,
+        deliveryMethod,
+        deliveryDetails,
+        selectedOccasion,
+        selectedSubCategory,
+        selectedTiming,
+        selectedPaymentMethod,
+      };
+      const result = await createOrder(orderData);
       if (result.error) {
         setError(result.error);
         toast.error(result.error, { id: toastId });

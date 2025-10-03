@@ -155,7 +155,7 @@ const BrandEdit = () => {
 
       if (result.success) {
         const brand = result.data;
-        // Enhanced mapping with proper handling of redemption channels
+
         const parseRedemptionChannels = (channels) => {
           if (typeof channels === 'object' && channels !== null) {
             return channels;
@@ -171,7 +171,6 @@ const BrandEdit = () => {
           return { online: false, inStore: false, phone: false };
         };
 
-        // Map the brand data to form structure with enhanced banking fields
         const mappedData = {
           // Core Information
           brandName: brand.brandName || '',
@@ -187,7 +186,7 @@ const BrandEdit = () => {
           isActive: brand.isActive || false,
           isFeature: brand.isFeature || false,
 
-          // Terms (from brandTerms relation)
+          // Terms
           settlementTrigger: brand.brandTerms?.[0]?.settelementTrigger || 'onRedemption',
           commissionType: brand.brandTerms?.[0]?.commissionType || 'Percentage',
           commissionValue: brand.brandTerms?.[0]?.commissionValue || 0,
@@ -208,14 +207,18 @@ const BrandEdit = () => {
           vatRate: brand.brandTerms?.[0]?.vatRate || 15,
           internalNotes: brand.brandTerms?.[0]?.internalNotes || '',
 
-          // Vouchers (Enhanced handling)
+          // Vouchers - FIXED: Properly handle isExpiry boolean
           denominationType: brand.vouchers?.[0]?.denominationType || 'fixed',
           denominations: brand.vouchers?.[0]?.denominations || [],
           maxAmount: brand.vouchers?.[0]?.maxAmount || 0,
           minAmount: brand.vouchers?.[0]?.minAmount || 0,
-          isExpiry: brand.vouchers?.[0]?.isExpiry || false,
+          // FIX: Use Boolean() to ensure proper boolean conversion
+          isExpiry: Boolean(brand.vouchers?.[0]?.isExpiry),
           expiryValue: brand.vouchers?.[0]?.expiryValue || '365',
-          expiresAt: brand.vouchers?.[0]?.expiresAt ? new Date(brand.vouchers?.[0]?.expiresAt).toISOString().split('T')[0] : '',
+          // FIX: Only set expiresAt if isExpiry is true and date exists
+          expiresAt: brand.vouchers?.[0]?.isExpiry && brand.vouchers?.[0]?.expiresAt
+            ? new Date(brand.vouchers[0].expiresAt).toISOString().split('T')[0]
+            : '',
           graceDays: brand.vouchers?.[0]?.graceDays || 0,
           minPerUsePerDays: brand.vouchers?.[0]?.minPerUsePerDays || 1,
           maxUserPerDay: brand.vouchers?.[0]?.maxUserPerDay || 1,
@@ -224,7 +227,7 @@ const BrandEdit = () => {
           stackable: brand.vouchers?.[0]?.Stackable || false,
           termsConditionsURL: brand.vouchers?.[0]?.termsConditionsURL || '',
 
-          // Banking & Settlement (Enhanced with new fields)
+          // Banking & Settlement
           settlementFrequency: brand.brandBankings?.[0]?.settlementFrequency || 'monthly',
           dayOfMonth: brand.brandBankings?.[0]?.dayOfMonth || 1,
           payoutMethod: brand.brandBankings?.[0]?.payoutMethod || 'EFT',
@@ -265,7 +268,7 @@ const BrandEdit = () => {
             type: 'ecommerce',
             status: integration.isActive ? 'active' : 'inactive',
             storeUrl: integration.storeUrl || '',
-            accessToken: '', // Don't load sensitive data
+            accessToken: '',
             consumerKey: '',
             consumerSecret: '',
             testConnection: false
@@ -484,39 +487,39 @@ const BrandEdit = () => {
   // Tab completion checking
   const checkTabCompletion = () => {
     const completedTabs = [];
-    
+
     // Core tab completion
     if (formData.brandName && formData.description && formData.website && formData.categoryName) {
       completedTabs.push('core');
     }
-    
+
     // Terms tab completion
     if (formData.commissionValue > 0 && formData.settlementTrigger) {
       completedTabs.push('terms');
     }
-    
+
     // Banking tab completion
     if (formData.accountHolder && formData.accountNumber && formData.branchCode && formData.bankName) {
       completedTabs.push('banking');
     }
 
     // Vouchers tab completion
-    if (formData.denominationType && 
-        (formData.redemptionChannels.online || formData.redemptionChannels.inStore || formData.redemptionChannels.phone)) {
+    if (formData.denominationType &&
+      (formData.redemptionChannels.online || formData.redemptionChannels.inStore || formData.redemptionChannels.phone)) {
       completedTabs.push('vouchers');
     }
-    
+
     // Integrations tab completion
     if (formData.integrations && formData.integrations.length > 0) {
       completedTabs.push('integrations');
     }
-    
+
     // Contacts tab completion
     const primaryContact = formData.contacts.find(c => c.isPrimary);
     if (primaryContact?.name && primaryContact?.email && primaryContact?.role) {
       completedTabs.push('contacts');
     }
-    
+
     return completedTabs;
   };
 
@@ -592,7 +595,7 @@ const BrandEdit = () => {
                   </span>
                 )}
                 <span className="text-xs text-gray-500">
-                  {completedTabs.length}/{tabs.length-1} sections completed
+                  {completedTabs.length}/{tabs.length - 1} sections completed
                 </span>
               </div>
             </div>
@@ -636,11 +639,10 @@ const BrandEdit = () => {
               key={tab.id}
               onClick={() => !saving && setActiveTab(tab.id)}
               disabled={saving}
-              className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 transition-colors duration-200 ${
-                activeTab === tab.id
+              className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 transition-colors duration-200 ${activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               <div className="flex items-center space-x-2">
                 <span>{tab.label}</span>

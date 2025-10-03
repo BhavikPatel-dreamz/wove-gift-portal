@@ -177,22 +177,24 @@ const VouchersTab = ({ formData, updateFormData }) => {
         <label className="flex items-center gap-2 mb-4">
           <input
             type="checkbox"
-            checked={formData.isExpiry}
-            onChange={(e) => {
-              updateFormData("isExpiry", e.target.checked);
-              if (!e.target.checked) updateFormData("expiresAt", null);
-            }}
+            className="rounded border-gray-300 mr-3 mt-1 focus:ring-2 focus:ring-blue-500"
+            checked={formData.isExpiry || false}
+            onChange={(e) => updateFormData('isExpiry', e.target.checked)}
           />
           <span className="text-sm">Set expiry date</span>
         </label>
 
         {formData.isExpiry && (
-          <input
-            type="date"
-            value={formData.expiresAt ? new Date(formData.expiresAt).toISOString().split("T")[0] : ""}
-            onChange={(e) => updateFormData("expiresAt", e.target.value)}
-            className="border rounded-md px-3 py-2"
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Expiry Date</label>
+            <input
+              type="date"
+              value={formData.expiresAt || ""}
+              onChange={(e) => updateFormData("expiresAt", e.target.value)}
+              className="border rounded-md px-3 py-2 w-full"
+              min={new Date().toISOString().split("T")[0]}
+            />
+          </div>
         )}
       </section>
 

@@ -184,6 +184,7 @@ model Vouchers {
   denominationValue    Int?           // For fixed value cards
   maxAmount            Int?
   minAmount            Int?
+  expiryPolicy      String? 
   isExpiry             Boolean        @default(false)
   expiresAt            DateTime    // ISO date for fixed expiry
   expiryValue          String?        // e.g., '365' for days from purchase

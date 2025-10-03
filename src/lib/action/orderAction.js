@@ -12,19 +12,6 @@ function generateOrderNumber() {
   return `ORD-${timestamp}-${random}`;
 }
 
-function generateVoucherCode() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let code = "";
-  for (let i = 0; i < 16; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-    // Add hyphen every 4 characters for readability
-    if ((i + 1) % 4 === 0 && i !== 15) {
-      code += "-";
-    }
-  }
-  return code;
-}
-
 function generateTokenizedLink(voucherCodeId) {
   // Generate secure tokenized link for WhatsApp delivery
   const token = Buffer.from(
@@ -81,15 +68,23 @@ export const createOrder = async (orderData) => {
     customVideoUrl,
   } = orderData;
 
+  console.log("orderData",orderData);
+  
+
   try {
     // Validate brand has voucher configuration
-    if (!selectedBrand.vouchers || selectedBrand.vouchers.length === 0) {
+    const voucherConfig = await prisma.vouchers.findFirst({
+        where: {
+            brandId: selectedBrand.id,
+            isActive: true,
+        }
+    });
+
+    if (!voucherConfig) {
       return {
-        error: "Brand does not have voucher configuration.",
+        error: "Brand does not have an active voucher configuration.",
       };
     }
-
-    const voucherConfig = selectedBrand.vouchers[0];
 
     // Create receiver detail
     const receiver = await prisma.receiverDetail.create({
