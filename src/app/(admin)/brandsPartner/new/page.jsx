@@ -57,9 +57,8 @@ const AddBrandPartner = () => {
     denominationType: 'fixed',
     maxAmount: 0,
     minAmount: 0,
-    expiryPolicy: 'neverExpires',
+    isExpiry: false,
     expiryValue: '365',
-    fixedDays: 365,
     expiresAt: '',
     graceDays: 0,
     redemptionChannels: {
@@ -133,10 +132,16 @@ const AddBrandPartner = () => {
 
   // State update functions
   const updateFormData = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const newState = { ...prev, [field]: value };
+      if (field === 'expiryValue') {
+        const num = parseInt(value, 10);
+        if (!isNaN(num)) {
+          newState.fixedDays = num;
+        }
+      }
+      return newState;
+    });
   };
 
   const updateIntegration = (id, field, value) => {
@@ -270,7 +275,7 @@ const AddBrandPartner = () => {
     }
 
    // Vouchers tab completion
-    if (formData.denominationType && formData.expiryPolicy && 
+    if (formData.denominationType && 
         (formData.redemptionChannels.online || formData.redemptionChannels.inStore || formData.redemptionChannels.phone)) {
       completedTabs.push('vouchers');
     }
@@ -312,8 +317,8 @@ const AddBrandPartner = () => {
       termsConditionsURL: formData.termsConditionsURL && isValidUrl(formData.termsConditionsURL) ? formData.termsConditionsURL : '',
       // Ensure remittance email is valid or empty
       remittanceEmail: formData.remittanceEmail && isValidEmail(formData.remittanceEmail) ? formData.remittanceEmail : '',
-      // Ensure website URL is valid
-      website: formData.website && isValidUrl(formData.website) ? formData.website : '',
+      // The website URL is passed as-is to prevent it from being cleared during submission.
+      website: formData.website,
     };
     
     // Add logo file if present

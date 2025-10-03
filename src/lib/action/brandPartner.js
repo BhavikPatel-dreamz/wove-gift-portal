@@ -100,7 +100,7 @@ const BrandPartnerSchema = z.object({
   denominationCurrency: z.string().default("USD"),
   maxAmount: z.number().min(0).optional().nullable(),
   minAmount: z.number().min(0).optional().nullable(),
-  expiryPolicy: z.string().default("fixedDate"),
+  isExpiry: z.boolean().default(false),
   expiryValue: z.string().optional().nullable(),
   expiresAt: z.string().optional().nullable(),
   graceDays: z.number().min(0).optional().nullable(),
@@ -294,9 +294,9 @@ export async function createBrandPartner(formData) {
               denominationValue: denominationValue,
               maxAmount: validatedData.maxAmount,
               minAmount: validatedData.minAmount,
-              expiryPolicy: validatedData.expiryPolicy,
-              expiryValue: validatedData.expiryPolicy === "noExpiry" ? null : validatedData.expiryValue,
-              expiresAt: validatedData.expiresAt || null,
+              isExpiry: validatedData.isExpiry,
+              expiryValue: validatedData.expiryValue,
+              expiresAt: validatedData.expiresAt ? new Date(validatedData.expiresAt) : null,
               graceDays: validatedData.graceDays,
               redemptionChannels: validatedData.redemptionChannels,
               partialRedemption: validatedData.partialRedemption,
@@ -427,7 +427,12 @@ export async function updateBrandPartner(brandId, formData) {
     const existingBrand = await prisma.brand.findUnique({
       where: { id: brandId },
       include: {
-        vouchers: { take: 1 },
+        vouchers: { 
+          take: 1,
+          orderBy: {
+            createdAt: 'desc'
+          }
+        },
       },
     });
 
@@ -547,9 +552,9 @@ export async function updateBrandPartner(brandId, formData) {
         denominationValue: denominationValue,
         maxAmount: validatedData.maxAmount,
         minAmount: validatedData.minAmount,
-        expiryPolicy: validatedData.expiryPolicy,
-        expiryValue: validatedData.expiryPolicy === "noExpiry" ? null : validatedData.expiryValue,
-        expiresAt: validatedData.expiresAt || null,
+        isExpiry: validatedData.isExpiry,
+        expiryValue: validatedData.expiryValue,
+        expiresAt: validatedData.expiresAt ? new Date(validatedData.expiresAt) : null,
         graceDays: validatedData.graceDays,
         redemptionChannels: validatedData.redemptionChannels,
         partialRedemption: validatedData.partialRedemption,

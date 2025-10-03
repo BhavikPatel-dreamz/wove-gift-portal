@@ -61,9 +61,8 @@ const BrandEdit = () => {
     denominations: [],
     maxAmount: 0,
     minAmount: 0,
-    expiryPolicy: 'neverExpires',
+    isExpiry: false,
     expiryValue: '365',
-    fixedDays: 365,
     graceDays: 0,
     redemptionChannels: {
       online: false,
@@ -214,10 +213,9 @@ const BrandEdit = () => {
           denominations: brand.vouchers?.[0]?.denominations || [],
           maxAmount: brand.vouchers?.[0]?.maxAmount || 0,
           minAmount: brand.vouchers?.[0]?.minAmount || 0,
-          expiryPolicy: brand.vouchers?.[0]?.expiryPolicy || 'neverExpires',
+          isExpiry: brand.vouchers?.[0]?.isExpiry || false,
           expiryValue: brand.vouchers?.[0]?.expiryValue || '365',
-          expiresAt: brand.vouchers?.[0]?.expiresAt || '',
-          fixedDays: brand.vouchers?.[0]?.fixedDays || 365,
+          expiresAt: brand.vouchers?.[0]?.expiresAt ? new Date(brand.vouchers?.[0]?.expiresAt).toISOString().split('T')[0] : '',
           graceDays: brand.vouchers?.[0]?.graceDays || 0,
           minPerUsePerDays: brand.vouchers?.[0]?.minPerUsePerDays || 1,
           maxUserPerDay: brand.vouchers?.[0]?.maxUserPerDay || 1,
@@ -418,8 +416,8 @@ const BrandEdit = () => {
       termsConditionsURL: formData.termsConditionsURL && isValidUrl(formData.termsConditionsURL) ? formData.termsConditionsURL : '',
       // Ensure remittance email is valid or empty
       remittanceEmail: formData.remittanceEmail && isValidEmail(formData.remittanceEmail) ? formData.remittanceEmail : '',
-      // Ensure website URL is valid
-      website: formData.website && isValidUrl(formData.website) ? formData.website : '',
+      // The website URL is passed as-is to prevent it from being cleared during submission.
+      website: formData.website,
     };
 
     // Add logo file if present
@@ -503,7 +501,7 @@ const BrandEdit = () => {
     }
 
     // Vouchers tab completion
-    if (formData.denominationType && formData.expiryPolicy && 
+    if (formData.denominationType && 
         (formData.redemptionChannels.online || formData.redemptionChannels.inStore || formData.redemptionChannels.phone)) {
       completedTabs.push('vouchers');
     }

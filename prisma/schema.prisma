@@ -184,8 +184,8 @@ model Vouchers {
   denominationValue    Int?           // For fixed value cards
   maxAmount            Int?
   minAmount            Int?
-  expiryPolicy         String         // 'fixedDate', 'fromPurchase', 'fromActivation', 'noExpiry'
-  expiresAt            String?        // ISO date for fixed expiry
+  isExpiry             Boolean        @default(false)
+  expiresAt            DateTime    // ISO date for fixed expiry
   expiryValue          String?        // e.g., '365' for days from purchase
   graceDays            Int?           @default(0)
   redemptionChannels   Json?          // ['online', 'inStore', 'both']
