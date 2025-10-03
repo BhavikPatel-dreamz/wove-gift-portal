@@ -54,6 +54,8 @@ enum UserRole {
 model Brand {
   id             String           @id @default(cuid())
   brandName      String           @unique
+  currency       String?
+  domain         String?           @unique
   slug           String           @unique
   logo           String
   description    String           @db.Text

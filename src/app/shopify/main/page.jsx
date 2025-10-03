@@ -335,13 +335,16 @@ export default function ShopifyMainPage() {
   );
 }
 
+
 // Create Gift Card Modal Component
 function CreateGiftCardModal({ onClose, onSubmit }) {
   const [formData, setFormData] = useState({
-    initialValue: '',
-    customerEmail: '',
-    note: '',
-    expiresAt: '',
+    initialValue: "",
+    customerEmail: "",
+    firstName: "",
+    lastName: "",
+    note: "",
+    expiresAt: "",
   });
 
   const handleSubmit = (e) => {
@@ -357,10 +360,7 @@ function CreateGiftCardModal({ onClose, onSubmit }) {
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium text-gray-900">Create Gift Card</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             ×
           </button>
         </div>
@@ -374,7 +374,9 @@ function CreateGiftCardModal({ onClose, onSubmit }) {
               type="number"
               step="0.01"
               value={formData.initialValue}
-              onChange={(e) => setFormData(prev => ({ ...prev, initialValue: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, initialValue: e.target.value }))
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
@@ -387,9 +389,43 @@ function CreateGiftCardModal({ onClose, onSubmit }) {
             <input
               type="email"
               value={formData.customerEmail}
-              onChange={(e) => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  customerEmail: e.target.value,
+                }))
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                First Name
+              </label>
+              <input
+                type="text"
+                value={formData.firstName}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, firstName: e.target.value }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Last Name
+              </label>
+              <input
+                type="text"
+                value={formData.lastName}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, lastName: e.target.value }))
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
           </div>
 
           <div>
@@ -398,7 +434,9 @@ function CreateGiftCardModal({ onClose, onSubmit }) {
             </label>
             <textarea
               value={formData.note}
-              onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, note: e.target.value }))
+              }
               rows="3"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -411,7 +449,9 @@ function CreateGiftCardModal({ onClose, onSubmit }) {
             <input
               type="date"
               value={formData.expiresAt}
-              onChange={(e) => setFormData(prev => ({ ...prev, expiresAt: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, expiresAt: e.target.value }))
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>

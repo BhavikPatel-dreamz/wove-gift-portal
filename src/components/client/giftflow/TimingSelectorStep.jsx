@@ -307,6 +307,10 @@ const TimingSelectorStep = () => {
               style={{
                 background: "linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)",
               }}
+                onClick={() => {
+                    setShowScheduleModal(false);
+                    handleContinue();
+                  }}
             >
               Continue to Delivery Method
               <span className="ml-3 text-lg">▶</span>

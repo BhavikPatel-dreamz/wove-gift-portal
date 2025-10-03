@@ -256,7 +256,7 @@ const DeliveryMethodStep = () => {
 
       {/* Main Content */}
       <div className="px-8 pb-8 w-full">
-        <div className="flex gap-5">
+        <div className="flex gap-5 text-black">
           {/* Your Information Section */}
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm w-full">
             <div className="flex items-center mb-6">

@@ -44,7 +44,7 @@ export const fetchShopInfo = async (accessToken, shopName) => {
 };
 
 export const saveBrandFromShopify = async (shopData) => {
-  const { myshopify_domain, name, email } = shopData;
+  const { myshopify_domain, name, email,domain,currency } = shopData;
   const slug = name.toLowerCase().replace(/\s+/g, '-');
 
   try {
@@ -59,7 +59,9 @@ export const saveBrandFromShopify = async (shopData) => {
         slug: slug,
         logo: '/placeholder.png', // Placeholder logo
         description: 'No description available.', // Placeholder description
-        website: myshopify_domain,
+        website: myshopify_domain || domain,
+        domain: domain,
+        currency:currency,
         contact: email,
         categoryName: 'Default', // Placeholder category
       },

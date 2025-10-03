@@ -113,119 +113,168 @@ export const createOrder = async (orderData) => {
     const discount = orderData.discountAmount || 0;
     const totalAmount = subtotal - discount;
 
-    // Create order with transaction to ensure atomicity
-    const result = await prisma.$transaction(async (tx) => {
-      // Create order
-      const order = await tx.order.create({
-        data: {
-          orderNumber: generateOrderNumber(),
-          brandId: selectedBrand.id,
-          occasionId: selectedOccasion,
-          subCategoryId: selectedSubCategory?.isCustom
-            ? null
-            : selectedSubCategory?.id,
-          customCardId: selectedSubCategory?.isCustom
-            ? selectedSubCategory?.id
-            : null,
-          userId: String(userId),
-          receiverDetailId: receiver.id,
+    // Create order
+    const order = await prisma.order.create({
+      data: {
+        orderNumber: generateOrderNumber(),
+        brandId: selectedBrand.id,
+        occasionId: selectedOccasion,
+        subCategoryId: selectedSubCategory?.isCustom
+          ? null
+          : selectedSubCategory?.id,
+        customCardId: selectedSubCategory?.isCustom
+          ? selectedSubCategory?.id
+          : null,
+        userId: String(userId),
+        receiverDetailId: receiver.id,
 
-          // Amounts
-          amount,
-          quantity,
-          subtotal,
-          discount,
-          totalAmount,
-          currency: selectedAmount.currency || "USD",
+        // Amounts
+        amount,
+        quantity,
+        subtotal,
+        discount,
+        totalAmount,
+        currency: selectedAmount.currency || "USD",
 
-          // Customization
-          message: personalMessage || "",
-          customImageUrl: customImageUrl || null,
-          customVideoUrl: customVideoUrl || null,
-          senderName: deliveryDetails.yourFullName || null,
+        // Customization
+        message: personalMessage || "",
+        customImageUrl: customImageUrl || null,
+        customVideoUrl: customVideoUrl || null,
+        senderName: deliveryDetails.yourFullName || null,
 
-          // Delivery
-          deliveryMethod: deliveryMethod || "whatsapp",
-          sendType:
-            selectedTiming?.type === "immediate"
-              ? "sendImmediately"
-              : "scheduleLater",
-          scheduledFor,
+        // Delivery
+        deliveryMethod: deliveryMethod || "whatsapp",
+        sendType:
+          selectedTiming?.type === "immediate"
+            ? "sendImmediately"
+            : "scheduleLater",
+        scheduledFor,
 
-          // Payment
-          paymentMethod: selectedPaymentMethod || "stripe",
-          paymentStatus: "PENDING",
+        // Payment
+        paymentMethod: selectedPaymentMethod || "stripe",
+        paymentStatus: "PENDING",
 
-          // Status
-          redemptionStatus: "Issued",
-          isActive: true,
+        // Status
+        redemptionStatus: "Issued",
+        isActive: true,
 
-          // Store sender details as JSON for backward compatibility
-          senderName: deliveryDetails.yourFullName || null,
-          senderEmail: deliveryDetails.yourEmailAddress || null,
-        },
-      });
+        // Store sender details as JSON for backward compatibility
+        senderName: deliveryDetails.yourFullName || null,
+        senderEmail: deliveryDetails.yourEmailAddress || null,
+      },
+    });
 
-      // Generate voucher codes based on quantity
-      const voucherCodes = [];
-      const expiresAt = calculateExpiryDate(
-        voucherConfig.expiryPolicy,
-        voucherConfig.expiryValue
-      );
+    if (!order) {
+      return { error: "Failed to create order." };
+    }
 
-      for (let i = 0; i < quantity; i++) {
-        const code = generateVoucherCode();
+    // Create Shopify gift card
+    const [firstName, ...lastName] = receiver.name.split(' ');
+    const giftCardData = {
+      initialValue: order.amount,
+      customerEmail: receiver.email,
+      firstName: firstName,
+      lastName: lastName.join(' '),
+      note: `Order ${order.orderNumber}`,
+    };
 
-        const voucherCode = await tx.voucherCode.create({
-          data: {
-            code,
-            orderId: order.id,
-            voucherId: voucherConfig.id,
-            originalValue: amount,
-            remainingValue: amount,
-            expiresAt,
-            isRedeemed: false,
-          },
+    if (!orderData.selectedBrand.domain || !receiver.email) {
+        // This case should ideally not be hit if validation is done properly on the client-side.
+        // Deleting the order to keep DB consistent.
+        await prisma.order.delete({ where: { id: order.id } });
+        return { error: "Missing shop domain or receiver email for gift card creation." };
+    }
+
+    let shopifyGiftCard;
+    try {
+        const giftCardResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/giftcard?shop=${orderData.selectedBrand.domain}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(giftCardData),
         });
 
-        // Generate tokenized link for secure delivery
-        const tokenizedLink = generateTokenizedLink(voucherCode.id);
-        const linkExpiresAt = new Date();
-        linkExpiresAt.setDate(linkExpiresAt.getDate() + 7); // Link expires in 7 days
+        if (!giftCardResponse.ok) {
+            const errorData = await giftCardResponse.json();
+            throw new Error(`Failed to create Shopify gift card: ${errorData.error || 'Unknown error'}`);
+        }
 
-        await tx.voucherCode.update({
-          where: { id: voucherCode.id },
-          data: {
-            tokenizedLink,
-            linkExpiresAt,
-          },
-        });
+        const giftCardResult = await giftCardResponse.json();
+        shopifyGiftCard = giftCardResult.gift_card;
 
-        voucherCodes.push({ ...voucherCode, tokenizedLink, linkExpiresAt });
-      }
+        if (!shopifyGiftCard?.maskedCode) {
+            throw new Error("Shopify gift card was created, but no code was returned.");
+        }
 
-      // Create delivery log entry
-      await tx.deliveryLog.create({
+    } catch (error) {
+        console.error('Error creating Shopify gift card:', error);
+        // Deleting the order to keep DB consistent, as gift card creation failed.
+        await prisma.order.delete({ where: { id: order.id } });
+        return { error: `Failed to create Shopify gift card. The order has been cancelled. Details: ${error.message}` };
+    }
+
+    // TODO: Support quantity > 1 for Shopify gift cards.
+    // This would require either the /api/giftcard endpoint to support creating multiple cards at once,
+    // or calling it in a loop here, which is not ideal.
+    if (quantity > 1) {
+        // Deleting the order to keep DB consistent.
+        await prisma.order.delete({ where: { id: order.id } });
+        return { error: "Ordering multiple Shopify gift cards at once is not currently supported." };
+    }
+
+    // Generate voucher codes (real)
+    const voucherCodes = [];
+    const expiresAt = calculateExpiryDate(
+      voucherConfig.expiryPolicy,
+      voucherConfig.expiryValue
+    );
+
+    // This loop will run only once due to the quantity check above.
+    for (let i = 0; i < quantity; i++) {
+      const code = shopifyGiftCard.maskedCode;
+
+      const voucherCode = await prisma.voucherCode.create({
         data: {
+          code,
           orderId: order.id,
-          voucherCodeId: voucherCodes[0]?.id || null,
-          method: deliveryMethod || "whatsapp",
-          recipient:
-            deliveryMethod === "email"
-              ? deliveryDetails.recipientEmailAddress
-              : deliveryDetails.recipientWhatsAppNumber,
-          status: scheduledFor ? "PENDING" : "PENDING", // Will be processed by delivery service
-          attemptCount: 0,
+          voucherId: voucherConfig.id,
+          originalValue: amount,
+          remainingValue: amount,
+          expiresAt,
+          isRedeemed: false,
         },
       });
 
-      return { order, voucherCodes };
+      const tokenizedLink = generateTokenizedLink(voucherCode.id);
+      const linkExpiresAt = new Date();
+      linkExpiresAt.setDate(linkExpiresAt.getDate() + 7);
+
+      await prisma.voucherCode.update({
+        where: { id: voucherCode.id },
+        data: { tokenizedLink, linkExpiresAt },
+      });
+
+      voucherCodes.push({ ...voucherCode, tokenizedLink, linkExpiresAt });
+    }
+
+    // Create delivery log
+    await prisma.deliveryLog.create({
+      data: {
+        orderId: order.id,
+        voucherCodeId: voucherCodes[0]?.id || null,
+        method: deliveryMethod || "whatsapp",
+        recipient:
+          deliveryMethod === "email"
+            ? deliveryDetails.recipientEmailAddress
+            : deliveryDetails.recipientWhatsAppNumber,
+        status: scheduledFor ? "PENDING" : "PENDING",
+        attemptCount: 0,
+      },
     });
 
     return {
       success: true,
-      order: result.order,
-      voucherCodes: result.voucherCodes,
+      order: order,
+      voucherCodes: voucherCodes,
     };
   } catch (error) {
     console.error("Error creating order:", error);
