@@ -2,7 +2,7 @@
 import React from 'react';
 
 const OrderDetails = ({ order }) => {
-  if (!order) return null;
+  if (!order) return null;  
 
   return (
     <div className="p-6 bg-gray-50 rounded-lg max-w-4xl mx-auto">
@@ -16,7 +16,7 @@ const OrderDetails = ({ order }) => {
           <div className="space-y-3">
             <p><strong>Order ID:</strong> {order.orderNumber}</p>
             <p><strong>Status:</strong> <span className={`px-2 py-1 text-sm font-semibold rounded-full ${getStatusColor(order.redemptionStatus)}`}>{order.redemptionStatus}</span></p>
-            <p><strong>Order Date:</strong> {new Date(order.timestamp).toLocaleString()}</p>
+            <p><strong>Order Date:</strong> {new Date(order.redeemedAt).toLocaleString()}</p>
             <p><strong>Amount:</strong> <span className="font-bold text-green-600">${order.amount} {order.currency}</span></p>
           </div>
         </div>

@@ -147,6 +147,7 @@ export async function POST(req) {
           where: { id: voucherCode.orderId },
           data: {
             redemptionStatus: balanceAfter === 0 ? "Redeemed" : "PartiallyRedeemed",
+            redeemedAt: balanceAfter === 0 ? new Date(txn.processed_at) : voucherCode.redeemedAt,
           },
         });
 

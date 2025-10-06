@@ -510,63 +510,41 @@ export async function getOrderById(orderId) {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        brand: {
-          select: {
-            id: true,
-            brandName: true,
-            logo: true,
-            website: true,
-          },
-        },
+        brand: { select: { id: true, brandName: true, logo: true, website: true } },
         receiverDetail: true,
         occasion: true,
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
+        user: { select: { id: true, email: true, firstName: true, lastName: true } },
         occasionCategory: true,
         customCard: true,
         voucherCodes: {
           include: {
-            redemptions: {
-              orderBy: {
-                redeemedAt: "desc",
-              },
-            },
+            redemptions: { orderBy: { redeemedAt: "desc" } },
           },
         },
-        deliveryLogs: {
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
+        deliveryLogs: { orderBy: { createdAt: "desc" } },
       },
     });
 
     if (!order) {
-      return {
-        success: false,
-        message: "Order not found",
-        status: 404,
-      };
+      return { success: false, message: "Order not found", status: 404 };
     }
 
-    return {
-      success: true,
-      data: order,
-    };
+    // Compute redeemedAt for the order based on its voucher codes
+    const redeemedDates = order.voucherCodes
+      .map(vc => vc.redeemedAt)             // voucher-level redeemedAt
+      .filter(Boolean);                     // remove nulls
+
+    const orderRedeemedAt = redeemedDates.length > 0
+      ? new Date(Math.max(...redeemedDates.map(d => d.getTime()))) // latest redeemedAt
+      : null;
+
+    // Attach redeemedAt directly to the order object
+    const orderWithRedeemedAt = { ...order, redeemedAt: orderRedeemedAt };
+
+    return { success: true, data: orderWithRedeemedAt };
   } catch (error) {
     console.error(`Error fetching order with ID ${orderId}:`, error);
-    return {
-      success: false,
-      message: "Failed to fetch order",
-      error: error.message,
-      status: 500,
-    };
+    return { success: false, message: "Failed to fetch order", error: error.message, status: 500 };
   }
 }
 

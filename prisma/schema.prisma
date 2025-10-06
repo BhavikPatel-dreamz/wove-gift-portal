@@ -21,64 +21,52 @@ model Session {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  phone     String?
-  firstName String
-  lastName  String
-  password  String
-  avatar    String?
-  role      UserRole  @default(CUSTOMER)
-  sessions  Session[]
-  orders    Order[]
-  wishlists Wishlist[]
-  isActive  Boolean   @default(false)
-  isVerified Boolean  @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  auditLogs AuditLog[]
+  id         String     @id @default(cuid())
+  email      String     @unique
+  phone      String?
+  firstName  String
+  lastName   String
+  password   String
+  avatar     String?
+  role       UserRole   @default(CUSTOMER)
+  isActive   Boolean    @default(false)
+  isVerified Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  auditLogs  AuditLog[]
+  orders     Order[]
+  wishlists  Wishlist[]
+  sessions   Session[]
 
   @@map("users")
 }
 
-enum UserRole {
-  CUSTOMER
-  ADMIN
-  BRAND_MANAGER
-  SUPPORT
-  FINANCE
-}
-
-// ==================== BRAND MANAGEMENT ====================
-
 model Brand {
-  id             String           @id @default(cuid())
-  brandName      String           @unique
-  currency       String?
-  domain         String?           @unique
-  slug           String           @unique
-  logo           String
-  description    String           @db.Text
-  website        String
-  contact        String
-  tagline        String?
-  color          String?
-  categoryName   String
-  isPrimary      Boolean          @default(false)
-  isActive       Boolean          @default(false)
-  isFeature      Boolean          @default(false)
-  notes          String?          @db.Text
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  
-  // Relations
-  brandContacts  BrandContacts[]
-  brandTerms     BrandTerms[]
-  brandBankings  BrandBanking[]
-  vouchers       Vouchers[]
-  orders         Order[]
-  settlements    Settlements[]
-  integrations   Integration[]
+  id            String          @id @default(cuid())
+  brandName     String          @unique
+  currency      String?
+  domain        String?         @unique
+  slug          String          @unique
+  logo          String
+  description   String
+  website       String
+  contact       String
+  tagline       String?
+  color         String?
+  categoryName  String
+  isPrimary     Boolean         @default(false)
+  isActive      Boolean         @default(false)
+  isFeature     Boolean         @default(false)
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  brandBankings BrandBanking?
+  brandContacts BrandContacts[]
+  brandTerms    BrandTerms?
+  integrations  Integration[]
+  orders        Order[]
+  settlements   Settlements[]
+  vouchers      Vouchers[]
 }
 
 model BrandContacts {
@@ -87,7 +75,7 @@ model BrandContacts {
   role      String
   email     String
   phone     String
-  notes     String?  @db.Text
+  notes     String?
   isPrimary Boolean  @default(false)
   brandId   String
   createdAt DateTime @default(now())
@@ -96,25 +84,25 @@ model BrandContacts {
 }
 
 model BrandTerms {
-  id                  String              @id @default(cuid())
-  settlementTrigger   SettlementStatus    @default(onRedemption)
-  commissionType      CommissionStatus    @default(Percentage)
-  commissionValue     Float               @default(0)
-  maxDiscount         Int?                @default(0)
-  minOrderValue       Int?                @default(0)
-  currency            String              @default("USD")
-  breakagePolicy     String?             @db.Text
-  breakageShare       Int?                @default(0)
-  contractStart       DateTime?
-  contractEnd         DateTime?
-  goLiveDate          DateTime?
-  renewContract       Boolean             @default(false)
-  vatRate             Float?              @default(0)
-  internalNotes       String?             @db.Text
-  brandId             String              @unique
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  brand               Brand               @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  id                String           @id @default(cuid())
+  settlementTrigger SettlementStatus @default(onRedemption)
+  commissionType    CommissionStatus @default(Percentage)
+  commissionValue   Float            @default(0)
+  maxDiscount       Int?             @default(0)
+  minOrderValue     Int?             @default(0)
+  currency          String           @default("USD")
+  breakagePolicy    String?
+  breakageShare     Int?             @default(0)
+  contractStart     DateTime?
+  contractEnd       DateTime?
+  goLiveDate        DateTime?
+  renewContract     Boolean          @default(false)
+  vatRate           Float?           @default(0)
+  internalNotes     String?
+  brandId           String           @unique
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  brand             Brand            @relation(fields: [brandId], references: [id], onDelete: Cascade)
 }
 
 model BrandBanking {
@@ -125,7 +113,7 @@ model BrandBanking {
   invoiceRequired     Boolean                   @default(false)
   remittanceEmail     String?
   accountHolder       String
-  accountNumber       String                    // Should be encrypted
+  accountNumber       String
   branchCode          String
   bankName            String
   swiftCode           String?
@@ -137,71 +125,63 @@ model BrandBanking {
   brand               Brand                     @relation(fields: [brandId], references: [id], onDelete: Cascade)
 }
 
-// ==================== INTEGRATIONS ====================
-
 model Integration {
-  id             String           @id @default(cuid())
+  id             String               @id @default(cuid())
   platform       String?
   storeUrl       String?
   storeName      String?
-  
-  // Encrypted sensitive fields
-  apiKey         String?          @db.Text
-  apiSecret      String?          @db.Text
-  accessToken    String?          @db.Text
-  consumerKey    String?          @db.Text
-  consumerSecret String?          @db.Text
-  
-  isActive       Boolean          @default(true)
+  apiKey         String?
+  apiSecret      String?
+  accessToken    String?
+  consumerKey    String?
+  consumerSecret String?
+  isActive       Boolean              @default(true)
   lastSyncAt     DateTime?
   syncStatus     SyncStatus?
-  syncMessage    String?          @db.Text
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  syncMessage    String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
   brandId        String
-  brand          Brand            @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brand          Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
   syncLogs       IntegrationSyncLog[]
 }
 
 model IntegrationSyncLog {
-  id            String         @id @default(cuid())
+  id            String      @id @default(cuid())
   integrationId String
-  syncType      String         // 'product', 'order', 'voucher'
+  syncType      String
   status        SyncStatus
-  itemsSynced   Int            @default(0)
-  errorMessage  String?        @db.Text
-  createdAt     DateTime       @default(now())
-  integration   Integration    @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  itemsSynced   Int         @default(0)
+  errorMessage  String?
+  createdAt     DateTime    @default(now())
+  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 }
 
-// ==================== VOUCHERS/GIFT CARDS ====================
-
 model Vouchers {
-  id                   String         @id @default(cuid())
+  id                   String             @id @default(cuid())
   denominationType     DenominationStatus @default(fixed)
-  denominations        Json?          // Array of fixed values [10, 25, 50, 100]
-  denominationCurrency String         @default("USD")
-  denominationValue    Int?           // For fixed value cards
+  denominations        Json?
+  denominationCurrency String             @default("USD")
+  denominationValue    Int?
   maxAmount            Int?
   minAmount            Int?
-  expiryPolicy      String? 
-  isExpiry             Boolean        @default(false)
-  expiresAt            DateTime    // ISO date for fixed expiry
-  expiryValue          String?        // e.g., '365' for days from purchase
-  graceDays            Int?           @default(0)
-  redemptionChannels   Json?          // ['online', 'inStore', 'both']
-  partialRedemption    Boolean        @default(false)
-  stackable            Boolean        @default(false)
+  expiresAt            DateTime
+  expiryValue          String?
+  graceDays            Int?               @default(0)
+  redemptionChannels   Json?
+  partialRedemption    Boolean            @default(false)
+  stackable            Boolean            @default(false)
   maxUserPerDay        Int?
-  termsConditionsURL   String?        @db.Text
-  productSku           String?        // For Shopify product mapping
-  isActive             Boolean        @default(true)
+  termsConditionsURL   String?
+  productSku           String?
+  isActive             Boolean            @default(true)
   brandId              String
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
-  
-  brand                Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  isExpiry             Boolean            @default(false)
+  expiryPolicy         String?
   voucherCodes         VoucherCode[]
+  brand                Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
 }
 
 model VoucherCode {
@@ -209,29 +189,26 @@ model VoucherCode {
   code              String              @unique
   orderId           String
   voucherId         String
-
- // Shopify integration
   shopifyGiftCardId String?             @unique
-  shopifyShop       String?             // Which merchant's store
-  shopifySyncError  String?             @db.Text
+  shopifyShop       String?
+  shopifySyncError  String?
   shopifySyncedAt   DateTime?
-
   isRedeemed        Boolean             @default(false)
   redeemedAt        DateTime?
   originalValue     Int
   remainingValue    Int
   expiresAt         DateTime?
-  pin               String?             // Encrypted, if required
-  qrCode            String?             @db.Text // Base64 or URL
-  tokenizedLink     String?             // For WhatsApp secure delivery
+  pin               String?
+  qrCode            String?
+  tokenizedLink     String?
   linkExpiresAt     DateTime?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
-  giftCard          GiftCard?   @relation(fields: [shopifyGiftCardId], references: [id])
-  order             Order               @relation(fields: [orderId], references: [id])
-  voucher           Vouchers            @relation(fields: [voucherId], references: [id])
-  redemptions       VoucherRedemption[]
   deliveryLogs      DeliveryLog[]
+  order             Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  giftCard          GiftCard?           @relation(fields: [shopifyGiftCardId], references: [id])
+  voucher           Vouchers            @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  redemptions       VoucherRedemption[]
 
   @@index([orderId])
   @@index([voucherId])
@@ -243,128 +220,108 @@ model VoucherRedemption {
   amountRedeemed Int
   balanceAfter   Int
   redeemedAt     DateTime    @default(now())
-  transactionId  String?     // From Shopify or other platform
+  transactionId  String?
   storeUrl       String?
-  
-  voucherCode    VoucherCode @relation(fields: [voucherCodeId], references: [id])
+  voucherCode    VoucherCode @relation(fields: [voucherCodeId], references: [id], onDelete: Cascade)
 
   @@index([voucherCodeId])
 }
 
-// ==================== OCCASIONS & CATEGORIES ====================
-
 model Occasion {
-  id                String             @id @default(cuid())
-  name              String             @unique
-  emoji             String?
-  description       String             @db.Text
-  image             String?
-  type              String             // 'birthday', 'holiday', 'thank_you', etc.
-  isActive          Boolean            @default(true)
-  displayOrder      Int                @default(0)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  
+  id                 String             @id @default(cuid())
+  name               String             @unique
+  emoji              String?
+  description        String
+  image              String?
+  type               String
+  isActive           Boolean            @default(true)
+  displayOrder       Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
   occasionCategories OccasionCategory[]
-  orders            Order[]
+  orders             Order[]
 }
 
 model OccasionCategory {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  description String    @db.Text
-  emoji       String?
-  image       String?
-  category    String
-  isActive    Boolean   @default(true)
+  id           String   @id @default(cuid())
+  name         String   @unique
+  description  String
+  emoji        String?
+  image        String?
+  category     String
+  isActive     Boolean  @default(true)
   displayOrder Int      @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  occasionId  String
-  
-  occasion    Occasion  @relation(fields: [occasionId], references: [id], onDelete: Cascade)
-  orders      Order[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  occasionId   String
+  occasion     Occasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  orders       Order[]
 }
 
 model CustomCard {
-  id          String   @id @default(cuid())
-  title       String
-  description String   @db.Text
-  bgColor     String?
-  bgImage     String?  @db.Text
-  emoji       String?
-  templateType String? // 'video', 'image', 'text'
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  orders      Order[]
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  bgColor      String?
+  bgImage      String?
+  emoji        String?
+  templateType String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
 }
 
-// ==================== ORDERS ====================
-
 model ReceiverDetail {
-  id         String   @id @default(cuid())
-  name       String
-  phone      String?
-  email      String?
-  orders     Order[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
 }
 
 model Order {
-  id                  String                @id @default(cuid())
-  orderNumber         String                @unique
-  brandId             String
-  occasionId          String
-  subCategoryId       String?
-  customCardId        String?
-  userId              String
-  receiverDetailId    String
-  
-  // Order amounts
-  amount              Int                   // Gift card value
-  quantity            Int                   @default(1)
-  subtotal            Int                   // amount * quantity
-  discount            Int                   @default(0)
-  totalAmount         Int                   // After discount
-  currency            String                @default("USD")
-  
-  // Customization
-  message             String?               @db.Text
-  customImageUrl      String?               @db.Text
-  customVideoUrl      String?               @db.Text
-  senderName          String?
-  senderEmail         String?   // Add this if needed
-  
-  // Delivery settings
-  deliveryMethod      DeliveryMethodStatus  @default(whatsapp)
-  sendType            SendStatus            @default(sendImmediately)
-  scheduledFor        DateTime?             // For scheduled delivery
-  
-  // Payment
-  paymentMethod       String?
-  paymentStatus       PaymentStatus         @default(PENDING)
-  paymentIntentId     String?               // Stripe payment intent
-  paidAt              DateTime?
-  
-  // Voucher status
-  redemptionStatus    RedemptionStatus      @default(Issued)
-  
-  // Metadata
-  isActive            Boolean               @default(true)
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  
-  // Relations
-  occasion            Occasion              @relation(fields: [occasionId], references: [id])
-  brand               Brand                 @relation(fields: [brandId], references: [id])
-  user                User                  @relation(fields: [userId], references: [id])
-  receiverDetail      ReceiverDetail        @relation(fields: [receiverDetailId], references: [id])
-  occasionCategory    OccasionCategory?     @relation(fields: [subCategoryId], references: [id])
-  customCard          CustomCard?           @relation(fields: [customCardId], references: [id])
-  voucherCodes        VoucherCode[]
-  deliveryLogs        DeliveryLog[]
+  id               String               @id @default(cuid())
+  orderNumber      String               @unique
+  brandId          String
+  occasionId       String
+  subCategoryId    String?
+  customCardId     String?
+  userId           String
+  receiverDetailId String
+  amount           Int
+  quantity         Int                  @default(1)
+  subtotal         Int
+  discount         Int                  @default(0)
+  totalAmount      Int
+  currency         String               @default("USD")
+  message          String?
+  customImageUrl   String?
+  customVideoUrl   String?
+  senderName       String?
+  senderEmail      String?
+  deliveryMethod   DeliveryMethodStatus @default(whatsapp)
+  sendType         SendStatus           @default(sendImmediately)
+  scheduledFor     DateTime?
+  paymentMethod    String?
+  paymentStatus    PaymentStatus        @default(PENDING)
+  paymentIntentId  String?
+  paidAt           DateTime?
+  redemptionStatus RedemptionStatus     @default(Issued)
+  redeemedAt        DateTime?
+  isActive         Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  deliveryLogs     DeliveryLog[]
+  brand            Brand                @relation(fields: [brandId], references: [id])
+  customCard       CustomCard?          @relation(fields: [customCardId], references: [id])
+  occasion         Occasion             @relation(fields: [occasionId], references: [id])
+  receiverDetail   ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
+  occasionCategory OccasionCategory?    @relation(fields: [subCategoryId], references: [id])
+  user             User                 @relation(fields: [userId], references: [id])
+  voucherCodes     VoucherCode[]
 
   @@index([userId])
   @@index([brandId])
@@ -372,65 +329,54 @@ model Order {
   @@index([paymentStatus])
 }
 
-// ==================== DELIVERY TRACKING ====================
-
 model DeliveryLog {
   id            String               @id @default(cuid())
   orderId       String
   voucherCodeId String?
   method        DeliveryMethodStatus
-  recipient     String               // Email or phone number
+  recipient     String
   status        DeliveryStatus       @default(PENDING)
   attemptCount  Int                  @default(0)
   sentAt        DateTime?
   deliveredAt   DateTime?
-  errorMessage  String?              @db.Text
-  messageId     String?              // WhatsApp/Email provider message ID
+  errorMessage  String?
+  messageId     String?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
-  
-  order         Order                @relation(fields: [orderId], references: [id])
-  voucherCode   VoucherCode?         @relation(fields: [voucherCodeId], references: [id])
+  order         Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  voucherCode   VoucherCode?         @relation(fields: [voucherCodeId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@index([status])
 }
 
-// ==================== SETTLEMENTS ====================
-
 model Settlements {
-  id                String             @id @default(cuid())
+  id                String                  @id @default(cuid())
   brandId           String
-  settlementPeriod  String             // 'January 2025', 'Week 1 2025'
+  settlementPeriod  String
   periodStart       DateTime
   periodEnd         DateTime
-  
-  totalSold         Int                // Number of vouchers sold
-  totalSoldAmount   Int                // Total face value sold
-  totalRedeemed     Int                // Number redeemed
-  redeemedAmount    Int                // Amount redeemed
-  outstanding       Int                // Unredeemed count
-  outstandingAmount Int                // Unredeemed value
-  
-  commissionAmount  Int                // Platform commission
-  breakageAmount    Int?               // Unredeemed/expired amount
+  totalSold         Int
+  totalSoldAmount   Int
+  totalRedeemed     Int
+  redeemedAmount    Int
+  outstanding       Int
+  outstandingAmount Int
+  commissionAmount  Int
+  breakageAmount    Int?
   vatAmount         Int?
-  netPayable        Int                // Amount to pay brand
-  
+  netPayable        Int
   status            SettlementPaymentStatus @default(Pending)
   paidAt            DateTime?
   paymentReference  String?
-  notes             String?            @db.Text
-  
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  brand             Brand              @relation(fields: [brandId], references: [id])
+  notes             String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  brand             Brand                   @relation(fields: [brandId], references: [id])
 
   @@index([brandId])
   @@index([status])
 }
-
-// ==================== WISHLIST ====================
 
 model Wishlist {
   id        String   @id @default(cuid())
@@ -438,44 +384,39 @@ model Wishlist {
   brandId   String?
   voucherId String?
   createdAt DateTime @default(now())
-  
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, voucherId])
   @@index([userId])
 }
 
-// ==================== AUDIT & LOGGING ====================
-
 model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  userEmail  String?
-  action     String   // 'CREATE', 'UPDATE', 'DELETE', 'LOGIN', etc.
-  entity     String   // 'Order', 'Brand', 'User', etc.
-  entityId   String?
-  changes    Json?    // Before/after snapshot
-  ipAddress  String?
-  userAgent  String?  @db.Text
-  createdAt  DateTime @default(now())
-  
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id        String   @id @default(cuid())
+  userId    String?
+  userEmail String?
+  action    String
+  entity    String
+  entityId  String?
+  changes   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([entity, entityId])
   @@index([createdAt])
 }
 
-// ==================== Shopify ====================
 model ShopifySession {
-  id            String   @id @default(cuid())
-  shop          String   @unique
-  accessToken   String
-  scope         String?
-  isOnline      Boolean  @default(false)
-  expiresAt     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(cuid())
+  shop        String    @unique
+  accessToken String
+  scope       String?
+  isOnline    Boolean   @default(false)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model AppInstallation {
@@ -487,31 +428,34 @@ model AppInstallation {
   isActive    Boolean  @default(true)
 }
 
-
-
 model GiftCard {
-  id            String    @id @default(cuid())
+  id            String       @id @default(cuid())
   shop          String
-  shopifyId     String?   @unique
-  code          String    @unique
+  shopifyId     String?      @unique
+  code          String       @unique
   initialValue  Float
   balance       Float
   customerEmail String?
   note          String?
   expiresAt     DateTime?
-  voucherCode  VoucherCode?
-  isActive      Boolean   @default(true)
-  isVirtual     Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isActive      Boolean      @default(true)
+  isVirtual     Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  voucherCode   VoucherCode?
 
   @@index([shop])
   @@index([code])
   @@index([customerEmail])
 }
 
-
-// ==================== ENUMS ====================
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  BRAND_MANAGER
+  SUPPORT
+  FINANCE
+}
 
 enum SettlementStatus {
   onRedemption
