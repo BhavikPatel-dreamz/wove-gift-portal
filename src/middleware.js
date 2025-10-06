@@ -13,6 +13,7 @@ export function middleware(request) {
     pathname.startsWith('/api/shopify/gift-cards') ||
     pathname.startsWith('/api/giftcard') ||
     pathname.startsWith('/api/shopify/shop') ||
+    pathname.startsWith('/api/webhooks/giftcard-redeem') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon')
   ) {

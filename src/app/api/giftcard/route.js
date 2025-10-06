@@ -223,8 +223,9 @@ export async function POST(req) {
     }
 
     // Step 5: Save to local DB
+    let newLocalGiftCard;
     try {
-      await prisma.giftCard.create({
+      newLocalGiftCard = await prisma.giftCard.create({
         data: {
           shop: shop,
           shopifyId: giftCard.id,
@@ -248,6 +249,7 @@ export async function POST(req) {
       gift_card: {
         ...giftCard,
         customerEmail: input.customerEmail,
+        localId: newLocalGiftCard ? newLocalGiftCard.id : null
       },
     });
 
