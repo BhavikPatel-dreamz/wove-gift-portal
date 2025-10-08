@@ -8,19 +8,22 @@ import { Clock, CheckCircle, AlertTriangle, Eye, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import { getSettlements } from "../../../lib/action/brandPartner";
 
-const Page = () => {
+const SettlementsPage = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({});
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const params = useMemo(() => ({
-    page: searchParams.get("page") || 1,
-    limit: searchParams.get("limit") || 10,
-    search: searchParams.get("search") || "",
-    status: searchParams.get("status") || "",
-  }), [searchParams]);
+  const params = useMemo(
+    () => ({
+      page: searchParams.get("page") || 1,
+      limit: searchParams.get("limit") || 10,
+      search: searchParams.get("search") || "",
+      status: searchParams.get("status") || "",
+    }),
+    [searchParams]
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,9 +58,9 @@ const Page = () => {
     router.push(`?${newParams.toString()}`);
   };
 
-  const handleFilter = (status) => {
+  const handleFilter = (name, value) => {
     const newParams = new URLSearchParams(searchParams);
-    newParams.set("status", status);
+    newParams.set(name, value);
     newParams.set("page", 1);
     router.push(`?${newParams.toString()}`);
   };
@@ -69,17 +72,14 @@ const Page = () => {
       Pending: {
         icon: Clock,
         color: "text-amber-600 bg-amber-50 border-amber-200",
-        iconColor: "text-amber-600",
       },
       Paid: {
         icon: CheckCircle,
         color: "text-green-600 bg-green-50 border-green-200",
-        iconColor: "text-green-600",
       },
       Review: {
         icon: AlertTriangle,
         color: "text-red-600 bg-red-50 border-red-200",
-        iconColor: "text-red-600",
       },
     };
 
@@ -87,32 +87,34 @@ const Page = () => {
     const IconComponent = config.icon;
 
     return (
-      <div
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm font-medium border ${config.color}`}>
-        <IconComponent size={14} className={config.iconColor} />
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}>
+        <IconComponent className="w-3.5 h-3.5" />
         {status}
-      </div>
+      </span>
     );
   };
 
-  const ActionButtons = ({ row, onView, onDownload, onMarkPaid }) => (
+  const ActionButtons = ({ row }) => (
     <div className="flex items-center gap-2">
       <button
-        onClick={() => onView(row.original)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">
-        <Eye size={14} />
-        View
+        onClick={() => handleView(row.original)}
+        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+        title="View Details"
+      >
+        <Eye className="w-4 h-4" />
       </button>
       <button
-        onClick={() => onDownload(row.original)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">
-        <Download size={14} />
-        CSV
+        onClick={() => handleDownload(row.original)}
+        className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+        title="Download CSV"
+      >
+        <Download className="w-4 h-4" />
       </button>
       {row.original.status === "Pending" && (
         <button
-          onClick={() => onMarkPaid(row.original)}
-          className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
+          onClick={() => handleMarkPaid(row.original)}
+          className="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+        >
           Mark Paid
         </button>
       )}
@@ -122,11 +124,11 @@ const Page = () => {
   const customColumns = [
     columnHelper.accessor("brandName", {
       header: "Brand Name",
-      cell: (info) => <div className="font-medium text-gray-900">{info.getValue()}</div>,
+      cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,
     }),
     columnHelper.accessor("totalSold", {
       header: "Total Sold",
-      cell: (info) => <div className="text-gray-900">R {info.getValue().toLocaleString()}</div>,
+      cell: (info) => <div className="text-gray-900 font-medium">R {info.getValue().toLocaleString()}</div>,
     }),
     columnHelper.accessor("redeemedAmount", {
       header: "Redeemed",
@@ -136,8 +138,8 @@ const Page = () => {
         const percentage = totalSold > 0 ? (redeemedAmount / totalSold) * 100 : 0;
         return (
           <div>
-            <div className="text-gray-900">R {redeemedAmount.toLocaleString()}</div>
-            <div className="text-sm text-gray-500">{percentage.toFixed(2)}% redeemed</div>
+            <div className="text-gray-900 font-medium">R {redeemedAmount.toLocaleString()}</div>
+            <div className="text-xs text-gray-500">{percentage.toFixed(1)}% redeemed</div>
           </div>
         );
       },
@@ -152,11 +154,15 @@ const Page = () => {
     }),
     columnHelper.accessor("netPayable", {
       header: "Amount Owed",
-      cell: (info) => <div className="font-medium text-green-600">R {info.getValue().toLocaleString()}</div>,
+      cell: (info) => <div className="font-semibold text-green-600">R {info.getValue().toLocaleString()}</div>,
     }),
     columnHelper.accessor("lastPaymentDate", {
       header: "Last Payment",
-      cell: (info) => <div className="text-gray-700">{info.getValue() ? new Date(info.getValue()).toLocaleDateString() : "N/A"}</div>,
+      cell: (info) => (
+        <div className="text-gray-700">
+          {info.getValue() ? new Date(info.getValue()).toLocaleDateString() : "N/A"}
+        </div>
+      ),
     }),
     columnHelper.accessor("status", {
       header: "Status",
@@ -165,49 +171,67 @@ const Page = () => {
     columnHelper.display({
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => (
-        <ActionButtons
-          row={row}
-          onView={handleView}
-          onDownload={handleDownload}
-          onMarkPaid={handleMarkPaid}
-        />
-      ),
+      cell: ({ row }) => <ActionButtons row={row} />,
     }),
   ];
 
   const handleView = (row) => {
     toast.info(`Viewing details for: ${row.brandName}`);
+    // Add your view logic here
   };
 
   const handleDownload = (row) => {
     toast.info(`Downloading CSV for: ${row.brandName}`);
+    // Add your download logic here
   };
 
   const handleMarkPaid = (row) => {
-    toast.info(`Marking as paid: ${row.brandName}`);
+    toast.success(`Marking as paid: ${row.brandName}`);
+    // Add your mark paid logic here
+  };
+
+  const handleExport = () => {
+    toast.info("Exporting all settlements...");
+    // Add your export logic here
   };
 
   return (
-    <div className="p-6">
-      <DynamicTable
-        data={data}
-        columns={customColumns}
-        loading={loading}
-        pagination={pagination}
-        onPageChange={handlePageChange}
-        onSearch={handleSearch}
-        onFilter={handleFilter}
-        searchPlaceholder="Search by brand or settlement ID..."
-        filterOptions={[
-          { value: "", label: "All Statuses" },
-          { value: "Pending", label: "Pending" },
-          { value: "Paid", label: "Paid" },
-          { value: "Review", label: "Review" },
-        ]}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        <DynamicTable
+          data={data}
+          columns={customColumns}
+          loading={loading}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onSearch={handleSearch}
+          onFilter={handleFilter}
+          title="Brand Settlements"
+          subtitle="Monitor and manage brand settlement payments"
+          searchPlaceholder="Search by brand or settlement ID..."
+          filters={[
+            {
+              name: "status",
+              placeholder: "All Statuses",
+              options: [
+                { value: "Pending", label: "Pending" },
+                { value: "Paid", label: "Paid" },
+                { value: "Review", label: "Review" },
+              ],
+            },
+          ]}
+          actions={[
+            {
+              label: "Export",
+              icon: Download,
+              onClick: handleExport,
+            },
+          ]}
+          emptyMessage="No settlements found. Try adjusting your filters."
+        />
+      </div>
     </div>
   );
 };
 
-export default Page;
+export default SettlementsPage;
