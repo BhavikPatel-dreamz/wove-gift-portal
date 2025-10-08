@@ -127,6 +127,8 @@ const PaymentStep = () => {
         selectedPaymentMethod,
       };
       const result = await createOrder(orderData);
+      console.log("result", result);
+      
       if (result.error) {
         setError(result.error);
         toast.error(result.error, { id: toastId });

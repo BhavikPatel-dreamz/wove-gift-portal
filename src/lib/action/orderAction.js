@@ -176,7 +176,7 @@ export const createOrder = async (orderData) => {
     let giftCardInDb; // ✅ Declare in outer scope
     
     try {
-        const giftCardResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/giftcard?shop=${orderData.selectedBrand.domain}`, {
+        const giftCardResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/giftcard?shop=${orderData.selectedBrand.domain}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(giftCardData),

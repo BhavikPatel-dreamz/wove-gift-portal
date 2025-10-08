@@ -467,7 +467,7 @@ const AddBrandPartner = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          {/* <div className="flex items-center space-x-3">
             <button
               onClick={handleSaveDraft}
               disabled={isFormDisabled}
@@ -484,7 +484,7 @@ const AddBrandPartner = () => {
               <Eye size={16} />
               <span>{isPending ? 'Publishing...' : 'Publish Brand'}</span>
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
