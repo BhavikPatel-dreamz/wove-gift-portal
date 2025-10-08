@@ -47,8 +47,8 @@ const BrandEdit = () => {
     maxDiscount: 0,
     minOrderValue: 0,
     currency: 'USD',
-    brackingPolicy: 'Retain',
-    brackingShare: 0,
+    breakagePolicy: 'Retain',
+    breakageShare: 0,
     contractStart: new Date().toISOString().split('T')[0],
     contractEnd: '',
     goLiveDate: new Date().toISOString().split('T')[0],
@@ -187,25 +187,25 @@ const BrandEdit = () => {
           isFeature: brand.isFeature || false,
 
           // Terms
-          settlementTrigger: brand.brandTerms?.[0]?.settelementTrigger || 'onRedemption',
-          commissionType: brand.brandTerms?.[0]?.commissionType || 'Percentage',
-          commissionValue: brand.brandTerms?.[0]?.commissionValue || 0,
-          maxDiscount: brand.brandTerms?.[0]?.maxDiscount || 0,
-          minOrderValue: brand.brandTerms?.[0]?.minOrderValue || 0,
-          currency: brand.brandTerms?.[0]?.currency || 'USD',
-          brackingPolicy: brand.brandTerms?.[0]?.brackingPolicy || 'Retain',
-          brackingShare: brand.brandTerms?.[0]?.brackingShare || 0,
-          contractStart: brand.brandTerms?.[0]?.contractStart ?
-            new Date(brand.brandTerms[0].contractStart).toISOString().split('T')[0] :
+          settlementTrigger: brand.brandTerms?.settlementTrigger || 'onRedemption',
+          commissionType: brand.brandTerms?.commissionType || 'Percentage',
+          commissionValue: brand.brandTerms?.commissionValue || 0,
+          maxDiscount: brand.brandTerms?.maxDiscount || 0,
+          minOrderValue: brand.brandTerms?.minOrderValue || 0,
+          currency: brand.brandTerms?.currency || 'USD',
+          breakagePolicy: brand.brandTerms?.breakagePolicy || 'Retain',
+          breakageShare: brand.brandTerms?.breakageShare || 0,
+          contractStart: brand.brandTerms?.contractStart ?
+            new Date(brand.brandTerms.contractStart).toISOString().split('T')[0] :
             new Date().toISOString().split('T')[0],
-          contractEnd: brand.brandTerms?.[0]?.contractEnd ?
-            new Date(brand.brandTerms[0].contractEnd).toISOString().split('T')[0] : '',
-          goLiveDate: brand.brandTerms?.[0]?.goLiveDate ?
-            new Date(brand.brandTerms[0].goLiveDate).toISOString().split('T')[0] :
+          contractEnd: brand.brandTerms?.contractEnd ?
+            new Date(brand.brandTerms.contractEnd).toISOString().split('T')[0] : '',
+          goLiveDate: brand.brandTerms?.goLiveDate ?
+            new Date(brand.brandTerms.goLiveDate).toISOString().split('T')[0] :
             new Date().toISOString().split('T')[0],
-          renewContract: brand.brandTerms?.[0]?.renewContract || false,
-          vatRate: brand.brandTerms?.[0]?.vatRate || 15,
-          internalNotes: brand.brandTerms?.[0]?.internalNotes || '',
+          renewContract: brand.brandTerms?.renewContract || false,
+          vatRate: brand.brandTerms?.vatRate || 15,
+          internalNotes: brand.brandTerms?.internalNotes || '',
 
           // Vouchers - FIXED: Properly handle isExpiry boolean
           denominationType: brand.vouchers?.[0]?.denominationType || 'fixed',
@@ -228,18 +228,18 @@ const BrandEdit = () => {
           termsConditionsURL: brand.vouchers?.[0]?.termsConditionsURL || '',
 
           // Banking & Settlement
-          settlementFrequency: brand.brandBankings?.[0]?.settlementFrequency || 'monthly',
-          dayOfMonth: brand.brandBankings?.[0]?.dayOfMonth || 1,
-          payoutMethod: brand.brandBankings?.[0]?.payoutMethod || 'EFT',
-          invoiceRequired: brand.brandBankings?.[0]?.invoiceRequired || false,
-          remittanceEmail: brand.brandBankings?.[0]?.remittanceEmail || '',
-          accountHolder: brand.brandBankings?.[0]?.accountHolder || '',
-          accountNumber: brand.brandBankings?.[0]?.accountNumber || '',
-          branchCode: brand.brandBankings?.[0]?.branchCode || '',
-          bankName: brand.brandBankings?.[0]?.bankName || '',
-          swiftCode: brand.brandBankings?.[0]?.SWIFTCode || brand.brandBankings?.[0]?.swiftCode || '',
-          country: brand.brandBankings?.[0]?.country || 'South Africa',
-          accountVerification: brand.brandBankings?.[0]?.accountVerification || false,
+          settlementFrequency: brand.brandBankings?.settlementFrequency || 'monthly',
+          dayOfMonth: brand.brandBankings?.dayOfMonth || 1,
+          payoutMethod: brand.brandBankings?.payoutMethod || 'EFT',
+          invoiceRequired: brand.brandBankings?.invoiceRequired || false,
+          remittanceEmail: brand.brandBankings?.remittanceEmail || '',
+          accountHolder: brand.brandBankings?.accountHolder || '',
+          accountNumber: brand.brandBankings?.accountNumber || '',
+          branchCode: brand.brandBankings?.branchCode || '',
+          bankName: brand.brandBankings?.bankName || '',
+          swiftCode: brand.brandBankings?.swiftCode || '',
+          country: brand.brandBankings?.country || 'South Africa',
+          accountVerification: brand.brandBankings?.accountVerification || false,
 
           // Contacts
           contacts: brand.brandContacts?.map(contact => ({
@@ -507,8 +507,14 @@ const BrandEdit = () => {
     }
 
     // Vouchers tab completion
-    if (formData.denominationType &&
-      (formData.redemptionChannels.online || formData.redemptionChannels.inStore || formData.redemptionChannels.phone)) {
+    const isDenominationValid =
+      (formData.denominationType === 'fixed' && formData.denominations?.length > 0) ||
+      (formData.denominationType === 'amount' &&
+        formData.minAmount > 0 &&
+        formData.maxAmount > 0 &&
+        formData.minAmount < formData.maxAmount);
+
+    if (isDenominationValid) {
       completedTabs.push('vouchers');
     }
 
@@ -518,8 +524,8 @@ const BrandEdit = () => {
     }
 
     // Contacts tab completion
-    const primaryContact = formData.contacts.find(c => c.isPrimary);
-    if (primaryContact?.name && primaryContact?.email && primaryContact?.role) {
+    const hasAtLeastOneContact = formData.contacts.some(c => c.name && c.email);
+    if (hasAtLeastOneContact) {
       completedTabs.push('contacts');
     }
 

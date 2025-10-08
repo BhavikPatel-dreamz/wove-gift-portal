@@ -317,7 +317,7 @@ export async function createBrandPartner(formData) {
               invoiceRequired: validatedData.invoiceRequired,
               remittanceEmail: validatedData.remittanceEmail,
               accountHolder: validatedData.accountHolder,
-              accountNumber: await hashSensitiveData(validatedData.accountNumber), // Hash account number
+              accountNumber: validatedData.accountNumber, // Hash account number
               branchCode: validatedData.branchCode,
               bankName: validatedData.bankName,
               swiftCode: validatedData.swiftCode,
@@ -587,7 +587,7 @@ export async function updateBrandPartner(brandId, formData) {
         invoiceRequired: validatedData.invoiceRequired,
         remittanceEmail: validatedData.remittanceEmail,
         accountHolder: validatedData.accountHolder,
-        accountNumber: await hashSensitiveData(validatedData.accountNumber),
+        accountNumber: validatedData.accountNumber,
         branchCode: validatedData.branchCode,
         bankName: validatedData.bankName,
         swiftCode: validatedData.swiftCode,
