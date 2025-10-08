@@ -1,61 +1,68 @@
-// app/dashboard/page.jsx
-"use client"
+"use client";
 
-import React from "react"
-import DynamicTable from "../../../components/forms/DynamicTable"
-import { createColumnHelper } from "@tanstack/react-table"
-import { Clock, CheckCircle, AlertTriangle, Eye, Download } from "lucide-react"
-import toast from "react-hot-toast"
+import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import DynamicTable from "../../../components/forms/DynamicTable";
+import { createColumnHelper } from "@tanstack/react-table";
+import { Clock, CheckCircle, AlertTriangle, Eye, Download } from "lucide-react";
+import toast from "react-hot-toast";
+import { getSettlements } from "../../../lib/action/brandPartner";
 
 const Page = () => {
-  const sampleData = [
-    {
-      id: 1,
-      brandName: "Superbalist",
-      totalSold: 245000,
-      redeemed: { amount: 189000, percentage: 77 },
-      outstanding: 56000,
-      settlementTerms: "30-day",
-      amountOwed: 22050,
-      lastPayment: "2024-05-15",
-      status: "Pending",
-    },
-    {
-      id: 2,
-      brandName: "Freedom of Movement",
-      totalSold: 198000,
-      redeemed: { amount: 156000, percentage: 79 },
-      outstanding: 42000,
-      settlementTerms: "Immediate",
-      amountOwed: 17820,
-      lastPayment: "2024-05-28",
-      status: "Paid",
-    },
-    {
-      id: 3,
-      brandName: "Huxlee",
-      totalSold: 167000,
-      redeemed: { amount: 134000, percentage: 80 },
-      outstanding: 33000,
-      settlementTerms: "30-day",
-      amountOwed: 15030,
-      lastPayment: "2024-05-10",
-      status: "Review",
-    },
-    {
-      id: 4,
-      brandName: "Burnt Studios",
-      totalSold: 145000,
-      redeemed: { amount: 112000, percentage: 77 },
-      outstanding: 33000,
-      settlementTerms: "30-day",
-      amountOwed: 13050,
-      lastPayment: "2024-05-20",
-      status: "Pending",
-    },
-  ]
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({});
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const columnHelper = createColumnHelper()
+  const params = useMemo(() => ({
+    page: searchParams.get("page") || 1,
+    limit: searchParams.get("limit") || 10,
+    search: searchParams.get("search") || "",
+    status: searchParams.get("status") || "",
+  }), [searchParams]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await getSettlements(params);
+        if (res.success) {
+          setData(res.data);
+          setPagination(res.pagination);
+        } else {
+          toast.error(res.message);
+        }
+      } catch (error) {
+        toast.error("Failed to fetch settlements");
+      }
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [params]);
+
+  const handlePageChange = (page) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("page", page);
+    router.push(`?${newParams.toString()}`);
+  };
+
+  const handleSearch = (search) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("search", search);
+    newParams.set("page", 1);
+    router.push(`?${newParams.toString()}`);
+  };
+
+  const handleFilter = (status) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("status", status);
+    newParams.set("page", 1);
+    router.push(`?${newParams.toString()}`);
+  };
+
+  const columnHelper = createColumnHelper();
 
   const StatusBadge = ({ status }) => {
     const statusConfig = {
@@ -74,100 +81,82 @@ const Page = () => {
         color: "text-red-600 bg-red-50 border-red-200",
         iconColor: "text-red-600",
       },
-    }
+    };
 
-    const config = statusConfig[status] || statusConfig.Pending
-    const IconComponent = config.icon
+    const config = statusConfig[status] || statusConfig.Pending;
+    const IconComponent = config.icon;
 
     return (
       <div
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm font-medium border ${config.color}`}
-      >
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm font-medium border ${config.color}`}>
         <IconComponent size={14} className={config.iconColor} />
         {status}
       </div>
-    )
-  }
+    );
+  };
 
   const ActionButtons = ({ row, onView, onDownload, onMarkPaid }) => (
     <div className="flex items-center gap-2">
       <button
         onClick={() => onView(row.original)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
-      >
+        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">
         <Eye size={14} />
         View
       </button>
       <button
         onClick={() => onDownload(row.original)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
-      >
+        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">
         <Download size={14} />
         CSV
       </button>
       {row.original.status === "Pending" && (
         <button
           onClick={() => onMarkPaid(row.original)}
-          className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors"
-        >
+          className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
           Mark Paid
         </button>
       )}
     </div>
-  )
+  );
 
   const customColumns = [
     columnHelper.accessor("brandName", {
       header: "Brand Name",
-      cell: (info) => (
-        <div className="font-medium text-gray-900">{info.getValue()}</div>
-      ),
+      cell: (info) => <div className="font-medium text-gray-900">{info.getValue()}</div>,
     }),
     columnHelper.accessor("totalSold", {
       header: "Total Sold",
-      cell: (info) => (
-        <div className="text-gray-900">R {info.getValue().toLocaleString()}</div>
-      ),
+      cell: (info) => <div className="text-gray-900">R {info.getValue().toLocaleString()}</div>,
     }),
-    columnHelper.accessor("redeemed", {
+    columnHelper.accessor("redeemedAmount", {
       header: "Redeemed",
       cell: (info) => {
-        const redeemed = info.getValue()
+        const redeemedAmount = info.getValue();
+        const totalSold = info.row.original.totalSold;
+        const percentage = totalSold > 0 ? (redeemedAmount / totalSold) * 100 : 0;
         return (
           <div>
-            <div className="text-gray-900">
-              R {redeemed.amount.toLocaleString()}
-            </div>
-            <div className="text-sm text-gray-500">
-              {redeemed.percentage}% redeemed
-            </div>
+            <div className="text-gray-900">R {redeemedAmount.toLocaleString()}</div>
+            <div className="text-sm text-gray-500">{percentage.toFixed(2)}% redeemed</div>
           </div>
-        )
+        );
       },
     }),
-    columnHelper.accessor("outstanding", {
+    columnHelper.accessor("outstandingAmount", {
       header: "Outstanding",
-      cell: (info) => (
-        <div className="text-gray-900">R {info.getValue().toLocaleString()}</div>
-      ),
+      cell: (info) => <div className="text-gray-900">R {info.getValue().toLocaleString()}</div>,
     }),
-    columnHelper.accessor("settlementTerms", {
+    columnHelper.accessor("settlementTrigger", {
       header: "Settlement Terms",
-      cell: (info) => (
-        <div className="text-gray-700">{info.getValue()}</div>
-      ),
-    }),
-    columnHelper.accessor("amountOwed", {
-      header: "Amount Owed",
-      cell: (info) => (
-        <div className="font-medium text-green-600">
-          R {info.getValue().toLocaleString()}
-        </div>
-      ),
-    }),
-    columnHelper.accessor("lastPayment", {
-      header: "Last Payment",
       cell: (info) => <div className="text-gray-700">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor("netPayable", {
+      header: "Amount Owed",
+      cell: (info) => <div className="font-medium text-green-600">R {info.getValue().toLocaleString()}</div>,
+    }),
+    columnHelper.accessor("lastPaymentDate", {
+      header: "Last Payment",
+      cell: (info) => <div className="text-gray-700">{info.getValue() ? new Date(info.getValue()).toLocaleDateString() : "N/A"}</div>,
     }),
     columnHelper.accessor("status", {
       header: "Status",
@@ -185,31 +174,40 @@ const Page = () => {
         />
       ),
     }),
-  ]
+  ];
 
   const handleView = (row) => {
-     toast.info(`Viewing details for: ${row.brandName}`)
-  }
+    toast.info(`Viewing details for: ${row.brandName}`);
+  };
 
   const handleDownload = (row) => {
-    toast.info(`Downloading CSV for: ${row.brandName}`)
-  }
+    toast.info(`Downloading CSV for: ${row.brandName}`);
+  };
 
   const handleMarkPaid = (row) => {
-    toast.info(`Marking as paid: ${row.brandName}`)
-  }
+    toast.info(`Marking as paid: ${row.brandName}`);
+  };
 
   return (
     <div className="p-6">
       <DynamicTable
-        data={sampleData}
+        data={data}
         columns={customColumns}
-        onView={handleView}
-        onDownload={handleDownload}
-        onMarkPaid={handleMarkPaid}
+        loading={loading}
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        onSearch={handleSearch}
+        onFilter={handleFilter}
+        searchPlaceholder="Search by brand or settlement ID..."
+        filterOptions={[
+          { value: "", label: "All Statuses" },
+          { value: "Pending", label: "Pending" },
+          { value: "Paid", label: "Paid" },
+          { value: "Review", label: "Review" },
+        ]}
       />
     </div>
-  )
-}
+  );
+};
 
-export default Page
+export default Page;

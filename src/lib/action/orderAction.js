@@ -156,89 +156,106 @@ export const createOrder = async (orderData) => {
     }
 
     // Create Shopify gift card
-    const [firstName, ...lastName] = receiver.name.split(' ');
+    const [firstName, ...lastName] = receiver.name.split(" ");
     const giftCardData = {
       initialValue: order.amount,
       customerEmail: receiver.email,
       firstName: firstName,
-      lastName: lastName.join(' '),
+      lastName: lastName.join(" "),
       note: `Order ${order.orderNumber}`,
     };
 
     if (!orderData.selectedBrand.domain || !receiver.email) {
-        // This case should ideally not be hit if validation is done properly on the client-side.
-        // Deleting the order to keep DB consistent.
-        await prisma.order.delete({ where: { id: order.id } });
-        return { error: "Missing shop domain or receiver email for gift card creation." };
+      // This case should ideally not be hit if validation is done properly on the client-side.
+      // Deleting the order to keep DB consistent.
+      await prisma.order.delete({ where: { id: order.id } });
+      return {
+        error: "Missing shop domain or receiver email for gift card creation.",
+      };
     }
 
     let shopifyGiftCard;
     let giftCardInDb; // ✅ Declare in outer scope
-    
+
     try {
-        const giftCardResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/giftcard?shop=${orderData.selectedBrand.domain}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(giftCardData),
-        });
-
-        if (!giftCardResponse.ok) {
-            const errorData = await giftCardResponse.json();
-            throw new Error(`Failed to create Shopify gift card: ${errorData.error || 'Unknown error'}`);
+      const giftCardResponse = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+        }/api/giftcard?shop=${orderData.selectedBrand.domain}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(giftCardData),
         }
+      );
 
-        const giftCardResult = await giftCardResponse.json();
-        shopifyGiftCard = giftCardResult.gift_card;
+      if (!giftCardResponse.ok) {
+        const errorData = await giftCardResponse.json();
+        throw new Error(
+          `Failed to create Shopify gift card: ${
+            errorData.error || "Unknown error"
+          }`
+        );
+      }
 
-        if (!shopifyGiftCard?.maskedCode) {
-            throw new Error("Shopify gift card was created, but no code was returned.");
-        }
+      const giftCardResult = await giftCardResponse.json();
+      shopifyGiftCard = giftCardResult.gift_card;
 
-        console.log('✅ Shopify gift card created:', {
-          id: shopifyGiftCard.id,
+      if (!shopifyGiftCard?.maskedCode) {
+        throw new Error(
+          "Shopify gift card was created, but no code was returned."
+        );
+      }
+
+      console.log("✅ Shopify gift card created:", {
+        id: shopifyGiftCard.id,
+        code: shopifyGiftCard.maskedCode,
+        balance: shopifyGiftCard.balance,
+      });
+
+      // ✅ Create or update GiftCard record in our database (assign to outer scope variable)
+      giftCardInDb = await prisma.giftCard.upsert({
+        where: {
+          shopifyId: shopifyGiftCard.id,
+        },
+        update: {
+          balance: parseFloat(shopifyGiftCard.balance.amount),
+          customerEmail: receiver.email,
+          updatedAt: new Date(),
+        },
+        create: {
+          shop: orderData.selectedBrand.domain,
+          shopifyId: shopifyGiftCard.id,
           code: shopifyGiftCard.maskedCode,
-          balance: shopifyGiftCard.balance
-        });
+          initialValue: parseFloat(shopifyGiftCard.balance.amount),
+          balance: parseFloat(shopifyGiftCard.balance.amount),
+          customerEmail: receiver.email,
+          note: `Order ${order.orderNumber}`,
+          isActive: true,
+          isVirtual: true,
+        },
+      });
 
-        // ✅ Create or update GiftCard record in our database (assign to outer scope variable)
-        giftCardInDb = await prisma.giftCard.upsert({
-          where: { 
-            shopifyId: shopifyGiftCard.id 
-          },
-          update: {
-            balance: parseFloat(shopifyGiftCard.balance.amount),
-            customerEmail: receiver.email,
-            updatedAt: new Date(),
-          },
-          create: {
-            shop: orderData.selectedBrand.domain,
-            shopifyId: shopifyGiftCard.id,
-            code: shopifyGiftCard.maskedCode,
-            initialValue: parseFloat(shopifyGiftCard.balance.amount),
-            balance: parseFloat(shopifyGiftCard.balance.amount),
-            customerEmail: receiver.email,
-            note: `Order ${order.orderNumber}`,
-            isActive: true,
-            isVirtual: true,
-          }
-        });
-
-        console.log('✅ GiftCard record created in DB:', giftCardInDb.id);
-
+      console.log("✅ GiftCard record created in DB:", giftCardInDb.id);
     } catch (error) {
-        console.error('Error creating Shopify gift card:', error);
-        // Deleting the order to keep DB consistent, as gift card creation failed.
-        await prisma.order.delete({ where: { id: order.id } });
-        return { error: `Failed to create Shopify gift card. The order has been cancelled. Details: ${error.message}` };
+      console.error("Error creating Shopify gift card:", error);
+      // Deleting the order to keep DB consistent, as gift card creation failed.
+      await prisma.order.delete({ where: { id: order.id } });
+      return {
+        error: `Failed to create Shopify gift card. The order has been cancelled. Details: ${error.message}`,
+      };
     }
 
     // TODO: Support quantity > 1 for Shopify gift cards.
     // This would require either the /api/giftcard endpoint to support creating multiple cards at once,
     // or calling it in a loop here, which is not ideal.
     if (quantity > 1) {
-        // Deleting the order to keep DB consistent.
-        await prisma.order.delete({ where: { id: order.id } });
-        return { error: "Ordering multiple Shopify gift cards at once is not currently supported." };
+      // Deleting the order to keep DB consistent.
+      await prisma.order.delete({ where: { id: order.id } });
+      return {
+        error:
+          "Ordering multiple Shopify gift cards at once is not currently supported.",
+      };
     }
 
     // Generate voucher codes (real)
@@ -254,7 +271,7 @@ export const createOrder = async (orderData) => {
       return { error: "Failed to create gift card record in database." };
     }
 
-    console.log('🔍 Using GiftCard ID for VoucherCode:', giftCardInDb.id);
+    console.log("🔍 Using GiftCard ID for VoucherCode:", giftCardInDb.id);
 
     // This loop will run only once due to the quantity check above.
     for (let i = 0; i < quantity; i++) {
@@ -286,13 +303,84 @@ export const createOrder = async (orderData) => {
       });
 
       voucherCodes.push({ ...voucherCode, tokenizedLink, linkExpiresAt });
-      
-      console.log('✅ VoucherCode created with GiftCard mapping:', {
+
+      console.log("✅ VoucherCode created with GiftCard mapping:", {
         voucherCodeId: voucherCode.id,
         giftCardId: giftCardInDb.id,
         shopifyGiftCardId: shopifyGiftCard.id,
-        code: code
+        code: code,
       });
+    }
+
+    try {
+      const periodStart = new Date(order.createdAt);
+      periodStart.setDate(1);
+      periodStart.setHours(0, 0, 0, 0);
+
+      const periodEnd = new Date(order.createdAt);
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+      periodEnd.setDate(0);
+      periodEnd.setHours(23, 59, 59, 999);
+
+      const settlementPeriod = `${order.createdAt.getFullYear()}-${String(
+        order.createdAt.getMonth() + 1
+      ).padStart(2, "0")}`;
+
+      // Check for existing settlement for this brand + period
+      const existingSettlement = await prisma.settlements.findFirst({
+        where: {
+          brandId: selectedBrand.id,
+          settlementPeriod,
+        },
+      });
+
+      if (existingSettlement) {
+        // Update the existing settlement totals
+        await prisma.settlements.update({
+          where: { id: existingSettlement.id },
+          data: {
+            totalSold: existingSettlement.totalSold + quantity,
+            totalSoldAmount: existingSettlement.totalSoldAmount + totalAmount,
+            outstanding: existingSettlement.outstanding + quantity,
+            outstandingAmount:
+              existingSettlement.outstandingAmount + totalAmount,
+            updatedAt: new Date(),
+          },
+        });
+
+        console.log(
+          `🔄 Updated existing settlement for brand ${selectedBrand.name} (${settlementPeriod})`
+        );
+      } else {
+        // Create a new settlement entry
+        await prisma.settlements.create({
+          data: {
+            brandId: selectedBrand.id,
+            settlementPeriod,
+            periodStart,
+            periodEnd,
+            totalSold: quantity,
+            totalSoldAmount: totalAmount,
+            totalRedeemed: 0,
+            redeemedAmount: 0,
+            outstanding: quantity,
+            outstandingAmount: totalAmount,
+            commissionAmount: 0,
+            breakageAmount: 0,
+            vatAmount: 0,
+            netPayable: 0,
+            status: "Pending",
+          },
+        });
+        console.log(
+          `✅ Created new settlement for brand ${selectedBrand.name} (${settlementPeriod})`
+        );
+      }
+    } catch (settlementError) {
+      console.error(
+        "⚠️ Failed to create or update settlement entry:",
+        settlementError
+      );
     }
 
     // Create delivery log
@@ -510,10 +598,14 @@ export async function getOrderById(orderId) {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        brand: { select: { id: true, brandName: true, logo: true, website: true } },
+        brand: {
+          select: { id: true, brandName: true, logo: true, website: true },
+        },
         receiverDetail: true,
         occasion: true,
-        user: { select: { id: true, email: true, firstName: true, lastName: true } },
+        user: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
         occasionCategory: true,
         customCard: true,
         voucherCodes: {
@@ -531,12 +623,13 @@ export async function getOrderById(orderId) {
 
     // Compute redeemedAt for the order based on its voucher codes
     const redeemedDates = order.voucherCodes
-      .map(vc => vc.redeemedAt)             // voucher-level redeemedAt
-      .filter(Boolean);                     // remove nulls
+      .map((vc) => vc.redeemedAt) // voucher-level redeemedAt
+      .filter(Boolean); // remove nulls
 
-    const orderRedeemedAt = redeemedDates.length > 0
-      ? new Date(Math.max(...redeemedDates.map(d => d.getTime()))) // latest redeemedAt
-      : null;
+    const orderRedeemedAt =
+      redeemedDates.length > 0
+        ? new Date(Math.max(...redeemedDates.map((d) => d.getTime()))) // latest redeemedAt
+        : null;
 
     // Attach redeemedAt directly to the order object
     const orderWithRedeemedAt = { ...order, redeemedAt: orderRedeemedAt };
@@ -544,7 +637,12 @@ export async function getOrderById(orderId) {
     return { success: true, data: orderWithRedeemedAt };
   } catch (error) {
     console.error(`Error fetching order with ID ${orderId}:`, error);
-    return { success: false, message: "Failed to fetch order", error: error.message, status: 500 };
+    return {
+      success: false,
+      message: "Failed to fetch order",
+      error: error.message,
+      status: 500,
+    };
   }
 }
 

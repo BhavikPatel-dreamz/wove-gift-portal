@@ -836,7 +836,6 @@ export async function getBrandPartner(params = {}) {
   }
 }
 
-
 export async function deleteBrandPartner(brandId) {
   try {
     if (!brandId) {
@@ -1049,5 +1048,105 @@ export async function createAuditLog(userId, action, entity, entityId, changes =
   } catch (error) {
     console.error('Error creating audit log:', error);
     // Don't throw error - audit logging should not break main operations
+  }
+}
+
+export async function getSettlements(params = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      status = '',
+      brandId = null,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = params;
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const whereClause = {};
+
+    if (search) {
+      whereClause.OR = [
+        { brand: { brandName: { contains: search, mode: 'insensitive' } } },
+        { id: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (brandId) {
+      whereClause.brandId = brandId;
+    }
+
+    const orderBy = { [sortBy]: sortOrder };
+
+    const [settlements, totalCount] = await Promise.all([
+      prisma.settlements.findMany({
+        where: whereClause,
+        orderBy,
+        skip,
+        take: limitNum,
+        include: {
+          brand: {
+            include: {
+              brandTerms: true,
+            },
+          },
+        },
+      }),
+      prisma.settlements.count({ where: whereClause }),
+    ]);
+
+    const processedSettlements = settlements.map(s => {
+      const totalSold = s.totalSoldAmount;
+      const redeemedAmount = s.redeemedAmount;
+      const commissionAmount = s.commissionAmount;
+      const outstandingAmount = s.outstandingAmount;
+      const netPayable = s.netPayable;
+
+      return {
+        ...s,
+        totalSold,
+        redeemedAmount,
+        outstandingAmount,
+        commissionAmount,
+        netPayable,
+        lastPaymentDate: s.paidAt,
+        settlementPeriod: `${new Date(s.periodStart).toLocaleDateString()} - ${new Date(s.periodEnd).toLocaleDateString()}`,
+        brandName: s.brand.brandName,
+        settlementTrigger: s.brand.brandTerms?.settlementTrigger,
+        commissionType: s.brand.brandTerms?.commissionType,
+        commissionValue: s.brand.brandTerms?.commissionValue,
+      };
+    });
+
+    const totalPages = Math.ceil(totalCount / limitNum);
+
+    return {
+      success: true,
+      data: processedSettlements,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalItems: totalCount,
+        itemsPerPage: limitNum,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching settlements:', error);
+    return {
+      success: false,
+      message: 'Failed to fetch settlements',
+      error: error.message,
+      status: 500,
+    };
   }
 }

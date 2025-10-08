@@ -5,7 +5,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    // Step 1: Get the store domain from webhook headers
+    // Step 1: Get store domain from headers
     const shopDomain = req.headers.get("x-shopify-shop-domain");
     if (!shopDomain) {
       console.error("❌ Missing shop domain in headers");
@@ -17,7 +17,7 @@ export async function POST(req) {
 
     console.log("📦 Order webhook received from store:", shopDomain);
 
-    // Step 2: Query Prisma to find the session for this store
+    // Step 2: Find Shopify session
     const session = await prisma.shopifySession.findUnique({
       where: { shop: shopDomain },
     });
@@ -43,7 +43,7 @@ export async function POST(req) {
       );
     }
 
-    // Step 3: Fetch transactions for this order
+    // Step 3: Fetch order transactions from Shopify
     const transactionsRes = await fetch(
       `https://${shopDomain}/admin/api/2025-10/orders/${orderId}/transactions.json`,
       {
@@ -58,32 +58,26 @@ export async function POST(req) {
     const transactionsData = await transactionsRes.json();
     const transactions = transactionsData.transactions || [];
 
-    // Step 4: Filter gift card transactions
+    // Step 4: Filter for successful gift card redemptions
     const giftCardTxns = transactions.filter(
       (txn) => txn.gateway === "gift_card" && txn.status === "success"
     );
 
     if (giftCardTxns.length === 0) {
-      console.log("💳 No successful gift card transactions found for this order.");
-      return NextResponse.json({ success: true, message: "No gift card usage" });
+      console.log("💳 No successful gift card transactions for this order.");
+      return NextResponse.json({
+        success: true,
+        message: "No gift card usage found.",
+      });
     }
-
-    console.log("🎁 Gift card redemption details:");
 
     const redemptions = [];
 
+    // Step 5: Process each gift card redemption
     for (const txn of giftCardTxns) {
       const numericGiftCardId = txn.receipt?.gift_card_id;
       const last4 = txn.receipt?.gift_card_last_characters;
-      const amountRedeemed = Math.abs(parseFloat(txn.amount)) * 100; // Convert to cents
-
-      console.log({
-        orderId,
-        amount: txn.amount,
-        redeemedAt: txn.processed_at,
-        giftCardId: numericGiftCardId,
-        last4,
-      });
+      const amountRedeemed = Math.abs(parseFloat(txn.amount)) * 100; // convert to cents
 
       if (!numericGiftCardId) {
         console.warn("⚠️ No gift card ID found in transaction receipt");
@@ -91,65 +85,121 @@ export async function POST(req) {
       }
 
       try {
-        // Convert numeric ID to full Shopify GID string
         const giftCardGid = `gid://shopify/GiftCard/${numericGiftCardId}`;
 
-        // Find the GiftCard record by Shopify GID
+        // Find gift card in DB
         const giftCard = await prisma.giftCard.findUnique({
           where: { shopifyId: giftCardGid },
         });
-
         if (!giftCard) {
-          console.warn(`⚠️ GiftCard not found for Shopify ID: ${giftCardGid}`);
+          console.warn(`⚠️ GiftCard not found for ID: ${giftCardGid}`);
           continue;
         }
 
-        // Find the VoucherCode by our database GiftCard ID
+        // Find matching voucher
         const voucherCode = await prisma.voucherCode.findUnique({
           where: { shopifyGiftCardId: giftCard.id },
         });
-
         if (!voucherCode) {
           console.warn(`⚠️ VoucherCode not found for GiftCard ID: ${giftCard.id}`);
           continue;
         }
 
-        // Calculate balance after redemption (ensure it never goes negative)
         const currentBalance = voucherCode.remainingValue;
         const actualAmountRedeemed = Math.min(amountRedeemed, currentBalance);
         const balanceAfter = Math.max(0, currentBalance - actualAmountRedeemed);
+        const isFullyRedeemed = balanceAfter === 0;
 
-        // Create redemption record
+        // Step 5a: Record redemption
         const redemption = await prisma.voucherRedemption.create({
           data: {
             voucherCodeId: voucherCode.id,
             amountRedeemed: actualAmountRedeemed,
-            balanceAfter: balanceAfter,
+            balanceAfter,
             redeemedAt: new Date(txn.processed_at),
             transactionId: txn.id.toString(),
             storeUrl: shopDomain,
           },
         });
 
-        // Update VoucherCode remaining value and redemption status
+        // Step 5b: Update voucher code balance
         await prisma.voucherCode.update({
           where: { id: voucherCode.id },
           data: {
             remainingValue: balanceAfter,
-            isRedeemed: balanceAfter === 0,
-            redeemedAt: balanceAfter === 0 ? new Date(txn.processed_at) : voucherCode.redeemedAt,
+            isRedeemed: isFullyRedeemed,
+            redeemedAt: isFullyRedeemed
+              ? new Date(txn.processed_at)
+              : voucherCode.redeemedAt,
             shopifySyncedAt: new Date(),
           },
         });
 
-        // Update Order redemption status
+        // Step 5c: Update order redemption status
         await prisma.order.update({
           where: { id: voucherCode.orderId },
           data: {
-            redemptionStatus: balanceAfter === 0 ? "Redeemed" : "PartiallyRedeemed",
-            redeemedAt: balanceAfter === 0 ? new Date(txn.processed_at) : voucherCode.redeemedAt,
+            redemptionStatus: isFullyRedeemed
+              ? "Redeemed"
+              : "PartiallyRedeemed",
+            redeemedAt: isFullyRedeemed
+              ? new Date(txn.processed_at)
+              : voucherCode.redeemedAt,
           },
         });
+
+        // Step 5d: Update settlement (moved inside the loop)
+        try {
+          const orderForSettlement = await prisma.order.findUnique({
+            where: { id: voucherCode.orderId },
+            select: {
+              brandId: true,
+              createdAt: true,
+              totalAmount: true,
+              quantity: true,
+            },
+          });
+
+          if (orderForSettlement) {
+            const settlementPeriod = `${orderForSettlement.createdAt.getFullYear()}-${String(
+              orderForSettlement.createdAt.getMonth() + 1
+            ).padStart(2, "0")}`;
+
+            const settlement = await prisma.settlements.findFirst({
+              where: {
+                brandId: orderForSettlement.brandId,
+                settlementPeriod,
+              },
+            });
+
+            if (settlement) {
+              await prisma.settlements.update({
+                where: { id: settlement.id },
+                data: {
+                  redeemedAmount: { increment: actualAmountRedeemed },
+                  ...(isFullyRedeemed && {
+                    totalRedeemed: { increment: 1 },
+                  }),
+                  outstandingAmount: { decrement: actualAmountRedeemed },
+                  ...(isFullyRedeemed && {
+                    outstanding: { decrement: 1 },
+                  }),
+                  updatedAt: new Date(),
+                },
+              });
+
+              console.log(
+                `✅ Settlement updated for brand ${orderForSettlement.brandId} | Redeemed: ${actualAmountRedeemed} | Fully Redeemed: ${isFullyRedeemed}`
+              );
+            } else {
+              console.warn(
+                `⚠️ No settlement found for brand ${orderForSettlement.brandId} in period ${settlementPeriod}`
+              );
+            }
+          }
+        } catch (settlementError) {
+          console.error("⚠️ Failed to update settlement:", settlementError);
+        }
 
         redemptions.push(redemption);
         console.log(`✅ Redemption recorded for voucher: ${voucherCode.code}`);
@@ -158,9 +208,10 @@ export async function POST(req) {
       }
     }
 
+    // Final webhook response
     return NextResponse.json({
       success: true,
-      message: "Gift card redemptions processed",
+      message: "Gift card redemptions processed successfully",
       redemptionsCount: redemptions.length,
       data: redemptions.map((r) => ({
         id: r.id,
