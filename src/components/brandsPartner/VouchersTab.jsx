@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 
-const currencies = ["ZAR", "USD", "EUR"];
 
 const VouchersTab = ({ formData, updateFormData }) => {
   const [denominationValue, setDenominationValue] = useState("");
-  const [denominationCurrency, setDenominationCurrency] = useState("ZAR");
+  const [denominationCurrency, setDenominationCurrency] = useState(formData?.currency);
+  const [currencies]=useState([formData?.currency]);
+
 
   const handleDenominationTypeChange = (type) => {
     updateFormData("denominationType", type);
