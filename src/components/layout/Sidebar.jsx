@@ -21,7 +21,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Orders', icon: ShoppingCart, href: '/orders' },
     { name: 'Brands', icon: Store, href: '/brandsPartner' },
     { name: 'Occasions', icon: Calendar, href: '/occasions' },
-    { name: 'Data', icon: BarChart3, href: '/data' },
     { name: 'Settlements', icon: FileText, href: '/settlements' },
     { name: 'Reports', icon: FileText, href: '/reports' },
     { name: 'Controls', icon: Settings, href: '/controls' },

@@ -1,4 +1,5 @@
 import { Gift, User, Heart, ShoppingCart, MapPin } from 'lucide-react';
+import Link from 'next/link';
 
 const navLinks = {
   "Home": "/",
@@ -36,13 +37,13 @@ const Header = () => {
             {/* Left Section - Navigation Links */}
             <nav className="hidden md:flex items-center space-x-8">
               {Object.keys(navLinks).map((item) => (
-                <a
+                <Link
                   key={item}
                   href={navLinks[item]}
                   className="nav-link"
                 >
                   {item}
-                </a>
+                </Link>
               ))}
             </nav>
 
@@ -58,27 +59,31 @@ const Header = () => {
             <div className="flex items-center space-x-3 ml-auto">
 
               {/* Login/Register Button */}
-              <button className="btn-secondary">
-                <User size={18} />
-                Login / Register
-              </button>
+              <Link href="/login">
+                <button className="btn-secondary">
+                  <User size={18} />
+                  Login / Register
+                </button>
+              </Link>
 
 
               {/* Admin Button */}
-              <button className="btn-outline flex items-center gap-2">
-                <Heart size={16} />
-                Admin
-              </button>
+              <Link href="/admin/dashboard">
+                <button className="btn-outline flex items-center gap-2">
+                  <Heart size={16} />
+                  Admin
+                </button>
+              </Link>
 
               {/* Wishlist Icon Button */}
-              <button className="btn-icon-circle">
+              {/* <button className="btn-icon-circle">
                 <Heart size={20} className="text-wave-pink" />
-              </button>
+              </button> */}
 
               {/* Cart Icon Button */}
-              <button className="btn-icon-circle">
+              {/* <button className="btn-icon-circle">
                 <ShoppingCart size={20} className="text-wave-pink" />
-              </button>
+              </button> */}
 
             </div>
           </div>
