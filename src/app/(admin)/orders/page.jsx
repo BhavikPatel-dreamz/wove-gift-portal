@@ -20,6 +20,7 @@ export default function GiftOrdersManagement() {
   });
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -47,22 +48,27 @@ export default function GiftOrdersManagement() {
   };
 
   const handleViewOrder = async (orderId) => {
+    setIsModalOpen(true);
+    setModalLoading(true);
+    setSelectedOrder(null);
     try {
       const response = await getOrderById(orderId);
       if (response.success) {
         setSelectedOrder(response.data);
-        setIsModalOpen(true);
       } else {
         setError(response.message);
       }
     } catch (err) {
       setError('An unexpected error occurred.');
+    } finally {
+      setModalLoading(false);
     }
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedOrder(null);
+    setModalLoading(false);
   };
   
   // Sample data for Analytics & Tracking
@@ -224,7 +230,13 @@ export default function GiftOrdersManagement() {
         </div>
       </div>
       <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <OrderDetails order={selectedOrder} />
+        {modalLoading ? (
+          <div className="flex justify-center items-center p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <OrderDetails order={selectedOrder} />
+        )}
       </Modal>
     </div>
   );
