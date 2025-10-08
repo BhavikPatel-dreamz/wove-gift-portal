@@ -2,7 +2,7 @@
 
 client_id = "c9f2dae08ce0d37db022b21b202c7e9d"
 name = "test-new-app"
-application_url = "https://559fcc10dd5d.ngrok-free.app/shopify/main"
+application_url = "https://aab38e7e31ad.ngrok-free.app/shopify/main"
 embedded = true
 
 [build]
@@ -22,17 +22,17 @@ use_legacy_install_flow = false
 
 [[webhooks.subscriptions]]
 topics = ["orders/create"]
-uri = "https://559fcc10dd5d.ngrok-free.app/api/webhooks/giftcard-redeem"
+uri = "https://aab38e7e31ad.ngrok-free.app/api/webhooks/giftcard-redeem"
 format = "json"
 
 [auth]
 redirect_urls = [
-  "https://559fcc10dd5d.ngrok-free.app/auth/callback",
-  "https://559fcc10dd5d.ngrok-free.app/auth/shopify/callback",
-  "https://559fcc10dd5d.ngrok-free.app/api/auth/callback",
-  "https://559fcc10dd5d.ngrok-free.app/api/shopify/auth/callback",
-  "https://559fcc10dd5d.ngrok-free.app/shopify/main",
-  "https://559fcc10dd5d.ngrok-free.app/shopify"
+  "https://aab38e7e31ad.ngrok-free.app/auth/callback",
+  "https://aab38e7e31ad.ngrok-free.app/auth/shopify/callback",
+  "https://aab38e7e31ad.ngrok-free.app/api/auth/callback",
+  "https://aab38e7e31ad.ngrok-free.app/api/shopify/auth/callback",
+  "https://aab38e7e31ad.ngrok-free.app/shopify/main",
+  "https://aab38e7e31ad.ngrok-free.app/shopify"
 ]
 
 [pos]

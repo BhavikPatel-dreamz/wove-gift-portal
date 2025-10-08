@@ -3,9 +3,6 @@ import prisma from '@/lib/db';
 import { PrismaSessionStorage } from '@/lib/session-storage';
 import {
   fetchShopInfo,
-  fetchGiftCardProducts,
-  fetchAllVendors,
-  fetchGiftCardInventory,
 } from '@/lib/action/shopify';
 
 const sessionStorage = new PrismaSessionStorage();
@@ -93,9 +90,25 @@ export async function GET(request) {
         },
       });
 
-      // Redirect to success page or app
-      const redirectUrl = `/?shop=${session.shop}${host ? `&host=${host}` : ''}`;
-      return NextResponse.redirect(new URL(redirectUrl, request.url));
+      // Find brand by shop domain to redirect to the edit page
+      const brand = await prisma.brand.findFirst({
+        where: {
+          domain: session.shop,
+        },
+      });
+
+      let redirectUrl;
+      if (brand) {
+        // If brand exists, redirect to the edit page with brand ID
+        redirectUrl = `/brandsPartner/edit/${brand.id}`;
+      } else {
+        // Otherwise, redirect to the main app page
+        redirectUrl = `/?shop=${session.shop}${host ? `&host=${host}` : ''}`;
+      }
+
+      const finalRedirectUrl = new URL(redirectUrl, request.url);
+      finalRedirectUrl.protocol = 'http';
+      return NextResponse.redirect(finalRedirectUrl);
       
     } catch (tokenError) {
       console.error('Token exchange error:', tokenError);

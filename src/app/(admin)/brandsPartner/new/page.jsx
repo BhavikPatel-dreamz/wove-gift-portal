@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useTransition } from 'react';
-import { ChevronLeft, Plus, X, AlertTriangle, CheckCircle, Save, Eye } from 'lucide-react';
+import { ChevronLeft, Plus, X, AlertTriangle, CheckCircle, Save, Eye, Lock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createBrandPartner } from '../../../../lib/action/brandPartner';
 
@@ -13,12 +13,14 @@ import BankingTab from '@/components/brandsPartner/BankingTab';
 import ContactsTab from '@/components/brandsPartner/ContactsTab';
 import ReviewTab from '@/components/brandsPartner/ReviewTab';
 import toast from 'react-hot-toast';
+import InstallPage from '../../../../components/shopify/InstallPage';
 
 const AddBrandPartner = () => {
-  const [activeTab, setActiveTab] = useState('core');
+  const [activeTab, setActiveTab] = useState('integrations');
   const [validationErrors, setValidationErrors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [integrationCompleted, setIntegrationCompleted] = useState(false);
   const router = useRouter();
 
   // Complete formData initialization with all fields
@@ -104,10 +106,10 @@ const AddBrandPartner = () => {
   });
 
   const tabs = [
+    { id: 'integrations', label: 'Integrations', completed: false },
     { id: 'core', label: 'Core', completed: false },
     { id: 'terms', label: 'Terms', completed: false },
     { id: 'vouchers', label: 'Vouchers', completed: false },
-    { id: 'integrations', label: 'Integrations', completed: false },
     { id: 'banking', label: 'Banking', completed: false },
     { id: 'contacts', label: 'Contacts', completed: false },
     { id: 'review', label: 'Review', completed: false }
@@ -158,6 +160,8 @@ const AddBrandPartner = () => {
       ...prev,
       integrations: [...prev.integrations, integrationData]
     }));
+    // Mark integration as completed when an integration is added
+    setIntegrationCompleted(true);
   };
 
   const removeIntegration = (id) => {
@@ -165,6 +169,10 @@ const AddBrandPartner = () => {
       ...prev,
       integrations: prev.integrations.filter(integration => integration.id !== id)
     }));
+    // If no integrations left, mark as not completed
+    if (formData.integrations.length <= 1) {
+      setIntegrationCompleted(false);
+    }
   };
 
   const updateContact = (id, field, value) => {
@@ -201,6 +209,11 @@ const AddBrandPartner = () => {
     }
   };
 
+  // Check if tab is accessible
+  const isTabAccessible = (tabId) => {
+    if (tabId === 'integrations') return true;
+    return integrationCompleted;
+  };
 
   // Enhanced validation function
   const validateRequiredFields = () => {
@@ -246,11 +259,6 @@ const AddBrandPartner = () => {
       errors.push('Terms & Conditions URL');
     }
     
-    // // Website URL validation
-    // if (formData.website && !isValidUrl(formData.website)) {
-    //   errors.push('Valid Website URL');
-    // }
-    
     setValidationErrors(errors);
     return errors.length === 0;
   };
@@ -258,13 +266,18 @@ const AddBrandPartner = () => {
   // Tab completion checking
   const checkTabCompletion = () => {
     const completedTabs = [];
-     // Core tab completion
+    
+    // Integrations tab completion
+    if (formData.integrations.length > 0) {
+      completedTabs.push('integrations');
+    }
+    
+    // Core tab completion
     if (formData.brandName && formData.description && formData.website && formData.categoryName) {
       completedTabs.push('core');
     }
     
-    
-     // Terms tab completion
+    // Terms tab completion
     if (formData.commissionValue > 0 && formData.settlementTrigger) {
       completedTabs.push('terms');
     }
@@ -274,18 +287,10 @@ const AddBrandPartner = () => {
       completedTabs.push('banking');
     }
 
-   // Vouchers tab completion
+    // Vouchers tab completion
     if (formData.denominationType && 
         (formData.redemptionChannels.online || formData.redemptionChannels.inStore || formData.redemptionChannels.phone)) {
       completedTabs.push('vouchers');
-    }
-    
-    // Integrations tab completion
-    const areIntegrationsValid = formData.integrations.every(
-      integration => !integration.storeUrl || isValidUrl(integration.storeUrl)
-    );
-    if (areIntegrationsValid) {
-      completedTabs.push('integrations');
     }
     
     // Contacts tab completion
@@ -342,20 +347,20 @@ const AddBrandPartner = () => {
         const result = await createBrandPartner(submitData);
         
         if (result.success) {
-           toast.success('Draft saved successfully!');
+          toast.success('Draft saved successfully!');
           router.push('/brandsPartner');
         } else {
           if (result.errors) {
             setValidationErrors(result.errors);
-             toast.error('Validation failed. Please check the form.');
+            toast.error('Validation failed. Please check the form.');
           } else {
-             toast.error(result.message || 'Failed to save draft');
+            toast.error(result.message || 'Failed to save draft');
           }
         }
       });
     } catch (error) {
       console.error('Error saving draft:', error);
-       toast.error('An error occurred while saving the draft');
+      toast.error('An error occurred while saving the draft');
     } finally {
       setIsLoading(false);
     }
@@ -364,7 +369,7 @@ const AddBrandPartner = () => {
   const handlePublish = async () => {
     // Validate required fields before publishing
     if (!validateRequiredFields()) {
-       toast.error('Please complete all required fields before publishing');
+      toast.error('Please complete all required fields before publishing');
       return;
     }
     
@@ -377,41 +382,46 @@ const AddBrandPartner = () => {
         const result = await createBrandPartner(submitData);
         
         if (result.success) {
-           toast.success('Brand partner published successfully!');
+          toast.success('Brand partner published successfully!');
           router.push('/brandsPartner');
         } else {
           if (result.errors) {
             setValidationErrors(result.errors);
-             toast.error('Validation failed. Please check the form.');
+            toast.error('Validation failed. Please check the form.');
           } else {
-             toast.error(result.message || 'Failed to publish brand partner');
+            toast.error(result.message || 'Failed to publish brand partner');
           }
         }
       });
     } catch (error) {
       console.error('Error publishing brand partner:', error);
-       toast.error('An error occurred while publishing the brand partner');
+      toast.error('An error occurred while publishing the brand partner');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleTabClick = (tabId) => {
+    if (isFormDisabled) return;
+    
+    if (!isTabAccessible(tabId)) {
+      toast.error('Please complete the Integrations setup first');
+      return;
+    }
+    
+    setActiveTab(tabId);
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'integrations':
+        return <InstallPage />;
       case 'core':
         return <CoreTab formData={formData} updateFormData={updateFormData} />;
       case 'terms':
         return <TermsTab formData={formData} updateFormData={updateFormData} />;
       case 'vouchers':
         return <VouchersTab formData={formData} updateFormData={updateFormData} />;
-      case 'integrations':
-        return <IntegrationsTab 
-          formData={formData} 
-          updateFormData={updateFormData} 
-          updateIntegration={updateIntegration}
-          addIntegration={addIntegration}
-          removeIntegration={removeIntegration}
-        />;
       case 'banking':
         return <BankingTab formData={formData} updateFormData={updateFormData} />;
       case 'contacts':
@@ -488,28 +498,51 @@ const AddBrandPartner = () => {
         </div>
       )}
 
+      {/* Integration Required Banner */}
+      {!integrationCompleted && activeTab === 'integrations' && (
+        <div className="bg-blue-50 border-b border-blue-200 px-6 py-3">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="text-blue-600" size={16} />
+            <span className="text-sm font-medium text-blue-800">Complete Integration Setup</span>
+            <span className="text-sm text-blue-600">
+              Other tabs will be accessible after completing the integration
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Navigation Tabs */}
       <div className="bg-white border-b border-gray-200 px-6">
         <div className="flex space-x-8 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => !isFormDisabled && setActiveTab(tab.id)}
-              disabled={isFormDisabled}
-              className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 transition-colors duration-200 ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <span>{tab.label}</span>
-                {completedTabs.includes(tab.id) && (
-                  <CheckCircle className="text-green-500" size={16} />
-                )}
-              </div>
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            const isAccessible = isTabAccessible(tab.id);
+            const isActive = activeTab === tab.id;
+            
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                disabled={isFormDisabled || !isAccessible}
+                className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-200 relative ${
+                  isActive
+                    ? 'border-blue-500 text-blue-600'
+                    : isAccessible
+                    ? 'border-transparent text-gray-500 hover:text-gray-700'
+                    : 'border-transparent text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <span>{tab.label}</span>
+                  {!isAccessible && tab.id !== 'integrations' && (
+                    <Lock size={14} className="text-gray-400" />
+                  )}
+                  {completedTabs.includes(tab.id) && (
+                    <CheckCircle className="text-green-500" size={16} />
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
       

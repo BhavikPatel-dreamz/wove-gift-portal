@@ -112,7 +112,7 @@ const BrandEdit = () => {
     { id: 'core', label: 'Core', completed: false },
     { id: 'terms', label: 'Terms', completed: false },
     { id: 'vouchers', label: 'Vouchers', completed: false },
-    { id: 'integrations', label: 'Integrations', completed: false },
+    // { id: 'integrations', label: 'Integrations', completed: false },
     { id: 'banking', label: 'Banking', completed: false },
     { id: 'contacts', label: 'Contacts', completed: false },
     { id: 'review', label: 'Review', completed: false }
@@ -291,12 +291,15 @@ const BrandEdit = () => {
     }
   };
 
+  console.log("formData",formData);
+  
   const updateFormData = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
+  
 
   const updateIntegration = (id, field, value) => {
     setFormData(prev => ({
