@@ -60,7 +60,6 @@ export default function VoucherDetails({ voucher }) {
             <DetailItem label="Remaining Amount" value={`$${remainingAmount.toFixed(2)}`} />
             <DetailItem label="Total Redeemed" value={`$${totalRedeemed.toFixed(2)}`} />
             <DetailItem label="Pending Amount" value={`$${pendingAmount.toFixed(2)}`} />
-            <DetailItem label="Partial Redemption" value={partialRedemption ? 'Supported' : 'Not Supported'} />
             <DetailItem label="Redemption Count" value={redemptionCount} />
             <DetailItem label="Last Redemption" value={lastRedemptionDate ? new Date(lastRedemptionDate).toLocaleString() : 'N/A'} />
           </dl>

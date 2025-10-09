@@ -30,7 +30,7 @@ const Modal = ({ isOpen, onClose, children }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 bg-opacity-50">
       <div
         ref={modalRef}
-        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8 bg-white rounded-lg shadow-lg"
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 bg-white rounded-lg shadow-lg"
       >
         <button
           onClick={onClose}
