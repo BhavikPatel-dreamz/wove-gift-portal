@@ -6,7 +6,6 @@ const navLinks = {
   "About": "/about",
   "FAQs": "/faq",
   "Send Gift Card": "/gift",
-  "Brands": "/BrandsSelection",
 };
 
 const Header = () => {

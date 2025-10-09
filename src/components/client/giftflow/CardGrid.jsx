@@ -12,7 +12,7 @@ const CardGrid = ({
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
-        {Array.from({ length: 12 }).map((_, index) => (
+        {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
             className="bg-white rounded-2xl p-6 animate-pulse border border-gray-100"

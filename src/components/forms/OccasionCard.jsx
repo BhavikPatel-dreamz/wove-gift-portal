@@ -1,90 +1,130 @@
-import { Edit, Trash2, Eye } from 'lucide-react';
+import { Edit, Trash2, Eye } from "lucide-react";
 
 const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = false }) => {
-  const statusVariant = occasion.isActive || occasion.active ? 'success' : 'default';
-  const statusText = occasion.isActive || occasion.active ? 'Active' : 'Inactive';
+  const statusActive = occasion.isActive || occasion.active;
+  const statusVariant = statusActive ? "success" : "default";
+  const statusText = statusActive ? "Active" : "Inactive";
   const cardCount = occasion.cardCount || occasion._count?.occasionCategories || 0;
 
-  const handleEdit = () => {
-    if (!disabled && onEdit) {
-      onEdit(occasion);
-    }
-  };
-
-  const handleViewCards = () => {
-    if (!disabled && onViewCards) {
-      onViewCards(occasion);
-    }
-  };
-
-  const handleDelete = () => {
-    if (!disabled && onDelete) {
-      onDelete(occasion.id);
-    }
-  };
+  const handleEdit = () => !disabled && onEdit?.(occasion);
+  const handleViewCards = () => !disabled && onViewCards?.(occasion);
+  const handleDelete = () => !disabled && onDelete?.(occasion.id);
 
   return (
-    <div 
-      className={`group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col ${
-        disabled ? 'opacity-50 cursor-not-allowed' : ''
-      }`}>
-      <div className="relative">
-        <div 
-          className="h-40 w-full flex items-center justify-center text-white font-bold text-5xl bg-blue-500"
+    <div
+      className={`group relative bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 flex flex-col
+        hover:shadow-lg hover:-translate-y-1 hover:border-blue-200 ${
+          disabled ? "opacity-60 cursor-not-allowed" : ""
+        }`}
+    >
+      {/* Image / Preview */}
+      <div className="relative aspect-[4/3] overflow-hidden">
+        {occasion.image ? (
+          <img
+            src={occasion.image}
+            alt={occasion.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={(e) => {
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+          />
+        ) : null}
+        <div
+          className={`w-full h-full flex items-center justify-center text-5xl font-semibold bg-gradient-to-br from-blue-50 to-indigo-50 text-indigo-600 ${
+            occasion.image ? "hidden" : "flex"
+          }`}
         >
-          {occasion.emoji || '🎉'}
+          {occasion.preview || "✨"}
         </div>
 
-        <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-md ${
-          statusVariant === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          <div className={`w-2 h-2 rounded-full ${statusVariant === 'success' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+        {/* Status Badge */}
+        <div
+          className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm backdrop-blur-md ${
+            statusVariant === "success"
+              ? "bg-green-100/90 text-green-800"
+              : "bg-red-100/90 text-red-700"
+          }`}
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              statusVariant === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
+          />
           {statusText}
         </div>
       </div>
-      
-      <div className="p-5 flex-grow flex flex-col">
-        <h3 className="font-bold text-xl text-gray-900 mb-1 truncate group-hover:text-blue-600 transition-colors" title={occasion.name}>
+
+      {/* Content */}
+      <div className="p-5 flex flex-col flex-grow">
+        <h3
+          className="font-semibold text-lg text-gray-900 mb-1 truncate group-hover:text-blue-600 transition-colors"
+          title={occasion.name}
+        >
           {occasion.name}
         </h3>
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2 min-h-[2.5rem] flex-grow" title={occasion.description}>
-          {occasion.description || 'No description available'}
+        <p
+          className="text-gray-600 text-sm mb-3 line-clamp-2 min-h-[2.5rem]"
+          title={occasion.description}
+        >
+          {occasion.description || "No description available"}
         </p>
-        <p className="text-gray-500 text-xs mb-4">Type: {occasion.type}</p>
 
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-          <span className="text-sm font-medium text-gray-500">
-            {cardCount} {cardCount === 1 ? 'card' : 'cards'}
+        <p className="text-xs text-gray-500 mb-3">Type: {occasion.type || "N/A"}</p>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
+          <span className="text-sm font-medium text-gray-600">
+            {cardCount} {cardCount === 1 ? "Card" : "Cards"}
           </span>
+
           <div className="flex items-center gap-2">
-            <button 
+            <IconButton
+              icon={<Eye size={16} />}
+              tooltip="View Cards"
               onClick={handleViewCards}
+              color="blue"
               disabled={disabled}
-              title="View Cards"
-              className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
-            >
-              <Eye size={16} />
-            </button>
-            <button 
+            />
+            <IconButton
+              icon={<Edit size={16} />}
+              tooltip="Edit Occasion"
               onClick={handleEdit}
+              color="indigo"
               disabled={disabled}
-              title="Edit Occasion"
-              className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
-            >
-              <Edit size={16} />
-            </button>
-            <button 
+            />
+            <IconButton
+              icon={<Trash2 size={16} />}
+              tooltip="Delete Occasion"
               onClick={handleDelete}
+              color="red"
               disabled={disabled}
-              title="Delete Occasion"
-              className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-all duration-200 disabled:opacity-50"
-            >
-              <Trash2 size={16} />
-            </button>
+            />
           </div>
         </div>
       </div>
     </div>
+  );
+};
+
+// Reusable Icon Button Component
+const IconButton = ({ icon, tooltip, onClick, color = "blue", disabled }) => {
+  const colorMap = {
+    blue: "hover:text-blue-600 hover:bg-blue-50",
+    indigo: "hover:text-indigo-600 hover:bg-indigo-50",
+    red: "hover:text-red-600 hover:bg-red-50",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={tooltip}
+      className={`text-gray-400 ${colorMap[color]} p-2 rounded-lg transition-all duration-200 
+        hover:scale-110 focus:ring-2 focus:ring-offset-1 focus:ring-${color}-200 disabled:opacity-50`}
+    >
+      {icon}
+    </button>
   );
 };
 

@@ -113,16 +113,16 @@ const BrandSelectionStep = () => {
     dispatch(resetFilters());
   }, [dispatch]);
 
-  if (loading && premiumBrands.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-wave-orange mx-auto"></div>
-          <h2 className="text-2xl font-semibold text-wave-green mt-4">Loading Brands...</h2>
-        </div>
-      </div>
-    );
-  }
+  // if (loading && premiumBrands.length === 0) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-wave-orange mx-auto"></div>
+  //         <h2 className="text-2xl font-semibold text-wave-green mt-4">Loading Brands...</h2>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (error && premiumBrands.length === 0) {
     return (
