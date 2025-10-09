@@ -22,7 +22,6 @@ export default function VouchersManagement() {
   });
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
     const fetchVouchers = async () => {
@@ -107,6 +106,10 @@ export default function VouchersManagement() {
   );
 
   const customColumns = [
+     columnHelper.accessor("orderNumber", {
+      header: "Order Number",
+      cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,
+    }),
     columnHelper.accessor("code", {
       header: "Voucher Code",
       cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,
@@ -135,8 +138,8 @@ export default function VouchersManagement() {
       header: "Status",
       cell: (info) => <StatusBadge status={info.getValue()} />,
     }),
-    columnHelper.accessor("expiryDate", {
-      header: "Expiry Date",
+    columnHelper.accessor("lastRedemptionDate", {
+      header: "Last Redemption Date",
       cell: (info) => (
         <div className="text-gray-700">
           {info.getValue() ? new Date(info.getValue()).toLocaleDateString() : "N/A"}

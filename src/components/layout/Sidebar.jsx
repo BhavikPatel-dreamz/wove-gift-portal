@@ -19,8 +19,8 @@ const Sidebar = ({ isOpen, onClose }) => {
   
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-    { name: 'Orders', icon: ShoppingCart, href: '/orders' },
-    { name: 'Gift Cards', icon: Gift, href: '/vouchers' },
+    // { name: 'Orders', icon: ShoppingCart, href: '/orders' },
+    { name: 'Gift Cards / Orders', icon: Gift, href: '/vouchers' },
     { name: 'Brands', icon: Store, href: '/brandsPartner' },
     { name: 'Occasions', icon: Calendar, href: '/occasions' },
     { name: 'Settlements', icon: FileText, href: '/settlements' },
