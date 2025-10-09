@@ -1,10 +1,8 @@
 "use client";
 import React, { useState } from "react";
-import { ArrowLeft, Gift, Sparkles, Check, CreditCard } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import ProgressIndicator from "./ProgressIndicator";
 import { goBack, goNext, setSelectedAmount } from "../../../redux/giftFlowSlice";
-import { Banknote } from "lucide-react";
 
 const GiftCardSelector = () => {
   const dispatch = useDispatch();
@@ -33,9 +31,16 @@ const GiftCardSelector = () => {
       alert(`Amount must be between ${currency} ${minAmount} and ${currency} ${maxAmount}`);
       return;
     }
-    const customVoucher = { value: customAmount, currency: currency };
+
+    const customVoucher = {
+      id: `custom-${Date.now()}`, // unique id
+      value: customAmount,
+      currency: currency,
+    };
+
     setLocalSelectedAmount(customVoucher);
     dispatch(setSelectedAmount(customVoucher));
+
     setTimeout(() => {
       dispatch(goNext());
     }, 300);
@@ -54,7 +59,7 @@ const GiftCardSelector = () => {
   };
 
   return (
-     <div className="min-h-screen bg-white py-8 px-4">
+    <div className="min-h-screen bg-white py-8 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Back Button */}
         <button
@@ -84,7 +89,6 @@ const GiftCardSelector = () => {
                 className={`relative bg-white rounded-2xl border-2 p-8 min-w-[140px] transition-all duration-300 hover:shadow-lg hover:scale-105 border-gray-200 hover:border-gray-300`}
                 onClick={() => handleAmountClick(amount)}
               >
-
                 {/* Coin Image */}
                 <div className="flex justify-center mb-4">
                   <div className="w-16 h-16 flex items-center justify-center">
@@ -122,6 +126,8 @@ const GiftCardSelector = () => {
                   </div>
                   <input
                     type="number"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(Number(e.target.value))}
                     className="w-48 pl-12 pr-6 py-4 border-2 border-gray-300 rounded-xl text-center text-2xl font-bold focus:border-orange-500 focus:outline-none transition-all bg-white text-gray-900"
                     min={minAmount}
                     max={maxAmount}
@@ -130,7 +136,10 @@ const GiftCardSelector = () => {
                 </div>
               </div>
 
-              <button className="w-full bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200">
+              <button
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-200"
+                onClick={handleCustomAmountSelect}
+              >
                 Select This Amount
               </button>
 

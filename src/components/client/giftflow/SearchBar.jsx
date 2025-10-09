@@ -1,6 +1,14 @@
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
 
-const SearchBar = ({ placeholder, onSearch, selectedCategory, categories, onCategoryChange }) => (
+const SearchBar = ({ 
+  placeholder, 
+  onSearch, 
+  selectedCategory, 
+  categories, 
+  onCategoryChange,
+  sortBy,
+  onSortChange 
+}) => (
   <div className="relative">
     {/* Background Section with Rounded Bottom */}
     <div className="pt-26 pb-26 px-4" style={{ 
@@ -18,7 +26,7 @@ const SearchBar = ({ placeholder, onSearch, selectedCategory, categories, onCate
     </div>
 
     {/* Search Bar - Positioned Half Inside/Half Outside */}
-    <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl px-4">
+    <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl px-4">
       <div className="flex items-center bg-white rounded-full shadow-xl border border-gray-200 overflow-hidden">
         {/* Search Input Section */}
         <div className="flex-1 relative flex items-center">
@@ -54,6 +62,29 @@ const SearchBar = ({ placeholder, onSearch, selectedCategory, categories, onCate
                 {category}
               </option>
             ))}
+          </select>
+          
+          {/* Chevron Down Icon */}
+          <ChevronDown className="absolute right-6 text-gray-700" size={18} />
+        </div>
+
+        {/* Vertical Divider */}
+        <div className="h-8 w-px bg-gray-300"></div>
+
+        {/* Sort By Dropdown Section */}
+        <div className="relative flex items-center gap-2 pl-6 pr-6">
+          {/* Sort Icon */}
+          <SlidersHorizontal className="w-5 h-5 text-gray-700" />
+          
+          {/* Sort Dropdown */}
+          <select
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value)}
+            className="appearance-none bg-transparent border-none py-4 pr-6 focus:outline-none text-gray-700 font-medium cursor-pointer"
+          >
+            <option value="featured">Featured</option>
+            <option value="name">Name (A-Z)</option>
+            <option value="newest">Newest</option>
           </select>
           
           {/* Chevron Down Icon */}

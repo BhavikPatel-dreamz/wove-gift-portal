@@ -24,6 +24,11 @@ const PaymentStep = () => {
     selectedPaymentMethod,
   } = useSelector((state) => state.giftFlowReducer);
 
+  const data = useSelector((state) => state.giftFlowReducer);
+
+  console.log("data",data);
+  
+
   const paymentMethods = [
     {
       id: 'card',

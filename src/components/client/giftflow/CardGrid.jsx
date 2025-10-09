@@ -1,7 +1,5 @@
 import React from "react";
-import { Heart, Star, Sparkles, Crown } from "lucide-react";
 import BrandCard from "./BrandCard";
-
 
 const CardGrid = ({ 
   brands = [], 
@@ -14,7 +12,7 @@ const CardGrid = ({
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
-        {Array.from({ length: 8 }).map((_, index) => (
+        {Array.from({ length: 12 }).map((_, index) => (
           <div
             key={index}
             className="bg-white rounded-2xl p-6 animate-pulse border border-gray-100"
@@ -37,8 +35,9 @@ const CardGrid = ({
   if (!brands || brands.length === 0) {
     return (
       <div className="text-center py-16">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">No brands available</h3>
-        <p className="text-gray-600">Check back later for new gift card options.</p>
+        <div className="text-6xl mb-4">🔍</div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">No brands found</h3>
+        <p className="text-gray-600">Try adjusting your search or filters.</p>
       </div>
     );
   }
@@ -57,6 +56,5 @@ const CardGrid = ({
     </div>
   );
 };
-
 
 export default CardGrid;

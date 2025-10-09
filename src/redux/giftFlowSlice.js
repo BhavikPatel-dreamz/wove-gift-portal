@@ -8,56 +8,69 @@ const giftFlowSlice = createSlice({
     selectedAmount: null,
     selectedOccasion: null,
     selectedSubCategory: null,
-    selectedTiming: null, // Stores timing selection
-    personalMessage: "", // Stores user's message
-    deliveryMethod: "email", // 'whatsapp', 'email', 'print'
+    selectedTiming: null,
+    personalMessage: "",
+    deliveryMethod: "email",
     deliveryDetails: {
-      // WhatsApp fields
       yourName: "",
       yourWhatsAppNumber: "",
       recipientName: "",
       recipientWhatsAppNumber: "",
       deliveryTips: [],
       previewMessage: false,
-      
-      // Email fields
       yourFullName: "",
       yourEmailAddress: "",
       recipientFullName: "",
       recipientEmailAddress: "",
-      
-      // Print fields
       printDetails: {}
     },
+    
+    // Brand filtering & pagination
     searchTerm: "",
     selectedCategory: "All Categories",
+    currentPage: 1,
+    sortBy: "featured",
     favorites: [],
+    categories: ['All Categories'],
+    
     // Data states
     premiumBrands: [],
     occasions: [],
     subCategories: [],
+    
+    // Loading & Error states
     loading: false,
     error: null,
+    
     // Pagination states
+    pagination: {
+      currentPage: 1,
+      totalPages: 1,
+      totalCount: 0,
+      limit: 12,
+      hasMore: false
+    },
     occasionsPagination: null,
     subCategoriesPagination: null,
     currentOccasionPage: 1,
     currentSubCategoryPage: 1,
+    
     selectedPaymentMethod: null,
   },
   reducers: {
     updateState: (state, action) => {
       return { ...state, ...action.payload };
     },
+    
     setCurrentStep: (state, action) => {
       state.currentStep = action.payload;
     },
+    
     goBack: (state) => {
       const currentStep = state.currentStep;
       if (currentStep > 1) {
         state.currentStep = currentStep - 1;
 
-        // Clear relevant data when going back
         switch (currentStep) {
           case 2:
             state.selectedBrand = null;
@@ -98,9 +111,11 @@ const giftFlowSlice = createSlice({
         }
       }
     },
+    
     goNext: (state) => {
       state.currentStep = Math.min(10, state.currentStep + 1);
     },
+    
     resetFlow: (state) => {
       return {
         currentStep: 1,
@@ -126,23 +141,35 @@ const giftFlowSlice = createSlice({
         },
         searchTerm: "",
         selectedCategory: "All Categories",
+        currentPage: 1,
+        sortBy: "featured",
         favorites: [],
+        categories: ['All Categories'],
         premiumBrands: [],
         occasions: [],
         subCategories: [],
         loading: false,
         error: null,
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalCount: 0,
+          limit: 12,
+          hasMore: false
+        },
         occasionsPagination: null,
         subCategoriesPagination: null,
         currentOccasionPage: 1,
         currentSubCategoryPage: 1,
+        selectedPaymentMethod: null,
       };
     },
+    
+    // Brand Selection
     setSelectedBrand: (state, action) => {
       let brand = { ...action.payload };
 
       if (brand) {
-        // Serialize dates on the brand object
         if (brand.createdAt) {
           brand.createdAt = new Date(brand.createdAt).toISOString();
         }
@@ -150,19 +177,34 @@ const giftFlowSlice = createSlice({
           brand.updatedAt = new Date(brand.updatedAt).toISOString();
         }
 
-        // Serialize dates in the vouchers array
         if (brand.vouchers && Array.isArray(brand.vouchers)) {
           brand.vouchers = brand.vouchers.map((voucher) => {
             const newVoucher = { ...voucher };
             if (newVoucher.createdAt) {
-              newVoucher.createdAt = new Date(
-                newVoucher.createdAt
-              ).toISOString();
+              newVoucher.createdAt = new Date(newVoucher.createdAt).toISOString();
             }
             if (newVoucher.updatedAt) {
-              newVoucher.updatedAt = new Date(
-                newVoucher.updatedAt
-              ).toISOString();
+              newVoucher.updatedAt = new Date(newVoucher.updatedAt).toISOString();
+            }
+            if (newVoucher.expiresAt) {
+              newVoucher.expiresAt = new Date(newVoucher.expiresAt).toISOString();
+            }
+            
+            // Serialize denominations
+            if (newVoucher.denominations && Array.isArray(newVoucher.denominations)) {
+              newVoucher.denominations = newVoucher.denominations.map((denom) => {
+                const newDenom = { ...denom };
+                if (newDenom.createdAt) {
+                  newDenom.createdAt = new Date(newDenom.createdAt).toISOString();
+                }
+                if (newDenom.updatedAt) {
+                  newDenom.updatedAt = new Date(newDenom.updatedAt).toISOString();
+                }
+                if (newDenom.expiresAt) {
+                  newDenom.expiresAt = new Date(newDenom.expiresAt).toISOString();
+                }
+                return newDenom;
+              });
             }
             return newVoucher;
           });
@@ -171,45 +213,39 @@ const giftFlowSlice = createSlice({
 
       state.selectedBrand = brand;
     },
-    setSelectedTiming: (state, action) => {
-      state.selectedTiming = action.payload;
-    },
-    setPersonalMessage: (state, action) => {
-      state.personalMessage = action.payload;
-    },
-    setDeliveryMethod: (state, action) => {
-      state.deliveryMethod = action.payload;
-    },
-    setDeliveryDetails: (state, action) => {
-      state.deliveryDetails = { ...state.deliveryDetails, ...action.payload };
-    },
-    updateDeliveryDetail: (state, action) => {
-      const { field, value } = action.payload;
-      state.deliveryDetails[field] = value;
-    },
-    setSelectedAmount: (state, action) => {
-      state.selectedAmount = action.payload;
-    },
-    setSelectedOccasion: (state, action) => {
-      state.selectedOccasion = action.payload;
-    },
-    setSelectedSubCategory: (state, action) => {
-      state.selectedSubCategory = action.payload;
-    },
+    
+    // Filtering & Search
     setSearchTerm: (state, action) => {
       state.searchTerm = action.payload;
+      state.currentPage = 1; // Reset to page 1 on search
     },
+    
     setSelectedCategory: (state, action) => {
       state.selectedCategory = action.payload;
+      state.currentPage = 1; // Reset to page 1 on category change
     },
-    toggleFavorite: (state, action) => {
-      const brandId = action.payload;
-      if (state.favorites.includes(brandId)) {
-        state.favorites = state.favorites.filter((id) => id !== brandId);
-      } else {
-        state.favorites.push(brandId);
-      }
+    
+    setSortBy: (state, action) => {
+      state.sortBy = action.payload;
+      state.currentPage = 1; // Reset to page 1 on sort change
     },
+    
+    setCurrentPage: (state, action) => {
+      state.currentPage = action.payload;
+    },
+    
+    setCategories: (state, action) => {
+      state.categories = action.payload;
+    },
+    
+    resetFilters: (state) => {
+      state.searchTerm = "";
+      state.selectedCategory = "All Categories";
+      state.sortBy = "featured";
+      state.currentPage = 1;
+    },
+    
+    // Brands Data
     setPremiumBrands: (state, action) => {
       const brands = action.payload.map((brand) => {
         const newBrand = { ...brand };
@@ -219,10 +255,94 @@ const giftFlowSlice = createSlice({
         if (newBrand.updatedAt) {
           newBrand.updatedAt = new Date(newBrand.updatedAt).toISOString();
         }
+        
+        // Serialize vouchers and denominations
+        if (newBrand.vouchers && Array.isArray(newBrand.vouchers)) {
+          newBrand.vouchers = newBrand.vouchers.map((voucher) => {
+            const newVoucher = { ...voucher };
+            if (newVoucher.createdAt) {
+              newVoucher.createdAt = new Date(newVoucher.createdAt).toISOString();
+            }
+            if (newVoucher.updatedAt) {
+              newVoucher.updatedAt = new Date(newVoucher.updatedAt).toISOString();
+            }
+            if (newVoucher.expiresAt) {
+              newVoucher.expiresAt = new Date(newVoucher.expiresAt).toISOString();
+            }
+            
+            if (newVoucher.denominations && Array.isArray(newVoucher.denominations)) {
+              newVoucher.denominations = newVoucher.denominations.map((denom) => {
+                const newDenom = { ...denom };
+                if (newDenom.createdAt) {
+                  newDenom.createdAt = new Date(newDenom.createdAt).toISOString();
+                }
+                if (newDenom.updatedAt) {
+                  newDenom.updatedAt = new Date(newDenom.updatedAt).toISOString();
+                }
+                if (newDenom.expiresAt) {
+                  newDenom.expiresAt = new Date(newDenom.expiresAt).toISOString();
+                }
+                return newDenom;
+              });
+            }
+            return newVoucher;
+          });
+        }
         return newBrand;
       });
       state.premiumBrands = brands;
     },
+    
+    // Pagination
+    setPagination: (state, action) => {
+      state.pagination = action.payload;
+    },
+    
+    // Favorites
+    toggleFavorite: (state, action) => {
+      const brandId = action.payload;
+      if (state.favorites.includes(brandId)) {
+        state.favorites = state.favorites.filter((id) => id !== brandId);
+      } else {
+        state.favorites.push(brandId);
+      }
+    },
+    
+    // Timing & Delivery
+    setSelectedTiming: (state, action) => {
+      state.selectedTiming = action.payload;
+    },
+    
+    setPersonalMessage: (state, action) => {
+      state.personalMessage = action.payload;
+    },
+    
+    setDeliveryMethod: (state, action) => {
+      state.deliveryMethod = action.payload;
+    },
+    
+    setDeliveryDetails: (state, action) => {
+      state.deliveryDetails = { ...state.deliveryDetails, ...action.payload };
+    },
+    
+    updateDeliveryDetail: (state, action) => {
+      const { field, value } = action.payload;
+      state.deliveryDetails[field] = value;
+    },
+    
+    // Amount & Occasions
+    setSelectedAmount: (state, action) => {
+      state.selectedAmount = action.payload;
+    },
+    
+    setSelectedOccasion: (state, action) => {
+      state.selectedOccasion = action.payload;
+    },
+    
+    setSelectedSubCategory: (state, action) => {
+      state.selectedSubCategory = action.payload;
+    },
+    
     setOccasions: (state, action) => {
       const { data, page, pagination } = action.payload;
       const serializedData = data.map((occasion) => {
@@ -244,19 +364,16 @@ const giftFlowSlice = createSlice({
       state.occasionsPagination = pagination;
       state.currentOccasionPage = page;
     },
+    
     setSubCategories: (state, action) => {
       const { data, page, pagination } = action.payload;
       const serializedData = data.map((subCategory) => {
         const newSubCategory = { ...subCategory };
         if (newSubCategory.createdAt) {
-          newSubCategory.createdAt = new Date(
-            newSubCategory.createdAt
-          ).toISOString();
+          newSubCategory.createdAt = new Date(newSubCategory.createdAt).toISOString();
         }
         if (newSubCategory.updatedAt) {
-          newSubCategory.updatedAt = new Date(
-            newSubCategory.updatedAt
-          ).toISOString();
+          newSubCategory.updatedAt = new Date(newSubCategory.updatedAt).toISOString();
         }
         return newSubCategory;
       });
@@ -269,12 +386,17 @@ const giftFlowSlice = createSlice({
       state.subCategoriesPagination = pagination;
       state.currentSubCategoryPage = page;
     },
+    
+    // Loading & Error
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
+    
     setError: (state, action) => {
       state.error = action.payload;
     },
+    
+    // Payment
     setSelectedPaymentMethod: (state, action) => {
       state.selectedPaymentMethod = action.payload;
     },
@@ -293,13 +415,18 @@ export const {
   setSelectedSubCategory,
   setSearchTerm,
   setSelectedCategory,
+  setSortBy,
+  setCurrentPage,
+  setCategories,
+  resetFilters,
+  setPremiumBrands,
+  setPagination,
+  toggleFavorite,
   setSelectedTiming,
   setPersonalMessage,
   setDeliveryMethod,
   setDeliveryDetails,
   updateDeliveryDetail,
-  toggleFavorite,
-  setPremiumBrands,
   setOccasions,
   setSubCategories,
   setLoading,
@@ -307,4 +434,4 @@ export const {
   setSelectedPaymentMethod,
 } = giftFlowSlice.actions;
 
-export default giftFlowSlice.reducer;
+export default giftFlowSlice.reducer

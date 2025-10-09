@@ -157,15 +157,37 @@ model IntegrationSyncLog {
   integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 }
 
+model Denomination {
+  id          String   @id @default(cuid())
+  voucherId   String
+  value       Int      // Denomination amount
+  currency    String   @default("USD")
+  displayName String?  
+  expiresAt   DateTime 
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  voucher     Vouchers @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  @@index([voucherId])
+  @@index([voucherId, isActive])
+  @@map("denominations")
+}
+
+// Update the Vouchers model by:
+// 1. Removing the 'denominations' Json field
+// 2. Adding the relation to Denomination
+
 model Vouchers {
   id                   String             @id @default(cuid())
   denominationType     DenominationStatus @default(fixed)
-  denominations        Json?
+  // Remove this line: denominations        Json?
   denominationCurrency String             @default("USD")
   denominationValue    Int?
   maxAmount            Int?
   minAmount            Int?
-  expiresAt            DateTime
+  expiresAt            DateTime?
   expiryValue          String?
   graceDays            Int?               @default(0)
   redemptionChannels   Json?
@@ -180,8 +202,13 @@ model Vouchers {
   updatedAt            DateTime           @updatedAt
   isExpiry             Boolean            @default(false)
   expiryPolicy         String?
+  
+  // Add this relation
+  denominations        Denomination[]     // One voucher can have multiple denominations
   voucherCodes         VoucherCode[]
   brand                Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@map("vouchers")
 }
 
 model VoucherCode {
@@ -442,12 +469,18 @@ model GiftCard {
   isVirtual     Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+
+  // Relation to VoucherCode
   voucherCode   VoucherCode?
+
+  denominationId   String?
 
   @@index([shop])
   @@index([code])
   @@index([customerEmail])
+  @@index([denominationId])  // optional, for faster lookups
 }
+
 
 enum UserRole {
   CUSTOMER

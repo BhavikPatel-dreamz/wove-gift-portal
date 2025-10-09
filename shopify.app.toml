@@ -2,7 +2,7 @@
 
 client_id = "c9f2dae08ce0d37db022b21b202c7e9d"
 name = "test-new-app"
-application_url = "https://fb69efda1d0b.ngrok-free.app/shopify/main"
+application_url = "https://3fe5626e738c.ngrok-free.app/shopify/main"
 embedded = true
 
 [build]
@@ -13,7 +13,7 @@ api_version = "2025-07"
 
   [[webhooks.subscriptions]]
   topics = [ "orders/create" ]
-  uri = "https://fb69efda1d0b.ngrok-free.app/api/webhooks/giftcard-redeem"
+  uri = "https://3fe5626e738c.ngrok-free.app/api/webhooks/giftcard-redeem"
 
 [access.admin]
 direct_api_mode = "offline"
@@ -26,12 +26,12 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://fb69efda1d0b.ngrok-free.app/auth/callback",
-  "https://fb69efda1d0b.ngrok-free.app/auth/shopify/callback",
-  "https://fb69efda1d0b.ngrok-free.app/api/auth/callback",
-  "https://fb69efda1d0b.ngrok-free.app/api/shopify/auth/callback",
-  "https://fb69efda1d0b.ngrok-free.app/shopify/main",
-  "https://fb69efda1d0b.ngrok-free.app/shopify"
+  "https://3fe5626e738c.ngrok-free.app/auth/callback",
+  "https://3fe5626e738c.ngrok-free.app/auth/shopify/callback",
+  "https://3fe5626e738c.ngrok-free.app/api/auth/callback",
+  "https://3fe5626e738c.ngrok-free.app/api/shopify/auth/callback",
+  "https://3fe5626e738c.ngrok-free.app/shopify/main",
+  "https://3fe5626e738c.ngrok-free.app/shopify"
 ]
 
 [pos]

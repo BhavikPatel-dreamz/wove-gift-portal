@@ -1,38 +1,87 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import SearchBar from './SearchBar';
-import SectionHeader from './SectionHeader';
 import CardGrid from './CardGrid';
-import BrandHeader from "./BrandHeader";
-import GiftCardSelector from "./GiftCardSelector";
-import { getBrandsForClient } from "@/lib/action/brandFetch";
-import OccasionSelector from "./OccasionSelector";
-import SubCategorySelector from "./SubCategorySelector";
+import { getBrandsForClient, getBrandCategories } from "@/lib/action/brandFetch";
 import { useDispatch, useSelector } from "react-redux";
-import { goBack, goNext, setError, setLoading, setPremiumBrands, setSearchTerm, setSelectedBrand, setSelectedCategory } from "../../../redux/giftFlowSlice";
-import ProgressIndicator from "./ProgressIndicator";
-import { ArrowLeft } from "lucide-react";
+import { 
+  goBack, 
+  goNext, 
+  setError, 
+  setLoading, 
+  setPremiumBrands, 
+  setSearchTerm, 
+  setSelectedBrand, 
+  setSelectedCategory,
+  setCategories,
+  setPagination,
+  setCurrentPage,
+  setSortBy,
+  toggleFavorite,
+  resetFilters
+} from "../../../redux/giftFlowSlice";
+import Pagination from "./Pagination";
+import { RefreshCw } from "lucide-react";
 
 const BrandSelectionStep = () => {
   const dispatch = useDispatch();
   const {
     searchTerm,
     selectedCategory,
+    currentPage,
+    sortBy,
     favorites,
     premiumBrands,
+    categories,
+    pagination,
     loading,
     error
   } = useSelector((state) => state.giftFlowReducer);
 
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { success, data } = await getBrandCategories();
+      if (success) {
+        dispatch(setCategories(data));
+      }
+    };
+    
+    if (categories.length <= 1) {
+      fetchCategories();
+    }
+  }, [dispatch, categories.length]);
+
+  // Fetch brands when filters change
   useEffect(() => {
     const fetchBrands = async () => {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
-        const { success, data, message } = await getBrandsForClient();
+        
+        const { success, data, pagination: paginationData, message } = await getBrandsForClient({
+          searchTerm: debouncedSearchTerm,
+          category: selectedCategory,
+          page: currentPage,
+          limit: 12,
+          sortBy
+        });
+
         if (success) {
           dispatch(setPremiumBrands(data));
+          dispatch(setPagination(paginationData));
         } else {
           dispatch(setError(message));
         }
@@ -43,30 +92,28 @@ const BrandSelectionStep = () => {
       }
     };
 
-    if (premiumBrands.length === 0) {
-      fetchBrands();
-    }
-  }, [dispatch, premiumBrands.length]);
+    fetchBrands();
+  }, [dispatch, debouncedSearchTerm, selectedCategory, currentPage, sortBy]);
 
-  const categories = ['All Categories', ...new Set(premiumBrands.map(brand => brand.category))];
-
-  const handleToggleFavorite = (brandId) => {
+  const handleToggleFavorite = useCallback((brandId) => {
     dispatch(toggleFavorite(brandId));
-  };
+  }, [dispatch]);
 
-  const handleBrandClick = (brand) => {
+  const handleBrandClick = useCallback((brand) => {
     dispatch(setSelectedBrand(brand));
     dispatch(goNext());
-  };
+  }, [dispatch]);
 
-  const filteredPremiumBrands = premiumBrands.filter(brand => {
-    const matchesSearch = brand.brandName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (brand.description && brand.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = selectedCategory === 'All Categories' || brand.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const handlePageChange = useCallback((page) => {
+    dispatch(setCurrentPage(page));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [dispatch]);
 
-  if (loading) {
+  const handleResetFilters = useCallback(() => {
+    dispatch(resetFilters());
+  }, [dispatch]);
+
+  if (loading && premiumBrands.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -77,43 +124,80 @@ const BrandSelectionStep = () => {
     );
   }
 
-  if (error) {
+  if (error && premiumBrands.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center p-8 bg-wave-cream rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold text-red-600">Error: {error}</h2>
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error: {error}</h2>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-wave-orange text-white rounded-lg hover:bg-opacity-90"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
+
   return (
     <div className="space-y-6">
-      {/* <ProgressIndicator /> */}
-
-      {/* <button
-        onClick={() => dispatch(goBack())}
-        className="flex items-center text-purple-500 hover:text-purple-600 mb-8 transition-colors"
-      >
-        <ArrowLeft className="w-5 h-5 mr-2" />
-        Back
-      </button> */}
-
       <SearchBar
         placeholder="Search for your perfect brand..."
         onSearch={(term) => dispatch(setSearchTerm(term))}
         selectedCategory={selectedCategory}
         categories={categories}
         onCategoryChange={(category) => dispatch(setSelectedCategory(category))}
+        sortBy={sortBy}
+        onSortChange={(sort) => dispatch(setSortBy(sort))}
       />
 
-      <div className="p-6 max-w-7xl mx-auto">
+      {/* Active Filters & Results Count */}
+      <div className="flex justify-between items-center px-6 max-w-7xl mx-auto">
+        <div className="text-sm text-gray-600 ">
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Loading...
+            </span>
+          ) : (
+            <span>
+              Showing <strong>{premiumBrands.length}</strong> of{" "}
+              <strong>{pagination.totalCount}</strong> brands
+            </span>
+          )}
+        </div>
+
+        {(searchTerm || selectedCategory !== "All Categories") && (
+          <button
+            onClick={handleResetFilters}
+            className="text-sm text-wave-orange hover:text-wave-green flex items-center gap-1"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reset Filters
+          </button>
+        )}
+      </div>
+
+      <div className="max-w-7xl mx-auto">
         <CardGrid
-          brands={filteredPremiumBrands}
+          brands={premiumBrands}
           favorites={favorites}
           onToggleFavorite={handleToggleFavorite}
           onBrandClick={handleBrandClick}
+          isLoading={loading}
         />
+
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+            hasMore={pagination.hasMore}
+          />
+        )}
       </div>
     </div>
   );

@@ -48,6 +48,16 @@ const IntegrationSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
+// New Denomination Schema
+const DenominationSchema = z.object({
+  id: z.union([z.number(), z.string()]).optional(),
+  value: z.number().min(1, "Denomination value must be at least 1"),
+  currency: z.string().default("USD"),
+  displayName: z.string().optional().nullable(),
+  isActive: z.boolean().default(true),
+  expiresAt: z.string().optional().nullable(),
+});
+
 const BrandPartnerSchema = z.object({
   // Core Brand Info
   brandName: z.string().min(1, "Brand name is required"),
@@ -95,7 +105,7 @@ const BrandPartnerSchema = z.object({
 
   // Voucher Configuration
   denominationType: z.enum(["fixed", "amount"]).default("fixed"),
-  denominations: z.any().optional().nullable(),
+  denominations: z.array(DenominationSchema).optional().default([]),
   denominationValue: z.any().optional().nullable(),
   denominationCurrency: z.string().default("USD"),
   maxAmount: z.number().min(0).optional().nullable(),
@@ -244,7 +254,6 @@ export async function createBrandPartner(formData) {
       ? parseInt(validatedData.denominationValue, 10) 
       : null;
 
-    const currentDate = new Date();
     const slug = generateSlug(validatedData.brandName);
 
     // Use transaction with increased timeout
@@ -285,11 +294,10 @@ export async function createBrandPartner(formData) {
             }
           },
 
-          // Nested create for Vouchers
+          // Nested create for Vouchers with Denominations
           vouchers: {
             create: {
               denominationType: validatedData.denominationType,
-              denominations: validatedData.denominations,
               denominationCurrency: validatedData.denominationCurrency,
               denominationValue: denominationValue,
               maxAmount: validatedData.maxAmount,
@@ -305,6 +313,18 @@ export async function createBrandPartner(formData) {
               termsConditionsURL: validatedData.termsConditionsURL,
               productSku: validatedData.productSku,
               isActive: true,
+              // Create denominations if provided
+              denominations: validatedData.denominations && validatedData.denominations.length > 0 
+                ? {
+                    create: validatedData.denominations.map(denom => ({
+                      value: denom.value,
+                      currency: denom.currency || validatedData.denominationCurrency,
+                      displayName: denom.displayName,
+                      isActive: denom.isActive ?? true,
+                      expiresAt: denom.expiresAt || 0,
+                    }))
+                  }
+                : undefined,
             }
           },
 
@@ -547,7 +567,6 @@ export async function updateBrandPartner(brandId, formData) {
       // Vouchers
       const voucherData = {
         denominationType: validatedData.denominationType,
-        denominations: validatedData.denominations,
         denominationCurrency: validatedData.denominationCurrency,
         denominationValue: denominationValue,
         maxAmount: validatedData.maxAmount,
@@ -565,18 +584,58 @@ export async function updateBrandPartner(brandId, formData) {
       };
 
       if (existingBrand.vouchers[0]) {
+        const voucherId = existingBrand.vouchers[0].id;
+        
         operations.push(
           tx.vouchers.update({
-            where: { id: existingBrand.vouchers[0].id },
+            where: { id: voucherId },
             data: voucherData,
           })
         );
-      } else {
+
+        // Handle denominations - delete existing and create new ones
         operations.push(
-          tx.vouchers.create({
-            data: { ...voucherData, brandId },
+          tx.denomination.deleteMany({
+            where: { voucherId }
           })
         );
+
+        if (validatedData.denominations && validatedData.denominations.length > 0) {
+          operations.push(
+            tx.denomination.createMany({
+              data: validatedData.denominations.map(denom => ({
+                voucherId,
+                value: denom.value,
+                currency: denom.currency || validatedData.denominationCurrency,
+                displayName: denom.displayName,
+                isActive: denom.isActive ?? true,
+                expiresAt: denom.expiresAt ? new Date(denom.expiresAt) : new Date(),
+              }))
+            })
+          );
+        }
+      } else {
+        // Create new voucher with denominations
+        const createVoucherPromise = tx.vouchers.create({
+          data: { 
+            ...voucherData,
+            brand: {
+              connect: { id: brandId }
+            },
+            denominations: validatedData.denominations && validatedData.denominations.length > 0 
+              ? {
+                  create: validatedData.denominations.map(denom => ({
+                    value: denom.value,
+                    currency: denom.currency || validatedData.denominationCurrency,
+                    displayName: denom.displayName,
+                    isActive: denom.isActive ?? true,
+                    expiresAt: denom.expiresAt ? new Date(denom.expiresAt) : new Date(),
+                  }))
+                }
+              : undefined,
+          },
+        });
+        operations.push(createVoucherPromise);
       }
 
       // Banking (one-to-one)
@@ -676,7 +735,13 @@ export async function getBrandPartnerDetails(brandId) {
         },
         brandTerms: true,
         brandBankings: true,
-        vouchers: true,
+        vouchers: {
+          include: {
+            denominations: {
+              where: { isActive: true }
+            }
+          }
+        },
         integrations: {
           select: {
             id: true,
@@ -858,7 +923,7 @@ export async function deleteBrandPartner(brandId) {
       };
     }
 
-    // Delete brand (cascade will handle related records)
+    // Delete brand (cascade will handle related records including denominations)
     await prisma.brand.delete({
       where: { id: brandId },
     });
