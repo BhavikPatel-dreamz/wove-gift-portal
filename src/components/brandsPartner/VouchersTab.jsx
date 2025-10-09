@@ -25,6 +25,8 @@ const VouchersTab = ({ formData, updateFormData }) => {
       setDisplayName("");
       setIsActive(true);
       updateFormData("denominations", []);
+      // Reset isExpiry for amount range
+      updateFormData("isExpiry", false);
     }
   };
 
@@ -34,18 +36,21 @@ const VouchersTab = ({ formData, updateFormData }) => {
       return;
     }
 
-    if (!denominationExpiry) {
-      toast.error("Please select an expiry date for this denomination.");
-      return;
-    }
+    // Only validate expiry if isExpiry is true
+    if (formData.isExpiry) {
+      if (!denominationExpiry) {
+        toast.error("Please select an expiry date for this denomination.");
+        return;
+      }
 
-    const selectedDate = new Date(denominationExpiry);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(denominationExpiry);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    if (selectedDate < today) {
-      toast.error("Expiry date cannot be in the past.");
-      return;
+      if (selectedDate < today) {
+        toast.error("Expiry date cannot be in the past.");
+        return;
+      }
     }
 
     const newDenom = {
@@ -54,7 +59,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
       currency: denominationCurrency,
       displayName: displayName || `${denominationCurrency} ${denominationValue}`,
       isActive: isActive,
-      expiresAt: denominationExpiry,
+      // Only set expiresAt if isExpiry is true
+      isExpiry: formData.isExpiry,
+      expiresAt: formData.isExpiry ? denominationExpiry : null,
     };
 
     updateFormData("denominations", [...(formData.denominations || []), newDenom]);
@@ -103,7 +110,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
       if (activeDenoms.length > 0) {
         const first = activeDenoms[0];
         amountDisplay = first.displayName || `${first.currency} ${first.value?.toFixed(2)}`;
-        if (first.expiresAt) {
+        if (formData.isExpiry && first.expiresAt) {
           expiryText = `Expires: ${new Date(first.expiresAt).toLocaleDateString()}`;
         }
       }
@@ -118,8 +125,6 @@ const VouchersTab = ({ formData, updateFormData }) => {
   };
 
   const preview = getPreviewData();
-
-
 
   return (
     <div className="space-y-8">
@@ -147,17 +152,41 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 </div>
                 <p className="text-sm text-gray-500">
                   {type === "fixed"
-                    ? "Create fixed amounts - each with its own expiry date."
-                    : "Allow any amount within a range - with a single expiry date."}
+                    ? "Create fixed amounts with optional expiry dates."
+                    : "Allow any amount within a range with optional expiry date."}
                 </p>
               </div>
             </label>
           ))}
         </div>
 
-        {/* Fixed Denominations with Individual Expiry */}
+        {/* Fixed Denominations */}
         {formData.denominationType === "fixed" && (
           <div className="space-y-4">
+            {/* Expiry Toggle for Fixed Denominations */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <label className="flex items-start gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 mt-1 focus:ring-2 focus:ring-amber-500"
+                  checked={formData.isExpiry || false}
+                  onChange={(e) => {
+                    updateFormData("isExpiry", e.target.checked);
+                    // Don't clear expiry dates - let users manage them individually
+                    setDenominationExpiry("");
+                  }}
+                />
+                <div>
+                  <span className="text-sm font-medium">
+                    Enable expiry dates for denominations
+                  </span>
+                  <p className="text-xs text-gray-600 mt-1">
+                    When enabled, each denomination can have its own expiry date. Existing denominations keep their dates.
+                  </p>
+                </div>
+              </label>
+            </div>
+
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="text-sm font-semibold mb-3 text-blue-900">
                 Add New Denomination
@@ -201,18 +230,20 @@ const VouchersTab = ({ formData, updateFormData }) => {
                   </div>
                 </div>
 
-                {/* Row 2: Expiry Date, Sort Order, Active Status, Add Button */}
+                {/* Row 2: Expiry Date (conditional), Active Status, Add Button */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                  <div>
-                    <label className="block text-xs font-medium mb-1 text-gray-700">Expiry Date *</label>
-                    <input
-                      type="date"
-                      className="w-full border rounded-md px-3 py-2 bg-white"
-                      value={denominationExpiry}
-                      onChange={(e) => setDenominationExpiry(e.target.value)}
-                      min={new Date().toISOString().split("T")[0]}
-                    />
-                  </div>
+                  {formData.isExpiry && (
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-gray-700">Expiry Date *</label>
+                      <input
+                        type="date"
+                        className="w-full border rounded-md px-3 py-2 bg-white"
+                        value={denominationExpiry}
+                        onChange={(e) => setDenominationExpiry(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                      />
+                    </div>
+                  )}
                   <div>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -243,18 +274,22 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 <h4 className="text-sm font-semibold text-gray-700">
                   Active Denominations ({formData.denominations.filter(d => d.isActive).length}/{formData.denominations.length})
                 </h4>
-                {formData.denominations
-                  .map((denom) => (
+                {formData.denominations.map((denom) => {
+                  // Check if denomination is expired
+                  const isExpired = denom.expiresAt && new Date(denom.expiresAt) < new Date();
+                  
+                  return (
                     <div
                       key={denom.id}
-                      className={`p-4 border rounded-lg transition-all ${denom.isActive
+                      className={`p-4 border rounded-lg transition-all ${
+                        denom.isActive
                           ? 'bg-white border-gray-200 hover:bg-gray-50'
                           : 'bg-gray-50 border-gray-300 opacity-60'
-                        }`}
+                      }`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-1 space-y-3">
-                          {/* Display Name & Status */}
+                          {/* Display Name, Status & Expiry Badge */}
                           <div className="flex items-center gap-3">
                             <div className="flex-1">
                               <label className="block text-xs font-medium text-gray-600 mb-1">Display Name</label>
@@ -267,20 +302,28 @@ const VouchersTab = ({ formData, updateFormData }) => {
                               />
                             </div>
                             <div className="flex items-center gap-2">
+                              {/* Expired Badge */}
+                              {isExpired && (
+                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                  ⚠️ Expired
+                                </span>
+                              )}
+                              {/* Active/Inactive Button */}
                               <button
                                 onClick={() => toggleDenominationActive(denom.id)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium ${denom.isActive
+                                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                  denom.isActive
                                     ? 'bg-green-100 text-green-700'
                                     : 'bg-gray-200 text-gray-600'
-                                  }`}
+                                }`}
                               >
                                 {denom.isActive ? '✓ Active' : '✕ Inactive'}
                               </button>
                             </div>
                           </div>
 
-                          {/* Amount, Currency, Sort Order */}
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                          {/* Amount, Currency, Expiry Date */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div>
                               <label className="block text-xs font-medium text-gray-600 mb-1">Currency</label>
                               <input
@@ -299,16 +342,27 @@ const VouchersTab = ({ formData, updateFormData }) => {
                                 className="w-full border rounded px-3 py-2 text-sm"
                               />
                             </div>
+                          {denom.isExpiry && (
                             <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Expiry Date</label>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">
+                                Expiry Date {!formData.isExpiry && '(Optional)'}
+                              </label>
                               <input
                                 type="date"
                                 value={denom.expiresAt ? new Date(denom.expiresAt).toISOString().split("T")[0] : ""}
-                                onChange={(e) => updateDenomination(denom.id, 'expiresAt', e.target.value)}
-                                className="w-full border rounded px-3 py-2 text-sm"
+                                onChange={(e) => updateDenomination(denom.id, 'expiresAt', e.target.value || null)}
+                                className={`w-full border rounded px-3 py-2 text-sm ${
+                                  isExpired ? 'border-red-300 bg-red-50' : ''
+                                }`}
                                 min={new Date().toISOString().split("T")[0]}
                               />
+                              {isExpired && (
+                                <p className="text-xs text-red-600 mt-1">
+                                  This date has passed
+                                </p>
+                              )}
                             </div>
+                              )}
                           </div>
                         </div>
 
@@ -334,7 +388,8 @@ const VouchersTab = ({ formData, updateFormData }) => {
                         </button>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -394,8 +449,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
                     Set expiry date for all vouchers in this range
                   </span>
                   <p className="text-xs text-gray-600 mt-1">
-                    All vouchers within this amount range will share the same expiry
-                    date
+                    All vouchers within this amount range will share the same expiry date
                   </p>
                 </div>
               </label>

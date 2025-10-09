@@ -158,17 +158,18 @@ model IntegrationSyncLog {
 }
 
 model Denomination {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   voucherId   String
-  value       Int      // Denomination amount
-  currency    String   @default("USD")
-  displayName String?  
-  expiresAt   DateTime 
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  voucher     Vouchers @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  value       Int // Denomination amount
+  currency    String    @default("USD")
+  displayName String?
+  isExpiry    Boolean 
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  voucher Vouchers @relation(fields: [voucherId], references: [id], onDelete: Cascade)
 
   @@index([voucherId])
   @@index([voucherId, isActive])
@@ -202,11 +203,11 @@ model Vouchers {
   updatedAt            DateTime           @updatedAt
   isExpiry             Boolean            @default(false)
   expiryPolicy         String?
-  
+
   // Add this relation
-  denominations        Denomination[]     // One voucher can have multiple denominations
-  voucherCodes         VoucherCode[]
-  brand                Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  denominations Denomination[] // One voucher can have multiple denominations
+  voucherCodes  VoucherCode[]
+  brand         Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@map("vouchers")
 }
@@ -337,7 +338,7 @@ model Order {
   paymentIntentId  String?
   paidAt           DateTime?
   redemptionStatus RedemptionStatus     @default(Issued)
-  redeemedAt        DateTime?
+  redeemedAt       DateTime?
   isActive         Boolean              @default(true)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
@@ -456,31 +457,30 @@ model AppInstallation {
 }
 
 model GiftCard {
-  id            String       @id @default(cuid())
+  id            String    @id @default(cuid())
   shop          String
-  shopifyId     String?      @unique
-  code          String       @unique
+  shopifyId     String?   @unique
+  code          String    @unique
   initialValue  Float
   balance       Float
   customerEmail String?
   note          String?
   expiresAt     DateTime?
-  isActive      Boolean      @default(true)
-  isVirtual     Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  isActive      Boolean   @default(true)
+  isVirtual     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relation to VoucherCode
-  voucherCode   VoucherCode?
+  voucherCode VoucherCode?
 
-  denominationId   String?
+  denominationId String?
 
   @@index([shop])
   @@index([code])
   @@index([customerEmail])
-  @@index([denominationId])  // optional, for faster lookups
+  @@index([denominationId]) // optional, for faster lookups
 }
-
 
 enum UserRole {
   CUSTOMER

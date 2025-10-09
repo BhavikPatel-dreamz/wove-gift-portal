@@ -50,6 +50,7 @@ export async function POST(req) {
     let denominationValue;
     let selectedDenomId = null;
     let expiresAt = null;
+    let shouldSetExpiry = false; // Track if expiry should be set
 
     // Handle fixed vs variable vouchers
     if (voucher.denominationType === "fixed") {
@@ -64,13 +65,24 @@ export async function POST(req) {
 
       denominationValue = selectedDenom.value;
       selectedDenomId = selectedDenom.id;
-      expiresAt = selectedDenom.expiresAt || null; // Use denomination expiry
+      
+      // ✅ Check denomination's isExpiry flag
+      if (selectedDenom.isExpiry && selectedDenom.expiresAt) {
+        shouldSetExpiry = true;
+        expiresAt = selectedDenom.expiresAt;
+      }
     } else {
+      // Variable/amount range voucher
       if (!input.denominationValue) {
         return NextResponse.json({ success: false, error: "Denomination value is required for variable vouchers" }, { status: 400 });
       }
       denominationValue = input.denominationValue;
-      expiresAt = voucher.expiresAt || null; // Use voucher expiry for variable
+      
+      // ✅ Check voucher's isExpiry flag
+      if (voucher.isExpiry && voucher.expiresAt) {
+        shouldSetExpiry = true;
+        expiresAt = voucher.expiresAt;
+      }
     }
 
     // Step 2: Fetch or create Shopify customer
@@ -122,7 +134,8 @@ export async function POST(req) {
     const formattedInput = {
       initialValue: parseFloat(denominationValue.toFixed(2)),
       note: input.note || null,
-      expiresOn: expiresAt ? new Date(expiresAt).toISOString().split("T")[0] : null, // ✅ Correct expiry
+      // ✅ Only set expiresOn if shouldSetExpiry is true
+      expiresOn: shouldSetExpiry && expiresAt ? new Date(expiresAt).toISOString().split("T")[0] : null,
       customerId,
     };
 
@@ -163,7 +176,8 @@ export async function POST(req) {
         initialValue: parseFloat(giftCard.initialValue.amount),
         balance: parseFloat(giftCard.balance.amount),
         note: giftCard.note,
-        expiresAt: giftCard.expiresOn ? new Date(giftCard.expiresOn) : null,
+        // ✅ Only set expiresAt in DB if shouldSetExpiry is true
+        expiresAt: shouldSetExpiry && giftCard.expiresOn ? new Date(giftCard.expiresOn) : null,
         isVirtual: true,
         isActive: true,
         customerEmail: input.customerEmail,
@@ -174,7 +188,12 @@ export async function POST(req) {
     return NextResponse.json({
       success: true,
       message: "Gift card created successfully",
-      gift_card: { ...giftCard, localId: newLocalGiftCard.id, denominationId: selectedDenomId || null },
+      gift_card: { 
+        ...giftCard, 
+        localId: newLocalGiftCard.id, 
+        denominationId: selectedDenomId || null,
+        hasExpiry: shouldSetExpiry, // Include expiry status in response
+      },
     });
 
   } catch (error) {
