@@ -9,18 +9,35 @@ const PersonalMessageStep = () => {
   const dispatch = useDispatch();
   const { personalMessage } = useSelector((state) => state.giftFlowReducer);
   const [message, setMessage] = useState(personalMessage || '');
+  const [error, setError] = useState('');
   const maxChars = 300;
+  const minChars = 1;
 
   const handleMessageChange = (e) => {
-    if (e.target.value.length <= maxChars) {
-      setMessage(e.target.value);
-      dispatch(setPersonalMessage(e.target.value));
+    const newMessage = e.target.value;
+    if (newMessage.length <= maxChars) {
+      setMessage(newMessage);
+      dispatch(setPersonalMessage(newMessage));
+      // Clear error when user starts typing
+      if (newMessage.trim().length > 0) {
+        setError('');
+      }
     }
   };
 
   const handleContinue = () => {
+    // Validate message is not empty
+    if (!message.trim() || message.trim().length === 0) {
+      setError('Please write a message before continuing');
+      return;
+    }
+    
+    // Clear error and proceed
+    setError('');
     dispatch(goNext());
   };
+
+  const isMessageEmpty = !message.trim() || message.trim().length === 0;
 
   return (
     <div className="min-h-screen bg-white p-8">
@@ -47,7 +64,7 @@ const PersonalMessageStep = () => {
         {/* Message Card */}
         <div className="rounded-3xl border border-pink-400 p-10 mb-8 max-w-4xl mx-auto" style={{
           borderRadius: '30px',
-          border: '1px solid #ED457D',
+          border: isMessageEmpty && error ? '2px solid #ef4444' : '1px solid #ED457D',
           background: 'linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%)'
         }}>
           {/* Card Header */}
@@ -75,7 +92,9 @@ const PersonalMessageStep = () => {
               value={message}
               onChange={handleMessageChange}
               placeholder="Write something meaningful...e.g., 'Wishing you many many happy returns of the day' 🎂🎉👏"
-              className="w-full p-6 border border-gray-300 text-black rounded-2xl focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100 resize-none text-base leading-relaxed bg-white placeholder-gray-400"
+              className={`w-full p-6 border rounded-2xl focus:outline-none focus:ring-2 resize-none text-base leading-relaxed bg-white placeholder-gray-400 text-black ${
+                error ? 'border-red-400 focus:ring-red-100' : 'border-gray-300 focus:border-red-400 focus:ring-red-100'
+              }`}
               rows={6}
             />
             <div className="absolute bottom-5 right-5 flex items-center gap-3">
@@ -87,14 +106,28 @@ const PersonalMessageStep = () => {
               </button>
             </div>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm text-red-700 font-medium">{error}</span>
+            </div>
+          )}
         </div>
 
         {/* Continue Button */}
         <div className="text-center mt-12">
           <button
             onClick={handleContinue}
-            className="text-white py-4 px-10 rounded-[50px] font-medium text-base transition-all duration-200 transform hover:scale-105 shadow-lg inline-flex items-center 
-               bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)]"
+            disabled={isMessageEmpty}
+            className={`text-white py-4 px-10 rounded-[50px] font-medium text-base transition-all duration-200 transform shadow-lg inline-flex items-center 
+               ${isMessageEmpty 
+                 ? 'bg-gray-400 cursor-not-allowed opacity-60' 
+                 : 'bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] hover:scale-105'
+               }`}
           >
             Schedule Delivery Date
             <span className="ml-3 text-lg">▶</span>

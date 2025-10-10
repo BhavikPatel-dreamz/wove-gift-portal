@@ -1,11 +1,11 @@
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard, ExternalLink } from "lucide-react";
+import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
 import { goBack, goNext } from "../../../redux/giftFlowSlice";
 
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
-  
+
   const {
     selectedBrand,
     selectedAmount,
@@ -13,22 +13,21 @@ const ReviewConfirmStep = () => {
     deliveryMethod,
     deliveryDetails,
     selectedTiming,
-    selectedOccasion
+    selectedSubCategory
   } = useSelector((state) => state.giftFlowReducer);
+
+
+  console.log("selectedSubCategory", selectedSubCategory);
 
   const handleBack = () => {
     dispatch(goBack());
   };
 
   const handleEditMessage = () => {
-    // Navigate back to personal message step
-    // You could implement a more sophisticated navigation system
-    // For now, just going back to step 5 (PersonalMessageStep)
     dispatch({ type: 'giftFlow/setCurrentStep', payload: 5 });
   };
 
   const handleChangeCard = () => {
-    // Navigate back to brand selection
     dispatch({ type: 'giftFlow/setCurrentStep', payload: 1 });
   };
 
@@ -67,7 +66,7 @@ const ReviewConfirmStep = () => {
 
   const getTimingDisplay = () => {
     if (!selectedTiming) return 'Not specified';
-    
+
     switch (selectedTiming.type) {
       case 'immediate':
         return 'Send Immediately';
@@ -81,188 +80,212 @@ const ReviewConfirmStep = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-50 p-6">
-      <div className="max-w-6xl mx-auto">
+     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Previous Button */}
         <button
           onClick={handleBack}
-          className="flex items-center text-pink-500 hover:text-pink-600 transition-colors mb-8"
+          className="flex items-center text-pink-500 hover:text-pink-600 transition-colors mb-8 px-4 py-2 border-2 border-pink-500 rounded-full text-sm font-medium"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2" />
           Previous
         </button>
-        {/* Header with Step Indicator */}
+
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm">
-              <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center mr-2">
-                <span className="text-white text-xs font-bold">👁️</span>
-              </div>
-              <span className="text-sm font-medium text-gray-700">Preview & Confirm</span>
-            </div>
-          </div>
-          
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
-            <span className="bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
-              Review Your Beautiful Gift
-            </span>
-            <span className="ml-2">🎁</span>
+          <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-3">
+            Review Your Beautiful Gift
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-base md:text-lg">
             Confirm all details before proceeding to payment
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Gift Card Preview */}
-          <div className="space-y-6">
+        {/* Secure Preview Banner */}
+        <div className="bg-green-50 border border-green-200 rounded-3xl p-5 mb-8 flex items-center justify-center max-w-2xl mx-auto">
+          <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+            <Shield className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-green-900">Secure Preview Mode</h3>
+            <p className="text-sm text-green-700">
+              Gift code protected until payment completion
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Left Column - Gift Card */}
+          <div className="lg:col-span-2">
             {/* Gift Card Visual */}
-            <div className="bg-gradient-to-br from-pink-400 to-red-400 rounded-2xl p-8 text-white relative overflow-hidden">
-              {/* Background decorative elements */}
-              <div className="absolute top-4 right-4 opacity-20">
-                <div className="w-32 h-32 border-2 border-white rounded-full"></div>
-              </div>
-              <div className="absolute -bottom-8 -left-8 opacity-10">
-                <div className="w-40 h-40 bg-white rounded-full"></div>
-              </div>
-              
-              {/* Gift Card Content */}
-              <div className="relative z-10">
-                <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Heart className="w-8 h-8 text-white fill-current" />
+            <div className="w-full">
+              <div className="w-full aspect-square rounded-2xl bg-white shadow-md overflow-hidden border border-gray-200">
+                {selectedSubCategory?.image ? (
+                  <img
+                    src={selectedSubCategory.image}
+                    alt={selectedSubCategory.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      if (e.target.nextElementSibling) {
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                
+                {/* Dummy Card - Birthday Theme */}
+                <div
+                  className="w-full h-full bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex flex-col items-center justify-center p-6 relative overflow-hidden"
+                  style={{ display: selectedSubCategory?.image ? 'none' : 'flex' }}
+                >
+                  {/* Decorative elements */}
+                  <div className="absolute top-4 left-4 w-8 h-8 text-red-400 opacity-30">
+                    <Heart className="w-full h-full fill-red-400" />
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">
-                    Special Gift
-                  </h3>
-                </div>
-
-                {/* Lock overlay for gift code protection */}
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border border-white/30">
-                  <div className="text-center">
-                    <Lock className="w-8 h-8 mx-auto mb-2 text-white" />
-                    <h4 className="font-semibold text-lg mb-1">Gift Code Protected</h4>
-                    <p className="text-sm opacity-90">Revealed after payment</p>
+                  <div className="absolute bottom-6 right-6 w-6 h-6 text-red-400 opacity-20">
+                    <Heart className="w-full h-full fill-red-400" />
                   </div>
-                </div>
 
-                <div className="text-center mt-6">
-                  <div className="text-4xl font-bold">
-                    {formatAmount(selectedAmount)}
+                  <div className="text-center space-y-4">
+                    {/* Main Text */}
+                    <div className="space-y-2">
+                      <p className="text-red-500 text-lg font-semibold tracking-widest">HAPPY</p>
+                      <h2 className="text-5xl font-bold text-red-500 font-serif">Birthday</h2>
+                      <p className="text-red-500 text-lg font-semibold">TO YOU</p>
+                    </div>
+
+                    {/* Gift Box Icon */}
+                    <div className="flex justify-center py-4">
+                      <div className="relative">
+                        {/* Box */}
+                        <div className="w-24 h-20 bg-red-400 rounded-sm flex items-end justify-center">
+                          {/* Ribbon pattern */}
+                          <div className="w-full h-full bg-red-300 rounded-sm opacity-40" 
+                               style={{backgroundImage: 'repeating-linear-gradient(45deg, #dc2626 0px, #dc2626 2px, transparent 2px, transparent 10px)'}}></div>
+                        </div>
+                        {/* Bow */}
+                        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                          <div className="flex gap-2">
+                            <div className="w-4 h-4 bg-teal-500 rounded-full"></div>
+                            <div className="w-3 h-3 bg-teal-600 rounded-full"></div>
+                          </div>
+                        </div>
+                        {/* Ribbon */}
+                        <div className="absolute left-1/2 transform -translate-x-1/2 w-2 h-8 bg-teal-500 -top-2"></div>
+                      </div>
+                    </div>
+
+                    {/* Decorative dots */}
+                    <div className="flex gap-1 justify-center pt-2">
+                      <span className="w-1 h-1 bg-red-400 rounded-full"></span>
+                      <span className="w-1 h-1 bg-red-400 rounded-full"></span>
+                      <span className="w-1 h-1 bg-red-400 rounded-full"></span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Secure Gift Code Info */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center mb-4">
-                <Shield className="w-6 h-6 text-green-500 mr-3" />
-                <h3 className="font-semibold text-gray-800">Secure Gift Code</h3>
+            {/* Secure Gift Code */}
+            <div className="border-2 border-dashed border-pink-300 rounded-3xl p-6 mt-6 text-center bg-white">
+              <div className="flex items-center justify-center mb-4">
+                <Heart className="w-5 h-5 text-red-500 mr-2 fill-red-500" />
+                <h4 className="font-semibold text-gray-800">Secure Gift Code</h4>
               </div>
-              
-              <div className="bg-gray-100 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-gray-400 tracking-wider">••••••••••••••••</span>
-                  <Lock className="w-4 h-4 text-gray-400" />
-                </div>
+
+              <div className="bg-gray-100 rounded-lg p-4 mb-4 font-mono text-gray-400 tracking-wider text-lg">
+                •••  •••  •••
               </div>
-              
-              <div className="flex items-center text-green-600">
-                <Shield className="w-4 h-4 mr-2" />
-                <span className="text-sm font-medium">Protected</span>
+
+              <div className="flex items-center justify-center text-xs text-gray-600">
+                <Lock className="w-4 h-4 mr-2" />
+                Code Revealed after payment completion
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                🔒 Code revealed after payment completion
-              </p>
             </div>
           </div>
 
-          {/* Right Column - Details Summary */}
-          <div className="space-y-6">
-            {/* Brand and Amount */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mr-4">
-                    {selectedBrand?.logo ? (
-                      <img 
-                        src={selectedBrand.logo} 
-                        alt={selectedBrand.brandName || selectedBrand.name}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                    ) : (
-                      <span className="text-white font-bold text-xs">
-                        {(selectedBrand?.brandName || selectedBrand?.name || 'SB')?.substring(0, 2).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-800">
-                      {selectedBrand?.brandName || selectedBrand?.name || 'Selected Brand'}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {selectedBrand?.description || selectedBrand?.tagline || 'Gift card'}
-                    </p>
-                  </div>
+          {/* Right Column - Details */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Brand and Amount Card */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
+                  {selectedBrand?.logo ? (
+                    <img
+                      src={selectedBrand.logo}
+                      alt={selectedBrand.brandName || selectedBrand.name}
+                      className="w-full h-full object-contain p-2 rounded-lg"
+                    />
+                  ) : (
+                    <span className="text-white font-bold text-3xl">
+                      {(selectedBrand?.brandName || selectedBrand?.name || 'SB')?.substring(0, 1).toUpperCase()}
+                    </span>
+                  )}
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-pink-600">
-                    {formatAmount(selectedAmount)}
-                  </div>
-                  <button 
+
+                <div className="flex-1">
+                  <h3 className="font-bold text-2xl text-gray-900">
+                    {selectedBrand?.brandName || selectedBrand?.name || 'Selected Brand'}
+                  </h3>
+                  <p className="text-gray-600 text-sm mt-1">
+                    {selectedBrand?.description || selectedBrand?.tagline || 'Gift card'}
+                  </p>
+
+                  <button
                     onClick={handleChangeCard}
-                    className="flex items-center text-sm text-gray-500 hover:text-gray-700 mt-1"
+                    className="mt-4 flex gap-2 items-center text-pink-500 hover:text-pink-600 text-sm font-medium px-3 py-1.5 border border-pink-500 rounded-full transition-colors"
                   >
-                    <ExternalLink className="w-3 h-3 mr-1" />
-                    Shop Now
+                    <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+                    <span className="font-bold text-red-600">
+                      {formatAmount(selectedAmount)}
+                    </span>
+                    <Edit className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Personal Message */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <Heart className="w-5 h-5 text-pink-500 mr-2" />
-                  <h3 className="font-semibold text-gray-800">Personal Message</h3>
+                  <Heart className="w-5 h-5 text-red-500 mr-2 fill-red-500" />
+                  <h3 className="font-semibold text-gray-900">Personal Message</h3>
                 </div>
                 <button
                   onClick={handleEditMessage}
-                  className="flex items-center text-sm text-blue-600 hover:text-blue-700"
+                  className="flex items-center text-pink-500 hover:text-pink-600 text-sm font-medium px-3 py-1.5 border border-pink-500 rounded-full transition-colors"
                 >
                   <Edit className="w-4 h-4 mr-1" />
-                  Edit Message
+                  Edit
                 </button>
               </div>
-              
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-700 italic">
+
+              <div className="bg-gray-50 rounded-xl p-4 max-h-40 overflow-y-auto">
+                <p className="text-gray-700 text-sm leading-relaxed italic">
                   "{personalMessage || 'No message added'}"
                 </p>
-                <div className="text-right mt-2">
-                  <span className="text-sm text-gray-500">— With love 💕</span>
-                </div>
               </div>
             </div>
 
             {/* Delivery Details */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-800 mb-4">Delivery Details</h3>
-              
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Method:</span>
-                  <span className="font-medium">{getDeliveryMethodDisplay()}</span>
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <h3 className="font-semibold text-gray-900 mb-4">Delivery Details</h3>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Method:</span>
+                  <span className="text-gray-900 font-semibold">{getDeliveryMethodDisplay()}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Recipient:</span>
-                  <span className="font-medium">{getRecipientInfo()}</span>
+                <div className="flex justify-between items-center pb-4 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Recipient:</span>
+                  <span className="text-gray-900 font-semibold">{getRecipientInfo()}</span>
                 </div>
                 {selectedTiming && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Timing:</span>
-                    <span className="font-medium">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 font-medium">Timing:</span>
+                    <span className="text-gray-900 font-semibold">
                       {getTimingDisplay()}
                     </span>
                   </div>
@@ -270,48 +293,14 @@ const ReviewConfirmStep = () => {
               </div>
             </div>
 
-            {/* Secure Preview Mode */}
-            <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                  <Shield className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-blue-800">Secure Preview Mode</h4>
-                  <p className="text-sm text-blue-600">
-                    Gift code protected until payment completion
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col space-y-4">
-              <button
-                onClick={handleProceedToPayment}
-                className="w-full bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center"
-              >
-                <CreditCard className="w-5 h-5 mr-2" />
-                Proceed to Payment
-              </button>
-              
-              <div className="flex space-x-4">
-                <button
-                  onClick={handleEditMessage}
-                  className="flex-1 border-2 border-gray-300 hover:border-gray-400 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Message
-                </button>
-                <button
-                  onClick={handleChangeCard}
-                  className="flex-1 border-2 border-gray-300 hover:border-gray-400 text-gray-700 py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Change Card
-                </button>
-              </div>
-            </div>
+            {/* Proceed to Payment Button */}
+            <button
+              onClick={handleProceedToPayment}
+              className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+            >
+              Proceed to Payment
+              <span className="text-xl">›</span>
+            </button>
           </div>
         </div>
       </div>

@@ -14,11 +14,14 @@ const DeliveryMethodStep = () => {
 
   const [selectedMethod, setSelectedMethod] = useState(deliveryMethod || null);
   const [showModal, setShowModal] = useState(false);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     // WhatsApp fields
     yourName: deliveryDetails.yourName || '',
+    yourCountryCode: deliveryDetails.yourCountryCode || '+91',
     yourWhatsAppNumber: deliveryDetails.yourWhatsAppNumber || '',
     recipientName: deliveryDetails.recipientName || '',
+    recipientCountryCode: deliveryDetails.recipientCountryCode || '+91',
     recipientWhatsAppNumber: deliveryDetails.recipientWhatsAppNumber || '',
 
     // Email fields
@@ -27,10 +30,26 @@ const DeliveryMethodStep = () => {
     recipientFullName: deliveryDetails.recipientFullName || '',
     recipientEmailAddress: deliveryDetails.recipientEmailAddress || '',
     yourPhoneNumber: deliveryDetails.yourPhoneNumber || '',
+    yourPhoneCountryCode: deliveryDetails.yourPhoneCountryCode || '+91',
 
     // Print fields
     printDetails: deliveryDetails.printDetails || {}
   });
+
+  const countryCodes = [
+    { code: '+1', country: 'USA/Canada' },
+    { code: '+44', country: 'UK' },
+    { code: '+91', country: 'India' },
+    { code: '+61', country: 'Australia' },
+    { code: '+86', country: 'China' },
+    { code: '+81', country: 'Japan' },
+    { code: '+33', country: 'France' },
+    { code: '+49', country: 'Germany' },
+    { code: '+39', country: 'Italy' },
+    { code: '+34', country: 'Spain' },
+    { code: '+27', country: 'South Africa' },
+    { code: '+55', country: 'Brazil' },
+  ];
 
   const deliveryMethods = [
     {
@@ -56,9 +75,74 @@ const DeliveryMethodStep = () => {
     }
   ];
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhoneNumber = (phone) => {
+    const phoneRegex = /^[0-9]{10,}$/;
+    return phoneRegex.test(phone.replace(/\s+/g, ''));
+  };
+
+  const validateWhatsAppForm = () => {
+    const newErrors = {};
+
+    if (!formData.yourName.trim()) {
+      newErrors.yourName = 'Your name is required';
+    }
+    if (!formData.yourWhatsAppNumber.trim()) {
+      newErrors.yourWhatsAppNumber = 'Your WhatsApp number is required';
+    } else if (!validatePhoneNumber(formData.yourWhatsAppNumber)) {
+      newErrors.yourWhatsAppNumber = 'Please enter a valid phone number (minimum 10 digits)';
+    }
+
+    if (!formData.recipientName.trim()) {
+      newErrors.recipientName = 'Recipient name is required';
+    }
+    if (!formData.recipientWhatsAppNumber.trim()) {
+      newErrors.recipientWhatsAppNumber = 'Recipient WhatsApp number is required';
+    } else if (!validatePhoneNumber(formData.recipientWhatsAppNumber)) {
+      newErrors.recipientWhatsAppNumber = 'Please enter a valid phone number (minimum 10 digits)';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateEmailForm = () => {
+    const newErrors = {};
+
+    if (!formData.yourFullName.trim()) {
+      newErrors.yourFullName = 'Your full name is required';
+    }
+    if (!formData.yourEmailAddress.trim()) {
+      newErrors.yourEmailAddress = 'Your email is required';
+    } else if (!validateEmail(formData.yourEmailAddress)) {
+      newErrors.yourEmailAddress = 'Please enter a valid email address';
+    }
+
+    if (formData.yourPhoneNumber.trim() && !validatePhoneNumber(formData.yourPhoneNumber)) {
+      newErrors.yourPhoneNumber = 'Please enter a valid phone number (minimum 10 digits)';
+    }
+
+    if (!formData.recipientFullName.trim()) {
+      newErrors.recipientFullName = 'Recipient name is required';
+    }
+    if (!formData.recipientEmailAddress.trim()) {
+      newErrors.recipientEmailAddress = 'Recipient email is required';
+    } else if (!validateEmail(formData.recipientEmailAddress)) {
+      newErrors.recipientEmailAddress = 'Please enter a valid email address';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleMethodChange = (method) => {
     setSelectedMethod(method);
     setShowModal(true);
+    setErrors({});
     dispatch(setDeliveryMethod(method));
   };
 
@@ -68,11 +152,31 @@ const DeliveryMethodStep = () => {
       [field]: value
     }));
     dispatch(updateDeliveryDetail({ field, value }));
+    
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
   };
 
   const handleContinue = () => {
-    dispatch(setDeliveryDetails(formData));
-    dispatch(goNext());
+    let isValid = false;
+
+    if (selectedMethod === 'whatsapp') {
+      isValid = validateWhatsAppForm();
+    } else if (selectedMethod === 'email') {
+      isValid = validateEmailForm();
+    } else if (selectedMethod === 'print') {
+      isValid = true;
+    }
+
+    if (isValid) {
+      dispatch(setDeliveryDetails(formData));
+      dispatch(goNext());
+    }
   };
 
   const handleBack = () => {
@@ -81,6 +185,7 @@ const DeliveryMethodStep = () => {
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setErrors({});
   };
 
   const renderMethodCard = (method) => (
@@ -102,6 +207,20 @@ const DeliveryMethodStep = () => {
     </div>
   );
 
+  const renderInputError = (fieldName) => {
+    if (errors[fieldName]) {
+      return (
+        <div className="mt-1 text-sm text-red-600 flex items-center gap-1">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18.364 5.364l-12.728 12.728a1 1 0 01-1.414 0l-5.656-5.656a1 1 0 011.414-1.414L5.5 16.086 16.95 4.636a1 1 0 011.414 1.414z" clipRule="evenodd" />
+          </svg>
+          {errors[fieldName]}
+        </div>
+      );
+    }
+    return null;
+  };
+
   const renderWhatsAppForm = () => (
     <div className="text-black">
       <div className="text-center pt-8 pb-4 px-6">
@@ -117,7 +236,7 @@ const DeliveryMethodStep = () => {
         {/* Left Side - Form */}
         <div className="space-y-6">
           {/* Your Details Section */}
-          <div className=" rounded-2xl  border border-gray-200">
+          <div className="rounded-2xl border border-gray-200">
             <div className="bg-green-50 flex items-start mb-4 border-b border-[#39AE41] p-4">
               <div className="relative w-12 h-12 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
                 <div className="absolute inset-0 bg-[#39AE41] opacity-20 rounded-xl"></div>
@@ -131,25 +250,50 @@ const DeliveryMethodStep = () => {
             </div>
 
             <div className="space-y-4 m-6">
-              <input
-                type="text"
-                value={formData.yourName}
-                onChange={(e) => handleInputChange('yourName', e.target.value)}
-                placeholder="Your Full Name*"
-                className="w-full p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition-all bg-white text-sm"
-              />
-              <input
-                type="tel"
-                value={formData.yourWhatsAppNumber}
-                onChange={(e) => handleInputChange('yourWhatsAppNumber', e.target.value)}
-                placeholder="Your WhatsApp No.*"
-                className="w-full p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition-all bg-white text-sm"
-              />
+              <div>
+                <input
+                  type="text"
+                  value={formData.yourName}
+                  onChange={(e) => handleInputChange('yourName', e.target.value)}
+                  placeholder="Your Full Name*"
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
+                    errors.yourName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
+                  }`}
+                />
+                {renderInputError('yourName')}
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-2">Your WhatsApp Number*</label>
+                <div className="flex gap-2">
+                  <select
+                    value={formData.yourCountryCode}
+                    onChange={(e) => handleInputChange('yourCountryCode', e.target.value)}
+                    className="w-28 p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition-all bg-white text-sm"
+                  >
+                    {countryCodes.map(({ code, country }) => (
+                      <option key={code} value={code}>{code} {country}</option>
+                    ))}
+                  </select>
+                  <div className="flex-1">
+                    <input
+                      type="tel"
+                      value={formData.yourWhatsAppNumber}
+                      onChange={(e) => handleInputChange('yourWhatsAppNumber', e.target.value)}
+                      placeholder="10 digit number"
+                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
+                        errors.yourWhatsAppNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
+                      }`}
+                    />
+                  </div>
+                </div>
+                {renderInputError('yourWhatsAppNumber')}
+              </div>
             </div>
           </div>
 
           {/* Recipient Details Section */}
-          <div className=" rounded-2xl  border border-gray-200">
+          <div className="rounded-2xl border border-gray-200">
             <div className="bg-green-50 flex items-start mb-4 border-b border-[#39AE41] p-4">
               <div className="relative w-12 h-12 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
                 <div className="absolute inset-0 bg-[#39AE41] opacity-20 rounded-xl"></div>
@@ -162,20 +306,45 @@ const DeliveryMethodStep = () => {
             </div>
 
             <div className="space-y-4 m-6">
-              <input
-                type="text"
-                value={formData.recipientName}
-                onChange={(e) => handleInputChange('recipientName', e.target.value)}
-                placeholder="Recipient's Name*"
-                className="w-full p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition-all bg-white text-sm"
-              />
-              <input
-                type="tel"
-                value={formData.recipientWhatsAppNumber}
-                onChange={(e) => handleInputChange('recipientWhatsAppNumber', e.target.value)}
-                placeholder="Recipient's WhatsApp No.*"
-                className="w-full p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition-all bg-white text-sm"
-              />
+              <div>
+                <input
+                  type="text"
+                  value={formData.recipientName}
+                  onChange={(e) => handleInputChange('recipientName', e.target.value)}
+                  placeholder="Recipient's Name*"
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
+                    errors.recipientName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
+                  }`}
+                />
+                {renderInputError('recipientName')}
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-600 block mb-2">Recipient's WhatsApp Number*</label>
+                <div className="flex gap-2">
+                  <select
+                    value={formData.recipientCountryCode}
+                    onChange={(e) => handleInputChange('recipientCountryCode', e.target.value)}
+                    className="w-28 p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition-all bg-white text-sm"
+                  >
+                    {countryCodes.map(({ code, country }) => (
+                      <option key={code} value={code}>{code} {country}</option>
+                    ))}
+                  </select>
+                  <div className="flex-1">
+                    <input
+                      type="tel"
+                      value={formData.recipientWhatsAppNumber}
+                      onChange={(e) => handleInputChange('recipientWhatsAppNumber', e.target.value)}
+                      placeholder="10 digit number"
+                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
+                        errors.recipientWhatsAppNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
+                      }`}
+                    />
+                  </div>
+                </div>
+                {renderInputError('recipientWhatsAppNumber')}
+              </div>
             </div>
           </div>
         </div>
@@ -248,7 +417,7 @@ const DeliveryMethodStep = () => {
   );
 
   const renderEmailForm = () => (
-    <div className="space-y-8 ">
+    <div className="space-y-8">
       {/* Header */}
       <div className="text-center pt-10 pb-8 px-6">
         <h2 className="text-2xl font-bold text-gray-900">Email Details</h2>
@@ -274,32 +443,57 @@ const DeliveryMethodStep = () => {
                   value={formData.yourFullName}
                   onChange={(e) => handleInputChange('yourFullName', e.target.value)}
                   placeholder="Your Full Name*"
-                  className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm placeholder:text-gray-400"
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
+                    errors.yourFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                  }`}
                 />
+                {renderInputError('yourFullName')}
               </div>
+
               <div>
                 <input
                   type="email"
                   value={formData.yourEmailAddress}
                   onChange={(e) => handleInputChange('yourEmailAddress', e.target.value)}
                   placeholder="Your Email Address*"
-                  className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm placeholder:text-gray-400"
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
+                    errors.yourEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                  }`}
                 />
+                {renderInputError('yourEmailAddress')}
               </div>
+
               <div>
-                <input
-                  type="tel"
-                  value={formData.yourPhoneNumber}
-                  onChange={(e) => handleInputChange('yourPhoneNumber', e.target.value)}
-                  placeholder="Your Phone Number (Optional)"
-                  className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm placeholder:text-gray-400"
-                />
+                <label className="text-xs font-semibold text-gray-600 block mb-2">Your Phone Number (Optional)</label>
+                <div className="flex gap-2">
+                  <select
+                    value={formData.yourPhoneCountryCode}
+                    onChange={(e) => handleInputChange('yourPhoneCountryCode', e.target.value)}
+                    className="w-24 p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm"
+                  >
+                    {countryCodes.map(({ code, country }) => (
+                      <option key={code} value={code}>{code}</option>
+                    ))}
+                  </select>
+                  <div className="flex-1">
+                    <input
+                      type="tel"
+                      value={formData.yourPhoneNumber}
+                      onChange={(e) => handleInputChange('yourPhoneNumber', e.target.value)}
+                      placeholder="10 digit number"
+                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
+                        errors.yourPhoneNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                      }`}
+                    />
+                  </div>
+                </div>
+                {renderInputError('yourPhoneNumber')}
               </div>
             </div>
           </div>
 
           {/* Recipient Details Section */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm  w-full">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm w-full">
             <div className="flex items-center mb-6">
               <div className="relative w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
                 <div className="absolute inset-0 bg-[#398FAE] opacity-20 rounded-xl"></div>
@@ -315,17 +509,24 @@ const DeliveryMethodStep = () => {
                   value={formData.recipientFullName}
                   onChange={(e) => handleInputChange('recipientFullName', e.target.value)}
                   placeholder="Recipient's Name*"
-                  className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm placeholder:text-gray-400"
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
+                    errors.recipientFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                  }`}
                 />
+                {renderInputError('recipientFullName')}
               </div>
+
               <div>
                 <input
                   type="email"
                   value={formData.recipientEmailAddress}
                   onChange={(e) => handleInputChange('recipientEmailAddress', e.target.value)}
                   placeholder="Email Address*"
-                  className="w-full p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm placeholder:text-gray-400"
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
+                    errors.recipientEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                  }`}
                 />
+                {renderInputError('recipientEmailAddress')}
               </div>
             </div>
           </div>
@@ -376,7 +577,7 @@ const DeliveryMethodStep = () => {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4  overflow-hidden">
+          <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-hidden">
             <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
               {/* Close Button */}
               <button
