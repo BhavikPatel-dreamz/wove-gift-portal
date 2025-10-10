@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getVouchers } from "@/lib/action/voucherAction";
-import { Eye, Edit, Trash, Download } from "lucide-react";
+import { Eye, Edit, Trash, Download, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import DynamicTable from "@/components/forms/DynamicTable";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -12,6 +12,7 @@ import VoucherDetails from "@/components/vouchers/VoucherDetails";
 export default function VouchersManagement() {
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({});
   const [filters, setFilters] = useState({
@@ -23,26 +24,27 @@ export default function VouchersManagement() {
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchVouchers = async () => {
-      setLoading(true);
-      try {
-        const response = await getVouchers({ ...filters, page: pagination.currentPage || 1 });
-        if (response.success) {
-          setVouchers(response.data);
-          setPagination(response.pagination);
-          setError(null);
-        } else {
-          setError(response.message);
-          toast.error(response.message);
-        }
-      } catch (err) {
-        setError("An unexpected error occurred.");
-        toast.error("Failed to fetch vouchers");
-      } finally {
-        setLoading(false);
+  const fetchVouchers = async () => {
+    setLoading(true);
+    try {
+      const response = await getVouchers({ ...filters, page: pagination.currentPage || 1 });
+      if (response.success) {
+        setVouchers(response.data);
+        setPagination(response.pagination);
+        setError(null);
+      } else {
+        setError(response.message);
+        toast.error(response.message);
       }
-    };
+    } catch (err) {
+      setError("An unexpected error occurred.");
+      toast.error("Failed to fetch vouchers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchVouchers();
   }, [filters, pagination.currentPage]);
 
@@ -71,6 +73,31 @@ export default function VouchersManagement() {
   const handleExport = () => {
     toast.info("Exporting vouchers...");
     // Add your export logic here
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    const toastId = toast.loading("Starting Shopify data sync...");
+
+    try {
+      const response = await fetch('/api/sync-shopify', { method: 'POST' });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success("Shopify data sync initiated. Data will be updated shortly.", { id: toastId });
+        // Refetch vouchers after a short delay to allow sync to process
+        setTimeout(() => {
+          fetchVouchers();
+        }, 5000); // 5 second delay
+      } else {
+        throw new Error(result.message || "Failed to sync Shopify data.");
+      }
+    } catch (error) {
+      console.error("Sync error:", error);
+      toast.error(error.message || "An unexpected error occurred during sync.", { id: toastId });
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const columnHelper = createColumnHelper();
@@ -159,7 +186,7 @@ export default function VouchersManagement() {
         <DynamicTable
           data={vouchers}
           columns={customColumns}
-          loading={loading}
+          loading={loading || syncing}
           pagination={pagination}
           onPageChange={handlePageChange}
           onSearch={handleSearch}
@@ -180,6 +207,12 @@ export default function VouchersManagement() {
             },
           ]}
           actions={[
+            {
+              label: syncing ? "Syncing..." : "Sync Shopify",
+              icon: RefreshCw,
+              onClick: handleSync,
+              disabled: syncing,
+            },
             {
               label: "Export",
               icon: Download,

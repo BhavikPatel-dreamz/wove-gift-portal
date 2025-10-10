@@ -14,6 +14,7 @@ export function middleware(request) {
     pathname.startsWith('/api/giftcard') ||
     pathname.startsWith('/api/shopify/shop') ||
     pathname.startsWith('/api/webhooks/giftcard-redeem') ||
+    pathname.startsWith('/api/sync-shopify') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon')
   ) {
@@ -99,7 +100,8 @@ export function middleware(request) {
     pathname.startsWith('/api/giftcard') ||
     pathname.startsWith('/api/shopify/products') ||
     pathname.startsWith('/api/shopify/gift-cards') ||
-    pathname.startsWith('/api/shopify/shop')
+    pathname.startsWith('/api/shopify/shop') ||
+    pathname.startsWith('/api/sync-shopify') 
   ) {
     return NextResponse.next()
   }

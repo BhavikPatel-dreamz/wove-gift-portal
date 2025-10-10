@@ -4,13 +4,14 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import DynamicTable from "../../../components/forms/DynamicTable";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Clock, CheckCircle, AlertTriangle, Eye, Download } from "lucide-react";
+import { Clock, CheckCircle, AlertTriangle, Eye, Download, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import { getSettlements } from "../../../lib/action/brandPartner";
 
 const SettlementsPage = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [pagination, setPagination] = useState({});
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -25,23 +26,23 @@ const SettlementsPage = () => {
     [searchParams]
   );
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const res = await getSettlements(params);
-        if (res.success) {
-          setData(res.data);
-          setPagination(res.pagination);
-        } else {
-          toast.error(res.message);
-        }
-      } catch (error) {
-        toast.error("Failed to fetch settlements");
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await getSettlements(params);
+      if (res.success) {
+        setData(res.data);
+        setPagination(res.pagination);
+      } else {
+        toast.error(res.message);
       }
-      setLoading(false);
-    };
+    } catch (error) {
+      toast.error("Failed to fetch settlements");
+    }
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchData();
   }, [params]);
 
@@ -63,6 +64,31 @@ const SettlementsPage = () => {
     newParams.set(name, value);
     newParams.set("page", 1);
     router.push(`?${newParams.toString()}`);
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    const toastId = toast.loading("Starting Shopify data sync...");
+
+    try {
+      const response = await fetch('/api/sync-shopify', { method: 'POST' });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        toast.success("Shopify data sync initiated. Data will be updated shortly.", { id: toastId });
+        // Refetch settlements after a short delay to allow sync to process
+        setTimeout(() => {
+          fetchData();
+        }, 5000); // 5 second delay
+      } else {
+        throw new Error(result.message || "Failed to sync Shopify data.");
+      }
+    } catch (error) {
+      console.error("Sync error:", error);
+      toast.error(error.message || "An unexpected error occurred during sync.", { id: toastId });
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const columnHelper = createColumnHelper();
@@ -201,7 +227,7 @@ const SettlementsPage = () => {
         <DynamicTable
           data={data}
           columns={customColumns}
-          loading={loading}
+          loading={loading || syncing}
           pagination={pagination}
           onPageChange={handlePageChange}
           onSearch={handleSearch}
@@ -221,6 +247,12 @@ const SettlementsPage = () => {
             },
           ]}
           actions={[
+            {
+              label: syncing ? "Syncing..." : "Sync Shopify",
+              icon: RefreshCw,
+              onClick: handleSync,
+              disabled: syncing,
+            },
             {
               label: "Export",
               icon: Download,

@@ -69,6 +69,10 @@ export async function syncShopifyDataMonthly() {
         console.log(`📝 Found ${transactions.length} transactions for ${voucherCode.code}`);
         totalTransactionsProcessed += transactions.length;
 
+        // Track new redemptions for this specific voucher code
+        let newRedemptionsForThisVoucher = 0;
+        let newRedemptionsValueForThisVoucher = 0;
+
         // Step 4️⃣ — Process each transaction (only redemptions/debits)
         for (const transaction of transactions) {
           const amount = parseFloat(transaction.amount?.amount || 0);
@@ -150,6 +154,8 @@ export async function syncShopifyDataMonthly() {
             });
           });
 
+          newRedemptionsForThisVoucher++;
+          newRedemptionsValueForThisVoucher += redemptionAmount;
           totalNewRedemptions++;
           totalFixedValue += redemptionAmount;
           console.log(`✅ Stored redemption: ${redemptionAmount} (Balance after: ${balanceAfter}) [${transactionNumber}]`);
@@ -157,12 +163,6 @@ export async function syncShopifyDataMonthly() {
 
         // Step 8️⃣ — Update VoucherCode with latest balance
         const currentBalance = Math.round(balance);
-        const totalLocalRedeemed = await prisma.voucherRedemption.aggregate({
-          where: { voucherCodeId: voucherCode.id },
-          _sum: { amountRedeemed: true },
-        });
-
-        const newRemainingValue = voucherCode.originalValue - (totalLocalRedeemed._sum.amountRedeemed || 0);
 
         await prisma.voucherCode.update({
           where: { id: voucherCode.id },
@@ -174,8 +174,8 @@ export async function syncShopifyDataMonthly() {
           },
         });
 
-        // Step 9️⃣ — Update settlement if order exists
-        if (totalNewRedemptions > 0) {
+        // Step 9️⃣ — Update settlement ONLY if new redemptions were found
+        if (newRedemptionsForThisVoucher > 0) {
           const order = await prisma.order.findUnique({
             where: { id: voucherCode.orderId },
             select: { brandId: true, createdAt: true },
@@ -194,23 +194,30 @@ export async function syncShopifyDataMonthly() {
             });
 
             if (settlement) {
-              const redemptionValue = totalLocalRedeemed._sum.amountRedeemed || 0;
+              // Check if voucher is now fully redeemed
+              const isFullyRedeemed = currentBalance === 0;
+              const wasNotFullyRedeemed = voucherCode.remainingValue > 0;
               
               await prisma.settlements.update({
                 where: { id: settlement.id },
                 data: {
-                  redeemedAmount: { increment: redemptionValue },
-                  outstandingAmount: { decrement: redemptionValue },
-                  ...(currentBalance === 0 && { totalRedeemed: { increment: 1 } }),
-                  ...(currentBalance === 0 && { outstanding: { decrement: 1 } }),
+                  redeemedAmount: { increment: newRedemptionsValueForThisVoucher },
+                  outstandingAmount: { decrement: newRedemptionsValueForThisVoucher },
+                  // Only increment totalRedeemed and decrement outstanding if voucher became fully redeemed in this sync
+                  ...(isFullyRedeemed && wasNotFullyRedeemed && { 
+                    totalRedeemed: { increment: 1 },
+                    outstanding: { decrement: 1 }
+                  }),
                   updatedAt: new Date(),
                 },
               });
+              
+              console.log(`💰 Settlement updated: +${newRedemptionsValueForThisVoucher} redeemed`);
             }
           }
         }
 
-        console.log(`📊 Processed ${voucherCode.code}: ${totalNewRedemptions} new redemptions added`);
+        console.log(`📊 Processed ${voucherCode.code}: ${newRedemptionsForThisVoucher} new redemptions added`);
       }
 
       console.log(`📊 Shop ${shopName}: processed ${cards.length} gift cards`);
