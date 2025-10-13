@@ -11,7 +11,7 @@ import ActionsSection from '../../components/client/home/ActionsSection';
 import Features from '../../components/client/home/Features';
 import Footer from '../../components/client/home/Footer';
 
-import { getBrands, getOccasions } from '../../lib/action/data';
+import { getBrands, getOccasions } from '../../lib/action/brandFetch';
 
 
 export default async function Home() {

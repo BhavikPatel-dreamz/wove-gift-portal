@@ -132,15 +132,14 @@ const PaymentStep = () => {
         selectedTiming,
         selectedPaymentMethod,
       };
-      const result = await createOrder(orderData);
-      console.log("result", result);
 
-      if (result.error) {
+      const result = await createOrder(orderData);
+      if (result?.success) {
+        setOrder(result?.data?.order);
+        toast.success('Order placed successfully!', { id: toastId });
+      } else {
         setError(result.error);
         toast.error(result.error, { id: toastId });
-      } else {
-        setOrder(result.order);
-        toast.success('Order placed successfully!', { id: toastId });
       }
     } catch (error) {
       setError("An unexpected error occurred.");

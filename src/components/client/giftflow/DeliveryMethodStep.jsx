@@ -3,13 +3,18 @@ import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, MessageCircle, Mail, Download, User, X, Phone } from "lucide-react";
 import { goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
 import ProgressIndicator from "./ProgressIndicator";
+import Image from "next/image";
 
 const DeliveryMethodStep = () => {
   const dispatch = useDispatch();
 
   const {
     deliveryMethod,
-    deliveryDetails
+    deliveryDetails,
+    selectedAmount,
+    personalMessage,
+    selectedSubCategory,
+    selectedBrand
   } = useSelector((state) => state.giftFlowReducer);
 
   const [selectedMethod, setSelectedMethod] = useState(deliveryMethod || null);
@@ -139,6 +144,8 @@ const DeliveryMethodStep = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+
+
   const handleMethodChange = (method) => {
     setSelectedMethod(method);
     setShowModal(true);
@@ -152,7 +159,7 @@ const DeliveryMethodStep = () => {
       [field]: value
     }));
     dispatch(updateDeliveryDetail({ field, value }));
-    
+
     // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -256,9 +263,8 @@ const DeliveryMethodStep = () => {
                   value={formData.yourName}
                   onChange={(e) => handleInputChange('yourName', e.target.value)}
                   placeholder="Your Full Name*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
-                    errors.yourName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
-                  }`}
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
+                    }`}
                 />
                 {renderInputError('yourName')}
               </div>
@@ -281,9 +287,8 @@ const DeliveryMethodStep = () => {
                       value={formData.yourWhatsAppNumber}
                       onChange={(e) => handleInputChange('yourWhatsAppNumber', e.target.value)}
                       placeholder="10 digit number"
-                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
-                        errors.yourWhatsAppNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
-                      }`}
+                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourWhatsAppNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
+                        }`}
                     />
                   </div>
                 </div>
@@ -312,9 +317,8 @@ const DeliveryMethodStep = () => {
                   value={formData.recipientName}
                   onChange={(e) => handleInputChange('recipientName', e.target.value)}
                   placeholder="Recipient's Name*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
-                    errors.recipientName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
-                  }`}
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.recipientName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
+                    }`}
                 />
                 {renderInputError('recipientName')}
               </div>
@@ -337,9 +341,8 @@ const DeliveryMethodStep = () => {
                       value={formData.recipientWhatsAppNumber}
                       onChange={(e) => handleInputChange('recipientWhatsAppNumber', e.target.value)}
                       placeholder="10 digit number"
-                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
-                        errors.recipientWhatsAppNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
-                      }`}
+                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.recipientWhatsAppNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-green-400 focus:border-green-400'
+                        }`}
                     />
                   </div>
                 </div>
@@ -379,18 +382,41 @@ const DeliveryMethodStep = () => {
                 <div className="flex-1 bg-gradient-to-b from-green-50 to-green-100 p-3 overflow-y-auto">
                   <div className="flex justify-start mb-3">
                     <div className="bg-white rounded-2xl rounded-tl-sm shadow-md p-3.5 max-w-[90%]">
-                      <div className="bg-gradient-to-br from-cyan-400 to-cyan-500 rounded-xl p-5 mb-3 text-center">
-                        <div className="text-white text-3xl font-bold leading-tight mb-1">HAPPY</div>
-                        <div className="text-white text-3xl font-bold leading-tight">BIRTHDAY</div>
+                      <div className="rounded-xl mb-3 text-center">
+                        <Image
+                          src={selectedSubCategory?.image}
+                          width={500}
+                          height={500}
+                          alt="Occation category"
+                        />
                       </div>
                       <div className="mb-3">
-                        <p className="text-xs font-semibold text-gray-900 mb-1">Friend Sent you a gift card</p>
-                        <p className="text-lg font-bold text-red-500 mb-2">₹2000</p>
+                        <p className="text-xs font-semibold text-gray-900">Friend Sent you a gift card</p>
+                        <p className="text-sm font-bold text-red-500">{selectedAmount.currency + " " + selectedAmount.value}</p>
                         <p className="text-xs text-gray-700 leading-relaxed">
-                          "Wishing you a fantastic birthday and a wonderful year ahead"
+                         "{personalMessage}"
                         </p>
+                        <div className="mt-3">
+                          <p className="text-sm font-semibold text-gray-900">Gift Code</p>
+                          <p className="text-xs text-gray-700 leading-relaxed">XXXX XXXX XXXX</p>
+                        </div>
                       </div>
-                      <button className="w-full bg-green-500 hover:bg-green-600 text-white text-xs py-2.5 px-4 rounded-lg font-medium flex items-center justify-center transition-colors">
+
+                      <div className="w-[95%] mx-auto h-[1px] bg-[#1A1A1A33] my-1"></div>
+
+                      <button
+                        className="w-full text-[#39AE41] text-xs py-2 px-4 rounded-lg font-medium flex items-center justify-center transition-colors"
+                        onClick={() => {
+                          const url =
+                            selectedBrand?.website ||
+                            selectedBrand?.domain ||
+                            `https://${selectedBrand?.slug}.myshopify.com`;
+
+                          // Ensure it has https:// prefix
+                          const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+                          window.open(fullUrl, "_blank");
+                        }}
+                      >
                         Claim Gift →
                       </button>
                     </div>
@@ -443,9 +469,8 @@ const DeliveryMethodStep = () => {
                   value={formData.yourFullName}
                   onChange={(e) => handleInputChange('yourFullName', e.target.value)}
                   placeholder="Your Full Name*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
-                    errors.yourFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
-                  }`}
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.yourFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                    }`}
                 />
                 {renderInputError('yourFullName')}
               </div>
@@ -456,9 +481,8 @@ const DeliveryMethodStep = () => {
                   value={formData.yourEmailAddress}
                   onChange={(e) => handleInputChange('yourEmailAddress', e.target.value)}
                   placeholder="Your Email Address*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
-                    errors.yourEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
-                  }`}
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.yourEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                    }`}
                 />
                 {renderInputError('yourEmailAddress')}
               </div>
@@ -481,9 +505,8 @@ const DeliveryMethodStep = () => {
                       value={formData.yourPhoneNumber}
                       onChange={(e) => handleInputChange('yourPhoneNumber', e.target.value)}
                       placeholder="10 digit number"
-                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
-                        errors.yourPhoneNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
-                      }`}
+                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.yourPhoneNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                        }`}
                     />
                   </div>
                 </div>
@@ -497,7 +520,7 @@ const DeliveryMethodStep = () => {
             <div className="flex items-center mb-6">
               <div className="relative w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
                 <div className="absolute inset-0 bg-[#398FAE] opacity-20 rounded-xl"></div>
-                <Mail className="relative w-5 h-5 text-[#398FAE]"/>
+                <Mail className="relative w-5 h-5 text-[#398FAE]" />
               </div>
               <h3 className="text-base font-bold text-gray-900">Recipient Details</h3>
             </div>
@@ -509,9 +532,8 @@ const DeliveryMethodStep = () => {
                   value={formData.recipientFullName}
                   onChange={(e) => handleInputChange('recipientFullName', e.target.value)}
                   placeholder="Recipient's Name*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
-                    errors.recipientFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
-                  }`}
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.recipientFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                    }`}
                 />
                 {renderInputError('recipientFullName')}
               </div>
@@ -522,9 +544,8 @@ const DeliveryMethodStep = () => {
                   value={formData.recipientEmailAddress}
                   onChange={(e) => handleInputChange('recipientEmailAddress', e.target.value)}
                   placeholder="Email Address*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${
-                    errors.recipientEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
-                  }`}
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.recipientEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                    }`}
                 />
                 {renderInputError('recipientEmailAddress')}
               </div>
