@@ -8,8 +8,10 @@ import DynamicTable from "@/components/forms/DynamicTable";
 import { createColumnHelper } from "@tanstack/react-table";
 import Modal from "@/components/Modal";
 import VoucherDetails from "@/components/vouchers/VoucherDetails";
+import { useSession } from "@/contexts/SessionContext";
 
 export default function VouchersManagement() {
+  const session = useSession();
   const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -27,7 +29,12 @@ export default function VouchersManagement() {
   const fetchVouchers = async () => {
     setLoading(true);
     try {
-      const response = await getVouchers({ ...filters, page: pagination.currentPage || 1 });
+      const response = await getVouchers({ 
+        ...filters, 
+        page: pagination.currentPage || 1,
+        userId: session?.user?.id,
+        userRole: session?.user?.role,
+      });
       if (response.success) {
         setVouchers(response.data);
         setPagination(response.pagination);
@@ -45,8 +52,10 @@ export default function VouchersManagement() {
   };
 
   useEffect(() => {
-    fetchVouchers();
-  }, [filters, pagination.currentPage]);
+    if (session?.user) {
+      fetchVouchers();
+    }
+  }, [filters, pagination.currentPage, session?.user]);
 
   const handleSearch = (search) => {
     setFilters((prev) => ({ ...prev, search }));
@@ -85,10 +94,9 @@ export default function VouchersManagement() {
 
       if (response.ok && result.success) {
         toast.success("Shopify data sync initiated. Data will be updated shortly.", { id: toastId });
-        // Refetch vouchers after a short delay to allow sync to process
         setTimeout(() => {
           fetchVouchers();
-        }, 5000); // 5 second delay
+        }, 5000);
       } else {
         throw new Error(result.message || "Failed to sync Shopify data.");
       }
@@ -128,12 +136,14 @@ export default function VouchersManagement() {
       >
         <Eye className="w-4 h-4" />
       </button>
-     
     </div>
   );
 
+  // Conditionally show/hide columns based on role
+  const isAdmin = session?.user?.role === 'ADMIN';
+
   const customColumns = [
-     columnHelper.accessor("orderNumber", {
+    columnHelper.accessor("orderNumber", {
       header: "Order Number",
       cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,
     }),
@@ -141,18 +151,21 @@ export default function VouchersManagement() {
       header: "Voucher Code",
       cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,
     }),
-    columnHelper.accessor("user", {
-      header: "Customer",
-      cell: (info) => {
-        const user = info.getValue();
-        return (
-          <div>
-            <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
-            <div className="text-xs text-gray-500">{user?.email}</div>
-          </div>
-        );
-      },
-    }),
+    // Only show customer column for admin users
+    ...(isAdmin ? [
+      columnHelper.accessor("user", {
+        header: "Customer",
+        cell: (info) => {
+          const user = info.getValue();
+          return (
+            <div>
+              <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
+              <div className="text-xs text-gray-500">{user?.email}</div>
+            </div>
+          );
+        },
+      })
+    ] : []),
     columnHelper.accessor("totalAmount", {
       header: "Total Amount",
       cell: (info) => <div className="text-gray-900 font-medium">${info.getValue()?.toFixed(2)}</div>,
@@ -192,7 +205,7 @@ export default function VouchersManagement() {
           onSearch={handleSearch}
           onFilter={handleFilter}
           title="Vouchers & Gift Cards"
-          subtitle="Track and manage all user-purchased vouchers and gift cards."
+          subtitle={isAdmin ? "Track and manage all user-purchased vouchers and gift cards." : "View and manage your vouchers and gift cards."}
           searchPlaceholder="Search by code, user email, or status..."
           filters={[
             {
@@ -207,12 +220,12 @@ export default function VouchersManagement() {
             },
           ]}
           actions={[
-            {
+            ...(isAdmin ? [{
               label: syncing ? "Syncing..." : "Sync Shopify",
               icon: RefreshCw,
               onClick: handleSync,
               disabled: syncing,
-            },
+            }] : []),
             {
               label: "Export",
               icon: Download,

@@ -1,6 +1,6 @@
 'use client'
 
-import { 
+import {
   LogOut,
   Menu,
   Search,
@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useSession } from '@/contexts/SessionContext'
 import { destroySession } from '../../lib/action/userAction/session'
+import Link from 'next/link';
 
 const Header = ({ onMenuClick }) => {
   const [loading, setLoading] = useState(false)
@@ -68,7 +69,7 @@ const Header = ({ onMenuClick }) => {
           >
             <Menu className="w-5 h-5" />
           </button>
-          
+
           <div className="relative max-w-md flex gap-2">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
@@ -78,27 +79,35 @@ const Header = ({ onMenuClick }) => {
             />
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
-          <button className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
+          {/* <button className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
             <Bell className="w-5 h-5" />
-          </button>
-          
+          </button> */}
+
           <div className="flex items-center space-x-3">
+            {user.role === 'CUSTOMER' && (
+              <Link href="/">
+                <button className="btn-outline flex items-center gap-2 border text-black border-gray-300 p-3 rounded-lg hover:bg-blue-500 hover:text-white font-bold">
+                  Home Page
+                </button>
+              </Link>
+            )}
+
             <div className="text-right">
               <span className="text-sm font-medium text-gray-700 block">
                 Welcome, {getDisplayName()}
               </span>
             </div>
-            
+
             {/* User Avatar */}
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
               {user ? getUserInitials() : <User className="w-4 h-4" />}
             </div>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
+
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleLogout}
               disabled={loading}
             >

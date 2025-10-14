@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function getVouchers(params = {}) {
-  const { page = 1, search = '', status = '', dateFrom, dateTo } = params;
+  const { page = 1, search = '', status = '', dateFrom, dateTo, userId, userRole } = params;
   const pageSize = 10;
   const skip = (page - 1) * pageSize;
 
@@ -15,6 +15,14 @@ export async function getVouchers(params = {}) {
       { order: { user: { email: { contains: search, mode: 'insensitive' } } } },
     ],
   };
+
+  // Role-based filtering: if not admin, show only user's own records
+  if (userRole !== 'ADMIN' && userId) {
+    where.order = {
+      ...where.order,
+      userId: userId,
+    };
+  }
 
   if (status) {
     if (status === 'Redeemed') where.isRedeemed = true;

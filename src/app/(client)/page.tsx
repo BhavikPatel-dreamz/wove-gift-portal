@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Gift, MessageSquare, CheckCircle, Mail, Phone } from 'lucide-react';
 import Header from '../../components/client/home/Header';
 import HeroSection from '../../components/client/home/HeroSection';
 import ProcessSection from '../../components/client/home/ProcessSection';
@@ -10,7 +9,6 @@ import TestimonialsSection from '../../components/client/home/TestimonialsSectio
 import ActionsSection from '../../components/client/home/ActionsSection';
 import Features from '../../components/client/home/Features';
 import Footer from '../../components/client/home/Footer';
-
 import { getBrands, getOccasions } from '../../lib/action/brandFetch';
 
 

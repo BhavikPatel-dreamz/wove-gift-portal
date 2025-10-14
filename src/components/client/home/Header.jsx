@@ -1,5 +1,7 @@
+'use client';
 import { Gift, User, Heart, ShoppingCart, MapPin } from 'lucide-react';
 import Link from 'next/link';
+import { useSession } from '@/contexts/SessionContext'
 
 const navLinks = {
   "Home": "/",
@@ -9,6 +11,8 @@ const navLinks = {
 };
 
 const Header = () => {
+  const session = useSession();
+  
   return (
     <>
       {/* Top Banner */}
@@ -57,22 +61,40 @@ const Header = () => {
             {/* Right Section - Action Buttons */}
             <div className="flex items-center space-x-3 ml-auto">
 
-              {/* Login/Register Button */}
-              <Link href="/login">
-                <button className="btn-secondary">
-                  <User size={18} />
-                  Login / Register
-                </button>
-              </Link>
+              {session ? (
+                <>
+                  {session.user.role === 'ADMIN' && (
+                    <Link href="/admin/dashboard">
+                      <button className="btn-outline flex items-center gap-2">
+                        <User size={16} />
+                        Admin
+                      </button>
+                    </Link>
+                  )}
+                  {session.user.role === 'CUSTOMER' && (
+                    <Link href="/dashboard">
+                      <button className="btn-outline flex items-center gap-2">
+                        <User size={16} />
+                        Dashboard
+                      </button>
+                    </Link>
+                  )}
+                  <Link href="/api/auth/logout">
+                    <button className="btn-secondary">
+                      Logout
+                    </button>
+                  </Link>
+                </>
+              ) : (
+                <Link href="/login">
+                  <button className="btn-secondary">
+                    <User size={18} />
+                    Login / Register
+                  </button>
+                </Link>
+              )}
 
 
-              {/* Admin Button */}
-              <Link href="/admin/dashboard">
-                <button className="btn-outline flex items-center gap-2">
-                  <Heart size={16} />
-                  Admin
-                </button>
-              </Link>
 
               {/* Wishlist Icon Button */}
               {/* <button className="btn-icon-circle">
