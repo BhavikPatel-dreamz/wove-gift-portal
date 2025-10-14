@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { ArrowLeft, Shield, Check, CreditCard, Gift } from "lucide-react";
+import { ArrowLeft, Shield, Check, CreditCard, Gift, Printer, Download } from "lucide-react";
 import { goBack, setSelectedPaymentMethod } from "../../../redux/giftFlowSlice";
 import { createOrder } from "../../../lib/action/orderAction";
 import toast, { Toaster } from 'react-hot-toast';
@@ -13,6 +13,123 @@ if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
 }
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+
+// Print Gift Card Component
+const PrintableGiftCard = React.forwardRef(({ order, voucherCode, GiftCode, selectedBrand, selectedAmount, personalMessage, deliveryDetails }, ref) => {
+  return (
+    <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto">
+      {/* Gift Card Design */}
+      <div className="border-4 border-red-500 rounded-3xl p-8 bg-gradient-to-br from-red-50 to-pink-50 relative overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-red-200 rounded-full opacity-20 -mr-32 -mt-32"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-200 rounded-full opacity-20 -ml-24 -mb-24"></div>
+
+        <div className="relative z-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-24 h-24 bg-red-500 rounded-full mb-4">
+              {selectedBrand?.logo ? (
+                <img src={selectedBrand.logo} alt={selectedBrand.brandName} className="w-20 h-20 object-cover rounded-full" />
+              ) : (
+                <Gift className="w-12 h-12 text-white" />
+              )}
+            </div>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">Gift Card</h1>
+            <p className="text-xl text-gray-600">{selectedBrand?.brandName || 'Digital Gift Card'}</p>
+          </div>
+
+          {/* Amount */}
+          <div className="text-center mb-8">
+            <div className="inline-block bg-white rounded-2xl px-12 py-6 shadow-lg">
+              <p className="text-5xl font-bold text-red-500">
+                {selectedAmount?.currency || '$'}{selectedAmount?.value || order?.amount}
+              </p>
+            </div>
+          </div>
+
+          {/* Personal Message */}
+          {personalMessage && (
+            <div className="bg-white rounded-xl p-6 mb-6 shadow-md">
+              <p className="text-center text-gray-700 text-lg italic">"{personalMessage}"</p>
+              {deliveryDetails?.yourFullName && (
+                <p className="text-center text-gray-600 mt-3">- {deliveryDetails.yourFullName}</p>
+              )}
+            </div>
+          )}
+
+          {/* Voucher Code */}
+          <div className="bg-white rounded-xl p-6 mb-6 shadow-md">
+            <p className="text-sm text-gray-600 text-center mb-2">Gift Card Code</p>
+            {order.deliveryMethod == "print" ? (
+              <p className="text-3xl font-mono font-bold text-center text-gray-800 tracking-wider">
+                {GiftCode || voucherCode?.code || '****-****-****'}
+              </p>
+            ) : (
+              <p className="text-3xl font-mono font-bold text-center text-gray-800 tracking-wider">
+                {voucherCode?.code || '****-****-****'}
+              </p>
+            )}
+          </div>
+
+          {/* Recipient Info */}
+          <div className="bg-white rounded-xl p-6 mb-6 shadow-md">
+            <p className="text-sm text-gray-600 mb-2">To:</p>
+            <p className="text-xl font-semibold text-gray-800">
+              {deliveryDetails?.recipientFullName || deliveryDetails?.recipientName || 'Valued Customer'}
+            </p>
+          </div>
+
+          {/* Order Details */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-white rounded-xl p-4 shadow-md">
+              <p className="text-xs text-gray-600 mb-1">Order Number</p>
+              <p className="text-sm font-semibold text-gray-800">{order?.orderNumber}</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-md">
+              <p className="text-xs text-gray-600 mb-1">Valid Until</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {voucherCode?.expiresAt
+                  ? new Date(voucherCode.expiresAt).toLocaleDateString()
+                  : 'No Expiry'
+                }
+              </p>
+            </div>
+          </div>
+
+          {/* Redemption Link */}
+          {voucherCode?.tokenizedLink && (
+            <div className="bg-white rounded-xl p-4 shadow-md text-center">
+              <p className="text-xs text-gray-600 mb-2">Redeem Online</p>
+              <p className="text-xs font-mono text-gray-700 break-all">
+                {voucherCode.tokenizedLink}
+              </p>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="text-center mt-8 text-sm text-gray-600">
+            <p>Thank you for choosing {selectedBrand?.brandName || 'our gift card'}!</p>
+            <p className="mt-2">For support, please contact customer service</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Terms and Conditions (Print Only) */}
+      <div className="mt-8 text-xs text-gray-600 space-y-2">
+        <p className="font-semibold">Terms & Conditions:</p>
+        <ul className="list-disc list-inside space-y-1 ml-2">
+          <li>This gift card is valid for one-time use only</li>
+          <li>Gift cards cannot be redeemed for cash</li>
+          <li>Lost or stolen gift cards cannot be replaced</li>
+          <li>Check balance and terms at the merchant's website</li>
+          <li>This gift card is issued by {selectedBrand?.brandName}</li>
+        </ul>
+      </div>
+    </div>
+  );
+});
+
+PrintableGiftCard.displayName = 'PrintableGiftCard';
 
 // Stripe Card Payment Component
 const StripeCardPayment = ({ total, isProcessing, onPayment }) => {
@@ -34,7 +151,6 @@ const StripeCardPayment = ({ total, isProcessing, onPayment }) => {
         return;
       }
 
-      // Send token to backend for payment processing
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/payment/process-card`, {
         method: 'POST',
         headers: {
@@ -122,6 +238,9 @@ const PaymentStep = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
+  const [voucherCode, setVoucherCode] = useState(null);
+  const [GiftCode, setGiftCode] = useState(null);
+  const printRef = useRef();
 
   const {
     selectedBrand,
@@ -152,6 +271,36 @@ const PaymentStep = () => {
     return baseAmount + serviceFee;
   };
 
+  const handlePrint = () => {
+    const printContent = printRef.current;
+    const windowPrint = window.open('', '', 'width=800,height=600');
+    windowPrint.document.write('<html><head><title>Gift Card</title>');
+    windowPrint.document.write('<style>body{font-family:Arial,sans-serif;margin:0;padding:20px;}@media print{body{margin:0;}}</style>');
+    windowPrint.document.write('</head><body>');
+    windowPrint.document.write(printContent.innerHTML);
+    windowPrint.document.write('</body></html>');
+    windowPrint.document.close();
+    windowPrint.focus();
+    setTimeout(() => {
+      windowPrint.print();
+      windowPrint.close();
+    }, 250);
+  };
+
+  const handleDownloadPDF = async () => {
+    toast.loading('Generating PDF...');
+    try {
+      // Here you would typically use a library like jsPDF or html2pdf
+      // For now, we'll trigger print which allows "Save as PDF"
+      handlePrint();
+      toast.dismiss();
+      toast.success('Use "Save as PDF" in the print dialog');
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Failed to generate PDF');
+    }
+  };
+
   const handlePayment = async (paymentData) => {
     setIsProcessing(true);
     setError(null);
@@ -175,6 +324,8 @@ const PaymentStep = () => {
       const result = await createOrder(orderData);
       if (result?.success) {
         setOrder(result?.data?.order);
+        setVoucherCode(result?.data?.voucherCode);
+        setGiftCode(result?.data?.giftCard?.code)
         toast.success('Order placed successfully!', { id: toastId });
       } else {
         setError(result.error);
@@ -190,44 +341,122 @@ const PaymentStep = () => {
 
   if (order) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50 p-4 md:p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50 p-4 md:p-6">
         <Toaster />
-        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-12 h-12 text-green-500" />
+
+        {/* Success Message - Only visible on screen */}
+        <div className="max-w-2xl mx-auto mb-6 print:hidden">
+          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check className="w-12 h-12 text-green-500" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">Payment Successful!</h1>
+            <p className="text-gray-600 mb-6">Your order has been placed successfully.</p>
+
+            <div className="bg-gray-50 rounded-xl p-6 space-y-4 text-left mb-6">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Order Number:</span>
+                <span className="font-semibold text-gray-800">{order.orderNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Amount:</span>
+                <span className="font-semibold text-gray-800">{order.currency} {order.totalAmount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Delivery Method:</span>
+                <span className="font-semibold text-gray-800 capitalize">{order.deliveryMethod}</span>
+              </div>
+            </div>
+
+            {deliveryMethod === 'print' && (
+              <div className="flex gap-3 mb-6">
+                <button
+                  onClick={handlePrint}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <Printer className="w-5 h-5" />
+                  Print Gift Card
+                </button>
+                <button
+                  onClick={handleDownloadPDF}
+                  className="flex-1 bg-purple-500 hover:bg-purple-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <Download className="w-5 h-5" />
+                  Download PDF
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200"
+            >
+              Send Another Gift
+            </button>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Payment Successful!</h1>
-          <p className="text-gray-600 mb-6">Your order has been placed successfully.</p>
-          <div className="bg-gray-50 rounded-xl p-6 space-y-4 text-left">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Order Number:</span>
-              <span className="font-semibold text-gray-800">{order.orderNumber}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Amount:</span>
-              <span className="font-semibold text-gray-800">{order.currency} {order.totalAmount}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Payment Method:</span>
-              <span className="font-semibold text-gray-800 capitalize">{order.paymentMethod}</span>
-            </div>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-8 w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200"
-          >
-            Send Another Gift
-          </button>
+        </div>
+
+        {/* Printable Gift Card */}
+        <div className="hidden print:block">
+          <PrintableGiftCard
+            ref={printRef}
+            order={order}
+            voucherCode={voucherCode}
+            GiftCode={GiftCode}
+            selectedBrand={selectedBrand}
+            selectedAmount={selectedAmount}
+            personalMessage={personalMessage}
+            deliveryDetails={deliveryDetails}
+          />
+        </div>
+
+        {/* Preview - Only visible on screen */}
+        <div className="print:hidden">
+          <PrintableGiftCard
+            ref={printRef}
+            order={order}
+            voucherCode={voucherCode}
+            GiftCode={GiftCode}
+            selectedBrand={selectedBrand}
+            selectedAmount={selectedAmount}
+            personalMessage={personalMessage}
+            deliveryDetails={deliveryDetails}
+          />
         </div>
       </div>
     );
   }
 
+  const getDeliveryIcon = () => {
+    switch (deliveryMethod) {
+      case 'email':
+        return '📧';
+      case 'whatsapp':
+        return '💬';
+      case 'print':
+        return '🖨️';
+      default:
+        return '📱';
+    }
+  };
+
+  const getDeliveryText = () => {
+    switch (deliveryMethod) {
+      case 'email':
+        return 'Email';
+      case 'whatsapp':
+        return 'WhatsApp';
+      case 'print':
+        return 'Print at Home';
+      default:
+        return deliveryMethod;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <Toaster />
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <button
             onClick={() => dispatch(goBack())}
@@ -241,9 +470,7 @@ const PaymentStep = () => {
           <p className="text-gray-600 mt-2">Let's deliver your beautiful gift and make someone's day absolutely wonderful</p>
         </div>
 
-        {/* Main Grid */}
         <div className="grid lg:grid-cols-5 gap-6">
-          {/* Left Column - Payment Method */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center mb-4">
@@ -252,13 +479,11 @@ const PaymentStep = () => {
               </div>
               <p className="text-sm text-gray-600 mb-6">Secure card payment</p>
 
-              {/* Security Notice */}
               <div className="mb-6 p-3 bg-green-50 rounded-lg border border-green-200 flex items-start">
                 <Check className="w-4 h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
                 <span className="text-xs text-green-700 font-medium">Your payment is 100% secure and encrypted</span>
               </div>
 
-              {/* Payment Method Card */}
               <div className="p-4 rounded-lg border-2 border-blue-500 bg-blue-50">
                 <div className="flex items-start">
                   <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
@@ -271,7 +496,6 @@ const PaymentStep = () => {
                 </div>
               </div>
 
-              {/* Payment Form */}
               <div className="mt-5">
                 <Elements
                   stripe={stripePromise}
@@ -291,9 +515,7 @@ const PaymentStep = () => {
             </div>
           </div>
 
-          {/* Right Column - Summary */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Gift Summary */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center mb-4">
                 <Gift className="w-5 h-5 text-red-500 mr-2" />
@@ -302,7 +524,6 @@ const PaymentStep = () => {
               </div>
               <p className="text-sm text-gray-600 mb-4">Ready to make someone smile</p>
 
-              {/* Gift Card */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl mb-4">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-red-500 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -325,23 +546,20 @@ const PaymentStep = () => {
                 </div>
               </div>
 
-              {/* Message */}
               <div className="p-4 bg-gray-50 rounded-xl mb-4">
                 <p className="text-sm text-gray-700 leading-relaxed">
                   "{personalMessage}"
                 </p>
               </div>
 
-              {/* Delivery Info */}
               <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                <MessageCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                <span className="text-2xl">{getDeliveryIcon()}</span>
                 <span className="text-sm text-green-700">
-                  <span className="font-semibold">Delivering via {deliveryMethod?.toUpperCase()}</span>
+                  <span className="font-semibold">Delivering via {getDeliveryText()}</span>
                 </span>
               </div>
             </div>
 
-            {/* Payment Summary */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h3 className="text-lg font-bold text-gray-900 mb-6">Payment summary</h3>
 
@@ -369,8 +587,6 @@ const PaymentStep = () => {
                   <span>{error}</span>
                 </div>
               )}
-
-
             </div>
           </div>
         </div>

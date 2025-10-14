@@ -56,7 +56,6 @@ function generateTokenizedLink(voucherCodeId) {
   return `${baseUrl}/redeem/${token}`;
 }
 
-
 // ==================== VALIDATION FUNCTIONS ====================
 function validateOrderData(orderData) {
   if (!orderData.selectedBrand?.id) {
@@ -73,25 +72,24 @@ function validateOrderData(orderData) {
 
   if (
     !orderData.deliveryMethod ||
-    !["whatsapp", "email"].includes(orderData.deliveryMethod)
+    !["whatsapp", "email", "print"].includes(orderData.deliveryMethod)
   ) {
     throw new ValidationError(
-      "Valid delivery method is required (whatsapp or email)"
+      "Valid delivery method is required (whatsapp, email, or print)"
     );
   }
 
   const { deliveryDetails } = orderData;
 
-  if (orderData.deliveryMethod === "whatsapp") {
-    if (!deliveryDetails?.recipientName) {
-      throw new ValidationError("Recipient full name is required");
-    }
-  } else {
-    if (!deliveryDetails?.recipientFullName) {
-      throw new ValidationError("Recipient full name is required");
-    }
+  // Recipient name validation - check both possible field names
+  const recipientName = deliveryDetails?.recipientFullName || deliveryDetails?.recipientName;
+  
+  if (!recipientName && orderData.deliveryMethod !== "print") {
+    throw new ValidationError("Recipient full name is required");
   }
 
+
+  // Email validation for email delivery
   if (
     orderData.deliveryMethod === "email" &&
     !deliveryDetails?.recipientEmailAddress
@@ -99,6 +97,7 @@ function validateOrderData(orderData) {
     throw new ValidationError("Recipient email is required for email delivery");
   }
 
+  // WhatsApp validation for WhatsApp delivery
   if (
     orderData.deliveryMethod === "whatsapp" &&
     !deliveryDetails?.recipientWhatsAppNumber
@@ -108,18 +107,25 @@ function validateOrderData(orderData) {
     );
   }
 
+  // // For print delivery, no contact info required but recipient name is needed
+  // if (orderData.deliveryMethod === "print") {
+  //   if (!deliveryDetails?.recipientFullName && !deliveryDetails?.recipientName) {
+  //     throw new ValidationError("Recipient name is required for print delivery");
+  //   }
+  // }
+
   return true;
 }
 
 // ==================== DATABASE OPERATIONS ====================
-async function createReceiverDetail(deliveryDetails) {
+async function createReceiverDetail(deliveryDetails, deliveryMethod) {
   try {
     return await prisma.receiverDetail.create({
       data: {
         name:
           deliveryDetails.recipientFullName || deliveryDetails?.recipientName,
-        email: deliveryDetails.recipientEmailAddress || null,
-        phone: deliveryDetails.recipientWhatsAppNumber || null,
+        email: deliveryMethod === "email" ? deliveryDetails.recipientEmailAddress : null,
+        phone: deliveryMethod === "whatsapp" ? deliveryDetails.recipientWhatsAppNumber : null,
       },
     });
   } catch (error) {
@@ -196,16 +202,22 @@ async function createShopifyGiftCard(selectedBrand, orderData) {
   const voucherConfig = selectedBrand.vouchers[0];
 
   const giftCardData = {
-    customerEmail: orderData.deliveryDetails?.recipientEmailAddress || "",
+    customerEmail: orderData.deliveryDetails?.recipientEmailAddress || orderData.deliveryDetails?.yourEmailAddress || "",
     firstName:
       orderData.deliveryDetails?.recipientFullName?.split(" ")[0] ||
+      orderData.deliveryDetails?.recipientName?.split(" ")[0] ||
       "Recipient",
     lastName:
       orderData.deliveryDetails?.recipientFullName
         ?.split(" ")
         .slice(1)
-        .join(" ") || "",
-    note: `Order to be generated`,
+        .join(" ") || 
+      orderData.deliveryDetails?.recipientName
+        ?.split(" ")
+        .slice(1)
+        .join(" ") || 
+      "",
+    note: `Order to be generated - Delivery Method: ${orderData.deliveryMethod}`,
     denominationValue:
       voucherConfig.denominationType === "fixed"
         ? orderData.selectedAmount.value
@@ -403,11 +415,20 @@ async function updateOrCreateSettlement(selectedBrand, order) {
 // ==================== DELIVERY OPERATIONS ====================
 async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
   try {
+    // For print delivery, skip sending messages
+    if (deliveryMethod === "print") {
+      console.log("✅ Print delivery selected - skipping message delivery");
+      return { success: true, message: "Print delivery - no message sent" };
+    }
+
+    // For email and WhatsApp, send messages as before
     if (deliveryMethod === "whatsapp") {
       return await SendWhatsappMessages(orderData, giftCard);
-    } else {
+    } else if (deliveryMethod === "email") {
       return await SendGiftCardEmail(orderData, giftCard);
     }
+
+    return { success: true, message: "No delivery required" };
   } catch (error) {
     throw new ExternalServiceError(
       `Failed to send ${deliveryMethod} message: ${error.message}`,
@@ -418,10 +439,16 @@ async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
 
 async function createDeliveryLog(order, voucherCode, orderData) {
   try {
-    const recipient =
-      orderData.deliveryMethod === "email"
-        ? orderData.deliveryDetails.recipientEmailAddress
-        : orderData.deliveryDetails.recipientWhatsAppNumber;
+    let recipient = "Print delivery";
+    
+    if (orderData.deliveryMethod === "email") {
+      recipient = orderData.deliveryDetails.recipientEmailAddress;
+    } else if (orderData.deliveryMethod === "whatsapp") {
+      recipient = orderData.deliveryDetails.recipientWhatsAppNumber;
+    }
+
+    // For print delivery, mark as completed immediately since no delivery is needed
+    const status = orderData.deliveryMethod === "print" ? "DELIVERED" : (order.scheduledFor ? "PENDING" : "PENDING");
 
     return await prisma.deliveryLog.create({
       data: {
@@ -429,8 +456,9 @@ async function createDeliveryLog(order, voucherCode, orderData) {
         voucherCodeId: voucherCode.id,
         method: orderData.deliveryMethod || "whatsapp",
         recipient,
-        status: order.scheduledFor ? "PENDING" : "PENDING",
-        attemptCount: 0,
+        status,
+        attemptCount: orderData.deliveryMethod === "print" ? 1 : 0,
+        deliveredAt: orderData.deliveryMethod === "print" ? new Date() : null,
       },
     });
   } catch (error) {
@@ -484,7 +512,7 @@ export const createOrder = async (orderData) => {
 
     // Step 3: Create receiver detail
     console.log("Step 3: Creating receiver detail...");
-    const receiver = await createReceiverDetail(orderData.deliveryDetails);
+    const receiver = await createReceiverDetail(orderData.deliveryDetails, orderData.deliveryMethod);
 
     // Step 4: Create order record
     console.log("Step 4: Creating order record...");
@@ -528,15 +556,15 @@ export const createOrder = async (orderData) => {
     console.log("Step 8: Updating settlement records...");
     await updateOrCreateSettlement(orderData.selectedBrand, order);
 
-    // Step 9: Send delivery message
-    console.log("Step 9: Sending delivery message...");
+    // Step 9: Send delivery message (skip for print)
+    console.log("Step 9: Processing delivery...");
     const deliveryResult = await sendDeliveryMessage(
       orderData,
       shopifyGiftCard,
       orderData.deliveryMethod
     );
 
-    if (!deliveryResult.success) {
+    if (!deliveryResult.success && orderData.deliveryMethod !== "print") {
       throw new ExternalServiceError(
         `Message delivery failed: ${deliveryResult.message}`,
         deliveryResult
@@ -565,23 +593,23 @@ export const createOrder = async (orderData) => {
       await cleanupOnError(order?.id, voucherCode?.id);
     }
 
-    // Throw error with proper status code
+    // Return structured error
     if (error instanceof ValidationError) {
-      throw {
+      return {
         success: false,
         error: error.message,
         statusCode: error.statusCode,
         errorType: error.name,
       };
     } else if (error instanceof AuthenticationError) {
-      throw {
+      return {
         success: false,
         error: error.message,
         statusCode: error.statusCode,
         errorType: error.name,
       };
     } else if (error instanceof ExternalServiceError) {
-      throw {
+      return {
         success: false,
         error: error.message,
         statusCode: error.statusCode,
@@ -589,7 +617,7 @@ export const createOrder = async (orderData) => {
         originalError: error.originalError?.message,
       };
     } else {
-      throw {
+      return {
         success: false,
         error: error.message || "An unexpected error occurred",
         statusCode: 500,
