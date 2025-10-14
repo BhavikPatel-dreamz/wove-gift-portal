@@ -1312,3 +1312,249 @@ export async function getSettlements(params = {}) {
     };
   }
 }
+
+export async function getSettlementDetailsByBrandId(brandId) {
+  try {
+    // Fetch settlement data with brand info
+    const settlement = await prisma.settlements.findFirst({
+      where: { brandId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        brand: {
+          include: {
+            brandTerms: true,
+            brandBankings: true,
+            brandContacts: true,
+            integrations: true,
+          },
+        },
+      },
+    });
+
+    if (!settlement) {
+      return {
+        success: false,
+        message: "Settlement not found",
+        status: 404,
+      };
+    }
+
+    // Fetch all vouchers for this brand
+    const vouchers = await prisma.vouchers.findMany({
+      where: { brandId },
+      include: {
+        denominations: true,
+      },
+    });
+
+    // Fetch all voucher codes and their redemption data
+    const voucherCodes = await prisma.voucherCode.findMany({
+      where: {
+        voucher: { brandId },
+      },
+      include: {
+        voucher: true,
+        redemptions: true,
+        deliveryLogs: true,
+      },
+    });
+
+    // Fetch all orders for this brand to get sales data
+    const orders = await prisma.order.findMany({
+      where: { brandId },
+      include: {
+        voucherCodes: true,
+      },
+    });
+
+    // Process voucher breakdown data
+    const voucherBreakdown = vouchers.map((voucher) => {
+      const relevantCodes = voucherCodes.filter(
+        (vc) => vc.voucherId === voucher.id
+      );
+
+      const totalIssued = relevantCodes.length;
+      const totalRedeemed = relevantCodes.filter((vc) => vc.isRedeemed).length;
+      const totalUnredeemed = totalIssued - totalRedeemed;
+
+      const totalRedeemedAmount = relevantCodes.reduce((sum, vc) => {
+        return (
+          sum +
+          (vc.redemptions?.reduce((rSum, r) => rSum + r.amountRedeemed, 0) || 0)
+        );
+      }, 0);
+
+      const denominationBreakdown = voucher.denominations.map((denom) => {
+        const denomCodes = relevantCodes.filter(
+          (vc) => vc.originalValue === denom.value
+        );
+        const denomRedeemed = denomCodes.filter((vc) => vc.isRedeemed).length;
+
+        return {
+          id: denom.id,
+          value: denom.value,
+          currency: denom.currency,
+          issued: denomCodes.length,
+          redeemed: denomRedeemed,
+          unredeemed: denomCodes.length - denomRedeemed,
+          percentage:
+            denomCodes.length > 0
+              ? ((denomRedeemed / denomCodes.length) * 100).toFixed(2)
+              : "0.00",
+          expiresAt: denom.expiresAt,
+          isActive: denom.isActive,
+        };
+      });
+
+      return {
+        id: voucher.id,
+        denominationType: voucher.denominationType,
+        totalIssued,
+        totalRedeemed,
+        totalUnredeemed,
+        redemptionRate:
+          totalIssued > 0
+            ? ((totalRedeemed / totalIssued) * 100).toFixed(2)
+            : "0.00",
+        totalRedeemedAmount,
+        partialRedemption: voucher.partialRedemption,
+        stackable: voucher.stackable,
+        isActive: voucher.isActive,
+        expiresAt: voucher.expiresAt,
+        denominationBreakdown,
+        createdAt: voucher.createdAt,
+        updatedAt: voucher.updatedAt,
+      };
+    });
+
+    // Calculate summary statistics
+    const totalOrderAmount = orders.reduce(
+      (sum, order) => sum + order.totalAmount,
+      0
+    );
+    const totalVouchersIssued = voucherCodes.length;
+    const totalVouchersRedeemed = voucherCodes.filter(
+      (vc) => vc.isRedeemed
+    ).length;
+    const totalVouchersUnredeemed = totalVouchersIssued - totalVouchersRedeemed;
+
+    // Delivery logs analysis
+    const deliveryLogs = await prisma.deliveryLog.findMany({
+      where: {
+        order: { brandId },
+      },
+    });
+
+    const deliverySummary = {
+      total: deliveryLogs.length,
+      pending: deliveryLogs.filter((dl) => dl.status === "PENDING").length,
+      sent: deliveryLogs.filter((dl) => dl.status === "SENT").length,
+      delivered: deliveryLogs.filter((dl) => dl.status === "DELIVERED").length,
+      failed: deliveryLogs.filter((dl) => dl.status === "FAILED").length,
+      bounced: deliveryLogs.filter((dl) => dl.status === "BOUNCED").length,
+    };
+
+    // Revenue calculations
+    const totalCommission = settlement.commissionAmount || 0;
+    const totalBreakage = settlement.breakageAmount || 0;
+    const totalVAT = settlement.vatAmount || 0;
+
+    return {
+      success: true,
+      data: {
+        settlement: {
+          id: settlement.id,
+          brandId: settlement.brandId,
+          settlementPeriod: `${new Date(
+            settlement.periodStart
+          ).toLocaleDateString()} - ${new Date(
+            settlement.periodEnd
+          ).toLocaleDateString()}`,
+          periodStart: settlement.periodStart,
+          periodEnd: settlement.periodEnd,
+          totalSold: settlement.totalSoldAmount,
+          totalRedeemed: settlement.redeemedAmount,
+          outstanding: settlement.outstandingAmount,
+          commissionAmount: totalCommission,
+          breakageAmount: totalBreakage,
+          vatAmount: totalVAT,
+          netPayable: settlement.netPayable,
+          status: settlement.status,
+          paidAt: settlement.paidAt,
+          paymentReference: settlement.paymentReference,
+          notes: settlement.notes,
+        },
+        brand: {
+          id: settlement.brand.id,
+          brandName: settlement.brand.brandName,
+          logo: settlement.brand.logo,
+          currency: settlement.brand.currency,
+          domain: settlement.brand.domain,
+          website: settlement.brand.website,
+          contact: settlement.brand.contact,
+          description: settlement.brand.description,
+          categoryName: settlement.brand.categoryName,
+          isActive: settlement.brand.isActive,
+          isPrimary: settlement.brand.isPrimary,
+          isFeature: settlement.brand.isFeature,
+        },
+        brandTerms: settlement.brand.brandTerms
+          ? {
+              settlementTrigger: settlement.brand.brandTerms.settlementTrigger,
+              commissionType: settlement.brand.brandTerms.commissionType,
+              commissionValue: settlement.brand.brandTerms.commissionValue,
+              maxDiscount: settlement.brand.brandTerms.maxDiscount,
+              minOrderValue: settlement.brand.brandTerms.minOrderValue,
+              breakagePolicy: settlement.brand.brandTerms.breakagePolicy,
+              breakageShare: settlement.brand.brandTerms.breakageShare,
+              contractStart: settlement.brand.brandTerms.contractStart,
+              contractEnd: settlement.brand.brandTerms.contractEnd,
+              vatRate: settlement.brand.brandTerms.vatRate,
+            }
+          : null,
+        brandBanking: settlement.brand.brandBankings
+          ? {
+              settlementFrequency:
+                settlement.brand.brandBankings.settlementFrequency,
+              payoutMethod: settlement.brand.brandBankings.payoutMethod,
+              accountHolder: settlement.brand.brandBankings.accountHolder,
+              accountNumber: settlement.brand.brandBankings.accountNumber,
+              bankName: settlement.brand.brandBankings.bankName,
+              branchCode: settlement.brand.brandBankings.branchCode,
+              country: settlement.brand.brandBankings.country,
+              accountVerification:
+                settlement.brand.brandBankings.accountVerification,
+            }
+          : null,
+        brandContacts: settlement.brand.brandContacts.map((contact) => ({
+          id: contact.id,
+          name: contact.name,
+          role: contact.role,
+          email: contact.email,
+          phone: contact.phone,
+          isPrimary: contact.isPrimary,
+        })),
+        voucherBreakdown,
+        summary: {
+          totalOrderAmount,
+          totalVouchersIssued,
+          totalVouchersRedeemed,
+          totalVouchersUnredeemed,
+          voucherRedemptionRate:
+            totalVouchersIssued > 0
+              ? ((totalVouchersRedeemed / totalVouchersIssued) * 100).toFixed(2)
+              : "0.00",
+          deliverySummary,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching settlement details:", error);
+    return {
+      success: false,
+      message: "Failed to fetch settlement details",
+      error: error instanceof Error ? error.message : "Unknown error",
+      status: 500,
+    };
+  }
+}

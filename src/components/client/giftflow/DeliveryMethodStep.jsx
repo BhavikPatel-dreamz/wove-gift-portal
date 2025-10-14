@@ -355,7 +355,7 @@ const DeliveryMethodStep = () => {
         {/* Right Side - WhatsApp Phone Preview */}
         <div className="flex items-center justify-center relative">
           {/* Decorative Circle Background */}
-          <div className="absolute w-[420px] h-[420px] bg-gradient-to-br from-green-100 to-green-200 rounded-full opacity-60 -z-10"></div>
+          <div className="absolute w-[500px] h-[420px] bg-gradient-to-br from-green-100 to-green-200 rounded-full opacity-60 -z-10"></div>
 
           <div className="relative z-10">
             <div className="w-[280px] h-[560px] bg-black rounded-[3rem] p-2.5 shadow-2xl">
@@ -394,7 +394,7 @@ const DeliveryMethodStep = () => {
                         <p className="text-xs font-semibold text-gray-900">Friend Sent you a gift card</p>
                         <p className="text-sm font-bold text-red-500">{selectedAmount.currency + " " + selectedAmount.value}</p>
                         <p className="text-xs text-gray-700 leading-relaxed">
-                         "{personalMessage}"
+                          "{personalMessage}"
                         </p>
                         <div className="mt-3">
                           <p className="text-sm font-semibold text-gray-900">Gift Code</p>
@@ -443,33 +443,40 @@ const DeliveryMethodStep = () => {
   );
 
   const renderEmailForm = () => (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center pt-10 pb-8 px-6">
-        <h2 className="text-2xl font-bold text-gray-900">Email Details</h2>
+    <div className="text-black">
+      <div className="text-center pt-8 pb-4 px-2">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Email Details</h2>
+        <p className="text-gray-600 text-sm">
+          Send the gift card via email with your personal message.
+        </p>
       </div>
 
       {/* Main Content */}
-      <div className="px-8 pb-8 w-full">
-        <div className="flex gap-5 text-black">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-2 pb-8">
+        {/* Left Side - Form */}
+        <div className="space-y-6">
           {/* Your Information Section */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm w-full">
-            <div className="flex items-center mb-6">
-              <div className="relative w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+          <div className="rounded-2xl border border-gray-200">
+            <div className="bg-blue-50 flex items-start mb-4 border-b border-[#398FAE] p-4">
+              <div className="relative w-12 h-12 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
                 <div className="absolute inset-0 bg-[#398FAE] opacity-20 rounded-xl"></div>
-                <User className="relative w-5 h-5 text-[#398FAE]" />
+                <User className="relative w-6 h-6 text-[#398FAE]" />
               </div>
-              <h3 className="text-base font-bold text-gray-900">Your Information</h3>
+
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Your Information</h3>
+                <p className="text-sm text-gray-600">We need your details to send the email</p>
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 m-6">
               <div>
                 <input
                   type="text"
                   value={formData.yourFullName}
                   onChange={(e) => handleInputChange('yourFullName', e.target.value)}
                   placeholder="Your Full Name*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.yourFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                     }`}
                 />
                 {renderInputError('yourFullName')}
@@ -481,7 +488,7 @@ const DeliveryMethodStep = () => {
                   value={formData.yourEmailAddress}
                   onChange={(e) => handleInputChange('yourEmailAddress', e.target.value)}
                   placeholder="Your Email Address*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.yourEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                     }`}
                 />
                 {renderInputError('yourEmailAddress')}
@@ -493,10 +500,10 @@ const DeliveryMethodStep = () => {
                   <select
                     value={formData.yourPhoneCountryCode}
                     onChange={(e) => handleInputChange('yourPhoneCountryCode', e.target.value)}
-                    className="w-24 p-3.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-pink-400 outline-none transition-all text-sm"
+                    className="w-28 p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all bg-white text-sm"
                   >
                     {countryCodes.map(({ code, country }) => (
-                      <option key={code} value={code}>{code}</option>
+                      <option key={code} value={code}>{code} {country}</option>
                     ))}
                   </select>
                   <div className="flex-1">
@@ -505,7 +512,7 @@ const DeliveryMethodStep = () => {
                       value={formData.yourPhoneNumber}
                       onChange={(e) => handleInputChange('yourPhoneNumber', e.target.value)}
                       placeholder="10 digit number"
-                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.yourPhoneNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                      className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourPhoneNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                         }`}
                     />
                   </div>
@@ -516,23 +523,26 @@ const DeliveryMethodStep = () => {
           </div>
 
           {/* Recipient Details Section */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm w-full">
-            <div className="flex items-center mb-6">
-              <div className="relative w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+          <div className="rounded-2xl border border-gray-200">
+            <div className="bg-blue-50 flex items-start mb-4 border-b border-[#398FAE] p-4">
+              <div className="relative w-12 h-12 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
                 <div className="absolute inset-0 bg-[#398FAE] opacity-20 rounded-xl"></div>
-                <Mail className="relative w-5 h-5 text-[#398FAE]" />
+                <Mail className="relative w-6 h-6 text-[#398FAE]" />
               </div>
-              <h3 className="text-base font-bold text-gray-900">Recipient Details</h3>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Recipient Details</h3>
+                <p className="text-sm text-gray-600">Who are you sending this gift to?</p>
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 m-6">
               <div>
                 <input
                   type="text"
                   value={formData.recipientFullName}
                   onChange={(e) => handleInputChange('recipientFullName', e.target.value)}
                   placeholder="Recipient's Name*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.recipientFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.recipientFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                     }`}
                 />
                 {renderInputError('recipientFullName')}
@@ -544,10 +554,126 @@ const DeliveryMethodStep = () => {
                   value={formData.recipientEmailAddress}
                   onChange={(e) => handleInputChange('recipientEmailAddress', e.target.value)}
                   placeholder="Email Address*"
-                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all text-sm placeholder:text-gray-400 ${errors.recipientEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-pink-400 focus:border-pink-400'
+                  className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.recipientEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                     }`}
                 />
                 {renderInputError('recipientEmailAddress')}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Email Preview */}
+        <div className="flex items-center justify-center relative">
+          {/* Decorative Circle Background */}
+          <div className="absolute w-[420px] h-[420px] bg-gradient-to-br from-blue-100 to-blue-200 rounded-full opacity-60 -z-10"></div>
+
+          <div className="relative z-10 w-full">
+            {/* Email Preview Card */}
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200 max-w-md">
+              {/* Preview Label */}
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <p className="text-sm font-semibold text-gray-700">Preview</p>
+                <X className="w-5 h-5 text-gray-400" />
+              </div>
+
+              {/* Email Subject */}
+              <div className="px-4 py-3 border-b border-gray-200 bg-white">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎉</span>
+                  <p className="text-sm font-semibold text-gray-900">Wishing you Happy Birthday!!!</p>
+                </div>
+              </div>
+
+              {/* Email From Section */}
+              <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-gray-600">D</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900">Friend</p>
+                    <p className="text-xs text-gray-600">&lt;hello@friend.com&gt;</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">12:30 PM (40 minutes ago)</span>
+                </div>
+              </div>
+
+              {/* Email Content */}
+              <div className="px-4 py-4 bg-gray-50">
+                <div className="bg-white rounded-lg p-4">
+                  {/* Header */}
+                  <div className="bg-pink-50 rounded-lg p-4 mb-4 text-center border border-pink-100">
+                    <p className="text-sm font-semibold text-gray-900 mb-3">You have received a Gift card!</p>
+
+                    {/* Gift Card Content */}
+                    <div className="mb-4">
+                      <p className="text-xs text-gray-700 mb-3">
+                        hi {formData.recipientFullName || 'jane'},
+                      </p>
+                      <p className="text-xs text-gray-700 mb-4">
+                        Congratulations, you've received gift card from {formData.yourFullName || 'friend'}.
+                      </p>
+
+                      {/* Personal Message */}
+                      {personalMessage && (
+                        <div className="bg-white rounded p-2 mb-3 border-l-4 border-pink-400">
+                          <p className="text-xs text-gray-700 italic">
+                            "{personalMessage}"
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Gift Card Image and Details */}
+                      <div className="flex items-center gap-2 w-fit mx-auto">
+                        {/* Image */}
+                        <div className="w-20 h-20 rounded-lg overflow-hidden bg-cyan-500 flex items-center justify-center">
+                          <Image
+                            src={selectedSubCategory?.image}
+                            width={80}
+                            height={80}
+                            alt="Gift card"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Details */}
+                        <div className="flex flex-col justify-center">
+                          <p className="text-xs font-semibold text-gray-900 mb-1">
+                            {selectedBrand?.name || 'Brand'}
+                          </p>
+                          <p className="text-sm font-bold text-red-500 mb-2">
+                            {selectedAmount.currency}
+                            {selectedAmount.value}
+                          </p>
+                          <p className="text-xs text-gray-700 mb-1">Gift Code</p>
+                          <p className="text-xs font-mono text-gray-700 font-semibold">XXX-XXX-XXX</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Separator */}
+                    <div className="w-full h-px bg-gray-300 my-3"></div>
+
+                    {/* Redeem Button */}
+                    <button
+                      className="w-full bg-gradient-to-r from-pink-500 to-orange-500 text-white py-2 rounded-full font-semibold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-1"
+                      onClick={() => {
+                        const url =
+                          selectedBrand?.website ||
+                          selectedBrand?.domain ||
+                          `https://${selectedBrand?.slug}.myshopify.com`;
+
+                        const fullUrl = url.startsWith("http") ? url : `https://${url}`;
+                        window.open(fullUrl, "_blank");
+                      }}
+                    >
+                      Redeem Now →
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -599,7 +725,7 @@ const DeliveryMethodStep = () => {
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-hidden">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto relative">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto relative">
               {/* Close Button */}
               <button
                 onClick={handleCloseModal}
@@ -609,7 +735,7 @@ const DeliveryMethodStep = () => {
               </button>
 
               {/* Modal Content */}
-              <div className="p-5">
+              <div className="p-4">
                 {selectedMethod === 'whatsapp' && renderWhatsAppForm()}
                 {selectedMethod === 'email' && renderEmailForm()}
                 {selectedMethod === 'print' && renderPrintForm()}
