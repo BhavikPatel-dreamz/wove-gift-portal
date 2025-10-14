@@ -13,13 +13,16 @@ import {
   ShoppingBag,
   Gift
 } from 'lucide-react';
+import { useSession } from '@/contexts/SessionContext'
 
 const Sidebar = ({ isOpen, onClose }) => {
   const pathname = usePathname();
+  const session = useSession()
+
+  console.log("session-------",session?.user?.role);
   
-  const menuItems = [
+  const allMenuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-    // { name: 'Orders', icon: ShoppingCart, href: '/orders' },
     { name: 'Gift Cards / Orders', icon: Gift, href: '/vouchers' },
     { name: 'Brands', icon: Store, href: '/brandsPartner' },
     { name: 'Occasions', icon: Calendar, href: '/occasions' },
@@ -27,6 +30,13 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Reports', icon: FileText, href: '/reports' },
     { name: 'Controls', icon: Settings, href: '/controls' },
   ];
+
+  // Filter menu items based on user role
+  const menuItems = session?.user?.role === 'ADMIN' 
+    ? allMenuItems 
+    : allMenuItems.filter(item => 
+        item.href === '/dashboard' || item.href === '/vouchers'
+      );
 
   // Check if the current path matches the menu item
   const isActiveItem = (href) => {
