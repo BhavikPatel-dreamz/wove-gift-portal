@@ -147,6 +147,10 @@ export default function VouchersManagement() {
       header: "Order Number",
       cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,
     }),
+    columnHelper.accessor("bulkOrderNumber", {
+      header: "Bulk Order Number",
+      cell: (info) => <div className="font-semibold text-gray-900">{info.getValue() || 'N/A'}</div>,
+    }),
     columnHelper.accessor("code", {
       header: "Voucher Code",
       cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,

@@ -82,6 +82,7 @@ export async function getVouchers(params = {}) {
         expiryDate: vc.expiresAt || vc.voucher.expiresAt,
         status: voucherStatus,
         orderNumber: vc.order.orderNumber,
+        bulkOrderNumber: vc.order.bulkOrderNumber,
       };
     });
 
