@@ -29,7 +29,7 @@ const CartPage = () => {
 
   const handleProceedToPayment = () => {
     if (session) {
-      router.push('/payment');
+      router.push('/checkout');
     } else {
       router.push('/login?redirect=/cart');
     }

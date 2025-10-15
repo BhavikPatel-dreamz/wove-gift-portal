@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
-import { goBack, goNext } from "../../../redux/giftFlowSlice";
+import { goBack, goNext, resetFlow } from "../../../redux/giftFlowSlice";
+import { addToCart } from "../../../redux/cartSlice";
 import { useSession } from '@/contexts/SessionContext'
 import { useRouter } from "next/navigation";
 
@@ -44,14 +45,9 @@ const ReviewConfirmStep = () => {
       selectedTiming,
       selectedSubCategory,
     };
-    const existingCart = JSON.parse(localStorage.getItem("cart")) || [];
-    const isDuplicate = existingCart.some(item => JSON.stringify(item) === JSON.stringify(cartItem));
-    if (!isDuplicate) {
-        localStorage.setItem("cart", JSON.stringify([...existingCart, cartItem]));
-        alert("Gift added to cart!");
-    } else {
-        alert("This gift is already in your cart.");
-    }
+    dispatch(addToCart(cartItem));
+    alert("Gift added to cart!");
+    dispatch(resetFlow());
   };
 
   const handleProceedToPayment = () => {

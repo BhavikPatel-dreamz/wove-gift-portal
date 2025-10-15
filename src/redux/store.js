@@ -1,9 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import giftFlowReducer from "./giftFlowSlice";
+import cartReducer from "./cartSlice";
 
 export const store = configureStore({
   reducer: {
     giftFlowReducer: giftFlowReducer,
+    cart: cartReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

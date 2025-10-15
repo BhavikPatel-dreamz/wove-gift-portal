@@ -230,6 +230,7 @@ model VoucherCode {
   qrCode            String?
   tokenizedLink     String?
   linkExpiresAt     DateTime?
+  lastSyncedRedeemedValue String?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   deliveryLogs      DeliveryLog[]
@@ -318,6 +319,7 @@ model Order {
   subCategoryId    String?
   customCardId     String?
   userId           String
+  bulkOrderNumber String?
   receiverDetailId String
   amount           Int
   quantity         Int                  @default(1)

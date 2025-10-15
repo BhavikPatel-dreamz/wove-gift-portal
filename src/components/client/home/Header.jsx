@@ -2,7 +2,7 @@
 import { Gift, User, Heart, ShoppingCart, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from '@/contexts/SessionContext'
-import { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux';
 
 const navLinks = {
   "Home": "/",
@@ -13,22 +13,7 @@ const navLinks = {
 
 const Header = () => {
   const session = useSession();
-  const [cartCount, setCartCount] = useState(0);
-
-  useEffect(() => {
-    const updateCartCount = () => {
-      const cart = JSON.parse(localStorage.getItem('cart')) || [];
-      setCartCount(cart.length);
-    };
-
-    updateCartCount();
-
-    window.addEventListener('storage', updateCartCount);
-
-    return () => {
-      window.removeEventListener('storage', updateCartCount);
-    };
-  }, []);
+  const cartCount = useSelector((state) => state.cart.items.length);
 
   return (
     <>
