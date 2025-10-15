@@ -50,22 +50,18 @@ const ReviewConfirmStep = () => {
     dispatch(resetFlow());
   };
 
-  const handleProceedToPayment = () => {
-    if (!session) {
-      const currentItem = {
-        selectedBrand,
-        selectedAmount,
-        personalMessage,
-        deliveryMethod,
-        deliveryDetails,
-        selectedTiming,
-        selectedSubCategory,
-      };
-      localStorage.setItem("checkoutItem", JSON.stringify(currentItem));
-      router.push("/login");
-    } else {
-      dispatch(goNext());
-    }
+  const handleBuyNow = () => {
+    const cartItem = {
+      selectedBrand,
+      selectedAmount,
+      personalMessage,
+      deliveryMethod,
+      deliveryDetails,
+      selectedTiming,
+      selectedSubCategory,
+    };
+    dispatch(addToCart(cartItem));
+    router.push('/checkout');
   };
 
   const formatAmount = (amount) => {
@@ -328,20 +324,26 @@ const ReviewConfirmStep = () => {
 
             {/* Action Buttons */}
             <div className="space-y-4">
-              <button
-                onClick={handleAddToCart}
-                className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
-              >
-                <CreditCard className="w-5 h-5" />
-                Add to Cart
-              </button>
-              <button
-                onClick={handleProceedToPayment}
-                className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-              >
-                Proceed to Payment
-                <span className="text-xl">›</span>
-              </button>
+              <div>
+                <button
+                  onClick={handleAddToCart}
+                  className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  Add Another Gift
+                </button>
+                <p className="text-center text-xs text-gray-500 mt-2">Use this to add more gifts to your cart.</p>
+              </div>
+              <div>
+                <button
+                  onClick={handleBuyNow}
+                  className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  Buy Now
+                  <span className="text-xl">›</span>
+                </button>
+                <p className="text-center text-xs text-gray-500 mt-2">Use this to checkout with the current gift.</p>
+              </div>
             </div>
           </div>
         </div>
