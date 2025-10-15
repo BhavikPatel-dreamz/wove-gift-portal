@@ -6,16 +6,10 @@ import Header from '../../../components/client/home/Header';
 
 const page = () => {
 
-  const headerData = {
-    logo: "Wave Gifts",
-    navigation: ["Home", "About", "FAQ", "Send Gift Card", "Brands"],
-    userActions: ["EN", "Login", "Register", "Artists"]
-  };
-
   return (
     <Provider store={store}>
       <div className="min-h-screen bg-gray-50">
-        <Header {...headerData} />
+        <Header />
         <StepRenderer />
       </div>
     </Provider>

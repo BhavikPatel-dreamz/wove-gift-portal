@@ -1,10 +1,14 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
 import { goBack, goNext } from "../../../redux/giftFlowSlice";
+import { useSession } from '@/contexts/SessionContext'
+import { useRouter } from "next/navigation";
 
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
+  const session = useSession();
+  const router = useRouter();
 
   const {
     selectedBrand,
@@ -13,9 +17,8 @@ const ReviewConfirmStep = () => {
     deliveryMethod,
     deliveryDetails,
     selectedTiming,
-    selectedSubCategory
+    selectedSubCategory,
   } = useSelector((state) => state.giftFlowReducer);
-
 
   console.log("selectedSubCategory", selectedSubCategory);
 
@@ -24,19 +27,53 @@ const ReviewConfirmStep = () => {
   };
 
   const handleEditMessage = () => {
-    dispatch({ type: 'giftFlow/setCurrentStep', payload: 5 });
+    dispatch({ type: "giftFlow/setCurrentStep", payload: 5 });
   };
 
   const handleChangeCard = () => {
-    dispatch({ type: 'giftFlow/setCurrentStep', payload: 1 });
+    dispatch({ type: "giftFlow/setCurrentStep", payload: 1 });
+  };
+
+  const handleAddToCart = () => {
+    const cartItem = {
+      selectedBrand,
+      selectedAmount,
+      personalMessage,
+      deliveryMethod,
+      deliveryDetails,
+      selectedTiming,
+      selectedSubCategory,
+    };
+    const existingCart = JSON.parse(localStorage.getItem("cart")) || [];
+    const isDuplicate = existingCart.some(item => JSON.stringify(item) === JSON.stringify(cartItem));
+    if (!isDuplicate) {
+        localStorage.setItem("cart", JSON.stringify([...existingCart, cartItem]));
+        alert("Gift added to cart!");
+    } else {
+        alert("This gift is already in your cart.");
+    }
   };
 
   const handleProceedToPayment = () => {
-    dispatch(goNext());
+    if (!session) {
+      const currentItem = {
+        selectedBrand,
+        selectedAmount,
+        personalMessage,
+        deliveryMethod,
+        deliveryDetails,
+        selectedTiming,
+        selectedSubCategory,
+      };
+      localStorage.setItem("checkoutItem", JSON.stringify(currentItem));
+      router.push("/login");
+    } else {
+      dispatch(goNext());
+    }
   };
 
   const formatAmount = (amount) => {
-    if (typeof amount === 'object' && amount?.value && amount?.currency) {
+    if (typeof amount === "object" && amount?.value && amount?.currency) {
       return `${amount.currency} ${amount.value}`;
     }
     return `R${amount || 0}`;
@@ -293,14 +330,23 @@ const ReviewConfirmStep = () => {
               </div>
             </div>
 
-            {/* Proceed to Payment Button */}
-            <button
-              onClick={handleProceedToPayment}
-              className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-            >
-              Proceed to Payment
-              <span className="text-xl">›</span>
-            </button>
+            {/* Action Buttons */}
+            <div className="space-y-4">
+              <button
+                onClick={handleAddToCart}
+                className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+              >
+                <CreditCard className="w-5 h-5" />
+                Add to Cart
+              </button>
+              <button
+                onClick={handleProceedToPayment}
+                className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              >
+                Proceed to Payment
+                <span className="text-xl">›</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

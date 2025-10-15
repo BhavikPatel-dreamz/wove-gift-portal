@@ -2,6 +2,7 @@
 import { Gift, User, Heart, ShoppingCart, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from '@/contexts/SessionContext'
+import { useState, useEffect } from 'react'
 
 const navLinks = {
   "Home": "/",
@@ -12,7 +13,23 @@ const navLinks = {
 
 const Header = () => {
   const session = useSession();
-  
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    const updateCartCount = () => {
+      const cart = JSON.parse(localStorage.getItem('cart')) || [];
+      setCartCount(cart.length);
+    };
+
+    updateCartCount();
+
+    window.addEventListener('storage', updateCartCount);
+
+    return () => {
+      window.removeEventListener('storage', updateCartCount);
+    };
+  }, []);
+
   return (
     <>
       {/* Top Banner */}
@@ -60,6 +77,15 @@ const Header = () => {
 
             {/* Right Section - Action Buttons */}
             <div className="flex items-center space-x-3 ml-auto">
+
+              <Link href="/cart" className="relative p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-100">
+                <ShoppingCart className="w-6 h-6" />
+                {cartCount > 0 && (
+                  <span className="absolute top-0 right-0 block h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
 
               {session ? (
                 <>
