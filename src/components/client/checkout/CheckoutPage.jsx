@@ -7,6 +7,9 @@ import { Elements, CardElement, useStripe, useElements } from "@stripe/react-str
 import { loadStripe } from "@stripe/stripe-js";
 import Link from 'next/link';
 import { createBulkOrder } from '../../../lib/action/bulkOrderAction';
+import { useDispatch } from 'react-redux';
+import { clearCart } from '../../../redux/cartSlice';
+import { resetFlow } from '../../../redux/giftFlowSlice';
 
 // Initialize Stripe
 if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
@@ -255,6 +258,7 @@ const CheckoutPage = () => {
   const [error, setError] = useState(null);
   const printRef = useRef();
   const router = useRouter();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const items = JSON.parse(localStorage.getItem('cart')) || [];
@@ -329,8 +333,8 @@ const CheckoutPage = () => {
       
       if (result?.success) {
         setBulkOrderResult(result.data);
-        localStorage.removeItem('cart');
-        window.dispatchEvent(new Event('storage'));
+        dispatch(clearCart());
+        dispatch(resetFlow());
         
         if (result.data.failedOrders?.length > 0) {
           console.warn('Some orders failed:', result.data.failedOrders);

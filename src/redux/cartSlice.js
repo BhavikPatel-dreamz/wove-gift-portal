@@ -1,4 +1,3 @@
-
 import { createSlice } from '@reduxjs/toolkit';
 
 const getInitialCart = () => {
@@ -28,8 +27,14 @@ const cartSlice = createSlice({
     initializeCart: (state) => {
       state.items = getInitialCart();
     },
+    clearCart: (state) => {
+      state.items = [];
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('cart');
+      }
+    },
   },
 });
 
-export const { addToCart, initializeCart } = cartSlice.actions;
+export const { addToCart, initializeCart, clearCart } = cartSlice.actions;
 export default cartSlice.reducer;
