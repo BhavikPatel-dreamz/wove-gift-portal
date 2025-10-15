@@ -3,6 +3,7 @@ import { Gift, User, Heart, ShoppingCart, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from '@/contexts/SessionContext'
 import { useSelector } from 'react-redux';
+import { useEffect, useState } from 'react';
 
 const navLinks = {
   "Home": "/",
@@ -14,6 +15,12 @@ const navLinks = {
 const Header = () => {
   const session = useSession();
   const cartCount = useSelector((state) => state.cart.items.length);
+  const [mounted, setMounted] = useState(false);
+
+  // Only render dynamic content after mounting on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <>
@@ -65,14 +72,20 @@ const Header = () => {
 
               <Link href="/cart" className="relative p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-100">
                 <ShoppingCart className="w-6 h-6" />
-                {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 block h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
+                {mounted && cartCount > 0 && (
+                  <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
                     {cartCount}
                   </span>
                 )}
               </Link>
 
-              {session ? (
+              {!mounted ? (
+                // Render a consistent placeholder during SSR
+                <button className="btn-secondary">
+                  <User size={18} />
+                  Login / Register
+                </button>
+              ) : session ? (
                 <>
                   {session.user.role === 'ADMIN' && (
                     <Link href="/admin/dashboard">
@@ -104,19 +117,6 @@ const Header = () => {
                   </button>
                 </Link>
               )}
-
-
-
-              {/* Wishlist Icon Button */}
-              {/* <button className="btn-icon-circle">
-                <Heart size={20} className="text-wave-pink" />
-              </button> */}
-
-              {/* Cart Icon Button */}
-              {/* <button className="btn-icon-circle">
-                <ShoppingCart size={20} className="text-wave-pink" />
-              </button> */}
-
             </div>
           </div>
         </div>
