@@ -43,14 +43,10 @@ const PersonalMessageStep = () => {
     <div className="min-h-screen bg-white p-8">
       <div className="max-w-4xl mx-auto">
         {/* Previous Button */}
-        <button
-          onClick={() => dispatch(goBack())}
-          className="flex items-center text-[#ED457D]  mb-16 transition-colors border border-[#ED457D] rounded-full px-5 py-2.5"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          <span className="text-sm font-medium">Previous</span>
+        <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
+          <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
+          <span className="text-base font-semibold text-gray-800">Previous</span>
         </button>
-
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-4 text-black">
@@ -92,9 +88,8 @@ const PersonalMessageStep = () => {
               value={message}
               onChange={handleMessageChange}
               placeholder="Write something meaningful...e.g., 'Wishing you many many happy returns of the day' 🎂🎉👏"
-              className={`w-full p-6 border rounded-2xl focus:outline-none focus:ring-2 resize-none text-base leading-relaxed bg-white placeholder-gray-400 text-black ${
-                error ? 'border-red-400 focus:ring-red-100' : 'border-gray-300 focus:border-red-400 focus:ring-red-100'
-              }`}
+              className={`w-full p-6 border rounded-2xl focus:outline-none focus:ring-2 resize-none text-base leading-relaxed bg-white placeholder-gray-400 text-black ${error ? 'border-red-400 focus:ring-red-100' : 'border-gray-300 focus:border-red-400 focus:ring-red-100'
+                }`}
               rows={6}
             />
             <div className="absolute bottom-5 right-5 flex items-center gap-3">
@@ -124,10 +119,10 @@ const PersonalMessageStep = () => {
             onClick={handleContinue}
             disabled={isMessageEmpty}
             className={`text-white py-4 px-10 rounded-[50px] font-medium text-base transition-all duration-200 transform shadow-lg inline-flex items-center 
-               ${isMessageEmpty 
-                 ? 'bg-gray-400 cursor-not-allowed opacity-60' 
-                 : 'bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] hover:scale-105'
-               }`}
+               ${isMessageEmpty
+                ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                : 'bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] hover:scale-105'
+              }`}
           >
             Schedule Delivery Date
             <span className="ml-3 text-lg">▶</span>

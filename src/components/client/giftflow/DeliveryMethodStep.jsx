@@ -699,12 +699,9 @@ const DeliveryMethodStep = () => {
   return (
     <div className="min-h-screen bg-white p-8">
       <div className="max-w-5xl mx-auto">
-        <button
-          onClick={handleBack}
-          className="inline-flex items-center px-6 py-2 mb-12 text-sm font-medium text-pink-500 bg-white border border-pink-200 rounded-full hover:bg-pink-50 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Previous
+        <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
+          <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
+          <span className="text-base font-semibold text-gray-800">Previous</span>
         </button>
 
         {/* Header */}

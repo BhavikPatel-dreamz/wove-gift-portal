@@ -1,5 +1,6 @@
 import React from 'react';
 import { Gift, Sparkles, Shield, Globe } from 'lucide-react';
+import Link from 'next/link';
 
 const HeroSection = () => {
   return (
@@ -36,9 +37,11 @@ const HeroSection = () => {
         </p>
 
         {/* CTA Button */}
-        <button className="hero-cta">
-          Start Gifting
-        </button>
+        <Link href="/gift">
+          <button className="hero-cta">
+            Start Gifting
+          </button>
+        </Link>
 
         {/* Trust Badge */}
         <div className="trust-badge">

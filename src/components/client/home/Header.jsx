@@ -1,9 +1,9 @@
 'use client';
-import { Gift, User, Heart, ShoppingCart, MapPin } from 'lucide-react';
+import { Gift, User, ShoppingCart, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from '@/contexts/SessionContext'
+import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux';
-import { useEffect, useState } from 'react';
 
 const navLinks = {
   "Home": "/",
@@ -14,10 +14,10 @@ const navLinks = {
 
 const Header = () => {
   const session = useSession();
-  const cartCount = useSelector((state) => state.cart.items.length);
+  const cartItems = useSelector((state) => state.cart.items);
   const [mounted, setMounted] = useState(false);
+  const cartCount = cartItems.length;
 
-  // Only render dynamic content after mounting on client
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -25,7 +25,7 @@ const Header = () => {
   return (
     <>
       {/* Top Banner */}
-      <div className="bg-pink-600 text-white uppercase text-xs font-semibold tracking-widest flex justify-between items-center px-6 py-2">
+      {/* <div className="bg-pink-600 text-white uppercase text-xs font-semibold tracking-widest flex justify-between items-center px-6 py-2">
         <span></span>
         <span>WHATSAPP · EMAIL · PRINT — YOUR PERFECT GIFT, DELIVERED PERFECTLY.</span>
         <div className="flex items-center space-x-2 cursor-pointer">
@@ -39,10 +39,10 @@ const Header = () => {
             <path d="M7 7l3 3 3-3H7z" />
           </svg>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Header */}
-      <header className="navbar">
+      <header className="navbar bg-[linear-gradient(151.97deg,#fbdce3_17.3%,#fde6db_95.19%)]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between" style={{ height: '72px' }}>
 
@@ -68,15 +68,24 @@ const Header = () => {
             </div>
 
             {/* Right Section - Action Buttons */}
-            <div className="flex items-center space-x-3 ml-auto">
 
+            <div className="flex items-center space-x-3 ml-auto">
+            
+                <img
+                  src="https://flagcdn.com/w40/za.png"
+                  alt="South Africa"
+                  className="w-6 h-4 object-cover rounded-sm"
+                />
+                <span className="text-sm font-medium text-gray-700">South Africa</span>
+                <ChevronDown className="w-4 h-4 text-gray-600" />
+              {/* </div> */}
               <Link href="/cart" className="relative p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-100">
                 <ShoppingCart className="w-6 h-6" />
-                {mounted && cartCount > 0 && (
+                {mounted && cartCount > 0 ? (
                   <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
                     {cartCount}
                   </span>
-                )}
+                ) : null}
               </Link>
 
               {!mounted ? (
