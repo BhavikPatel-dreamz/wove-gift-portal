@@ -146,7 +146,7 @@ export default function SubCategorySelector() {
   } = useSelector((state) => state.giftFlowReducer);
 
   const [isCustomizing, setIsCustomizing] = useState(false);
-  const [selectedOccasionName,setSelectedOccationName] = useState(null);
+  const [selectedOccasionName, setSelectedOccationName] = useState(null);
 
 
   const fetchSubCategories = useCallback(async (page) => {
@@ -225,15 +225,15 @@ export default function SubCategorySelector() {
     <div className="min-h-screen bg-[#FFF] py-8">
       <div className="max-w-7xl mx-auto px-6">
         {/* Back Button */}
-        <button onClick={() => dispatch(goBack())}  className="flex items-center gap-2 rounded-full text-gray-700 hover:text-gray-900 mb-12 px-4 py-2 border border-gray-300 hover:border-gray-400 transition-all">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Previous
+        <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
+          <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
+          <span className="text-base font-semibold text-gray-800">Previous</span>
         </button>
 
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-          Pick a {selectedOccasionName} Design They'll Love
+            Pick a {selectedOccasionName} Design They'll Love
           </h1>
           <p className="text-gray-600 text-base max-w-2xl mx-auto">
             Select from our curated collection of beautiful, emotionally engaging {selectedOccasionName} cards
@@ -274,22 +274,22 @@ export default function SubCategorySelector() {
               className="bg-white rounded-2xl p-2 overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer border border-gray-200 group flex flex-col"
               onClick={() => handleSubCategorySelect(subCategory)}
             >
-             {/* Image Container with rounded corners */}
+              {/* Image Container with rounded corners */}
               <div className="w-full">
                 <div className="w-full h-80 overflow-hidden rounded-2xl bg-gray-200">
-                {subCategory.image ? (
-                  <img 
-                    src={subCategory.image} 
-                    alt={subCategory.name}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-              </div>
-                
+                  {subCategory.image ? (
+                    <img
+                      src={subCategory.image}
+                      alt={subCategory.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                </div>
+
                 <div
                   className="w-full h-full bg-gradient-to-br from-pink-100 to-orange-100 flex items-center justify-center"
                   style={{ display: subCategory.image ? 'none' : 'flex' }}
@@ -297,14 +297,14 @@ export default function SubCategorySelector() {
                   <span className="text-6xl opacity-80">{subCategory.emoji || '🎁'}</span>
                 </div>
               </div>
-              
+
               {/* Card Content */}
               <div className="p-5">
                 {/* Title */}
                 <h3 className="font-bold text-lg text-gray-900 mb-2">
                   {subCategory.name}
                 </h3>
-                
+
                 {/* Description */}
                 <p className="text-gray-600 text-sm leading-relaxed">
                   {subCategory.description}

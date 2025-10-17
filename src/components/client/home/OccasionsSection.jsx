@@ -1,9 +1,21 @@
+"use client";
+import { useDispatch } from 'react-redux';
+import { useRouter } from 'next/navigation';
+import { setSelectedOccasion, setCurrentStep } from '@/redux/giftFlowSlice';
 
 const OccasionsSection = ({ occasions = [] }) => {
-  
+  const dispatch = useDispatch();
+  const router = useRouter();
+
   if (!occasions.length) {
     return null;
   }
+
+  const handleOccasionSelect = (occasion) => {
+    dispatch(setSelectedOccasion(occasion.id));
+    dispatch(setCurrentStep(4)); // Directly go to SubCategory selection
+    router.push('/gift');
+  };
 
   return (
     <section className="occasions-section">
@@ -35,7 +47,10 @@ const OccasionsSection = ({ occasions = [] }) => {
                 <p className="occasion-card-description">{occasion.description}</p>
                 
                 {/* Button */}
-                <button className="occasion-card-button">
+                <button 
+                  className="occasion-card-button"
+                  onClick={() => handleOccasionSelect(occasion)}
+                >
                   Choose this Occasion
                   <span>▸</span>
                 </button>

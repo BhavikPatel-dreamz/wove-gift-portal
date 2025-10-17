@@ -1,4 +1,5 @@
 "use client"
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 const FeaturedBrands = ({
@@ -166,10 +167,12 @@ const FeaturedBrands = ({
 
         {/* CTA Button */}
         <div className="text-center">
+         <Link href="/gift">
          <button className="hero-cta">
             See all Brands
             <span className='pl-2'>▸</span>
           </button>
+          </Link>
         </div>
       </div>
 

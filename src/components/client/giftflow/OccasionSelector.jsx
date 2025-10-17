@@ -86,11 +86,10 @@ export default function OccasionSelector() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-6">
         {/* Back Button */}
-        <button onClick={() => dispatch(goBack())}  className="flex items-center gap-2 rounded-full text-gray-700 hover:text-gray-900 mb-12 px-4 py-2 border border-gray-300 hover:border-gray-400 transition-all">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Previous
+        <button onClick={() => dispatch(goBack())}  className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
+          <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
+           <span className="text-base font-semibold text-gray-800">Previous</span>
         </button>
-
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">

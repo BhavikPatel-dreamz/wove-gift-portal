@@ -67,10 +67,10 @@ const GiftCardSelector = () => {
         {/* Back Button */}
         <button
           onClick={handleBackClick}
-          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 mb-12 px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-all"
+          className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm font-medium">Back to Brands</span>
+          <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
+          <span className="text-base font-semibold text-gray-800">Back to Brands</span>
         </button>
 
         {/* Header */}
@@ -89,19 +89,18 @@ const GiftCardSelector = () => {
             {presetAmounts.map((amount) => (
               <button
                 key={amount.id}
-                className={`relative bg-white rounded-2xl border-2 p-8 min-w-[140px] transition-all duration-300 hover:shadow-lg hover:scale-105 ${
-                  localSelectedAmount?.id === amount.id
+                className={`relative bg-white rounded-2xl border-2 p-8 min-w-[140px] transition-all duration-300 hover:shadow-lg hover:scale-105 ${localSelectedAmount?.id === amount.id
                     ? 'border-blue-500 ring-2 ring-blue-200'
                     : 'border-gray-200 hover:border-gray-300'
-                }`}
+                  }`}
                 onClick={() => handleAmountClick(amount)}
               >
                 {/* Coin Image */}
                 <div className="flex justify-center mb-4">
                   <div className="w-16 h-16 flex items-center justify-center">
-                    <img 
-                      src="/coin.svg" 
-                      alt="Coin" 
+                    <img
+                      src="/coin.svg"
+                      alt="Coin"
                       className="w-full h-full object-contain"
                     />
                   </div>

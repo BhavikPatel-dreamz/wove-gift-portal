@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
 import { goBack, goNext, resetFlow } from "../../../redux/giftFlowSlice";
@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
+  const [error, setError] = useState('');
   const session = useSession();
   const router = useRouter();
 
@@ -23,7 +24,31 @@ const ReviewConfirmStep = () => {
     isEditMode,
   } = useSelector((state) => state.giftFlowReducer);
 
-  console.log("selectedSubCategory", selectedSubCategory);
+  const validateGift = () => {
+    if (!selectedBrand) {
+      setError("Please select a brand for your gift card.");
+      return false;
+    }
+    if (!selectedAmount || (typeof selectedAmount === 'object' ? !selectedAmount.value : !selectedAmount)) {
+      setError("Please select an amount for your gift card.");
+      return false;
+    }
+    if (!deliveryMethod) {
+      setError("Please select a delivery method.");
+      return false;
+    }
+    if (deliveryMethod === 'email' && (!deliveryDetails?.recipientEmail || !deliveryDetails?.recipientFullName)) {
+      setError("Please provide the recipient's full name and email for email delivery.");
+      return false;
+    }
+    if (deliveryMethod === 'whatsapp' && (!deliveryDetails?.recipientPhone)) {
+      setError("Please provide the recipient's WhatsApp number for WhatsApp delivery.");
+      return false;
+    }
+    setError(''); // Clear error if validation passes
+    return true;
+  };
+
 
   const handleBack = () => {
     dispatch(goBack());
@@ -38,6 +63,8 @@ const ReviewConfirmStep = () => {
   };
 
   const handleAddToCart = () => {
+    if (!validateGift()) return;
+
     const cartItem = {
       selectedBrand,
       selectedAmount,
@@ -58,6 +85,8 @@ const ReviewConfirmStep = () => {
   };
 
   const handleBuyNow = () => { // Renamed from handleProceedToPayment for clarity
+    if (!validateGift()) return;
+
     const currentItem = {
       selectedBrand,
       selectedAmount,
@@ -122,15 +151,12 @@ const ReviewConfirmStep = () => {
   };
 
   return (
-     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Previous Button */}
-        <button
-          onClick={handleBack}
-          className="flex items-center text-pink-500 hover:text-pink-600 transition-colors mb-8 px-4 py-2 border-2 border-pink-500 rounded-full text-sm font-medium"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Previous
+        <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
+          <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
+          <span className="text-base font-semibold text-gray-800">Previous</span>
         </button>
 
         {/* Header */}
@@ -175,7 +201,7 @@ const ReviewConfirmStep = () => {
                     }}
                   />
                 ) : null}
-                
+
                 {/* Dummy Card - Birthday Theme */}
                 <div
                   className="w-full h-full bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex flex-col items-center justify-center p-6 relative overflow-hidden"
@@ -203,8 +229,8 @@ const ReviewConfirmStep = () => {
                         {/* Box */}
                         <div className="w-24 h-20 bg-red-400 rounded-sm flex items-end justify-center">
                           {/* Ribbon pattern */}
-                          <div className="w-full h-full bg-red-300 rounded-sm opacity-40" 
-                               style={{backgroundImage: 'repeating-linear-gradient(45deg, #dc2626 0px, #dc2626 2px, transparent 2px, transparent 10px)'}}></div>
+                          <div className="w-full h-full bg-red-300 rounded-sm opacity-40"
+                            style={{ backgroundImage: 'repeating-linear-gradient(45deg, #dc2626 0px, #dc2626 2px, transparent 2px, transparent 10px)' }}></div>
                         </div>
                         {/* Bow */}
                         <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
@@ -337,6 +363,11 @@ const ReviewConfirmStep = () => {
 
             {/* Action Buttons */}
             <div className="space-y-4">
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 text-center">
+                  {error}
+                </div>
+              )}
               <div>
                 {isEditMode ? (
                   <button

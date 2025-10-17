@@ -51,11 +51,11 @@
 }
 
 /* Main Header/Navbar */
-.navbar,
+/* .navbar,
 header {
   background-color: var(--wave-cream-bg) !important;
   border-bottom: 1px solid var(--wave-border-subtle) !important;
-}
+} */
 
 /* Navigation Links */
 .nav-link {
