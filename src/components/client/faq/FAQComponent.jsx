@@ -105,7 +105,7 @@ const FAQComponent = () => {
 
     <div className="min-h-screen bg-gray-50">
       {/* Category Pills */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b ml-[150px]">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex flex-wrap gap-7">
             {categories.map((category) => (

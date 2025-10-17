@@ -12,7 +12,8 @@ export default function OccasionSelector() {
     loading, 
     error, 
     occasionsPagination, 
-    currentOccasionPage 
+    currentOccasionPage,
+    selectedOccasion
   } = useSelector((state) => state.giftFlowReducer);
 
   const fetchOccasions = async (page) => {
@@ -105,7 +106,9 @@ export default function OccasionSelector() {
           {occasions.map((occasion, index) => (
             <div
               key={`${occasion.id}-${index}`}
-              className="bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group"
+              className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${
+                selectedOccasion === occasion.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
+              }`}
               onClick={() => handleOccasionSelect(occasion.id)}
             >
               {/* Image Container with rounded corners */}

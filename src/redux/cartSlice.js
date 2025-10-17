@@ -24,6 +24,22 @@ const cartSlice = createSlice({
         }
       }
     },
+    updateCartItem: (state, action) => {
+      const { index, item } = action.payload;
+      if (state.items[index]) {
+        state.items[index] = item;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cart', JSON.stringify(state.items));
+        }
+      }
+    },
+    removeFromCart: (state, action) => {
+      const indexToRemove = action.payload;
+      state.items.splice(indexToRemove, 1);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cart', JSON.stringify(state.items));
+      }
+    },
     initializeCart: (state) => {
       state.items = getInitialCart();
     },
@@ -36,5 +52,5 @@ const cartSlice = createSlice({
   },
 });
 
-export const { addToCart, initializeCart, clearCart } = cartSlice.actions;
+export const { addToCart, updateCartItem, removeFromCart, initializeCart, clearCart } = cartSlice.actions;
 export default cartSlice.reducer;

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
 import { goBack, goNext, resetFlow } from "../../../redux/giftFlowSlice";
-import { addToCart } from "../../../redux/cartSlice";
+import { addToCart, updateCartItem } from "../../../redux/cartSlice";
 import { useSession } from '@/contexts/SessionContext'
 import { useRouter } from "next/navigation";
 
@@ -19,6 +19,8 @@ const ReviewConfirmStep = () => {
     deliveryDetails,
     selectedTiming,
     selectedSubCategory,
+    editingIndex,
+    isEditMode,
   } = useSelector((state) => state.giftFlowReducer);
 
   console.log("selectedSubCategory", selectedSubCategory);
@@ -45,22 +47,33 @@ const ReviewConfirmStep = () => {
       selectedTiming,
       selectedSubCategory,
     };
-    dispatch(addToCart(cartItem));
-    alert("Gift added to cart!");
+
+    if (isEditMode && editingIndex !== null) {
+      dispatch(updateCartItem({ index: editingIndex, item: cartItem }));
+    } else {
+      dispatch(addToCart(cartItem));
+    }
     dispatch(resetFlow());
+    router.push('/cart');
   };
 
-  const handleBuyNow = () => {
-    const cartItem = {
+  const handleBuyNow = () => { // Renamed from handleProceedToPayment for clarity
+    const currentItem = {
       selectedBrand,
       selectedAmount,
       personalMessage,
       deliveryMethod,
       deliveryDetails,
       selectedTiming,
-      selectedSubCategory,
+      selectedSubCategory
     };
-    dispatch(addToCart(cartItem));
+    if (isEditMode && editingIndex !== null) {
+      dispatch(updateCartItem({ index: editingIndex, item: currentItem }));
+    } else {
+      dispatch(addToCart(currentItem));
+    }
+    // It's often better to reset the flow after the action is complete.
+    dispatch(resetFlow());
     router.push('/checkout');
   };
 
@@ -325,13 +338,23 @@ const ReviewConfirmStep = () => {
             {/* Action Buttons */}
             <div className="space-y-4">
               <div>
-                <button
-                  onClick={handleAddToCart}
-                  className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="w-5 h-5" />
-                  Add Another Gift
-                </button>
+                {isEditMode ? (
+                  <button
+                    onClick={handleAddToCart}
+                    className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                  >
+                    <Edit className="w-5 h-5" />
+                    Update Gift in Cart
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAddToCart}
+                    className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    Add Another Gift
+                  </button>
+                )}
                 <p className="text-center text-xs text-gray-500 mt-2">Use this to add more gifts to your cart.</p>
               </div>
               <div>

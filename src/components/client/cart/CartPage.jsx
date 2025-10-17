@@ -1,31 +1,39 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from '@/contexts/SessionContext'
+import { useSession } from '@/contexts/SessionContext';
 import { useRouter } from 'next/navigation';
 import { Trash2, ShoppingBag, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Button from '@/components/forms/Button';
 import Header from '../../../components/client/home/Header';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  updateState,
+  setCurrentStep,
+} from '@/redux/giftFlowSlice';
+import { removeFromCart } from '@/redux/cartSlice';
 
 const CartPage = () => {
-  const [cartItems, setCartItems] = useState([]);
- const session = useSession();
+  const cartItems = useSelector((state) => state.cart.items);
+  const session = useSession();
   const router = useRouter();
-
-  useEffect(() => {
-    const items = JSON.parse(localStorage.getItem('cart')) || [];
-    setCartItems(items);
-  }, []);
-
+  const dispatch = useDispatch();
 
   const handleRemoveItem = (index) => {
-    const newCartItems = [...cartItems];
-    newCartItems.splice(index, 1);
-    setCartItems(newCartItems);
-    localStorage.setItem('cart', JSON.stringify(newCartItems));
-    window.dispatchEvent(new Event('storage')); // To update header count
+    dispatch(removeFromCart(index));
   };
+
+  const handleEditItem = (item, index) => {
+    // Dispatch actions to update the gift flow state
+    dispatch(updateState({
+      ...item, // Spread the item properties
+      editingIndex: index, // Pass the index of the item being edited
+      isEditMode: true,
+    }));
+    dispatch(setCurrentStep(2)); // Navigate to GiftCardSelector step
+    router.push('/gift');
+  }
 
   const handleProceedToPayment = () => {
     if (session) {
@@ -66,7 +74,7 @@ const CartPage = () => {
           <div className="text-center bg-white p-12 rounded-2xl shadow-sm border-2 border-dashed border-gray-200">
             <ShoppingBag className="mx-auto h-20 w-20 text-gray-300" />
             <h2 className="mt-6 text-3xl font-bold text-gray-800">Your cart is empty</h2>
-            <p className="mt-2 text-lg text-gray-500">Looks like you haven’t added any gifts to your cart yet.</p>
+            <p className="mt-2 text-lg text-gray-500">Looks like you haven't added any gifts to your cart yet.</p>
             <Link
               href="/"
               className="mt-8 inline-block px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-semibold text-center"
@@ -78,7 +86,11 @@ const CartPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-6">
               {cartItems.map((item, index) => (
-                <div key={index} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex items-start gap-6 transition-all hover:shadow-lg hover:border-pink-200">
+                <div
+                  key={index}
+                  className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex items-start gap-6 transition-all hover:shadow-lg hover:border-pink-200 cursor-pointer"
+                  onClick={() => handleEditItem(item, index)}
+                >
                   <div className="w-28 h-28 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 border">
                     <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-3 rounded-lg" />
                   </div>
@@ -87,9 +99,14 @@ const CartPage = () => {
                     <p className="font-bold text-pink-600 text-lg my-1">
                       {formatAmount(item.selectedAmount)}
                     </p>
-                    <p className="text-gray-500 text-sm italic line-clamp-2">“{item.personalMessage || 'No personal message.'}”</p>
+                    <p className="text-gray-500 text-sm italic line-clamp-2">"{item.personalMessage || 'No personal message.'}"</p>
                   </div>
-                  <button onClick={() => handleRemoveItem(index)} className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent handleEditItem from firing
+                      handleRemoveItem(index);
+                    }}
+                    className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors">
                     <Trash2 size={22} />
                   </button>
                 </div>

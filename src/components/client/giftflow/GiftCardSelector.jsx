@@ -3,10 +3,9 @@ import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { goBack, goNext, setSelectedAmount } from "../../../redux/giftFlowSlice";
-
 const GiftCardSelector = () => {
   const dispatch = useDispatch();
-  const { selectedBrand } = useSelector((state) => state.giftFlowReducer);
+  const { selectedBrand, selectedAmount } = useSelector((state) => state.giftFlowReducer);
 
   const voucherData = selectedBrand?.vouchers[0];
   const isFixedDenomination = voucherData?.denominationType === "fixed";
@@ -15,8 +14,12 @@ const GiftCardSelector = () => {
   const maxAmount = voucherData?.maxAmount || 10000;
   const currency = voucherData?.denominationCurrency || "ZAR";
 
-  const [customAmount, setCustomAmount] = useState(minAmount);
-  const [localSelectedAmount, setLocalSelectedAmount] = useState(null);
+  const [customAmount, setCustomAmount] = useState(
+    selectedAmount && !isFixedDenomination ? selectedAmount.value : minAmount
+  );
+  const [localSelectedAmount, setLocalSelectedAmount] = useState(
+    selectedAmount || null
+  );
 
   const handleAmountClick = (amount) => {
     setLocalSelectedAmount(amount);
@@ -86,7 +89,11 @@ const GiftCardSelector = () => {
             {presetAmounts.map((amount) => (
               <button
                 key={amount.id}
-                className={`relative bg-white rounded-2xl border-2 p-8 min-w-[140px] transition-all duration-300 hover:shadow-lg hover:scale-105 border-gray-200 hover:border-gray-300`}
+                className={`relative bg-white rounded-2xl border-2 p-8 min-w-[140px] transition-all duration-300 hover:shadow-lg hover:scale-105 ${
+                  localSelectedAmount?.id === amount.id
+                    ? 'border-blue-500 ring-2 ring-blue-200'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
                 onClick={() => handleAmountClick(amount)}
               >
                 {/* Coin Image */}

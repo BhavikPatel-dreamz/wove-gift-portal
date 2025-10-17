@@ -27,7 +27,7 @@ const SearchBar = ({
 
     {/* Search Bar - Positioned Half Inside/Half Outside */}
     <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl px-4">
-      <div className="flex items-center bg-white rounded-full shadow-xl border border-gray-200 overflow-hidden">
+      <div className="flex items-center bg-white rounded-full shadow-xl border border-[rgb(230,57,70)] overflow-hidden">
         {/* Search Input Section */}
         <div className="flex-1 relative flex items-center">
           <Search className="absolute left-5 text-gray-400" size={20} />
