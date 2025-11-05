@@ -25,6 +25,9 @@ const ReviewConfirmStep = () => {
   } = useSelector((state) => state.giftFlowReducer);
 
   const validateGift = () => {
+
+    console.log("deliveryDetails",deliveryDetails);
+    
     if (!selectedBrand) {
       setError("Please select a brand for your gift card.");
       return false;
@@ -41,7 +44,7 @@ const ReviewConfirmStep = () => {
       setError("Please provide the recipient's full name and email for email delivery.");
       return false;
     }
-    if (deliveryMethod === 'whatsapp' && (!deliveryDetails?.recipientPhone)) {
+    if (deliveryMethod === 'whatsapp' && (!deliveryDetails?.recipientWhatsAppNumber)) {
       setError("Please provide the recipient's WhatsApp number for WhatsApp delivery.");
       return false;
     }
