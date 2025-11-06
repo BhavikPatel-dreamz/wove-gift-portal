@@ -40,7 +40,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
   const stats = [
     {
       label: "Total Sold",
-      value: `R ${settlement.totalSold?.toLocaleString() || 0}`,
+      value: `R ${summary.totalOrderAmount?.toLocaleString() || 0}`,
       icon: TrendingUp,
       color: "bg-blue-50 text-blue-600",
     },

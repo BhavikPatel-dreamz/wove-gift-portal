@@ -82,6 +82,8 @@ const SettlementsPage = () => {
     try {
       const res = await getSettlementDetailsByBrandId(row.brandId);
       if (res.success) {
+        console.log("res.data",res.data);
+        
         setSelectedSettlement(res.data);
         setModalOpen(true);
       } else {
