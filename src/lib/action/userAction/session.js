@@ -96,7 +96,13 @@ export async function validateSession() {
 
   // If session doesn't exist or expired, destroy it
   if (!dbSession || dbSession.expiresAt < new Date()) {
-    await destroySession()
+    if (session.sessionId) {
+      await prisma.session.delete({
+        where: { id: session.sessionId },
+      }).catch(() => {
+        // Ignore errors if session doesn't exist
+      })
+    }
     return null
   }
 
