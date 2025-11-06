@@ -40,7 +40,7 @@ const ReviewConfirmStep = () => {
       setError("Please select a delivery method.");
       return false;
     }
-    if (deliveryMethod === 'email' && (!deliveryDetails?.recipientEmail || !deliveryDetails?.recipientFullName)) {
+    if (deliveryMethod === 'email' && (!deliveryDetails?.recipientFullName || !deliveryDetails?.recipientEmailAddress)) {
       setError("Please provide the recipient's full name and email for email delivery.");
       return false;
     }

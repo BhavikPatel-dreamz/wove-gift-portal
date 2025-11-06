@@ -817,18 +817,6 @@ const BrandManager = () => {
                 ? 'Try adjusting your search or filter criteria' 
                 : 'Get started by adding your first brand'}
             </p>
-            {!filters.search && filters.category === 'All Brands' && !filters.isActive && !filters.isFeature && (
-              <button
-                onClick={() => {
-                  resetForm();
-                  setEditingBrand(null);
-                  setShowAddForm(true);
-                }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Add Your First Brand
-              </button>
-            )}
           </div>
         )}
 
