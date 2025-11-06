@@ -142,7 +142,7 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Gift Card Analytics</h1>
             <p className="text-gray-600">Monitor your gift card performance and transactions</p>
           </div>
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             {['all', 'month', 'quarter', 'year'].map((range) => (
               <button
                 key={range}
@@ -156,7 +156,7 @@ const Dashboard = () => {
                 {range === 'all' ? 'All Time' : range}
               </button>
             ))}
-          </div>
+          </div> */}
         </div>
 
         {/* Top Metrics */}

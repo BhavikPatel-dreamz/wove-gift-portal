@@ -119,79 +119,179 @@ function buildDateFilter(dateRange) {
   };
 }
 
-// Gift Cards Metrics
+// Gift Cards Metrics - FIXED VERSION
 async function getGiftCardsMetrics(dateRange) {
   const dateFilter = buildDateFilter(dateRange);
 
-  const [issued, totalValue, byStatus] = await Promise.all([
-    // Total issued
-    prisma.voucherCode.count({
-      where: dateFilter,
-    }),
-
-    // Total value issued and average
-    prisma.voucherCode.aggregate({
-      _sum: { originalValue: true },
-      _avg: { originalValue: true },
-      where: dateFilter,
-    }),
-
-    // Status breakdown
-    prisma.voucherCode.groupBy({
-      by: ["isRedeemed"],
-      _count: true,
-      _sum: {
-        originalValue: true,
-        remainingValue: true,
+  // Get all voucher codes with their values
+  const voucherCodes = await prisma.voucherCode.findMany({
+    where: dateFilter,
+    select: {
+      id: true,
+      isRedeemed: true,
+      originalValue: true,
+      remainingValue: true,
+      _count: {
+        select: {
+          redemptions: true,
+        },
       },
-      where: dateFilter,
-    }),
-  ]);
+    },
+  });
+
+  const totalIssued = voucherCodes.length;
+
+  // Calculate total value issued
+  const totalValue = voucherCodes.reduce(
+    (sum, vc) => sum + vc.originalValue,
+    0
+  );
+
+  // Calculate average value
+  const averageValue = totalIssued > 0 ? Math.round(totalValue / totalIssued) : 0;
+
+  // Categorize vouchers based on redemption status
+  const fullyRedeemed = voucherCodes.filter((vc) => {
+    const hasRedemptionRecords = vc._count.redemptions > 0;
+    const isMarkedRedeemed = vc.isRedeemed === true;
+    const fullyUsed = vc.remainingValue === 0;
+    return hasRedemptionRecords || isMarkedRedeemed || fullyUsed;
+  });
+
+  const partiallyRedeemed = voucherCodes.filter((vc) => {
+    const hasBeenUsed = vc.remainingValue < vc.originalValue;
+    const notFullyUsed = vc.remainingValue > 0;
+    return hasBeenUsed && notFullyUsed;
+  });
+
+  const active = voucherCodes.filter((vc) => {
+    const notUsed = vc.remainingValue === vc.originalValue;
+    const notMarkedRedeemed = !vc.isRedeemed;
+    const noRedemptions = vc._count.redemptions === 0;
+    return notUsed && notMarkedRedeemed && noRedemptions;
+  });
+
+  // Calculate values for each category
+  const fullyRedeemedValue = fullyRedeemed.reduce(
+    (sum, vc) => sum + vc.originalValue,
+    0
+  );
+
+  const partiallyRedeemedValue = partiallyRedeemed.reduce(
+    (sum, vc) => sum + vc.originalValue,
+    0
+  );
+
+  const partiallyRedeemedRemaining = partiallyRedeemed.reduce(
+    (sum, vc) => sum + vc.remainingValue,
+    0
+  );
+
+  const activeValue = active.reduce(
+    (sum, vc) => sum + vc.originalValue,
+    0
+  );
 
   // Calculate growth rate if period is specified
   let growthRate = null;
   if (dateRange.start && dateRange.end) {
     const previousPeriod = await getPreviousPeriodMetrics(dateRange);
-    growthRate = calculateGrowthRate(issued, previousPeriod.count);
+    growthRate = calculateGrowthRate(totalIssued, previousPeriod.count);
   }
 
   return {
-    totalIssued: issued,
-    totalValue: totalValue._sum.originalValue || 0,
-    averageValue: Math.round(totalValue._avg.originalValue || 0),
+    totalIssued,
+    totalValue,
+    averageValue,
     growthRate,
-    byStatus: byStatus.map((item) => ({
-      status: item.isRedeemed ? "Redeemed" : "Active",
-      count: item._count,
-      totalValue: item._sum.originalValue || 0,
-      remainingValue: item._sum.remainingValue || 0,
-    })),
+    byStatus: [
+      {
+        status: "Redeemed",
+        count: fullyRedeemed.length,
+        totalValue: fullyRedeemedValue,
+        remainingValue: 0,
+      },
+      {
+        status: "Partially Redeemed",
+        count: partiallyRedeemed.length,
+        totalValue: partiallyRedeemedValue,
+        remainingValue: partiallyRedeemedRemaining,
+      },
+      {
+        status: "Active",
+        count: active.length,
+        totalValue: activeValue,
+        remainingValue: activeValue,
+      },
+    ],
   };
 }
 
-// Redemption Metrics
+// Redemption Metrics - FIXED VERSION (Based on second API logic)
 async function getRedemptionMetrics(dateRange) {
   const dateFilter = buildDateFilter(dateRange);
-  
-  // Build partially redeemed query
-  let partialQuery = `
-    SELECT COUNT(*)::int as count
-    FROM "VoucherCode"
-    WHERE "remainingValue" > 0 
-      AND "remainingValue" < "originalValue"
-  `;
-  const partialParams = [];
-  
-  if (dateRange.start) {
-    partialQuery += ` AND "createdAt" >= $${partialParams.length + 1}::timestamp`;
-    partialParams.push(dateRange.start);
-  }
-  if (dateRange.end) {
-    partialQuery += ` AND "createdAt" <= $${partialParams.length + 1}::timestamp`;
-    partialParams.push(dateRange.end);
-  }
 
-  // Build daily redemptions query
+  // Get all voucher codes with their redemption data
+  const voucherCodes = await prisma.voucherCode.findMany({
+    where: dateFilter,
+    select: {
+      id: true,
+      isRedeemed: true,
+      originalValue: true,
+      remainingValue: true,
+      redeemedAt: true,
+      _count: {
+        select: {
+          redemptions: true,
+        },
+      },
+    },
+  });
+
+  const totalIssued = voucherCodes.length;
+
+  // Calculate total issued value
+  const totalIssuedValue = voucherCodes.reduce(
+    (sum, vc) => sum + vc.originalValue,
+    0
+  );
+
+  // Count fully redeemed vouchers
+  const fullyRedeemed = voucherCodes.filter((vc) => {
+    const hasRedemptionRecords = vc._count.redemptions > 0;
+    const isMarkedRedeemed = vc.isRedeemed === true;
+    const fullyUsed = vc.remainingValue === 0;
+    return hasRedemptionRecords || isMarkedRedeemed || fullyUsed;
+  }).length;
+
+  // Count partially redeemed vouchers
+  const partiallyRedeemed = voucherCodes.filter((vc) => {
+    const hasBeenUsed = vc.remainingValue < vc.originalValue;
+    const notFullyUsed = vc.remainingValue > 0;
+    return hasBeenUsed && notFullyUsed;
+  }).length;
+
+  // Calculate total used value (for accurate redemption rate)
+  const totalUsedValue = voucherCodes.reduce((sum, vc) => {
+    const hasRedemptionRecords = vc._count.redemptions > 0;
+    const isMarkedRedeemed = vc.isRedeemed === true;
+    const hasBeenUsed = vc.remainingValue < vc.originalValue;
+
+    // Only include used/partially redeemed vouchers
+    if (hasRedemptionRecords || isMarkedRedeemed || hasBeenUsed) {
+      const usedAmount = vc.originalValue - vc.remainingValue;
+      return sum + usedAmount;
+    }
+    return sum;
+  }, 0);
+
+  // Calculate redemption rate based on value usage (same as second API)
+  const redemptionRate =
+    totalIssuedValue > 0
+      ? parseFloat(((totalUsedValue / totalIssuedValue) * 100).toFixed(2))
+      : 0;
+
+  // Get daily redemptions for trend analysis
   let dailyQuery = `
     SELECT
       DATE("redeemedAt") as date,
@@ -200,14 +300,15 @@ async function getRedemptionMetrics(dateRange) {
     FROM "VoucherCode"
     WHERE "isRedeemed" = true
   `;
+  
   const dailyParams = [];
   
   if (dateRange.start) {
-    dailyQuery += ` AND "redeemedAt" >= $${dailyParams.length + 1}::timestamp`;
+    dailyQuery += ` AND "redeemedAt" >= ${dailyParams.length + 1}::timestamp`;
     dailyParams.push(dateRange.start);
   }
   if (dateRange.end) {
-    dailyQuery += ` AND "redeemedAt" <= $${dailyParams.length + 1}::timestamp`;
+    dailyQuery += ` AND "redeemedAt" <= ${dailyParams.length + 1}::timestamp`;
     dailyParams.push(dateRange.end);
   }
   
@@ -217,42 +318,15 @@ async function getRedemptionMetrics(dateRange) {
     LIMIT 30
   `;
   
-  const [redeemed, partiallyRedeemed, totalIssued, redemptionsByDay] =
-    await Promise.all([
-      // Fully redeemed
-      prisma.voucherCode.count({
-        where: {
-          isRedeemed: true,
-          redeemedAt: dateRange.start
-            ? {
-                gte: dateRange.start,
-                lte: dateRange.end,
-              }
-            : undefined,
-        },
-      }),
-
-      // Partially redeemed
-      prisma.$queryRawUnsafe(partialQuery, ...partialParams),
-
-      // Total issued for rate calculation
-      prisma.voucherCode.count({
-        where: dateFilter,
-      }),
-
-      // Daily redemptions trend
-      prisma.$queryRawUnsafe(dailyQuery, ...dailyParams),
-    ]);
-
-  const partialCount = Number(partiallyRedeemed[0]?.count || 0);
-  const redemptionRatePercentage =
-    totalIssued > 0 ? ((redeemed / totalIssued) * 100).toFixed(2) : 0;
+  const dailyRedemptions = await prisma.$queryRawUnsafe(dailyQuery, ...dailyParams);
 
   return {
-    fullyRedeemed: redeemed,
-    partiallyRedeemed: partialCount,
-    redemptionRate: parseFloat(redemptionRatePercentage),
-    dailyTrend: redemptionsByDay,
+    fullyRedeemed,
+    partiallyRedeemed,
+    redemptionRate,
+    totalUsedValue,
+    totalIssuedValue,
+    dailyTrend: dailyRedemptions,
   };
 }
 
@@ -408,7 +482,7 @@ async function getMonthlyTransactionTrends(dateRange) {
   return trendsWithGrowth.reverse();
 }
 
-// Top Performing Brands
+// Top Performing Brands - FIXED VERSION
 async function getTopPerformingBrands(dateRange, limit = 10) {
   const dateFilter = buildDateFilter(dateRange);
 
@@ -449,31 +523,57 @@ async function getTopPerformingBrands(dateRange, limit = 10) {
     },
   }) : [];
 
-  // Calculate metrics for each brand
+  // Calculate metrics for each brand using the same logic as second API
   const enrichedBrands = await Promise.all(
     topBrands.map(async (brand) => {
       const brandDetails = brands.find((b) => b.id === brand.brandId);
 
-      // Get redemption rate for this brand
-      const [totalVouchers, redeemedVouchers] = await Promise.all([
-        prisma.voucherCode.count({
-          where: {
-            order: { brandId: brand.brandId },
+      // Get voucher codes with redemption data for this brand
+      const voucherCodesWithRedemptions = await prisma.voucherCode.findMany({
+        where: {
+          order: {
+            brandId: brand.brandId,
             ...dateFilter,
           },
-        }),
-        prisma.voucherCode.count({
-          where: {
-            order: { brandId: brand.brandId },
-            isRedeemed: true,
-            ...dateFilter,
+        },
+        select: {
+          id: true,
+          isRedeemed: true,
+          originalValue: true,
+          remainingValue: true,
+          _count: {
+            select: {
+              redemptions: true,
+            },
           },
-        }),
-      ]);
+        },
+      });
 
+      const totalVouchers = voucherCodesWithRedemptions.length;
+
+      // Calculate total issued value
+      const totalIssuedValue = voucherCodesWithRedemptions.reduce(
+        (sum, vc) => sum + vc.originalValue,
+        0
+      );
+
+      // Calculate total used value
+      const totalUsedValue = voucherCodesWithRedemptions.reduce((sum, vc) => {
+        const hasRedemptionRecords = vc._count.redemptions > 0;
+        const isMarkedRedeemed = vc.isRedeemed === true;
+        const hasBeenUsed = vc.remainingValue < vc.originalValue;
+
+        if (hasRedemptionRecords || isMarkedRedeemed || hasBeenUsed) {
+          const usedAmount = vc.originalValue - vc.remainingValue;
+          return sum + usedAmount;
+        }
+        return sum;
+      }, 0);
+
+      // Calculate redemption rate based on value (same as second API)
       const redemptionRate =
-        totalVouchers > 0
-          ? ((redeemedVouchers / totalVouchers) * 100).toFixed(2)
+        totalIssuedValue > 0
+          ? parseFloat(((totalUsedValue / totalIssuedValue) * 100).toFixed(2))
           : 0;
 
       return {
@@ -489,7 +589,7 @@ async function getTopPerformingBrands(dateRange, limit = 10) {
           totalQuantity: brand._sum.quantity || 0,
           totalDiscount: brand._sum.discount || 0,
           avgOrderValue: Math.round(brand._avg.totalAmount || 0),
-          redemptionRate: parseFloat(redemptionRate),
+          redemptionRate,
         },
       };
     })
@@ -708,7 +808,7 @@ async function getCustomerMetrics(dateRange) {
   };
 }
 
-// Occasion Metrics - FIXED VERSION
+// Occasion Metrics
 async function getOccasionMetrics(dateRange) {
   const dateFilter = buildDateFilter(dateRange);
 
