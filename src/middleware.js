@@ -18,7 +18,8 @@ export function middleware(request) {
     pathname.startsWith('/api/payment/process-card') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
-    pathname.startsWith('/api/dashboard')
+    pathname.startsWith('/api/dashboard') || 
+    pathname.startsWith('/api/analytics') 
   ) {
     return NextResponse.next();
   }
@@ -105,7 +106,8 @@ export function middleware(request) {
     pathname.startsWith('/api/shopify/shop') ||
     pathname.startsWith('/api/sync-shopify') ||
     pathname.startsWith('/api/payment/process-card') ||
-    pathname.startsWith('/api/dashboard')
+    pathname.startsWith('/api/dashboard') || 
+    pathname.startsWith('/api/analytics') 
     
   ) {
     return NextResponse.next()

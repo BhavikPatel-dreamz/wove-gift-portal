@@ -396,6 +396,7 @@ model Settlements {
   breakageAmount    Int?
   vatAmount         Int?
   netPayable        Int
+  remainingAmount   Int?        @default(0)
   status            SettlementPaymentStatus @default(Pending)
   paidAt            DateTime?
   paymentReference  String?

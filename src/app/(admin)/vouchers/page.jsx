@@ -9,6 +9,8 @@ import { createColumnHelper } from "@tanstack/react-table";
 import Modal from "@/components/Modal";
 import VoucherDetails from "@/components/vouchers/VoucherDetails";
 import { useSession } from "@/contexts/SessionContext";
+import AnalyticsTracking from "../../../components/orders/AnalyticsTracking";
+import BrandAnalyticsTable from "../../../components/orders/BrandAnalyticsTable";
 
 export default function VouchersManagement() {
   const session = useSession();
@@ -25,12 +27,13 @@ export default function VouchersManagement() {
   });
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('analytics');
 
   const fetchVouchers = async () => {
     setLoading(true);
     try {
-      const response = await getVouchers({ 
-        ...filters, 
+      const response = await getVouchers({
+        ...filters,
         page: pagination.currentPage || 1,
         userId: session?.user?.id,
         userRole: session?.user?.role,
@@ -200,49 +203,94 @@ export default function VouchersManagement() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
-        <DynamicTable
-          data={vouchers}
-          columns={customColumns}
-          loading={loading || syncing}
-          pagination={pagination}
-          onPageChange={handlePageChange}
-          onSearch={handleSearch}
-          onFilter={handleFilter}
-          title="Vouchers & Gift Cards"
-          subtitle={isAdmin ? "Track and manage all user-purchased vouchers and gift cards." : "View and manage your vouchers and gift cards."}
-          searchPlaceholder="Search by code, user email, or status..."
-          filters={[
-            {
-              name: "status",
-              placeholder: "All Statuses",
-              options: [
-                { value: "Active", label: "Active" },
-                { value: "Redeemed", label: "Redeemed" },
-                { value: "Expired", label: "Expired" },
-                { value: "Inactive", label: "Inactive" },
-              ],
-            },
-          ]}
-          actions={[
-            ...(isAdmin ? [{
-              label: syncing ? "Syncing..." : "Sync Shopify",
-              icon: RefreshCw,
-              onClick: handleSync,
-              disabled: syncing,
-            }] : []),
-            {
-              label: "Export",
-              icon: Download,
-              onClick: handleExport,
-            },
-          ]}
-          emptyMessage={error || "No vouchers found. Try adjusting your filters."}
-        />
 
-        <Modal isOpen={isModalOpen} onClose={closeModal} title="Voucher Details">
-          {selectedVoucher && <VoucherDetails voucher={selectedVoucher} />}
-        </Modal>
+        {/* Tab Navigation */}
+        <div className="flex gap-4 mb-8">
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'orders'
+              ? 'bg-white text-gray-900 shadow-md'
+              : 'bg-white/50 text-gray-600 hover:bg-white/80'
+              }`}
+          >
+            Order Management
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'analytics'
+              ? 'bg-white text-gray-900 shadow-md'
+              : 'bg-white/50 text-gray-600 hover:bg-white/80'
+              }`}
+          >
+            Analytics & Tracking
+          </button>
+          <button
+            onClick={() => setActiveTab('settlements')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'settlements'
+              ? 'bg-white text-gray-900 shadow-md'
+              : 'bg-white/50 text-gray-600 hover:bg-white/80'
+              }`}
+          >
+            Brand Settlements
+          </button>
+        </div>
       </div>
+
+      {activeTab === 'orders' && (
+        <div className="max-w-7xl mx-auto">
+          <DynamicTable
+            data={vouchers}
+            columns={customColumns}
+            loading={loading || syncing}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            title="Vouchers & Gift Cards"
+            subtitle={isAdmin ? "Track and manage all user-purchased vouchers and gift cards." : "View and manage your vouchers and gift cards."}
+            searchPlaceholder="Search by code, user email, or status..."
+            filters={[
+              {
+                name: "status",
+                placeholder: "All Statuses",
+                options: [
+                  { value: "Active", label: "Active" },
+                  { value: "Redeemed", label: "Redeemed" },
+                  { value: "Expired", label: "Expired" },
+                  { value: "Inactive", label: "Inactive" },
+                ],
+              },
+            ]}
+            actions={[
+              ...(isAdmin ? [{
+                label: syncing ? "Syncing..." : "Sync Shopify",
+                icon: RefreshCw,
+                onClick: handleSync,
+                disabled: syncing,
+              }] : []),
+              {
+                label: "Export",
+                icon: Download,
+                onClick: handleExport,
+              },
+            ]}
+            emptyMessage={error || "No vouchers found. Try adjusting your filters."}
+          />
+
+          <Modal isOpen={isModalOpen} onClose={closeModal} title="Voucher Details">
+            {selectedVoucher && <VoucherDetails voucher={selectedVoucher} />}
+          </Modal>
+        </div>
+      )}
+
+      {activeTab === 'analytics' && (
+        <AnalyticsTracking />
+      )}
+
+      {activeTab === 'settlements' && (
+      <BrandAnalyticsTable/>
+      )}
+
     </div>
   );
 }
