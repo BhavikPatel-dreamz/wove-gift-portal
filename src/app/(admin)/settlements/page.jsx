@@ -208,20 +208,22 @@ const SettlementsPage = () => {
       header: "Total Sold",
       cell: (info) => (
         <div className="text-gray-900 font-medium">
-          R {info.getValue().toLocaleString()}
+          {info.getValue().toLocaleString()}
         </div>
       ),
     }),
     columnHelper.accessor("redeemedAmount", {
       header: "Redeemed",
       cell: (info) => {
-        const redeemedAmount = info.getValue();
-        const totalSold = info.row.original.totalSold;
-        const percentage = totalSold > 0 ? (redeemedAmount / totalSold) * 100 : 0;
+        const redeemedAmount = info.getValue() || 0;
+        const totalSoldAmount = info.row.original.totalSoldAmount || 0;
+        
+        const percentage = totalSoldAmount > 0 ? (redeemedAmount / totalSoldAmount) * 100 : 0;
+
         return (
           <div>
             <div className="text-gray-900 font-medium">
-              R {redeemedAmount.toLocaleString()}
+              ₹{redeemedAmount.toLocaleString()}
             </div>
             <div className="text-xs text-gray-500">
               {percentage.toFixed(1)}% redeemed
@@ -229,26 +231,17 @@ const SettlementsPage = () => {
           </div>
         );
       },
-    }),
-    columnHelper.accessor("outstandingAmount", {
+    }), columnHelper.accessor("outstandingAmount", {
       header: "Outstanding",
       cell: (info) => (
         <div className="text-gray-900">
-          R {info.getValue().toLocaleString()}
+          {info.getValue().toLocaleString()}
         </div>
       ),
     }),
     columnHelper.accessor("settlementTrigger", {
       header: "Settlement Terms",
       cell: (info) => <div className="text-gray-700">{info.getValue()}</div>,
-    }),
-    columnHelper.accessor("netPayable", {
-      header: "Amount Owed",
-      cell: (info) => (
-        <div className="font-semibold text-green-600">
-          R {info.getValue().toLocaleString()}
-        </div>
-      ),
     }),
     columnHelper.accessor("lastPaymentDate", {
       header: "Last Payment",

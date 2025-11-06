@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 import prisma from "../../../lib/db";
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') || 'year';
+    const period = searchParams.get("period") || "year";
 
     // Calculate date range
     const dateRange = getDateRange(period);
@@ -22,12 +22,15 @@ export async function GET(request) {
       period,
     });
   } catch (error) {
-    console.error('Analytics API Error:', error);
+    console.error("Analytics API Error:", error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch analytics data',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+        message: "Failed to fetch analytics data",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Internal server error",
       },
       { status: 500 }
     );
@@ -37,26 +40,27 @@ export async function GET(request) {
 // Helper function to get date range
 function getDateRange(period) {
   const now = new Date();
-  let start, end = now;
+  let start,
+    end = now;
 
   switch (period) {
-    case 'today':
+    case "today":
       start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       break;
-    case 'week':
+    case "week":
       start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       break;
-    case 'month':
+    case "month":
       start = new Date(now.getFullYear(), now.getMonth(), 1);
       break;
-    case 'quarter':
+    case "quarter":
       const quarter = Math.floor(now.getMonth() / 3);
       start = new Date(now.getFullYear(), quarter * 3, 1);
       break;
-    case 'year':
+    case "year":
       start = new Date(now.getFullYear(), 0, 1);
       break;
-    case 'all':
+    case "all":
     default:
       start = null;
       end = null;
@@ -66,9 +70,9 @@ function getDateRange(period) {
 }
 
 // Build date filter for Prisma queries
-function buildDateFilter(dateRange, field = 'createdAt') {
+function buildDateFilter(dateRange, field = "createdAt") {
   if (!dateRange.start || !dateRange.end) return {};
-  
+
   return {
     [field]: {
       gte: dateRange.start,
@@ -92,7 +96,7 @@ async function getBrandRedemptionMetrics(dateRange) {
       logo: true,
     },
     orderBy: {
-      brandName: 'asc',
+      brandName: "asc",
     },
   });
 
@@ -108,8 +112,6 @@ async function getBrandRedemptionMetrics(dateRange) {
           },
         },
       });
-
-      
 
       // Get all voucher codes with their redemption data
       const voucherCodesWithRedemptions = await prisma.voucherCode.findMany({
@@ -132,58 +134,87 @@ async function getBrandRedemptionMetrics(dateRange) {
         },
       });
 
+      // 💰 Calculate total issued (sum of original values)
+      const totalIssuedValue = voucherCodesWithRedemptions.reduce(
+        (sum, vc) => sum + vc.originalValue,
+        0
+      );
+
       // Count redeemed vouchers using multiple criteria
-      const redeemedVouchers = voucherCodesWithRedemptions.filter(vc => {
+      const redeemedVouchers = voucherCodesWithRedemptions.filter((vc) => {
         // Check if voucher has any redemption records
         const hasRedemptionRecords = vc._count.redemptions > 0;
-        
+
         // Check if marked as redeemed
         const isMarkedRedeemed = vc.isRedeemed === true;
-        
+
         // Check if value has been used (remaining < original)
         const hasBeenUsed = vc.remainingValue < vc.originalValue;
-        
+
         return hasRedemptionRecords || isMarkedRedeemed || hasBeenUsed;
       }).length;
 
+      // 💰 Calculate total used (sum of used amounts for vouchers that have been redeemed or partially used)
+      const totalUsedValue = voucherCodesWithRedemptions.reduce((sum, vc) => {
+        const hasRedemptionRecords = vc._count.redemptions > 0;
+        const isMarkedRedeemed = vc.isRedeemed === true;
+        const hasBeenUsed = vc.remainingValue < vc.originalValue;
+
+        // Only include used/partially redeemed vouchers
+        if (hasRedemptionRecords || isMarkedRedeemed || hasBeenUsed) {
+          const usedAmount = vc.originalValue - vc.remainingValue;
+          return sum + usedAmount;
+        }
+        return sum;
+      }, 0);
+
+      
       // Calculate redemption rate
-      const redemptionRate = totalVouchers > 0 
-        ? Math.round((redeemedVouchers / totalVouchers) * 100) 
-        : 0;
+      const redemptionRate =
+        totalVouchers > 0
+          ? Math.round((totalUsedValue / totalIssuedValue) * 100)
+          : 0;
+          
 
       return {
         name: brand.brandName,
-        logo: brand.logo || '🎁',
+        logo: brand.logo || "🎁",
         redemptionRate,
         redeemed: redeemedVouchers,
         total: totalVouchers,
         brandId: brand.id,
         debug: {
           voucherCodesCount: voucherCodesWithRedemptions.length,
-          withRedemptions: voucherCodesWithRedemptions.filter(vc => vc._count.redemptions > 0).length,
-          markedRedeemed: voucherCodesWithRedemptions.filter(vc => vc.isRedeemed).length,
-          valueChanged: voucherCodesWithRedemptions.filter(vc => vc.remainingValue < vc.originalValue).length,
-        }
+          withRedemptions: voucherCodesWithRedemptions.filter(
+            (vc) => vc._count.redemptions > 0
+          ).length,
+          markedRedeemed: voucherCodesWithRedemptions.filter(
+            (vc) => vc.isRedeemed
+          ).length,
+          valueChanged: voucherCodesWithRedemptions.filter(
+            (vc) => vc.remainingValue < vc.originalValue
+          ).length,
+        },
       };
     })
   );
 
   // Filter out brands with no data and sort by redemption rate
   const filteredBrands = brandRedemptions
-    .filter(b => b.total > 0)
+    .filter((b) => b.total > 0)
     .sort((a, b) => b.redemptionRate - a.redemptionRate)
     .slice(0, 8); // Top 8 brands
 
   // Assign background colors based on position
   const bgColors = [
-    'bg-gray-100',      // Position 1
-    'bg-pink-50',       // Position 2
-    'bg-yellow-50',     // Position 3
-    'bg-red-50',        // Position 4
-    'bg-blue-50',       // Position 5
-    'bg-red-50',        // Position 6
-    'bg-gray-100',      // Position 7
-    'bg-orange-50',     // Position 8
+    "bg-gray-100", // Position 1
+    "bg-pink-50", // Position 2
+    "bg-yellow-50", // Position 3
+    "bg-red-50", // Position 4
+    "bg-blue-50", // Position 5
+    "bg-red-50", // Position 6
+    "bg-gray-100", // Position 7
+    "bg-orange-50", // Position 8
   ];
 
   // Return without debug info for production
@@ -205,7 +236,7 @@ async function getSettlementData(dateRange) {
   // Get pending settlements with brand details
   const pendingSettlements = await prisma.settlements.findMany({
     where: {
-      status: 'Pending',
+      status: "Pending",
       ...dateFilter,
     },
     include: {
@@ -219,7 +250,7 @@ async function getSettlementData(dateRange) {
       },
     },
     orderBy: {
-      netPayable: 'desc',
+      netPayable: "desc",
     },
     take: 6, // Top 6 pending settlements
   });
@@ -233,4 +264,3 @@ async function getSettlementData(dateRange) {
 
   return settlements;
 }
-

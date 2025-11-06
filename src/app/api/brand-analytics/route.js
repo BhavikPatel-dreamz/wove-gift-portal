@@ -53,6 +53,8 @@ export async function GET(request) {
         });
         const totalIssuedValue = totalSoldAgg._sum.totalSoldAmount || 0;
 
+        
+
         // 🔹 Count redeemed vouchers
         const redeemedVouchers = voucherCodes.filter(
           (vc) =>
@@ -71,8 +73,10 @@ export async function GET(request) {
         // 🔹 Redemption rate
         const redemptionRate =
           totalIssued > 0
-            ? parseFloat(((totalRedeemed / totalIssued) * 100).toFixed(2))
+            ? Math.round((totalRedeemedValue / totalIssuedValue) * 100) 
             : 0.0;
+
+                      console.log(totalRedeemedValue,totalIssuedValue,redemptionRate);
 
         // 🔹 Aggregate settlements to compute paid vs sold
         const settlementsAgg = await prisma.settlements.groupBy({
