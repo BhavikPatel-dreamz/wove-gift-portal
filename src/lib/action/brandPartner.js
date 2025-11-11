@@ -1289,7 +1289,6 @@ export async function getSettlements(params = {}) {
                 gte: periodStart,
                 lte: periodEnd,
               },
-              paymentStatus: "COMPLETED",
             },
             include: {
               voucherCodes: {
@@ -1443,7 +1442,6 @@ export async function getSettlements(params = {}) {
                 gte: settlement.periodStart,
                 lte: settlement.periodEnd,
               },
-              paymentStatus: "COMPLETED",
             },
             include: {
               voucherCodes: {
