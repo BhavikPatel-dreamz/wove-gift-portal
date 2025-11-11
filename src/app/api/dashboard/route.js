@@ -444,7 +444,6 @@ async function getMonthlyTransactionTrends(dateRange) {
       AVG("totalAmount")::float as "avgOrderValue",
       SUM("discount")::float as "totalDiscount"
     FROM "Order"
-    WHERE "paymentStatus" = 'COMPLETED'
   `;
   
   const params = [];
@@ -498,7 +497,6 @@ async function getTopPerformingBrands(dateRange, limit = 10) {
       totalAmount: true,
     },
     where: {
-      paymentStatus: "COMPLETED",
       ...dateFilter,
     },
     orderBy: {
@@ -617,7 +615,6 @@ async function getWeeklyPerformance(dateRange) {
     ) AS date_series
     LEFT JOIN "Order" o
       ON DATE(o."createdAt") = date_series.day
-      AND o."paymentStatus" = 'COMPLETED'
     GROUP BY date_series.day
     ORDER BY date_series.day ASC
   `;
@@ -631,8 +628,7 @@ async function getWeeklyPerformance(dateRange) {
   const previousWeekData = await prisma.$queryRaw`
     SELECT COALESCE(SUM("totalAmount"), 0)::float as total
     FROM "Order"
-    WHERE "paymentStatus" = 'COMPLETED'
-      AND "createdAt" >= CURRENT_DATE - interval '13 days'
+    WHERE "createdAt" >= CURRENT_DATE - interval '13 days'
       AND "createdAt" < CURRENT_DATE - interval '6 days'
   `;
 
@@ -709,7 +705,6 @@ async function getRevenueMetrics(dateRange) {
     },
     _count: true,
     where: {
-      paymentStatus: "COMPLETED",
       ...dateFilter,
     },
   });
@@ -720,7 +715,6 @@ async function getRevenueMetrics(dateRange) {
     _sum: { totalAmount: true },
     _count: true,
     where: {
-      paymentStatus: "COMPLETED",
       ...dateFilter,
     },
   });
@@ -815,7 +809,6 @@ async function getOccasionMetrics(dateRange) {
   // Check if there are any completed orders
   const ordersWithOccasions = await prisma.order.count({
     where: {
-      paymentStatus: "COMPLETED",
       ...dateFilter,
     },
   });
@@ -830,7 +823,6 @@ async function getOccasionMetrics(dateRange) {
     _count: true,
     _sum: { totalAmount: true },
     where: {
-      paymentStatus: "COMPLETED",
       ...dateFilter,
     },
     orderBy: {

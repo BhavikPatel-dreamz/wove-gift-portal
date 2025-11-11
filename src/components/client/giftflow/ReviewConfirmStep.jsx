@@ -90,23 +90,7 @@ const ReviewConfirmStep = () => {
   const handleBuyNow = () => { // Renamed from handleProceedToPayment for clarity
     if (!validateGift()) return;
 
-    const currentItem = {
-      selectedBrand,
-      selectedAmount,
-      personalMessage,
-      deliveryMethod,
-      deliveryDetails,
-      selectedTiming,
-      selectedSubCategory
-    };
-    if (isEditMode && editingIndex !== null) {
-      dispatch(updateCartItem({ index: editingIndex, item: currentItem }));
-    } else {
-      dispatch(addToCart(currentItem));
-    }
-    // It's often better to reset the flow after the action is complete.
-    dispatch(resetFlow());
-    router.push('/checkout');
+    dispatch(goNext());
   };
 
   const formatAmount = (amount) => {
@@ -399,7 +383,7 @@ const ReviewConfirmStep = () => {
                   Buy Now
                   <span className="text-xl">›</span>
                 </button>
-                <p className="text-center text-xs text-gray-500 mt-2">Use this to checkout with the current gift.</p>
+                {/* <p className="text-center text-xs text-gray-500 mt-2">Use this to checkout with the current gift.</p> */}
               </div>
             </div>
           </div>

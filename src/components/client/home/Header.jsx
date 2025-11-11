@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useSession } from '@/contexts/SessionContext'
 import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux';
+import { destroySession } from '../../../lib/action/userAction/session'
+import { useRouter } from 'next/navigation';
 
 const navLinks = {
   "Home": "/",
@@ -17,10 +19,22 @@ const Header = () => {
   const cartItems = useSelector((state) => state.cart.items);
   const [mounted, setMounted] = useState(false);
   const cartCount = cartItems.length;
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+
+
+  const handleLogout = async () => {
+    try {
+      await destroySession() // Use the logout from SessionContext
+      router.push('/')
+    } catch (error) {
+      console.error('Logout error:', error)
+    } 
+  }
 
   return (
     <>
@@ -97,7 +111,7 @@ const Header = () => {
               ) : session ? (
                 <>
                   {session.user.role === 'ADMIN' && (
-                    <Link href="/admin/dashboard">
+                    <Link href="/dashboard">
                       <button className="btn-outline flex items-center gap-2">
                         <User size={16} />
                         Admin
@@ -112,11 +126,9 @@ const Header = () => {
                       </button>
                     </Link>
                   )}
-                  <Link href="/api/auth/logout">
-                    <button className="btn-secondary">
+                    <button className="btn-secondary" onClick={()=> handleLogout()}>
                       Logout
                     </button>
-                  </Link>
                 </>
               ) : (
                 <Link href="/login">

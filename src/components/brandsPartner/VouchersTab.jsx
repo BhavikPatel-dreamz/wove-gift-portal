@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import {currencyList} from "./currency";
 
 const VouchersTab = ({ formData, updateFormData }) => {
   const [denominationValue, setDenominationValue] = useState("");
@@ -7,7 +8,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
   const [denominationExpiry, setDenominationExpiry] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [isActive, setIsActive] = useState(true);
-  const [currencies] = useState([formData?.currency]);
+  const [currencies] = useState(currencyList);
 
   const handleDenominationTypeChange = (type) => {
     updateFormData("denominationType", type);
@@ -202,8 +203,8 @@ const VouchersTab = ({ formData, updateFormData }) => {
                       className="w-full border rounded-md px-3 py-2 bg-white"
                     >
                       {currencies.map((cur) => (
-                        <option key={cur} value={cur}>
-                          {cur}
+                        <option key={cur?.code} value={cur?.code}>
+                          {cur?.symbol + " " + cur?.code}
                         </option>
                       ))}
                     </select>

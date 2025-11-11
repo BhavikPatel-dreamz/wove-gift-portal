@@ -199,7 +199,7 @@ const AnalyticsTracking = () => {
                           {settlement.brand}
                         </h3>
                         <p className="text-xl font-semibold text-green-600">
-                          R{settlement.amount.toLocaleString()}
+                          {settlement.amount.toLocaleString()}
                         </p>
                       </div>
                       {/* Status Badge */}

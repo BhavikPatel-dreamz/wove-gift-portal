@@ -109,7 +109,7 @@ const GiftCardSelector = () => {
                 {/* Amount */}
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">
-                    {formatAmount(amount.value)}
+                    {amount.currency + " " + amount.value}
                   </div>
                 </div>
               </button>
