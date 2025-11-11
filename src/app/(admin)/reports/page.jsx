@@ -1,8 +1,11 @@
 import React from 'react'
+import ReportsPage from '../../../components/report/ReportsPage'
 
 const page = () => {
   return (
-    <div className='text-2xl font-bold text-black'>page</div>
+    <div className='text-black'>
+      <ReportsPage/>
+    </div>
   )
 }
 

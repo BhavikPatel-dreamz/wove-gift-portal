@@ -91,3 +91,53 @@ export async function DELETE(req) {
         });
     }
 }
+
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const activeOnly = searchParams.get("active") === "true";
+    const limit = parseInt(searchParams.get("limit")) || 100;
+
+    const whereClause = {};
+    if (activeOnly) {
+      whereClause.isActive = true;
+    }
+
+    const brands = await prisma.brand.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        brandName: true,
+        logo: true,
+        categoryName: true,
+        isActive: true,
+        isFeature: true,
+        slug: true,
+      },
+      orderBy: {
+        brandName: "asc",
+      },
+      take: limit,
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: brands,
+      count: brands.length,
+    });
+  } catch (error) {
+    console.error("Brands API Error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to fetch brands",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Internal server error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
