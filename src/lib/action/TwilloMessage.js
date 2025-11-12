@@ -196,7 +196,6 @@ function buildWhatsAppTextMessage(data, giftCard) {
 // ==================== WHATSAPP SERVICE ====================
 export const SendWhatsappMessages = async (data, giftCard) => {
   try {
-    console.log("📱 Starting WhatsApp message send...");
 
     // Step 1: Validate input
     console.log("Step 1: Validating WhatsApp input...");
@@ -225,7 +224,6 @@ export const SendWhatsappMessages = async (data, giftCard) => {
         contentVariables: JSON.stringify(templateVariables),
       });
 
-      console.log("✅ Templated WhatsApp message sent");
     } else {
       // Method 2: Using text message with media
       console.log("Step 3: Sending text WhatsApp message with media...");
@@ -242,17 +240,14 @@ export const SendWhatsappMessages = async (data, giftCard) => {
       // Only add media if URL is valid
       if (mediaUrl && isValidMediaUrl(mediaUrl)) {
         messagePayload.mediaUrl = [mediaUrl];
-        console.log("📸 Media URL included:", mediaUrl);
       } else if (mediaUrl) {
         console.warn("⚠️ Media URL invalid or insecure:", mediaUrl);
       }
 
       message = await client.messages.create(messagePayload);
 
-      console.log("✅ Text WhatsApp message sent");
     }
 
-    console.log("✅ WhatsApp message delivery successful");
 
     return {
       success: true,
@@ -414,7 +409,6 @@ This gift card was sent to you by ${friendName}.`;
 // ==================== EMAIL SERVICE ====================
 export const SendGiftCardEmail = async (data, giftCard) => {
   try {
-    console.log("📧 Starting email send...");
 
     // Step 1: Validate input
     console.log("Step 1: Validating email input...");
@@ -504,7 +498,6 @@ export const SendGiftCardEmail = async (data, giftCard) => {
     console.log("Step 4: Sending email via Brevo...");
     const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
-    console.log("✅ Email delivery successful");
 
     return {
       success: true,

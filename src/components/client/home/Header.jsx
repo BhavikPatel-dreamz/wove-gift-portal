@@ -1,5 +1,5 @@
 'use client';
-import { Gift, User, ShoppingCart, ChevronDown } from 'lucide-react';
+import { Gift, User, ShoppingCart, ChevronDown, ShoppingBasket, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from '@/contexts/SessionContext';
 import { useState, useEffect } from 'react';
@@ -20,8 +20,20 @@ const Header = () => {
   const cartItems = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
   const [mounted, setMounted] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const cartCount = cartItems.length;
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10); // ✅ header changes after 10px scroll
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -44,8 +56,13 @@ const Header = () => {
 
   return (
     <>
-      <header className="navbar bg-[linear-gradient(151.97deg,#fbdce3_17.3%,#fde6db_95.19%)]">
-        <div className="max-w-7xl mx-auto px-6">
+      <header
+        className={`fixed top-0 z-100 w-full transition-all duration-300 ${isScrolled
+            ? 'bg-white shadow-md'
+            : 'bg-transparent'
+          }`}
+      >
+        <div className="max-w-[1440px] mx-auto px-6">
           <div className="flex items-center justify-between" style={{ height: '72px' }}>
             {/* Left Section - Navigation Links */}
             <nav className="hidden md:flex items-center space-x-8">
@@ -74,22 +91,12 @@ const Header = () => {
               <img
                 src="https://flagcdn.com/w40/za.png"
                 alt="South Africa"
-                className="w-6 h-4 object-cover rounded-sm"
+                className="w-6 h-6 object-cover rounded-[50%]"
               />
               <span className="text-sm font-medium text-gray-700">South Africa</span>
               <ChevronDown className="w-4 h-4 text-gray-600" />
 
-              <Link
-                href="/cart"
-                className="relative p-2 text-gray-600 hover:text-gray-800 rounded-full hover:bg-gray-100"
-              >
-                <ShoppingCart className="w-6 h-6" />
-                {mounted && cartCount > 0 && (
-                  <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
+
 
               {!mounted ? (
                 <button className="btn-secondary">
@@ -126,6 +133,28 @@ const Header = () => {
                   </button>
                 </Link>
               )}
+              <Link
+                href="/wishlist"
+                className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 border border-[#ED457D] rounded-[50%]"
+              >
+                <Heart className="w-6 h-6" color="#ED457D" />
+                {mounted && cartCount > 0 && (
+                  <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href="/cart"
+                className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 border border-[#ED457D] rounded-[50%]"
+              >
+                <ShoppingBasket className="w-6 h-6" color="#ED457D" />
+                {mounted && cartCount > 0 && (
+                  <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
             </div>
           </div>
         </div>

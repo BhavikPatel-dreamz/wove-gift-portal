@@ -38,7 +38,6 @@ export const fetchShopInfo = async (accessToken, shopName) => {
   }
 
   const shopData = await response.json();
-  console.log("Shop Information:", shopData.shop);
   await saveBrandFromShopify(shopData.shop);
   return shopData.shop;
 };
@@ -66,7 +65,6 @@ export const saveBrandFromShopify = async (shopData) => {
         categoryName: 'Default', // Placeholder category
       },
     });
-    console.log(`Successfully saved/updated brand info for ${name}`);
     return brand;
   } catch (error) {
     console.error(`Failed to save brand info for ${name}:`, error);
@@ -144,8 +142,6 @@ export const fetchGiftCardProducts = async (accessToken, shopName) => {
       hasNextPage = false;
     }
   }
-
-  console.log(`All Gift Card Products for ${shopName}:`, allGiftCardProducts);
   return allGiftCardProducts;
 };
 
@@ -204,7 +200,7 @@ export const fetchAllVendors = async (accessToken, shopName) => {
     }
   }
 
-  console.log(`All Vendors for ${shopName}:`, Array.from(allVendors));
+ 
   return Array.from(allVendors);
 };
 
@@ -264,6 +260,5 @@ export const fetchGiftCardInventory = async (accessToken, shopName) => {
     }
   }
 
-  console.log(`All Gift Card Inventory for ${shopName}:`, allGiftCards);
   return allGiftCards;
 };

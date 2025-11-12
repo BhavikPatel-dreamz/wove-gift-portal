@@ -11,9 +11,6 @@ const SHOPIFY_API_VERSION = "2025-10";
  * Fetches individual transactions and stores each redemption separately.
  */
 export async function syncShopifyDataMonthly() {
-  console.log("\n========================================");
-  console.log("🔄 STARTING MONTHLY SHOPIFY SYNC (Individual Transactions Mode)");
-  console.log("========================================\n");
 
   const startTime = Date.now();
   let totalGiftCards = 0;
@@ -24,18 +21,16 @@ export async function syncShopifyDataMonthly() {
   try {
     const allShops = await prisma.appInstallation.findMany();
     if (!allShops.length) {
-      console.log("⚠️ No Shopify stores found.");
       return;
     }
 
     for (const shop of allShops) {
       const shopName = shop.shop;
       const token = shop.accessToken;
-      console.log(`\n📍 Processing shop: ${shopName}`);
-      console.log("─".repeat(60));
+     
 
       const cards = await fetchGiftCards(shopName, token);
-      console.log(`✅ Retrieved ${cards.length} gift cards`);
+    
 
       for (const card of cards) {
         const shopifyGiftCardId = card.id;
@@ -46,7 +41,7 @@ export async function syncShopifyDataMonthly() {
           where: { shopifyId: shopifyGiftCardId },
         });
         if (!localGiftCard) {
-          console.log(`⚠️ Gift card ${shopifyGiftCardId} not found in local DB`);
+      
           continue;
         }
 
@@ -56,17 +51,17 @@ export async function syncShopifyDataMonthly() {
           include: { redemptions: true },
         });
         if (!voucherCode) {
-          console.log(`⚠️ No voucher code linked to gift card ${shopifyGiftCardId}`);
+      
           continue;
         }
 
         totalGiftCards++;
 
         // Step 3️⃣ — Fetch individual transactions from Shopify
-        console.log(`🔍 Fetching transactions for gift card: ${voucherCode.code}`);
+   
         const transactions = await fetchGiftCardTransactions(shopName, token, shopifyGiftCardId);
         
-        console.log(`📝 Found ${transactions.length} transactions for ${voucherCode.code}`);
+
         totalTransactionsProcessed += transactions.length;
 
         // Track new redemptions for this specific voucher code
@@ -84,7 +79,7 @@ export async function syncShopifyDataMonthly() {
           
           // Skip zero-amount transactions
           if (redemptionAmount === 0) {
-            console.log(`⏭️ Skipping zero-amount transaction`);
+            
             continue;
           }
 
@@ -132,13 +127,10 @@ export async function syncShopifyDataMonthly() {
           });
 
           if (exists) {
-            console.log(`⏭️ Transaction already recorded - Amount: ${redemptionAmount}, Balance: ${balanceAfter}, Date: ${transactionDay}`);
+            
             continue;
           }
 
-          console.log(
-            `💰 New redemption found: ${redemptionAmount} on ${transactionDay}`
-          );
 
           // Step 7️⃣ — Store the individual redemption (use full GID for consistency)
           await prisma.$transaction(async (tx) => {
@@ -158,7 +150,7 @@ export async function syncShopifyDataMonthly() {
           newRedemptionsValueForThisVoucher += redemptionAmount;
           totalNewRedemptions++;
           totalFixedValue += redemptionAmount;
-          console.log(`✅ Stored redemption: ${redemptionAmount} (Balance after: ${balanceAfter}) [${transactionNumber}]`);
+    
         }
 
         // Step 8️⃣ — Update VoucherCode with latest balance
@@ -212,27 +204,19 @@ export async function syncShopifyDataMonthly() {
                 },
               });
               
-              console.log(`💰 Settlement updated: +${newRedemptionsValueForThisVoucher} redeemed`);
+       
             }
           }
         }
 
-        console.log(`📊 Processed ${voucherCode.code}: ${newRedemptionsForThisVoucher} new redemptions added`);
+
       }
 
-      console.log(`📊 Shop ${shopName}: processed ${cards.length} gift cards`);
+
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
-    console.log("\n========================================");
-    console.log("✅ RECONCILIATION COMPLETE");
-    console.log("========================================");
-    console.log(`⏱ Duration: ${duration}s`);
-    console.log(`💳 Total Gift Cards Checked: ${totalGiftCards}`);
-    console.log(`📝 Total Transactions Processed: ${totalTransactionsProcessed}`);
-    console.log(`🔁 New Redemptions Added: ${totalNewRedemptions}`);
-    console.log(`💵 Total Value Reconciled: ${totalFixedValue.toFixed(2)}\n`);
 
     return {
       success: true,
@@ -265,7 +249,7 @@ async function fetchGiftCards(shop, token) {
   const startDate = lastMonth.toISOString().split("T")[0];
   const endDate = today.toISOString().split("T")[0];
 
-  console.log(`📅 Period: ${startDate} → ${endDate}`);
+
 
   while (hasNextPage) {
     const query = `

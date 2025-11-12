@@ -76,7 +76,7 @@ export async function GET(request) {
             ? Math.round((totalRedeemedValue / totalIssuedValue) * 100) 
             : 0.0;
 
-                      console.log(totalRedeemedValue,totalIssuedValue,redemptionRate);
+                  
 
         // 🔹 Aggregate settlements to compute paid vs sold
         const settlementsAgg = await prisma.settlements.groupBy({

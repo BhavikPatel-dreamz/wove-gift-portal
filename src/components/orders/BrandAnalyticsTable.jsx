@@ -25,7 +25,6 @@ const BrandAnalyticsTable = () => {
       const response = await fetch('/api/brand-analytics?period=year');
       const data = await response.json();
 
-      console.log('data',data);
       
       
       if (data.success) {
@@ -73,7 +72,6 @@ const BrandAnalyticsTable = () => {
 
       const data = await response.json();
 
-      console.log("datasssssss",data);
       
 
       if (data.success) {

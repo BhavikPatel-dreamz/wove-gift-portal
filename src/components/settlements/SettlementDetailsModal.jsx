@@ -64,7 +64,6 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
     },
   ];
 
-  console.log("brand.logo",brand.logo);
   
 
   return (

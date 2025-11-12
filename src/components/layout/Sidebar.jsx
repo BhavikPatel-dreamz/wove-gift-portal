@@ -18,8 +18,6 @@ import { useSession } from '@/contexts/SessionContext'
 const Sidebar = ({ isOpen, onClose }) => {
   const pathname = usePathname();
   const session = useSession()
-
-  console.log("session-------",session?.user?.role);
   
   const allMenuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },

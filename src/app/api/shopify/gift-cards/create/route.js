@@ -12,13 +12,11 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    console.log("Creating gift card for shop:", shop);
     // Get Shopify session
     const session = await prisma.appInstallation.findUnique({
       where: { shop }
     });
 
-    console.log("Shopify session:", session);
 
     if (!session) {
       return NextResponse.json({ 
@@ -117,7 +115,6 @@ async function createShopifyGiftCard(shop, accessToken, { initialValue, note, ex
     }
 
     const createData = await createResponse.json();
-    console.log("Gift card create response:", JSON.stringify(createData, null, 2));
 
     const giftCard = createData?.data?.giftCardCreate?.giftCard;
     const userErrors = createData?.data?.giftCardCreate?.userErrors || [];

@@ -14,8 +14,6 @@ export async function POST(req) {
       source: token,
       description: 'Gift Card Purchase',
     });
-
-    console.log("charge",charge);
     
     return NextResponse.json({
       success: true,

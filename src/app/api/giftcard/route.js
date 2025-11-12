@@ -215,8 +215,7 @@ export async function POST(req) {
       restApiPayload.gift_card.customer_id = parseInt(customerIdNumeric);
     }
 
-    console.log("Creating gift card with REST API:", restApiPayload);
-
+    
     const createGiftCardResponse = await fetch(
       `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/gift_cards.json`,
       {
@@ -230,7 +229,6 @@ export async function POST(req) {
     );
 
     const createData = await createGiftCardResponse.json();
-    console.log("REST API Response:", createData);
 
     if (!createData.gift_card) {
       return NextResponse.json(
@@ -249,7 +247,6 @@ export async function POST(req) {
     const fullGiftCardCode = giftCard.code;
     const shopifyGid = `gid://shopify/GiftCard/${giftCard.id}`;
 
-    console.log("✅ Full gift card code:", fullGiftCardCode);
 
     // Step 4: Save to local DB with full code
     const newLocalGiftCard = await prisma.giftCard.create({

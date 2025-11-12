@@ -291,7 +291,7 @@ const BrandEdit = () => {
     }
   };
 
-  console.log("formData",formData);
+
   
   const updateFormData = (field, value) => {
     setFormData(prev => ({
