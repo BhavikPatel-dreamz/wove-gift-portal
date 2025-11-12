@@ -2,7 +2,7 @@
 
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ log: ['warn', 'error'] })
 
 export async function getVouchers(params = {}) {
   const { page = 1, search = '', status = '', dateFrom, dateTo, userId, userRole } = params;
