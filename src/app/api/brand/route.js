@@ -51,7 +51,7 @@ export async function PATCH(req) {
         return NextResponse.json(
             {
                 success: false,
-                message: "Internal server error"
+                message: error instanceof Error ? error.message : "Internal server error"
             }, {
             status: 500
         });
@@ -85,7 +85,7 @@ export async function DELETE(req) {
         return NextResponse.json(
             {
                 success: false,
-                message: "Internal server error"
+                message: error instanceof Error ? error.message : "Internal server error"
             }, {
             status: 500
         });

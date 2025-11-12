@@ -84,7 +84,7 @@ export async function POST(request) {
 }
 
 // GET: Retrieve all scheduled reports
-export async function GET(request) {
+export async function GET() {
   try {
     const scheduledReports = await prisma.auditLog.findMany({
       where: {

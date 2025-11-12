@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { addOccasion, updateOccasion, deleteOccasion } from '../../../lib/action/occasionAction';
-import { deleteOccasionSchema } from '../../../lib/validation';
+//import { deleteOccasionSchema } from '../../../lib/validation';
 
 
 
@@ -67,7 +67,7 @@ export async function DELETE(req) {
         return NextResponse.json(
             {
                 success: false,
-                message: "Internal server error"
+                message: error instanceof Error ? error.message : "Internal server error"
             }, {
             status: 500
         });

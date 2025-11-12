@@ -248,7 +248,7 @@ async function getRedemptionMetrics(dateRange) {
     },
   });
 
-  const totalIssued = voucherCodes.length;
+  //const totalIssued = voucherCodes.length;
 
   // Calculate total issued value
   const totalIssuedValue = voucherCodes.reduce(
@@ -547,7 +547,7 @@ async function getTopPerformingBrands(dateRange, limit = 10) {
         },
       });
 
-      const totalVouchers = voucherCodesWithRedemptions.length;
+      //const totalVouchers = voucherCodesWithRedemptions.length;
 
       // Calculate total issued value
       const totalIssuedValue = voucherCodesWithRedemptions.reduce(
@@ -597,7 +597,7 @@ async function getTopPerformingBrands(dateRange, limit = 10) {
 }
 
 // Weekly Performance
-async function getWeeklyPerformance(dateRange) {
+async function getWeeklyPerformance() {
   const weeklyData = await prisma.$queryRaw`
     SELECT
       to_char(date_series.day, 'YYYY-MM-DD') as date,

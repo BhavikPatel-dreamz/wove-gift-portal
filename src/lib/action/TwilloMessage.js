@@ -4,15 +4,15 @@ import twilio from "twilio";
 import * as brevo from "@getbrevo/brevo";
 
 // ==================== CUSTOM ERROR CLASSES ====================
-class MessageServiceError extends Error {
-  constructor(message, service, originalError) {
-    super(message);
-    this.name = "MessageServiceError";
-    this.service = service;
-    this.originalError = originalError;
-    this.statusCode = 500;
-  }
-}
+// class MessageServiceError extends Error {
+//   constructor(message, service, originalError) {
+//     super(message);
+//     this.name = "MessageServiceError";
+//     this.service = service;
+//     this.originalError = originalError;
+//     this.statusCode = 500;
+//   }
+// }
 
 class ConfigurationError extends Error {
   constructor(message) {
@@ -175,7 +175,7 @@ function buildWhatsAppTextMessage(data, giftCard) {
   const amount = data?.selectedAmount?.value || "100";
   const personalMessage = data?.personalMessage || "";
   const giftCode = giftCard?.code || "XXXX XXXX XXXX";
-  const brandName = data?.selectedBrand?.brandName || "Brand";
+ // const brandName = data?.selectedBrand?.brandName || "Brand";
   const claimUrl = getClaimUrl(data?.selectedBrand);
 
   let messageBody = `*${friendName} Sent you a gift card*\n\n`;

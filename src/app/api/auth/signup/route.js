@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import {  NextResponse } from 'next/server'
 import { signupSchema } from '@/lib/validation'
 import { createUser } from '../../../../lib/action/userAction/auth'
 import { createSession } from '../../../../lib/action/userAction/session'

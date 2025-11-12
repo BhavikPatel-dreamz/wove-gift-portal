@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '../../../../../lib/db.js';
+import prisma from '../../../../lib/db';
 
 export async function POST(request) {
   try {
@@ -74,4 +74,5 @@ async function sendGiftCardEmail(email, giftCard) {
   // Implement email sending logic here
   // You can use services like SendGrid, Nodemailer, etc.
   // TODO: Implement actual email sending
+  return {email, giftCard};
 }

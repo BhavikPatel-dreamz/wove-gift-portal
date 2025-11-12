@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
 export function middleware(request) {
-  const { pathname, search } = request.nextUrl
+  const { pathname } = request.nextUrl
 
-  const urlSearchParams = new URLSearchParams(search);
-  const params = Object.fromEntries(urlSearchParams.entries());
+  //const urlSearchParams = new URLSearchParams(search);
+  //const params = Object.fromEntries(urlSearchParams.entries());
 
   if (
     pathname.startsWith('/shopify/install') ||
@@ -29,7 +29,7 @@ export function middleware(request) {
   if (pathname.startsWith('/shopify')) 
     {
     const shop = request.nextUrl.searchParams.get('shop');
-    const embedded = request.nextUrl.searchParams.get('embedded');
+   // const embedded = request.nextUrl.searchParams.get('embedded');
     const session = request.nextUrl.searchParams.get('session');
     const idToken = request.nextUrl.searchParams.get('id_token');
     

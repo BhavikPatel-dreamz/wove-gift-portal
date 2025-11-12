@@ -219,7 +219,7 @@ async function getBrandRedemptionMetrics(dateRange) {
 
   // Return without debug info for production
   return filteredBrands.map((brand, index) => {
-    const { debug, ...brandData } = brand;
+    const {  ...brandData } = brand;
     return {
       ...brandData,
       bgColor: bgColors[index],

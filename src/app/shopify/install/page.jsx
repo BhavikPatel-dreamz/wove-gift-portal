@@ -1,11 +1,11 @@
 'use client'; // Add this if using app directory
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation'; // App Router
 // OR
 // import { useRouter } from 'next/compat/router'; // Pages Router compatibility
 
-export default function InstallPage() {
+function InstallContent() {
   const [shop, setShop] = useState('');
   const [installing, setInstalling] = useState(false);
   const router = useRouter();
@@ -161,5 +161,13 @@ export default function InstallPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function InstallPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <InstallContent />
+    </Suspense>
   );
 }
