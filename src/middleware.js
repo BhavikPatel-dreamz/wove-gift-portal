@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
 export function middleware(request) {
-  const { pathname, search } = request.nextUrl
+  const { pathname } = request.nextUrl
 
-  const urlSearchParams = new URLSearchParams(search);
+  //const urlSearchParams = new URLSearchParams(search);
   //const params = Object.fromEntries(urlSearchParams.entries());
 
   if (

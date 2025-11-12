@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { 
   Gift, 
@@ -17,7 +17,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 
-export default function ShopifyMainPage() {
+function ShopifyMainContent() {
   const searchParams = useSearchParams();
   const shop = searchParams.get('shop');
   
@@ -474,5 +474,13 @@ function CreateGiftCardModal({ onClose, onSubmit }) {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ShopifyMainPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ShopifyMainContent />
+    </Suspense>
   );
 }

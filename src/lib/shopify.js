@@ -9,7 +9,7 @@ const requiredEnvVars = {
   SHOPIFY_APP_URL: process.env.SHOPIFY_APP_URL,
 };
 
-console.log("requiredEnvVars",requiredEnvVars);
+
 
 const missingVars = Object.entries(requiredEnvVars)
   .filter(([, value]) => !value)

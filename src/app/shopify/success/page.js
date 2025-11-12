@@ -1,22 +1,30 @@
 "use client"
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function InstallSuccess() {
+function SuccessContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [shop, setShop] = useState('');
+
+  useEffect(() => {
+    const shopParam = searchParams?.get('shop');
+    if (shopParam) {
+      setShop(shopParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Auto-redirect to dashboard after 3 seconds
     const timer = setTimeout(() => {
-      const shop = router.query.shop;
       if (shop) {
         router.push(`/shopify?shop=${shop}`);
       }
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [router, shop]);
 
   return (
     <div className="success-page">
@@ -29,7 +37,7 @@ export default function InstallSuccess() {
           <div className="redirect-info">
             <p>Redirecting to dashboard in 3 seconds...</p>
             <Link 
-              href={`/shopify?shop=${router.query.shop}`}
+              href={shop ? `/shopify?shop=${shop}` : '/shopify'}
               className="dashboard-btn"
             >
               Go to Dashboard Now
@@ -97,5 +105,13 @@ export default function InstallSuccess() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function InstallSuccess() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SuccessContent />
+    </Suspense>
   );
 }
