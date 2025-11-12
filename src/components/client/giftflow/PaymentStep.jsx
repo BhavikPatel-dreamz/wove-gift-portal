@@ -321,9 +321,12 @@ const PaymentStep = () => {
       const orderData = isBulkMode ? {
         selectedBrand,
         selectedAmount,
+        personalMessage,
         quantity,
         companyInfo,
         deliveryOption: bulkDeliveryOption,
+        selectedOccasion,
+        selectedSubCategory,
         selectedPaymentMethod: 'card',
         paymentData,
         totalAmount: calculateTotal(),

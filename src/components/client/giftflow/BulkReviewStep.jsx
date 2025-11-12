@@ -267,7 +267,7 @@ const BulkReviewStep = () => {
                                 </div>
                             </label>
 
-                            <label className="flex items-start gap-3 cursor-pointer">
+                            {/* <label className="flex items-start gap-3 cursor-pointer">
                                 <input
                                     type="radio"
                                     name="deliveryOption"
@@ -279,7 +279,7 @@ const BulkReviewStep = () => {
                                 <div className="flex-1">
                                     <span className="text-gray-900 font-medium">Send vouchers to multiple individuals as gifts.</span>
                                 </div>
-                            </label>
+                            </label> */}
                         </div>
                     </div>
                 </div>

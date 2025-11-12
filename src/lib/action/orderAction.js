@@ -3,7 +3,11 @@
 import { PrismaClient } from "@prisma/client";
 import { getSession } from "./userAction/session";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage";
+import * as brevo from "@getbrevo/brevo";
 
+const apiKey = process.env.NEXT_BREVO_API_KEY;
+let apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
 const prisma = new PrismaClient();
 
 // ==================== CUSTOM ERROR CLASSES ====================
@@ -23,14 +27,6 @@ class AuthenticationError extends Error {
   }
 }
 
-class NotFoundError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "NotFoundError";
-    this.statusCode = 404;
-  }
-}
-
 class ExternalServiceError extends Error {
   constructor(message, originalError) {
     super(message);
@@ -47,14 +43,19 @@ function generateOrderNumber() {
   return `ORD-${timestamp}-${random}`;
 }
 
-function generateTokenizedLink(voucherCodeId) {
-  const token = Buffer.from(
-    `${voucherCodeId}-${Date.now()}-${Math.random()}`
-  ).toString("base64url");
+function getClaimUrl(selectedBrand) {
+  const claimUrl =
+    selectedBrand?.website ||
+    selectedBrand?.domain ||
+    (selectedBrand?.slug ? `https://${selectedBrand.slug}.myshopify.com` : null);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.wove.com";
-  return `${baseUrl}/redeem/${token}`;
+  if (!claimUrl) {
+    throw new ValidationError("Brand website or domain not configured");
+  }
+
+  return claimUrl.startsWith("http") ? claimUrl : `https://${claimUrl}`;
 }
+
 
 // ==================== VALIDATION FUNCTIONS ====================
 function validateOrderData(orderData) {
@@ -219,15 +220,14 @@ async function createOrderRecord(
       isActive: true,
     };
 
-    console.log("orderBase",orderBase);
-
     if (isBulkOrder) {
       // Bulk order specific fields
       return await prisma.order.create({
         data: {
           ...orderBase,
           deliveryMethod: "email", // Bulk orders are delivered via email/CSV
-          message: `Bulk order for ${orderData.companyInfo.companyName}`,
+          // message: `Bulk order for ${orderData.companyInfo.companyName}`,
+          message: orderData.personalMessage || "",
           senderName: orderData.companyInfo.companyName,
           sendType: "sendImmediately",
           scheduledFor: null,
@@ -373,7 +373,7 @@ async function processBulkOrder(
         create: {
           shop: selectedBrand.domain,
           shopifyId: shopifyGiftCard.id,
-          code: shopifyGiftCard.maskedCode,
+          code: shopifyGiftCard.code,
           initialValue: parseFloat(shopifyGiftCard.balance?.amount || 0),
           balance: parseFloat(shopifyGiftCard.balance?.amount || 0),
           customerEmail: orderData.companyInfo.contactEmail,
@@ -412,7 +412,9 @@ async function processBulkOrder(
       });
 
       // Generate and save tokenized link
-      const tokenizedLink = generateTokenizedLink(voucherCode.id);
+      const tokenizedLink = getClaimUrl(selectedBrand);
+      console.log("----------------tokenizedLink",tokenizedLink);
+      
       const linkExpiresAt = new Date();
       linkExpiresAt.setDate(linkExpiresAt.getDate() + 7);
 
@@ -421,7 +423,11 @@ async function processBulkOrder(
         data: { tokenizedLink, linkExpiresAt },
       });
 
-      voucherCodes.push(voucherCode);
+      voucherCodes.push({
+      ...voucherCode,
+      code: shopifyGiftCard.code,
+      tokenizedLink:tokenizedLink
+      });
       giftCards.push(shopifyGiftCard);
     }
 
@@ -434,7 +440,7 @@ async function processBulkOrder(
 }
 
 // ==================== BULK DELIVERY ====================
-async function sendBulkDelivery(orderData, voucherCodes, giftCards) {
+async function sendBulkDelivery(orderData, voucherCodes) {
   try {
     const { deliveryOption, companyInfo } = orderData;
 
@@ -443,36 +449,440 @@ async function sendBulkDelivery(orderData, voucherCodes, giftCards) {
       const csvHeader =
         "Voucher Code,Amount,Currency,Expires At,Redemption Link\n";
       const csvRows = voucherCodes
-        .map((vc, index) => {
-          const gc = giftCards[index];
-          return `${vc.code},${vc.originalValue},${
-            orderData.selectedAmount.currency
-          },${vc.expiresAt || "No Expiry"},${vc.tokenizedLink}`;
+        .map((vc) => {
+          const expiryDate = vc.expiresAt
+            ? new Date(vc.expiresAt).toLocaleDateString()
+            : "No Expiry";
+          return `${vc.code},${vc.originalValue},${orderData.selectedAmount.currency},${expiryDate},${vc.tokenizedLink}`;
         })
         .join("\n");
 
       const csvContent = csvHeader + csvRows;
 
-      // Send email with CSV attachment
-      // TODO: Implement email service to send CSV
-      console.log("📧 Sending CSV to:", companyInfo.contactEmail);
-      console.log("CSV Content:", csvContent);
+      // Initialize Brevo
+      const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
+      const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
 
-      return { success: true, message: "CSV will be sent to email" };
+      if (!senderEmail) {
+        throw new ConfigurationError(
+          "Missing Brevo sender email: NEXT_BREVO_SENDER_EMAIL"
+        );
+      }
+
+      // Convert CSV to base64 for attachment
+      const csvBuffer = Buffer.from(csvContent, "utf-8");
+      const csvBase64 = csvBuffer.toString("base64");
+      const fileName = `gift-cards-${Date.now()}.csv`;
+
+      const sendSmtpEmail = {
+        sender: {
+          email: senderEmail,
+          name: senderName,
+        },
+        to: [
+          {
+            email: companyInfo.contactEmail,
+            name: companyInfo.companyName,
+          },
+        ],
+        subject: `Bulk Gift Card Order - ${voucherCodes.length} Vouchers (CSV Attached)`,
+        htmlContent: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+          
+          <tr>
+            <td style="background-color: #ffe4e6; padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #1a1a1a;">🎉 Bulk Gift Card Order Confirmed</h1>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 8px; font-size: 16px; color: #1a1a1a;">Dear ${
+                companyInfo.companyName
+              },</p>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a; line-height: 1.6;">Your bulk gift card order has been successfully processed. All voucher codes are attached as a CSV file.</p>
+              
+              <div style="background-color: #f8f9fa; border-left: 4px solid #ff6b9d; padding: 20px; margin-bottom: 24px; border-radius: 8px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">📊 Order Summary</h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Brand:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${orderData.selectedBrand?.brandName || "N/A"}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Total Vouchers:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${voucherCodes.length}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Amount per Voucher:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${orderData.selectedAmount?.currency || "₹"}${
+          orderData.selectedAmount?.value || "0"
+        }
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                      <strong>Total Value:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #1a1a1a; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                      ${orderData.selectedAmount?.currency || "₹"}${
+          (orderData.selectedAmount?.value || 0) * voucherCodes.length
+        }
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; margin-bottom: 24px; border-radius: 8px;">
+                <p style="margin: 0 0 8px; font-size: 14px; color: #856404; font-weight: 600;">📎 CSV File Attached</p>
+                <p style="margin: 0; font-size: 13px; color: #856404; line-height: 1.6;">
+                  The attached CSV file contains all ${
+                    voucherCodes.length
+                  } voucher codes with their details (code, amount, expiry date, and redemption link).
+                </p>
+              </div>
+              
+              <div style="margin-top: 24px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">📋 How to Use</h3>
+                <ol style="margin: 0; padding-left: 20px; color: #4a5568; font-size: 14px; line-height: 1.8;">
+                  <li>Download and open the attached CSV file</li>
+                  <li>Each row contains a unique voucher code and redemption link</li>
+                  <li>Distribute the codes to your recipients</li>
+                  <li>Recipients can redeem at ${
+                    orderData.selectedBrand?.brandName || "the brand"
+                  }</li>
+                </ol>
+              </div>
+              
+              <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d; line-height: 1.6;">
+                  Need help? Contact our support team at any time.
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.6;">
+                Thank you for choosing our gift card platform.<br>
+                This order was placed by ${companyInfo.companyName}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+        textContent: `Bulk Gift Card Order Confirmation
+
+Dear ${companyInfo.companyName},
+
+Your bulk gift card order has been successfully processed.
+
+Order Summary:
+- Brand: ${orderData.selectedBrand?.brandName || "N/A"}
+- Total Vouchers: ${voucherCodes.length}
+- Amount per Voucher: ${orderData.selectedAmount?.currency || "₹"}${
+          orderData.selectedAmount?.value || "0"
+        }
+- Total Value: ${orderData.selectedAmount?.currency || "₹"}${
+          (orderData.selectedAmount?.value || 0) * voucherCodes.length
+        }
+
+CSV File Attached:
+The attached CSV file contains all ${
+          voucherCodes.length
+        } voucher codes with their details.
+
+How to Use:
+1. Download and open the attached CSV file
+2. Each row contains a unique voucher code and redemption link
+3. Distribute the codes to your recipients
+4. Recipients can redeem at ${orderData.selectedBrand?.brandName || "the brand"}
+
+Thank you for choosing our gift card platform.`,
+        attachment: [
+          {
+            content: csvBase64,
+            name: fileName,
+          },
+        ],
+      };
+
+      console.log("📧 Sending CSV email to:", companyInfo.contactEmail);
+      const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+      console.log("✅ CSV email sent successfully");
+
+      return {
+        success: true,
+        message: "CSV file sent to email successfully",
+        messageId: response.messageId,
+        recipient: companyInfo.contactEmail,
+        vouchersCount: voucherCodes.length,
+        deliveryMethod: "csv",
+      };
     } else if (deliveryOption === "email") {
-      // Send all codes in a single email
-      console.log("📧 Sending bulk email to:", companyInfo.contactEmail);
-      // TODO: Implement bulk email with all codes
-      return { success: true, message: "Bulk email will be sent" };
-    } else if (deliveryOption === "multiple") {
-      // This would require additional recipient information
-      console.log("📧 Multiple recipient delivery selected");
-      // TODO: Implement multiple recipient delivery
-      return { success: true, message: "Multiple delivery will be processed" };
+      // Send all voucher codes in a single email (not CSV, just HTML table)
+      const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
+      const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
+
+      if (!senderEmail) {
+        throw new ConfigurationError(
+          "Missing Brevo sender email: NEXT_BREVO_SENDER_EMAIL"
+        );
+      }
+
+      // Generate voucher rows for HTML table
+      const voucherRows = voucherCodes
+        .map((vc, index) => {
+          const expiryDate = vc.expiresAt
+            ? new Date(vc.expiresAt).toLocaleDateString()
+            : "No Expiry";
+
+          return `
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px 8px; font-size: 13px; color: #4a5568;">
+              ${index + 1}
+            </td>
+            <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a; font-family: 'Courier New', monospace;">
+              ${vc.code}
+            </td>
+            <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a;">
+              ${orderData.selectedAmount?.currency || "₹"}${vc.originalValue}
+            </td>
+            <td style="padding: 12px 8px; font-size: 13px; color: #4a5568;">
+              ${expiryDate}
+            </td>
+            <td style="padding: 12px 8px;">
+              <a href="${
+                vc.tokenizedLink
+              }" style="color: #ff6b9d; text-decoration: none; font-size: 12px;">Redeem →</a>
+            </td>
+          </tr>
+        `;
+        })
+        .join("");
+
+      const sendSmtpEmail = {
+        sender: {
+          email: senderEmail,
+          name: senderName,
+        },
+        to: [
+          {
+            email: companyInfo.contactEmail,
+            name: companyInfo.companyName,
+          },
+        ],
+        subject: `Bulk Gift Card Order - ${voucherCodes.length} Vouchers`,
+        htmlContent: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 700px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+          
+          <tr>
+            <td style="background-color: #ffe4e6; padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #1a1a1a;">🎉 Bulk Gift Card Order Confirmed</h1>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 8px; font-size: 16px; color: #1a1a1a;">Dear ${
+                companyInfo.companyName
+              },</p>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a; line-height: 1.6;">Your bulk gift card order has been successfully processed. Below are all your voucher codes.</p>
+              
+              <div style="background-color: #f8f9fa; border-left: 4px solid #ff6b9d; padding: 20px; margin-bottom: 24px; border-radius: 8px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">📊 Order Summary</h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Brand:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${orderData.selectedBrand?.brandName || "N/A"}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Total Vouchers:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${voucherCodes.length}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Amount per Voucher:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${orderData.selectedAmount?.currency || "₹"}${
+          orderData.selectedAmount?.value || "0"
+        }
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                      <strong>Total Value:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #1a1a1a; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                      ${orderData.selectedAmount?.currency || "₹"}${
+          (orderData.selectedAmount?.value || 0) * voucherCodes.length
+        }
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div style="margin-top: 24px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">🎁 Your Voucher Codes</h3>
+                <div style="overflow-x: auto;">
+                  <table role="presentation" style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <thead>
+                      <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">#</th>
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Voucher Code</th>
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Amount</th>
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Expires</th>
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${voucherRows}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <div style="margin-top: 24px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">📋 How to Use</h3>
+                <ol style="margin: 0; padding-left: 20px; color: #4a5568; font-size: 14px; line-height: 1.8;">
+                  <li>Copy the voucher code you want to use</li>
+                  <li>Click the "Redeem" link or visit ${
+                    orderData.selectedBrand?.brandName || "the brand"
+                  }</li>
+                  <li>Enter the voucher code at checkout</li>
+                  <li>Enjoy your gift!</li>
+                </ol>
+              </div>
+              
+              <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d; line-height: 1.6;">
+                  Need help? Contact our support team at any time.
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.6;">
+                Thank you for choosing our gift card platform.<br>
+                This order was placed by ${companyInfo.companyName}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+        textContent: `Bulk Gift Card Order Confirmation
+
+Dear ${companyInfo.companyName},
+
+Your bulk gift card order has been successfully processed.
+
+Order Summary:
+- Brand: ${orderData.selectedBrand?.brandName || "N/A"}
+- Total Vouchers: ${voucherCodes.length}
+- Amount per Voucher: ${orderData.selectedAmount?.currency || "₹"}${
+          orderData.selectedAmount?.value || "0"
+        }
+- Total Value: ${orderData.selectedAmount?.currency || "₹"}${
+          (orderData.selectedAmount?.value || 0) * voucherCodes.length
+        }
+
+Your Voucher Codes:
+${voucherCodes
+  .map((vc, index) => {
+    const expiryDate = vc.expiresAt
+      ? new Date(vc.expiresAt).toLocaleDateString()
+      : "No Expiry";
+    return `${index + 1}. ${vc.code} - ${
+      orderData.selectedAmount?.currency || "₹"
+    }${vc.originalValue} - Expires: ${expiryDate}\n   Redeem: ${
+      vc.tokenizedLink
+    }`;
+  })
+  .join("\n\n")}
+
+How to Use:
+1. Copy the voucher code you want to use
+2. Visit ${orderData.selectedBrand?.brandName || "the brand"}
+3. Enter the voucher code at checkout
+4. Enjoy your gift!
+
+Thank you for choosing our gift card platform.`,
+      };
+
+      console.log(
+        "📧 Sending bulk email with all codes to:",
+        companyInfo.contactEmail
+      );
+      const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+      console.log("✅ Bulk email sent successfully");
+
+      return {
+        success: true,
+        message: "All voucher codes sent in single email successfully",
+        messageId: response.messageId,
+        recipient: companyInfo.contactEmail,
+        vouchersCount: voucherCodes.length,
+        deliveryMethod: "email",
+      };
     }
 
     return { success: true, message: "Bulk delivery processed" };
   } catch (error) {
+    console.error("❌ Bulk delivery failed:", error);
+
     throw new ExternalServiceError(
       `Failed to send bulk delivery: ${error.message}`,
       error
@@ -543,7 +953,7 @@ async function processSingleOrder(
     });
 
     // Generate and save tokenized link
-    const tokenizedLink = generateTokenizedLink(voucherCode.id);
+    const tokenizedLink = getClaimUrl(selectedBrand);
     const linkExpiresAt = new Date();
     linkExpiresAt.setDate(linkExpiresAt.getDate() + 7);
 
@@ -657,10 +1067,7 @@ async function updateOrCreateSettlement(selectedBrand, order) {
           updatedAt: new Date(),
         },
       });
-
-      console.log(
-        `✅ Updated settlement for brand ${selectedBrand.name} (${settlementPeriod})`
-      );
+      
     } else {
       await prisma.settlements.create({
         data: {
@@ -681,10 +1088,6 @@ async function updateOrCreateSettlement(selectedBrand, order) {
           status: "Pending",
         },
       });
-
-      console.log(
-        `✅ Created new settlement for brand ${selectedBrand.name} (${settlementPeriod})`
-      );
     }
   } catch (error) {
     console.error("⚠️ Settlement update failed (non-critical):", error.message);
@@ -779,7 +1182,7 @@ export const createOrder = async (orderData) => {
       voucherCodeIds = voucherCodes.map((vc) => vc.id);
 
       // Step 6: Update settlement
-      console.log("Step 6: Updating settlement records...");
+      console.log("Step 6: Updating settlement records...",voucherCodes);
       await updateOrCreateSettlement(orderData.selectedBrand, order);
 
       // Step 7: Send bulk delivery
