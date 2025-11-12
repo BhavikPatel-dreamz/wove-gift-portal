@@ -116,7 +116,7 @@ const giftFlowSlice = createSlice({
       const increment = action.payload || 1; // Default to 1 if no payload
       state.currentStep = Math.min(10, state.currentStep + increment);
     },
-
+    
     resetFlow: () => {
       return {
         currentStep: 1,

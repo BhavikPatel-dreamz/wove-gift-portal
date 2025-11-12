@@ -1,10 +1,9 @@
-# Shopify Product Creator & Gift Card Manager
+# Shopify Product Creator
 
-This module provides comprehensive functionality for creating Shopify products and managing gift cards using the stored Shopify session from your Wove Gift Portal application.
+This module provides functionality to create Shopify products using the stored Shopify session from your Wove Gift Portal application.
 
 ## Features
 
-### Product Creator
 - ✅ Create single products
 - ✅ Create multiple products in batch
 - ✅ Create gift card products with predefined settings
@@ -16,23 +15,12 @@ This module provides comprehensive functionality for creating Shopify products a
 - ✅ Command-line interface
 - ✅ REST API endpoint
 
-### Gift Card Manager
-- ✅ Create, view, and manage gift cards through web interface
-- ✅ Command line tools for batch operations
-- ✅ Direct integration with Shopify's Gift Card API
-- ✅ Local database tracking for enhanced analytics
-- ✅ Automatic customer creation and assignment
-- ✅ Gift card statistics and reporting
-
 ## Files Structure
 
 ```
 src/lib/shopify-product-creator.js    # Core product creation functions
 src/app/api/shopify/products/route.js # REST API endpoint
-src/app/api/shopify/gift-cards/       # Gift card API endpoints
-src/app/shopify/main/                 # Gift card web interface
-scripts/create-shopify-product.js     # Command-line script for products
-scripts/gift-card-manager.js          # Command-line script for gift cards
+scripts/create-shopify-product.js     # Command-line script
 scripts/examples/                     # Example configuration files
   ├── single-gift-card.json          # Single gift card with variants
   └── multiple-occasion-cards.json   # Multiple themed gift cards
@@ -340,128 +328,3 @@ When contributing to this module:
 ## License
 
 This module is part of the Wove Gift Portal application and follows the same license terms.
-
----
-
-# Gift Card Manager
-
-## Overview
-
-The Gift Card Manager provides comprehensive gift card management for your Shopify store through both web interface and command line tools.
-
-## Getting Started
-
-### Web Interface
-
-1. Navigate to `/shopify` in your application
-2. Enter your Shopify store domain (e.g., `yourstore.myshopify.com`)
-3. Complete the Shopify app installation process
-4. Access the gift card management interface at `/shopify/main`
-
-### Command Line Interface
-
-#### Create a Gift Card
-```bash
-node scripts/gift-card-manager.js \
-  --shop=yourstore.myshopify.com \
-  --action=create \
-  --value=50.00 \
-  --email=customer@example.com \
-  --note="Welcome gift card"
-```
-
-#### List All Gift Cards
-```bash
-node scripts/gift-card-manager.js \
-  --shop=yourstore.myshopify.com \
-  --action=list \
-  --format=table
-```
-
-#### Get Gift Card Details
-```bash
-node scripts/gift-card-manager.js \
-  --shop=yourstore.myshopify.com \
-  --action=get \
-  --code=GIFT123ABC
-```
-
-#### View Gift Card Statistics
-```bash
-node scripts/gift-card-manager.js \
-  --shop=yourstore.myshopify.com \
-  --action=stats \
-  --format=json
-```
-
-#### Disable a Gift Card
-```bash
-node scripts/gift-card-manager.js \
-  --shop=yourstore.myshopify.com \
-  --action=disable \
-  --code=GIFT123ABC
-```
-
-## Gift Card API Endpoints
-
-### GET /api/shopify/gift-cards
-Fetch all gift cards for a shop
-```bash
-curl "https://yourapp.com/api/shopify/gift-cards?shop=yourstore.myshopify.com"
-```
-
-### POST /api/shopify/gift-cards/create
-Create a new gift card
-```bash
-curl -X POST "https://yourapp.com/api/shopify/gift-cards/create" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "shop": "yourstore.myshopify.com",
-    "initialValue": 50.00,
-    "customerEmail": "customer@example.com",
-    "note": "Welcome gift"
-  }'
-```
-
-### GET /api/shopify/shop
-Get shop information
-```bash
-curl "https://yourapp.com/api/shopify/shop?shop=yourstore.myshopify.com"
-```
-
-## Command Line Options
-
-- `--shop` (required): Your Shopify store domain
-- `--action` (required): Action to perform (create, list, get, update, disable, stats)
-- `--value`: Gift card value for create action
-- `--email`: Customer email (optional)
-- `--code`: Gift card code for get/update/disable actions
-- `--note`: Gift card note (optional)
-- `--expires`: Expiration date in YYYY-MM-DD format (optional)
-- `--format`: Output format (table, json) - default is table
-
-## Examples
-
-### Bulk Gift Card Creation
-```bash
-#!/bin/bash
-# Create 10 gift cards with $25 value each
-
-for i in {1..10}; do
-  node scripts/gift-card-manager.js \
-    --shop=yourstore.myshopify.com \
-    --action=create \
-    --value=25.00 \
-    --note="Bulk gift card #$i"
-  sleep 1  # Rate limiting
-done
-```
-
-### Export Gift Card Data
-```bash
-# Export all gift cards to JSON
-node scripts/gift-card-manager.js \
-  --shop=yourstore.myshopify.com \
-  --action=list \
-  --format=json > gift-cards-export.json
-```

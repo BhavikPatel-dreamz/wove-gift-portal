@@ -65,7 +65,7 @@ export async function POST(req) {
 
     for (const txn of giftCardTxns) {
       const numericGiftCardId = txn.receipt?.gift_card_id;
-      const last4 = txn.receipt?.gift_card_last_characters;
+      //const last4 = txn.receipt?.gift_card_last_characters;
       const amountRedeemed = Number(parseFloat(txn.amount));
 
 
