@@ -8,7 +8,7 @@ import * as brevo from "@getbrevo/brevo";
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
-const prisma = new PrismaClient({ log: ['warn', 'error'] })
+const prisma = new PrismaClient({ log: ["warn", "error"] });
 
 // ==================== CUSTOM ERROR CLASSES ====================
 class ValidationError extends Error {
@@ -55,7 +55,9 @@ function getClaimUrl(selectedBrand) {
   const claimUrl =
     selectedBrand?.website ||
     selectedBrand?.domain ||
-    (selectedBrand?.slug ? `https://${selectedBrand.slug}.myshopify.com` : null);
+    (selectedBrand?.slug
+      ? `https://${selectedBrand.slug}.myshopify.com`
+      : null);
 
   if (!claimUrl) {
     throw new ValidationError("Brand website or domain not configured");
@@ -63,7 +65,6 @@ function getClaimUrl(selectedBrand) {
 
   return claimUrl.startsWith("http") ? claimUrl : `https://${claimUrl}`;
 }
-
 
 // ==================== VALIDATION FUNCTIONS ====================
 function validateOrderData(orderData) {
@@ -228,11 +229,20 @@ async function createOrderRecord(
       isActive: true,
     };
 
+    function generateBulkOrderNumber() {
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 10000);
+      return `BULK-${timestamp}-${random}`;
+    }
+
+    const bulkOrderNumber = generateBulkOrderNumber();
+
     if (isBulkOrder) {
       // Bulk order specific fields
       return await prisma.order.create({
         data: {
           ...orderBase,
+          bulkOrderNumber: bulkOrderNumber || null,
           deliveryMethod: "email", // Bulk orders are delivered via email/CSV
           // message: `Bulk order for ${orderData.companyInfo.companyName}`,
           message: orderData.personalMessage || "",
@@ -421,8 +431,8 @@ async function processBulkOrder(
 
       // Generate and save tokenized link
       const tokenizedLink = getClaimUrl(selectedBrand);
-      console.log("----------------tokenizedLink",tokenizedLink);
-      
+      console.log("----------------tokenizedLink", tokenizedLink);
+
       const linkExpiresAt = new Date();
       linkExpiresAt.setDate(linkExpiresAt.getDate() + 7);
 
@@ -432,9 +442,9 @@ async function processBulkOrder(
       });
 
       voucherCodes.push({
-      ...voucherCode,
-      code: shopifyGiftCard.code,
-      tokenizedLink:tokenizedLink
+        ...voucherCode,
+        code: shopifyGiftCard.code,
+        tokenizedLink: tokenizedLink,
       });
       giftCards.push(shopifyGiftCard);
     }
@@ -1075,7 +1085,6 @@ async function updateOrCreateSettlement(selectedBrand, order) {
           updatedAt: new Date(),
         },
       });
-      
     } else {
       await prisma.settlements.create({
         data: {
@@ -1190,7 +1199,7 @@ export const createOrder = async (orderData) => {
       voucherCodeIds = voucherCodes.map((vc) => vc.id);
 
       // Step 6: Update settlement
-      console.log("Step 6: Updating settlement records...",voucherCodes);
+      console.log("Step 6: Updating settlement records...", voucherCodes);
       await updateOrCreateSettlement(orderData.selectedBrand, order);
 
       // Step 7: Send bulk delivery
