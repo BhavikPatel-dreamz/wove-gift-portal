@@ -94,7 +94,7 @@ export async function POST(request) {
 
 // ==================== REPORT GENERATORS ====================
 
-async function generateSalesSummary(whereClause, startDate, endDate) {
+async function generateSalesSummary(whereClause) {
   const orders = await prisma.order.findMany({
     where: whereClause,
     include: {
@@ -158,7 +158,7 @@ async function generateSalesSummary(whereClause, startDate, endDate) {
   };
 }
 
-async function generateRedemptionDetails(whereClause, startDate, endDate) {
+async function generateRedemptionDetails(whereClause) {
   const orders = await prisma.order.findMany({
     where: whereClause,
     include: {

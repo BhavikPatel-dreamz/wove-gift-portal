@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Gift, Plus, Settings, BarChart3, Users } from 'lucide-react';
+//import Link from 'next/link';
+import { Gift } from 'lucide-react';
 
 export default function ShopifyAppDashboard() {
   const router = useRouter();
-  const [shopData, setShopData] = useState(null);
+  //const [shopData, setShopData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [shop, setShop] = useState('');
 
@@ -19,11 +19,11 @@ export default function ShopifyAppDashboard() {
         router.push(`/shopify/install?shop=${shopDomain}`);
         return;
       }
-      const data = await response.json();
-      setShopData(data.shop || { name: shopDomain });
+      //const data = await response.json();
+      //setShopData(data.shop || { name: shopDomain });
     } catch (error) {
       console.error('Error fetching shop data:', error);
-      setShopData({ name: shopDomain });
+      //setShopData({ name: shopDomain });
     } finally {
       setLoading(false);
     }
@@ -39,6 +39,7 @@ export default function ShopifyAppDashboard() {
     } else {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   const handleShopSubmit = (e) => {

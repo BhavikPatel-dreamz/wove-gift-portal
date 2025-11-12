@@ -74,4 +74,5 @@ async function sendGiftCardEmail(email, giftCard) {
   // Implement email sending logic here
   // You can use services like SendGrid, Nodemailer, etc.
   // TODO: Implement actual email sending
+  return {email, giftCard};
 }

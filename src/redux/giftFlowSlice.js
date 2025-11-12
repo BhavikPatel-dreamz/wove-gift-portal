@@ -116,7 +116,7 @@ const giftFlowSlice = createSlice({
       state.currentStep = Math.min(10, state.currentStep + 1);
     },
     
-    resetFlow: (state) => {
+    resetFlow: () => {
       return {
         currentStep: 1,
         selectedBrand: null,

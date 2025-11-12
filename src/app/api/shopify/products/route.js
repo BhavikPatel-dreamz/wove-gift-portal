@@ -1,322 +1,167 @@
-import { NextResponse } from "next/server";
-import { getShopifyClient } from "../../../../lib/shopify-auth";
+import { NextResponse } from 'next/server';
+import { 
+  createShopifyProduct, 
+  createMultipleShopifyProducts, 
+  createGiftCardProduct 
+} from '@/lib/shopify-product-creator';
 
-// CREATE a product
 export async function POST(request) {
-  const { searchParams } = new URL(request.url);
-  let shop = searchParams.get("shop");
-
-  if (shop) {
-    shop = shop.replace(/\/$/, "");
-  }
-
-  if (!shop) {
-    return NextResponse.json(
-      { error: "Missing shop parameter" },
-      { status: 400 }
-    );
-  }
-
   try {
-    const productData = await request.json();
-    const { graphql } = await getShopifyClient(shop);
+    const body = await request.json();
+    const { shop, type = 'single', productData, productsData, giftCardData } = body;
 
-    // Remove variants from productData if it exists, as it's not a valid field on ProductInput
-    const { variants, ...cleanProductData } = productData;
-
-    const createProductMutation = `
-      mutation productCreate($input: ProductInput!) {
-        productCreate(input: $input) {
-          product {
-            id
-            title
-            handle
-            descriptionHtml
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  inventoryQuantity
-                }
-              }
-            }
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `;
-
-    const data = await graphql.request(createProductMutation, {
-      variables: {
-        input: cleanProductData,
-      },
-    });
-
-    if (data.data.productCreate.userErrors.length > 0) {
+    if (!shop) {
       return NextResponse.json(
-        { errors: data.data.productCreate.userErrors },
+        { error: 'Shop domain is required' },
         { status: 400 }
       );
     }
 
-    return NextResponse.json(data.data.productCreate.product);
-  } catch (error) {
-    console.error("Error creating product:", error);
-    return NextResponse.json(
-      { error: error.message || "Error creating product" },
-      { status: 500 }
-    );
-  }
-}
+    // Ensure shop domain is properly formatted
+    const shopDomain = shop.endsWith('.myshopify.com') ? shop : `${shop}.myshopify.com`;
 
-// READ product(s)
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  let shop = searchParams.get("shop");
-  const id = searchParams.get("id");
+    let result;
 
-  if (shop) {
-    shop = shop.replace(/\/$/, "");
-  }
-
-  if (!shop) {
-    return NextResponse.json(
-      { error: "Missing shop parameter" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const { graphql } = await getShopifyClient(shop);
-
-    if (id) {
-      // Fetch a single product
-      const getProductQuery = `
-        query getProduct($id: ID!) {
-          product(id: $id) {
-            id
-            title
-            handle
-            descriptionHtml
-            status
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  inventoryQuantity
-                }
-              }
-            }
-          }
+    switch (type) {
+      case 'single':
+        if (!productData) {
+          return NextResponse.json(
+            { error: 'productData is required for single product creation' },
+            { status: 400 }
+          );
         }
-      `;
+        result = await createShopifyProduct(shopDomain, productData);
+        break;
 
-      const data = await graphql.request(getProductQuery, {
-        variables: {
-          id: id.startsWith("gid://") ? id : `gid://shopify/Product/${id}`,
-        },
-      });
+      case 'multiple':
+        if (!productsData || !Array.isArray(productsData)) {
+          return NextResponse.json(
+            { error: 'productsData array is required for multiple product creation' },
+            { status: 400 }
+          );
+        }
+        result = await createMultipleShopifyProducts(shopDomain, productsData);
+        break;
 
-      if (!data.data.product) {
+      case 'gift-card':
+        if (!giftCardData) {
+          return NextResponse.json(
+            { error: 'giftCardData is required for gift card creation' },
+            { status: 400 }
+          );
+        }
+        result = await createGiftCardProduct(shopDomain, giftCardData);
+        break;
+
+      default:
         return NextResponse.json(
-          { error: "Product not found" },
-          { status: 404 }
+          { error: 'Invalid type. Must be "single", "multiple", or "gift-card"' },
+          { status: 400 }
         );
-      }
-
-      return NextResponse.json(data.data.product);
-    } else {
-      // Fetch all products
-      const getProductsQuery = `
-        query getProducts {
-          products(first: 10) {
-            edges {
-              node {
-                id
-                title
-                handle
-                descriptionHtml
-                status
-              }
-            }
-          }
-        }
-      `;
-
-      const data = await graphql.request(getProductsQuery);
-
-      return NextResponse.json(
-        data.data.products.edges.map((edge) => edge.node)
-      );
-    }
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    return NextResponse.json(
-      { error: error.message || "Error fetching data" },
-      { status: 500 }
-    );
-  }
-}
-
-// UPDATE a product
-export async function PUT(request) {
-  const { searchParams } = new URL(request.url);
-  let shop = searchParams.get("shop");
-  const id = searchParams.get("id");
-
-  if (shop) {
-    shop = shop.replace(/\/$/, "");
-  }
-
-  if (!shop) {
-    return NextResponse.json(
-      { error: "Missing shop parameter" },
-      { status: 400 }
-    );
-  }
-
-  if (!id) {
-    return NextResponse.json(
-      { error: "Missing product id parameter" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const productData = await request.json();
-    const { graphql } = await getShopifyClient(shop);
-
-    // Remove variants from productData if it exists
-    const { variants, ...cleanProductData } = productData;
-
-    const updateProductMutation = `
-      mutation productUpdate($input: ProductInput!) {
-        productUpdate(input: $input) {
-          product {
-            id
-            title
-            handle
-            descriptionHtml
-            status
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  inventoryQuantity
-                }
-              }
-            }
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `;
-
-    // Ensure the product ID is in the correct format
-    const productId = id.startsWith("gid://") ? id : `gid://shopify/Product/${id}`;
-
-    const data = await graphql.request(updateProductMutation, {
-      variables: {
-        input: {
-          id: productId,
-          ...cleanProductData,
-        },
-      },
-    });
-
-    if (data.data.productUpdate.userErrors.length > 0) {
-      return NextResponse.json(
-        { errors: data.data.productUpdate.userErrors },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(data.data.productUpdate.product);
-  } catch (error) {
-    console.error("Error updating product:", error);
-    return NextResponse.json(
-      { error: error.message || "Error updating product" },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE a product
-export async function DELETE(request) {
-  const { searchParams } = new URL(request.url);
-  let shop = searchParams.get("shop");
-  const id = searchParams.get("id");
-
-  if (shop) {
-    shop = shop.replace(/\/$/, "");
-  }
-
-  if (!shop) {
-    return NextResponse.json(
-      { error: "Missing shop parameter" },
-      { status: 400 }
-    );
-  }
-
-  if (!id) {
-    return NextResponse.json(
-      { error: "Missing product id parameter" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const { graphql } = await getShopifyClient(shop);
-
-    const deleteProductMutation = `
-      mutation productDelete($input: ProductDeleteInput!) {
-        productDelete(input: $input) {
-          deletedProductId
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `;
-
-    // Ensure the product ID is in the correct format
-    const productId = id.startsWith("gid://") ? id : `gid://shopify/Product/${id}`;
-
-    const data = await graphql.request(deleteProductMutation, {
-      variables: {
-        input: {
-          id: productId,
-        },
-      },
-    });
-
-    if (data.data.productDelete.userErrors.length > 0) {
-      return NextResponse.json(
-        { errors: data.data.productDelete.userErrors },
-        { status: 400 }
-      );
     }
 
     return NextResponse.json({
       success: true,
-      deletedProductId: data.data.productDelete.deletedProductId,
-      message: "Product deleted successfully",
+      data: result,
     });
+
   } catch (error) {
-    console.error("Error deleting product:", error);
+    console.error('Product creation API error:', error);
+    
     return NextResponse.json(
-      { error: error.message || "Error deleting product" },
+      { 
+        error: 'Failed to create product(s)',
+        details: error.message 
+      },
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  // Return example usage and documentation
+  return NextResponse.json({
+    message: 'Shopify Product Creator API',
+    usage: {
+      endpoint: '/api/shopify/products',
+      method: 'POST',
+      types: {
+        single: {
+          description: 'Create a single product',
+          body: {
+            shop: 'your-shop.myshopify.com',
+            type: 'single',
+            productData: {
+              title: 'Product Title',
+              descriptionHtml: '<p>Product description</p>',
+              productType: 'Gift Card',
+              price: 25.00,
+              vendor: 'Your Vendor',
+              status: 'DRAFT', // or 'ACTIVE'
+              tags: ['tag1', 'tag2'],
+              seo: {
+                title: 'SEO Title',
+                description: 'SEO Description'
+              },
+              images: [
+                {
+                  src: 'https://example.com/image.jpg',
+                  altText: 'Image description'
+                }
+              ]
+            }
+          }
+        },
+        multiple: {
+          description: 'Create multiple products in batch',
+          body: {
+            shop: 'your-shop.myshopify.com',
+            type: 'multiple',
+            productsData: [
+              // Array of product data objects
+            ]
+          }
+        },
+        'gift-card': {
+          description: 'Create a gift card product with predefined settings',
+          body: {
+            shop: 'your-shop.myshopify.com',
+            type: 'gift-card',
+            giftCardData: {
+              title: 'Gift Card',
+              description: 'Gift card description',
+              amount: 50.00,
+              amounts: [25, 50, 100], // For multiple variants
+              tags: ['custom-tag']
+            }
+          }
+        }
+      }
+    },
+    examples: {
+      singleProduct: {
+        shop: 'demo-shop.myshopify.com',
+        type: 'single',
+        productData: {
+          title: 'Premium Gift Card',
+          descriptionHtml: '<p>A beautiful premium gift card perfect for any occasion.</p>',
+          productType: 'Gift Card',
+          vendor: 'Wove Gift Portal',
+          status: 'DRAFT',
+          price: 50.00,
+          tags: ['gift-card', 'premium']
+        }
+      },
+      giftCard: {
+        shop: 'demo-shop.myshopify.com',
+        type: 'gift-card',
+        giftCardData: {
+          title: 'Multi-Value Gift Card',
+          description: 'Choose from multiple denominations',
+          amounts: [25, 50, 100, 200],
+          tags: ['multi-value']
+        }
+      }
+    }
+  });
 }
