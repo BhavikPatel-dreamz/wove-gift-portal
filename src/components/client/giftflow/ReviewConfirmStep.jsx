@@ -25,8 +25,6 @@ const ReviewConfirmStep = () => {
   } = useSelector((state) => state.giftFlowReducer);
 
   const validateGift = () => {
-
-    console.log("deliveryDetails",deliveryDetails);
     
     if (!selectedBrand) {
       setError("Please select a brand for your gift card.");

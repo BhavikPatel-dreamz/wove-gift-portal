@@ -1706,9 +1706,6 @@ export async function getSettlementDetailsByBrandId(brandId) {
       }, 0);
 
         const orderTotal = Number(orderAggregation._sum.totalAmount) || 0;
-      console.log("orderTotal",orderTotal);
-      
-
       return {
         id: voucher.id,
         denominationType: voucher.denominationType,
@@ -1776,17 +1773,7 @@ export async function getSettlementDetailsByBrandId(brandId) {
     const netPayableAmount = Number(settlementData.netPayable) || 
       (redeemedAmount - commissionAmount - vatAmount);
 
-      console.log("-----------",{
-          totalOrderAmount: orderTotal,
-          totalVouchersIssued: summaryTotalIssued,
-          totalVouchersRedeemed: summaryTotalRedeemed,
-          totalVouchersUnredeemed: summaryTotalUnredeemed,
-          totalRedeemedAmount: summaryRedeemedAmount,
-          voucherRedemptionRate: summaryTotalIssued > 0
-            ? ((summaryRedeemedAmount / orderTotal) * 100).toFixed(2)
-            : "0.00",
-          deliverySummary,
-        });
+    
       
 
     // Return complete settlement details

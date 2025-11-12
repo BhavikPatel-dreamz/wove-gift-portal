@@ -5,17 +5,17 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
-    console.log('Starting database seed...');
+  
     
     // Clean the database
-    console.log('Cleaning existing users...');
+
     await prisma.user.deleteMany();
     
     // Hash password
     const userPassword = await bcrypt.hash("test@123", 10);
     
     // Create admin user
-    console.log('Creating admin user...');
+
     const adminUser = await prisma.user.create({
       data: {
         firstName: "Admin",
@@ -29,10 +29,10 @@ async function main() {
       },
     });
     
-    console.log('Admin user created:', adminUser.email);
+
     
     // Optionally create a test customer user
-    console.log('Creating customer user...');
+
     const customerUser = await prisma.user.create({
       data: {
         firstName: "Test",
@@ -46,8 +46,8 @@ async function main() {
       },
     });
     
-    console.log('Customer user created:', customerUser.email);
-    console.log('Seeding completed successfully!');
+
+
     
   } catch (error) {
     console.error("Error during seeding:", error);
@@ -62,5 +62,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-    console.log('Disconnected from database');
+
   });

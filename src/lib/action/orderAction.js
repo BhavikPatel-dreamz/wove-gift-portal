@@ -308,7 +308,7 @@ async function createVoucherCode(
     } else {
       expireDate = voucherConfig?.expiresAt || null;
     }
-    console.log("voucherConfig", expireDate);
+ 
 
     const voucherCode = await prisma.voucherCode.create({
       data: {
@@ -378,9 +378,7 @@ async function updateOrCreateSettlement(selectedBrand, order) {
         },
       });
 
-      console.log(
-        `✅ Updated settlement for brand ${selectedBrand.name} (${settlementPeriod})`
-      );
+     
     } else {
       await prisma.settlements.create({
         data: {
@@ -402,9 +400,7 @@ async function updateOrCreateSettlement(selectedBrand, order) {
         },
       });
 
-      console.log(
-        `✅ Created new settlement for brand ${selectedBrand.name} (${settlementPeriod})`
-      );
+     
     }
   } catch (error) {
     console.error("⚠️ Settlement update failed (non-critical):", error.message);
@@ -417,7 +413,6 @@ async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
   try {
     // For print delivery, skip sending messages
     if (deliveryMethod === "print") {
-      console.log("✅ Print delivery selected - skipping message delivery");
       return { success: true, message: "Print delivery - no message sent" };
     }
 
@@ -575,7 +570,6 @@ export const createOrder = async (orderData) => {
     console.log("Step 10: Creating delivery log...");
     await createDeliveryLog(order, voucherCode, orderData);
 
-    console.log("✅ Order created successfully:", order.orderNumber);
 
     return {
       success: true,

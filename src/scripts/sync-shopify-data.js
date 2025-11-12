@@ -5,11 +5,9 @@
 import { syncShopifyDataMonthly } from "./giftcard.js";
 
 
-console.log('Starting Shopify data sync...');
-
 syncShopifyDataMonthly()
   .then(() => {
-    console.log('Shopify data sync completed successfully.');
+  
     process.exit(0);
   })
   .catch((error) => {
