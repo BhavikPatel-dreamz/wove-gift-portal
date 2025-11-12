@@ -66,7 +66,7 @@ const Header = () => {
               <div className="logo-icon">
                 <Gift size={24} color="white" strokeWidth={2.5} />
               </div>
-              <span className="logo-text">Wave Gifts</span>
+              <span className="logo-text">Wove Gifts</span>
             </div>
 
             {/* Right Section */}

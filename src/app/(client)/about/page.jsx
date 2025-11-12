@@ -36,7 +36,7 @@ const page = () => {
     ];
 
     const headerData = {
-        logo: "Wave Gifts",
+        logo: "Wove Gifts",
         navigation: ["Home", "About", "FAQ", "Send Gift Card", "Brands"],
         userActions: ["EN", "Login", "Register", "Artists"]
     };
@@ -56,7 +56,7 @@ const page = () => {
                 items: ["Facebook", "Twitter", "Instagram", "LinkedIn"]
             },
             {
-                title: "Wave Gift",
+                title: "Wove Gift",
                 items: ["About", "Careers", "Press"]
             }
         ],

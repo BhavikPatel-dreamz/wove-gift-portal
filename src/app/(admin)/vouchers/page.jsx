@@ -27,7 +27,8 @@ export default function VouchersManagement() {
   });
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('analytics');
+  const [activeTab, setActiveTab] = useState('orders');
+
 
   const fetchVouchers = async () => {
     setLoading(true);
@@ -215,24 +216,29 @@ export default function VouchersManagement() {
           >
             Order Management
           </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'analytics'
-              ? 'bg-white text-gray-900 shadow-md'
-              : 'bg-white/50 text-gray-600 hover:bg-white/80'
-              }`}
-          >
-            Analytics & Tracking
-          </button>
-          <button
-            onClick={() => setActiveTab('settlements')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'settlements'
-              ? 'bg-white text-gray-900 shadow-md'
-              : 'bg-white/50 text-gray-600 hover:bg-white/80'
-              }`}
-          >
-            Brand Settlements
-          </button>
+
+          {session?.user?.role !== "CUSTOMER" && (
+            <>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'analytics'
+                  ? 'bg-white text-gray-900 shadow-md'
+                  : 'bg-white/50 text-gray-600 hover:bg-white/80'
+                  }`}
+              >
+                Analytics & Tracking
+              </button>
+              <button
+                onClick={() => setActiveTab('settlements')}
+                className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'settlements'
+                  ? 'bg-white text-gray-900 shadow-md'
+                  : 'bg-white/50 text-gray-600 hover:bg-white/80'
+                  }`}
+              >
+                Brand Settlements
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -288,7 +294,7 @@ export default function VouchersManagement() {
       )}
 
       {activeTab === 'settlements' && (
-      <BrandAnalyticsTable/>
+        <BrandAnalyticsTable />
       )}
 
     </div>

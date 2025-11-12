@@ -8,7 +8,7 @@ import { Phone } from 'lucide-react';
 const page = () => {
 
   const headerData = {
-    logo: "Wave Gifts",
+    logo: "Wove Gifts",
     navigation: ["Home", "About", "FAQ", "Send Gift Card", "Brands"],
     userActions: ["EN", "Login", "Register", "Artists"]
   };
