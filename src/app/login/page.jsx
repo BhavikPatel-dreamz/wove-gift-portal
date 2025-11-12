@@ -1,5 +1,20 @@
-import LoginForm from "@/component/auth/LoginForm";
+import Link from 'next/link'
+import AuthForm from '@/components/AuthForm'
+import { validateSession } from '@/lib/action/userAction/session'
+import { redirect } from 'next/navigation'
 
-export default function LoginPage() {
-  return <LoginForm />;
+export default async function LoginPage() {
+  const session = await validateSession()
+
+  if (session) {
+    redirect('/dashboard')
+  }
+
+  return (
+    <main className="">
+
+        <AuthForm type="login" />
+       
+    </main>
+  )
 }

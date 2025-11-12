@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -14,229 +7,497 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique 
-  phone     String    
-  firstName String
-  lastName  String
-  password  String
-  avatar    String?
-  role      String?
-  sessions  Session[]
-  order     Order[]
-  isActive  Boolean  @default(false)
-  isVerify  Boolean  @default(false)
+// ==================== AUTHENTICATION & USERS ====================
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id         String     @id @default(cuid())
+  email      String     @unique
+  phone      String?
+  firstName  String
+  lastName   String
+  password   String
+  avatar     String?
+  role       UserRole   @default(CUSTOMER)
+  isActive   Boolean    @default(false)
+  isVerified Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  auditLogs  AuditLog[]
+  orders     Order[]
+  wishlists  Wishlist[]
+  sessions   Session[]
 
   @@map("users")
 }
-model Session {
-  id           String   @id @default(uuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
 
 model Brand {
-  id             String          @id @default(uuid())
-  brandName      String          @unique
-  logo           String   
-  description    String
-  website        String
-  contact        String
-  tagline        String
-  color          String
-  categoryId     String
-  categories     Categories     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  isActive       Boolean        @default(false)
-  isFeature      Boolean        @default(false)
-  notes          String
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  brandcontacts  BrandContacts[]
-  brandTerms     BrandTerms[]
-  brandBankings  BrandBanking[]
-  vouchers       Vouchers[]
-  order          Order[]
-  settlements    Settlements[]
-  }
+  id            String          @id @default(cuid())
+  brandName     String          @unique
+  currency      String?
+  domain        String?         @unique
+  slug          String          @unique
+  logo          String
+  description   String
+  website       String
+  contact       String
+  tagline       String?
+  color         String?
+  categoryName  String
+  isPrimary     Boolean         @default(false)
+  isActive      Boolean         @default(false)
+  isFeature     Boolean         @default(false)
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  brandBankings BrandBanking?
+  brandContacts BrandContacts[]
+  brandTerms    BrandTerms?
+  integrations  Integration[]
+  orders        Order[]
+  settlements   Settlements[]
+  vouchers      Vouchers[]
+}
 
 model BrandContacts {
-    id        String @id @default(uuid())
-    name      String
-    role      String
-    email     String
-    phone     String
-    brandId   String
-    createdAt DateTime       @default(now())
-    updatedAt DateTime       @updatedAt
-    brands    Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  }
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  email     String
+  phone     String
+  notes     String?
+  isPrimary Boolean  @default(false)
+  brandId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  brand     Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
 
 model BrandTerms {
-  id                  String                @id @default(uuid())
-  settelementTrigger  SettelmentStatus      @default(onRedemption)
-  commissionType      CommissionStatus      @default(Percentage)
-  commissionValue     Int                   @default(0) 
-  currency            String               
-  discount            Int?                  @default(0) 
-  orderValue          Int?                  @default(0)
-  contractStart       DateTime              
-  contractEnd         DateTime              
-  goLiveDate          DateTime
-  renewContract       Boolean               @default(false)
-  brackingPolicy      PolicyStatus          @default(Retain)
-  brackingShare       Int?                  @default(0)
-  vatRate             Int?                  @default(0)
-  internalNotes       String
-  brandId             String
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  brands              Brand                 @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  }
-
-model Vouchers {
-  id                 String              @id @default(uuid())
-  denominationype    DenominationStatus  @default(staticDenominations)
-  addDenomination    Json?
-  maxAmount          Int?                @default(0)
-  minAmount          Int?                @default(0)
-  expiryPolicy       expiryPolicyStatus  @default(fixedDay)
-  expiryValue        String              
-  graceDays          Int?                @default(0)
-  redemptionChannels String? 
-  partialRedemption  Boolean             @default(false)
-  Stackable          Boolean             @default(false)
-  userPerDay         Int?
-  termsConditionsURL String?
-  brandId            String
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  brands              Brand               @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  id                String           @id @default(cuid())
+  settlementTrigger SettlementStatus @default(onRedemption)
+  commissionType    CommissionStatus @default(Percentage)
+  commissionValue   Float            @default(0)
+  maxDiscount       Int?             @default(0)
+  minOrderValue     Int?             @default(0)
+  currency          String           @default("USD")
+  breakagePolicy    String?
+  breakageShare     Int?             @default(0)
+  contractStart     DateTime?
+  contractEnd       DateTime?
+  goLiveDate        DateTime?
+  renewContract     Boolean          @default(false)
+  vatRate           Float?           @default(0)
+  internalNotes     String?
+  brandId           String           @unique
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  brand             Brand            @relation(fields: [brandId], references: [id], onDelete: Cascade)
 }
 
 model BrandBanking {
-  id                  String                    @id @default(uuid())
+  id                  String                    @id @default(cuid())
   settlementFrequency SettlementFrequencyStatus @default(monthly)
-  dayOfMonth          Int?                      @default(0)
-  payoutMethod        payoutMethodStatus        @default(EFT)
+  dayOfMonth          Int?
+  payoutMethod        PayoutMethodStatus        @default(EFT)
   invoiceRequired     Boolean                   @default(false)
-  remittanceEmail     String
+  remittanceEmail     String?
   accountHolder       String
   accountNumber       String
   branchCode          String
   bankName            String
-  SWIFTCode           String
+  swiftCode           String?
   country             String
-  brandId             String
+  accountVerification Boolean                   @default(false)
+  brandId             String                    @unique
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
-  brands              Brand                     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brand               Brand                     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
+
+model Integration {
+  id             String               @id @default(cuid())
+  platform       String?
+  storeUrl       String?
+  storeName      String?
+  apiKey         String?
+  apiSecret      String?
+  accessToken    String?
+  consumerKey    String?
+  consumerSecret String?
+  isActive       Boolean              @default(true)
+  lastSyncAt     DateTime?
+  syncStatus     SyncStatus?
+  syncMessage    String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  brandId        String
+  brand          Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  syncLogs       IntegrationSyncLog[]
+}
+
+model IntegrationSyncLog {
+  id            String      @id @default(cuid())
+  integrationId String
+  syncType      String
+  status        SyncStatus
+  itemsSynced   Int         @default(0)
+  errorMessage  String?
+  createdAt     DateTime    @default(now())
+  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+}
+
+model Denomination {
+  id          String    @id @default(cuid())
+  voucherId   String
+  value       Int // Denomination amount
+  currency    String    @default("USD")
+  displayName String?
+  isExpiry    Boolean 
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  voucher Vouchers @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  @@index([voucherId])
+  @@index([voucherId, isActive])
+  @@map("denominations")
+}
+
+// Update the Vouchers model by:
+// 1. Removing the 'denominations' Json field
+// 2. Adding the relation to Denomination
+
+model Vouchers {
+  id                   String             @id @default(cuid())
+  denominationType     DenominationStatus @default(fixed)
+  // Remove this line: denominations        Json?
+  denominationCurrency String             @default("USD")
+  denominationValue    Int?
+  maxAmount            Int?
+  minAmount            Int?
+  expiresAt            DateTime?
+  expiryValue          String?
+  graceDays            Int?               @default(0)
+  redemptionChannels   Json?
+  partialRedemption    Boolean            @default(false)
+  stackable            Boolean            @default(false)
+  maxUserPerDay        Int?
+  termsConditionsURL   String?
+  productSku           String?
+  isActive             Boolean            @default(true)
+  brandId              String
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  isExpiry             Boolean            @default(false)
+  expiryPolicy         String?
+
+  // Add this relation
+  denominations Denomination[] // One voucher can have multiple denominations
+  voucherCodes  VoucherCode[]
+  brand         Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@map("vouchers")
+}
+
+model VoucherCode {
+  id                String              @id @default(cuid())
+  code              String              @unique
+  orderId           String
+  voucherId         String
+  shopifyGiftCardId String?             @unique
+  shopifyShop       String?
+  shopifySyncError  String?
+  shopifySyncedAt   DateTime?
+  isRedeemed        Boolean             @default(false)
+  redeemedAt        DateTime?
+  originalValue     Int
+  remainingValue    Int
+  expiresAt         DateTime?
+  pin               String?
+  qrCode            String?
+  tokenizedLink     String?
+  linkExpiresAt     DateTime?
+  lastSyncedRedeemedValue String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  deliveryLogs      DeliveryLog[]
+  order             Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  giftCard          GiftCard?           @relation(fields: [shopifyGiftCardId], references: [id])
+  voucher           Vouchers            @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  redemptions       VoucherRedemption[]
+
+  @@index([orderId])
+  @@index([voucherId])
+}
+
+model VoucherRedemption {
+  id             String      @id @default(cuid())
+  voucherCodeId  String
+  amountRedeemed Int
+  balanceAfter   Int
+  redeemedAt     DateTime    @default(now())
+  transactionId  String?
+  storeUrl       String?
+  voucherCode    VoucherCode @relation(fields: [voucherCodeId], references: [id], onDelete: Cascade)
+
+  @@index([voucherCodeId])
 }
 
 model Occasion {
-  id                  String            @id @default(uuid())
-  name                String
-  emoji               String
-  description         String
-  isActive            Boolean            @default(false)
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  occasionCategory    OccasionCategory[]
-  order               Order[]
-
+  id                 String             @id @default(cuid())
+  name               String             @unique
+  emoji              String?
+  description        String
+  image              String?
+  type               String
+  isActive           Boolean            @default(true)
+  displayOrder       Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  occasionCategories OccasionCategory[]
+  orders             Order[]
 }
 
 model OccasionCategory {
-  id          String    @id @default(uuid())
-  name        String
-  description String
-  emoji       String
-  image       String
-  isActive    Boolean   @default(false)
-  occasionId  String
-  occasions   Occasion  @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  name         String   @unique
+  description  String
+  emoji        String?
+  image        String?
+  category     String
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  occasionId   String
+  occasion     Occasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  orders       Order[]
 }
 
-model Categories {
-  id          String @id @default(uuid())
-  name        String
-  brands      Brand[]
+model CustomCard {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  bgColor      String?
+  bgImage      String?
+  emoji        String?
+  templateType String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
 }
+
 model ReceiverDetail {
-  id         String @id @default(uuid())
-  name       String
-  phone      String
-  email      String
-  order      Order[]
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
 }
 
 model Order {
-  id                  String @id @default(uuid())
-  brandId             String
-  occasionId          String
-  amount              Int
-  message             String
-  isActive            Boolean             @default(false)
-  sendType            SendStatus          @default(sendImmediately)
-  deliveryMethod      deliveryMethodStatus @default(whatsup)
-  receiverId          String
-  senderId            String    
-  giftCode            String
-  orderNumber         String
-  paymentMethod       paymentStatus       @default(COD)
-  totalAmount         Int?                @default(0)
-  redemptionStatus    RedemptionStatus    @default(Issued)
-  timeStemp           DateTime
-  receiverDetails     ReceiverDetail      @relation(fields: [receiverId], references: [id], onDelete: Cascade)
-  occasions           Occasion            @relation(fields: [occasionId], references: [id], onDelete: Cascade)
-  brands              Brand               @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  user                User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
-}
-model Settlements {
-  id                  String      @id @default(uuid())
-  brandId             String
-  totalSold           Int
-  Redeemed            String
-  Outstanding         Int?  
-  settlementTerms     String
-  Amount 	            Int?
-  lastPayment         DateTime
-  status              Status       @default(Pending)
-  brands              Brand        @relation(fields: [brandId], references: [id], onDelete: Cascade)
-}
-enum Status {
-  Pending
-  Paid
-  InReview
+  id               String               @id @default(cuid())
+  orderNumber      String               @unique
+  brandId          String
+  occasionId       String
+  subCategoryId    String?
+  customCardId     String?
+  userId           String
+  bulkOrderNumber String?
+  receiverDetailId String
+  amount           Int
+  quantity         Int                  @default(1)
+  subtotal         Int
+  discount         Int                  @default(0)
+  totalAmount      Int
+  currency         String               @default("USD")
+  message          String?
+  customImageUrl   String?
+  customVideoUrl   String?
+  senderName       String?
+  senderEmail      String?
+  deliveryMethod   DeliveryMethodStatus @default(whatsapp)
+  sendType         SendStatus           @default(sendImmediately)
+  scheduledFor     DateTime?
+  paymentMethod    String?
+  paymentStatus    PaymentStatus        @default(PENDING)
+  paymentIntentId  String?
+  paidAt           DateTime?
+  redemptionStatus RedemptionStatus     @default(Issued)
+  redeemedAt       DateTime?
+  isActive         Boolean              @default(true)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  deliveryLogs     DeliveryLog[]
+  brand            Brand                @relation(fields: [brandId], references: [id])
+  customCard       CustomCard?          @relation(fields: [customCardId], references: [id])
+  occasion         Occasion             @relation(fields: [occasionId], references: [id])
+  receiverDetail   ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
+  occasionCategory OccasionCategory?    @relation(fields: [subCategoryId], references: [id])
+  user             User                 @relation(fields: [userId], references: [id])
+  voucherCodes     VoucherCode[]
+
+  @@index([userId])
+  @@index([brandId])
+  @@index([orderNumber])
+  @@index([paymentStatus])
 }
 
-enum deliveryMethodStatus {
- whatsup 
- email
- print
+model DeliveryLog {
+  id            String               @id @default(cuid())
+  orderId       String
+  voucherCodeId String?
+  method        DeliveryMethodStatus
+  recipient     String
+  status        DeliveryStatus       @default(PENDING)
+  attemptCount  Int                  @default(0)
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  errorMessage  String?
+  messageId     String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  order         Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  voucherCode   VoucherCode?         @relation(fields: [voucherCodeId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
 }
-enum RedemptionStatus {
- Issued 
- Redeemed
- Exparied
- NotRedeemed
+
+model Settlements {
+  id                String                  @id @default(cuid())
+  brandId           String
+  settlementPeriod  String
+  periodStart       DateTime
+  periodEnd         DateTime
+  totalSold         Int
+  totalSoldAmount   Int
+  totalRedeemed     Int
+  redeemedAmount    Int
+  outstanding       Int
+  outstandingAmount Int
+  commissionAmount  Int
+  breakageAmount    Int?
+  vatAmount         Int?
+  netPayable        Int
+  remainingAmount   Int?        @default(0)
+  status            SettlementPaymentStatus @default(Pending)
+  paidAt            DateTime?
+  paymentReference  String?
+  notes             String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  brand             Brand                   @relation(fields: [brandId], references: [id])
+
+  @@index([brandId])
+  @@index([status])
 }
-enum paymentStatus {
- COD
- Stripe
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  brandId   String?
+  voucherId String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, voucherId])
+  @@index([userId])
 }
-enum SendStatus {
- sendImmediately 
- scheduleLater
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userEmail String?
+  action    String
+  entity    String
+  entityId  String?
+  changes   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
 }
-enum SettelmentStatus {
- onRedemption
- onPurchase
+
+model ShopifySession {
+  id          String    @id @default(cuid())
+  shop        String    @unique
+  accessToken String
+  scope       String?
+  isOnline    Boolean   @default(false)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
+
+model AppInstallation {
+  id          String   @id @default(cuid())
+  shop        String   @unique
+  accessToken String
+  scopes      String
+  installedAt DateTime @default(now())
+  isActive    Boolean  @default(true)
+}
+
+model GiftCard {
+  id            String    @id @default(cuid())
+  shop          String
+  shopifyId     String?   @unique
+  code          String    @unique
+  initialValue  Float
+  balance       Float
+  customerEmail String?
+  note          String?
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  isVirtual     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relation to VoucherCode
+  voucherCode VoucherCode?
+
+  denominationId String?
+
+  @@index([shop])
+  @@index([code])
+  @@index([customerEmail])
+  @@index([denominationId]) // optional, for faster lookups
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  BRAND_MANAGER
+  SUPPORT
+  FINANCE
+}
+
+enum SettlementStatus {
+  onRedemption
+  onPurchase
+}
+
 enum CommissionStatus {
   Fixed
   Percentage
@@ -248,21 +509,81 @@ enum PolicyStatus {
 }
 
 enum DenominationStatus {
-  staticDenominations
-  amountRange
+  fixed
+  amount
 }
 
-enum expiryPolicyStatus {
-  fixedDay
-  endOfMonth
-  absoluteDate
+enum IntegrationType {
+  shopify
+  woocommerce
+  magento
+  custom_api
+  other
+}
+
+enum SyncStatus {
+  success
+  failed
+  partial
+  syncing
+  pending
+}
+
+enum PayoutMethodStatus {
+  EFT
+  wire_transfer
+  paypal
+  stripe
+  manual
 }
 
 enum SettlementFrequencyStatus {
-  monthly
+  daily
   weekly
+  monthly
+  quarterly
 }
-enum payoutMethodStatus {
-  EFT
-  ManualProcessing
+
+enum DeliveryMethodStatus {
+  whatsapp
+  email
+  sms
+  print
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+enum RedemptionStatus {
+  Issued
+  PartiallyRedeemed
+  Redeemed
+  Expired
+  Cancelled
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum SendStatus {
+  sendImmediately
+  scheduleLater
+}
+
+enum SettlementPaymentStatus {
+  Pending
+  Paid
+  InReview
+  Disputed
 }

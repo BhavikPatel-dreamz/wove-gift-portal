@@ -1,37 +1,75 @@
 {
-  "name": "wove-gifts",
+  "name": "nextjs-auth-system",
   "version": "0.1.0",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed",
+    "test": "jest",
+    "g:install": "npm i -g @shopify/cli@latest",
+    "shopify": "shopify",
+    "update:config": "node _developer/tomlWriter.js; npm run pretty; shopify app deploy;",
+    "update:url": "node _developer/updateDashboard.js",
+    "gift-cards:create": "node scripts/gift-card-manager.js --action=create",
+    "gift-cards:list": "node scripts/gift-card-manager.js --action=list",
+    "gift-cards:stats": "node scripts/gift-card-manager.js --action=stats",
+    "sync:shopify": "node src/scripts/sync-shopify-data.js"
   },
- 
-     "prisma": {
-       "seed": "node prisma/seed.js"
-     },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
+    "@paypal/paypal-server-sdk": "^1.1.0",
     "@prisma/client": "^6.16.1",
-    "@types/pg": "^8.15.5",
+    "@reduxjs/toolkit": "^2.9.0",
+    "@sendgrid/mail": "^8.1.6",
+    "@shopify/shopify-api": "^12.0.0",
+    "@stripe/react-stripe-js": "^5.2.0",
+    "@stripe/stripe-js": "^8.0.0",
+    "@tanstack/react-table": "^8.21.3",
     "bcryptjs": "^3.0.2",
+    "commander": "^11.1.0",
+    "emoji-picker-react": "^4.13.3",
+    "fs": "^0.0.1-security",
+    "iron-session": "^8.0.4",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.544.0",
-    "next": "15.5.2",
-    "pg": "^8.16.3",
+    "next": "15.5.3",
+    "node-fetch": "^3.3.2",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-hot-toast": "^2.6.0",
+    "react-redux": "^9.2.0",
+    "recharts": "^3.2.1",
+    "stripe": "^19.1.0",
+    "twilio": "^5.10.2",
+    "zod": "^4.1.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@faker-js/faker": "^9.9.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
     "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.5.2",
+    "eslint-config-next": "15.5.3",
+    "jest": "^30.1.3",
     "prisma": "^6.16.1",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
