@@ -71,7 +71,7 @@ const Header = () => {
                   key={item}
                   href={navLinks[item]}
                   onClick={() => handleNavClick(item)} // ✅ attach click handler
-                  className="nav-link"
+                  className="nav-link font-poppins"
                 >
                   {item}
                 </Link>
