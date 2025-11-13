@@ -43,7 +43,7 @@ const CardGrid = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:p-10 mt-10">
       {brands.map(brand => (
         <BrandCard
           key={brand.id}

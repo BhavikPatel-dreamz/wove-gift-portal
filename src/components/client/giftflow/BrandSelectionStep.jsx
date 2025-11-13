@@ -155,20 +155,6 @@ const BrandSelectionStep = () => {
 
       {/* Active Filters & Results Count */}
       <div className="flex justify-between items-center px-6 max-w-7xl mx-auto">
-        <div className="text-sm text-gray-600 ">
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              Loading...
-            </span>
-          ) : (
-            <span>
-              Showing <strong>{premiumBrands.length}</strong> of{" "}
-              <strong>{pagination.totalCount}</strong> brands
-            </span>
-          )}
-        </div>
-
         {(searchTerm || selectedCategory !== "All Categories") && (
           <button
             onClick={handleResetFilters}
@@ -180,7 +166,7 @@ const BrandSelectionStep = () => {
         )}
       </div>
 
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[75%] mx-auto">
         <CardGrid
           brands={premiumBrands}
           favorites={favorites}
