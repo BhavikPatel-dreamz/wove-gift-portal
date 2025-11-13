@@ -62,16 +62,68 @@ const GiftCardSelector = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white py-30 px-4">
+    <div className="min-h-screen bg-[linear-gradient(0deg,#FFFFFF,#FFFFFF),linear-gradient(126.43deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)] py-30 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Back Button */}
+
         <button
+          className="
+    relative w-full inline-flex items-center justify-center gap-2
+    px-5 py-3 rounded-full font-semibold text-base
+    text-[#4A4A4A] bg-white border border-transparent
+    transition-all duration-300 overflow-hidden group cursor-pointer max-w-[200px]
+  "
           onClick={handleBackClick}
-          className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group"
         >
-          <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
-          <span className="text-base font-semibold text-gray-800">Back to Brands</span>
+          {/* Outer gradient border */}
+          <span
+            className="
+      absolute inset-0 rounded-full p-[1.5px]
+      bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+    "
+          >
+
+          </span>
+          <span
+            className="
+      absolute inset-[1.5px] rounded-full bg-white
+      transition-all duration-300
+      group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+    "
+          ></span>
+
+          {/* Button content */}
+          <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+            <svg
+              width="8"
+              height="9"
+              viewBox="0 0 8 9"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="transition-all duration-300 group-hover:[&>path]:fill-white"
+            >
+              <path
+                d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                fill="url(#paint0_linear_584_1923)"
+              />
+              <defs>
+                <linearGradient
+                  id="paint0_linear_584_1923"
+                  x1="7.5"
+                  y1="3.01721"
+                  x2="-9.17006"
+                  y2="13.1895"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stopColor="#ED457D" />
+                  <stop offset="1" stopColor="#FA8F42" />
+                </linearGradient>
+              </defs>
+            </svg>
+            Back to Brands
+          </div>
         </button>
+
 
         {/* Header */}
         <div className="text-center mb-12">
@@ -90,8 +142,8 @@ const GiftCardSelector = () => {
               <button
                 key={amount.id}
                 className={`relative bg-white rounded-2xl border-2 p-8 min-w-[140px] transition-all duration-300 hover:shadow-lg hover:scale-105 ${localSelectedAmount?.id === amount.id
-                    ? 'border-blue-500 ring-2 ring-blue-200'
-                    : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-blue-500 ring-2 ring-blue-200'
+                  : 'border-gray-200 hover:border-gray-300'
                   }`}
                 onClick={() => handleAmountClick(amount)}
               >
