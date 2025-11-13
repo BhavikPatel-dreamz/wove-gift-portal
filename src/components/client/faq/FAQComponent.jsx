@@ -68,7 +68,7 @@ const FAQComponent = () => {
     <div className="min-h-screen" style={{ backgroundColor: '#FFFFFF' }}>
       {/* Hero Section */}
       <div
-        className="p-10 py-20"
+        className="p-10 py-30"
         style={{
           borderRadius: '0 0 50px 50px',
           background: 'linear-gradient(126deg, #FBDCE3 31.7%, #FDE6DB 87.04%)',

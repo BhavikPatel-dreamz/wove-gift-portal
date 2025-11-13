@@ -55,7 +55,7 @@ export default function OccasionSelector() {
 
   if (loading && currentOccasionPage === 1) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen  py-30 flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="w-12 h-12 border-3 border-dashed rounded-full animate-spin border-pink-500 mx-auto"></div>
           <h2 className="text-xl font-medium text-gray-900 mt-4">Loading Occasions...</h2>
@@ -67,7 +67,7 @@ export default function OccasionSelector() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen  py-30  flex items-center justify-center bg-gray-50">
         <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-gray-200">
           <h2 className="text-xl font-semibold text-red-600">Oops! Something went wrong.</h2>
           <p className="text-gray-600 mt-2 text-sm">{error}</p>
@@ -83,7 +83,7 @@ export default function OccasionSelector() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50  py-30">
       <div className="max-w-7xl mx-auto px-6">
         {/* Back Button */}
         <button onClick={() => dispatch(goBack())}  className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">

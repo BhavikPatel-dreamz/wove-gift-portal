@@ -5,7 +5,7 @@ import Link from 'next/link';
 const HeroSection = () => {
   return (
     <section className="hero-section">
-      
+
       {/* Decorative Emoji Icons with Figma-matched positioning */}
       <div className="emoji-float animate-float-1" style={{ top: '15%', left: '18%', fontSize: '3.5rem' }}>
         ❤️
@@ -20,8 +20,23 @@ const HeroSection = () => {
         🎁
       </div>
 
-      <div className="max-w-4xl mx-auto text-center px-4 relative z-10" style={{ paddingTop: '1rem' }}>
-        
+      {/* New emojis added below */}
+      <div className="emoji-float animate-float-5" style={{ bottom: '15%', left: '20%', fontSize: '3.8rem' }}>
+        💫
+      </div>
+      <div className="emoji-float animate-float-6" style={{ bottom: '10%', right: '25%', fontSize: '4rem' }}>
+        🌸
+      </div>
+      <div className="emoji-float animate-float-6" style={{ top: '20%', right: '30%', fontSize: '3.5rem' }}>
+        💖
+      </div>
+      <div className="emoji-float animate-float-6" style={{ bottom: '20%', left: '5%', fontSize: '3.8rem' }}>
+        🎀
+      </div>
+
+
+      <div className="max-w-4xl mx-auto text-center px-4 relative z-10 py-10">
+
         {/* Main Heading */}
         <h1 className="hero-heading">
           <span className="hero-heading-dark">Turn Every Day</span>

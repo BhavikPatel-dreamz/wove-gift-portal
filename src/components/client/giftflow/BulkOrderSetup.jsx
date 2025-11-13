@@ -98,7 +98,7 @@ const BulkOrderSetup = () => {
 
   if (!selectedBrand) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4  py-30">
         <div className="text-center">
           <p className="text-gray-600 mb-4">No brand selected</p>
           <button
@@ -113,7 +113,7 @@ const BulkOrderSetup = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <button

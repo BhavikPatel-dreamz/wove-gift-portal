@@ -40,7 +40,7 @@ const PersonalMessageStep = () => {
   const isMessageEmpty = !message.trim() || message.trim().length === 0;
 
   return (
-    <div className="min-h-screen bg-white p-8">
+    <div className="min-h-screen bg-white  py-30">
       <div className="max-w-4xl mx-auto">
         {/* Previous Button */}
         <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">

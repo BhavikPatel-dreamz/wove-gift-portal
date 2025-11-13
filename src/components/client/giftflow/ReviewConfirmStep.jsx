@@ -136,7 +136,7 @@ const ReviewConfirmStep = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
       <div className="max-w-7xl mx-auto">
         {/* Previous Button */}
         <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">

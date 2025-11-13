@@ -11,7 +11,7 @@ const SearchBar = ({
 }) => (
   <div className="relative">
     {/* Background Section with Rounded Bottom */}
-    <div className="pt-26 pb-26 px-4" style={{ 
+    <div className="pt-36 pb- px-4" style={{ 
       borderRadius: '0 0 50px 50px',
       background: 'linear-gradient(126deg, #FBDCE3 31.7%, #FDE6DB 87.04%)'
     }}>

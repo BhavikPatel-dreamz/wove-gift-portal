@@ -62,7 +62,7 @@ const GiftCardSelector = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white py-8 px-4">
+    <div className="min-h-screen bg-white py-30 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Back Button */}
         <button
