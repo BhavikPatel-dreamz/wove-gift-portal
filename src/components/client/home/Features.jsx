@@ -1,11 +1,14 @@
-import { Gift, Package, ShieldCheck, Globe } from "lucide-react";
+import GiftIcon from "@/icons/GiftIcon";
+import GlobeIcon from "@/icons/GlobeIcon";
+import PackageIcon from "@/icons/PackageIcon";
+import ShieldCheckIcon from "@/icons/ShieldCheckIcon";
 
 const Features = () => {
   const features = [
-    { icon: <Gift size={22} />, label: "1000+ Brands" },
-    { icon: <Package size={22} />, label: "Instant Delivery" },
-    { icon: <ShieldCheck size={22} />, label: "100% Secure" },
-    { icon: <Globe size={22} />, label: "Global Reach" },
+    { icon: <GiftIcon size={22} />, label: "1000+ Brands" },
+    { icon: <PackageIcon size={22} />, label: "Instant Delivery" },
+    { icon: <ShieldCheckIcon size={22} />, label: "100% Secure" },
+    { icon: <GlobeIcon size={22} />, label: "Global Reach" },
   ];
 
   return (

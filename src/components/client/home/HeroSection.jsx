@@ -44,16 +44,16 @@ const HeroSection = () => {
         </h1>
 
         {/* Subheading */}
-        <p className="hero-subheading" style={{ marginTop: '1.5rem' }}>
+        <p className="hero-subheading font-inter" style={{ marginTop: '1.5rem' }}>
           Choose from 1000+ brands, personalize your card,
         </p>
-        <p className="hero-subheading" style={{ marginBottom: '0' }}>
+        <p className="hero-subheading font-inter" style={{ marginBottom: '0' }}>
           and deliver joy instantly.
         </p>
 
         {/* CTA Button */}
         <Link href="/gift">
-          <button className="hero-cta">
+          <button className="hero-cta font-inter">
             Start Gifting
           </button>
         </Link>
@@ -63,7 +63,7 @@ const HeroSection = () => {
           <div className="trust-icon">
             <Shield size={12} color="white" />
           </div>
-          <span>Trusted by 1M+ customers worldwide</span>
+          <span className='font-inter'>Trusted by 1M+ customers worldwide</span>
         </div>
       </div>
     </section>
