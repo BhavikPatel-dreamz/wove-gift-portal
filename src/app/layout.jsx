@@ -3,7 +3,7 @@ import './globals.css'
 
 const inter = Inter({ 
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-inter', // This creates the CSS variable
 })
 
 const poppins = Poppins({ 
@@ -20,7 +20,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
-      <body className={poppins.className + " bg-gray-50 text-gray-900"}>
+      <body className="bg-gray-50 text-gray-900">
         <div className="min-h-screen flex flex-col">
           {children}
         </div>
