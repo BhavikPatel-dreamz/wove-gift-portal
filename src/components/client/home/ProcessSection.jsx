@@ -47,7 +47,7 @@ const ProcessSection = () => {
         
         {/* Section Header */}
         <div className="mb-12">
-          <h2 className="process-section-title">Gifting Made Simple</h2>
+          <h2 className="process-section-title fontPoppins ">Gifting Made Simple</h2>
           <p className="process-section-subtitle">From selection to delivery in just a few taps</p>
         </div>
 

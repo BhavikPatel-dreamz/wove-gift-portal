@@ -325,12 +325,18 @@ h6,
 /* ===== HERO SECTION STYLES ===== */
 
 .hero-section {
-  background: linear-gradient(151.97deg, #fbdce3 17.3%, #fde6db 95.19%);
-  padding: 5rem 5rem !important; /* Remove bottom padding since stats bar follows */
+  background: 
+    linear-gradient(151.97deg, #fbdce3 17.3%, #fde6db 95.19%),
+    url('../../../public/uploads/dashboard/dashboarbgVector.svg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  padding: 5rem 5rem !important;
   position: relative !important;
   overflow: hidden !important;
   min-height: 450px !important;
 }
+
 
 /* Hero Heading */
 .hero-heading {
@@ -484,7 +490,7 @@ h6,
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #fef8f6;
+  background: #FFE8DA;
   padding: 12px 20px;
   border-radius: 8px;
   gap: 3rem;
@@ -514,7 +520,7 @@ h6,
 .divider {
   width: 1px;
   height: 20px;
-  background: #ddd;
+  background: #002402;
   margin-left: 24px;
 }
 
@@ -570,14 +576,16 @@ h6,
 /* ===== PROCESS SECTION STYLES ===== */
 
 .process-section {
-  padding: 4rem 0 !important;
-  background-color: white !important;
+  padding: 80px 0 38px !important;
+  background: linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%) !important;
+  background-color: white !important; /* fallback */
   overflow: hidden !important;
 }
 
+
 .process-section-title {
-  font-size: 2.25rem !important;
-  font-weight: 700 !important;
+  font-size: 44px !important;
+  font-weight: 600 !important;
   color: #1a1a1a !important;
   text-align: center !important;
   margin-bottom: 0.75rem !important;
@@ -585,10 +593,10 @@ h6,
 }
 
 .process-section-subtitle {
-  font-size: 15px !important;
-  color: #666666 !important;
+  font-size: 18px !important;
+  color: #4A4A4A !important;
   text-align: center !important;
-  font-weight: 400 !important;
+  font-weight: 500 !important;
   margin-bottom: 3rem !important;
 }
 
