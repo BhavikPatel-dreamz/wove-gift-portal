@@ -21,7 +21,7 @@ const Header = () => {
   const dispatch = useDispatch();
   const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const cartCount = cartItems.length;
   const router = useRouter();
 
@@ -41,6 +41,7 @@ const Header = () => {
       await destroySession();
       setMobileMenuOpen(false);
       router.push('/');
+      setIsMobileMenuOpen(false);
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -50,7 +51,7 @@ const Header = () => {
     if (item === 'Send Gift Card') {
       dispatch(resetFlow());
     }
-    setMobileMenuOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -60,18 +61,18 @@ const Header = () => {
           isScrolled ? 'bg-white shadow-md' : 'bg-transparent'
         }`}
       >
-        <div className="max-w-[1440px] mx-auto px-4 md:px-6">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 md:h-[72px]">
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button - Left */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              className="md:hidden p-2 text-gray-600 hover:text-gray-800"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            {/* Desktop Navigation Links */}
+            {/* Desktop Navigation Links - Left */}
             <nav className="hidden md:flex items-center space-x-8">
               {Object.keys(navLinks).map((item) => (
                 <Link
@@ -93,58 +94,66 @@ const Header = () => {
               <span className="logo-text">Wove Gifts</span>
             </div>
 
-            {/* Right Section - Desktop */}
-            <div className="hidden md:flex items-center space-x-3 ml-auto">
-              <img
-                src="https://flagcdn.com/w40/za.png"
-                alt="South Africa"
-                className="w-6 h-6 object-cover rounded-[50%]"
-              />
-              <span className="text-sm font-medium text-gray-700">South Africa</span>
-              <ChevronDown className="w-4 h-4 text-gray-600" />
+            {/* Right Section - Mobile & Desktop */}
+            <div className="flex items-center gap-2 ml-auto">
+              {/* Country Selector - Hidden on Mobile */}
+              <div className="hidden md:flex items-center space-x-3 mr-3">
+                <img
+                  src="https://flagcdn.com/w40/za.png"
+                  alt="South Africa"
+                  className="w-6 h-6 object-cover rounded-[50%]"
+                />
+                <span className="text-sm font-medium text-gray-700">South Africa</span>
+                <ChevronDown className="w-4 h-4 text-gray-600" />
+              </div>
 
-              {!mounted ? (
-                <button className="btn-secondary">
-                  <User size={18} />
-                  Login / Register
-                </button>
-              ) : session ? (
-                <>
-                  {session.user.role === 'ADMIN' && (
-                    <Link href="/dashboard">
-                      <button className="btn-outline flex items-center gap-2">
-                        <User size={16} />
-                        Admin
-                      </button>
-                    </Link>
-                  )}
-                  {session.user.role === 'CUSTOMER' && (
-                    <Link href="/dashboard">
-                      <button className="btn-outline flex items-center gap-2">
-                        <User size={16} />
-                        Dashboard
-                      </button>
-                    </Link>
-                  )}
-                  <button className="btn-secondary" onClick={handleLogout}>
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <Link href="/login">
+              {/* Desktop Auth Buttons */}
+              <div className="hidden md:flex items-center space-x-3">
+                {!mounted ? (
                   <button className="btn-secondary">
                     <User size={18} />
                     Login / Register
                   </button>
-                </Link>
-              )}
+                ) : session ? (
+                  <>
+                    {session.user.role === 'ADMIN' && (
+                      <Link href="/dashboard">
+                        <button className="btn-outline flex items-center gap-2">
+                          <User size={16} />
+                          Admin
+                        </button>
+                      </Link>
+                    )}
+                    {session.user.role === 'CUSTOMER' && (
+                      <Link href="/dashboard">
+                        <button className="btn-outline flex items-center gap-2">
+                          <User size={16} />
+                          Dashboard
+                        </button>
+                      </Link>
+                    )}
+                    <button className="btn-secondary" onClick={handleLogout}>
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <Link href="/login">
+                    <button className="btn-secondary">
+                      <User size={18} />
+                      Login / Register
+                    </button>
+                  </Link>
+                )}
+              </div>
+
+              {/* Wishlist & Cart Icons - Always Visible */}
               <Link
                 href="/wishlist"
                 className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 border border-[#ED457D] rounded-[50%]"
               >
-                <Heart className="w-6 h-6" color="#ED457D" />
+                <Heart className="w-5 h-5 md:w-6 md:h-6" color="#ED457D" />
                 {mounted && cartCount > 0 && (
-                  <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 h-4 w-4 md:h-5 md:w-5 rounded-full bg-pink-500 text-white text-[10px] md:text-xs flex items-center justify-center">
                     {cartCount}
                   </span>
                 )}
@@ -153,9 +162,9 @@ const Header = () => {
                 href="/cart"
                 className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 border border-[#ED457D] rounded-[50%]"
               >
-                <ShoppingBasket className="w-6 h-6" color="#ED457D" />
+                <ShoppingBasket className="w-5 h-5 md:w-6 md:h-6" color="#ED457D" />
                 {mounted && cartCount > 0 && (
-                  <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-pink-500 text-white text-xs flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 h-4 w-4 md:h-5 md:w-5 rounded-full bg-pink-500 text-white text-[10px] md:text-xs flex items-center justify-center">
                     {cartCount}
                   </span>
                 )}
@@ -190,74 +199,66 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Mobile Menu Dropdown */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
-            <div className="px-4 py-3 space-y-1">
+        {/* Mobile Menu Overlay */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden fixed inset-0 top-16 bg-white z-40 overflow-y-auto">
+            <nav className="flex flex-col p-6 space-y-6">
               {/* Navigation Links */}
-              <div className="pb-3 border-b border-gray-200">
-                {Object.keys(navLinks).map((item) => (
-                  <Link
-                    key={item}
-                    href={navLinks[item]}
-                    onClick={() => handleNavClick(item)}
-                    className="block px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium"
-                  >
-                    {item}
-                  </Link>
-                ))}
-              </div>
+              {Object.keys(navLinks).map((item) => (
+                <Link
+                  key={item}
+                  href={navLinks[item]}
+                  onClick={() => handleNavClick(item)}
+                  className="text-lg font-medium text-gray-700 hover:text-[#ED457D] transition-colors"
+                >
+                  {item}
+                </Link>
+              ))}
+
+              <hr className="border-gray-200" />
 
               {/* Country Selector */}
-              <div className="flex items-center px-4 py-3 space-x-2 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
                 <img
                   src="https://flagcdn.com/w40/za.png"
                   alt="South Africa"
                   className="w-6 h-6 object-cover rounded-[50%]"
                 />
                 <span className="text-sm font-medium text-gray-700">South Africa</span>
-                <ChevronDown className="w-4 h-4 text-gray-600 ml-auto" />
+                <ChevronDown className="w-4 h-4 text-gray-600" />
               </div>
 
-              {/* User Actions */}
-              <div className="pt-3 space-y-2 flex gap-2 flex-col">
-                {!mounted ? (
-                  <button className="w-full btn-secondary justify-center">
+              <hr className="border-gray-200" />
+
+              {/* Auth Buttons */}
+              {!mounted ? (
+                <button className="btn-secondary w-full justify-center">
+                  <User size={18} />
+                  Login / Register
+                </button>
+              ) : session ? (
+                <>
+                  {(session.user.role === 'ADMIN' || session.user.role === 'CUSTOMER') && (
+                    <Link href="/dashboard" className="w-full">
+                      <button className="btn-outline w-full justify-center flex items-center gap-2">
+                        <User size={16} />
+                        {session.user.role === 'ADMIN' ? 'Admin' : 'Dashboard'}
+                      </button>
+                    </Link>
+                  )}
+                  <button className="btn-secondary w-full justify-center" onClick={handleLogout}>
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link href="/login" className="w-full">
+                  <button className="btn-secondary w-full justify-center">
                     <User size={18} />
                     Login / Register
                   </button>
-                ) : session ? (
-                  <>
-                    {session.user.role === 'ADMIN' && (
-                      <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                        <button className="w-full btn-outline flex items-center justify-center gap-2">
-                          <User size={16} />
-                          Admin
-                        </button>
-                      </Link>
-                    )}
-                    {session.user.role === 'CUSTOMER' && (
-                      <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                        <button className="w-full btn-outline flex items-center justify-center gap-2">
-                          <User size={16} />
-                          Dashboard
-                        </button>
-                      </Link>
-                    )}
-                    <button className="w-full btn-secondary justify-center" onClick={handleLogout}>
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <button className="w-full btn-secondary justify-center">
-                      <User size={18} />
-                      Login / Register
-                    </button>
-                  </Link>
-                )}
-              </div>
-            </div>
+                </Link>
+              )}
+            </nav>
           </div>
         )}
       </header>

@@ -69,7 +69,7 @@ const TestimonialsSection = () => {
     <section className="testimonials-section">
       <div className="testimonials-container">
         <div className="testimonials-header">
-          <h2 className="testimonials-title">Loved by Gift Senders</h2>
+          <h2 className="testimonials-title fontPoppins">Loved by Gift Senders</h2>
           <p className="testimonials-subtitle">Real stories from real people spreading joy</p>
         </div>
 
@@ -85,10 +85,13 @@ const TestimonialsSection = () => {
                     <div key={index} className="testimonial-card">
                       <div className="stars">
                         {[...Array(5)].map((_, i) => (
-                          <span key={i} className="star">⭐</span>
+                          <span key={i} className="star"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M6.46955 0.565775C6.83319 -0.188597 7.90753 -0.188597 8.27117 0.565775L9.74491 3.6231C9.89068 3.92551 10.1785 4.13459 10.5111 4.17978L13.8742 4.63663C14.704 4.74935 15.036 5.77111 14.4309 6.35006L11.9787 8.69644C11.7361 8.92852 11.6262 9.26683 11.686 9.59717L12.2908 12.9368C12.44 13.7609 11.5708 14.3924 10.8332 13.9958L7.8439 12.3886C7.54822 12.2296 7.1925 12.2296 6.89682 12.3886L3.90749 13.9958C3.16989 14.3924 2.30073 13.7609 2.44995 12.9368L3.05472 9.59717C3.11454 9.26683 3.00462 8.92852 2.76206 8.69644L0.309779 6.35006C-0.295302 5.77111 0.0366881 4.74935 0.866508 4.63663L4.22961 4.17978C4.56226 4.13459 4.85004 3.92551 4.99581 3.6231L6.46955 0.565775Z" fill="#FDA84F"/>
+                          </svg>
+                          </span>
                         ))}
                       </div>
-                      <h3 className="testimonial-text">{testimonial.text}</h3>
+                      <h3 className="testimonial-text fontPoppins">{`"${testimonial.text}"`}</h3>
                       <p className="testimonial-description">{testimonial.description}</p>
                       <p className="testimonial-author">-{testimonial.author}</p>
                     </div>

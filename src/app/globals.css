@@ -29,3 +29,16 @@ body {
 .fontPoppins{
   font-family:  var(--font-poppins), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
+.gradient-border-orange {
+  background: url('../../public/uploads/dashboard/orange-border.svg') no-repeat top;
+  background-size: cover;
+}
+
+.gradient-border-blue { 
+  background: url('../../public/uploads/dashboard/blue-border.svg') no-repeat top;
+  background-size: cover;
+}
+.gradient-border-green { 
+  background: url('../../public/uploads/dashboard/green-border.svg') no-repeat top;
+  background-size: cover;
+}

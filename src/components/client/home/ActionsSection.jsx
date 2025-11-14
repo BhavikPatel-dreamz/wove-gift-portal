@@ -2,6 +2,10 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Heart, CreditCard, Package } from 'lucide-react';
+import WishListIcon from '@/icons/WishListIcon';
+import GiftCardIcon from '@/icons/GiftCardIcon';
+import BoxIcon from '@/icons/BoxIcon';
+import RightArrow from '@/icons/RightArrow';
 
 const ActionSelectionCards = (props) => {
   const router = useRouter();
@@ -12,47 +16,48 @@ const ActionSelectionCards = (props) => {
 
   const actionCards = [
     {
-      icon: <Heart className="w-8 h-8 text-white" />,
+      icon: <WishListIcon/>,
       title: "Browse Brands",
       description: "Explore all available gift card brands by category",
       buttonText: "View All Brands",
       buttonColor: "bg-orange-500 hover:bg-orange-600",
-      borderColor: "border-orange-300",
-      iconBg: "bg-orange-500",
+      borderColor: "gradient-border-orange",
+      iconBg: "bg-[#fdf6f0]",
       path: "/gift?mode=single"
     },
     {
-      icon: <CreditCard className="w-8 h-8 text-white" />,
+      icon: <GiftCardIcon/>,
       title: "Send Gift Card",
       description: "Send personalized gift cards via email, SMS, or WhatsApp",
       buttonText: "Start Sending",
       buttonColor: "bg-teal-500 hover:bg-teal-600",
-      borderColor: "border-teal-300",
-      iconBg: "bg-teal-500",
+      borderColor: "gradient-border-blue",
+      iconBg: "bg-[#f2faf9]",
       path: "/gift?mode=single"
     },
     {
-      icon: <Package className="w-8 h-8 text-white" />,
+      icon: <BoxIcon/>,
       title: "Buy in Bulk",
       description: "Purchase multiple gift cards for corporate gifts or events",
       buttonText: "Start Buying",
       buttonColor: "bg-green-500 hover:bg-green-600",
-      borderColor: "border-green-300",
-      iconBg: "bg-green-500",
+      borderColor: "gradient-border-green",
+      iconBg: "bg-[#f0faf7]",
       path: "/gift?mode=bulk"
     }
   ];
+  
 
   const handleCardClick = (card) => {
     router.push(card.path);
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-12 bg-gray-50">
+    <div className="w-full max-w-full mx-auto px-4 py-12 bg-gray-50">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">{title}</h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">{subtitle}</p>
+        <h1 className="text-[40px] font-semibold text-[#1A1A1A] mb-4">{title}</h1>
+        <p className="text-lg text-[#4A4A4A] max-w-2xl mx-auto">{subtitle}</p>
       </div>
 
       {/* Action Cards */}
@@ -60,11 +65,11 @@ const ActionSelectionCards = (props) => {
         {actionCards.map((card, index) => (
           <div
             key={index}
-            className={`relative bg-white rounded-2xl p-8 border-2 border-dashed ${card.borderColor} text-center hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer`}
+            className={`relative bg-white rounded-2xl p-8  ${card.borderColor} text-center hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer`}
             onClick={() => handleCardClick(card)}
           >
             {/* Icon */}
-            <div className={`w-16 h-16 ${card.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-6`}>
+            <div className={`w-[83px] h-[83px] ${card.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-6`}>
               {card.icon}
             </div>
 
@@ -83,11 +88,11 @@ const ActionSelectionCards = (props) => {
               }}
             >
               {card.buttonText}
-              <span className="ml-2">▶</span>
+              <span className="ml-2"><RightArrow/></span>
             </button>
 
             {/* Bottom Fade */}
-            <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-full h-12 bg-linear-to-t from-white to-transparent pointer-events-none"></div>
           </div>
         ))}
       </div>
