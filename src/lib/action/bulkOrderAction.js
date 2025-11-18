@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { getSession } from "./userAction/session";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ log: ['warn', 'error'] })
 
 // ==================== CUSTOM ERROR CLASSES ====================
 class ValidationError extends Error {
@@ -561,7 +561,7 @@ export const createOrder = async (orderData) => {
     console.log("Step 10: Creating delivery log...");
     await createDeliveryLog(order, voucherCode, orderData);
 
-    console.log("✅ Order created successfully:", order.orderNumber);
+
 
     return {
       success: true,
@@ -619,8 +619,7 @@ export const createBulkOrder = async (cartItems, paymentData) => {
   let totalAmount = 0;
 
   try {
-    console.log(`🚀 Starting bulk order creation: ${bulkOrderNumber}`);
-    console.log(`📦 Processing ${cartItems.length} items`);
+  
 
     // Step 1: Authentication
     const session = await getSession();
@@ -641,7 +640,6 @@ export const createBulkOrder = async (cartItems, paymentData) => {
       let voucherCode = null;
 
       try {
-        console.log(`\n📝 Processing item ${i + 1}/${cartItems.length}`);
         
         item.userId = userId;
         item.selectedPaymentMethod = paymentData?.method || 'card';
@@ -719,7 +717,6 @@ export const createBulkOrder = async (cartItems, paymentData) => {
 
         totalAmount += order.totalAmount;
 
-        console.log(`✅ Item ${i + 1} processed successfully: ${order.orderNumber}`);
       } catch (error) {
         console.error(`❌ Failed to process item ${i + 1}:`, error.message);
         
@@ -738,7 +735,6 @@ export const createBulkOrder = async (cartItems, paymentData) => {
 
     // Step 4: Update payment status for successful orders
     if (successfulOrders.length > 0 && paymentData?.chargeId) {
-      console.log("\n💳 Updating payment status for successful orders...");
       
       const orderIds = successfulOrders.map(o => o.order.id);
       await prisma.order.updateMany({
@@ -749,10 +745,8 @@ export const createBulkOrder = async (cartItems, paymentData) => {
       });
     }
 
-    console.log(`\n✅ Bulk order completed: ${bulkOrderNumber}`);
-    console.log(`✅ Successful: ${successfulOrders.length}/${cartItems.length}`);
     if (failedOrders.length > 0) {
-      console.log(`❌ Failed: ${failedOrders.length}/${cartItems.length}`);
+  
     }
 
     return {

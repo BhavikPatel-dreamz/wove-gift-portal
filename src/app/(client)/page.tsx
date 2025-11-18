@@ -9,6 +9,7 @@ import TestimonialsSection from '../../components/client/home/TestimonialsSectio
 import ActionsSection from '../../components/client/home/ActionsSection';
 import Features from '../../components/client/home/Features';
 import Footer from '../../components/client/home/Footer';
+import BulkGiftingBanner from "../../components/client/home/BulkGiftingBanner"
 import { getBrands, getOccasions } from '../../lib/action/brandFetch';
 
 
@@ -23,8 +24,8 @@ export default async function Home() {
   };
 
   const brandsData = {
-    title: "Gifts From Brands People Love",
-    subtitle: "Give the gift of choice with brands you know and trust.",
+    title: "Featured Brands You'll Love",
+    subtitle: "Curated partners, ready for your next gift.",
     brands: brands
   };
   
@@ -38,6 +39,7 @@ export default async function Home() {
       <OccasionsSection {...occasionsData} />
       <BrandsSection {...brandsData} />
       <TestimonialsSection />
+      <BulkGiftingBanner/>
       <ActionsSection />
       <Footer/>
     </div>

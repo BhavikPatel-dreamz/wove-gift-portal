@@ -58,8 +58,6 @@ export async function GET(request) {
         console.error("Error fetching data from Shopify:", e);
       }
       // [/Wove]
-
-      console.log("tokenData",tokenData);
       
       
       // Create session object

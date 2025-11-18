@@ -1,58 +1,55 @@
 import React from 'react';
-import { Star, Sparkles, MessageSquare, Send } from 'lucide-react';
+
+import MessageIcon from '@/icons/MessageIcon';
+import SendIcon from '@/icons/SendIcon';
+
+import StartIcon from '@/icons/StartIcon';
+import SparklesIcon from '@/icons/SparklesIcon';
 
 const ProcessSection = () => {
   const steps = [
     {
-      icon: Star,
+      icon: StartIcon,
       title: "Pick a Brand",
       description: "Choose from 1000+ Brands",
       gradient: "process-icon-pink",
       cardClass: "process-card-1",
-      titleClass: "",
-      descClass: ""
     },
     {
-      icon: Sparkles,
+      icon: SparklesIcon,
       title: "Choose a Design",
       description: "Select the perfect card design",
       gradient: "process-icon-orange",
       cardClass: "process-card-2",
-      titleClass: "process-title-tilted",
-      descClass: "process-desc-tilted"
     },
     {
-      icon: MessageSquare,
+      icon: MessageIcon,
       title: "Add a Message",
       description: "Write something heartfelt",
       gradient: "process-icon-red",
       cardClass: "process-card-3",
-      titleClass: "",
-      descClass: ""
     },
     {
-      icon: Send,
-      title: "send Instantly",
+      icon: SendIcon,
+      title: "Send Instantly",
       description: "WhatsApp, Email, or Print",
       gradient: "process-icon-coral",
       cardClass: "process-card-4",
-      titleClass: "process-title-tilted",
-      descClass: "process-desc-tilted"
-    }
+    },
   ];
-
+  
   return (
     <section className="process-section">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="mb-12">
-          <h2 className="process-section-title">Gifting Made Simple</h2>
+          <h2 className="process-section-title fontPoppins ">Gifting Made Simple</h2>
           <p className="process-section-subtitle">From selection to delivery in just a few taps</p>
         </div>
 
         {/* Process Steps Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, index) => {
             const IconComponent = step.icon;
             return (
@@ -64,7 +61,7 @@ const ProcessSection = () => {
                 </div>
 
                 {/* Title */}
-                <h3 className={`process-step-title ${step.titleClass}`}>
+                <h3 className={`process-step-title fontPoppins ${step.titleClass}`}>
                   {step.title}
                 </h3>
 

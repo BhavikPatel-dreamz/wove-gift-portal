@@ -38,7 +38,6 @@ export default function ReportsPage() {
         fetchBrands();
     }, []);
 
-    console.log("brands", brands);
 
 
     const [scheduledReport, setScheduledReport] = useState({

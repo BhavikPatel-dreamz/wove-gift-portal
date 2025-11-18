@@ -131,7 +131,7 @@ const FeaturedBrands = ({
   );
 
   return (
-    <section className="py-20 bg-gradient-to-b from-[#FEF8F6] to-[#FDF7F8] overflow-hidden">
+    <section className="py-[44px] bg-gradient-to-b from-[#FEF8F6] to-[#FDF7F8] overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">

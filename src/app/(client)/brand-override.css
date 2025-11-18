@@ -325,12 +325,19 @@ h6,
 /* ===== HERO SECTION STYLES ===== */
 
 .hero-section {
-  background: linear-gradient(151.97deg, #fbdce3 17.3%, #fde6db 95.19%);
-  padding: 5rem 5rem !important; /* Remove bottom padding since stats bar follows */
+  background: 
+    linear-gradient(151.97deg, rgba(251, 220, 227, 0.55) 17.3%, rgba(253, 230, 219, 0.55)
+    95.19%),
+    url('../../../public/uploads/dashboard/dashboarbgVector.svg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  padding: 5rem 5rem !important;
   position: relative !important;
   overflow: hidden !important;
   min-height: 450px !important;
 }
+
 
 /* Hero Heading */
 .hero-heading {
@@ -394,6 +401,7 @@ h6,
   transform: translateY(-2px) !important;
   box-shadow: 0 8px 24px rgba(237, 69, 125, 0.4) !important;
 }
+
 
 /* Show the stats bar */
 .stats-bar {
@@ -481,14 +489,22 @@ h6,
 }
 
 .features-container {
+  background: #FFE8DA;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  overflow: hidden;
+}
+
+.features-desktop {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #fef8f6;
-  padding: 12px 20px;
-  border-radius: 8px;
   gap: 3rem;
-  font-family: "Inter", sans-serif;
+}
+
+.features-mobile {
+  display: none;
 }
 
 .feature-item {
@@ -501,7 +517,7 @@ h6,
 }
 
 .feature-icon {
-  color: #ed457d; /* Lucide icon color */
+  color: #ed457d;
   margin-right: 8px;
   display: flex;
   align-items: center;
@@ -514,10 +530,39 @@ h6,
 .divider {
   width: 1px;
   height: 20px;
-  background: #ddd;
+  background: #002402;
   margin-left: 24px;
 }
 
+.marquee {
+  display: flex;
+  gap: 3rem;
+  animation: scroll 20s linear infinite;
+}
+
+.marquee-content {
+  display: flex;
+  gap: 3rem;
+  min-width: 100%;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-33.333%);
+  }
+}
+
+@media (max-width: 768px) {
+  .features-desktop {
+    display: none !important;
+  }
+  .features-mobile {
+    display: block !important;
+  }
+}
 /* Floating Emojis */
 .emoji-float {
   position: absolute !important;
@@ -525,6 +570,9 @@ h6,
   user-select: none !important;
   z-index: 1 !important;
   opacity: 1 !important;
+  padding: 11px;
+  background: #fff;
+  border-radius: 25px;
 }
 
 .emoji-float-lg {
@@ -570,14 +618,16 @@ h6,
 /* ===== PROCESS SECTION STYLES ===== */
 
 .process-section {
-  padding: 4rem 0 !important;
-  background-color: white !important;
+  padding: 80px 0 38px !important;
+  background: linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%) !important;
+  background-color: white !important; /* fallback */
   overflow: hidden !important;
 }
 
+
 .process-section-title {
-  font-size: 2.25rem !important;
-  font-weight: 700 !important;
+  font-size: 44px !important;
+  font-weight: 600 !important;
   color: #1a1a1a !important;
   text-align: center !important;
   margin-bottom: 0.75rem !important;
@@ -585,28 +635,29 @@ h6,
 }
 
 .process-section-subtitle {
-  font-size: 15px !important;
-  color: #666666 !important;
+  font-size: 18px !important;
+  color: #4A4A4A !important;
   text-align: center !important;
-  font-weight: 400 !important;
+  font-weight: 500 !important;
   margin-bottom: 3rem !important;
 }
 
 /* Process Step Card */
 .process-step-card {
-  background: white !important;
   border: 1px solid var(--wave-border-gray) !important;
-  border-radius: 20px !important;
-  padding: 2rem 1.5rem !important;
   text-align: center !important;
-  position: relative !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
-  min-height: 240px !important;
-  display: flex !important;
+  background: #fff !important;
+  border-radius: 20px !important;
   flex-direction: column !important;
-  align-items: center !important;
   justify-content: flex-start !important;
+  align-items: center !important;
+  min-height: 240px !important;
+  padding: 2rem 1.5rem !important;
+  transition: all .3s !important;
+  display: flex !important;
+  position: relative !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .04) !important;
+  transform: translate(1px, 10px);
 }
 
 .process-step-card:hover {
@@ -616,11 +667,11 @@ h6,
 
 /* Card Rotation Effects */
 .process-card-2 {
-  transform: rotate(10.45deg) !important;
+  transform: rotate(6.45deg) !important;
 }
 
 .process-card-4 {
-  transform: rotate(-12.51deg) !important;
+  transform: rotate(-8.51deg) !important;
 }
 
 .process-step-icon-wrapper {
@@ -634,6 +685,7 @@ h6,
   position: relative !important;
   transition: transform 0.3s ease !important;
 }
+
 
 /* Icon Background Gradients */
 .process-icon-pink {
@@ -682,7 +734,7 @@ h6,
 
 .process-step-description {
   font-size: 14px !important;
-  color: #666666 !important;
+  color: #4a4a4a !important;
   line-height: 1.5 !important;
   font-weight: 400 !important;
 }
@@ -702,24 +754,24 @@ h6,
 /* ===== OCCASIONS SECTION STYLES ===== */
 
 .occasions-section {
-  padding: 4rem 0 !important;
+  padding: 80px 0 !important;
   background-color: white !important;
 }
 
 .occasions-section-title {
-  font-size: 2.25rem !important;
-  font-weight: 700 !important;
-  color: #1a1a1a !important;
+  font-size: 40PX !important;
+  font-weight: 600 !important;
+  color: #1A1A1A !important;
   text-align: center !important;
   margin-bottom: 0.75rem !important;
   letter-spacing: -0.02em !important;
 }
 
 .occasions-section-subtitle {
-  font-size: 15px !important;
-  color: #666666 !important;
+  font-size: 18px !important;
+  color: #4A4A4A !important;
   text-align: center !important;
-  font-weight: 400 !important;
+  font-weight: 500 !important;
   margin-bottom: 2.5rem !important;
 }
 
@@ -731,6 +783,7 @@ h6,
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
   transition: all 0.3s ease !important;
   border: 1px solid var(--wave-border-gray) !important;
+  padding: 12px;
 }
 
 .occasion-card:hover {
@@ -740,8 +793,9 @@ h6,
 
 .occasion-card-image {
   width: 100% !important;
-  height: 240px !important;
+  height: 338px !important;
   object-fit: cover !important;
+  border-radius: 8px;
 }
 
 .occasion-card-content {
@@ -750,15 +804,16 @@ h6,
 }
 
 .occasion-card-title {
-  font-size: 1.125rem !important;
+  font-size: 22px !important;
   font-weight: 600 !important;
   color: #1a1a1a !important;
   margin-bottom: 0.5rem !important;
 }
 
 .occasion-card-description {
-  font-size: 13px !important;
-  color: #666666 !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  color: #4A4A4A !important;
   margin-bottom: 1rem !important;
   line-height: 1.5 !important;
 }
@@ -793,6 +848,13 @@ h6,
   ) !important;
   transform: translateY(-2px) !important;
   box-shadow: 0 6px 16px rgba(237, 69, 125, 0.35) !important;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* ===== UTILITY CLASSES ===== */
@@ -902,15 +964,16 @@ h6,
 
 /* ----------  TESTIMONIALS – PIXEL-PERFECT  ---------- */
 .testimonials-section {
-  background: linear-gradient(180deg, #F5F0FF 0%, #EFE7FF 100%);
-  padding: 80px 0;
+  background: linear-gradient(180deg, rgba(221, 153, 255, 0.2) 0%, rgba(221, 153, 255, 0) 100%);
+  /* background: linear-gradient(180deg, #F5F0FF 0%, #EFE7FF 100%); */
+  padding: 60px 0 18px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   overflow: hidden; /* kill horizontal scrollbar */
 }
 
 .testimonials-container {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -921,8 +984,8 @@ h6,
 }
 
 .testimonials-title {
-  font-size: 48px;
-  font-weight: 700;
+  font-size: 40px;
+  font-weight: 600;
   color: #1a1a1a;
   margin: 0 0 12px 0;
   letter-spacing: -0.02em;
@@ -931,6 +994,7 @@ h6,
 .testimonials-subtitle {
   font-size: 18px;
   color: #4a4a4a;
+  font-weight: 500;
   margin: 0;
 }
 
@@ -964,20 +1028,23 @@ h6,
 
 /* ---------------  SINGLE CARD  --------------- */
 .testimonial-card {
-  aspect-ratio: 4 / 3;
+  width: auto;
+  height: 260px;          /* ← fixed height (adjust as needed) */
+  padding: 32px 24px;
+
   background: #ffffff;
   border-radius: 20px;
   border: 1px solid #e0e0e0;
-  padding: 32px 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   gap: 12px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
 
 .testimonial-card:hover {
   transform: translateY(-4px);
@@ -1012,7 +1079,8 @@ h6,
 
 .testimonial-author {
   font-size: 14px;
-  color: #6a6a6a;
+  font-weight: 500;
+  color: #1A1A1A;
   margin: 0;
   font-style: italic;
 }
@@ -1047,21 +1115,42 @@ h6,
   border-radius: 4px;
 }
 
-/* ---------------  RESPONSIVE  --------------- */
+/* Desktop — 4 cards in one row */
+@media (min-width: 1025px) {
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;   /* equal spacing */
+  }
+  .testimonial-card{
+    margin: 0 4.5px;  
+  }
+}
+
+/* Tablet — 2 cards in one row */
 @media (max-width: 1024px) {
   .testimonials-grid {
-    grid-template-columns: repeat(2, 1fr);
-    max-width: 560px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* two cards per row */
+    gap: 0;              /* equal spacing */
+    width: 100%;            /* full width */
+    max-width: 600px;       /* optional: keeps grid centered nicely */
+    margin: 0 auto;       /* centers the grid */
+  }
+  .testimonial-card{
+    margin: 0 4.5px;  
   }
 }
 
-@media (max-width: 600px) {
+
+/* Mobile (optional) — 1 card per row */
+@media (max-width: 599px) {
   .testimonials-grid {
     grid-template-columns: 1fr;
-    max-width: 280px;
+    max-width: 100%;
+    gap: 20px;
   }
-  .testimonials-title {
-    font-size: 36px;
+  .testimonial-card{
+    margin: 0 4.5px;  
   }
 }
-

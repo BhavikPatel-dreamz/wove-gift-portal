@@ -126,7 +126,7 @@ const BrandSelectionStep = () => {
 
   if (error && premiumBrands.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center py-30">
         <div className="text-center p-8 bg-wave-cream rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Error: {error}</h2>
           <button
@@ -155,20 +155,6 @@ const BrandSelectionStep = () => {
 
       {/* Active Filters & Results Count */}
       <div className="flex justify-between items-center px-6 max-w-7xl mx-auto">
-        <div className="text-sm text-gray-600 ">
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              Loading...
-            </span>
-          ) : (
-            <span>
-              Showing <strong>{premiumBrands.length}</strong> of{" "}
-              <strong>{pagination.totalCount}</strong> brands
-            </span>
-          )}
-        </div>
-
         {(searchTerm || selectedCategory !== "All Categories") && (
           <button
             onClick={handleResetFilters}
@@ -180,7 +166,7 @@ const BrandSelectionStep = () => {
         )}
       </div>
 
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[75%] mx-auto">
         <CardGrid
           brands={premiumBrands}
           favorites={favorites}

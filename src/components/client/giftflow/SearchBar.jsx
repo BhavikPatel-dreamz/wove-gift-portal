@@ -1,101 +1,95 @@
-import { ChevronDown, Search, SlidersHorizontal } from "lucide-react";
+"use client";
+import { useState } from "react";
+import { ChevronDown, Search, Filter } from "lucide-react";
 
-const SearchBar = ({ 
-  placeholder, 
-  onSearch, 
-  selectedCategory, 
-  categories, 
+const SearchBar = ({
+  placeholder,
+  onSearch,
+  selectedCategory,
+  categories,
   onCategoryChange,
-  sortBy,
-  onSortChange 
-}) => (
-  <div className="relative">
-    {/* Background Section with Rounded Bottom */}
-    <div className="pt-26 pb-26 px-4" style={{ 
-      borderRadius: '0 0 50px 50px',
-      background: 'linear-gradient(126deg, #FBDCE3 31.7%, #FDE6DB 87.04%)'
-    }}>
-      <div className="text-center">
-        <h1 className="text-5xl font-bold text-gray-900 mb-4">
+}) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative w-full">
+      {/* 🌈 Gradient Header */}
+      <div
+        className="text-center px-4 py-30 sm:py-30"
+        style={{
+          borderRadius: "0 0 40px 40px",
+          background: "linear-gradient(126deg, #FBDCE3 31.7%, #FDE6DB 87.04%)",
+        }}
+      >
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
           Pick Your Perfect Brand
         </h1>
-        <p className="text-gray-600 text-base">
+        <p className="text-gray-600 text-sm sm:text-base max-w-md mx-auto px-2">
           Choose from our curated brands to make their day unforgettable
         </p>
       </div>
-    </div>
 
-    {/* Search Bar - Positioned Half Inside/Half Outside */}
-    <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl px-4">
-      <div className="flex items-center bg-white rounded-full shadow-xl border border-[rgb(230,57,70)] overflow-hidden">
-        {/* Search Input Section */}
-        <div className="flex-1 relative flex items-center">
-          <Search className="absolute left-5 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder={placeholder || "Search for your perfect brand"}
-            onChange={(e) => onSearch(e.target.value)}
-            className="w-full pl-14 pr-6 py-4 bg-transparent border-none focus:outline-none text-gray-700 placeholder-gray-400"
-          />
-        </div>
-        
-        {/* Vertical Divider */}
-        <div className="h-8 w-px bg-gray-300"></div>
-        
-        {/* Category Dropdown Section */}
-        <div className="relative flex items-center gap-2 pl-6 pr-6">
-          {/* Filter Icon */}
-          <svg className="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="4" y1="6" x2="20" y2="6"/>
-            <line x1="4" y1="12" x2="20" y2="12"/>
-            <line x1="4" y1="18" x2="20" y2="18"/>
-          </svg>
-          
-          {/* Select Dropdown */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => onCategoryChange(e.target.value)}
-            className="appearance-none bg-transparent border-none py-4 pr-6 focus:outline-none text-gray-700 font-medium cursor-pointer"
-          >
-            {categories.map((category, index) => (
-              <option key={index} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-          
-          {/* Chevron Down Icon */}
-          <ChevronDown className="absolute right-6 text-gray-700" size={18} />
+      {/* 🔍 Search Input + Dropdown */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] sm:w-full max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-2 sm:px-4">
+        {/* Search Input */}
+        <div
+          className="flex items-center w-full rounded-full p-[1px]"
+          style={{
+            background: "linear-gradient(90deg, #F16B86, #FDBB74)",
+          }}
+        >
+          <div className="flex items-center w-full bg-white rounded-full px-4 sm:px-5 py-2 sm:py-3 shadow-md">
+            <Search className="text-gray-400 mr-2 sm:mr-3" size={18} />
+            <input
+              type="text"
+              placeholder={placeholder || "Search for your perfect brand"}
+              onChange={(e) => onSearch(e.target.value)}
+              className="flex-1 text-gray-700 placeholder-gray-400 bg-transparent focus:outline-none text-sm sm:text-base"
+            />
+          </div>
         </div>
 
-        {/* Vertical Divider */}
-        <div className="h-8 w-px bg-gray-300"></div>
-
-        {/* Sort By Dropdown Section */}
-        <div className="relative flex items-center gap-2 pl-6 pr-6">
-          {/* Sort Icon */}
-          <SlidersHorizontal className="w-5 h-5 text-gray-700" />
-          
-          {/* Sort Dropdown */}
-          <select
-            value={sortBy}
-            onChange={(e) => onSortChange(e.target.value)}
-            className="appearance-none bg-transparent border-none py-4 pr-6 focus:outline-none text-gray-700 font-medium cursor-pointer"
+        {/* Filter Dropdown */}
+        <div className="relative w-full sm:w-auto">
+          <div
+            onClick={() => setOpen(!open)}
+            className="flex items-center justify-between sm:justify-center gap-2 bg-white rounded-full shadow-md border border-gray-100 px-4 sm:px-6 py-2 sm:py-3 cursor-pointer hover:shadow-lg transition"
           >
-            <option value="featured">Featured</option>
-            <option value="name">Name (A-Z)</option>
-            <option value="newest">Newest</option>
-          </select>
-          
-          {/* Chevron Down Icon */}
-          <ChevronDown className="absolute right-6 text-gray-700" size={18} />
+            <Filter className="w-4 h-4 text-gray-700" />
+            <span className="text-gray-800 font-medium text-sm sm:text-base whitespace-nowrap truncate max-w-[140px] sm:max-w-none">
+              {selectedCategory || "All Categories"}
+            </span>
+            <ChevronDown
+              size={16}
+              className={`text-gray-600 transition-transform ${
+                open ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+
+          {/* Dropdown List */}
+          {open && (
+            <div className="absolute top-full mt-2 right-0 left-0 sm:left-auto sm:right-0 bg-white rounded-xl shadow-lg border border-gray-100 z-50 w-full sm:w-48 max-h-60 overflow-y-auto">
+              {categories.map((cat, i) => (
+                <div
+                  key={i}
+                  onClick={() => {
+                    onCategoryChange(cat);
+                    setOpen(false);
+                  }}
+                  className={`px-4 py-2 text-sm sm:text-md text-gray-700 cursor-pointer hover:bg-pink-50 ${
+                    cat === selectedCategory ? "font-semibold text-pink-600" : ""
+                  }`}
+                >
+                  {cat}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
-
-    {/* Spacer to prevent content overlap */}
-    <div className="h-16"></div>
-  </div>
-);
+  );
+};
 
 export default SearchBar;

@@ -22,50 +22,50 @@ const giftFlowSlice = createSlice({
       yourEmailAddress: "",
       recipientFullName: "",
       recipientEmailAddress: "",
-      printDetails: {}
+      printDetails: {},
     },
-    
+
     // Brand filtering & pagination
     searchTerm: "",
     selectedCategory: "All Categories",
     currentPage: 1,
     sortBy: "featured",
     favorites: [],
-    categories: ['All Categories'],
-    
+    categories: ["All Categories"],
+
     // Data states
     premiumBrands: [],
     occasions: [],
     subCategories: [],
-    
+
     // Loading & Error states
     loading: false,
     error: null,
-    
+
     // Pagination states
     pagination: {
       currentPage: 1,
       totalPages: 1,
       totalCount: 0,
       limit: 12,
-      hasMore: false
+      hasMore: false,
     },
     occasionsPagination: null,
     subCategoriesPagination: null,
     currentOccasionPage: 1,
     currentSubCategoryPage: 1,
-    
+
     selectedPaymentMethod: null,
   },
   reducers: {
     updateState: (state, action) => {
       return { ...state, ...action.payload };
     },
-    
+
     setCurrentStep: (state, action) => {
       state.currentStep = action.payload;
     },
-    
+
     goBack: (state) => {
       const currentStep = state.currentStep;
       if (currentStep > 1) {
@@ -105,15 +105,16 @@ const giftFlowSlice = createSlice({
               yourEmailAddress: "",
               recipientFullName: "",
               recipientEmailAddress: "",
-              printDetails: {}
+              printDetails: {},
             };
             break;
         }
       }
     },
-    
-    goNext: (state) => {
-      state.currentStep = Math.min(10, state.currentStep + 1);
+
+    goNext: (state, action) => {
+      const increment = action.payload || 1; // Default to 1 if no payload
+      state.currentStep = Math.min(10, state.currentStep + increment);
     },
     
     resetFlow: () => {
@@ -137,14 +138,14 @@ const giftFlowSlice = createSlice({
           yourEmailAddress: "",
           recipientFullName: "",
           recipientEmailAddress: "",
-          printDetails: {}
+          printDetails: {},
         },
         searchTerm: "",
         selectedCategory: "All Categories",
         currentPage: 1,
         sortBy: "featured",
         favorites: [],
-        categories: ['All Categories'],
+        categories: ["All Categories"],
         premiumBrands: [],
         occasions: [],
         subCategories: [],
@@ -155,7 +156,7 @@ const giftFlowSlice = createSlice({
           totalPages: 1,
           totalCount: 0,
           limit: 12,
-          hasMore: false
+          hasMore: false,
         },
         occasionsPagination: null,
         subCategoriesPagination: null,
@@ -164,7 +165,7 @@ const giftFlowSlice = createSlice({
         selectedPaymentMethod: null,
       };
     },
-    
+
     // Brand Selection
     setSelectedBrand: (state, action) => {
       let brand = { ...action.payload };
@@ -181,30 +182,47 @@ const giftFlowSlice = createSlice({
           brand.vouchers = brand.vouchers.map((voucher) => {
             const newVoucher = { ...voucher };
             if (newVoucher.createdAt) {
-              newVoucher.createdAt = new Date(newVoucher.createdAt).toISOString();
+              newVoucher.createdAt = new Date(
+                newVoucher.createdAt
+              ).toISOString();
             }
             if (newVoucher.updatedAt) {
-              newVoucher.updatedAt = new Date(newVoucher.updatedAt).toISOString();
+              newVoucher.updatedAt = new Date(
+                newVoucher.updatedAt
+              ).toISOString();
             }
             if (newVoucher.expiresAt) {
-              newVoucher.expiresAt = new Date(newVoucher.expiresAt).toISOString();
+              newVoucher.expiresAt = new Date(
+                newVoucher.expiresAt
+              ).toISOString();
             }
-            
+
             // Serialize denominations
-            if (newVoucher.denominations && Array.isArray(newVoucher.denominations)) {
-              newVoucher.denominations = newVoucher.denominations.map((denom) => {
-                const newDenom = { ...denom };
-                if (newDenom.createdAt) {
-                  newDenom.createdAt = new Date(newDenom.createdAt).toISOString();
+            if (
+              newVoucher.denominations &&
+              Array.isArray(newVoucher.denominations)
+            ) {
+              newVoucher.denominations = newVoucher.denominations.map(
+                (denom) => {
+                  const newDenom = { ...denom };
+                  if (newDenom.createdAt) {
+                    newDenom.createdAt = new Date(
+                      newDenom.createdAt
+                    ).toISOString();
+                  }
+                  if (newDenom.updatedAt) {
+                    newDenom.updatedAt = new Date(
+                      newDenom.updatedAt
+                    ).toISOString();
+                  }
+                  if (newDenom.expiresAt) {
+                    newDenom.expiresAt = new Date(
+                      newDenom.expiresAt
+                    ).toISOString();
+                  }
+                  return newDenom;
                 }
-                if (newDenom.updatedAt) {
-                  newDenom.updatedAt = new Date(newDenom.updatedAt).toISOString();
-                }
-                if (newDenom.expiresAt) {
-                  newDenom.expiresAt = new Date(newDenom.expiresAt).toISOString();
-                }
-                return newDenom;
-              });
+              );
             }
             return newVoucher;
           });
@@ -213,38 +231,38 @@ const giftFlowSlice = createSlice({
 
       state.selectedBrand = brand;
     },
-    
+
     // Filtering & Search
     setSearchTerm: (state, action) => {
       state.searchTerm = action.payload;
       state.currentPage = 1; // Reset to page 1 on search
     },
-    
+
     setSelectedCategory: (state, action) => {
       state.selectedCategory = action.payload;
       state.currentPage = 1; // Reset to page 1 on category change
     },
-    
+
     setSortBy: (state, action) => {
       state.sortBy = action.payload;
       state.currentPage = 1; // Reset to page 1 on sort change
     },
-    
+
     setCurrentPage: (state, action) => {
       state.currentPage = action.payload;
     },
-    
+
     setCategories: (state, action) => {
       state.categories = action.payload;
     },
-    
+
     resetFilters: (state) => {
       state.searchTerm = "";
       state.selectedCategory = "All Categories";
       state.sortBy = "featured";
       state.currentPage = 1;
     },
-    
+
     // Brands Data
     setPremiumBrands: (state, action) => {
       const brands = action.payload.map((brand) => {
@@ -255,35 +273,52 @@ const giftFlowSlice = createSlice({
         if (newBrand.updatedAt) {
           newBrand.updatedAt = new Date(newBrand.updatedAt).toISOString();
         }
-        
+
         // Serialize vouchers and denominations
         if (newBrand.vouchers && Array.isArray(newBrand.vouchers)) {
           newBrand.vouchers = newBrand.vouchers.map((voucher) => {
             const newVoucher = { ...voucher };
             if (newVoucher.createdAt) {
-              newVoucher.createdAt = new Date(newVoucher.createdAt).toISOString();
+              newVoucher.createdAt = new Date(
+                newVoucher.createdAt
+              ).toISOString();
             }
             if (newVoucher.updatedAt) {
-              newVoucher.updatedAt = new Date(newVoucher.updatedAt).toISOString();
+              newVoucher.updatedAt = new Date(
+                newVoucher.updatedAt
+              ).toISOString();
             }
             if (newVoucher.expiresAt) {
-              newVoucher.expiresAt = new Date(newVoucher.expiresAt).toISOString();
+              newVoucher.expiresAt = new Date(
+                newVoucher.expiresAt
+              ).toISOString();
             }
-            
-            if (newVoucher.denominations && Array.isArray(newVoucher.denominations)) {
-              newVoucher.denominations = newVoucher.denominations.map((denom) => {
-                const newDenom = { ...denom };
-                if (newDenom.createdAt) {
-                  newDenom.createdAt = new Date(newDenom.createdAt).toISOString();
+
+            if (
+              newVoucher.denominations &&
+              Array.isArray(newVoucher.denominations)
+            ) {
+              newVoucher.denominations = newVoucher.denominations.map(
+                (denom) => {
+                  const newDenom = { ...denom };
+                  if (newDenom.createdAt) {
+                    newDenom.createdAt = new Date(
+                      newDenom.createdAt
+                    ).toISOString();
+                  }
+                  if (newDenom.updatedAt) {
+                    newDenom.updatedAt = new Date(
+                      newDenom.updatedAt
+                    ).toISOString();
+                  }
+                  if (newDenom.expiresAt) {
+                    newDenom.expiresAt = new Date(
+                      newDenom.expiresAt
+                    ).toISOString();
+                  }
+                  return newDenom;
                 }
-                if (newDenom.updatedAt) {
-                  newDenom.updatedAt = new Date(newDenom.updatedAt).toISOString();
-                }
-                if (newDenom.expiresAt) {
-                  newDenom.expiresAt = new Date(newDenom.expiresAt).toISOString();
-                }
-                return newDenom;
-              });
+              );
             }
             return newVoucher;
           });
@@ -292,12 +327,12 @@ const giftFlowSlice = createSlice({
       });
       state.premiumBrands = brands;
     },
-    
+
     // Pagination
     setPagination: (state, action) => {
       state.pagination = action.payload;
     },
-    
+
     // Favorites
     toggleFavorite: (state, action) => {
       const brandId = action.payload;
@@ -307,42 +342,42 @@ const giftFlowSlice = createSlice({
         state.favorites.push(brandId);
       }
     },
-    
+
     // Timing & Delivery
     setSelectedTiming: (state, action) => {
       state.selectedTiming = action.payload;
     },
-    
+
     setPersonalMessage: (state, action) => {
       state.personalMessage = action.payload;
     },
-    
+
     setDeliveryMethod: (state, action) => {
       state.deliveryMethod = action.payload;
     },
-    
+
     setDeliveryDetails: (state, action) => {
       state.deliveryDetails = { ...state.deliveryDetails, ...action.payload };
     },
-    
+
     updateDeliveryDetail: (state, action) => {
       const { field, value } = action.payload;
       state.deliveryDetails[field] = value;
     },
-    
+
     // Amount & Occasions
     setSelectedAmount: (state, action) => {
       state.selectedAmount = action.payload;
     },
-    
+
     setSelectedOccasion: (state, action) => {
       state.selectedOccasion = action.payload;
     },
-    
+
     setSelectedSubCategory: (state, action) => {
       state.selectedSubCategory = action.payload;
     },
-    
+
     setOccasions: (state, action) => {
       const { data, page, pagination } = action.payload;
       const serializedData = data.map((occasion) => {
@@ -364,16 +399,20 @@ const giftFlowSlice = createSlice({
       state.occasionsPagination = pagination;
       state.currentOccasionPage = page;
     },
-    
+
     setSubCategories: (state, action) => {
       const { data, page, pagination } = action.payload;
       const serializedData = data.map((subCategory) => {
         const newSubCategory = { ...subCategory };
         if (newSubCategory.createdAt) {
-          newSubCategory.createdAt = new Date(newSubCategory.createdAt).toISOString();
+          newSubCategory.createdAt = new Date(
+            newSubCategory.createdAt
+          ).toISOString();
         }
         if (newSubCategory.updatedAt) {
-          newSubCategory.updatedAt = new Date(newSubCategory.updatedAt).toISOString();
+          newSubCategory.updatedAt = new Date(
+            newSubCategory.updatedAt
+          ).toISOString();
         }
         return newSubCategory;
       });
@@ -386,16 +425,16 @@ const giftFlowSlice = createSlice({
       state.subCategoriesPagination = pagination;
       state.currentSubCategoryPage = page;
     },
-    
+
     // Loading & Error
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
-    
+
     setError: (state, action) => {
       state.error = action.payload;
     },
-    
+
     // Payment
     setSelectedPaymentMethod: (state, action) => {
       state.selectedPaymentMethod = action.payload;
@@ -434,4 +473,4 @@ export const {
   setSelectedPaymentMethod,
 } = giftFlowSlice.actions;
 
-export default giftFlowSlice.reducer
+export default giftFlowSlice.reducer;

@@ -129,7 +129,7 @@ const Dashboard = () => {
 
   const hasData = dashboardData?.metrics?.giftCards?.totalIssued > 0;
 
-  console.log("monthlyData",monthlyData);
+ 
   
 
   return (

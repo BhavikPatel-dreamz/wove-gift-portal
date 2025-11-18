@@ -25,6 +25,7 @@ const DynamicTable = ({
   actions,
   emptyMessage = "No data found",
   className = "",
+  renderExpandedRow, // New prop for rendering expanded content
 }) => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState([]);
@@ -73,7 +74,7 @@ const DynamicTable = ({
             <button
               onClick={() => onPageChange && onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="p-2 border border-gray-300 text-black  rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -110,7 +111,7 @@ const DynamicTable = ({
             <button
               onClick={() => onPageChange && onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="p-2 border border-gray-300 text-black rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -211,15 +212,21 @@ const DynamicTable = ({
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-6 py-4 text-sm">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              <>
+                {table.getRowModel().rows.map((row) => (
+                  <React.Fragment key={row.id}>
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="px-6 py-4 text-sm">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                    {/* Render expanded row if provided */}
+                    {renderExpandedRow && renderExpandedRow(row.original)}
+                  </React.Fragment>
+                ))}
+              </>
             )}
           </tbody>
         </table>

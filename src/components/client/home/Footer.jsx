@@ -2,9 +2,10 @@ import { Instagram, Facebook, Linkedin } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="bg-[background: linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%)] text-gray-800 py-16 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+    <>    <footer className="bg-[background: linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%)] text-gray-800 pt-16 pb-[90px] px-6">
+      <div className="max-w-[1440px] mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_1.5fr] gap-12 mb-12"
+        >
           {/* Branding Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-3 mb-6">
@@ -16,7 +17,7 @@ const Footer = () => {
               <h3 className="font-bold text-pink-500 text-xl">Wove Gifts</h3>
             </div>
             
-            <h4 className="font-bold text-gray-900 text-base">
+            <h4 className="font-semibold text-[#1A1A1A] text-[18px] fontPoppins">
               South Africa's #1 Gift Card Platform
             </h4>
             
@@ -49,7 +50,7 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-bold text-gray-900 mb-6 text-sm tracking-wide uppercase">
+            <h4 className="font-bold text-[#1A1A1A] mb-6 text-[16px] tracking-wide uppercase">
               QUICK LINKS
             </h4>
             <ul className="space-y-4">
@@ -57,7 +58,7 @@ const Footer = () => {
                 <li key={idx}>
                   <a
                     href="#"
-                    className="text-gray-700 text-sm hover:text-pink-500 transition-colors duration-200"
+                    className="text-[#4A4A4A] text-[16px] hover:text-pink-500 transition-colors duration-200"
                   >
                     {item}
                   </a>
@@ -68,7 +69,7 @@ const Footer = () => {
 
           {/* Legal & Support */}
           <div>
-            <h4 className="font-bold text-gray-900 mb-6 text-sm tracking-wide uppercase">
+            <h4 className="font-bold text-[#1A1A1A] mb-6 text-[16px] tracking-wide uppercase">
               LEGAL & SUPPORT
             </h4>
             <ul className="space-y-4">
@@ -81,7 +82,7 @@ const Footer = () => {
                 <li key={idx}>
                   <a
                     href="#"
-                    className="text-gray-700 text-sm hover:text-pink-500 transition-colors duration-200"
+                    className="text-[#4A4A4A] text-[16px] hover:text-pink-500 transition-colors duration-200"
                   >
                     {item}
                   </a>
@@ -92,10 +93,10 @@ const Footer = () => {
 
           {/* Newsletter */}
           <div>
-            <h4 className="font-bold text-gray-900 mb-4 text-sm tracking-wide uppercase">
+            <h4 className="font-bold text-[#1A1A1A] mb-4 text-[16px] tracking-wide uppercase">
               STAY IN THE LOOP
             </h4>
-            <p className="text-gray-600 text-sm mb-5 leading-relaxed">
+            <p className="text-[#4A4A4A] text-[16px] font-medium mb-5 leading-relaxed">
               Get updates and special gifting moments
             </p>
             <div className="flex flex-col gap-3">
@@ -104,7 +105,7 @@ const Footer = () => {
                 placeholder="Enter your mail"
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all"
               />
-              <button className="bg-gradient-to-r from-pink-500 to-pink-400 text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2">
+              <button className="bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 w-fit">
                 Subscribe
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
@@ -115,13 +116,15 @@ const Footer = () => {
         </div>
 
         {/* Copyright */}
-        <div className="pt-8 border-t border-gray-200 text-center">
+      </div>
+    </footer>
+        <div className="py-8 border-t border-gray-200 text-center">
           <p className="text-gray-600 text-sm">
             © 2025 Wove Gift. All rights reserved.
           </p>
         </div>
-      </div>
-    </footer>
+    </>
+
   );
 };
 

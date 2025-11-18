@@ -3,8 +3,12 @@
 import { PrismaClient } from "@prisma/client";
 import { getSession } from "./userAction/session";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage";
+import * as brevo from "@getbrevo/brevo";
 
-const prisma = new PrismaClient();
+const apiKey = process.env.NEXT_BREVO_API_KEY;
+let apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
+const prisma = new PrismaClient({ log: ["warn", "error"] });
 
 // ==================== CUSTOM ERROR CLASSES ====================
 class ValidationError extends Error {
@@ -47,13 +51,19 @@ function generateOrderNumber() {
   return `ORD-${timestamp}-${random}`;
 }
 
-function generateTokenizedLink(voucherCodeId) {
-  const token = Buffer.from(
-    `${voucherCodeId}-${Date.now()}-${Math.random()}`
-  ).toString("base64url");
+function getClaimUrl(selectedBrand) {
+  const claimUrl =
+    selectedBrand?.website ||
+    selectedBrand?.domain ||
+    (selectedBrand?.slug
+      ? `https://${selectedBrand.slug}.myshopify.com`
+      : null);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.wove.com";
-  return `${baseUrl}/redeem/${token}`;
+  if (!claimUrl) {
+    throw new ValidationError("Brand website or domain not configured");
+  }
+
+  return claimUrl.startsWith("http") ? claimUrl : `https://${claimUrl}`;
 }
 
 // ==================== VALIDATION FUNCTIONS ====================
@@ -66,68 +76,114 @@ function validateOrderData(orderData) {
     throw new ValidationError("Gift card amount is required");
   }
 
-  if (orderData.quantity < 1) {
+  const quantity = orderData.quantity || 1;
+  if (quantity < 1) {
     throw new ValidationError("Quantity must be at least 1");
   }
 
-  if (
-    !orderData.deliveryMethod ||
-    !["whatsapp", "email", "print"].includes(orderData.deliveryMethod)
-  ) {
-    throw new ValidationError(
-      "Valid delivery method is required (whatsapp, email, or print)"
-    );
+  // Check if it's a bulk order
+  const isBulkOrder = orderData.isBulkOrder === true;
+
+  if (isBulkOrder) {
+    // Bulk order validation
+    if (!orderData.companyInfo) {
+      throw new ValidationError(
+        "Company information is required for bulk orders"
+      );
+    }
+
+    if (!orderData.companyInfo.companyName) {
+      throw new ValidationError("Company name is required for bulk orders");
+    }
+
+    if (!orderData.companyInfo.contactEmail) {
+      throw new ValidationError("Contact email is required for bulk orders");
+    }
+
+    if (!orderData.companyInfo.contactNumber) {
+      throw new ValidationError("Contact number is required for bulk orders");
+    }
+
+    if (!orderData.deliveryOption) {
+      throw new ValidationError("Delivery option is required for bulk orders");
+    }
+
+    if (!["csv", "email", "multiple"].includes(orderData.deliveryOption)) {
+      throw new ValidationError("Invalid delivery option for bulk orders");
+    }
+  } else {
+    // Single gift order validation
+    if (
+      !orderData.deliveryMethod ||
+      !["whatsapp", "email", "print"].includes(orderData.deliveryMethod)
+    ) {
+      throw new ValidationError(
+        "Valid delivery method is required (whatsapp, email, or print)"
+      );
+    }
+
+    const { deliveryDetails } = orderData;
+    const recipientName =
+      deliveryDetails?.recipientFullName || deliveryDetails?.recipientName;
+
+    if (!recipientName && orderData.deliveryMethod !== "print") {
+      throw new ValidationError("Recipient full name is required");
+    }
+
+    if (
+      orderData.deliveryMethod === "email" &&
+      !deliveryDetails?.recipientEmailAddress
+    ) {
+      throw new ValidationError(
+        "Recipient email is required for email delivery"
+      );
+    }
+
+    if (
+      orderData.deliveryMethod === "whatsapp" &&
+      !deliveryDetails?.recipientWhatsAppNumber
+    ) {
+      throw new ValidationError(
+        "Recipient WhatsApp number is required for WhatsApp delivery"
+      );
+    }
   }
-
-  const { deliveryDetails } = orderData;
-
-  // Recipient name validation - check both possible field names
-  const recipientName = deliveryDetails?.recipientFullName || deliveryDetails?.recipientName;
-  
-  if (!recipientName && orderData.deliveryMethod !== "print") {
-    throw new ValidationError("Recipient full name is required");
-  }
-
-
-  // Email validation for email delivery
-  if (
-    orderData.deliveryMethod === "email" &&
-    !deliveryDetails?.recipientEmailAddress
-  ) {
-    throw new ValidationError("Recipient email is required for email delivery");
-  }
-
-  // WhatsApp validation for WhatsApp delivery
-  if (
-    orderData.deliveryMethod === "whatsapp" &&
-    !deliveryDetails?.recipientWhatsAppNumber
-  ) {
-    throw new ValidationError(
-      "Recipient WhatsApp number is required for WhatsApp delivery"
-    );
-  }
-
-  // // For print delivery, no contact info required but recipient name is needed
-  // if (orderData.deliveryMethod === "print") {
-  //   if (!deliveryDetails?.recipientFullName && !deliveryDetails?.recipientName) {
-  //     throw new ValidationError("Recipient name is required for print delivery");
-  //   }
-  // }
 
   return true;
 }
 
 // ==================== DATABASE OPERATIONS ====================
-async function createReceiverDetail(deliveryDetails, deliveryMethod) {
+async function createReceiverDetail(orderData) {
   try {
-    return await prisma.receiverDetail.create({
-      data: {
-        name:
-          deliveryDetails.recipientFullName || deliveryDetails?.recipientName,
-        email: deliveryMethod === "email" ? deliveryDetails.recipientEmailAddress : null,
-        phone: deliveryMethod === "whatsapp" ? deliveryDetails.recipientWhatsAppNumber : null,
-      },
-    });
+    const isBulkOrder = orderData.isBulkOrder === true;
+
+    if (isBulkOrder) {
+      // For bulk orders, use company info
+      return await prisma.receiverDetail.create({
+        data: {
+          name: orderData.companyInfo.companyName,
+          email: orderData.companyInfo.contactEmail,
+          phone: orderData.companyInfo.contactNumber,
+        },
+      });
+    } else {
+      // For single gift orders, use delivery details
+      const { deliveryDetails, deliveryMethod } = orderData;
+      return await prisma.receiverDetail.create({
+        data: {
+          name:
+            deliveryDetails.recipientFullName || deliveryDetails?.recipientName,
+          email:
+            deliveryMethod === "email"
+              ? deliveryDetails.recipientEmailAddress
+              : null,
+          phone:
+            deliveryMethod === "whatsapp"
+              ? deliveryDetails.recipientWhatsAppNumber
+              : null,
+        },
+      });
+    }
   } catch (error) {
     throw new Error(`Failed to create receiver detail: ${error.message}`);
   }
@@ -141,83 +197,118 @@ async function createOrderRecord(
 ) {
   try {
     const amount = orderData.selectedAmount.value;
-    const { quantity = 1 } = orderData;
+    const quantity = orderData.quantity || 1;
     const subtotal = amount * quantity;
     const discount = orderData.discountAmount || 0;
     const totalAmount = subtotal - discount;
+    const isBulkOrder = orderData.isBulkOrder === true;
 
-    return await prisma.order.create({
-      data: {
-        orderNumber: generateOrderNumber(),
-        brandId: selectedBrand.id,
-        occasionId: orderData.selectedOccasion,
-        subCategoryId: orderData.selectedSubCategory?.isCustom
-          ? null
-          : orderData.selectedSubCategory?.id,
-        customCardId: orderData.selectedSubCategory?.isCustom
-          ? orderData.selectedSubCategory?.id
-          : null,
-        userId: String(orderData.userId),
-        receiverDetailId: receiver.id,
-        amount,
-        quantity,
-        subtotal,
-        discount,
-        totalAmount,
-        currency: orderData.selectedAmount.currency || "USD",
-        message: orderData.personalMessage || "",
-        customImageUrl: orderData.customImageUrl || null,
-        customVideoUrl: orderData.customVideoUrl || null,
-        senderName: orderData.deliveryDetails?.yourFullName || null,
-        deliveryMethod: orderData.deliveryMethod || "whatsapp",
-        sendType:
-          orderData.selectedTiming?.type === "immediate"
-            ? "sendImmediately"
-            : "scheduleLater",
-        scheduledFor,
-        paymentMethod: orderData.selectedPaymentMethod || "stripe",
-        paymentStatus: "PENDING",
-        redemptionStatus: "Issued",
-        isActive: true,
-        senderEmail: orderData.deliveryDetails?.yourEmailAddress || null,
-      },
-    });
+    const orderBase = {
+      orderNumber: generateOrderNumber(),
+      brandId: selectedBrand.id,
+      occasionId: orderData.selectedOccasion,
+      subCategoryId: orderData.selectedSubCategory?.isCustom
+        ? null
+        : orderData.selectedSubCategory?.id,
+      customCardId: orderData.selectedSubCategory?.isCustom
+        ? orderData.selectedSubCategory?.id
+        : null,
+      userId: String(orderData.userId),
+      receiverDetailId: receiver.id,
+      amount,
+      quantity,
+      subtotal,
+      discount,
+      totalAmount,
+      currency: orderData.selectedAmount.currency || "USD",
+      paymentMethod: orderData.selectedPaymentMethod || "stripe",
+      customImageUrl: orderData.customImageUrl || null,
+      customVideoUrl: orderData.customVideoUrl || null,
+      paymentStatus: "COMPLETED",
+      redemptionStatus: "Issued",
+      isActive: true,
+    };
+
+    function generateBulkOrderNumber() {
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 10000);
+      return `BULK-${timestamp}-${random}`;
+    }
+
+    const bulkOrderNumber = generateBulkOrderNumber();
+
+    if (isBulkOrder) {
+      // Bulk order specific fields
+      return await prisma.order.create({
+        data: {
+          ...orderBase,
+          bulkOrderNumber: bulkOrderNumber || null,
+          deliveryMethod: "email", // Bulk orders are delivered via email/CSV
+          // message: `Bulk order for ${orderData.companyInfo.companyName}`,
+          message: orderData.personalMessage || "",
+          senderName: orderData.companyInfo.companyName,
+          sendType: "sendImmediately",
+          scheduledFor: null,
+          senderEmail: orderData.companyInfo.contactEmail,
+        },
+      });
+    } else {
+      // Single gift order fields
+      return await prisma.order.create({
+        data: {
+          ...orderBase,
+          deliveryMethod: orderData.deliveryMethod || "whatsapp",
+          message: orderData.personalMessage || "",
+          senderName: orderData.deliveryDetails?.yourFullName || null,
+          sendType:
+            orderData.selectedTiming?.type === "immediate"
+              ? "sendImmediately"
+              : "scheduleLater",
+          scheduledFor,
+          senderEmail: orderData.deliveryDetails?.yourEmailAddress || null,
+        },
+      });
+    }
   } catch (error) {
     throw new Error(`Failed to create order record: ${error.message}`);
   }
 }
 
 // ==================== SHOPIFY GIFT CARD OPERATIONS ====================
-async function createShopifyGiftCard(selectedBrand, orderData) {
+async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig) {
   if (!selectedBrand.domain) {
     throw new ValidationError(
       "Brand domain is required for gift card creation"
     );
   }
 
-  if (!selectedBrand.vouchers || selectedBrand.vouchers.length === 0) {
-    throw new ValidationError("Brand does not have voucher configuration");
-  }
-
-  const voucherConfig = selectedBrand.vouchers[0];
+  const isBulkOrder = orderData.isBulkOrder === true;
 
   const giftCardData = {
-    customerEmail: orderData.deliveryDetails?.recipientEmailAddress || orderData.deliveryDetails?.yourEmailAddress || "",
-    firstName:
-      orderData.deliveryDetails?.recipientFullName?.split(" ")[0] ||
-      orderData.deliveryDetails?.recipientName?.split(" ")[0] ||
-      "Recipient",
-    lastName:
-      orderData.deliveryDetails?.recipientFullName
-        ?.split(" ")
-        .slice(1)
-        .join(" ") || 
-      orderData.deliveryDetails?.recipientName
-        ?.split(" ")
-        .slice(1)
-        .join(" ") || 
-      "",
-    note: `Order to be generated - Delivery Method: ${orderData.deliveryMethod}`,
+    customerEmail: isBulkOrder
+      ? orderData.companyInfo.contactEmail
+      : orderData.deliveryDetails?.recipientEmailAddress ||
+        orderData.deliveryDetails?.yourEmailAddress ||
+        "",
+    firstName: isBulkOrder
+      ? orderData.companyInfo.companyName.split(" ")[0]
+      : orderData.deliveryDetails?.recipientFullName?.split(" ")[0] ||
+        orderData.deliveryDetails?.recipientName?.split(" ")[0] ||
+        "Recipient",
+    lastName: isBulkOrder
+      ? orderData.companyInfo.companyName.split(" ").slice(1).join(" ")
+      : orderData.deliveryDetails?.recipientFullName
+          ?.split(" ")
+          .slice(1)
+          .join(" ") ||
+        orderData.deliveryDetails?.recipientName
+          ?.split(" ")
+          .slice(1)
+          .join(" ") ||
+        "",
+    note: isBulkOrder
+      ? `Bulk Order - ${orderData.quantity} vouchers - Delivery: ${orderData.deliveryOption}`
+      : `Order to be generated - Delivery Method: ${orderData.deliveryMethod}`,
     denominationValue:
       voucherConfig.denominationType === "fixed"
         ? orderData.selectedAmount.value
@@ -254,7 +345,7 @@ async function createShopifyGiftCard(selectedBrand, orderData) {
       );
     }
 
-    return { giftCard: result.gift_card, voucherConfig };
+    return result.gift_card;
   } catch (error) {
     if (error instanceof ExternalServiceError) throw error;
     throw new ExternalServiceError(
@@ -264,10 +355,576 @@ async function createShopifyGiftCard(selectedBrand, orderData) {
   }
 }
 
-// ==================== DATABASE GIFT CARD OPERATIONS ====================
-async function saveGiftCardToDb(shopifyGiftCard, selectedBrand, order) {
+// ==================== BULK ORDER PROCESSING ====================
+async function processBulkOrder(
+  selectedBrand,
+  orderData,
+  order,
+  voucherConfig
+) {
   try {
-    return await prisma.giftCard.upsert({
+    const quantity = orderData.quantity || 1;
+    const voucherCodes = [];
+    const giftCards = [];
+
+    console.log(`🔄 Creating ${quantity} gift cards for bulk order...`);
+
+    // Create multiple gift cards
+    for (let i = 0; i < quantity; i++) {
+      console.log(`Creating gift card ${i + 1}/${quantity}...`);
+
+      // Create Shopify gift card
+      const shopifyGiftCard = await createShopifyGiftCard(
+        selectedBrand,
+        orderData,
+        voucherConfig
+      );
+
+      // Save to database
+      const giftCardInDb = await prisma.giftCard.upsert({
+        where: { shopifyId: shopifyGiftCard.id },
+        update: {
+          balance: parseFloat(shopifyGiftCard.balance?.amount || 0),
+          customerEmail: orderData.companyInfo.contactEmail,
+          updatedAt: new Date(),
+        },
+        create: {
+          shop: selectedBrand.domain,
+          shopifyId: shopifyGiftCard.id,
+          code: shopifyGiftCard.code,
+          initialValue: parseFloat(shopifyGiftCard.balance?.amount || 0),
+          balance: parseFloat(shopifyGiftCard.balance?.amount || 0),
+          customerEmail: orderData.companyInfo.contactEmail,
+          note: `Bulk Order ${order.orderNumber} - Voucher ${
+            i + 1
+          }/${quantity}`,
+          isActive: true,
+          isVirtual: true,
+        },
+      });
+
+      // Create voucher code
+      let expireDate = null;
+      if (voucherConfig?.denominationType === "fixed") {
+        const matchedDenomination = voucherConfig?.denominations?.find(
+          (d) => d?.value == order?.amount
+        );
+        expireDate = matchedDenomination?.expiresAt || null;
+      } else {
+        expireDate = voucherConfig?.expiresAt || null;
+      }
+
+      const voucherCode = await prisma.voucherCode.create({
+        data: {
+          code: shopifyGiftCard.maskedCode,
+          orderId: order.id,
+          voucherId: voucherConfig.id,
+          originalValue: order.amount,
+          remainingValue: order.amount,
+          expiresAt: expireDate,
+          isRedeemed: false,
+          shopifyGiftCardId: giftCardInDb.id,
+          shopifyShop: selectedBrand.domain,
+          shopifySyncedAt: new Date(),
+        },
+      });
+
+      // Generate and save tokenized link
+      const tokenizedLink = getClaimUrl(selectedBrand);
+      console.log("----------------tokenizedLink", tokenizedLink);
+
+      const linkExpiresAt = new Date();
+      linkExpiresAt.setDate(linkExpiresAt.getDate() + 7);
+
+      await prisma.voucherCode.update({
+        where: { id: voucherCode.id },
+        data: { tokenizedLink, linkExpiresAt },
+      });
+
+      voucherCodes.push({
+        ...voucherCode,
+        code: shopifyGiftCard.code,
+        tokenizedLink: tokenizedLink,
+      });
+      giftCards.push(shopifyGiftCard);
+    }
+
+    console.log(`✅ Created ${quantity} gift cards successfully`);
+
+    return { voucherCodes, giftCards };
+  } catch (error) {
+    throw new Error(`Failed to process bulk order: ${error.message}`);
+  }
+}
+
+// ==================== BULK DELIVERY ====================
+async function sendBulkDelivery(orderData, voucherCodes) {
+  try {
+    const { deliveryOption, companyInfo } = orderData;
+
+    if (deliveryOption === "csv") {
+      // Generate CSV content
+      const csvHeader =
+        "Voucher Code,Amount,Currency,Expires At,Redemption Link\n";
+      const csvRows = voucherCodes
+        .map((vc) => {
+          const expiryDate = vc.expiresAt
+            ? new Date(vc.expiresAt).toLocaleDateString()
+            : "No Expiry";
+          return `${vc.code},${vc.originalValue},${orderData.selectedAmount.currency},${expiryDate},${vc.tokenizedLink}`;
+        })
+        .join("\n");
+
+      const csvContent = csvHeader + csvRows;
+
+      // Initialize Brevo
+      const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
+      const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
+
+      if (!senderEmail) {
+        throw new ConfigurationError(
+          "Missing Brevo sender email: NEXT_BREVO_SENDER_EMAIL"
+        );
+      }
+
+      // Convert CSV to base64 for attachment
+      const csvBuffer = Buffer.from(csvContent, "utf-8");
+      const csvBase64 = csvBuffer.toString("base64");
+      const fileName = `gift-cards-${Date.now()}.csv`;
+
+      const sendSmtpEmail = {
+        sender: {
+          email: senderEmail,
+          name: senderName,
+        },
+        to: [
+          {
+            email: companyInfo.contactEmail,
+            name: companyInfo.companyName,
+          },
+        ],
+        subject: `Bulk Gift Card Order - ${voucherCodes.length} Vouchers (CSV Attached)`,
+        htmlContent: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+          
+          <tr>
+            <td style="background-color: #ffe4e6; padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #1a1a1a;">🎉 Bulk Gift Card Order Confirmed</h1>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 8px; font-size: 16px; color: #1a1a1a;">Dear ${
+                companyInfo.companyName
+              },</p>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a; line-height: 1.6;">Your bulk gift card order has been successfully processed. All voucher codes are attached as a CSV file.</p>
+              
+              <div style="background-color: #f8f9fa; border-left: 4px solid #ff6b9d; padding: 20px; margin-bottom: 24px; border-radius: 8px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">📊 Order Summary</h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Brand:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${orderData.selectedBrand?.brandName || "N/A"}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Total Vouchers:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${voucherCodes.length}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Amount per Voucher:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${orderData.selectedAmount?.currency || "₹"}${
+          orderData.selectedAmount?.value || "0"
+        }
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                      <strong>Total Value:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #1a1a1a; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                      ${orderData.selectedAmount?.currency || "₹"}${
+          (orderData.selectedAmount?.value || 0) * voucherCodes.length
+        }
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; margin-bottom: 24px; border-radius: 8px;">
+                <p style="margin: 0 0 8px; font-size: 14px; color: #856404; font-weight: 600;">📎 CSV File Attached</p>
+                <p style="margin: 0; font-size: 13px; color: #856404; line-height: 1.6;">
+                  The attached CSV file contains all ${
+                    voucherCodes.length
+                  } voucher codes with their details (code, amount, expiry date, and redemption link).
+                </p>
+              </div>
+              
+              <div style="margin-top: 24px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">📋 How to Use</h3>
+                <ol style="margin: 0; padding-left: 20px; color: #4a5568; font-size: 14px; line-height: 1.8;">
+                  <li>Download and open the attached CSV file</li>
+                  <li>Each row contains a unique voucher code and redemption link</li>
+                  <li>Distribute the codes to your recipients</li>
+                  <li>Recipients can redeem at ${
+                    orderData.selectedBrand?.brandName || "the brand"
+                  }</li>
+                </ol>
+              </div>
+              
+              <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d; line-height: 1.6;">
+                  Need help? Contact our support team at any time.
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.6;">
+                Thank you for choosing our gift card platform.<br>
+                This order was placed by ${companyInfo.companyName}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+        textContent: `Bulk Gift Card Order Confirmation
+
+Dear ${companyInfo.companyName},
+
+Your bulk gift card order has been successfully processed.
+
+Order Summary:
+- Brand: ${orderData.selectedBrand?.brandName || "N/A"}
+- Total Vouchers: ${voucherCodes.length}
+- Amount per Voucher: ${orderData.selectedAmount?.currency || "₹"}${
+          orderData.selectedAmount?.value || "0"
+        }
+- Total Value: ${orderData.selectedAmount?.currency || "₹"}${
+          (orderData.selectedAmount?.value || 0) * voucherCodes.length
+        }
+
+CSV File Attached:
+The attached CSV file contains all ${
+          voucherCodes.length
+        } voucher codes with their details.
+
+How to Use:
+1. Download and open the attached CSV file
+2. Each row contains a unique voucher code and redemption link
+3. Distribute the codes to your recipients
+4. Recipients can redeem at ${orderData.selectedBrand?.brandName || "the brand"}
+
+Thank you for choosing our gift card platform.`,
+        attachment: [
+          {
+            content: csvBase64,
+            name: fileName,
+          },
+        ],
+      };
+
+      console.log("📧 Sending CSV email to:", companyInfo.contactEmail);
+      const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+      console.log("✅ CSV email sent successfully");
+
+      return {
+        success: true,
+        message: "CSV file sent to email successfully",
+        messageId: response.messageId,
+        recipient: companyInfo.contactEmail,
+        vouchersCount: voucherCodes.length,
+        deliveryMethod: "csv",
+      };
+    } else if (deliveryOption === "email") {
+      // Send all voucher codes in a single email (not CSV, just HTML table)
+      const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
+      const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
+
+      if (!senderEmail) {
+        throw new ConfigurationError(
+          "Missing Brevo sender email: NEXT_BREVO_SENDER_EMAIL"
+        );
+      }
+
+      // Generate voucher rows for HTML table
+      const voucherRows = voucherCodes
+        .map((vc, index) => {
+          const expiryDate = vc.expiresAt
+            ? new Date(vc.expiresAt).toLocaleDateString()
+            : "No Expiry";
+
+          return `
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px 8px; font-size: 13px; color: #4a5568;">
+              ${index + 1}
+            </td>
+            <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a; font-family: 'Courier New', monospace;">
+              ${vc.code}
+            </td>
+            <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a;">
+              ${orderData.selectedAmount?.currency || "₹"}${vc.originalValue}
+            </td>
+            <td style="padding: 12px 8px; font-size: 13px; color: #4a5568;">
+              ${expiryDate}
+            </td>
+            <td style="padding: 12px 8px;">
+              <a href="${
+                vc.tokenizedLink
+              }" style="color: #ff6b9d; text-decoration: none; font-size: 12px;">Redeem →</a>
+            </td>
+          </tr>
+        `;
+        })
+        .join("");
+
+      const sendSmtpEmail = {
+        sender: {
+          email: senderEmail,
+          name: senderName,
+        },
+        to: [
+          {
+            email: companyInfo.contactEmail,
+            name: companyInfo.companyName,
+          },
+        ],
+        subject: `Bulk Gift Card Order - ${voucherCodes.length} Vouchers`,
+        htmlContent: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 700px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+          
+          <tr>
+            <td style="background-color: #ffe4e6; padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #1a1a1a;">🎉 Bulk Gift Card Order Confirmed</h1>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 8px; font-size: 16px; color: #1a1a1a;">Dear ${
+                companyInfo.companyName
+              },</p>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a; line-height: 1.6;">Your bulk gift card order has been successfully processed. Below are all your voucher codes.</p>
+              
+              <div style="background-color: #f8f9fa; border-left: 4px solid #ff6b9d; padding: 20px; margin-bottom: 24px; border-radius: 8px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">📊 Order Summary</h3>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Brand:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${orderData.selectedBrand?.brandName || "N/A"}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Total Vouchers:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${voucherCodes.length}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;">
+                      <strong>Amount per Voucher:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
+                      ${orderData.selectedAmount?.currency || "₹"}${
+          orderData.selectedAmount?.value || "0"
+        }
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                      <strong>Total Value:</strong>
+                    </td>
+                    <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #1a1a1a; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                      ${orderData.selectedAmount?.currency || "₹"}${
+          (orderData.selectedAmount?.value || 0) * voucherCodes.length
+        }
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              
+              <div style="margin-top: 24px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">🎁 Your Voucher Codes</h3>
+                <div style="overflow-x: auto;">
+                  <table role="presentation" style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <thead>
+                      <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">#</th>
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Voucher Code</th>
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Amount</th>
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Expires</th>
+                        <th style="padding: 12px 8px; text-align: left; font-size: 13px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${voucherRows}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <div style="margin-top: 24px;">
+                <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">📋 How to Use</h3>
+                <ol style="margin: 0; padding-left: 20px; color: #4a5568; font-size: 14px; line-height: 1.8;">
+                  <li>Copy the voucher code you want to use</li>
+                  <li>Click the "Redeem" link or visit ${
+                    orderData.selectedBrand?.brandName || "the brand"
+                  }</li>
+                  <li>Enter the voucher code at checkout</li>
+                  <li>Enjoy your gift!</li>
+                </ol>
+              </div>
+              
+              <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 12px; color: #6c757d; line-height: 1.6;">
+                  Need help? Contact our support team at any time.
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.6;">
+                Thank you for choosing our gift card platform.<br>
+                This order was placed by ${companyInfo.companyName}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+        textContent: `Bulk Gift Card Order Confirmation
+
+Dear ${companyInfo.companyName},
+
+Your bulk gift card order has been successfully processed.
+
+Order Summary:
+- Brand: ${orderData.selectedBrand?.brandName || "N/A"}
+- Total Vouchers: ${voucherCodes.length}
+- Amount per Voucher: ${orderData.selectedAmount?.currency || "₹"}${
+          orderData.selectedAmount?.value || "0"
+        }
+- Total Value: ${orderData.selectedAmount?.currency || "₹"}${
+          (orderData.selectedAmount?.value || 0) * voucherCodes.length
+        }
+
+Your Voucher Codes:
+${voucherCodes
+  .map((vc, index) => {
+    const expiryDate = vc.expiresAt
+      ? new Date(vc.expiresAt).toLocaleDateString()
+      : "No Expiry";
+    return `${index + 1}. ${vc.code} - ${
+      orderData.selectedAmount?.currency || "₹"
+    }${vc.originalValue} - Expires: ${expiryDate}\n   Redeem: ${
+      vc.tokenizedLink
+    }`;
+  })
+  .join("\n\n")}
+
+How to Use:
+1. Copy the voucher code you want to use
+2. Visit ${orderData.selectedBrand?.brandName || "the brand"}
+3. Enter the voucher code at checkout
+4. Enjoy your gift!
+
+Thank you for choosing our gift card platform.`,
+      };
+
+      console.log(
+        "📧 Sending bulk email with all codes to:",
+        companyInfo.contactEmail
+      );
+      const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+      console.log("✅ Bulk email sent successfully");
+
+      return {
+        success: true,
+        message: "All voucher codes sent in single email successfully",
+        messageId: response.messageId,
+        recipient: companyInfo.contactEmail,
+        vouchersCount: voucherCodes.length,
+        deliveryMethod: "email",
+      };
+    }
+
+    return { success: true, message: "Bulk delivery processed" };
+  } catch (error) {
+    console.error("❌ Bulk delivery failed:", error);
+
+    throw new ExternalServiceError(
+      `Failed to send bulk delivery: ${error.message}`,
+      error
+    );
+  }
+}
+
+// ==================== SINGLE ORDER PROCESSING ====================
+async function processSingleOrder(
+  selectedBrand,
+  orderData,
+  order,
+  voucherConfig
+) {
+  try {
+    // Create Shopify gift card
+    const shopifyGiftCard = await createShopifyGiftCard(
+      selectedBrand,
+      orderData,
+      voucherConfig
+    );
+
+    // Save gift card to database
+    const giftCardInDb = await prisma.giftCard.upsert({
       where: { shopifyId: shopifyGiftCard.id },
       update: {
         balance: parseFloat(shopifyGiftCard.balance?.amount || 0),
@@ -286,19 +943,8 @@ async function saveGiftCardToDb(shopifyGiftCard, selectedBrand, order) {
         isVirtual: true,
       },
     });
-  } catch (error) {
-    throw new Error(`Failed to save gift card to database: ${error.message}`);
-  }
-}
 
-async function createVoucherCode(
-  order,
-  voucherConfig,
-  giftCard,
-  selectedBrand,
-  shopifyGiftCard
-) {
-  try {
+    // Create voucher code
     let expireDate = null;
     if (voucherConfig?.denominationType === "fixed") {
       const matchedDenomination = voucherConfig?.denominations?.find(
@@ -308,7 +954,6 @@ async function createVoucherCode(
     } else {
       expireDate = voucherConfig?.expiresAt || null;
     }
-    console.log("voucherConfig", expireDate);
 
     const voucherCode = await prisma.voucherCode.create({
       data: {
@@ -319,14 +964,14 @@ async function createVoucherCode(
         remainingValue: order.amount,
         expiresAt: expireDate,
         isRedeemed: false,
-        shopifyGiftCardId: giftCard.id,
+        shopifyGiftCardId: giftCardInDb.id,
         shopifyShop: selectedBrand.domain,
         shopifySyncedAt: new Date(),
       },
     });
 
     // Generate and save tokenized link
-    const tokenizedLink = generateTokenizedLink(voucherCode.id);
+    const tokenizedLink = getClaimUrl(selectedBrand);
     const linkExpiresAt = new Date();
     linkExpiresAt.setDate(linkExpiresAt.getDate() + 7);
 
@@ -335,9 +980,72 @@ async function createVoucherCode(
       data: { tokenizedLink, linkExpiresAt },
     });
 
-    return voucherCode;
+    return { voucherCode, giftCard: giftCardInDb, shopifyGiftCard };
   } catch (error) {
-    throw new Error(`Failed to create voucher code: ${error.message}`);
+    throw new Error(`Failed to process single order: ${error.message}`);
+  }
+}
+
+// ==================== DELIVERY OPERATIONS ====================
+async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
+  try {
+    if (deliveryMethod === "print") {
+      console.log("✅ Print delivery selected - skipping message delivery");
+      return { success: true, message: "Print delivery - no message sent" };
+    }
+
+    if (deliveryMethod === "whatsapp") {
+      return await SendWhatsappMessages(orderData, giftCard);
+    } else if (deliveryMethod === "email") {
+      return await SendGiftCardEmail(orderData, giftCard);
+    }
+
+    return { success: true, message: "No delivery required" };
+  } catch (error) {
+    throw new ExternalServiceError(
+      `Failed to send ${deliveryMethod} message: ${error.message}`,
+      error
+    );
+  }
+}
+
+async function createDeliveryLog(order, voucherCodeId, orderData) {
+  try {
+    const isBulkOrder = orderData.isBulkOrder === true;
+    let recipient = "Print delivery";
+
+    if (isBulkOrder) {
+      recipient = orderData.companyInfo.contactEmail;
+    } else if (orderData.deliveryMethod === "email") {
+      recipient = orderData.deliveryDetails.recipientEmailAddress;
+    } else if (orderData.deliveryMethod === "whatsapp") {
+      recipient = orderData.deliveryDetails.recipientWhatsAppNumber;
+    }
+
+    const status =
+      orderData.deliveryMethod === "print" || isBulkOrder
+        ? "DELIVERED"
+        : order.scheduledFor
+        ? "PENDING"
+        : "PENDING";
+
+    return await prisma.deliveryLog.create({
+      data: {
+        orderId: order.id,
+        voucherCodeId,
+        method: isBulkOrder ? "email" : orderData.deliveryMethod || "whatsapp",
+        recipient,
+        status,
+        attemptCount:
+          orderData.deliveryMethod === "print" || isBulkOrder ? 1 : 0,
+        deliveredAt:
+          orderData.deliveryMethod === "print" || isBulkOrder
+            ? new Date()
+            : null,
+      },
+    });
+  } catch (error) {
+    throw new Error(`Failed to create delivery log: ${error.message}`);
   }
 }
 
@@ -377,10 +1085,6 @@ async function updateOrCreateSettlement(selectedBrand, order) {
           updatedAt: new Date(),
         },
       });
-
-      console.log(
-        `✅ Updated settlement for brand ${selectedBrand.name} (${settlementPeriod})`
-      );
     } else {
       await prisma.settlements.create({
         data: {
@@ -401,78 +1105,19 @@ async function updateOrCreateSettlement(selectedBrand, order) {
           status: "Pending",
         },
       });
-
-      console.log(
-        `✅ Created new settlement for brand ${selectedBrand.name} (${settlementPeriod})`
-      );
     }
   } catch (error) {
     console.error("⚠️ Settlement update failed (non-critical):", error.message);
-    // Don't throw - settlement failure should not block order creation
-  }
-}
-
-// ==================== DELIVERY OPERATIONS ====================
-async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
-  try {
-    // For print delivery, skip sending messages
-    if (deliveryMethod === "print") {
-      console.log("✅ Print delivery selected - skipping message delivery");
-      return { success: true, message: "Print delivery - no message sent" };
-    }
-
-    // For email and WhatsApp, send messages as before
-    if (deliveryMethod === "whatsapp") {
-      return await SendWhatsappMessages(orderData, giftCard);
-    } else if (deliveryMethod === "email") {
-      return await SendGiftCardEmail(orderData, giftCard);
-    }
-
-    return { success: true, message: "No delivery required" };
-  } catch (error) {
-    throw new ExternalServiceError(
-      `Failed to send ${deliveryMethod} message: ${error.message}`,
-      error
-    );
-  }
-}
-
-async function createDeliveryLog(order, voucherCode, orderData) {
-  try {
-    let recipient = "Print delivery";
-    
-    if (orderData.deliveryMethod === "email") {
-      recipient = orderData.deliveryDetails.recipientEmailAddress;
-    } else if (orderData.deliveryMethod === "whatsapp") {
-      recipient = orderData.deliveryDetails.recipientWhatsAppNumber;
-    }
-
-    // For print delivery, mark as completed immediately since no delivery is needed
-    const status = orderData.deliveryMethod === "print" ? "DELIVERED" : (order.scheduledFor ? "PENDING" : "PENDING");
-
-    return await prisma.deliveryLog.create({
-      data: {
-        orderId: order.id,
-        voucherCodeId: voucherCode.id,
-        method: orderData.deliveryMethod || "whatsapp",
-        recipient,
-        status,
-        attemptCount: orderData.deliveryMethod === "print" ? 1 : 0,
-        deliveredAt: orderData.deliveryMethod === "print" ? new Date() : null,
-      },
-    });
-  } catch (error) {
-    throw new Error(`Failed to create delivery log: ${error.message}`);
   }
 }
 
 // ==================== CLEANUP FUNCTIONS ====================
-async function cleanupOnError(orderId, voucherCodeId) {
+async function cleanupOnError(orderId, voucherCodeIds = []) {
   try {
-    if (voucherCodeId) {
+    if (voucherCodeIds.length > 0) {
       await prisma.voucherCode
-        .delete({
-          where: { id: voucherCodeId },
+        .deleteMany({
+          where: { id: { in: voucherCodeIds } },
         })
         .catch(() => null);
     }
@@ -492,7 +1137,7 @@ async function cleanupOnError(orderId, voucherCodeId) {
 // ==================== MAIN ORDER CREATION ====================
 export const createOrder = async (orderData) => {
   let order = null;
-  let voucherCode = null;
+  let voucherCodeIds = [];
 
   try {
     // Step 1: Authentication
@@ -510,13 +1155,16 @@ export const createOrder = async (orderData) => {
     console.log("Step 2: Validating order data...");
     validateOrderData(orderData);
 
+    const isBulkOrder = orderData.isBulkOrder === true;
+
     // Step 3: Create receiver detail
     console.log("Step 3: Creating receiver detail...");
-    const receiver = await createReceiverDetail(orderData.deliveryDetails, orderData.deliveryMethod);
+    const receiver = await createReceiverDetail(orderData);
 
     // Step 4: Create order record
     console.log("Step 4: Creating order record...");
     const scheduledFor =
+      !isBulkOrder &&
       orderData.selectedTiming?.type === "scheduled" &&
       orderData.selectedTiming?.dateTime
         ? new Date(orderData.selectedTiming.dateTime)
@@ -529,68 +1177,109 @@ export const createOrder = async (orderData) => {
       scheduledFor
     );
 
-    // Step 5: Create Shopify gift card
-    console.log("Step 5: Creating Shopify gift card...");
-    const { giftCard: shopifyGiftCard, voucherConfig } =
-      await createShopifyGiftCard(orderData.selectedBrand, orderData);
-
-    // Step 6: Save gift card to database
-    console.log("Step 6: Saving gift card to database...");
-    const giftCardInDb = await saveGiftCardToDb(
-      shopifyGiftCard,
-      orderData.selectedBrand,
-      order
-    );
-
-    // Step 7: Create voucher code
-    console.log("Step 7: Creating voucher code...");
-    voucherCode = await createVoucherCode(
-      order,
-      voucherConfig,
-      giftCardInDb,
-      orderData.selectedBrand,
-      shopifyGiftCard
-    );
-
-    // Step 8: Update settlement
-    console.log("Step 8: Updating settlement records...");
-    await updateOrCreateSettlement(orderData.selectedBrand, order);
-
-    // Step 9: Send delivery message (skip for print)
-    console.log("Step 9: Processing delivery...");
-    const deliveryResult = await sendDeliveryMessage(
-      orderData,
-      shopifyGiftCard,
-      orderData.deliveryMethod
-    );
-
-    if (!deliveryResult.success && orderData.deliveryMethod !== "print") {
-      throw new ExternalServiceError(
-        `Message delivery failed: ${deliveryResult.message}`,
-        deliveryResult
-      );
+    // Get voucher configuration
+    if (
+      !orderData.selectedBrand.vouchers ||
+      orderData.selectedBrand.vouchers.length === 0
+    ) {
+      throw new ValidationError("Brand does not have voucher configuration");
     }
+    const voucherConfig = orderData.selectedBrand.vouchers[0];
 
-    // Step 10: Create delivery log
-    console.log("Step 10: Creating delivery log...");
-    await createDeliveryLog(order, voucherCode, orderData);
-
-    console.log("✅ Order created successfully:", order.orderNumber);
-
-    return {
-      success: true,
-      data: {
+    if (isBulkOrder) {
+      // ========== BULK ORDER PROCESSING ==========
+      console.log("Step 5: Processing bulk order...");
+      const { voucherCodes, giftCards } = await processBulkOrder(
+        orderData.selectedBrand,
+        orderData,
         order,
-        voucherCode,
-        giftCard: giftCardInDb,
-      },
-    };
+        voucherConfig
+      );
+
+      voucherCodeIds = voucherCodes.map((vc) => vc.id);
+
+      // Step 6: Update settlement
+      console.log("Step 6: Updating settlement records...", voucherCodes);
+      await updateOrCreateSettlement(orderData.selectedBrand, order);
+
+      // Step 7: Send bulk delivery
+      console.log("Step 7: Processing bulk delivery...");
+      const deliveryResult = await sendBulkDelivery(
+        orderData,
+        voucherCodes,
+        giftCards
+      );
+
+      // Step 8: Create delivery logs for all vouchers
+      console.log("Step 8: Creating delivery logs...");
+      for (const voucherCode of voucherCodes) {
+        await createDeliveryLog(order, voucherCode.id, orderData);
+      }
+
+      console.log("✅ Bulk order created successfully:", order.orderNumber);
+
+      return {
+        success: true,
+        data: {
+          order,
+          voucherCodes,
+          giftCards,
+          deliveryResult,
+        },
+      };
+    } else {
+      // ========== SINGLE ORDER PROCESSING ==========
+      console.log("Step 5: Processing single order...");
+      const { voucherCode, giftCard, shopifyGiftCard } =
+        await processSingleOrder(
+          orderData.selectedBrand,
+          orderData,
+          order,
+          voucherConfig
+        );
+
+      voucherCodeIds = [voucherCode.id];
+
+      // Step 6: Update settlement
+      console.log("Step 6: Updating settlement records...");
+      await updateOrCreateSettlement(orderData.selectedBrand, order);
+
+      // Step 7: Send delivery message
+      console.log("Step 7: Processing delivery...");
+      const deliveryResult = await sendDeliveryMessage(
+        orderData,
+        shopifyGiftCard,
+        orderData.deliveryMethod
+      );
+
+      if (!deliveryResult.success && orderData.deliveryMethod !== "print") {
+        throw new ExternalServiceError(
+          `Message delivery failed: ${deliveryResult.message}`,
+          deliveryResult
+        );
+      }
+
+      // Step 8: Create delivery log
+      console.log("Step 8: Creating delivery log...");
+      await createDeliveryLog(order, voucherCode.id, orderData);
+
+      console.log("✅ Order created successfully:", order.orderNumber);
+
+      return {
+        success: true,
+        data: {
+          order,
+          voucherCode,
+          giftCard,
+        },
+      };
+    }
   } catch (error) {
     console.error("❌ Order creation failed:", error);
 
     // Cleanup on error
-    if (order?.id || voucherCode?.id) {
-      await cleanupOnError(order?.id, voucherCode?.id);
+    if (order?.id || voucherCodeIds.length > 0) {
+      await cleanupOnError(order?.id, voucherCodeIds);
     }
 
     // Return structured error

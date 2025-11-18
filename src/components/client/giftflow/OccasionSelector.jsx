@@ -7,11 +7,11 @@ import { useDispatch, useSelector } from 'react-redux';
 
 export default function OccasionSelector() {
   const dispatch = useDispatch();
-  const { 
-    occasions, 
-    loading, 
-    error, 
-    occasionsPagination, 
+  const {
+    occasions,
+    loading,
+    error,
+    occasionsPagination,
     currentOccasionPage,
     selectedOccasion
   } = useSelector((state) => state.giftFlowReducer);
@@ -55,7 +55,7 @@ export default function OccasionSelector() {
 
   if (loading && currentOccasionPage === 1) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen  py-30 flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="w-12 h-12 border-3 border-dashed rounded-full animate-spin border-pink-500 mx-auto"></div>
           <h2 className="text-xl font-medium text-gray-900 mt-4">Loading Occasions...</h2>
@@ -67,7 +67,7 @@ export default function OccasionSelector() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen  py-30  flex items-center justify-center bg-gray-50">
         <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-gray-200">
           <h2 className="text-xl font-semibold text-red-600">Oops! Something went wrong.</h2>
           <p className="text-gray-600 mt-2 text-sm">{error}</p>
@@ -83,13 +83,22 @@ export default function OccasionSelector() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50  py-30">
       <div className="max-w-7xl mx-auto px-6">
         {/* Back Button */}
-        <button onClick={() => dispatch(goBack())}  className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
-          <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
-           <span className="text-base font-semibold text-gray-800">Previous</span>
-        </button>
+        <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+          <button
+            onClick={() => dispatch(goBack())}
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
+               transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+            <span className="text-base font-semibold text-gray-800">
+              Previous
+            </span>
+          </button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
@@ -105,16 +114,15 @@ export default function OccasionSelector() {
           {occasions.map((occasion, index) => (
             <div
               key={`${occasion.id}-${index}`}
-              className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${
-                selectedOccasion === occasion.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
-              }`}
+              className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${selectedOccasion === occasion.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
+                }`}
               onClick={() => handleOccasionSelect(occasion.id)}
             >
               {/* Image Container with rounded corners */}
               <div className="w-full px-4 pt-4">
                 <div className="w-full h-56 overflow-hidden rounded-2xl bg-gray-200">
-                  <img 
-                    src={occasion.image} 
+                  <img
+                    src={occasion.image}
                     alt={occasion.name}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
@@ -123,19 +131,19 @@ export default function OccasionSelector() {
                   />
                 </div>
               </div>
-              
+
               {/* Card Content */}
               <div className="px-6 pt-5 pb-6 text-center">
                 {/* Title */}
                 <h3 className="font-bold text-xl text-gray-900 mb-2">
                   {occasion.name}
                 </h3>
-                
+
                 {/* Description */}
-                <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+                <p className="text-gray-600 text-sm mb-6 leading-relaxed line-clamp-2">
                   {occasion.description}
                 </p>
-                
+
                 {/* CTA Button */}
                 <button
                   className="w-full py-3.5 px-4 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-xl hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 transform hover:scale-105"

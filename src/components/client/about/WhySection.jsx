@@ -1,8 +1,9 @@
+import Link from "next/link";
 import React from "react";
 
 const WhyWoveExists = () => {
   return (
-    <section className="max-w-7xl mx-auto px-6 py-12">
+    <section className="max-w-6xl mx-auto py-12">
       <div className="flex flex-col md:flex-row items-center gap-10 md:gap-20">
         {/* Left content */}
         <div className="flex-1 max-w-xl">
@@ -14,12 +15,19 @@ const WhyWoveExists = () => {
           </p>
 
           <div className="flex flex-wrap gap-4">
-            <button className="bg-gradient-to-r from-pink-500 to-orange-400 text-white font-medium rounded-full px-6 py-3 hover:brightness-110 transition ">
+            <Link
+              className="bg-gradient-to-r from-pink-500 to-orange-400 text-white font-medium rounded-full px-6 py-3 hover:brightness-110 transition "
+              href="/gift"
+            >
               Start Gifting <span className='pl-2'>▸</span>
-            </button>
-            <button className="border border-pink-500 text-pink-500 font-medium rounded-full px-6 py-3 hover:bg-pink-50 transition">
-              Explore Bulk Gifting <span className='pl-2'>▸</span>
-            </button>
+            </Link>
+
+            <Link
+             className="border border-pink-500 text-pink-500 font-medium rounded-full px-6 py-3 hover:bg-pink-50 transition"
+              href="/gift?mode=bulk"
+            >
+                Explore Bulk Gifting <span className='pl-2'>▸</span>
+            </Link>
           </div>
         </div>
 

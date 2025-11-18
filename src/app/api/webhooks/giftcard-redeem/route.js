@@ -13,7 +13,6 @@ export async function POST(req) {
       );
     }
 
-    console.log("📦 Order webhook received from store:", shopDomain);
 
     const session = await prisma.shopifySession.findUnique({
       where: { shop: shopDomain },
@@ -163,7 +162,6 @@ export async function POST(req) {
         }
 
         redemptions.push(redemption);
-        console.log(`✅ Processed redemption for voucher: ${voucherCode.code}`);
       } catch (dbError) {
         console.error(`❌ Error processing gift card ${numericGiftCardId}:`, dbError);
       }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getVouchers } from "@/lib/action/voucherAction";
-import { Eye, Edit, Trash, Download, RefreshCw } from "lucide-react";
+import { Eye, Download, RefreshCw, Package, X, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import DynamicTable from "@/components/forms/DynamicTable";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -18,7 +18,14 @@ export default function VouchersManagement() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({});
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    from: 1,
+    to: 10,
+    total: 0
+  });
   const [filters, setFilters] = useState({
     search: "",
     status: "",
@@ -27,18 +34,32 @@ export default function VouchersManagement() {
   });
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBulkOrder, setSelectedBulkOrder] = useState(null);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('orders');
 
+  // 🟢 Pagination for Bulk Modal
+  const [bulkPagination, setBulkPagination] = useState({
+    currentPage: 1,
+    pageSize: 7,
+  });
+
+  const [bulkFilters, setBulkFilters] = useState({
+    search: "",
+    status: "",
+  });
 
   const fetchVouchers = async () => {
     setLoading(true);
     try {
       const response = await getVouchers({
         ...filters,
-        page: pagination.currentPage || 1,
+        page: pagination.currentPage,
         userId: session?.user?.id,
         userRole: session?.user?.role,
+        pageSize: 10,
       });
+
       if (response.success) {
         setVouchers(response.data);
         setPagination(response.pagination);
@@ -46,10 +67,13 @@ export default function VouchersManagement() {
       } else {
         setError(response.message);
         toast.error(response.message);
+        setVouchers([]);
       }
     } catch (err) {
+      console.error("Fetch error:", err);
       setError("An unexpected error occurred.");
       toast.error("Failed to fetch vouchers");
+      setVouchers([]);
     } finally {
       setLoading(false);
     }
@@ -63,19 +87,33 @@ export default function VouchersManagement() {
 
   const handleSearch = (search) => {
     setFilters((prev) => ({ ...prev, search }));
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
   };
 
   const handleFilter = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
   };
 
   const handlePageChange = (page) => {
     setPagination((prev) => ({ ...prev, currentPage: page }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleViewVoucher = (voucher) => {
+  const handleViewVoucher = (voucher, fromBulkOrder = false) => {
     setSelectedVoucher(voucher);
     setIsModalOpen(true);
+    if (!fromBulkOrder) {
+      setIsBulkModalOpen(false);
+      setSelectedBulkOrder(null);
+    }
+  };
+
+  const handleViewBulkOrder = (bulkOrder) => {
+    setSelectedBulkOrder(bulkOrder);
+    setBulkPagination({ currentPage: 1, pageSize: 7 });
+    setBulkFilters({ search: "", status: "" });
+    setIsBulkModalOpen(true);
   };
 
   const closeModal = () => {
@@ -83,9 +121,13 @@ export default function VouchersManagement() {
     setSelectedVoucher(null);
   };
 
+  const closeBulkModal = () => {
+    setIsBulkModalOpen(false);
+    setSelectedBulkOrder(null);
+  };
+
   const handleExport = () => {
     toast.info("Exporting vouchers...");
-    // Add your export logic here
   };
 
   const handleSync = async () => {
@@ -114,7 +156,7 @@ export default function VouchersManagement() {
 
   const columnHelper = createColumnHelper();
 
-  const StatusBadge = ({ status }) => {
+  const StatusBadge = ({ status, statusBreakdown }) => {
     const statusConfig = {
       Redeemed: { color: "text-green-600 bg-green-50 border-green-200" },
       Active: { color: "text-blue-600 bg-blue-50 border-blue-200" },
@@ -125,16 +167,25 @@ export default function VouchersManagement() {
     const config = statusConfig[status] || statusConfig.Active;
 
     return (
-      <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}>
-        {status}
-      </span>
+      <div className="flex flex-col gap-1">
+        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}>
+          {status}
+        </span>
+        {statusBreakdown && (
+          <div className="text-xs text-gray-500">
+            {statusBreakdown.active > 0 && <div>Active: {statusBreakdown.active}</div>}
+            {statusBreakdown.redeemed > 0 && <div>Redeemed: {statusBreakdown.redeemed}</div>}
+            {statusBreakdown.expired > 0 && <div>Expired: {statusBreakdown.expired}</div>}
+          </div>
+        )}
+      </div>
     );
   };
 
   const ActionButtons = ({ row }) => (
     <div className="flex items-center gap-2">
       <button
-        onClick={() => handleViewVoucher(row.original)}
+        onClick={() => row.isBulkOrder ? handleViewBulkOrder(row) : handleViewVoucher(row)}
         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
         title="View Details"
       >
@@ -143,23 +194,53 @@ export default function VouchersManagement() {
     </div>
   );
 
-  // Conditionally show/hide columns based on role
   const isAdmin = session?.user?.role === 'ADMIN';
 
   const customColumns = [
     columnHelper.accessor("orderNumber", {
       header: "Order Number",
-      cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,
+      cell: (info) => {
+        const row = info.row.original;
+        return (
+          <div className="flex items-center gap-2">
+            {row.isBulkOrder && <Package className="w-4 h-4 text-blue-600" />}
+            <span className="font-semibold text-gray-900">{info.getValue()}</span>
+          </div>
+        );
+      },
     }),
     columnHelper.accessor("bulkOrderNumber", {
       header: "Bulk Order Number",
-      cell: (info) => <div className="font-semibold text-gray-900">{info.getValue() || 'N/A'}</div>,
+      cell: (info) => {
+        const row = info.row.original;
+        return (
+          <div className="font-semibold text-gray-900">
+            {info.getValue() || '-'}
+            {row.isBulkOrder && (
+              <div className="mt-1">
+                <span className="text-xs text-green-600">{row.voucherCount} vouchers</span>
+              </div>
+            )}
+          </div>
+        );
+      },
     }),
     columnHelper.accessor("code", {
       header: "Voucher Code",
-      cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,
+      cell: (info) => {
+        const row = info.row.original;
+        return (
+          <div>
+            <div className="font-semibold text-gray-900">{info.getValue()}</div>
+            {row.isBulkOrder && (
+              <div className="text-xs text-gray-500 mt-1">
+                Click eye icon to view all vouchers
+              </div>
+            )}
+          </div>
+        );
+      },
     }),
-    // Only show customer column for admin users
     ...(isAdmin ? [
       columnHelper.accessor("user", {
         header: "Customer",
@@ -184,28 +265,47 @@ export default function VouchersManagement() {
     }),
     columnHelper.accessor("status", {
       header: "Status",
-      cell: (info) => <StatusBadge status={info.getValue()} />,
+      cell: (info) => {
+        const row = info.row.original;
+        return <StatusBadge status={info.getValue()} statusBreakdown={row.statusBreakdown} />;
+      },
     }),
     columnHelper.accessor("lastRedemptionDate", {
       header: "Last Redemption Date",
       cell: (info) => (
         <div className="text-gray-700">
-          {info.getValue() ? new Date(info.getValue()).toLocaleDateString() : "N/A"}
+          {info.getValue() ? new Date(info.getValue()).toLocaleDateString() : "-"}
         </div>
       ),
     }),
     columnHelper.display({
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => <ActionButtons row={row} />,
+      cell: ({ row }) => <ActionButtons row={row.original} />,
     }),
   ];
 
+  // 🟣 Filtered + Paginated children for Bulk Modal
+  const filteredBulkChildren = selectedBulkOrder?.children?.filter((child) => {
+    const matchesSearch = bulkFilters.search
+      ? child.code.toLowerCase().includes(bulkFilters.search.toLowerCase())
+      : true;
+    const matchesStatus = bulkFilters.status
+      ? child.status === bulkFilters.status
+      : true;
+    return matchesSearch && matchesStatus;
+  }) || [];
+
+  const totalBulkPages = Math.ceil(filteredBulkChildren.length / bulkPagination.pageSize);
+  const paginatedBulkChildren = filteredBulkChildren.slice(
+    (bulkPagination.currentPage - 1) * bulkPagination.pageSize,
+    bulkPagination.currentPage * bulkPagination.pageSize
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-      <div className="max-w-7xl mx-auto">
-
-        {/* Tab Navigation */}
+      <div className="max-w-[90%] mx-auto">
+        {/* Tabs */}
         <div className="flex gap-4 mb-8">
           <button
             onClick={() => setActiveTab('orders')}
@@ -216,7 +316,6 @@ export default function VouchersManagement() {
           >
             Order Management
           </button>
-
           {session?.user?.role !== "CUSTOMER" && (
             <>
               <button
@@ -243,7 +342,7 @@ export default function VouchersManagement() {
       </div>
 
       {activeTab === 'orders' && (
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[90%] mx-auto">
           <DynamicTable
             data={vouchers}
             columns={customColumns}
@@ -283,20 +382,199 @@ export default function VouchersManagement() {
             emptyMessage={error || "No vouchers found. Try adjusting your filters."}
           />
 
-          <Modal isOpen={isModalOpen} onClose={closeModal} title="Voucher Details">
-            {selectedVoucher && <VoucherDetails voucher={selectedVoucher} />}
-          </Modal>
+          {/* Voucher Modal */}
+          {isModalOpen && selectedVoucher && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+              <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-gray-900">Voucher Details</h2>
+                  <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg">
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+                <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+                  <VoucherDetails voucher={selectedVoucher} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Order Modal */}
+          {isBulkModalOpen && selectedBulkOrder && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                      <Package className="w-6 h-6 text-blue-600" />
+                      Bulk Order Details
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {selectedBulkOrder.bulkOrderNumber} • {selectedBulkOrder.voucherCount} Vouchers
+                    </p>
+                  </div>
+                  <button onClick={closeBulkModal} className="p-2 hover:bg-gray-100 rounded-lg">
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+
+                {/* Summary Cards */}
+                <div className="flex-1  p-6">
+                  {/* Search & Filter Controls */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div className="text-xs text-blue-600 font-semibold mb-1">Total Amount</div>
+                        <div className="text-2xl font-bold text-blue-900">${selectedBulkOrder.totalAmount?.toFixed(2)}</div>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                        <div className="text-xs text-green-600 font-semibold mb-1">Remaining</div>
+                        <div className="text-2xl font-bold text-green-900">${selectedBulkOrder.remainingAmount?.toFixed(2)}</div>
+                      </div>
+                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                        <div className="text-xs text-purple-600 font-semibold mb-1">Order Count</div>
+                        <div className="text-2xl font-bold text-purple-900">{selectedBulkOrder.orderCount || 0}</div>
+                      </div>
+                      <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                        <div className="text-xs text-orange-600 font-semibold mb-1">Voucher Count</div>
+                        <div className="text-2xl font-bold text-orange-900">{selectedBulkOrder.voucherCount}</div>
+                      </div>
+                    </div>
+
+                    {/* Status Breakdown */}
+                    <div className=" p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-3">Status Breakdown</h3>
+                      <div className="flex gap-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                          <span className="text-sm text-gray-600">Active: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.active || 0}</span></span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-sm text-gray-600">Redeemed: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.redeemed || 0}</span></span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <span className="text-sm text-gray-600">Expired: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.expired || 0}</span></span>
+                        </div>
+                      </div>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 ">
+                  {/* Search & Filter Controls */}
+                  <div className="flex flex-wrap gap-3 mb-5 items-center">
+                    <div className="relative w-full md:w-1/3 text-black">
+                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search by voucher code..."
+                        className="pl-9 pr-3 py-2 border rounded-lg w-full text-sm"
+                        value={bulkFilters.search}
+                        onChange={(e) => {
+                          setBulkFilters((p) => ({ ...p, search: e.target.value }));
+                          setBulkPagination((p) => ({ ...p, currentPage: 1 }));
+                        }}
+                      />
+                    </div>
+
+                    <select
+                      className="border px-3 py-2 rounded-lg text-sm text-black"
+                      value={bulkFilters.status}
+                      onChange={(e) => {
+                        setBulkFilters((p) => ({ ...p, status: e.target.value }));
+                        setBulkPagination((p) => ({ ...p, currentPage: 1 }));
+                      }}
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="Active">Active</option>
+                      <option value="Redeemed">Redeemed</option>
+                      <option value="Expired">Expired</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  </div>
+
+                  {/* Voucher List */}
+                  <div className="space-y-3">
+                    {paginatedBulkChildren.length > 0 ? (
+                      paginatedBulkChildren.map((child, idx) => (
+                        <div key={child.id || idx} className="bg-white p-4 rounded-lg border hover:shadow-md transition-all">
+                          <div className="flex items-center justify-between">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm flex-1">
+                              <div>
+                                <span className="block text-xs text-gray-500 mb-1">Order Number</span>
+                                <span className="font-medium text-gray-900">{child.orderNumber}</span>
+                              </div>
+                              <div>
+                                <span className="block text-xs text-gray-500 mb-1">Voucher Code</span>
+                                <span className="font-medium text-gray-900">{child.code}</span>
+                              </div>
+                              <div>
+                                <span className="block text-xs text-gray-500 mb-1">Total Amount</span>
+                                <span className="font-medium text-gray-900">${child.totalAmount?.toFixed(2)}</span>
+                              </div>
+                              <div>
+                                <span className="block text-xs text-gray-500 mb-1">Remaining</span>
+                                <span className="font-medium text-gray-900">${child.remainingAmount?.toFixed(2)}</span>
+                              </div>
+                              <div>
+                                <span className="block text-xs text-gray-500 mb-1">Status</span>
+                                <StatusBadge status={child.status} />
+                              </div>
+                              <div>
+                                <span className="block text-xs text-gray-500 mb-1">Last Redemption</span>
+                                <span className="font-medium text-gray-900">
+                                  {child.lastRedemptionDate
+                                    ? new Date(child.lastRedemptionDate).toLocaleDateString()
+                                    : "-"}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleViewVoucher(child, true)}
+                              className="ml-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-gray-500 py-10">No vouchers found.</div>
+                    )}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalBulkPages > 1 && (
+                    <div className="flex justify-center gap-2 mt-6 text-black">
+                      <button
+                        className="px-3 py-1 border rounded-lg text-sm"
+                        disabled={bulkPagination.currentPage === 1}
+                        onClick={() => setBulkPagination((p) => ({ ...p, currentPage: p.currentPage - 1 }))}
+                      >
+                        Prev
+                      </button>
+                      <span className="text-sm text-gray-700 py-1">
+                        Page {bulkPagination.currentPage} of {totalBulkPages}
+                      </span>
+                      <button
+                        className="px-3 py-1 border rounded-lg text-sm"
+                        disabled={bulkPagination.currentPage === totalBulkPages}
+                        onClick={() => setBulkPagination((p) => ({ ...p, currentPage: p.currentPage + 1 }))}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {activeTab === 'analytics' && (
-        <AnalyticsTracking />
-      )}
-
-      {activeTab === 'settlements' && (
-        <BrandAnalyticsTable />
-      )}
-
+      {activeTab === "analytics" && <AnalyticsTracking />}
+      {activeTab === "settlements" && <BrandAnalyticsTable />}
     </div>
   );
 }

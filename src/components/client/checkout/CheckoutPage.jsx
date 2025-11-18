@@ -327,7 +327,6 @@ const CheckoutPage = () => {
     setError(null);
 
     try {
-      console.log('Creating bulk order with', cartItems.length, 'items');
       
       const result = await createBulkOrder(cartItems, paymentData);
       
