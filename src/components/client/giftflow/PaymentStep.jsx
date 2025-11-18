@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { ArrowLeft, Shield, Check, CreditCard, Gift, Printer, Download, Package } from "lucide-react";
+import { ArrowLeft, Shield, Check, CreditCard, Gift, Printer, Download, Package, Globe, CreditCardIcon, Star, DollarSign } from "lucide-react";
 import { goBack, setSelectedPaymentMethod } from "../../../redux/giftFlowSlice";
 import { createOrder } from "../../../lib/action/orderAction";
 import toast, { Toaster } from 'react-hot-toast';
@@ -18,7 +18,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 const PrintableGiftCard = React.forwardRef(({ order, voucherCode, GiftCode, selectedBrand, selectedAmount, personalMessage, deliveryDetails }, ref) => {
   return (
     <div ref={ref} className="bg-white p-8 max-w-4xl mx-auto">
-      <div className="border-4 border-red-500 rounded-3xl p-8 bg-gradient-to-br from-red-50 to-pink-50 relative overflow-hidden">
+      <div className="border-4 border-red-500 rounded-3xl p-8 bg-linear-to-br from-red-50 to-pink-50 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-red-200 rounded-full opacity-20 -mr-32 -mt-32"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-200 rounded-full opacity-20 -ml-24 -mb-24"></div>
 
@@ -208,7 +208,7 @@ const StripeCardPayment = ({ total, isProcessing, onPayment }) => {
       <button
         onClick={handleCardPayment}
         disabled={!stripe || isProcessing}
-        className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white py-4 px-6 rounded-xl font-semibold text-base transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed shadow-lg"
+        className="w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white py-4 px-6 rounded-xl font-semibold text-base transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed shadow-lg"
       >
         {isProcessing ? (
           <>
@@ -367,7 +367,7 @@ const PaymentStep = () => {
 
   if (order) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-cyan-50 px-4 py-30 md:px-6 md:py-30">
+      <div className="min-h-screen bg-linear-to-br from-green-50 via-teal-50 to-cyan-50 px-4 py-30 md:px-6 md:py-30">
         <Toaster />
         <div className="max-w-2xl mx-auto mb-6 print:hidden">
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -376,7 +376,7 @@ const PaymentStep = () => {
             </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-4">Payment Successful!</h1>
             <p className="text-gray-600 mb-6">
-              {isBulkMode 
+              {isBulkMode
                 ? `Your bulk order of ${quantity} gift cards has been placed successfully.`
                 : 'Your order has been placed successfully.'}
             </p>
@@ -459,15 +459,60 @@ const PaymentStep = () => {
     return deliveryMethod === 'email' ? 'Email' : deliveryMethod === 'whatsapp' ? 'WhatsApp' : 'Print';
   };
 
+  const [selectedMethod, setSelectedMethod] = useState(null);
+
+  const paymentMethods = [
+    {
+      id: 'payfast',
+      icon: <Globe className="w-6 h-6 text-blue-600" />,
+      bgColor: 'bg-blue-50',
+      title: 'PayFast',
+      subtitle: 'Trusted South African...'
+    },
+    {
+      id: 'card',
+      icon: <CreditCardIcon className="w-6 h-6 text-purple-600" />,
+      bgColor: 'bg-purple-50',
+      title: 'Card',
+      subtitle: 'Visa, Mastercard'
+    },
+    {
+      id: 'discovery',
+      icon: <Star className="w-6 h-6 text-green-600" />,
+      bgColor: 'bg-green-50',
+      title: 'Discovery Miles',
+      subtitle: 'Pay with your Discove...'
+    },
+    {
+      id: 'ebucks',
+      icon: <DollarSign className="w-6 h-6 text-orange-600" />,
+      bgColor: 'bg-orange-50',
+      title: 'eBucks (FNB)',
+      subtitle: 'Pay with your FNB eB...'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
       <Toaster />
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <button onClick={() => dispatch(goBack())} className="flex items-center text-gray-600 hover:text-gray-800 mb-6 transition-colors">
+          {/* <button onClick={() => dispatch(goBack())} className="flex items-center text-gray-600 hover:text-gray-800 mb-6 transition-colors">
             <ArrowLeft className="w-5 h-5 mr-2" />
             <span className="text-sm font-medium">Previous</span>
-          </button>
+          </button> */}
+          <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+            <button
+              onClick={() => dispatch(goBack())}
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
+                         transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+              <span className="text-base font-semibold text-gray-800">
+                Previous
+              </span>
+            </button>
+          </div>
 
           {isBulkMode && (
             <div className="text-center mb-4">
@@ -477,11 +522,11 @@ const PaymentStep = () => {
             </div>
           )}
 
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 text-center fontPoppins">
             {isBulkMode ? 'Complete your payment securely' : "You're almost there!"}
           </h1>
           <p className="text-gray-600 text-center">
-            {isBulkMode 
+            {isBulkMode
               ? 'Your vouchers will be generated instantly after payment'
               : "Let's deliver your beautiful gift and make someone's day absolutely wonderful"}
           </p>
@@ -489,71 +534,70 @@ const PaymentStep = () => {
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Left Column - Payment Method */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-red-600" />
+          <div className="bg-gray-50 flex  justify-center">
+            <div className="w-full max-w-lg">
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                {/* Header */}
+                <div className="flex items-start gap-3 mb-6">
+                  <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center shrink-0">
+                    <div className="w-8 h-6 bg-red-500 rounded flex items-center justify-center">
+                      <div className="w-3 h-3 bg-white rounded-full"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 mb-1">
+                      Choose Your Payment Method
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      Select how you'd like to complete this transaction
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Choose Your Payment Method</h2>
-                  <p className="text-sm text-gray-600">Select how you'd like to complete this transaction</p>
+
+                {/* Security Badge */}
+                <div className="flex items-center justify-center gap-2 p-3 bg-green-50 rounded-lg mb-6">
+                  <Shield className="w-5 h-5 text-green-600" />
+                  <span className="text-sm font-medium text-green-700">
+                    Your payment is 100% secure and encrypted
+                  </span>
                 </div>
+
+                {/* Payment Method Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {paymentMethods.map((method) => (
+                    <button
+                      key={method.id}
+                      onClick={() => setSelectedMethod(method.id)}
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-all text-left ${selectedMethod === method.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                    >
+                      <div className={`w-10 h-10 ${method.bgColor} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        {method.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm mb-0.5">
+                          {method.title}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {method.subtitle}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Selected Method Info */}
+                {selectedMethod && (
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      <span className="font-semibold">Selected:</span>{' '}
+                      {paymentMethods.find(m => m.id === selectedMethod)?.title}
+                    </p>
+                  </div>
+                )}
               </div>
-
-              <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg mb-5">
-                <Shield className="w-4 h-4 text-green-600 flex-shrink-0" />
-                <span className="text-sm text-green-700 font-medium">Your payment is 100% secure and encrypted</span>
-              </div>
-
-              <div className="flex gap-3 mb-6">
-                <button
-                  onClick={() => setSelectedPaymentTab('payfast')}
-                  className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                    selectedPaymentTab === 'payfast' ? 'border-gray-300 bg-gray-50' : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-blue-600 rounded-full"></div>
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold text-gray-900 text-sm">PayFast</p>
-                    <p className="text-xs text-gray-600">Trusted South African...</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setSelectedPaymentTab('card')}
-                  className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                    selectedPaymentTab === 'card' ? 'border-pink-500 bg-pink-50' : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-pink-600" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold text-gray-900 text-sm">Card</p>
-                    <p className="text-xs text-gray-600">Visa, Mastercard</p>
-                  </div>
-                </button>
-              </div>
-
-              {selectedPaymentTab === 'card' && (
-                <Elements
-                  stripe={stripePromise}
-                  options={{
-                    mode: "payment",
-                    amount: convertToSubcurrency(calculateTotal()),
-                    currency: "usd",
-                  }}
-                >
-                  <StripeCardPayment
-                    total={convertToSubcurrency(calculateTotal())}
-                    isProcessing={isProcessing}
-                    onPayment={handlePayment}
-                  />
-                </Elements>
-              )}
             </div>
           </div>
 
@@ -573,11 +617,11 @@ const PaymentStep = () => {
 
               {/* Brand Display */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl mb-4">
-                <div className="w-16 h-16 flex-shrink-0">
+                <div className="w-16 h-16 shrink-0">
                   {selectedBrand?.logo ? (
                     <img src={selectedBrand.logo} alt={selectedBrand.brandName} className="w-full h-full object-contain rounded-lg" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
+                    <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
                       <span className="text-white font-bold text-xl">{(selectedBrand?.brandName || 'B').substring(0, 1).toUpperCase()}</span>
                     </div>
                   )}
@@ -602,9 +646,9 @@ const PaymentStep = () => {
                 <div>
                   <p className="text-sm font-semibold text-green-800">Delivering via {getDeliveryText()}</p>
                   <p className="text-xs text-green-700">
-                    {isBulkMode 
+                    {isBulkMode
                       ? `to ${companyInfo?.contactEmail || 'your email'}`
-                      : deliveryMethod === 'email' 
+                      : deliveryMethod === 'email'
                         ? `to ${deliveryDetails?.recipientEmailAddress || 'Friend'}`
                         : deliveryMethod === 'whatsapp'
                           ? 'to Friend'
@@ -621,10 +665,10 @@ const PaymentStep = () => {
                       <div className="absolute left-3 top-1/2 -translate-y-1/2">
                         <span className="text-red-500">🎟️</span>
                       </div>
-                      <input 
-                        type="text" 
-                        placeholder="Promocode" 
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 text-gray-900" 
+                      <input
+                        type="text"
+                        placeholder="Promocode"
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 text-gray-900"
                       />
                     </div>
                     <button className="px-6 py-2.5 bg-white border border-pink-500 text-pink-500 font-semibold rounded-lg hover:bg-pink-50 transition-colors">
@@ -696,7 +740,7 @@ const PaymentStep = () => {
         {error && (
           <div className="mt-6 max-w-6xl mx-auto">
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                 <span className="text-white text-xs font-bold">!</span>
               </div>
               <div>

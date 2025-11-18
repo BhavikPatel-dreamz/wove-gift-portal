@@ -225,10 +225,22 @@ export default function SubCategorySelector() {
     <div className="min-h-screen bg-[#FFF]  py-30">
       <div className="max-w-7xl mx-auto px-6">
         {/* Back Button */}
-        <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
+        {/* <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
           <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
           <span className="text-base font-semibold text-gray-800">Previous</span>
-        </button>
+        </button> */}
+        <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+          <button
+            onClick={() => dispatch(goBack())}
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
+                       transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+            <span className="text-base font-semibold text-gray-800">
+              Previous
+            </span>
+          </button>
+        </div>
 
         {/* Header */}
         <div className="text-center mb-10">
@@ -244,26 +256,42 @@ export default function SubCategorySelector() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
           {/* Upload Custom Design Card */}
           <div
-            className="bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer border-2 border-dashed border-pink-300 group flex flex-col"
+            className="
+      rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer group flex flex-col
+     bg-linear-to-b from-[#FFF5F5] to-white p-2
+      
+    "
             onClick={() => setIsCustomizing(true)}
           >
             {/* Content Area */}
-            <div className="flex-1 flex flex-col items-center justify-center p-8 min-h-[280px]">
-              <div className="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center mb-4">
-                <Upload className="w-8 h-8 text-pink-500" />
+            <div className=' border-2 border-dashed border-[#FFB4B4] h-full rounded-2xl'>
+              <div className="flex-1 flex flex-col items-center justify-center p-8 min-h-full">
+                {/* Icon with border */}
+                <div className="w-14 h-14 rounded-2xl border-2 border-[#FF69B4] flex items-center justify-center mb-6 bg-white">
+                  <Upload className="w-6 h-6 text-[#FF69B4]" strokeWidth={2.5} />
+                </div>
+
+                {/* Title */}
+                <h3 className="font-bold text-base text-gray-900 mb-3 text-center">
+                  Upload your Own Design
+                </h3>
+
+                {/* Description */}
+                <p className="text-gray-600 text-sm text-center mb-8">
+                  Use your own design or photo
+                </p>
+
+                {/* Divider */}
+                <div className="w-full border-t border-gray-200 mb-6"></div>
+
+                {/* File requirements */}
+                <p className="text-gray-900 text-sm font-semibold text-center mb-1">
+                  JPG or PNG
+                </p>
+                <p className="text-gray-500 text-xs text-center">
+                  Max 5MB Vertical layout preferred
+                </p>
               </div>
-              <h3 className="font-bold text-lg text-gray-900 mb-2 text-center">
-                Upload your Own Design
-              </h3>
-              <p className="text-gray-600 text-sm text-center mb-2">
-                Use your own design or photo
-              </p>
-              <p className="text-gray-500 text-xs text-center">
-                JPG or PNG
-              </p>
-              <p className="text-gray-500 text-xs text-center">
-                Max 5MB Vertical layout preferred
-              </p>
             </div>
           </div>
 
@@ -309,6 +337,16 @@ export default function SubCategorySelector() {
                 <p className="text-gray-600 text-sm leading-relaxed">
                   {subCategory.description}
                 </p>
+                <button
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-xl hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 transform hover:scale-105 mt-2.5"
+                // onClick={(e) => {
+                //   e.stopPropagation();
+                //   handleOccasionSelect(occasion.id);
+                // }}
+                >
+                  Choose this Design
+                  <span className="text-lg font-bold">▸</span>
+                </button>
               </div>
             </div>
           ))}

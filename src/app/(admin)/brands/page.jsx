@@ -14,7 +14,7 @@ const BrandManager = () => {
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  
+
   // Filter and search states
   const [filters, setFilters] = useState({
     search: '',
@@ -24,7 +24,7 @@ const BrandManager = () => {
     sortBy: 'createdAt',
     sortOrder: 'desc'
   });
-  
+
   // Pagination states
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -34,7 +34,7 @@ const BrandManager = () => {
     hasNextPage: false,
     hasPrevPage: false
   });
-  
+
   // Statistics
   const [statistics, setStatistics] = useState({
     total: 0,
@@ -42,7 +42,7 @@ const BrandManager = () => {
     featured: 0,
     activeRate: 0
   });
-  
+
   const [categoryStats, setCategoryStats] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -63,17 +63,17 @@ const BrandManager = () => {
   // Debounce hook for search
   const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
-    
+
     useEffect(() => {
       const handler = setTimeout(() => {
         setDebouncedValue(value);
       }, delay);
-      
+
       return () => {
         clearTimeout(handler);
       };
     }, [value, delay]);
-    
+
     return debouncedValue;
   };
 
@@ -84,7 +84,7 @@ const BrandManager = () => {
     try {
       setLoading(true);
       const currentPage = resetPage ? 1 : pagination.currentPage;
-      
+
       const params = {
         page: currentPage,
         limit: pagination.itemsPerPage,
@@ -95,9 +95,9 @@ const BrandManager = () => {
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder
       };
-      
+
       const result = await getBrands(params);
-      
+
       if (result.success) {
         setBrands(result.data || []);
         setPagination(result.pagination);
@@ -179,12 +179,12 @@ const BrandManager = () => {
   // Helper function to create FormData with all required fields
   const createFormData = (brandData, isUpdate = false, existingBrand = null) => {
     const formDataToSend = new FormData();
-    
+
     // If updating, add the ID
     if (isUpdate && existingBrand) {
       formDataToSend.append('id', existingBrand.id);
     }
-    
+
     // Always append all fields to prevent data loss
     const fieldsToAppend = {
       brandName: brandData.brandName || (existingBrand?.brandName || ''),
@@ -212,7 +212,7 @@ const BrandManager = () => {
     if (brandData.logo && brandData.logo instanceof File) {
       formDataToSend.append('logo', brandData.logo);
     }
-    
+
     return formDataToSend;
   };
 
@@ -287,17 +287,17 @@ const BrandManager = () => {
 
     try {
       setActionLoading(true);
-      
+
       // Create FormData with all existing brand data plus the toggle
       const toggleData = {
         ...brand,
         isFeature: !brand.isFeature,
         logo: null // Don't send file again
       };
-      
+
       const formDataToSend = createFormData(toggleData, true, brand);
       const result = await updateBrand(formDataToSend);
-      
+
       if (result.success) {
         toast.success(`Brand ${!brand.isFeature ? 'featured' : 'unfeatured'} successfully`);
         await fetchBrands(false);
@@ -352,7 +352,7 @@ const BrandManager = () => {
 
     try {
       toast.loading('Extracting website information...');
-      
+
       const simulatedData = {
         brandName: 'Auto Brand',
         tagline: 'Automatically populated tagline',
@@ -363,7 +363,7 @@ const BrandManager = () => {
         ...prev,
         ...simulatedData
       }));
-      
+
       toast.dismiss();
       toast.success('Website information extracted successfully');
     } catch (error) {
@@ -432,7 +432,7 @@ const BrandManager = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -602,7 +602,7 @@ const BrandManager = () => {
               </span>
             )}
           </div>
-          
+
           {/* Items per page selector */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Show:</span>
@@ -641,10 +641,10 @@ const BrandManager = () => {
                   Featured
                 </div>
               )}
-              
+
               <div className="p-4">
                 <div className="flex items-start justify-between mb-4">
-                  <div 
+                  <div
                     className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm"
                     style={{ backgroundColor: brand.color || '#000000' }}
                   >
@@ -663,7 +663,7 @@ const BrandManager = () => {
 
                 <h3 className="font-bold text-lg text-gray-900 mb-1 truncate">{brand.brandName}</h3>
                 <p className="text-gray-600 text-sm italic mb-3 line-clamp-1">"{brand.tagline}"</p>
-                
+
                 <p className="text-gray-700 text-sm mb-4 line-clamp-2 min-h-[2.5rem]">{brand.description}</p>
 
                 <div className="mb-4">
@@ -673,31 +673,29 @@ const BrandManager = () => {
                 </div>
 
                 <div className="flex items-center justify-between mb-4">
-                  <span className={`text-sm font-medium ${
-                    brand.isActive ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <span className={`text-sm font-medium ${brand.isActive ? 'text-green-600' : 'text-red-600'
+                    }`}>
                     {brand.isActive ? 'Active' : 'Inactive'}
                   </span>
                   <div className="flex gap-1">
                     <button
                       onClick={() => toggleFeatured(brand.id)}
                       disabled={actionLoading}
-                      className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                        brand.isFeature 
-                          ? 'text-orange-500 hover:bg-orange-50' 
+                      className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${brand.isFeature
+                          ? 'text-orange-500 hover:bg-orange-50'
                           : 'text-gray-400 hover:bg-gray-50 hover:text-orange-500'
-                      }`}
+                        }`}
                     >
                       <Star size={16} fill={brand.isFeature ? 'currentColor' : 'none'} />
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleEditClick(brand)}
                       disabled={actionLoading}
                       className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <Edit size={16} />
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDeleteBrand(brand.id)}
                       disabled={actionLoading}
                       className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors disabled:opacity-50"
@@ -713,13 +711,11 @@ const BrandManager = () => {
                     <button
                       onClick={() => toggleFeatured(brand.id)}
                       disabled={actionLoading}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                        brand.isFeature ? 'bg-blue-600' : 'bg-gray-300'
-                      }`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${brand.isFeature ? 'bg-blue-600' : 'bg-gray-300'
+                        }`}
                     >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        brand.isFeature ? 'translate-x-6' : 'translate-x-1'
-                      }`} />
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${brand.isFeature ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
                     </button>
                   </div>
                 </div>
@@ -744,17 +740,29 @@ const BrandManager = () => {
             <div className="text-sm text-gray-600">
               Page {pagination.currentPage} of {pagination.totalPages}
             </div>
-            
+
             <div className="flex items-center gap-2">
-              <button
+              {/* <button
                 onClick={() => handlePageChange(pagination.currentPage - 1)}
                 disabled={!pagination.hasPrevPage || loading}
                 className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 <ChevronLeft size={16} />
                 Previous
-              </button>
-              
+              </button> */}
+              <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+                <button
+                  onClick={() => dispatch(goBack())}
+                  className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
+                             transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+                  <span className="text-base font-semibold text-gray-800">
+                    Previous
+                  </span>
+                </button>
+              </div>
+
               {/* Page numbers */}
               <div className="flex gap-1">
                 {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
@@ -768,24 +776,23 @@ const BrandManager = () => {
                   } else {
                     pageNum = pagination.currentPage - 2 + i;
                   }
-                  
+
                   return (
                     <button
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
                       disabled={loading}
-                      className={`px-3 py-2 rounded-lg ${
-                        pageNum === pagination.currentPage
+                      className={`px-3 py-2 rounded-lg ${pageNum === pagination.currentPage
                           ? 'bg-blue-600 text-white'
                           : 'border border-gray-300 hover:bg-gray-50'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {pageNum}
                     </button>
                   );
                 })}
               </div>
-              
+
               <button
                 onClick={() => handlePageChange(pagination.currentPage + 1)}
                 disabled={!pagination.hasNextPage || loading}
@@ -807,7 +814,7 @@ const BrandManager = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No brands found</h3>
             <p className="text-gray-600 mb-4">
               {filters.search || filters.category !== 'All Brands' || filters.isActive || filters.isFeature
-                ? 'Try adjusting your search or filter criteria' 
+                ? 'Try adjusting your search or filter criteria'
                 : 'Get started by adding your first brand'}
             </p>
             {!filters.search && filters.category === 'All Brands' && !filters.isActive && !filters.isFeature && (
@@ -827,12 +834,12 @@ const BrandManager = () => {
 
         {/* Add Brand Modal */}
         <Modal isOpen={showAddForm} onClose={() => setShowAddForm(false)}>
-          <BrandForm 
-            formData={formData} 
-            handleInputChange={handleInputChange} 
-            handleSubmit={handleSubmit} 
-            autoPopulateFromWebsite={autoPopulateFromWebsite} 
-            setShowAddForm={setShowAddForm} 
+          <BrandForm
+            formData={formData}
+            handleInputChange={handleInputChange}
+            handleSubmit={handleSubmit}
+            autoPopulateFromWebsite={autoPopulateFromWebsite}
+            setShowAddForm={setShowAddForm}
             setFormData={setFormData}
             actionLoading={actionLoading}
             isEditing={false}
@@ -845,12 +852,12 @@ const BrandManager = () => {
           setEditingBrand(null);
           resetForm();
         }}>
-          <BrandForm 
-            formData={formData} 
-            handleInputChange={handleInputChange} 
-            handleSubmit={handleSubmit} 
-            autoPopulateFromWebsite={autoPopulateFromWebsite} 
-            setShowAddForm={setShowEditForm} 
+          <BrandForm
+            formData={formData}
+            handleInputChange={handleInputChange}
+            handleSubmit={handleSubmit}
+            autoPopulateFromWebsite={autoPopulateFromWebsite}
+            setShowAddForm={setShowEditForm}
             setFormData={setFormData}
             actionLoading={actionLoading}
             isEditing={true}

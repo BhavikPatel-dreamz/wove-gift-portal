@@ -42,3 +42,8 @@ body {
   background: url('../../public/uploads/dashboard/green-border.svg') no-repeat top;
   background-size: cover;
 }
+.gradient-border {
+  border: 2px solid transparent;
+  border-image-source: linear-gradient(114.06deg, #000 11.36%, #FA8F42 90.28%);
+  border-image-slice: 1;
+}

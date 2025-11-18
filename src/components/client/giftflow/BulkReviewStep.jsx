@@ -108,13 +108,25 @@ const BulkReviewStep = () => {
         <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
             <div className="max-w-3xl mx-auto">
                 {/* Previous Button */}
-                <button
+                {/* <button
                     onClick={handleBack}
                     className="flex items-center gap-2 text-pink-500 hover:text-pink-600 mb-6 font-medium transition-colors"
                 >
                     <ArrowLeft className="w-5 h-5" />
                     <span>Previous</span>
-                </button>
+                </button> */}
+                <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+                    <button
+                        onClick={() => dispatch(goBack())}
+                        className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
+                               transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                        <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+                        <span className="text-base font-semibold text-gray-800">
+                            Previous
+                        </span>
+                    </button>
+                </div>
 
                 {/* Header */}
                 <div className="text-center mb-8">

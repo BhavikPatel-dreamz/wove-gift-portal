@@ -5,6 +5,9 @@ import { goBack, goNext, resetFlow } from "../../../redux/giftFlowSlice";
 import { addToCart, updateCartItem } from "../../../redux/cartSlice";
 import { useSession } from '@/contexts/SessionContext'
 import { useRouter } from "next/navigation";
+import SecurityIcon from "../../../icons/SecurityIcon"
+import HeartColorIcon from "../../../icons/HeartColorIcon"
+import EditIcon from "../../../icons/EditIcon"
 
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
@@ -25,7 +28,7 @@ const ReviewConfirmStep = () => {
   } = useSelector((state) => state.giftFlowReducer);
 
   const validateGift = () => {
-    
+
     if (!selectedBrand) {
       setError("Please select a brand for your gift card.");
       return false;
@@ -136,43 +139,56 @@ const ReviewConfirmStep = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-[1440px] m-auto min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
+        <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+          <button
+            onClick={() => dispatch(goBack())}
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
+                       transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+            <span className="text-base font-semibold text-gray-800">
+              Previous
+            </span>
+          </button>
+        </div>
+      <div className="max-w-3xl mx-auto">
         {/* Previous Button */}
-        <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
+        {/* <button onClick={() => dispatch(goBack())} className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group">
           <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
           <span className="text-base font-semibold text-gray-800">Previous</span>
-        </button>
+        </button> */}
+
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-3">
+          <h1 className="text-[40px] md:text-5xl font-bold text-[#1A1A1A] mb-3">
             Review Your Beautiful Gift
           </h1>
-          <p className="text-gray-600 text-base md:text-lg">
+          <p className="text-[#4A4A4A] font-medium text-base md:text-lg">
             Confirm all details before proceeding to payment
           </p>
         </div>
 
         {/* Secure Preview Banner */}
-        <div className="bg-green-50 border border-green-200 rounded-3xl p-5 mb-8 flex items-center justify-center max-w-2xl mx-auto">
-          <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-            <Shield className="w-6 h-6 text-white" />
+        <div className="bg-green-50 border border-[#D9F0DB3B] rounded-3xl p-5 mb-8 flex items-center justify-center max-w-fit mx-auto">
+          <div className="w-10 h-10 flex items-center justify-center mr-4 shrink-0">
+            <SecurityIcon />
           </div>
           <div>
-            <h3 className="font-semibold text-green-900">Secure Preview Mode</h3>
-            <p className="text-sm text-green-700">
+            <h3 className="font-semibold text-[#1A1A1A]">Secure Preview Mode</h3>
+            <p className="text-sm text-[#4A4A4A]">
               Gift code protected until payment completion
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[313px_1fr] gap-8">
           {/* Left Column - Gift Card */}
-          <div className="lg:col-span-2">
+          <div className="">
             {/* Gift Card Visual */}
-            <div className="w-full">
-              <div className="w-full aspect-square rounded-2xl bg-white shadow-md overflow-hidden border border-gray-200">
+            <div className="">
+              <div className="w-[313px] h-[353px] aspect-square rounded-2xl bg-white shadow-md overflow-hidden border border-gray-200">
                 {selectedSubCategory?.image ? (
                   <img
                     src={selectedSubCategory.image}
@@ -189,7 +205,7 @@ const ReviewConfirmStep = () => {
 
                 {/* Dummy Card - Birthday Theme */}
                 <div
-                  className="w-full h-full bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex flex-col items-center justify-center p-6 relative overflow-hidden"
+                  className="w-full h-full bg-linear-to-br from-amber-50 via-orange-50 to-red-50 flex flex-col items-center justify-center p-6 relative overflow-hidden"
                   style={{ display: selectedSubCategory?.image ? 'none' : 'flex' }}
                 >
                   {/* Decorative elements */}
@@ -241,7 +257,7 @@ const ReviewConfirmStep = () => {
             </div>
 
             {/* Secure Gift Code */}
-            <div className="border-2 border-dashed border-pink-300 rounded-3xl p-6 mt-6 text-center bg-white">
+            <div className=" border-2 border-dashed border-pink-300 rounded-3xl p-6 mt-6 text-center bg-white">
               <div className="flex items-center justify-center mb-4">
                 <Heart className="w-5 h-5 text-red-500 mr-2 fill-red-500" />
                 <h4 className="font-semibold text-gray-800">Secure Gift Code</h4>
@@ -259,42 +275,45 @@ const ReviewConfirmStep = () => {
           </div>
 
           {/* Right Column - Details */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="space-y-6">
             {/* Brand and Amount Card */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <div className="flex items-start gap-4">
-                <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
-                  {selectedBrand?.logo ? (
-                    <img
-                      src={selectedBrand.logo}
-                      alt={selectedBrand.brandName || selectedBrand.name}
-                      className="w-full h-full object-contain p-2 rounded-lg"
-                    />
-                  ) : (
-                    <span className="text-white font-bold text-3xl">
-                      {(selectedBrand?.brandName || selectedBrand?.name || 'SB')?.substring(0, 1).toUpperCase()}
+                <div>
+                  <div className="w-20 h-20 bg-linear-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shrink-0 shadow-md">
+                    {selectedBrand?.logo ? (
+                      <img
+                        src={selectedBrand.logo}
+                        alt={selectedBrand.brandName || selectedBrand.name}
+                        className="w-full h-full object-contain p-2 rounded-lg"
+                      />
+                    ) : (
+                      <span className="text-white font-bold text-3xl">
+                        {(selectedBrand?.brandName || selectedBrand?.name || 'SB')?.substring(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleChangeCard}
+                    className="mt-4 flex gap-2 items-center text-pink-500 hover:text-pink-600 text-sm font-medium px-3 py-1.5 rounded-full transition-colors bg-[#F4F4F4]"
+                  >
+                    <HeartColorIcon />
+                    <span className="font-bold text-[#1A1A1A] text-[16px]">
+                      {formatAmount(selectedAmount)}
                     </span>
-                  )}
+                    <EditIcon />
+                  </button>
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="font-bold text-2xl text-gray-900">
+                  <h3 className="font-semibold text-[18px] text-[#1A1A1A]">
                     {selectedBrand?.brandName || selectedBrand?.name || 'Selected Brand'}
                   </h3>
-                  <p className="text-gray-600 text-sm mt-1">
+                  <p className="text-[#4A4A4A] text-sm mt-1">
                     {selectedBrand?.description || selectedBrand?.tagline || 'Gift card'}
                   </p>
 
-                  <button
-                    onClick={handleChangeCard}
-                    className="mt-4 flex gap-2 items-center text-pink-500 hover:text-pink-600 text-sm font-medium px-3 py-1.5 border border-pink-500 rounded-full transition-colors"
-                  >
-                    <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-                    <span className="font-bold text-red-600">
-                      {formatAmount(selectedAmount)}
-                    </span>
-                    <Edit className="w-4 h-4" />
-                  </button>
+
                 </div>
               </div>
             </div>
@@ -303,16 +322,10 @@ const ReviewConfirmStep = () => {
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <Heart className="w-5 h-5 text-red-500 mr-2 fill-red-500" />
                   <h3 className="font-semibold text-gray-900">Personal Message</h3>
+                  <Heart className="w-5 h-5 text-red-500 ml-2 fill-red-500" />
                 </div>
-                <button
-                  onClick={handleEditMessage}
-                  className="flex items-center text-pink-500 hover:text-pink-600 text-sm font-medium px-3 py-1.5 border border-pink-500 rounded-full transition-colors"
-                >
-                  <Edit className="w-4 h-4 mr-1" />
-                  Edit
-                </button>
+
               </div>
 
               <div className="bg-gray-50 rounded-xl p-4 max-h-40 overflow-y-auto">
@@ -320,10 +333,18 @@ const ReviewConfirmStep = () => {
                   "{personalMessage || 'No message added'}"
                 </p>
               </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleEditMessage}
+                  className="flex items-center text-pink-500 hover:text-pink-600 text-sm font-medium px-3 py-1.5 rounded-full transition-colors"
+                >
+                  <EditIcon />
+                </button>
+              </div>
             </div>
 
             {/* Delivery Details */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            {/* <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <h3 className="font-semibold text-gray-900 mb-4">Delivery Details</h3>
 
               <div className="space-y-4">
@@ -344,7 +365,7 @@ const ReviewConfirmStep = () => {
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
 
             {/* Action Buttons */}
             <div className="space-y-4">
@@ -354,7 +375,7 @@ const ReviewConfirmStep = () => {
                 </div>
               )}
               <div>
-                {isEditMode ? (
+                {/* {isEditMode ? (
                   <button
                     onClick={handleAddToCart}
                     className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
@@ -370,16 +391,19 @@ const ReviewConfirmStep = () => {
                     <CreditCard className="w-5 h-5" />
                     Add Another Gift
                   </button>
-                )}
-                <p className="text-center text-xs text-gray-500 mt-2">Use this to add more gifts to your cart.</p>
+                )} */}
+                {/* <p className="text-center text-xs text-gray-500 mt-2">Use this to add more gifts to your cart.</p> */}
               </div>
               <div>
                 <button
                   onClick={handleBuyNow}
-                  className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                  className="w-full bg-[linear-gradient(114.06deg,rgba(237,69,125,1)_11.36%,rgba(250,143,66,1)_90.28%)] text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                 >
-                  Buy Now
-                  <span className="text-xl">›</span>
+                  Proceed to Payment
+                  <span className="text-xl"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                  </svg>
+                  </span>
                 </button>
                 {/* <p className="text-center text-xs text-gray-500 mt-2">Use this to checkout with the current gift.</p> */}
               </div>

@@ -402,6 +402,7 @@ h6,
   box-shadow: 0 8px 24px rgba(237, 69, 125, 0.4) !important;
 }
 
+
 /* Show the stats bar */
 .stats-bar {
   position: relative !important;
@@ -550,21 +551,16 @@ h6,
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(-33.333%);
   }
 }
 
 @media (max-width: 768px) {
   .features-desktop {
-    display: none;
+    display: none !important;
   }
-
   .features-mobile {
-    display: block;
-  }
-
-  .features-container {
-    padding: 12px 0;
+    display: block !important;
   }
 }
 /* Floating Emojis */
@@ -574,6 +570,9 @@ h6,
   user-select: none !important;
   z-index: 1 !important;
   opacity: 1 !important;
+  padding: 11px;
+  background: #fff;
+  border-radius: 25px;
 }
 
 .emoji-float-lg {
@@ -850,6 +849,13 @@ h6,
   transform: translateY(-2px) !important;
   box-shadow: 0 6px 16px rgba(237, 69, 125, 0.35) !important;
 }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* ===== UTILITY CLASSES ===== */
 
@@ -959,7 +965,6 @@ h6,
 /* ----------  TESTIMONIALS – PIXEL-PERFECT  ---------- */
 .testimonials-section {
   background: linear-gradient(180deg, rgba(221, 153, 255, 0.2) 0%, rgba(221, 153, 255, 0) 100%);
-
   /* background: linear-gradient(180deg, #F5F0FF 0%, #EFE7FF 100%); */
   padding: 60px 0 18px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
@@ -1023,20 +1028,23 @@ h6,
 
 /* ---------------  SINGLE CARD  --------------- */
 .testimonial-card {
-  aspect-ratio: 4 / 3;
+  width: auto;
+  height: 260px;          /* ← fixed height (adjust as needed) */
+  padding: 32px 24px;
+
   background: #ffffff;
   border-radius: 20px;
   border: 1px solid #e0e0e0;
-  padding: 32px 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   gap: 12px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
 
 .testimonial-card:hover {
   transform: translateY(-4px);
@@ -1107,21 +1115,42 @@ h6,
   border-radius: 4px;
 }
 
-/* ---------------  RESPONSIVE  --------------- */
+/* Desktop — 4 cards in one row */
+@media (min-width: 1025px) {
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;   /* equal spacing */
+  }
+  .testimonial-card{
+    margin: 0 4.5px;  
+  }
+}
+
+/* Tablet — 2 cards in one row */
 @media (max-width: 1024px) {
   .testimonials-grid {
-    grid-template-columns: repeat(2, 1fr);
-    max-width: 560px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* two cards per row */
+    gap: 0;              /* equal spacing */
+    width: 100%;            /* full width */
+    max-width: 600px;       /* optional: keeps grid centered nicely */
+    margin: 0 auto;       /* centers the grid */
+  }
+  .testimonial-card{
+    margin: 0 4.5px;  
   }
 }
 
-@media (max-width: 600px) {
+
+/* Mobile (optional) — 1 card per row */
+@media (max-width: 599px) {
   .testimonials-grid {
     grid-template-columns: 1fr;
-    max-width: 280px;
+    max-width: 100%;
+    gap: 20px;
   }
-  .testimonials-title {
-    font-size: 36px;
+  .testimonial-card{
+    margin: 0 4.5px;  
   }
 }
-

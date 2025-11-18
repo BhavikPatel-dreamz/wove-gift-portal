@@ -37,17 +37,17 @@ const OccasionsManager = () => {
   // Debounce hook for search
   const useDebounce = (value, delay) => {
     const [debouncedValue, setDebouncedValue] = useState(value);
-    
+
     useEffect(() => {
       const handler = setTimeout(() => {
         setDebouncedValue(value);
       }, delay);
-      
+
       return () => {
         clearTimeout(handler);
       };
     }, [value, delay]);
-    
+
     return debouncedValue;
   };
 
@@ -57,7 +57,7 @@ const OccasionsManager = () => {
     try {
       setLoading(true);
       const currentPage = resetPage ? 1 : pagination?.currentPage;
-      
+
       const params = {
         page: currentPage,
         limit: pagination?.itemsPerPage,
@@ -67,7 +67,7 @@ const OccasionsManager = () => {
       };
 
       const result = await getOccasions(params);
-      
+
       if (result.success) {
         setOccasions(result.data || []);
         setPagination(result.pagination);
@@ -122,7 +122,7 @@ const OccasionsManager = () => {
     try {
       setActionLoading(true);
       const formData = new FormData();
-      
+
       Object.keys(newOccasion).forEach(key => {
         if (newOccasion[key] !== null && newOccasion[key] !== undefined) {
           formData.append(key, newOccasion[key]);
@@ -155,9 +155,9 @@ const OccasionsManager = () => {
     try {
       setActionLoading(true);
       const formData = new FormData();
-      
+
       formData.append('id', editingOccasion.id);
-      
+
       Object.keys(updatedOccasion).forEach(key => {
         if (updatedOccasion[key] !== null && updatedOccasion[key] !== undefined) {
           formData.append(key, updatedOccasion[key]);
@@ -190,7 +190,7 @@ const OccasionsManager = () => {
     try {
       setActionLoading(true);
       const result = await deleteOccasion(id);
-      
+
       if (result.success) {
         toast.success("Occasion deleted successfully");
         await fetchOccasions(false);
@@ -317,7 +317,7 @@ const OccasionsManager = () => {
               </span>
             )}
           </div>
-          
+
           {/* Items per page selector */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Show:</span>
@@ -366,17 +366,29 @@ const OccasionsManager = () => {
             <div className="text-sm text-gray-600">
               Page {pagination?.currentPage} of {pagination?.totalPages}
             </div>
-            
+
             <div className="flex items-center gap-2">
-              <button
+              {/* <button
                 onClick={() => handlePageChange(pagination?.currentPage - 1)}
                 disabled={!pagination?.hasPrevPage || loading}
                 className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 <ChevronLeft size={16} />
                 Previous
-              </button>
-              
+              </button> */}
+              <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+                <button
+                  onClick={() => dispatch(goBack())}
+                  className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
+                             transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+                  <span className="text-base font-semibold text-gray-800">
+                    Previous
+                  </span>
+                </button>
+              </div>
+
               <div className="flex gap-1">
                 {Array.from({ length: Math.min(5, pagination?.totalPages) }, (_, i) => {
                   let pageNum;
@@ -389,24 +401,23 @@ const OccasionsManager = () => {
                   } else {
                     pageNum = pagination?.currentPage - 2 + i;
                   }
-                  
+
                   return (
                     <button
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
                       disabled={loading}
-                      className={`px-3 py-2 rounded-lg ${
-                        pageNum === pagination?.currentPage
+                      className={`px-3 py-2 rounded-lg ${pageNum === pagination?.currentPage
                           ? 'bg-blue-600 text-white'
                           : 'border border-gray-300 hover:bg-gray-50'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {pageNum}
                     </button>
                   );
                 })}
               </div>
-              
+
               <button
                 onClick={() => handlePageChange(pagination?.currentPage + 1)}
                 disabled={!pagination?.hasNextPage || loading}
