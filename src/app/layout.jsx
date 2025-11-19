@@ -13,7 +13,7 @@ const poppins = Poppins({
 })
 
 export const metadata = {
-  title: 'Next.js Auth System',
+  title: 'Wove Gift Cards',
   description: 'Production-grade authentication with Next.js, Prisma, and PostgreSQL',
 }
 

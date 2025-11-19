@@ -17,6 +17,7 @@ import { destroySession } from '../../../lib/action/userAction/session';
 import { useRouter } from 'next/navigation';
 import { resetFlow } from '../../../redux/giftFlowSlice';
 
+
 const navLinks = {
   Home: '/',
   About: '/about',
@@ -24,8 +25,17 @@ const navLinks = {
   'Send Gift Card': '/gift',
 };
 
+const countries = [
+  { name: "South Africa", code: "za" },
+  { name: "India", code: "in" },
+  { name: "United States", code: "us" },
+  { name: "United Kingdom", code: "gb" },
+  { name: "Australia", code: "au" },
+];
+
 const Header = () => {
   const session = useSession();
+  console.log(session, "session")
   const cartItems = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
   const router = useRouter();
@@ -33,6 +43,13 @@ const Header = () => {
   const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(countries[0]);
+
+  const handleSelect = (country) => {
+    setSelected(country);
+    setOpen(false);
+  };
 
   const cartCount = cartItems.length;
 
@@ -93,36 +110,70 @@ const Header = () => {
 
             {/* Logo - Always Centered */}
             <div className="logo-container absolute left-1/2 transform -translate-x-1/2">
-              <div className="logo-icon w-8 h-8 sm:w-10 sm:h-10">
-                <Gift size={20} className="sm:w-6 sm:h-6" color="white" strokeWidth={2.5} />
-              </div>
-              <span className="logo-text text-sm sm:text-base lg:text-lg">Wove Gifts</span>
+              <Link href="/" className="flex items-center gap-2 cursor-pointer">
+                <div className="logo-icon w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                  <Gift size={20} className="sm:w-6 sm:h-6" color="white" strokeWidth={2.5} />
+                </div>
+                <span className="logo-text text-sm sm:text-base lg:text-lg">Wove Gifts</span>
+              </Link>
             </div>
 
             {/* Right Section - Responsive */}
             <div className="flex items-center space-x-2 sm:space-x-3 ml-auto">
               {/* Country Selector - Hidden on mobile, visible on tablet+ */}
-              <div className="hidden md:flex items-center space-x-2 lg:space-x-3">
-                <img
-                  src="https://flagcdn.com/w40/za.png"
-                  alt="South Africa"
-                  className="w-5 h-5 lg:w-6 lg:h-6 rounded-full object-cover"
-                />
-                <span className="text-xs lg:text-sm font-medium text-gray-700 hidden xl:inline">
-                  South Africa
-                </span>
-                <ChevronDown className="w-3 h-3 lg:w-4 lg:h-4 text-gray-600" />
+              <div className="relative">
+                {/* Trigger */}
+                <div
+                  className="hidden md:flex items-center space-x-2 lg:space-x-3 cursor-pointer"
+                  onClick={() => setOpen(!open)}
+                >
+                  <img
+                    src={`https://flagcdn.com/w40/${selected.code}.png`}
+                    alt={selected.name}
+                    className="w-5 h-5 lg:w-6 lg:h-6 rounded-full object-cover"
+                  />
+
+                  <span className="text-xs lg:text-sm font-medium text-gray-700 hidden xl:inline">
+                    {selected.name}
+                  </span>
+
+                  {/* Rotating Icon */}
+                  <ChevronDown
+                    className={`w-3 h-3 lg:w-4 lg:h-4 text-gray-600 transition-transform duration-200 ${open ? "rotate-180" : ""
+                      }`}
+                  />
+                </div>
+
+                {/* Dropdown */}
+                {open && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg z-50">
+                    {countries.map((country) => (
+                      <div
+                        key={country.code}
+                        onClick={() => handleSelect(country)}
+                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                      >
+                        <img
+                          src={`https://flagcdn.com/w40/${country.code}.png`}
+                          alt={country.name}
+                          className="w-5 h-5 rounded-full object-cover"
+                        />
+                        <span className="text-sm text-gray-700">{country.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Auth Section - Hidden on mobile/small tablets */}
               <div className="hidden md:flex items-center space-x-2">
-                {!mounted ? (
-                  <button className="btn-secondary text-xs lg:text-sm px-3 lg:px-4 py-2">
-                    <User size={16} className="lg:w-[18px] lg:h-[18px]" />
-                    <span className="hidden lg:inline">Login / Register</span>
-                    <span className="lg:hidden">Login</span>
-                  </button>
-                ) : session ? (
+
+                {/* <button className="btn-secondary text-xs lg:text-sm px-3 lg:px-4 py-2">
+                  <User size={16} className="lg:w-[18px] lg:h-[18px]" />
+                  <span className="hidden lg:inline">Login / Register</span>
+                  <span className="lg:hidden">Login</span>
+                </button> */}
+                {session ? (
                   <>
                     {(session.user.role === 'ADMIN' || session.user.role === 'CUSTOMER') && (
                       <Link href="/dashboard">
@@ -157,6 +208,8 @@ const Header = () => {
               </div>
 
               {/* Wishlist - Always visible */}
+              {
+                session &&
               <Link
                 href="/wishlist"
                 className="relative p-1.5 sm:p-2 hover:bg-gray-100 border border-[#ED457D] rounded-full transition-colors"
@@ -167,6 +220,7 @@ const Header = () => {
                   <span className="badge text-[10px] sm:text-xs">{cartCount}</span>
                 )}
               </Link>
+              }
 
               {/* Cart - Always visible */}
               <Link
