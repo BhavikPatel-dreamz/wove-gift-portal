@@ -157,7 +157,7 @@ const GiftCardSelector = () => {
                 <div className="flex justify-center mb-5">
                   <div className="text-5xl">
                     <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <g clip-path="url(#clip0_1065_2944)">
+                      <g clipPath="url(#clip0_1065_2944)">
                         <path d="M41.9999 46.348V83.9445L26.1932 76.6982L24.0922 75.7365L15.9154 71.9891L15.4581 71.7787L2.02734 65.6198V27.9708L15.9154 34.3547L26.1932 39.0813L41.9999 46.348Z" fill="#ED457D" />
                         <path d="M81.9726 27.9708V65.6198L70.1407 71.0596L67.1604 72.4305L61.5066 75.0291L56.8826 77.1571L42 84V46.348L56.8826 39.5052L67.1604 34.7815L81.9726 27.9708Z" fill="#FF81AB" />
                         <path d="M26.1928 39.0813V76.6982L24.0918 75.7365L15.915 71.9891V34.3547L26.1928 39.0813Z" fill="#FFF380" />

@@ -14,7 +14,7 @@ import { useSession } from '@/contexts/SessionContext';
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { destroySession } from '../../../lib/action/userAction/session';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { resetFlow } from '../../../redux/giftFlowSlice';
 
 
@@ -35,7 +35,6 @@ const countries = [
 
 const Header = () => {
   const session = useSession();
-  console.log(session, "session")
   const cartItems = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
   const router = useRouter();
@@ -45,6 +44,7 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(countries[0]);
+
 
   const handleSelect = (country) => {
     setSelected(country);
@@ -76,6 +76,12 @@ const Header = () => {
     if (item === 'Send Gift Card') dispatch(resetFlow());
     setMobileMenuOpen(false);
   };
+  const pathname = usePathname();
+
+  const activeTab = Object.keys(navLinks).find(
+    (key) => navLinks[key] === pathname
+  );
+
 
   return (
     <>
@@ -101,12 +107,16 @@ const Header = () => {
                   key={item}
                   href={navLinks[item]}
                   onClick={() => handleNavClick(item)}
-                  className="nav-link font-poppins text-sm xl:text-base whitespace-nowrap"
+                  className={`nav-link font-poppins text-sm xl:text-base whitespace-nowrap ${activeTab === item
+                      ? "text-[#ed457d] underline underline-offset-4"
+                      : "text-gray-800"
+                    }`}
                 >
                   {item}
                 </Link>
               ))}
             </nav>
+
 
             {/* Logo - Always Centered */}
             <div className="logo-container absolute left-1/2 transform -translate-x-1/2">
@@ -210,16 +220,16 @@ const Header = () => {
               {/* Wishlist - Always visible */}
               {
                 session &&
-              <Link
-                href="/wishlist"
-                className="relative p-1.5 sm:p-2 hover:bg-gray-100 border border-[#ED457D] rounded-full transition-colors"
-                aria-label="Wishlist"
-              >
-                <Heart className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" color="#ED457D" />
-                {mounted && cartCount > 0 && (
-                  <span className="badge text-[10px] sm:text-xs">{cartCount}</span>
-                )}
-              </Link>
+                <Link
+                  href="/wishlist"
+                  className="relative p-1.5 sm:p-2 hover:bg-gray-100 border border-[#ED457D] rounded-full transition-colors"
+                  aria-label="Wishlist"
+                >
+                  <Heart className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" color="#ED457D" />
+                  {mounted && cartCount > 0 && (
+                    <span className="badge text-[10px] sm:text-xs">{cartCount}</span>
+                  )}
+                </Link>
               }
 
               {/* Cart - Always visible */}

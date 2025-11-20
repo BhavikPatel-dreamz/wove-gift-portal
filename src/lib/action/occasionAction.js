@@ -411,7 +411,8 @@ export async function getOccasions(params = {}) {
                 };
             })
         );
-
+     
+            console.log(occasions,"occasions")
         const pagination = {
             currentPage: page,
             totalPages,

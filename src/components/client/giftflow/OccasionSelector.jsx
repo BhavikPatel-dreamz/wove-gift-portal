@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { getOccasions } from '@/lib/action/occasionAction';
 import { ArrowLeft } from 'lucide-react';
-import { goBack, goNext, setLoading, setOccasions, setSelectedOccasion, setError } from '../../../redux/giftFlowSlice';
+import { goBack, goNext, setLoading, setOccasions, setSelectedOccasion, setError, setSelectedOccasionName } from '../../../redux/giftFlowSlice';
 import { useDispatch, useSelector } from 'react-redux';
 
 export default function OccasionSelector() {
@@ -42,8 +42,10 @@ export default function OccasionSelector() {
     }
   }, [dispatch, occasions.length]);
 
-  const handleOccasionSelect = (occasionId) => {
-    dispatch(setSelectedOccasion(occasionId));
+  const handleOccasionSelect = (occasion) => {
+
+    dispatch(setSelectedOccasion(occasion.id));
+    dispatch(setSelectedOccasionName(occasion.name))
     dispatch(goNext());
   };
 
@@ -111,12 +113,14 @@ export default function OccasionSelector() {
 
         {/* Occasions Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {occasions.map((occasion, index) => (
+          {occasions.map((occasion, index) => {
+            console.log(occasion,"occasion")
+            return(
             <div
               key={`${occasion.id}-${index}`}
               className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${selectedOccasion === occasion.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
                 }`}
-              onClick={() => handleOccasionSelect(occasion.id)}
+              onClick={() => handleOccasionSelect(occasion)}
             >
               {/* Image Container with rounded corners */}
               <div className="w-full px-4 pt-4">
@@ -149,7 +153,7 @@ export default function OccasionSelector() {
                   className="w-full py-3.5 px-4 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-xl hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 transform hover:scale-105"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleOccasionSelect(occasion.id);
+                    handleOccasionSelect(occasion);
                   }}
                 >
                   Choose this Occasion
@@ -157,7 +161,7 @@ export default function OccasionSelector() {
                 </button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
 
         {/* Load More Section */}

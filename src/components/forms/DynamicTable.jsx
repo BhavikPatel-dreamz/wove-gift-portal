@@ -164,7 +164,7 @@ const DynamicTable = ({
                 <button
                   key={idx}
                   onClick={action.onClick}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   {action.icon && <action.icon className="w-4 h-4" />}
                   {action.label}

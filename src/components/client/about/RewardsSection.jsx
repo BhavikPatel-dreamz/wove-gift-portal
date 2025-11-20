@@ -3,7 +3,7 @@ import React from "react";
 
 const BulkGifting = () => {
   return (
-    <div className="max-w-6xl mx-auto mt-10 mb-14">
+    <div className="max-w-[1440px] mx-auto mt-10 mb-14">
       {/* Main container with custom styles and fade effect */}
       <div className="relative">
         {/* Card with gradient border mask */}
@@ -31,9 +31,10 @@ const BulkGifting = () => {
 
           {/* Left text section */}
           <div className="md:w-1/2 mb-8 md:mb-0 px-8 relative z-10">
-            <h2 className="text-gray-900 font-extrabold text-2xl md:text-3xl leading-tight mb-4">
+            <h2 className="text-[#1A1A1A] font-semibold text-[40px] md:text-3xl  mb-4 fontPoppins">
               Rewards at scale,<br />made simple.
             </h2>
+
             <p className="text-gray-700 text-sm md:text-base mb-6 max-w-md">
               Buy in bulk, receive CSV codes instantly, track and reconcile with ease. Perfect for staff rewards, client campaigns, and loyalty programs.
             </p>
