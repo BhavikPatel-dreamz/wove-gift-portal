@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { goBack, goNext, setLoading, setSelectedSubCategory, setSubCategories, setError } from '../../../redux/giftFlowSlice';
 import EmojiPicker from '../../occasions/EmojiPicker';
 import { createCustomCard } from '@/lib/action/customCardAction';
+import { useSearchParams } from 'next/navigation';
 
 // Custom Card Creator Component
 const CustomCardCreator = ({ onSave, onCancel }) => {
@@ -147,7 +148,9 @@ export default function SubCategorySelector() {
 
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [selectedOccasionName, setSelectedOccationName] = useState(null);
-
+    const searchParams = useSearchParams();
+    const mode = searchParams.get('mode');
+    const isBulkMode = mode === 'bulk';
 
   const fetchSubCategories = useCallback(async (page) => {
     if (!selectedOccasion) return;
@@ -229,6 +232,7 @@ export default function SubCategorySelector() {
           <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
           <span className="text-base font-semibold text-gray-800">Previous</span>
         </button> */}
+        
         <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
           <button
             onClick={() => dispatch(goBack())}
@@ -244,6 +248,25 @@ export default function SubCategorySelector() {
 
         {/* Header */}
         <div className="text-center mb-10">
+        {
+            isBulkMode &&
+            <div className="w-full flex items-center justify-center mb-4">
+              {/* Left line */}
+              <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
+
+              {/* Center pill */}
+              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
+                <div className="px-4 py-1.5 bg-white rounded-full">
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                    Bulk Gifting
+                  </span>
+                </div>
+              </div>
+
+              {/* Right line */}
+              <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
+            </div>
+          }
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
             Pick a {selectedOccasionName} Design They'll Love
           </h1>
@@ -345,7 +368,11 @@ export default function SubCategorySelector() {
                 // }}
                 >
                   Choose this Design
-                  <span className="text-lg font-bold">▸</span>
+                  <span className="text-lg font-bold">
+                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                    </svg>
+                    </span>
                 </button>
               </div>
             </div>
