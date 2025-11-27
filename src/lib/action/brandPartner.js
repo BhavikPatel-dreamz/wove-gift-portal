@@ -1219,7 +1219,7 @@ export async function getSettlements(params = {}) {
       brandId = null,
       sortBy = "createdAt",
       sortOrder = "desc",
-      groupByBrand = true, // New parameter to control grouping
+      groupByBrand = false, // Changed to false to show individual settlement records
     } = params;
 
     const pageNum = parseInt(page, 10);

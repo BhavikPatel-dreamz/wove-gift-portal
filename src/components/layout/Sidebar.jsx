@@ -1,24 +1,23 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Store, 
-  Calendar, 
-  BarChart3, 
-  FileText, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Store,
+  Calendar,
+  FileText,
+  Settings,
   X,
-  ShoppingBag,
   Gift
 } from 'lucide-react';
-import { useSession } from '@/contexts/SessionContext'
+import { useSession } from '@/contexts/SessionContext';
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, onClose, type, shopParam }) => {
   const pathname = usePathname();
-  const session = useSession()
-  
+  const session = useSession();
+
   const allMenuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
     { name: 'Gift Cards / Orders', icon: Gift, href: '/vouchers' },
@@ -29,46 +28,80 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Controls', icon: Settings, href: '/controls' },
   ];
 
-  // Filter menu items based on user role
-  const menuItems = session?.user?.role === 'ADMIN' 
-    ? allMenuItems 
-    : allMenuItems.filter(item => 
-        item.href === '/dashboard' || item.href === '/vouchers'
-      );
+  // -------------------------
+  // MENU ACCESS PER MODE
+  // -------------------------
+  let menuItems = [];
 
-  // Check if the current path matches the menu item
+  // Mode 1: Shopify Admin Mode via prop
+  if (type === 'shopAdmin' || shopParam) {
+    const shopifyRoutes = ['/dashboard', '/vouchers', '/settlements', '/reports'];
+    menuItems = allMenuItems
+      .filter(item => shopifyRoutes.includes(item.href))
+      .map(item => ({
+        ...item,
+        href: `/shopify${item.href}` // Prefix with /shopify/
+      }));
+  }
+  // Mode 2: Logged-in ADMIN user
+  else if (session?.user?.role === 'ADMIN') {
+    menuItems = allMenuItems;
+  }
+  // Mode 3: Normal user
+  else {
+    menuItems = allMenuItems.filter(item =>
+      ['/dashboard', '/vouchers'].includes(item.href)
+    );
+  }
+
+  // -------------------------
+  // ACTIVE STATE CHECK
+  // -------------------------
   const isActiveItem = (href) => {
-    if (href === '/dashboard') {
-      return pathname === '/' || pathname === '/dashboard';
+    // Handle both /dashboard and /shopify/dashboard
+    if (href === '/dashboard' || href === '/shopify/dashboard') {
+      return pathname === '/' ||
+        pathname === '/dashboard' ||
+        pathname === '/shopify/dashboard';
     }
     return pathname === href || pathname.startsWith(href + '/');
   };
 
   return (
     <>
-      {/* Mobile backdrop */}
+      {/* Mobile Backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
-      <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
+      <div
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200
+          transform transition-transform duration-300 ease-in-out
+          lg:translate-x-0 lg:static lg:inset-0
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {/* Header */}
         <div className="flex items-center justify-between h-19 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
               <div className="w-4 h-4 bg-white rounded-sm"></div>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-xs text-gray-500">Gift Card Management & Analytics</p>
+              <h1 className="text-lg font-bold text-gray-900">
+                Admin Dashboard
+              </h1>
+              <p className="text-xs text-gray-500">
+                Gift Card Management & Analytics
+              </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
             className="lg:hidden p-1 rounded-md hover:bg-gray-100"
@@ -76,7 +109,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
+        {/* Navigation */}
         <nav className="mt-8 px-4">
           <ul className="space-y-2">
             {menuItems.map((item) => (

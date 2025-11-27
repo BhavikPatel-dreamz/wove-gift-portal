@@ -5,14 +5,25 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "year";
+    const shop = searchParams.get("shop"); // Shopify shop domain
 
     // Calculate date range
     const dateRange = getDateRange(period);
 
+    // Get brand ID if shop parameter is provided
+    let brandId = null;
+    if (shop) {
+      const brand = await prisma.brand.findUnique({
+        where: { domain: shop },
+        select: { id: true },
+      });
+      brandId = brand?.id || null;
+    }
+
     // Fetch analytics data in parallel
     const [brandRedemptions, settlements] = await Promise.all([
-      getBrandRedemptionMetrics(dateRange),
-      getSettlementData(dateRange),
+      getBrandRedemptionMetrics(dateRange, brandId),
+      getSettlementData(dateRange, brandId),
     ]);
 
     return NextResponse.json({
@@ -82,14 +93,17 @@ function buildDateFilter(dateRange, field = "createdAt") {
 }
 
 // Get brand redemption metrics - formatted for frontend
-async function getBrandRedemptionMetrics(dateRange) {
+async function getBrandRedemptionMetrics(dateRange, brandId = null) {
   const dateFilter = buildDateFilter(dateRange);
 
-  // Get all active brands
+  // Get all active brands (or specific brand if brandId provided)
+  const whereClause = { isActive: true };
+  if (brandId) {
+    whereClause.id = brandId;
+  }
+
   const brands = await prisma.brand.findMany({
-    where: {
-      isActive: true,
-    },
+    where: whereClause,
     select: {
       id: true,
       brandName: true,
@@ -230,8 +244,11 @@ async function getBrandRedemptionMetrics(dateRange) {
 }
 
 // Get settlement data - formatted for frontend
-async function getSettlementData(dateRange) {
+async function getSettlementData(dateRange, brandId = null) {
   const dateFilter = buildDateFilter(dateRange);
+  if (brandId) {
+    dateFilter.brandId = brandId;
+  }
 
   // Get pending settlements with brand details
   const pendingSettlements = await prisma.settlements.findMany({

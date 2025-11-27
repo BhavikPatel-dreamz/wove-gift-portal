@@ -12,7 +12,7 @@ export default async function AuthLayout({ children }) {
 
   return (
     <SessionProvider session={session}>
-      <AppLayout>{children}</AppLayout>
+      <AppLayout session={session}>{children}</AppLayout>
     </SessionProvider>
   );
 }

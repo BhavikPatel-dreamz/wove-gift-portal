@@ -37,6 +37,7 @@ export default function VouchersManagement() {
   const [selectedBulkOrder, setSelectedBulkOrder] = useState(null);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('orders');
+  const shopParam = localStorage.getItem("shop");
 
   // 🟢 Pagination for Bulk Modal
   const [bulkPagination, setBulkPagination] = useState({
@@ -58,6 +59,7 @@ export default function VouchersManagement() {
         userId: session?.user?.id,
         userRole: session?.user?.role,
         pageSize: 10,
+        shopParam: shopParam, // Add shop parameter for filtering
       });
 
       if (response.success) {
@@ -80,10 +82,10 @@ export default function VouchersManagement() {
   };
 
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user || shopParam) {
       fetchVouchers();
     }
-  }, [filters, pagination.currentPage, session?.user]);
+  }, [filters, pagination.currentPage, session?.user, shopParam]);
 
   const handleSearch = (search) => {
     setFilters((prev) => ({ ...prev, search }));
@@ -327,15 +329,18 @@ export default function VouchersManagement() {
               >
                 Analytics & Tracking
               </button>
-              <button
-                onClick={() => setActiveTab('settlements')}
-                className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'settlements'
-                  ? 'bg-white text-gray-900 shadow-md'
-                  : 'bg-white/50 text-gray-600 hover:bg-white/80'
-                  }`}
-              >
-                Brand Settlements
-              </button>
+
+              {/* {(session?.user?.role == "Admin" && session?.user?.role == "admin") && ( */}
+                <button
+                  onClick={() => setActiveTab('settlements')}
+                  className={`px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'settlements'
+                    ? 'bg-white text-gray-900 shadow-md'
+                    : 'bg-white/50 text-gray-600 hover:bg-white/80'
+                    }`}
+                >
+                  Brand Settlements
+                </button>
+              {/* )} */}
             </>
           )}
         </div>
@@ -422,43 +427,43 @@ export default function VouchersManagement() {
                 {/* Summary Cards */}
                 <div className="flex-1  p-6">
                   {/* Search & Filter Controls */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <div className="text-xs text-blue-600 font-semibold mb-1">Total Amount</div>
-                        <div className="text-2xl font-bold text-blue-900">${selectedBulkOrder.totalAmount?.toFixed(2)}</div>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                        <div className="text-xs text-green-600 font-semibold mb-1">Remaining</div>
-                        <div className="text-2xl font-bold text-green-900">${selectedBulkOrder.remainingAmount?.toFixed(2)}</div>
-                      </div>
-                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                        <div className="text-xs text-purple-600 font-semibold mb-1">Order Count</div>
-                        <div className="text-2xl font-bold text-purple-900">{selectedBulkOrder.orderCount || 0}</div>
-                      </div>
-                      <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                        <div className="text-xs text-orange-600 font-semibold mb-1">Voucher Count</div>
-                        <div className="text-2xl font-bold text-orange-900">{selectedBulkOrder.voucherCount}</div>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="text-xs text-blue-600 font-semibold mb-1">Total Amount</div>
+                      <div className="text-2xl font-bold text-blue-900">${selectedBulkOrder.totalAmount?.toFixed(2)}</div>
                     </div>
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="text-xs text-green-600 font-semibold mb-1">Remaining</div>
+                      <div className="text-2xl font-bold text-green-900">${selectedBulkOrder.remainingAmount?.toFixed(2)}</div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <div className="text-xs text-purple-600 font-semibold mb-1">Order Count</div>
+                      <div className="text-2xl font-bold text-purple-900">{selectedBulkOrder.orderCount || 0}</div>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                      <div className="text-xs text-orange-600 font-semibold mb-1">Voucher Count</div>
+                      <div className="text-2xl font-bold text-orange-900">{selectedBulkOrder.voucherCount}</div>
+                    </div>
+                  </div>
 
-                    {/* Status Breakdown */}
-                    <div className=" p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <h3 className="text-sm font-semibold text-gray-700 mb-3">Status Breakdown</h3>
-                      <div className="flex gap-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                          <span className="text-sm text-gray-600">Active: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.active || 0}</span></span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                          <span className="text-sm text-gray-600">Redeemed: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.redeemed || 0}</span></span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                          <span className="text-sm text-gray-600">Expired: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.expired || 0}</span></span>
-                        </div>
+                  {/* Status Breakdown */}
+                  <div className=" p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Status Breakdown</h3>
+                    <div className="flex gap-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <span className="text-sm text-gray-600">Active: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.active || 0}</span></span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span className="text-sm text-gray-600">Redeemed: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.redeemed || 0}</span></span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span className="text-sm text-gray-600">Expired: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.expired || 0}</span></span>
                       </div>
                     </div>
+                  </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 ">
