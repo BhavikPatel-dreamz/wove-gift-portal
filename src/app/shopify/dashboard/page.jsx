@@ -16,10 +16,12 @@ import {
   ShoppingBag,
   TrendingUp
 } from 'lucide-react';
+import Link from 'next/link';
 
 function ShopifyMainContent() {
   const searchParams = useSearchParams();
   const shop = searchParams.get('shop');
+  console.log("shopify main shop param", shop);
   
   const [shopData, setShopData] = useState(null);
   const [giftCards, setGiftCards] = useState([]);
@@ -142,6 +144,7 @@ function ShopifyMainContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+    <Link href={'/shopify/dashboard'} > asdfasdf</Link>
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
