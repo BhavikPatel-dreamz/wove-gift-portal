@@ -9,6 +9,7 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import { Search, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import SkeletonRow from "./SkeletonRow";
 
 const DynamicTable = ({
   data = [],
@@ -71,13 +72,13 @@ const DynamicTable = ({
             <span className="font-medium">{total}</span> results
           </p>
           <div className="flex items-center gap-2">
-            <button
+            <div
               onClick={() => onPageChange && onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="p-2 border border-gray-300 text-black  rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="p-2 border border-gray-300 text-black cursor-pointer rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <ChevronLeft className="w-4 h-4" />
-            </button>
+            </div>
 
             <div className="flex gap-1">
               {[...Array(Math.min(totalPages, 5))].map((_, idx) => {
@@ -93,28 +94,28 @@ const DynamicTable = ({
                 }
 
                 return (
-                  <button
+                  <div
                     key={idx}
                     onClick={() => onPageChange && onPageChange(pageNumber)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${
                       currentPage === pageNumber
                         ? "bg-blue-600 text-white shadow-sm"
                         : "border border-gray-300 hover:bg-white text-gray-700"
                     }`}
                   >
                     {pageNumber}
-                  </button>
+                  </div>
                 );
               })}
             </div>
 
-            <button
+            <div
               onClick={() => onPageChange && onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="p-2 border border-gray-300 text-black rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="p-2 border border-gray-300 text-black cursor-pointer rounded-lg hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -139,7 +140,7 @@ const DynamicTable = ({
               value={globalFilter ?? ""}
               onChange={handleSearchChange}
               placeholder={searchPlaceholder}
-              className="w-full pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              className="w-full text-black pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
           </div>
 
@@ -164,7 +165,7 @@ const DynamicTable = ({
                 <button
                   key={idx}
                   onClick={action.onClick}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="flex items-center cursor-pointer gap-2 px-4 py-2.5 bg-blue-700 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
                   {action.icon && <action.icon className="w-4 h-4" />}
                   {action.label}
@@ -183,7 +184,7 @@ const DynamicTable = ({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="px-6 py-4 text-left text-xs cursor-pointer font-semibold text-gray-600 uppercase tracking-wider hover:bg-gray-100 transition-colors"
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-2">
@@ -196,15 +197,8 @@ const DynamicTable = ({
             ))}
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-            {loading ? (
-              <tr>
-                <td colSpan={columns.length} className="text-center py-12">
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                    <p className="text-sm text-gray-500">Loading data...</p>
-                  </div>
-                </td>
-              </tr>
+             {loading ? (
+              [...Array(10)].map((_, i) => <SkeletonRow key={i} columns={columns} />)
             ) : table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="text-center py-12">
