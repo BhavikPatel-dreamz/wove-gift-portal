@@ -60,42 +60,23 @@ export async function getVouchers(params = {}) {
       });
     }
 
-    // Step 3: Group orders by bulkOrderNumber (if exists)
-    const bulkOrdersMap = new Map();
-    const individualOrders = [];
+    // Step 3: Process each order into records
+    const allRecords = [];
 
     orders.forEach(order => {
-      if (order.bulkOrderNumber && order.voucherCodes.length > 0) {
-        const bulkKey = order.bulkOrderNumber;
-        if (!bulkOrdersMap.has(bulkKey)) {
-          bulkOrdersMap.set(bulkKey, []);
-        }
-        bulkOrdersMap.get(bulkKey).push(order);
-      } else if (order.voucherCodes.length > 0) {
-        individualOrders.push(order);
-      }
-    });
+      // Skip orders with no voucher codes
+      if (order.voucherCodes.length === 0) return;
 
-    // Step 4: Create grouped records
-    const allGroupedRecords = [];
+      // Check if this is a bulk order (has bulkOrderNumber)
+      if (order.bulkOrderNumber) {
+        // For bulk orders, create ONE record per order (not merged)
+        const voucherCodes = order.voucherCodes.map(vc => ({
+          ...vc,
+          order: order,
+          user: order.user
+        }));
 
-    // Process bulk orders (each bulk order becomes one record)
-    bulkOrdersMap.forEach((ordersList, bulkOrderNumber) => {
-      // Only create bulk order group if there are 3 or more orders
-      if (ordersList.length >= 3) {
-        const allVoucherCodes = [];
-        
-        ordersList.forEach(order => {
-          order.voucherCodes.forEach(vc => {
-            allVoucherCodes.push({
-              ...vc,
-              order: order,
-              user: order.user
-            });
-          });
-        });
-
-        const children = allVoucherCodes.map(vc => mapVoucherCode(vc));
+        const children = voucherCodes.map(vc => mapVoucherCode(vc));
         
         const totalAmount = children.reduce((sum, v) => sum + (v.totalAmount || 0), 0);
         const remainingAmount = children.reduce((sum, v) => sum + (v.remainingAmount || 0), 0);
@@ -104,75 +85,68 @@ export async function getVouchers(params = {}) {
         const expiredCount = children.filter(v => v.status === 'Expired').length;
         
         // Apply status filter to bulk orders
-        let includeThisBulkOrder = true;
+        let includeThisOrder = true;
         if (status) {
-          if (status === 'Active' && activeCount === 0) includeThisBulkOrder = false;
-          if (status === 'Redeemed' && redeemedCount === 0) includeThisBulkOrder = false;
-          if (status === 'Expired' && expiredCount === 0) includeThisBulkOrder = false;
+          if (status === 'Active' && activeCount === 0) includeThisOrder = false;
+          if (status === 'Redeemed' && redeemedCount === 0) includeThisOrder = false;
+          if (status === 'Expired' && expiredCount === 0) includeThisOrder = false;
         }
 
-        if (includeThisBulkOrder) {
+        if (includeThisOrder) {
           children.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-          allGroupedRecords.push({
-            id: `bulk-${bulkOrderNumber}`,
+          allRecords.push({
+            id: `bulk-${order.id}`,
             isBulkOrder: true,
-            bulkOrderNumber,
-            orderNumber: ordersList[0].orderNumber,
-            code: `${allVoucherCodes.length} Vouchers`,
-            user: ordersList[0].user,
+            bulkOrderNumber: order.bulkOrderNumber,
+            orderNumber: order.orderNumber,
+            code: `${voucherCodes.length} Vouchers`,
+            user: order.user,
             totalAmount,
             remainingAmount,
             status: activeCount > 0 ? 'Active' : (redeemedCount > 0 ? 'Redeemed' : 'Expired'),
             statusBreakdown: { active: activeCount, redeemed: redeemedCount, expired: expiredCount },
             lastRedemptionDate: children[0]?.lastRedemptionDate,
-            voucherCount: allVoucherCodes.length,
-            orderCount: ordersList.length,
+            voucherCount: voucherCodes.length,
+            orderCount: 1, // Each order is separate
             children,
-            createdAt: ordersList[0].createdAt,
+            createdAt: order.createdAt,
           });
         }
       } else {
-        // If less than 3 orders, treat them as individual orders
-        ordersList.forEach(order => {
-          individualOrders.push(order);
+        // For non-bulk orders, create one record per voucher code
+        order.voucherCodes.forEach(vc => {
+          const mappedVoucher = mapVoucherCode({
+            ...vc,
+            order: order,
+            user: order.user
+          });
+
+          // Apply status filter
+          let includeThisVoucher = true;
+          if (status) {
+            if (status === 'Active' && mappedVoucher.status !== 'Active') includeThisVoucher = false;
+            if (status === 'Redeemed' && mappedVoucher.status !== 'Redeemed') includeThisVoucher = false;
+            if (status === 'Expired' && mappedVoucher.status !== 'Expired') includeThisVoucher = false;
+          }
+
+          if (includeThisVoucher) {
+            allRecords.push({
+              ...mappedVoucher,
+              isBulkOrder: false,
+              createdAt: order.createdAt,
+            });
+          }
         });
       }
     });
 
-    // Process individual orders (each voucher code becomes one record)
-    individualOrders.forEach(order => {
-      order.voucherCodes.forEach(vc => {
-        const mappedVoucher = mapVoucherCode({
-          ...vc,
-          order: order,
-          user: order.user
-        });
+    // Step 4: Sort all records by creation date
+    allRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-        // Apply status filter
-        let includeThisVoucher = true;
-        if (status) {
-          if (status === 'Active' && mappedVoucher.status !== 'Active') includeThisVoucher = false;
-          if (status === 'Redeemed' && mappedVoucher.status !== 'Redeemed') includeThisVoucher = false;
-          if (status === 'Expired' && mappedVoucher.status !== 'Expired') includeThisVoucher = false;
-        }
-
-        if (includeThisVoucher) {
-          allGroupedRecords.push({
-            ...mappedVoucher,
-            isBulkOrder: false,
-            createdAt: order.createdAt,
-          });
-        }
-      });
-    });
-
-    // Step 5: Sort all records by creation date
-    allGroupedRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    // Step 6: Apply pagination
-    const totalCount = allGroupedRecords.length;
-    const paginatedData = allGroupedRecords.slice(skip, skip + pageSize);
+    // Step 5: Apply pagination
+    const totalCount = allRecords.length;
+    const paginatedData = allRecords.slice(skip, skip + pageSize);
 
     return {
       success: true,
@@ -192,6 +166,143 @@ export async function getVouchers(params = {}) {
       success: false, 
       message: "Failed to fetch vouchers.",
       data: [],
+      pagination: {
+        currentPage: 1,
+        totalPages: 0,
+        totalCount: 0,
+        from: 0,
+        to: 0,
+        total: 0,
+      }
+    };
+  }
+}
+
+// New API function to get bulk order details with pagination
+export async function getBulkOrderDetails(params = {}) {
+  const { bulkOrderNumber, orderNumber, page = 1, pageSize = 10, search = '', status = '' } = params;
+
+  try {
+    if (!bulkOrderNumber && !orderNumber) {
+      return {
+        success: false,
+        message: "Bulk order number or order number is required",
+        data: null
+      };
+    }
+
+    // Build where clause
+    const where = {};
+    if (orderNumber) {
+      where.orderNumber = orderNumber;
+    } else if (bulkOrderNumber) {
+      where.bulkOrderNumber = bulkOrderNumber;
+    }
+
+    // Fetch the specific order
+    const orders = await prisma.order.findMany({
+      where,
+      include: {
+        user: true,
+        voucherCodes: {
+          include: {
+            voucher: true,
+            redemptions: {
+              orderBy: { redeemedAt: 'desc' }
+            },
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (orders.length === 0) {
+      return {
+        success: false,
+        message: "Order not found",
+        data: null
+      };
+    }
+
+    const order = orders[0];
+
+    // Collect all voucher codes from this order
+    const allVoucherCodes = [];
+    order.voucherCodes.forEach(vc => {
+      allVoucherCodes.push({
+        ...vc,
+        order: order,
+        user: order.user
+      });
+    });
+
+    // Map all vouchers
+    let children = allVoucherCodes.map(vc => mapVoucherCode(vc));
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      children = children.filter(child => 
+        child.code?.toLowerCase().includes(searchLower) ||
+        child.orderNumber?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply status filter
+    if (status) {
+      children = children.filter(child => child.status === status);
+    }
+
+    // Sort by creation date
+    children.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Calculate totals from filtered data
+    const totalAmount = children.reduce((sum, v) => sum + (v.totalAmount || 0), 0);
+    const remainingAmount = children.reduce((sum, v) => sum + (v.remainingAmount || 0), 0);
+    const activeCount = children.filter(v => v.status === 'Active').length;
+    const redeemedCount = children.filter(v => v.status === 'Redeemed').length;
+    const expiredCount = children.filter(v => v.status === 'Expired').length;
+
+    // Apply pagination
+    const totalCount = children.length;
+    const skip = (page - 1) * pageSize;
+    const paginatedChildren = children.slice(skip, skip + pageSize);
+
+    return {
+      success: true,
+      data: {
+        bulkOrderNumber: order.bulkOrderNumber,
+        orderNumber: order.orderNumber,
+        user: order.user,
+        totalAmount,
+        remainingAmount,
+        status: activeCount > 0 ? 'Active' : (redeemedCount > 0 ? 'Redeemed' : 'Expired'),
+        statusBreakdown: { 
+          active: activeCount, 
+          redeemed: redeemedCount, 
+          expired: expiredCount 
+        },
+        voucherCount: allVoucherCodes.length,
+        orderCount: 1,
+        lastRedemptionDate: children[0]?.lastRedemptionDate,
+        createdAt: order.createdAt,
+        children: paginatedChildren,
+      },
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / pageSize),
+        totalCount,
+        from: totalCount > 0 ? skip + 1 : 0,
+        to: Math.min(skip + pageSize, totalCount),
+        total: totalCount,
+      }
+    };
+  } catch (error) {
+    console.error("Failed to get bulk order details:", error);
+    return { 
+      success: false, 
+      message: "Failed to fetch bulk order details.",
+      data: null,
       pagination: {
         currentPage: 1,
         totalPages: 0,
