@@ -2,19 +2,19 @@ import React, { useState } from "react";
 import {
   X,
   TrendingUp,
-  TrendingDown,
   Gift,
   CheckCircle,
   Clock,
   AlertCircle,
   Calendar,
   DollarSign,
-  Percent,
   User,
   Mail,
   Phone,
   Building,
   Loader,
+  Calculator,
+  Info,
 } from "lucide-react";
 
 const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
@@ -24,7 +24,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 bg-opacity-50">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
         <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4">
           <Loader className="w-8 h-8 animate-spin text-blue-600" />
           <p className="text-gray-600">Loading settlement details...</p>
@@ -35,43 +35,53 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
 
   if (!data) return null;
 
-  const { settlement, brand, brandTerms, brandBanking, brandContacts, voucherBreakdown, summary } = data;
+  const { settlement, brand, brandTerms, brandBanking, brandContacts, voucherBreakdown, summary, calculationBreakdown } = data;
+
+  // Determine which amount to show based on settlement trigger
+  const baseAmountLabel = settlement.settlementTrigger === "onRedemption" 
+    ? "Redeemed Amount (Base)" 
+    : "Sold Amount (Base)";
+  const baseAmountValue = settlement.settlementTrigger === "onRedemption"
+    ? settlement.redeemedAmount
+    : settlement.totalSoldAmount;
 
   const stats = [
     {
       label: "Total Sold",
-      value: `R ${summary.totalOrderAmount?.toLocaleString() || 0}`,
+      value: `₹${settlement.totalSoldAmount?.toLocaleString() || 0}`,
+      subtext: `${settlement.totalSold} vouchers`,
       icon: TrendingUp,
       color: "bg-blue-50 text-blue-600",
     },
     {
       label: "Total Redeemed",
-      value: `R ${settlement.totalRedeemed?.toLocaleString() || 0}`,
+      value: `₹${settlement.redeemedAmount?.toLocaleString() || 0}`,
+      subtext: `${settlement.totalRedeemed} vouchers (${settlement.redemptionRate}%)`,
       icon: CheckCircle,
       color: "bg-green-50 text-green-600",
     },
     {
       label: "Outstanding",
-      value: `R ${settlement.outstanding?.toLocaleString() || 0}`,
+      value: `₹${settlement.outstandingAmount?.toLocaleString() || 0}`,
+      subtext: `${settlement.outstanding} vouchers pending`,
       icon: Clock,
       color: "bg-amber-50 text-amber-600",
     },
     {
-      label: "Amount Owed",
-      value: `R ${settlement.netPayable?.toLocaleString() || 0}`,
+      label: "Net Payable",
+      value: `₹${settlement.netPayable?.toLocaleString() || 0}`,
+      subtext: settlement.settlementTriggerDisplay || "Settlement Amount",
       icon: DollarSign,
       color: "bg-purple-50 text-purple-600",
     },
   ];
 
-  
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-black/50 bg-opacity-50 transition-opacity" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
 
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
           {/* Header */}
           <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between z-10">
             <div className="flex items-center gap-4">
@@ -80,7 +90,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
               )}
               <div>
                 <h2 className="text-2xl font-bold text-white">{brand.brandName}</h2>
-                <p className="text-blue-100 text-sm">Complete Settlement Details</p>
+                <p className="text-blue-100 text-sm">{settlement.settlementPeriod}</p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 hover:bg-blue-500 rounded-lg transition-colors">
@@ -100,16 +110,46 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                       <span className="text-sm font-medium">{stat.label}</span>
                       <Icon className="w-4 h-4" />
                     </div>
-                    <p className="text-lg font-bold">{stat.value}</p>
+                    <p className="text-xl font-bold">{stat.value}</p>
+                    {stat.subtext && (
+                      <p className="text-xs mt-1 opacity-75">{stat.subtext}</p>
+                    )}
                   </div>
                 );
               })}
             </div>
 
+            {/* Settlement Trigger Banner */}
+            <div className={`mx-6 mt-6 p-4 rounded-lg ${
+              settlement.settlementTrigger === "onRedemption" 
+                ? "bg-blue-50 border border-blue-200" 
+                : "bg-green-50 border border-green-200"
+            }`}>
+              <div className="flex items-start gap-3">
+                <Info className={`w-5 h-5 mt-0.5 ${
+                  settlement.settlementTrigger === "onRedemption" ? "text-blue-600" : "text-green-600"
+                }`} />
+                <div>
+                  <h4 className={`font-semibold ${
+                    settlement.settlementTrigger === "onRedemption" ? "text-blue-900" : "text-green-900"
+                  }`}>
+                    Settlement Mode: {settlement.settlementTriggerDisplay}
+                  </h4>
+                  <p className={`text-sm mt-1 ${
+                    settlement.settlementTrigger === "onRedemption" ? "text-blue-700" : "text-green-700"
+                  }`}>
+                    {settlement.settlementTrigger === "onRedemption" 
+                      ? "This brand is paid based on voucher redemptions. Payment is calculated using the redeemed amount."
+                      : "This brand is paid based on voucher sales. Payment is calculated using the total sold amount."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Tabs */}
-            <div className="border-b bg-white sticky top-0">
+            <div className="border-b bg-white sticky top-0 mt-6">
               <div className="flex gap-0 overflow-x-auto">
-                {["overview", "vouchers", "contacts", "banking", "terms"].map((tab) => (
+                {["overview", "calculation", "vouchers", "contacts", "banking", "terms"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -156,6 +196,14 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                             </p>
                           </div>
                         </div>
+                        {settlement.lastRedemptionDate && (
+                          <div className="pt-2 border-t">
+                            <p className="text-xs text-gray-500">Last Redemption</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {new Date(settlement.lastRedemptionDate).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -208,26 +256,32 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                   {/* Financial Breakdown */}
                   <div className="border rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-gray-600 mb-4">Financial Breakdown</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="bg-gray-50 rounded p-3">
-                        <p className="text-xs text-gray-600">Commission</p>
-                        <p className="text-lg font-semibold text-gray-900">
-                          R {settlement.commissionAmount?.toLocaleString() || 0}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-blue-50 rounded p-3">
+                        <p className="text-xs text-blue-600">{baseAmountLabel}</p>
+                        <p className="text-lg font-semibold text-blue-700">
+                          ₹{baseAmountValue?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                      <div className="bg-red-50 rounded p-3">
+                        <p className="text-xs text-red-600">Commission</p>
+                        <p className="text-lg font-semibold text-red-700">
+                          -₹{settlement.commissionAmount?.toLocaleString() || 0}
                         </p>
                       </div>
                       {settlement.breakageAmount > 0 && (
-                        <div className="bg-gray-50 rounded p-3">
-                          <p className="text-xs text-gray-600">Breakage</p>
-                          <p className="text-lg font-semibold text-gray-900">
-                            R {settlement.breakageAmount?.toLocaleString() || 0}
+                        <div className="bg-orange-50 rounded p-3">
+                          <p className="text-xs text-orange-600">Breakage</p>
+                          <p className="text-lg font-semibold text-orange-700">
+                            -₹{settlement.breakageAmount?.toLocaleString() || 0}
                           </p>
                         </div>
                       )}
                       {settlement.vatAmount > 0 && (
-                        <div className="bg-gray-50 rounded p-3">
-                          <p className="text-xs text-gray-600">VAT</p>
-                          <p className="text-lg font-semibold text-gray-900">
-                            R {settlement.vatAmount?.toLocaleString() || 0}
+                        <div className="bg-green-50 rounded p-3">
+                          <p className="text-xs text-green-600">VAT</p>
+                          <p className="text-lg font-semibold text-green-700">
+                            +₹{settlement.vatAmount?.toLocaleString() || 0}
                           </p>
                         </div>
                       )}
@@ -283,7 +337,110 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                 </div>
               )}
 
-              {/* Vouchers Tab */}
+              {/* Calculation Tab */}
+              {activeTab === "calculation" && calculationBreakdown && (
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6 text-black">
+                    <div className="flex items-center gap-3 mb-4">
+                      <Calculator className="w-6 h-6 text-purple-600" />
+                      <h3 className="text-lg font-bold text-gray-900">Settlement Calculation Breakdown</h3>
+                    </div>
+                    
+                    <div className="bg-white rounded-lg p-4 mb-4">
+                      <p className="text-sm font-mono text-gray-700 leading-relaxed">
+                        {calculationBreakdown.netPayableFormula}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4">
+                      {/* Commission Calculation */}
+                      <div className="bg-white border rounded-lg p-4">
+                        <h4 className="font-semibold text-gray-900 mb-3 text-sm">1. Commission Calculation</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Type:</span>
+                            <span className="font-medium">{calculationBreakdown.commissionCalculation.type}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Value:</span>
+                            <span className="font-medium">
+                              {calculationBreakdown.commissionCalculation.type === "Percentage" 
+                                ? `${calculationBreakdown.commissionCalculation.value}%`
+                                : `₹${calculationBreakdown.commissionCalculation.value}`}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Base Amount:</span>
+                            <span className="font-medium">₹{calculationBreakdown.commissionCalculation.baseAmount?.toLocaleString()}</span>
+                          </div>
+                          {calculationBreakdown.commissionCalculation.type === "Fixed" && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Transaction Count:</span>
+                              <span className="font-medium">{calculationBreakdown.commissionCalculation.transactionCount}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between pt-2 border-t font-semibold">
+                            <span className="text-gray-900">Commission Amount:</span>
+                            <span className="text-red-600">-₹{calculationBreakdown.commissionCalculation.result?.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Breakage Calculation */}
+                      {calculationBreakdown.breakageCalculation.result > 0 && (
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-3 text-sm">2. Breakage Calculation</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Total Expired Value:</span>
+                              <span className="font-medium">₹{calculationBreakdown.breakageCalculation.totalExpired?.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Brand Share:</span>
+                              <span className="font-medium">{calculationBreakdown.breakageCalculation.sharePercentage}%</span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t font-semibold">
+                              <span className="text-gray-900">Breakage Deduction:</span>
+                              <span className="text-orange-600">-₹{calculationBreakdown.breakageCalculation.result?.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* VAT Calculation */}
+                      {calculationBreakdown.vatCalculation.result > 0 && (
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-3 text-sm">3. VAT Calculation</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">VAT Rate:</span>
+                              <span className="font-medium">{calculationBreakdown.vatCalculation.rate}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">On Commission:</span>
+                              <span className="font-medium">₹{calculationBreakdown.vatCalculation.baseAmount?.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t font-semibold">
+                              <span className="text-gray-900">VAT Amount:</span>
+                              <span className="text-green-600">+₹{calculationBreakdown.vatCalculation.result?.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Final Net Payable */}
+                      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg p-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-bold">Net Payable to Brand:</span>
+                          <span className="text-2xl font-bold">₹{settlement.netPayable?.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Vouchers Tab - Same as before */}
               {activeTab === "vouchers" && (
                 <div className="space-y-4">
                   {voucherBreakdown && voucherBreakdown.length > 0 ? (
@@ -293,10 +450,12 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                           <div className="bg-blue-50 rounded p-3">
                             <p className="text-xs text-blue-600">Total Issued</p>
                             <p className="text-2xl font-bold text-blue-700">{voucher.totalIssued}</p>
+                            <p className="text-xs text-blue-600 mt-1">₹{voucher.totalSoldAmount?.toLocaleString()}</p>
                           </div>
                           <div className="bg-green-50 rounded p-3">
                             <p className="text-xs text-green-600">Redeemed</p>
                             <p className="text-2xl font-bold text-green-700">{voucher.totalRedeemed}</p>
+                            <p className="text-xs text-green-600 mt-1">₹{voucher.totalRedeemedAmount?.toLocaleString()}</p>
                           </div>
                           <div className="bg-amber-50 rounded p-3">
                             <p className="text-xs text-amber-600">Unredeemed</p>
@@ -318,9 +477,8 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Value</th>
                                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Issued</th>
                                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Redeemed</th>
-                                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Unredeemed</th>
+                                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Amount Redeemed</th>
                                     <th className="px-4 py-2 text-left font-semibold text-gray-700">Rate</th>
-                                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Expires</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -331,14 +489,13 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                                       </td>
                                       <td className="px-4 py-2 text-blue-600 font-semibold">{denom.issued}</td>
                                       <td className="px-4 py-2 text-green-600 font-semibold">{denom.redeemed}</td>
-                                      <td className="px-4 py-2 text-amber-600 font-semibold">{denom.unredeemed}</td>
+                                      <td className="px-4 py-2 text-green-700 font-semibold">
+                                        ₹{denom.redeemedAmount?.toLocaleString()}
+                                      </td>
                                       <td className="px-4 py-2">
                                         <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-semibold">
                                           {denom.percentage}%
                                         </span>
-                                      </td>
-                                      <td className="px-4 py-2 text-gray-600">
-                                        {denom.expiresAt ? new Date(denom.expiresAt).toLocaleDateString() : "No expiry"}
                                       </td>
                                     </tr>
                                   ))}
@@ -583,17 +740,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex gap-3 justify-end">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-            >
-              Close
-            </button>
-            <button className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-              Download Report
-            </button>
-          </div>
+          
         </div>
       </div>
     </div>

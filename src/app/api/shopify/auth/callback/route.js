@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { completeAuth, registerWebhooks } from '@/lib/shopify.server.js';
+import { PrismaSessionStorage } from '@/lib/session-storage';
 import {
   fetchShopInfo,
 } from '@/lib/action/shopify';
+
+const sessionStorage = new PrismaSessionStorage();
 
 export async function GET(request) {
   try {
@@ -19,14 +21,33 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
     
+    // Ensure shop domain is properly formatted
+    const shopDomain = shop.endsWith('.myshopify.com') ? shop : `${shop}.myshopify.com`;
+    
     try {
-      // Use the centralized auth completion function
-      const session = await completeAuth(code, shop);
+      // Exchange the authorization code for an access token
+      const tokenResponse = await fetch(`https://${shopDomain}/admin/oauth/access_token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: process.env.SHOPIFY_API_KEY,
+          client_secret: process.env.SHOPIFY_SECRET_KEY,
+          code: code,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error(`Failed to exchange code for token: ${tokenResponse.status}`);
+      }
+
+      const tokenData = await tokenResponse.json();
 
       // [Wove] Get all vendors on app install
       try {
-        const accessToken = session.accessToken;
-        const shopName = session.shop;
+        const accessToken = tokenData.access_token;
+        const shopName = shopDomain;
 
         await fetchShopInfo(accessToken, shopName);
         // await fetchGiftCardProducts(accessToken, shopName);
@@ -37,16 +58,37 @@ export async function GET(request) {
         console.error("Error fetching data from Shopify:", e);
       }
       // [/Wove]
+      
+      
+      // Create session object
+      const session = {
+        shop: shopDomain,
+        accessToken: tokenData.access_token,
+        scope: tokenData.scope,
+        isOnline: false, // For public apps, this is typically false
+        expires: null, // Public app tokens don't expire
+      };
 
-      // Register webhooks after successful installation
-      try {
-        await registerWebhooks(session);
-      } catch (webhookError) {
-        console.error('Webhook registration error:', webhookError);
-        // Don't fail the installation if webhooks fail
-      }
+      // Store the session data using existing session storage utility
+      await sessionStorage.storeSession(session);
+      
+      // Also store in AppInstallation table for tracking
+      await prisma.appInstallation.upsert({
+        where: { shop: session.shop },
+        update: {
+          accessToken: session.accessToken,
+          scopes: session.scope,
+          isActive: true,
+        },
+        create: {
+          shop: session.shop,
+          accessToken: session.accessToken,
+          scopes: session.scope,
+          isActive: true,
+        },
+      });
 
-      // Find brand by shop domain to redirect appropriately
+      // Find brand by shop domain to redirect to the edit page
       const brand = await prisma.brand.findFirst({
         where: {
           domain: session.shop,
@@ -55,14 +97,16 @@ export async function GET(request) {
 
       let redirectUrl;
       if (brand) {
-        // If brand exists, redirect to Shopify dashboard
-        redirectUrl = `/shopify/dashboard?shop=${session.shop}${host ? `&host=${host}` : ''}`;
+        // If brand exists, redirect to the edit page with brand ID
+        redirectUrl = `/brandsPartner/edit/${brand.id}`;
       } else {
         // Otherwise, redirect to the main app page
-        redirectUrl = `/shopify/dashboard?shop=${session.shop}${host ? `&host=${host}` : ''}`;
+        redirectUrl = `/?shop=${session.shop}${host ? `&host=${host}` : ''}`;
       }
 
-      return NextResponse.redirect(new URL(redirectUrl, request.url));
+      const finalRedirectUrl = new URL(redirectUrl, request.url);
+      finalRedirectUrl.protocol = 'http';
+      return NextResponse.redirect(finalRedirectUrl);
       
     } catch (tokenError) {
       console.error('Token exchange error:', tokenError);

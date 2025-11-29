@@ -4,7 +4,6 @@ import {
   ApiVersion,
   LogSeverity,
   BillingInterval,
-  LATEST_API_VERSION,
 } from "@shopify/shopify-api";
 import { PrismaSessionStorage } from "./session-storage.js";
 import prisma from "./db.js";
@@ -50,7 +49,7 @@ const shopify = shopifyApi({
     ""
   ),
   hostScheme: process.env.SHOPIFY_APP_URL.startsWith("https") ? "https" : "http",
-  apiVersion: LATEST_API_VERSION,
+  apiVersion: ApiVersion.April24,
   isEmbeddedApp: true,
   sessionStorage,
   logger: {
@@ -302,5 +301,5 @@ export function verifyWebhook(request, body) {
 }
 
 export default shopify;
-export const apiVersion = LATEST_API_VERSION;
+export const apiVersion = ApiVersion.April24;
 export { sessionStorage };

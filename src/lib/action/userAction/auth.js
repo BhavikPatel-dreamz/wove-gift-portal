@@ -19,7 +19,7 @@ export async function createUser(data) {
       firstName: data.firstName || null,
       lastName: data.lastName || null,
       phone: data.phone || null,
-      role: "CUSTOMER"
+      role: "ADMIN"
     },
     select: {
       id: true,
