@@ -99,7 +99,7 @@ const DynamicTable = ({
                     onClick={() => onPageChange && onPageChange(pageNumber)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${
                       currentPage === pageNumber
-                        ? "bg-blue-600 text-white shadow-sm"
+                        ? "bg-blue-700 text-white shadow-sm"
                         : "border border-gray-300 hover:bg-white text-gray-700"
                     }`}
                   >
