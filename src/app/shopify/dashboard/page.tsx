@@ -55,7 +55,7 @@ function DashboardContent() {
   };
 
   const handleNavigateToGiftCards = () => {
-    navigate('/shopify/gift-cards');
+    navigate('/shopify/vouchers');
   };
 
   const handleCreateGiftCard = () => {
