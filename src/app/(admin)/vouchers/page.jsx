@@ -268,11 +268,11 @@ export default function VouchersManagement() {
         return (
           <div className="font-semibold text-gray-900 w-45">
             {info.getValue() || '-'}
-            {row.isBulkOrder && (
+            {/* {row.isBulkOrder && (
               <div className="mt-1">
                 <span className="text-xs text-green-600">{row.voucherCount} vouchers</span>
               </div>
-            )}
+            )} */}
           </div>
         );
       },
@@ -284,11 +284,6 @@ export default function VouchersManagement() {
         return (
           <div>
             <div className="font-semibold text-gray-900">{info.getValue()}</div>
-            {row.isBulkOrder && (
-              <div className="text-xs text-gray-500 mt-1">
-                Click eye icon to view all vouchers
-              </div>
-            )}
           </div>
         );
       },
