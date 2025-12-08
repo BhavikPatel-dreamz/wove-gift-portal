@@ -20,6 +20,7 @@ import {
 import toast from "react-hot-toast";
 import { getSettlementDetailsByBrandId, getSettlements } from "../../../lib/action/brandPartner";
 import SettlementDetailsModal from "../../../components/settlements/SettlementDetailsModal";
+import { currencyList } from "../../../components/brandsPartner/currency";
 
 const SettlementsPage = () => {
   const [data, setData] = useState([]);
@@ -34,6 +35,11 @@ const SettlementsPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const shop = searchParams.get('shop');
+
+   const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "";
+    
+  
 
   const params = useMemo(
     () => ({

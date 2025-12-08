@@ -396,32 +396,6 @@ const Dashboard = ({ shopParam }) => {
             </div>
           </div>
         </div>
-
-        {/* Getting Started Section - Show only if no data */}
-        {!hasData && (
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-            <div className="max-w-3xl">
-              <h3 className="text-2xl font-semibold text-gray-800 mb-4">Getting Started</h3>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <p className="text-blue-800 font-medium mb-2">No gift orders have been submitted yet</p>
-                <p className="text-blue-700 text-sm">Start your gift card journey by creating your first order</p>
-              </div>
-              <p className="text-gray-600 leading-relaxed mb-6">
-                Once users start submitting gift orders through the frontend, you'll see real-time data and analytics here.
-                All metrics, charts, and performance data will automatically populate based on actual user activity.
-              </p>
-              <div className="flex gap-4">
-                <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Create First Order
-                </button>
-                <button className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                  View Documentation
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
     </div>
   );
