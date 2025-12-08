@@ -16,9 +16,13 @@ import {
   Calculator,
   Info,
 } from "lucide-react";
+import { currencyList } from "../brandsPartner/currency";
 
 const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
   const [activeTab, setActiveTab] = useState("overview");
+
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "";
 
   if (!isOpen) return null;
 
@@ -48,28 +52,28 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
   const stats = [
     {
       label: "Total Sold",
-      value: `₹${settlement.totalSoldAmount?.toLocaleString() || 0}`,
+      value: `${getCurrencySymbol(brand.currency)}${settlement.totalSoldAmount?.toLocaleString() || 0}`,
       subtext: `${settlement.totalSold} vouchers`,
       icon: TrendingUp,
       color: "bg-blue-50 text-blue-600",
     },
     {
       label: "Total Redeemed",
-      value: `₹${settlement.redeemedAmount?.toLocaleString() || 0}`,
+      value: `${getCurrencySymbol(brand.currency)}${settlement.redeemedAmount?.toLocaleString() || 0}`,
       subtext: `${settlement.totalRedeemed} vouchers (${settlement.redemptionRate}%)`,
       icon: CheckCircle,
       color: "bg-green-50 text-green-600",
     },
     {
       label: "Outstanding",
-      value: `₹${settlement.outstandingAmount?.toLocaleString() || 0}`,
+      value: `${getCurrencySymbol(brand.currency)}${settlement.outstandingAmount?.toLocaleString() || 0}`,
       subtext: `${settlement.outstanding} vouchers pending`,
       icon: Clock,
       color: "bg-amber-50 text-amber-600",
     },
     {
       label: "Net Payable",
-      value: `₹${settlement.netPayable?.toLocaleString() || 0}`,
+      value: `${getCurrencySymbol(brand.currency)}${settlement.netPayable?.toLocaleString() || 0}`,
       subtext: settlement.settlementTriggerDisplay || "Settlement Amount",
       icon: DollarSign,
       color: "bg-purple-50 text-purple-600",
@@ -260,20 +264,20 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                       <div className="bg-blue-50 rounded p-3">
                         <p className="text-xs text-blue-600">{baseAmountLabel}</p>
                         <p className="text-lg font-semibold text-blue-700">
-                          ₹{baseAmountValue?.toLocaleString() || 0}
+                          {getCurrencySymbol(brand.currency)}{baseAmountValue?.toLocaleString() || 0}
                         </p>
                       </div>
                       <div className="bg-red-50 rounded p-3">
                         <p className="text-xs text-red-600">Commission</p>
                         <p className="text-lg font-semibold text-red-700">
-                          -₹{settlement.commissionAmount?.toLocaleString() || 0}
+                          -{getCurrencySymbol(brand.currency)}{settlement.commissionAmount?.toLocaleString() || 0}
                         </p>
                       </div>
                       {settlement.breakageAmount > 0 && (
                         <div className="bg-orange-50 rounded p-3">
                           <p className="text-xs text-orange-600">Breakage</p>
                           <p className="text-lg font-semibold text-orange-700">
-                            -₹{settlement.breakageAmount?.toLocaleString() || 0}
+                            -{getCurrencySymbol(brand.currency)}{settlement.breakageAmount?.toLocaleString() || 0}
                           </p>
                         </div>
                       )}
@@ -281,7 +285,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                         <div className="bg-green-50 rounded p-3">
                           <p className="text-xs text-green-600">VAT</p>
                           <p className="text-lg font-semibold text-green-700">
-                            +₹{settlement.vatAmount?.toLocaleString() || 0}
+                            +{getCurrencySymbol(brand.currency)}{settlement.vatAmount?.toLocaleString() || 0}
                           </p>
                         </div>
                       )}
@@ -366,12 +370,12 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                             <span className="font-medium">
                               {calculationBreakdown.commissionCalculation.type === "Percentage" 
                                 ? `${calculationBreakdown.commissionCalculation.value}%`
-                                : `₹${calculationBreakdown.commissionCalculation.value}`}
+                                : `${getCurrencySymbol(brand.currency)}${calculationBreakdown.commissionCalculation.value}`}
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-600">Base Amount:</span>
-                            <span className="font-medium">₹{calculationBreakdown.commissionCalculation.baseAmount?.toLocaleString()}</span>
+                            <span className="font-medium">{getCurrencySymbol(brand.currency)}{calculationBreakdown.commissionCalculation.baseAmount?.toLocaleString()}</span>
                           </div>
                           {calculationBreakdown.commissionCalculation.type === "Fixed" && (
                             <div className="flex justify-between">
@@ -381,7 +385,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                           )}
                           <div className="flex justify-between pt-2 border-t font-semibold">
                             <span className="text-gray-900">Commission Amount:</span>
-                            <span className="text-red-600">-₹{calculationBreakdown.commissionCalculation.result?.toLocaleString()}</span>
+                            <span className="text-red-600">-{getCurrencySymbol(brand.currency)}{calculationBreakdown.commissionCalculation.result?.toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
@@ -393,7 +397,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Total Expired Value:</span>
-                              <span className="font-medium">₹{calculationBreakdown.breakageCalculation.totalExpired?.toLocaleString()}</span>
+                              <span className="font-medium">{getCurrencySymbol(brand.currency)}{calculationBreakdown.breakageCalculation.totalExpired?.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-600">Brand Share:</span>
@@ -401,7 +405,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                             </div>
                             <div className="flex justify-between pt-2 border-t font-semibold">
                               <span className="text-gray-900">Breakage Deduction:</span>
-                              <span className="text-orange-600">-₹{calculationBreakdown.breakageCalculation.result?.toLocaleString()}</span>
+                              <span className="text-orange-600">-{getCurrencySymbol(brand.currency)}{calculationBreakdown.breakageCalculation.result?.toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
@@ -418,11 +422,11 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-600">On Commission:</span>
-                              <span className="font-medium">₹{calculationBreakdown.vatCalculation.baseAmount?.toLocaleString()}</span>
+                              <span className="font-medium">{getCurrencySymbol(brand.currency)}{calculationBreakdown.vatCalculation.baseAmount?.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between pt-2 border-t font-semibold">
                               <span className="text-gray-900">VAT Amount:</span>
-                              <span className="text-green-600">+₹{calculationBreakdown.vatCalculation.result?.toLocaleString()}</span>
+                              <span className="text-green-600">+{getCurrencySymbol(brand.currency)}{calculationBreakdown.vatCalculation.result?.toLocaleString()}</span>
                             </div>
                           </div>
                         </div>
@@ -432,7 +436,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                       <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg p-4">
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-bold">Net Payable to Brand:</span>
-                          <span className="text-2xl font-bold">₹{settlement.netPayable?.toLocaleString()}</span>
+                          <span className="text-2xl font-bold">{getCurrencySymbol(brand.currency)}{settlement.netPayable?.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -450,12 +454,12 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                           <div className="bg-blue-50 rounded p-3">
                             <p className="text-xs text-blue-600">Total Issued</p>
                             <p className="text-2xl font-bold text-blue-700">{voucher.totalIssued}</p>
-                            <p className="text-xs text-blue-600 mt-1">₹{voucher.totalSoldAmount?.toLocaleString()}</p>
+                            <p className="text-xs text-blue-600 mt-1">{getCurrencySymbol(brand.currency)}{voucher.totalSoldAmount?.toLocaleString()}</p>
                           </div>
                           <div className="bg-green-50 rounded p-3">
                             <p className="text-xs text-green-600">Redeemed</p>
                             <p className="text-2xl font-bold text-green-700">{voucher.totalRedeemed}</p>
-                            <p className="text-xs text-green-600 mt-1">₹{voucher.totalRedeemedAmount?.toLocaleString()}</p>
+                            <p className="text-xs text-green-600 mt-1">{getCurrencySymbol(brand.currency)}{voucher.totalRedeemedAmount?.toLocaleString()}</p>
                           </div>
                           <div className="bg-amber-50 rounded p-3">
                             <p className="text-xs text-amber-600">Unredeemed</p>
@@ -485,12 +489,12 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                                   {voucher.denominationBreakdown.map((denom, didx) => (
                                     <tr key={didx} className="border-b hover:bg-gray-50">
                                       <td className="px-4 py-2 font-medium text-black">
-                                        {denom.currency} {denom.value}
+                                        {getCurrencySymbol(brand.currency)} {denom.value}
                                       </td>
                                       <td className="px-4 py-2 text-blue-600 font-semibold">{denom.issued}</td>
                                       <td className="px-4 py-2 text-green-600 font-semibold">{denom.redeemed}</td>
                                       <td className="px-4 py-2 text-green-700 font-semibold">
-                                        ₹{denom.redeemedAmount?.toLocaleString()}
+                                        {getCurrencySymbol(brand.currency)}{denom.redeemedAmount?.toLocaleString()}
                                       </td>
                                       <td className="px-4 py-2">
                                         <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-semibold">
@@ -664,19 +668,19 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
                             <p className="font-medium text-gray-900">
                               {brandTerms.commissionType === "Percentage"
                                 ? `${brandTerms.commissionValue}%`
-                                : `R ${brandTerms.commissionValue}`}
+                                : `${getCurrencySymbol(brand.currency)} ${brandTerms.commissionValue}`}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Minimum Order Value</p>
                             <p className="font-medium text-gray-900">
-                              R {brandTerms.minOrderValue?.toLocaleString() || 0}
+                              {getCurrencySymbol(brand.currency)} {brandTerms.minOrderValue?.toLocaleString() || 0}
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Maximum Discount</p>
                             <p className="font-medium text-gray-900">
-                              R {brandTerms.maxDiscount?.toLocaleString() || 0}
+                              {getCurrencySymbol(brand.currency)} {brandTerms.maxDiscount?.toLocaleString() || 0}
                             </p>
                           </div>
                         </div>

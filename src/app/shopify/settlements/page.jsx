@@ -234,7 +234,7 @@ const SettlementsPage = () => {
     </div>
   );
 
-  const customColumns = [
+ const customColumns = [
     columnHelper.accessor("brandName", {
       header: "Brand",
       cell: (info) => (
@@ -270,7 +270,7 @@ const SettlementsPage = () => {
       cell: (info) => (
         <div>
           <div className="text-gray-900 font-semibold">
-            ₹{info.getValue().toLocaleString()}
+           {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
           </div>
           <div className="text-xs text-gray-500">
             {info.row.original.totalSold} vouchers
@@ -285,7 +285,7 @@ const SettlementsPage = () => {
         return (
           <div>
             <div className="text-green-700 font-semibold">
-              ₹{info.getValue().toLocaleString()}
+              {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
             </div>
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <TrendingUp className="w-3 h-3" />
@@ -302,11 +302,11 @@ const SettlementsPage = () => {
         return (
           <div>
             <div className="text-gray-900 font-bold">
-              ₹{info.getValue().toLocaleString()}
+              {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
             </div>
             {row.commissionAmount > 0 && (
               <div className="text-xs text-gray-500">
-                Commission: ₹{row.commissionAmount.toLocaleString()}
+                Commission: {getCurrencySymbol(info.row.original.currency)}{row.commissionAmount.toLocaleString()}
               </div>
             )}
           </div>
@@ -323,7 +323,7 @@ const SettlementsPage = () => {
               amount > 0 ? "text-red-600" : "text-green-600"
             }`}
           >
-            ₹{amount.toLocaleString()}
+            {getCurrencySymbol(info.row.original.currency)}{amount.toLocaleString()}
           </div>
         );
       },
@@ -376,7 +376,7 @@ const SettlementsPage = () => {
                   <DollarSign className="w-5 h-5 text-blue-500" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900">
-                  ₹{summary.totalPayable.toLocaleString()}
+                  {getCurrencySymbol(data && data[0]?.currency)}{summary.totalPayable.toLocaleString()}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   {summary.totalSettlements} settlements
@@ -389,7 +389,7 @@ const SettlementsPage = () => {
                   <CheckCircle className="w-5 h-5 text-green-500" />
                 </div>
                 <div className="text-2xl font-bold text-green-600">
-                  ₹{summary.totalPaid.toLocaleString()}
+                  {getCurrencySymbol(data && data[0]?.currency)}{summary.totalPaid.toLocaleString()}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   {summary.paidCount} completed
@@ -402,7 +402,7 @@ const SettlementsPage = () => {
                   <AlertTriangle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="text-2xl font-bold text-amber-600">
-                  ₹{summary.totalRemaining.toLocaleString()}
+                  {getCurrencySymbol(data && data[0]?.currency)}{summary.totalRemaining.toLocaleString()}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   {summary.pendingCount} pending
@@ -538,19 +538,19 @@ const PaymentHistoryModal = ({ isOpen, onClose, settlement }) => {
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="text-sm text-blue-600 mb-1">Total Payable</div>
                 <div className="text-2xl font-bold text-blue-700">
-                  ₹{settlement.netPayable.toLocaleString()}
+                  {getCurrencySymbol(data && data[0]?.currency)}{settlement.netPayable.toLocaleString()}
                 </div>
               </div>
               <div className="bg-green-50 rounded-lg p-4">
                 <div className="text-sm text-green-600 mb-1">Total Paid</div>
                 <div className="text-2xl font-bold text-green-700">
-                  ₹{settlement.totalPaid.toLocaleString()}
+                  {getCurrencySymbol(data && data[0]?.currency)}{settlement.totalPaid.toLocaleString()}
                 </div>
               </div>
               <div className="bg-amber-50 rounded-lg p-4">
                 <div className="text-sm text-amber-600 mb-1">Remaining</div>
                 <div className="text-2xl font-bold text-amber-700">
-                  ₹{settlement.remainingAmount.toLocaleString()}
+                  {getCurrencySymbol(data && data[0]?.currency)}{settlement.remainingAmount.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -582,7 +582,7 @@ const PaymentHistoryModal = ({ isOpen, onClose, settlement }) => {
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-green-600">
-                          ₹{payment.amount.toLocaleString()}
+                          {getCurrencySymbol(data && data[0]?.currency)}{payment.amount.toLocaleString()}
                         </div>
                         <div className="text-xs text-gray-500">Completed</div>
                       </div>
