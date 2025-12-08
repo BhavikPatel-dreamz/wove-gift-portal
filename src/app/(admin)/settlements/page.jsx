@@ -52,6 +52,7 @@ const SettlementsPage = () => {
     try {
       const res = await getSettlements(params);
       if (res.success) {
+        console.log(res.data);
         setData(res.data);
         setPagination(res.pagination);
         setSummary(res.summary);
@@ -266,7 +267,7 @@ const SettlementsPage = () => {
       cell: (info) => (
         <div>
           <div className="text-gray-900 font-semibold">
-            ₹{info.getValue().toLocaleString()}
+           ₹{info.getValue().toLocaleString()}
           </div>
           <div className="text-xs text-gray-500">
             {info.row.original.totalSold} vouchers

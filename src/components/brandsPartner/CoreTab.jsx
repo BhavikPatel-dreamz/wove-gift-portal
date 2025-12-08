@@ -1,11 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { AlertTriangle, Upload, X, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { currencyList } from './currency';
 
 const CoreTab = ({ formData, updateFormData }) => {
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [currencies] = useState(currencyList);
 
   // Handle existing logo when component mounts or formData changes
   useEffect(() => {
@@ -32,7 +34,7 @@ const CoreTab = ({ formData, updateFormData }) => {
       // Validate file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml', 'image/webp'];
       if (!validTypes.includes(file.type)) {
-         toast.error('Please select a valid image file (JPG, PNG, SVG, WebP)');
+        toast.error('Please select a valid image file (JPG, PNG, SVG, WebP)');
         return;
       }
 
@@ -63,7 +65,7 @@ const CoreTab = ({ formData, updateFormData }) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileSelect(e.dataTransfer.files[0]);
     }
@@ -183,6 +185,20 @@ const CoreTab = ({ formData, updateFormData }) => {
               required
             />
           </div>
+          <div>
+            <label className="block text-xs font-medium mb-1 text-gray-700">Currency</label>
+            <select
+              value={formData?.currency || ''}
+              onChange={(e) => updateFormData('currency', e.target.value)}
+              className="w-full border rounded-md px-3 py-2 bg-white"
+            >
+              {currencies.map((cur) => (
+                <option key={cur?.code} value={cur?.code}>
+                  {cur?.symbol + " " + cur?.code}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="mt-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -196,6 +212,8 @@ const CoreTab = ({ formData, updateFormData }) => {
             required
           />
         </div>
+
+
       </div>
 
       {/* Visual Identity */}
@@ -206,15 +224,14 @@ const CoreTab = ({ formData, updateFormData }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Brand Logo *
             </label>
-            
+
             {/* File Upload Area */}
             <div className="relative">
               <div
-                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-                  dragActive 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 hover:border-gray-400'
-                }`}
+                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${dragActive
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+                  }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
@@ -224,9 +241,9 @@ const CoreTab = ({ formData, updateFormData }) => {
               >
                 {imagePreview ? (
                   <div className="relative">
-                    <img 
-                      src={imagePreview} 
-                      alt="Logo preview" 
+                    <img
+                      src={imagePreview}
+                      alt="Logo preview"
                       className="mx-auto mb-2 max-h-24 w-auto rounded"
                       onError={(e) => {
                         e.target.style.display = 'none';
@@ -256,7 +273,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                   </div>
                 )}
               </div>
-              
+
               {imagePreview && (
                 <button
                   type="button"
@@ -266,7 +283,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                   <X size={12} />
                 </button>
               )}
-              
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -276,7 +293,7 @@ const CoreTab = ({ formData, updateFormData }) => {
               />
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Primary Color

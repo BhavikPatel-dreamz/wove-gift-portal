@@ -192,7 +192,7 @@ const BrandEdit = () => {
           commissionValue: brand.brandTerms?.commissionValue || 0,
           maxDiscount: brand.brandTerms?.maxDiscount || 0,
           minOrderValue: brand.brandTerms?.minOrderValue || 0,
-          currency: brand.brandTerms?.currency || 'USD',
+          currency: brand.currency || 'USD',
           breakagePolicy: brand.brandTerms?.breakagePolicy || 'Retain',
           breakageShare: brand.brandTerms?.breakageShare || 0,
           contractStart: brand.brandTerms?.contractStart ?
