@@ -7,13 +7,13 @@ import Header from './Header';
 import { Toaster } from "react-hot-toast";
 import { useSearchParams } from 'next/navigation';
 import ShopAdminHeader from "../../components/layout/ShopAdminHeader";
+import { useSession } from '@/contexts/SessionContext'
 
-const AppLayout = ({ children, session }) => {
+const AppLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const params = useSearchParams();
   const shopParam = params.get('shop');
-
-  console.log(session, "shopParam");
+  const session = useSession()
 
 
   return (
