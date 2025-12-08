@@ -153,7 +153,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, data, loading }) => {
             {/* Tabs */}
             <div className="border-b bg-white sticky top-0 mt-6">
               <div className="flex gap-0 overflow-x-auto">
-                {["overview", "calculation", "vouchers", "contacts", "banking", "terms"].map((tab) => (
+                {["overview", "vouchers", "contacts", "banking", "terms"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
