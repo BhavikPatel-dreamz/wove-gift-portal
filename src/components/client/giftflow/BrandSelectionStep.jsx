@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import SearchBar from './SearchBar';
 import CardGrid from './CardGrid';
 import { getBrandsForClient, getBrandCategories } from "@/lib/action/brandFetch";
@@ -36,10 +36,15 @@ const BrandSelectionStep = () => {
     categories,
     pagination,
     loading,
-    error
+    error,
+    selectedBrand
   } = useSelector((state) => state.giftFlowReducer);
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  
+  // Cache to track fetched data
+  const fetchCacheRef = useRef(new Map());
+  const isFetchingRef = useRef(false);
 
   // Debounce search term
   useEffect(() => {
@@ -50,7 +55,7 @@ const BrandSelectionStep = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch categories on mount
+  // Fetch categories on mount (only once)
   useEffect(() => {
     const fetchCategories = async () => {
       const { success, data } = await getBrandCategories();
@@ -67,7 +72,30 @@ const BrandSelectionStep = () => {
   // Fetch brands when filters change
   useEffect(() => {
     const fetchBrands = async () => {
+      // Check if we already have premium brands data loaded
+      if (premiumBrands && premiumBrands.length > 0 && !debouncedSearchTerm && selectedCategory === "All Categories" && currentPage === 1) {
+        // Data already exists, no need to fetch
+        return;
+      }
+
+      // Create a unique cache key based on filters
+      const cacheKey = `${debouncedSearchTerm}-${selectedCategory}-${currentPage}-${sortBy}`;
+      
+      // Check if we already have this data cached
+      if (fetchCacheRef.current.has(cacheKey)) {
+        const cachedData = fetchCacheRef.current.get(cacheKey);
+        dispatch(setPremiumBrands(cachedData.brands));
+        dispatch(setPagination(cachedData.pagination));
+        return;
+      }
+
+      // Prevent concurrent fetches
+      if (isFetchingRef.current) {
+        return;
+      }
+
       try {
+        isFetchingRef.current = true;
         dispatch(setLoading(true));
         dispatch(setError(null));
         
@@ -82,6 +110,18 @@ const BrandSelectionStep = () => {
         if (success) {
           dispatch(setPremiumBrands(data));
           dispatch(setPagination(paginationData));
+          
+          // Cache the result
+          fetchCacheRef.current.set(cacheKey, {
+            brands: data,
+            pagination: paginationData
+          });
+
+          // Limit cache size to prevent memory issues (keep last 20 entries)
+          if (fetchCacheRef.current.size > 20) {
+            const firstKey = fetchCacheRef.current.keys().next().value;
+            fetchCacheRef.current.delete(firstKey);
+          }
         } else {
           dispatch(setError(message));
         }
@@ -89,11 +129,12 @@ const BrandSelectionStep = () => {
         dispatch(setError("An unexpected error occurred."));
       } finally {
         dispatch(setLoading(false));
+        isFetchingRef.current = false;
       }
     };
 
     fetchBrands();
-  }, [dispatch, debouncedSearchTerm, selectedCategory, currentPage, sortBy]);
+  }, [dispatch, debouncedSearchTerm, selectedCategory, currentPage, sortBy, premiumBrands]);
 
   const handleToggleFavorite = useCallback((brandId) => {
     dispatch(toggleFavorite(brandId));
@@ -110,19 +151,10 @@ const BrandSelectionStep = () => {
   }, [dispatch]);
 
   const handleResetFilters = useCallback(() => {
+    // Clear cache when filters are reset
+    fetchCacheRef.current.clear();
     dispatch(resetFilters());
   }, [dispatch]);
-
-  // if (loading && premiumBrands.length === 0) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <div className="text-center">
-  //         <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-wave-orange mx-auto"></div>
-  //         <h2 className="text-2xl font-semibold text-wave-green mt-4">Loading Brands...</h2>
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   if (error && premiumBrands.length === 0) {
     return (
@@ -130,7 +162,10 @@ const BrandSelectionStep = () => {
         <div className="text-center p-8 bg-wave-cream rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Error: {error}</h2>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              fetchCacheRef.current.clear();
+              window.location.reload();
+            }}
             className="px-6 py-2 bg-wave-orange text-white rounded-lg hover:bg-opacity-90"
           >
             Retry
@@ -139,7 +174,6 @@ const BrandSelectionStep = () => {
       </div>
     );
   }
-
 
   return (
     <div className="space-y-6">
@@ -173,6 +207,7 @@ const BrandSelectionStep = () => {
           onToggleFavorite={handleToggleFavorite}
           onBrandClick={handleBrandClick}
           isLoading={loading}
+          selectedBrand={selectedBrand}
         />
 
         {/* Pagination */}

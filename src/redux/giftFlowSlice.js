@@ -72,44 +72,45 @@ const giftFlowSlice = createSlice({
       if (currentStep > 1) {
         state.currentStep = currentStep - 1;
 
-        switch (currentStep) {
-          case 2:
-            state.selectedBrand = null;
-            break;
-          case 3:
-            state.selectedAmount = null;
-            break;
-          case 4:
-            state.selectedOccasion = null;
-            state.subCategories = [];
-            state.currentSubCategoryPage = 1;
-            break;
-          case 5:
-            state.selectedSubCategory = null;
-            break;
-          case 6:
-            state.personalMessage = "";
-            break;
-          case 7:
-            state.selectedTiming = null;
-            break;
-          case 8:
-            state.deliveryMethod = null;
-            state.deliveryDetails = {
-              yourName: "",
-              yourWhatsAppNumber: "",
-              recipientName: "",
-              recipientWhatsAppNumber: "",
-              deliveryTips: [],
-              previewMessage: false,
-              yourFullName: "",
-              yourEmailAddress: "",
-              recipientFullName: "",
-              recipientEmailAddress: "",
-              printDetails: {},
-            };
-            break;
-        }
+        // switch (currentStep) {
+        //   case 2:
+        //     state.selectedBrand = null;
+        //     break;
+        //   case 3:
+        //     state.selectedAmount = null;
+        //     break;
+        //   case 4:
+        //     state.selectedOccasion = null;
+        //     state.selectedOccasionName = null;
+        //     state.subCategories = [];
+        //     state.currentSubCategoryPage = 1;
+        //     break;
+        //   case 5:
+        //     state.selectedSubCategory = null;
+        //     break;
+        //   case 6:
+        //     state.personalMessage = "";
+        //     break;
+        //   case 7:
+        //     state.selectedTiming = null;
+        //     break;
+        //   case 8:
+        //     state.deliveryMethod = null;
+        //     state.deliveryDetails = {
+        //       yourName: "",
+        //       yourWhatsAppNumber: "",
+        //       recipientName: "",
+        //       recipientWhatsAppNumber: "",
+        //       deliveryTips: [],
+        //       previewMessage: false,
+        //       yourFullName: "",
+        //       yourEmailAddress: "",
+        //       recipientFullName: "",
+        //       recipientEmailAddress: "",
+        //       printDetails: {},
+        //     };
+        //     break;
+        // }
       }
     },
 

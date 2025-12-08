@@ -108,8 +108,8 @@ const Header = () => {
                   href={navLinks[item]}
                   onClick={() => handleNavClick(item)}
                   className={`nav-link font-poppins text-sm xl:text-base whitespace-nowrap ${activeTab === item
-                      ? "text-[#ed457d] underline underline-offset-4"
-                      : "text-gray-800"
+                    ? "text-[#ed457d] underline underline-offset-4"
+                    : "text-gray-800"
                     }`}
                 >
                   {item}
@@ -218,31 +218,43 @@ const Header = () => {
               </div>
 
               {/* Wishlist - Always visible */}
-              {
+              {/* {
                 session &&
                 <Link
                   href="/wishlist"
-                  className="relative p-1.5 sm:p-2 hover:bg-gray-100 border border-[#ED457D] rounded-full transition-colors"
+                  className="relative p-1.5 sm:p-2 hover:bg-gray-100 border border-[#ED457D] rounded-full transition-colors text-black"
                   aria-label="Wishlist"
                 >
                   <Heart className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" color="#ED457D" />
                   {mounted && cartCount > 0 && (
-                    <span className="badge text-[10px] sm:text-xs">{cartCount}</span>
+                    <span className="badge text-[10px] sm:text-xs text-black">{cartCount}</span>
                   )}
                 </Link>
-              }
+              } */}
 
-              {/* Cart - Always visible */}
               <Link
                 href="/cart"
-                className="relative p-1.5 sm:p-2 hover:bg-gray-100 border border-[#ED457D] rounded-full transition-colors"
+                className="relative flex items-center justify-center p-2 sm:p-2.5 
+             rounded-full border border-[#ED457D]/50 bg-white 
+             hover:bg-[#ED457D]/10 transition-all duration-200"
                 aria-label="Shopping cart"
               >
-                <ShoppingBasket className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" color="#ED457D" />
+                <ShoppingBasket
+                  className="w-5 h-5 sm:w-6 sm:h-6"
+                  color="#ED457D"
+                />
+
                 {mounted && cartCount > 0 && (
-                  <span className="badge text-[10px] sm:text-xs">{cartCount}</span>
+                  <span
+                    className="absolute -top-1 -right-1 bg-[#ED457D] text-white 
+                 w-5 h-5 text-[10px] sm:text-[11px] flex items-center justify-center 
+                 rounded-full shadow-md font-medium"
+                  >
+                    {cartCount}
+                  </span>
                 )}
               </Link>
+
             </div>
           </div>
         </div>

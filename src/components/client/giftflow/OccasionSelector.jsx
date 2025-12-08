@@ -16,6 +16,7 @@ export default function OccasionSelector() {
     currentOccasionPage,
     selectedOccasion
   } = useSelector((state) => state.giftFlowReducer);
+  const data  = useSelector((state) => state.giftFlowReducer);
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
@@ -39,6 +40,9 @@ export default function OccasionSelector() {
     }
   };
 
+  console.log("selectedOccasion",selectedOccasion,data);
+  
+
   useEffect(() => {
     if (occasions.length === 0) {
       fetchOccasions(1);
@@ -46,7 +50,6 @@ export default function OccasionSelector() {
   }, [dispatch, occasions.length]);
 
   const handleOccasionSelect = (occasion) => {
-
     dispatch(setSelectedOccasion(occasion.id));
     dispatch(setSelectedOccasionName(occasion.name))
     dispatch(goNext());
@@ -136,7 +139,6 @@ export default function OccasionSelector() {
         {/* Occasions Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {occasions.map((occasion, index) => {
-            console.log(occasion, "occasion")
             return (
               <div
                 key={`${occasion.id}-${index}`}

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import SecurityIcon from "../../../icons/SecurityIcon"
 import HeartColorIcon from "../../../icons/HeartColorIcon"
 import EditIcon from "../../../icons/EditIcon"
+import { ShoppingBasket } from "lucide-react";
 
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
@@ -25,7 +26,12 @@ const ReviewConfirmStep = () => {
     selectedSubCategory,
     editingIndex,
     isEditMode,
+    selectedOccasion
   } = useSelector((state) => state.giftFlowReducer);
+
+  console.log(deliveryMethod,
+    deliveryDetails);
+  
 
   const validateGift = () => {
 
@@ -77,6 +83,7 @@ const ReviewConfirmStep = () => {
       deliveryDetails,
       selectedTiming,
       selectedSubCategory,
+      selectedOccasion
     };
 
     if (isEditMode && editingIndex !== null) {
@@ -84,7 +91,6 @@ const ReviewConfirmStep = () => {
     } else {
       dispatch(addToCart(cartItem));
     }
-    dispatch(resetFlow());
     router.push('/cart');
   };
 
@@ -375,7 +381,7 @@ const ReviewConfirmStep = () => {
                 </div>
               )}
               <div>
-                {/* {isEditMode ? (
+                {isEditMode ? (
                   <button
                     onClick={handleAddToCart}
                     className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
@@ -388,10 +394,10 @@ const ReviewConfirmStep = () => {
                     onClick={handleAddToCart}
                     className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
                   >
-                    <CreditCard className="w-5 h-5" />
-                    Add Another Gift
+                  <ShoppingBasket className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" color="#ED457D" />
+                    Add to Cart
                   </button>
-                )} */}
+                )}
                 {/* <p className="text-center text-xs text-gray-500 mt-2">Use this to add more gifts to your cart.</p> */}
               </div>
               <div>

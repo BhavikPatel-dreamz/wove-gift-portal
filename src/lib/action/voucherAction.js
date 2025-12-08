@@ -5,15 +5,40 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient({ log: ['warn', 'error'] });
 
 export async function getVouchers(params = {}) {
-  const { page = 1, search = '', status = '', dateFrom, dateTo, userId, userRole, pageSize = 10 } = params;
+  const { page = 1, search = '', status = '', dateFrom, dateTo, userId, userRole, pageSize = 10, shop } = params;
   const skip = (page - 1) * pageSize;
 
   try {
     // Build the base where clause for filtering
     const baseWhere = {};
 
+    if (shop) {
+      const brand = await prisma.brand.findUnique({
+        where: { domain: shop },
+        select: { id: true },
+      });
+      if (brand) {
+        baseWhere.brandId = brand.id;
+      } else {
+        // If shop is provided but not found, return no vouchers.
+        return {
+          success: true,
+          data: [],
+          pagination: {
+            currentPage: page,
+            totalPages: 0,
+            totalCount: 0,
+            from: 0,
+            to: 0,
+            total: 0,
+          },
+        };
+      }
+    }
+
+
     // Role-based filtering
-    if (userRole !== 'ADMIN' && userId) {
+    if (userRole !== 'ADMIN' && userId && !shop) {
       baseWhere.userId = userId;
     }
 

@@ -16,7 +16,10 @@ const PersonalMessageStep = () => {
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
+  const data  = useSelector((state) => state.giftFlowReducer);
 
+  console.log("data",data);
+  
   const handleMessageChange = (e) => {
     const newMessage = e.target.value;
     if (newMessage.length <= maxChars) {

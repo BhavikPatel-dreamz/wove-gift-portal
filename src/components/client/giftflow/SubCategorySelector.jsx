@@ -17,6 +17,7 @@ const CustomCardCreator = ({ onSave, onCancel }) => {
   const [emoji, setEmoji] = useState('🎉');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const imageInputRef = useRef(null);
+ 
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -143,14 +144,15 @@ export default function SubCategorySelector() {
     loading,
     error,
     subCategoriesPagination,
-    currentSubCategoryPage
+    currentSubCategoryPage,
+    selectedSubCategory
   } = useSelector((state) => state.giftFlowReducer);
 
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [selectedOccasionName, setSelectedOccationName] = useState(null);
-    const searchParams = useSearchParams();
-    const mode = searchParams.get('mode');
-    const isBulkMode = mode === 'bulk';
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode');
+  const isBulkMode = mode === 'bulk';
 
   const fetchSubCategories = useCallback(async (page) => {
     if (!selectedOccasion) return;
@@ -232,7 +234,7 @@ export default function SubCategorySelector() {
           <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:translate-x-[-2px] transition-transform duration-200" />
           <span className="text-base font-semibold text-gray-800">Previous</span>
         </button> */}
-        
+
         <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
           <button
             onClick={() => dispatch(goBack())}
@@ -248,7 +250,7 @@ export default function SubCategorySelector() {
 
         {/* Header */}
         <div className="text-center mb-10">
-        {
+          {
             isBulkMode &&
             <div className="w-full flex items-center justify-center mb-4">
               {/* Left line */}
@@ -322,7 +324,7 @@ export default function SubCategorySelector() {
           {subCategories.map((subCategory, index) => (
             <div
               key={`${subCategory.id}-${index}`}
-              className="bg-white rounded-2xl p-2 overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer border border-gray-200 group flex flex-col"
+              className={`bg-white rounded-2xl p-2 overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer group border flex flex-col ${selectedSubCategory?.id === subCategory.id ? 'border-2 border-blue-500' : ' border-gray-200 '}`}
               onClick={() => handleSubCategorySelect(subCategory)}
             >
               {/* Image Container with rounded corners */}
@@ -372,7 +374,7 @@ export default function SubCategorySelector() {
                     <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
                     </svg>
-                    </span>
+                  </span>
                 </button>
               </div>
             </div>

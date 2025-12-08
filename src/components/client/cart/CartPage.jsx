@@ -31,7 +31,7 @@ const CartPage = () => {
       editingIndex: index, // Pass the index of the item being edited
       isEditMode: true,
     }));
-    dispatch(setCurrentStep(2)); // Navigate to GiftCardSelector step
+    dispatch(setCurrentStep(0)); // Navigate to GiftCardSelector step
     router.push('/gift');
   }
 
@@ -59,7 +59,7 @@ const CartPage = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-25">
         <div className="flex items-center mb-8">
           <Link href="/" className="flex items-center text-gray-500 hover:text-gray-800">
             <ArrowLeft size={20} className="mr-2" />
@@ -116,7 +116,7 @@ const CartPage = () => {
               <div className="bg-white rounded-2xl p-7 border-2 border-gray-200 shadow-sm sticky top-28">
                 <h2 className="text-2xl font-bold mb-5 border-b pb-4">Order Summary</h2>
                 <div className="space-y-3 text-lg">
-                  <div className="flex justify-between font-medium text-gray-800">
+                  <div className="flex justify-between font-medium text-black">
                     <span>Subtotal</span>
                     <span>R{calculateTotal()}</span>
                   </div>
@@ -125,7 +125,7 @@ const CartPage = () => {
                     <span className="font-medium">Calculated at checkout</span>
                   </div>
                 </div>
-                <div className="flex justify-between items-baseline font-extrabold text-2xl mt-6 pt-6 border-t-2 border-dashed">
+                <div className="flex justify-between items-baseline font-extrabold text-2xl mt-6 pt-6 border-t-2 border-dashed text-black">
                   <span>Total</span>
                   <span>R{calculateTotal()}</span>
                 </div>
