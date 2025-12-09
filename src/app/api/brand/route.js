@@ -97,10 +97,16 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get("active") === "true";
     const limit = parseInt(searchParams.get("limit")) || 100;
+    const shop = searchParams.get("shop");
 
     const whereClause = {};
     if (activeOnly) {
       whereClause.isActive = true;
+    }
+    
+
+    if (shop && shop !== "undefined") {
+        whereClause.domain = shop;
     }
 
     const brands = await prisma.brand.findMany({
@@ -112,7 +118,6 @@ export async function GET(request) {
         categoryName: true,
         isActive: true,
         isFeature: true,
-        slug: true,
       },
       orderBy: {
         brandName: "asc",
