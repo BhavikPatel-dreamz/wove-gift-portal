@@ -425,10 +425,8 @@ const SettlementsPage = () => {
                 </div>
                 <div className="text-2xl font-bold text-purple-600">
                   {summary.totalSettlements > 0
-                    ? (((summary.totalSettlements - (summary.statusCounts?.Pending || 0))
-                      / summary.totalSettlements) * 100).toFixed(1)
-                    : "0.0"}%
-
+                    ? ((summary.paidCount / summary.totalSettlements) * 100).toFixed(1)
+                    : 0}%
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   Payment completion

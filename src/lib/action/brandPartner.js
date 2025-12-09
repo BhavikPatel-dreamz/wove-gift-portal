@@ -1212,7 +1212,6 @@ export async function createAuditLog(
 
 // ==================== OPTIMIZED SETTLEMENT SERVICE ====================
 
-
 export async function getSettlements(params = {}) {
   try {
     const {
@@ -1306,7 +1305,9 @@ export async function getSettlements(params = {}) {
 
     // Process settlements based on grouping options
     if (groupByFrequency && groupByBrand) {
-      processedSettlements = await groupSettlementsByBrandAndFrequency(allSettlements);
+      processedSettlements = await groupSettlementsByBrandAndFrequency(
+        allSettlements
+      );
     } else if (groupByBrand) {
       processedSettlements = await groupSettlementsByBrand(allSettlements);
     } else {
@@ -1314,7 +1315,10 @@ export async function getSettlements(params = {}) {
     }
 
     // Apply pagination
-    const paginatedSettlements = processedSettlements.slice(skip, skip + limitNum);
+    const paginatedSettlements = processedSettlements.slice(
+      skip,
+      skip + limitNum
+    );
     const totalPages = Math.ceil(processedSettlements.length / limitNum);
 
     // ==================== CALCULATE SUMMARY FROM PROCESSED DATA ====================
@@ -1347,17 +1351,30 @@ export async function getSettlements(params = {}) {
 
 // ==================== HELPER: CALCULATE SUMMARY FROM PROCESSED DATA ====================
 function calculateSummaryFromProcessed(processedSettlements) {
-  console.log(processedSettlements,"processedSettlements");
-  
+  console.log(processedSettlements, "processedSettlements");
+
   return {
     totalSettlements: processedSettlements.length,
-    totalPayable: processedSettlements.reduce((sum, s) => sum + (s.netPayable || 0), 0),
-    totalPaid: processedSettlements.reduce((sum, s) => sum + (s.totalPaid || 0), 0),
-    totalRemaining: processedSettlements.reduce((sum, s) => sum + (s.remainingAmount || 0), 0),
-    pendingCount: processedSettlements.filter((s) => s.status === "Pending").length,
-    paidCount: processedSettlements.filter((s) => s.status !== "Pending").length,
-    inReviewCount: processedSettlements.filter((s) => s.status === "InReview").length,
-    disputedCount: processedSettlements.filter((s) => s.status === "Disputed").length,
+    totalPayable: processedSettlements.reduce(
+      (sum, s) => sum + (s.netPayable || 0),
+      0
+    ),
+    totalPaid: processedSettlements.reduce(
+      (sum, s) => sum + (s.totalPaid || 0),
+      0
+    ),
+    totalRemaining: processedSettlements.reduce(
+      (sum, s) => sum + (s.remainingAmount || 0),
+      0
+    ),
+    pendingCount: processedSettlements.filter((s) => s.status === "Pending")
+      .length,
+    paidCount: processedSettlements.filter((s) => s.status !== "Pending")
+      .length,
+    inReviewCount: processedSettlements.filter((s) => s.status === "InReview")
+      .length,
+    disputedCount: processedSettlements.filter((s) => s.status === "Disputed")
+      .length,
   };
 }
 
@@ -1398,29 +1415,29 @@ function getWeekNumber(date) {
 function getPeriodLabel(periodStart, periodEnd, frequency) {
   const startDate = new Date(periodStart);
   const endDate = new Date(periodEnd);
-  
+
   switch (frequency) {
-    case 'daily':
-      return startDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
+    case "daily":
+      return startDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
       });
-    
-    case 'weekly':
+
+    case "weekly":
       const weekNumber = getWeekNumber(startDate);
       return `Week ${weekNumber}, ${startDate.getFullYear()}`;
-    
-    case 'monthly':
-      return startDate.toLocaleDateString('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
+
+    case "monthly":
+      return startDate.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
       });
-    
-    case 'quarterly':
+
+    case "quarterly":
       const quarter = Math.floor(startDate.getMonth() / 3) + 1;
       return `Q${quarter} ${startDate.getFullYear()}`;
-    
+
     default:
       return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
   }
@@ -1429,30 +1446,41 @@ function getPeriodLabel(periodStart, periodEnd, frequency) {
 // ==================== HELPER: FREQUENCY PERIOD KEY ====================
 function getFrequencyPeriodKey(periodStart, frequency) {
   const date = new Date(periodStart);
-  
+
   switch (frequency) {
-    case 'daily':
-      return date.toISOString().split('T')[0];
-    
-    case 'weekly':
+    case "daily":
+      return date.toISOString().split("T")[0];
+
+    case "weekly":
       const weekNumber = getWeekNumber(date);
-      return `${date.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
-    
-    case 'monthly':
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    
-    case 'quarterly':
+      return `${date.getFullYear()}-W${String(weekNumber).padStart(2, "0")}`;
+
+    case "monthly":
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}`;
+
+    case "quarterly":
       const quarter = Math.floor(date.getMonth() / 3) + 1;
       return `${date.getFullYear()}-Q${quarter}`;
-    
+
     default:
-      return date.toISOString().split('T')[0];
+      return date.toISOString().split("T")[0];
   }
 }
 
 // ==================== CALCULATE SETTLEMENT METRICS ====================
-function calculateSettlementMetrics(orders, settlements, expiredByOrder, brandTerms) {
-  const totalSoldAmount = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+function calculateSettlementMetrics(
+  orders,
+  settlements,
+  expiredByOrder,
+  brandTerms
+) {
+  const totalSoldAmount = orders.reduce(
+    (sum, order) => sum + (order.totalAmount || 0),
+    0
+  );
   const totalSold = orders.length;
 
   let totalRedeemed = 0;
@@ -1481,18 +1509,24 @@ function calculateSettlementMetrics(orders, settlements, expiredByOrder, brandTe
 
   // Calculate commission
   let commissionAmount = 0;
-  const baseAmount = brandTerms?.settlementTrigger === "onRedemption"
-    ? redeemedAmount
-    : totalSoldAmount;
+  const baseAmount =
+    brandTerms?.settlementTrigger === "onRedemption"
+      ? redeemedAmount
+      : totalSoldAmount;
 
   if (brandTerms) {
     if (brandTerms.commissionType === "Percentage") {
-      commissionAmount = Math.round((baseAmount * (brandTerms.commissionValue || 0)) / 100);
+      commissionAmount = Math.round(
+        (baseAmount * (brandTerms.commissionValue || 0)) / 100
+      );
     } else if (brandTerms.commissionType === "Fixed") {
-      const transactionCount = brandTerms.settlementTrigger === "onRedemption" 
-        ? totalRedeemed 
-        : totalSold;
-      commissionAmount = Math.round((brandTerms.commissionValue || 0) * transactionCount);
+      const transactionCount =
+        brandTerms.settlementTrigger === "onRedemption"
+          ? totalRedeemed
+          : totalSold;
+      commissionAmount = Math.round(
+        (brandTerms.commissionValue || 0) * transactionCount
+      );
     }
   }
 
@@ -1512,7 +1546,8 @@ function calculateSettlementMetrics(orders, settlements, expiredByOrder, brandTe
 
   // ==================== NET PAYABLE CALCULATION ====================
   // CRITICAL: This is the main calculation that determines payment amount
-  const netPayable = baseAmount - commissionAmount - adjustedBreakage + vatAmount;
+  const netPayable =
+    baseAmount - commissionAmount - adjustedBreakage + vatAmount;
 
   // Determine overall status
   const hasPending = settlements.some((s) => s.status === "Pending");
@@ -1537,10 +1572,25 @@ function calculateSettlementMetrics(orders, settlements, expiredByOrder, brandTe
     .sort((a, b) => new Date(b.paidAt) - new Date(a.paidAt));
 
   const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  
+
   // ==================== REMAINING CALCULATION ====================
   // CRITICAL: Remaining should be netPayable - totalPaid (unless fully paid)
-  const remainingAmount = overallStatus === "Paid" ? 0 : Math.max(0, netPayable - totalPaid);
+  // Calculate remaining AFTER totalPaid
+  const remainingAmount =
+    overallStatus === "Paid" ? 0 : Math.max(0, netPayable - totalPaid);
+
+  // Determine status based on actual payment
+  if (totalPaid >= netPayable) {
+    overallStatus = "Paid";
+  } else if (hasDisputed) {
+    overallStatus = "Disputed";
+  } else if (hasInReview) {
+    overallStatus = "InReview";
+  } else if (totalPaid > 0) {
+    overallStatus = "PartiallyPaid";
+  } else {
+    overallStatus = "Pending";
+  }
 
   const lastPaymentDate = payments.length > 0 ? payments[0].paidAt : null;
 
@@ -1551,7 +1601,8 @@ function calculateSettlementMetrics(orders, settlements, expiredByOrder, brandTe
     redeemedAmount,
     outstanding,
     outstandingAmount,
-    redemptionRate: totalSold > 0 ? ((totalRedeemed / totalSold) * 100).toFixed(2) : "0.00",
+    redemptionRate:
+      totalSold > 0 ? ((totalRedeemed / totalSold) * 100).toFixed(2) : "0.00",
     lastRedemptionDate,
     commissionAmount,
     breakageAmount: adjustedBreakage,
@@ -1574,7 +1625,8 @@ async function groupSettlementsByBrandAndFrequency(allSettlements) {
   const brandFrequencyGroups = {};
 
   allSettlements.forEach((settlement) => {
-    const frequency = settlement.brand.brandBankings?.settlementFrequency || 'monthly';
+    const frequency =
+      settlement.brand.brandBankings?.settlementFrequency || "monthly";
     const periodKey = getFrequencyPeriodKey(settlement.periodStart, frequency);
     const groupKey = `${settlement.brandId}_${frequency}_${periodKey}`;
 
@@ -1589,7 +1641,7 @@ async function groupSettlementsByBrandAndFrequency(allSettlements) {
     brandFrequencyGroups[groupKey].settlements.push(settlement);
   });
 
-  const brandIds = [...new Set(allSettlements.map(s => s.brandId))];
+  const brandIds = [...new Set(allSettlements.map((s) => s.brandId))];
 
   // Batch fetch orders
   const allOrders = await prisma.order.findMany({
@@ -1634,61 +1686,75 @@ async function groupSettlementsByBrandAndFrequency(allSettlements) {
   });
 
   // Process each group
-  const processedSettlements = Object.values(brandFrequencyGroups).map((group) => {
-    const { brandId, frequency, periodKey, settlements: groupSettlements } = group;
-    const firstSettlement = groupSettlements[0];
-    const allIds = groupSettlements.map((s) => s.id);
+  const processedSettlements = Object.values(brandFrequencyGroups).map(
+    (group) => {
+      const {
+        brandId,
+        frequency,
+        periodKey,
+        settlements: groupSettlements,
+      } = group;
+      const firstSettlement = groupSettlements[0];
+      const allIds = groupSettlements.map((s) => s.id);
 
-    const periodStart = new Date(Math.min(...groupSettlements.map((s) => new Date(s.periodStart))));
-    const periodEnd = new Date(Math.max(...groupSettlements.map((s) => new Date(s.periodEnd))));
+      const periodStart = new Date(
+        Math.min(...groupSettlements.map((s) => new Date(s.periodStart)))
+      );
+      const periodEnd = new Date(
+        Math.max(...groupSettlements.map((s) => new Date(s.periodEnd)))
+      );
 
-    // Filter orders for this brand and period
-    const brandOrders = (ordersByBrand[brandId] || []).filter(
-      (order) => new Date(order.createdAt) >= periodStart && new Date(order.createdAt) <= periodEnd
-    );
+      // Filter orders for this brand and period
+      const brandOrders = (ordersByBrand[brandId] || []).filter(
+        (order) =>
+          new Date(order.createdAt) >= periodStart &&
+          new Date(order.createdAt) <= periodEnd
+      );
 
-    // Calculate metrics
-    const metrics = calculateSettlementMetrics(
-      brandOrders,
-      groupSettlements,
-      expiredByOrder,
-      firstSettlement.brand.brandTerms
-    );
+      // Calculate metrics
+      const metrics = calculateSettlementMetrics(
+        brandOrders,
+        groupSettlements,
+        expiredByOrder,
+        firstSettlement.brand.brandTerms
+      );
 
-    return {
-      id: allIds.join(","),
-      settlementIds: allIds,
-      brandId,
-      brandName: firstSettlement.brand.brandName,
-      brandLogo: firstSettlement.brand.logo,
-      frequency,
-      frequencyPeriodKey: periodKey,
-      frequencyPeriodLabel: getPeriodLabel(periodStart, periodEnd, frequency),
-      settlementPeriod: `${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`,
-      periodStart,
-      periodEnd,
-      recordCount: groupSettlements.length,
-      ...metrics,
-      settlementFrequency: firstSettlement.brand.brandBankings?.settlementFrequency,
-      bankingInfo: firstSettlement.brand.brandBankings
-        ? {
-            accountHolder: firstSettlement.brand.brandBankings.accountHolder,
-            accountNumber: firstSettlement.brand.brandBankings.accountNumber,
-            bankName: firstSettlement.brand.brandBankings.bankName,
-            branchCode: firstSettlement.brand.brandBankings.branchCode,
-            payoutMethod: firstSettlement.brand.brandBankings.payoutMethod,
-          }
-        : null,
-      currency: firstSettlement.brand?.currency || null,
-      createdAt: firstSettlement.createdAt,
-      updatedAt: new Date(Math.max(...groupSettlements.map((s) => new Date(s.updatedAt)))),
-    };
-  });
+      return {
+        id: allIds.join(","),
+        settlementIds: allIds,
+        brandId,
+        brandName: firstSettlement.brand.brandName,
+        brandLogo: firstSettlement.brand.logo,
+        frequency,
+        frequencyPeriodKey: periodKey,
+        frequencyPeriodLabel: getPeriodLabel(periodStart, periodEnd, frequency),
+        settlementPeriod: `${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`,
+        periodStart,
+        periodEnd,
+        recordCount: groupSettlements.length,
+        ...metrics,
+        settlementFrequency:
+          firstSettlement.brand.brandBankings?.settlementFrequency,
+        bankingInfo: firstSettlement.brand.brandBankings
+          ? {
+              accountHolder: firstSettlement.brand.brandBankings.accountHolder,
+              accountNumber: firstSettlement.brand.brandBankings.accountNumber,
+              bankName: firstSettlement.brand.brandBankings.bankName,
+              branchCode: firstSettlement.brand.brandBankings.branchCode,
+              payoutMethod: firstSettlement.brand.brandBankings.payoutMethod,
+            }
+          : null,
+        currency: firstSettlement.brand?.currency || null,
+        createdAt: firstSettlement.createdAt,
+        updatedAt: new Date(
+          Math.max(...groupSettlements.map((s) => new Date(s.updatedAt)))
+        ),
+      };
+    }
+  );
 
   return processedSettlements.sort((a, b) => b.periodStart - a.periodStart);
 }
-
-
 
 // Original grouping by brand only (for backward compatibility)
 async function groupSettlementsByBrand(allSettlements) {
@@ -1763,9 +1829,7 @@ async function groupSettlementsByBrand(allSettlements) {
       );
 
       // Filter orders for this brand and period
-      const brandOrders = (
-        ordersByBrand[firstSettlement.brandId] || []
-      ).filter(
+      const brandOrders = (ordersByBrand[firstSettlement.brandId] || []).filter(
         (order) =>
           order.createdAt >= periodStart && order.createdAt <= periodEnd
       );
@@ -1784,20 +1848,14 @@ async function groupSettlementsByBrand(allSettlements) {
 
       brandOrders.forEach((order) => {
         order.voucherCodes.forEach((voucherCode) => {
-          if (
-            voucherCode.redemptions &&
-            voucherCode.redemptions.length > 0
-          ) {
+          if (voucherCode.redemptions && voucherCode.redemptions.length > 0) {
             uniqueRedeemedVouchers.add(voucherCode.id);
 
             voucherCode.redemptions.forEach((redemption) => {
               redeemedAmount += redemption.amountRedeemed;
 
               const redemptionDate = new Date(redemption.redeemedAt);
-              if (
-                !lastRedemptionDate ||
-                redemptionDate > lastRedemptionDate
-              ) {
+              if (!lastRedemptionDate || redemptionDate > lastRedemptionDate) {
                 lastRedemptionDate = redemptionDate;
               }
             });
@@ -1851,21 +1909,12 @@ async function groupSettlementsByBrand(allSettlements) {
       const netPayable =
         brandTerms?.settlementTrigger === "onRedemption"
           ? redeemedAmount - commissionAmount - adjustedBreakage + vatAmount
-          : totalSoldAmount -
-            commissionAmount -
-            adjustedBreakage +
-            vatAmount;
+          : totalSoldAmount - commissionAmount - adjustedBreakage + vatAmount;
 
       // Determine overall status
-      const hasPending = brandSettlements.some(
-        (s) => s.status === "Pending"
-      );
-      const hasInReview = brandSettlements.some(
-        (s) => s.status === "InReview"
-      );
-      const hasDisputed = brandSettlements.some(
-        (s) => s.status === "Disputed"
-      );
+      const hasPending = brandSettlements.some((s) => s.status === "Pending");
+      const hasInReview = brandSettlements.some((s) => s.status === "InReview");
+      const hasDisputed = brandSettlements.some((s) => s.status === "Disputed");
 
       let overallStatus = "Paid";
       if (hasPending) overallStatus = "Pending";
@@ -1888,8 +1937,7 @@ async function groupSettlementsByBrand(allSettlements) {
       const remainingAmount =
         overallStatus === "Paid" ? 0 : netPayable - totalPaid;
 
-      const lastPaymentDate =
-        payments.length > 0 ? payments[0].paidAt : null;
+      const lastPaymentDate = payments.length > 0 ? payments[0].paidAt : null;
 
       return {
         id: allIds.join(","),
@@ -1941,14 +1989,11 @@ async function groupSettlementsByBrand(allSettlements) {
         // Banking details
         bankingInfo: firstSettlement.brand.brandBankings
           ? {
-              accountHolder:
-                firstSettlement.brand.brandBankings.accountHolder,
-              accountNumber:
-                firstSettlement.brand.brandBankings.accountNumber,
+              accountHolder: firstSettlement.brand.brandBankings.accountHolder,
+              accountNumber: firstSettlement.brand.brandBankings.accountNumber,
               bankName: firstSettlement.brand.brandBankings.bankName,
               branchCode: firstSettlement.brand.brandBankings.branchCode,
-              payoutMethod:
-                firstSettlement.brand.brandBankings.payoutMethod,
+              payoutMethod: firstSettlement.brand.brandBankings.payoutMethod,
             }
           : null,
 
@@ -2020,20 +2065,14 @@ async function processIndividualSettlements(allSettlements) {
 
       orders.forEach((order) => {
         order.voucherCodes.forEach((voucherCode) => {
-          if (
-            voucherCode.redemptions &&
-            voucherCode.redemptions.length > 0
-          ) {
+          if (voucherCode.redemptions && voucherCode.redemptions.length > 0) {
             uniqueRedeemedVouchers.add(voucherCode.id);
 
             voucherCode.redemptions.forEach((redemption) => {
               redeemedAmount += redemption.amountRedeemed;
 
               const redemptionDate = new Date(redemption.redeemedAt);
-              if (
-                !lastRedemptionDate ||
-                redemptionDate > lastRedemptionDate
-              ) {
+              if (!lastRedemptionDate || redemptionDate > lastRedemptionDate) {
                 lastRedemptionDate = redemptionDate;
               }
             });
@@ -2081,10 +2120,7 @@ async function processIndividualSettlements(allSettlements) {
       const netPayable =
         brandTerms?.settlementTrigger === "onRedemption"
           ? redeemedAmount - commissionAmount - adjustedBreakage + vatAmount
-          : totalSoldAmount -
-            commissionAmount -
-            adjustedBreakage +
-            vatAmount;
+          : totalSoldAmount - commissionAmount - adjustedBreakage + vatAmount;
       const remainingAmount = settlement.status === "Paid" ? 0 : netPayable;
 
       return {
@@ -2161,9 +2197,6 @@ async function processIndividualSettlements(allSettlements) {
   );
 }
 
-
-// lib/action/brandPartner.js - Optimized API functions
-
 export async function getSettlementOverview(brandId) {
   try {
     const settlementData = await prisma.settlements.findFirst({
@@ -2202,7 +2235,10 @@ export async function getSettlementOverview(brandId) {
     });
 
     // Calculate metrics
-    const totalSoldAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const totalSoldAmount = orders.reduce(
+      (sum, order) => sum + order.totalAmount,
+      0
+    );
     const totalSold = orders.length;
 
     let totalRedeemed = 0;
@@ -2276,9 +2312,16 @@ export async function getSettlementOverview(brandId) {
           redeemedAmount,
           outstanding,
           outstandingAmount,
-          redemptionRate: totalSold > 0 ? ((totalRedeemed / totalSold) * 100).toFixed(2) : "0.00",
+          redemptionRate:
+            totalSold > 0
+              ? ((totalRedeemed / totalSold) * 100).toFixed(2)
+              : "0.00",
           lastRedemptionDate,
-          settlementPeriod: `${new Date(settlementData.periodStart).toLocaleDateString()} - ${new Date(settlementData.periodEnd).toLocaleDateString()}`,
+          settlementPeriod: `${new Date(
+            settlementData.periodStart
+          ).toLocaleDateString()} - ${new Date(
+            settlementData.periodEnd
+          ).toLocaleDateString()}`,
         },
         brand: settlementData.brand,
         summary: {
@@ -2287,9 +2330,10 @@ export async function getSettlementOverview(brandId) {
           totalVouchersUnredeemed: summaryTotalIssued - summaryTotalRedeemed,
           totalSoldAmount,
           totalRedeemedAmount: redeemedAmount,
-          voucherRedemptionRate: totalSoldAmount > 0 
-            ? ((redeemedAmount / totalSoldAmount) * 100).toFixed(2) 
-            : "0.00",
+          voucherRedemptionRate:
+            totalSoldAmount > 0
+              ? ((redeemedAmount / totalSoldAmount) * 100).toFixed(2)
+              : "0.00",
           deliverySummary,
         },
       },
@@ -2333,7 +2377,10 @@ export async function getSettlementCalculation(brandId) {
     });
 
     // Calculate amounts
-    const totalSoldAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const totalSoldAmount = orders.reduce(
+      (sum, order) => sum + order.totalAmount,
+      0
+    );
     let redeemedAmount = 0;
     let totalRedeemed = 0;
 
@@ -2351,19 +2398,25 @@ export async function getSettlementCalculation(brandId) {
     totalRedeemed = uniqueRedeemed.size;
 
     // Calculate commission
-    const baseAmount = brandTerms?.settlementTrigger === "onRedemption" 
-      ? redeemedAmount 
-      : totalSoldAmount;
+    const baseAmount =
+      brandTerms?.settlementTrigger === "onRedemption"
+        ? redeemedAmount
+        : totalSoldAmount;
 
     let commissionAmount = 0;
     if (brandTerms) {
       if (brandTerms.commissionType === "Percentage") {
-        commissionAmount = Math.round((baseAmount * brandTerms.commissionValue) / 100);
+        commissionAmount = Math.round(
+          (baseAmount * brandTerms.commissionValue) / 100
+        );
       } else if (brandTerms.commissionType === "Fixed") {
-        const transactionCount = brandTerms.settlementTrigger === "onRedemption" 
-          ? totalRedeemed 
-          : orders.length;
-        commissionAmount = Math.round(brandTerms.commissionValue * transactionCount);
+        const transactionCount =
+          brandTerms.settlementTrigger === "onRedemption"
+            ? totalRedeemed
+            : orders.length;
+        commissionAmount = Math.round(
+          brandTerms.commissionValue * transactionCount
+        );
       }
     }
 
@@ -2388,7 +2441,8 @@ export async function getSettlementCalculation(brandId) {
       : 0;
 
     // Net payable
-    const netPayable = baseAmount - commissionAmount - adjustedBreakage + vatAmount;
+    const netPayable =
+      baseAmount - commissionAmount - adjustedBreakage + vatAmount;
 
     return {
       success: true,
@@ -2399,9 +2453,10 @@ export async function getSettlementCalculation(brandId) {
           type: brandTerms?.commissionType,
           value: brandTerms?.commissionValue,
           baseAmount,
-          transactionCount: brandTerms?.settlementTrigger === "onRedemption" 
-            ? totalRedeemed 
-            : orders.length,
+          transactionCount:
+            brandTerms?.settlementTrigger === "onRedemption"
+              ? totalRedeemed
+              : orders.length,
           result: commissionAmount,
         },
         breakageCalculation: {
@@ -2414,14 +2469,19 @@ export async function getSettlementCalculation(brandId) {
           baseAmount: commissionAmount,
           result: vatAmount,
         },
-        netPayableFormula: brandTerms?.settlementTrigger === "onRedemption"
-          ? `Redeemed (${redeemedAmount}) - Commission (${commissionAmount}) - Breakage (${adjustedBreakage}) + VAT (${vatAmount}) = ${netPayable}`
-          : `Sold (${totalSoldAmount}) - Commission (${commissionAmount}) - Breakage (${adjustedBreakage}) + VAT (${vatAmount}) = ${netPayable}`,
+        netPayableFormula:
+          brandTerms?.settlementTrigger === "onRedemption"
+            ? `Redeemed (${redeemedAmount}) - Commission (${commissionAmount}) - Breakage (${adjustedBreakage}) + VAT (${vatAmount}) = ${netPayable}`
+            : `Sold (${totalSoldAmount}) - Commission (${commissionAmount}) - Breakage (${adjustedBreakage}) + VAT (${vatAmount}) = ${netPayable}`,
       },
     };
   } catch (error) {
     console.error("Error fetching calculation:", error);
-    return { success: false, message: "Failed to fetch calculation", status: 500 };
+    return {
+      success: false,
+      message: "Failed to fetch calculation",
+      status: 500,
+    };
   }
 }
 
@@ -2454,54 +2514,71 @@ export async function getSettlementVouchers(brandId) {
     });
 
     const voucherBreakdown = vouchers.map((voucher) => {
-      const denominationBreakdown = voucher.denominations.map((denomination) => {
-        const matchingCodes = voucher.voucherCodes.filter(
-          (code) => Number(code.originalValue) === Number(denomination.value)
-        );
+      const denominationBreakdown = voucher.denominations.map(
+        (denomination) => {
+          const matchingCodes = voucher.voucherCodes.filter(
+            (code) => Number(code.originalValue) === Number(denomination.value)
+          );
 
-        const issuedCount = matchingCodes.length;
-        const redeemedCount = matchingCodes.filter(
-          (code) => code.redemptions?.length > 0
-        ).length;
+          const issuedCount = matchingCodes.length;
+          const redeemedCount = matchingCodes.filter(
+            (code) => code.redemptions?.length > 0
+          ).length;
 
-        const denominationRedeemedAmount = matchingCodes.reduce((sum, code) => {
-          if (code.redemptions?.length > 0) {
-            return sum + code.redemptions.reduce(
-              (rSum, redemption) => rSum + Number(redemption.amountRedeemed || 0),
-              0
-            );
-          }
-          return sum;
-        }, 0);
+          const denominationRedeemedAmount = matchingCodes.reduce(
+            (sum, code) => {
+              if (code.redemptions?.length > 0) {
+                return (
+                  sum +
+                  code.redemptions.reduce(
+                    (rSum, redemption) =>
+                      rSum + Number(redemption.amountRedeemed || 0),
+                    0
+                  )
+                );
+              }
+              return sum;
+            },
+            0
+          );
 
-        return {
-          id: denomination.id,
-          value: Number(denomination.value),
-          currency: denomination.currency,
-          issued: issuedCount,
-          redeemed: redeemedCount,
-          unredeemed: issuedCount - redeemedCount,
-          redeemedAmount: denominationRedeemedAmount,
-          percentage: issuedCount > 0 
-            ? ((redeemedCount / issuedCount) * 100).toFixed(2) 
-            : "0.00",
-        };
-      });
+          return {
+            id: denomination.id,
+            value: Number(denomination.value),
+            currency: denomination.currency,
+            issued: issuedCount,
+            redeemed: redeemedCount,
+            unredeemed: issuedCount - redeemedCount,
+            redeemedAmount: denominationRedeemedAmount,
+            percentage:
+              issuedCount > 0
+                ? ((redeemedCount / issuedCount) * 100).toFixed(2)
+                : "0.00",
+          };
+        }
+      );
 
       const voucherIssuedTotal = voucher.voucherCodes.length;
       const voucherRedeemedTotal = voucher.voucherCodes.filter(
         (code) => code.redemptions?.length > 0
       ).length;
 
-      const voucherRedeemedAmount = voucher.voucherCodes.reduce((total, code) => {
-        if (code.redemptions?.length > 0) {
-          return total + code.redemptions.reduce(
-            (sum, redemption) => sum + Number(redemption.amountRedeemed || 0),
-            0
-          );
-        }
-        return total;
-      }, 0);
+      const voucherRedeemedAmount = voucher.voucherCodes.reduce(
+        (total, code) => {
+          if (code.redemptions?.length > 0) {
+            return (
+              total +
+              code.redemptions.reduce(
+                (sum, redemption) =>
+                  sum + Number(redemption.amountRedeemed || 0),
+                0
+              )
+            );
+          }
+          return total;
+        },
+        0
+      );
 
       const voucherSoldAmount = voucher.voucherCodes.reduce(
         (sum, code) => sum + Number(code.originalValue || 0),
@@ -2516,9 +2593,10 @@ export async function getSettlementVouchers(brandId) {
         totalUnredeemed: voucherIssuedTotal - voucherRedeemedTotal,
         totalSoldAmount: voucherSoldAmount,
         totalRedeemedAmount: voucherRedeemedAmount,
-        redemptionRate: voucherSoldAmount > 0 
-          ? ((voucherRedeemedAmount / voucherSoldAmount) * 100).toFixed(2) 
-          : "0.00",
+        redemptionRate:
+          voucherSoldAmount > 0
+            ? ((voucherRedeemedAmount / voucherSoldAmount) * 100).toFixed(2)
+            : "0.00",
         denominationBreakdown,
       };
     });
