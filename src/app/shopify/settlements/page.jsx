@@ -1,3 +1,5 @@
+// app/settlements/page.jsx - Updated to use optimized modal
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -18,7 +20,7 @@ import {
   FileText,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { getSettlementDetailsByBrandId, getSettlements } from "../../../lib/action/brandPartner";
+import { getSettlements, getSettlementTabData } from "../../../lib/action/brandPartner";
 import SettlementDetailsModal from "../../../components/settlements/SettlementDetailsModal";
 import { currencyList } from "../../../components/brandsPartner/currency";
 
@@ -29,17 +31,12 @@ const SettlementsPage = () => {
   const [pagination, setPagination] = useState({});
   const [summary, setSummary] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedSettlement, setSelectedSettlement] = useState(null);
-  const [modalLoading, setModalLoading] = useState(false);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedBrandId, setSelectedBrandId] = useState(null);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const shop = searchParams.get('shop');
 
-   const getCurrencySymbol = (code) =>
+  const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "";
-    
-  
 
   const params = useMemo(
     () => ({
@@ -50,11 +47,9 @@ const SettlementsPage = () => {
       frequency: searchParams.get("frequency") || "",
       dateFrom: searchParams.get("dateFrom") || "",
       dateTo: searchParams.get("dateTo") || "",
-      shopId: shop || "",
     }),
-    [searchParams, shop]
+    [searchParams]
   );
-
 
   const fetchData = async () => {
     setLoading(true);
@@ -68,7 +63,6 @@ const SettlementsPage = () => {
         toast.error(res.message);
       }
     } catch (error) {
-      console.error("Error fetching settlements:", error);
       toast.error("Failed to fetch settlements");
     }
     setLoading(false);
@@ -102,26 +96,20 @@ const SettlementsPage = () => {
     router.push(`?${newParams.toString()}`);
   };
 
-  const handleView = async (row) => {
-    setModalLoading(true);
-    try {
-      const res = await getSettlementDetailsByBrandId(row.brandId);
-      if (res.success) {
-        setSelectedSettlement(res.data);
-        setModalOpen(true);
-      } else {
-        toast.error(res.message);
-      }
-    } catch (error) {
-      toast.error("Failed to load settlement details");
-    } finally {
-      setModalLoading(false);
-    }
+  const handleView = (row) => {
+    setSelectedBrandId(row.brandId);
+    setModalOpen(true);
   };
 
-  const handleViewPayments = (row) => {
-    setSelectedSettlement(row);
-    setPaymentModalOpen(true);
+  const handleFetchTabData = async (brandId, tab) => {
+    try {
+      const res = await getSettlementTabData(brandId, tab);
+      return res;
+    } catch (error) {
+      console.error(`Error fetching ${tab} data:`, error);
+      toast.error(`Failed to load ${tab} data`);
+      return { success: false, message: "Failed to fetch data" };
+    }
   };
 
   const handleDownload = (row) => {
@@ -207,21 +195,11 @@ const SettlementsPage = () => {
     <div className="flex items-center gap-2">
       <button
         onClick={() => handleView(row.original)}
-        disabled={modalLoading}
-        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
         title="View Details"
       >
         <Eye className="w-4 h-4" />
       </button>
-      {row.original.paymentCount > 0 && (
-        <button
-          onClick={() => handleViewPayments(row.original)}
-          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-          title="View Payments"
-        >
-          <CreditCard className="w-4 h-4" />
-        </button>
-      )}
       <button
         onClick={() => handleDownload(row.original)}
         className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
@@ -240,7 +218,7 @@ const SettlementsPage = () => {
     </div>
   );
 
- const customColumns = [
+  const customColumns = [
     columnHelper.accessor("brandName", {
       header: "Brand",
       cell: (info) => (
@@ -276,7 +254,7 @@ const SettlementsPage = () => {
       cell: (info) => (
         <div>
           <div className="text-gray-900 font-semibold">
-           {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
+            {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
           </div>
           <div className="text-xs text-gray-500">
             {info.row.original.totalSold} vouchers
@@ -483,156 +461,17 @@ const SettlementsPage = () => {
         </div>
       </div>
 
-      {/* Settlement Details Modal */}
+      {/* Optimized Settlement Details Modal */}
       <SettlementDetailsModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        data={selectedSettlement}
-        loading={modalLoading}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedBrandId(null);
+        }}
+        brandId={selectedBrandId}
+        onFetchTabData={handleFetchTabData}
       />
-
-      {/* Payment History Modal */}
-      {paymentModalOpen && selectedSettlement && (
-        <PaymentHistoryModal
-          isOpen={paymentModalOpen}
-          onClose={() => setPaymentModalOpen(false)}
-          settlement={selectedSettlement}
-        />
-      )}
     </>
-  );
-};
-
-// Payment History Modal Component
-const PaymentHistoryModal = ({ isOpen, onClose, settlement }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div
-        className="fixed inset-0 bg-black/50"
-        onClick={onClose}
-      />
-
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 rounded-t-2xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CreditCard className="w-6 h-6 text-white" />
-                <div>
-                  <h3 className="text-xl font-bold text-white">Payment History</h3>
-                  <p className="text-purple-100 text-sm">{settlement.brandName}</p>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-purple-500 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-6">
-            {/* Summary */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="text-sm text-blue-600 mb-1">Total Payable</div>
-                <div className="text-2xl font-bold text-blue-700">
-                  {getCurrencySymbol(data && data[0]?.currency)}{settlement.netPayable.toLocaleString()}
-                </div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-4">
-                <div className="text-sm text-green-600 mb-1">Total Paid</div>
-                <div className="text-2xl font-bold text-green-700">
-                  {getCurrencySymbol(data && data[0]?.currency)}{settlement.totalPaid.toLocaleString()}
-                </div>
-              </div>
-              <div className="bg-amber-50 rounded-lg p-4">
-                <div className="text-sm text-amber-600 mb-1">Remaining</div>
-                <div className="text-2xl font-bold text-amber-700">
-                  {getCurrencySymbol(data && data[0]?.currency)}{settlement.remainingAmount.toLocaleString()}
-                </div>
-              </div>
-            </div>
-
-            {/* Payment List */}
-            <div className="space-y-3">
-              <h4 className="font-semibold text-gray-900 mb-3">
-                Payment Transactions ({settlement.paymentCount})
-              </h4>
-              {settlement.paymentHistory && settlement.paymentHistory.length > 0 ? (
-                settlement.paymentHistory.map((payment, idx) => (
-                  <div
-                    key={payment.id}
-                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900">
-                            Payment #{idx + 1}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(payment.paidAt).toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-green-600">
-                          {getCurrencySymbol(data && data[0]?.currency)}{payment.amount.toLocaleString()}
-                        </div>
-                        <div className="text-xs text-gray-500">Completed</div>
-                      </div>
-                    </div>
-                    {payment.reference && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="text-xs text-gray-500">Reference</div>
-                        <div className="text-sm font-mono text-gray-900">
-                          {payment.reference}
-                        </div>
-                      </div>
-                    )}
-                    {payment.notes && (
-                      <div className="mt-2">
-                        <div className="text-xs text-gray-500">Notes</div>
-                        <div className="text-sm text-gray-700">{payment.notes}</div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No payment history available
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-            >
-              Close
-            </button>
-            <button className="px-4 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Export History
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 };
 

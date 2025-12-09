@@ -1,3 +1,5 @@
+// app/settlements/page.jsx - Updated to use optimized modal
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -18,7 +20,7 @@ import {
   FileText,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { getSettlementDetailsByBrandId, getSettlements } from "../../../lib/action/brandPartner";
+import { getSettlements, getSettlementTabData } from "../../../lib/action/brandPartner";
 import SettlementDetailsModal from "../../../components/settlements/SettlementDetailsModal";
 import { currencyList } from "../../../components/brandsPartner/currency";
 
@@ -29,16 +31,15 @@ const SettlementsPage = () => {
   const [pagination, setPagination] = useState({});
   const [summary, setSummary] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedBrandId, setSelectedBrandId] = useState(null);
   const [selectedSettlement, setSelectedSettlement] = useState(null);
-  const [modalLoading, setModalLoading] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
   const searchParams = useSearchParams();
   const router = useRouter();
 
- const getCurrencySymbol = (code) =>
-  currencyList.find((c) => c.code === code)?.symbol || "";
-  
-
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "";
   const params = useMemo(
     () => ({
       page: searchParams.get("page") || 1,
@@ -52,12 +53,13 @@ const SettlementsPage = () => {
     [searchParams]
   );
 
+  console.log(summary);
+
   const fetchData = async () => {
     setLoading(true);
     try {
       const res = await getSettlements(params);
       if (res.success) {
-        console.log(res.data);
         setData(res.data);
         setPagination(res.pagination);
         setSummary(res.summary);
@@ -98,20 +100,19 @@ const SettlementsPage = () => {
     router.push(`?${newParams.toString()}`);
   };
 
-  const handleView = async (row) => {
-    setModalLoading(true);
+  const handleView = (row) => {
+    setSelectedBrandId(row.brandId);
+    setModalOpen(true);
+  };
+
+  const handleFetchTabData = async (brandId, tab) => {
     try {
-      const res = await getSettlementDetailsByBrandId(row.brandId);
-      if (res.success) {
-        setSelectedSettlement(res.data);
-        setModalOpen(true);
-      } else {
-        toast.error(res.message);
-      }
+      const res = await getSettlementTabData(brandId, tab);
+      return res;
     } catch (error) {
-      toast.error("Failed to load settlement details");
-    } finally {
-      setModalLoading(false);
+      console.error(`Error fetching ${tab} data:`, error);
+      toast.error(`Failed to load ${tab} data`);
+      return { success: false, message: "Failed to fetch data" };
     }
   };
 
@@ -203,8 +204,7 @@ const SettlementsPage = () => {
     <div className="flex items-center gap-2">
       <button
         onClick={() => handleView(row.original)}
-        disabled={modalLoading}
-        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
         title="View Details"
       >
         <Eye className="w-4 h-4" />
@@ -218,13 +218,13 @@ const SettlementsPage = () => {
           <CreditCard className="w-4 h-4" />
         </button>
       )}
-      <button
+      {/* <button
         onClick={() => handleDownload(row.original)}
         className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
         title="Download CSV"
       >
         <Download className="w-4 h-4" />
-      </button>
+      </button> */}
       {row.original.status === "Pending" && (
         <button
           onClick={() => handleMarkPaid(row.original)}
@@ -241,13 +241,13 @@ const SettlementsPage = () => {
       header: "Brand",
       cell: (info) => (
         <div className="flex items-center gap-3">
-          {info.row.original.brandLogo && (
+          {/* {info.row.original.brandLogo && (
             <img
               src={info.row.original.brandLogo}
               alt={info.getValue()}
               className="w-8 h-8 rounded object-cover"
             />
-          )}
+          )} */}
           <div>
             <div className="font-semibold text-gray-900">{info.getValue()}</div>
             {info.row.original.settlementFrequency && (
@@ -270,11 +270,11 @@ const SettlementsPage = () => {
     columnHelper.accessor("totalSoldAmount", {
       header: "Sold",
       cell: (info) => (
-        <div>
+        <div className="min-w-20">
           <div className="text-gray-900 font-semibold">
-           {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
+            {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 min-w-fit">
             {info.row.original.totalSold} vouchers
           </div>
         </div>
@@ -302,13 +302,19 @@ const SettlementsPage = () => {
       cell: (info) => {
         const row = info.row.original;
         return (
-          <div>
+          <div className="min-w-30">
             <div className="text-gray-900 font-bold">
               {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
             </div>
             {row.commissionAmount > 0 && (
               <div className="text-xs text-gray-500">
                 Commission: {getCurrencySymbol(info.row.original.currency)}{row.commissionAmount.toLocaleString()}
+              </div>
+            )}
+
+            {row.vatAmount > 0 && (
+              <div className="text-xs text-gray-500">
+                VAT : {getCurrencySymbol(info.row.original.currency)}{row.vatAmount.toLocaleString()}
               </div>
             )}
           </div>
@@ -321,9 +327,8 @@ const SettlementsPage = () => {
         const amount = info.getValue();
         return (
           <div
-            className={`font-semibold ${
-              amount > 0 ? "text-red-600" : "text-green-600"
-            }`}
+            className={`font-semibold ${amount > 0 ? "text-red-600" : "text-green-600"
+              }`}
           >
             {getCurrencySymbol(info.row.original.currency)}{amount.toLocaleString()}
           </div>
@@ -365,10 +370,12 @@ const SettlementsPage = () => {
     }),
   ];
 
+  console.log(data);
+
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-8xl mx-auto">
           {/* Summary Cards */}
           {summary && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -418,8 +425,10 @@ const SettlementsPage = () => {
                 </div>
                 <div className="text-2xl font-bold text-purple-600">
                   {summary.totalSettlements > 0
-                    ? ((summary.paidCount / summary.totalSettlements) * 100).toFixed(1)
-                    : 0}%
+                    ? (((summary.totalSettlements - (summary.statusCounts?.Pending || 0))
+                      / summary.totalSettlements) * 100).toFixed(1)
+                    : "0.0"}%
+
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   Payment completion
@@ -479,12 +488,15 @@ const SettlementsPage = () => {
         </div>
       </div>
 
-      {/* Settlement Details Modal */}
+      {/* Optimized Settlement Details Modal */}
       <SettlementDetailsModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        data={selectedSettlement}
-        loading={modalLoading}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedBrandId(null);
+        }}
+        brandId={selectedBrandId}
+        onFetchTabData={handleFetchTabData}
       />
 
       {/* Payment History Modal */}
@@ -494,14 +506,17 @@ const SettlementsPage = () => {
           onClose={() => setPaymentModalOpen(false)}
           settlement={selectedSettlement}
         />
-      )}
-    </>
+      )}    </>
   );
 };
+
 
 // Payment History Modal Component
 const PaymentHistoryModal = ({ isOpen, onClose, settlement }) => {
   if (!isOpen) return null;
+
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "";
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -540,19 +555,19 @@ const PaymentHistoryModal = ({ isOpen, onClose, settlement }) => {
               <div className="bg-blue-50 rounded-lg p-4">
                 <div className="text-sm text-blue-600 mb-1">Total Payable</div>
                 <div className="text-2xl font-bold text-blue-700">
-                  {getCurrencySymbol(data && data[0]?.currency)}{settlement.netPayable.toLocaleString()}
+                  {getCurrencySymbol(settlement?.currency)}{settlement.netPayable.toLocaleString()}
                 </div>
               </div>
               <div className="bg-green-50 rounded-lg p-4">
                 <div className="text-sm text-green-600 mb-1">Total Paid</div>
                 <div className="text-2xl font-bold text-green-700">
-                  {getCurrencySymbol(data && data[0]?.currency)}{settlement.totalPaid.toLocaleString()}
+                  {getCurrencySymbol(settlement?.currency)}{settlement.totalPaid.toLocaleString()}
                 </div>
               </div>
               <div className="bg-amber-50 rounded-lg p-4">
                 <div className="text-sm text-amber-600 mb-1">Remaining</div>
                 <div className="text-2xl font-bold text-amber-700">
-                  {getCurrencySymbol(data && data[0]?.currency)}{settlement.remainingAmount.toLocaleString()}
+                  {getCurrencySymbol(settlement?.currency)}{settlement.remainingAmount.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -584,7 +599,7 @@ const PaymentHistoryModal = ({ isOpen, onClose, settlement }) => {
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-green-600">
-                          {getCurrencySymbol(data && data[0]?.currency)}{payment.amount.toLocaleString()}
+                          {getCurrencySymbol(settlement?.currency)}{payment.amount.toLocaleString()}
                         </div>
                         <div className="text-xs text-gray-500">Completed</div>
                       </div>
@@ -631,5 +646,6 @@ const PaymentHistoryModal = ({ isOpen, onClose, settlement }) => {
     </div>
   );
 };
+
 
 export default SettlementsPage;
