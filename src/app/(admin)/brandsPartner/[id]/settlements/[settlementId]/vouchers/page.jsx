@@ -1,12 +1,14 @@
 'use client'
+
 import React from 'react'
-import SettlementTabs from '../../../../../components/settlements/SettlementTabs'
-import VouchersTab from '../../../../../components/settlements/VouchersTab'
+import SettlementTabs from '../../../../../../../components/settlements/SettlementTabs'
+import VouchersTab from '../../../../../../../components/settlements/VouchersTab'
 import { useParams } from 'next/navigation';
 
 const page = () => {
     const params = useParams();
-    const settlementId = params.id;
+    const settlementId = params.settlementId;
+
 
     return (
         <div className="relative flex min-h-screen w-full flex-col bg-[#f7f8fa]">

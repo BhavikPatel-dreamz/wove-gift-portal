@@ -6,13 +6,12 @@ import { useParams } from "next/navigation";
 import { getSettlementVouchersList } from "../../lib/action/brandPartner";
 import { currencyList } from "../brandsPartner/currency";
 
-const VouchersTab = () => {
+const VouchersTab = ({settlementId}) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState(null);
     const [pagination, setPagination] = useState({});
-    const params = useParams();
-    const settlementId = params?.id;
+  
     const [filters, setFilters] = useState({
         page: 1,
         limit: 10,

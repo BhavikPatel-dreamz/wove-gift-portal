@@ -132,8 +132,7 @@ const BrandSettlementHistoryPage = () => {
   };
 
   const handleViewDetails = async (settlement) => {
-    setSelectedSettlement(settlement);
-    setDetailsModalOpen(true);
+    router.push(`/brandsPartner/${id}/settlements/${settlement.id}/overview`);
   };
 
   const handleViewPayments = (settlement) => {

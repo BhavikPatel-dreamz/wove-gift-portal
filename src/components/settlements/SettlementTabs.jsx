@@ -1,19 +1,28 @@
 "use client"
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
-const SettlementTabs = ({ brandId }) => {
+const SettlementTabs = () => {
     const router = useRouter();
-    const currentPath = router.pathname;
-     const params = useParams();
-      const settlementId = params?.id;
+    const pathname = usePathname();
+    const params = useParams();
+    const brandId = params.id;
+
+    // Detect if we're in the brandsPartner route or direct settlements route
+    const isBrandPartnerRoute = pathname?.includes('/brandsPartner/');
+    console.log(params,pathname,isBrandPartnerRoute);
+    const settlementId = isBrandPartnerRoute ? params.settlementId : params.id;
+    const basePath = isBrandPartnerRoute
+        ? `/brandsPartner/${brandId}/settlements/${settlementId}`
+        : `/settlements/${settlementId}`;
 
     const tabs = [
-        { id: "overview", label: "Overview", path: `/settlements/${settlementId}/overview` },
-        { id: "vouchers", label: "Vouchers", path: `/settlements/${settlementId}/vouchers` },
-        { id: "contacts", label: "Contacts", path: `/settlements/${settlementId}/contacts` },
-        { id: "banking", label: "Banking", path: `/settlements/${settlementId}/banking` },
-        { id: "terms", label: "Terms", path: `/settlements/${settlementId}/terms` },
+        { id: "overview", label: "Overview", path: `${basePath}/overview` },
+        { id: "vouchers", label: "Vouchers", path: `${basePath}/vouchers` },
+        { id: "contacts", label: "Contacts", path: `${basePath}/contacts` },
+        { id: "banking", label: "Banking", path: `${basePath}/banking` },
+        { id: "terms", label: "Terms", path: `${basePath}/terms` },
     ];
 
     const handleTabChange = (path) => {
@@ -29,11 +38,10 @@ const SettlementTabs = ({ brandId }) => {
                         <button
                             key={tab.id}
                             onClick={() => handleTabChange(tab.path)}
-                            className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-semibold transition-colors ${
-                                currentPath === tab.path
-                                    ? "border-[#197fe6] text-[#197fe6]"
-                                    : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
-                            }`}
+                            className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-semibold transition-colors ${pathname === tab.path
+                                ? "border-[#197fe6] text-[#197fe6]"
+                                : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
+                                }`}
                         >
                             {tab.label}
                         </button>
