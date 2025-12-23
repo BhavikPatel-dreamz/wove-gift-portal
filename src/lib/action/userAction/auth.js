@@ -1,16 +1,16 @@
-import prisma from '../../db'
-import { hashPassword, verifyPassword } from './password'
+import prisma from "../../db";
+import { hashPassword, verifyPassword } from "./password";
 
 export async function createUser(data) {
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },
-  })
+  });
 
   if (existingUser) {
-    throw new Error('User already exists with this email')
+    throw new Error("User already exists with this email");
   }
 
-  const hashedPassword = await hashPassword(data.password)
+  const hashedPassword = await hashPassword(data.password);
 
   const user = await prisma.user.create({
     data: {
@@ -19,7 +19,9 @@ export async function createUser(data) {
       firstName: data.firstName || null,
       lastName: data.lastName || null,
       phone: data.phone || null,
-      role: "ADMIN"
+      role: "CUSTOMER",
+      isActive: true, // Set default value
+      isVerified: false, // Set default value
     },
     select: {
       id: true,
@@ -28,34 +30,48 @@ export async function createUser(data) {
       lastName: true,
       phone: true,
       role: true,
+      isActive: true,
+      isVerified: true,
       createdAt: true,
+      updatedAt: true,
     },
-  })
+  });
 
-  return user
+  return user;
 }
 
 export async function authenticateUser(data) {
   const user = await prisma.user.findUnique({
     where: { email: data.email },
-  })
+    select: {
+      id: true,
+      email: true,
+      password: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      role: true,
+      isActive: true,
+      isVerified: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
   if (!user) {
-    throw new Error('Invalid credentials')
+    throw new Error("Invalid credentials");
   }
 
-  const isValidPassword = await verifyPassword(data.password, user.password)
+  const isValidPassword = await verifyPassword(data.password, user.password);
 
   if (!isValidPassword) {
-    throw new Error('Invalid credentials')
+    throw new Error("Invalid credentials");
   }
 
-  return {
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName || null,
-    lastName: user.lastName || null,
-  }
+  // Remove password from response
+  const { password, ...userWithoutPassword } = user;
+  
+  return userWithoutPassword;
 }
 
 export async function getUserById(userId) {
@@ -68,7 +84,10 @@ export async function getUserById(userId) {
       lastName: true,
       phone: true,
       role: true,
+      isActive: true,
+      isVerified: true,
       createdAt: true,
+      updatedAt: true,
     },
-  })
+  });
 }

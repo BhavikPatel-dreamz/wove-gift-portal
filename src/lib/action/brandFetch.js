@@ -115,7 +115,7 @@ export async function getBrandCategories() {
 
 export const getBrands = async () => {
   try {
-    const brands = await prisma.brand.findMany({
+    const brands = await prisma?.brand?.findMany({
       where: {
         isActive: true,
         isFeature: true,
