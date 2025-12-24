@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getVouchers } from "@/lib/action/voucherAction";
+import { getVouchers, getBulkOrderDetails } from "@/lib/action/voucherAction";
 import { Eye, Download, RefreshCw, Package, X, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import DynamicTable from "@/components/forms/DynamicTable";
@@ -38,12 +38,17 @@ export default function VouchersManagement() {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('orders');
 
-  // 🟢 Pagination for Bulk Modal
+  // Bulk modal state
+  const [bulkData, setBulkData] = useState(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkPagination, setBulkPagination] = useState({
     currentPage: 1,
-    pageSize: 7,
+    totalPages: 1,
+    totalCount: 0,
+    from: 0,
+    to: 0,
+    total: 0,
   });
-
   const [bulkFilters, setBulkFilters] = useState({
     search: "",
     status: "",
@@ -79,11 +84,45 @@ export default function VouchersManagement() {
     }
   };
 
+  const fetchBulkOrderDetails = async (bulkOrderNumber, orderNumber) => {
+    setBulkLoading(true);
+    try {
+      const response = await getBulkOrderDetails({
+        bulkOrderNumber,
+        orderNumber,
+        page: bulkPagination.currentPage,
+        pageSize: 10,
+        search: bulkFilters.search,
+        status: bulkFilters.status,
+      });
+
+      if (response.success) {
+        setBulkData(response.data);
+        setBulkPagination(response.pagination);
+      } else {
+        toast.error(response.message);
+        setBulkData(null);
+      }
+    } catch (err) {
+      console.error("Fetch bulk order error:", err);
+      toast.error("Failed to fetch bulk order details");
+      setBulkData(null);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (session?.user) {
       fetchVouchers();
     }
   }, [filters, pagination.currentPage, session?.user]);
+
+  useEffect(() => {
+    if (selectedBulkOrder && isBulkModalOpen) {
+      fetchBulkOrderDetails(selectedBulkOrder.bulkOrderNumber, selectedBulkOrder.orderNumber);
+    }
+  }, [selectedBulkOrder, bulkPagination.currentPage, bulkFilters]);
 
   const handleSearch = (search) => {
     setFilters((prev) => ({ ...prev, search }));
@@ -103,16 +142,13 @@ export default function VouchersManagement() {
   const handleViewVoucher = (voucher, fromBulkOrder = false) => {
     setSelectedVoucher(voucher);
     setIsModalOpen(true);
-    if (!fromBulkOrder) {
-      setIsBulkModalOpen(false);
-      setSelectedBulkOrder(null);
-    }
   };
 
   const handleViewBulkOrder = (bulkOrder) => {
     setSelectedBulkOrder(bulkOrder);
-    setBulkPagination({ currentPage: 1, pageSize: 7 });
+    setBulkPagination({ currentPage: 1, totalPages: 1, totalCount: 0, from: 0, to: 0, total: 0 });
     setBulkFilters({ search: "", status: "" });
+    setBulkData(null);
     setIsBulkModalOpen(true);
   };
 
@@ -124,6 +160,23 @@ export default function VouchersManagement() {
   const closeBulkModal = () => {
     setIsBulkModalOpen(false);
     setSelectedBulkOrder(null);
+    setBulkData(null);
+    setBulkPagination({ currentPage: 1, totalPages: 1, totalCount: 0, from: 0, to: 0, total: 0 });
+    setBulkFilters({ search: "", status: "" });
+  };
+
+  const handleBulkSearch = (search) => {
+    setBulkFilters((prev) => ({ ...prev, search }));
+    setBulkPagination((prev) => ({ ...prev, currentPage: 1 }));
+  };
+
+  const handleBulkFilter = (status) => {
+    setBulkFilters((prev) => ({ ...prev, status }));
+    setBulkPagination((prev) => ({ ...prev, currentPage: 1 }));
+  };
+
+  const handleBulkPageChange = (page) => {
+    setBulkPagination((prev) => ({ ...prev, currentPage: page }));
   };
 
   const handleExport = () => {
@@ -202,8 +255,7 @@ export default function VouchersManagement() {
       cell: (info) => {
         const row = info.row.original;
         return (
-          <div className="flex items-center gap-2">
-            {row.isBulkOrder && <Package className="w-4 h-4 text-blue-600" />}
+          <div className="flex items-center w-45 ">
             <span className="font-semibold text-gray-900">{info.getValue()}</span>
           </div>
         );
@@ -214,13 +266,13 @@ export default function VouchersManagement() {
       cell: (info) => {
         const row = info.row.original;
         return (
-          <div className="font-semibold text-gray-900">
+          <div className="font-semibold text-gray-900 w-45">
             {info.getValue() || '-'}
-            {row.isBulkOrder && (
+            {/* {row.isBulkOrder && (
               <div className="mt-1">
                 <span className="text-xs text-green-600">{row.voucherCount} vouchers</span>
               </div>
-            )}
+            )} */}
           </div>
         );
       },
@@ -232,11 +284,6 @@ export default function VouchersManagement() {
         return (
           <div>
             <div className="font-semibold text-gray-900">{info.getValue()}</div>
-            {row.isBulkOrder && (
-              <div className="text-xs text-gray-500 mt-1">
-                Click eye icon to view all vouchers
-              </div>
-            )}
           </div>
         );
       },
@@ -285,26 +332,9 @@ export default function VouchersManagement() {
     }),
   ];
 
-  // 🟣 Filtered + Paginated children for Bulk Modal
-  const filteredBulkChildren = selectedBulkOrder?.children?.filter((child) => {
-    const matchesSearch = bulkFilters.search
-      ? child.code.toLowerCase().includes(bulkFilters.search.toLowerCase())
-      : true;
-    const matchesStatus = bulkFilters.status
-      ? child.status === bulkFilters.status
-      : true;
-    return matchesSearch && matchesStatus;
-  }) || [];
-
-  const totalBulkPages = Math.ceil(filteredBulkChildren.length / bulkPagination.pageSize);
-  const paginatedBulkChildren = filteredBulkChildren.slice(
-    (bulkPagination.currentPage - 1) * bulkPagination.pageSize,
-    bulkPagination.currentPage * bulkPagination.pageSize
-  );
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-      <div className="max-w-[90%] mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-[100%] mx-auto">
         {/* Tabs */}
         <div className="flex gap-4 mb-8">
           <button
@@ -342,7 +372,7 @@ export default function VouchersManagement() {
       </div>
 
       {activeTab === 'orders' && (
-        <div className="max-w-[90%] mx-auto">
+        <div className="max-w-[100%] mx-auto">
           <DynamicTable
             data={vouchers}
             columns={customColumns}
@@ -420,48 +450,50 @@ export default function VouchersManagement() {
                 </div>
 
                 {/* Summary Cards */}
-                <div className="flex-1  p-6">
-                  {/* Search & Filter Controls */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <div className="text-xs text-blue-600 font-semibold mb-1">Total Amount</div>
-                        <div className="text-2xl font-bold text-blue-900">${selectedBulkOrder.totalAmount?.toFixed(2)}</div>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                        <div className="text-xs text-green-600 font-semibold mb-1">Remaining</div>
-                        <div className="text-2xl font-bold text-green-900">${selectedBulkOrder.remainingAmount?.toFixed(2)}</div>
-                      </div>
-                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                        <div className="text-xs text-purple-600 font-semibold mb-1">Order Count</div>
-                        <div className="text-2xl font-bold text-purple-900">{selectedBulkOrder.orderCount || 0}</div>
-                      </div>
-                      <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                        <div className="text-xs text-orange-600 font-semibold mb-1">Voucher Count</div>
-                        <div className="text-2xl font-bold text-orange-900">{selectedBulkOrder.voucherCount}</div>
-                      </div>
+                <div className="p-6 border-b border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="text-xs text-blue-600 font-semibold mb-1">Total Amount</div>
+                      <div className="text-2xl font-bold text-blue-900">${bulkData?.totalAmount?.toFixed(2) || '0.00'}</div>
                     </div>
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="text-xs text-green-600 font-semibold mb-1">Remaining</div>
+                      <div className="text-2xl font-bold text-green-900">${bulkData?.remainingAmount?.toFixed(2) || '0.00'}</div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <div className="text-xs text-purple-600 font-semibold mb-1">Order Count</div>
+                      <div className="text-2xl font-bold text-purple-900">{bulkData?.orderCount || 0}</div>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                      <div className="text-xs text-orange-600 font-semibold mb-1">Voucher Count</div>
+                      <div className="text-2xl font-bold text-orange-900">{bulkData?.voucherCount || 0}</div>
+                    </div>
+                  </div>
 
-                    {/* Status Breakdown */}
-                    <div className=" p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  {/* Status Breakdown */}
+                  {bulkData?.statusBreakdown && (
+                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                       <h3 className="text-sm font-semibold text-gray-700 mb-3">Status Breakdown</h3>
                       <div className="flex gap-6">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                          <span className="text-sm text-gray-600">Active: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.active || 0}</span></span>
+                          <span className="text-sm text-gray-600">Active: <span className="font-semibold">{bulkData.statusBreakdown.active || 0}</span></span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                          <span className="text-sm text-gray-600">Redeemed: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.redeemed || 0}</span></span>
+                          <span className="text-sm text-gray-600">Redeemed: <span className="font-semibold">{bulkData.statusBreakdown.redeemed || 0}</span></span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                          <span className="text-sm text-gray-600">Expired: <span className="font-semibold">{selectedBulkOrder.statusBreakdown?.expired || 0}</span></span>
+                          <span className="text-sm text-gray-600">Expired: <span className="font-semibold">{bulkData.statusBreakdown.expired || 0}</span></span>
                         </div>
                       </div>
                     </div>
+                  )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 ">
+                {/* Scrollable Voucher List */}
+                <div className="flex-1 overflow-y-auto p-6">
                   {/* Search & Filter Controls */}
                   <div className="flex flex-wrap gap-3 mb-5 items-center">
                     <div className="relative w-full md:w-1/3 text-black">
@@ -471,20 +503,14 @@ export default function VouchersManagement() {
                         placeholder="Search by voucher code..."
                         className="pl-9 pr-3 py-2 border rounded-lg w-full text-sm"
                         value={bulkFilters.search}
-                        onChange={(e) => {
-                          setBulkFilters((p) => ({ ...p, search: e.target.value }));
-                          setBulkPagination((p) => ({ ...p, currentPage: 1 }));
-                        }}
+                        onChange={(e) => handleBulkSearch(e.target.value)}
                       />
                     </div>
 
                     <select
                       className="border px-3 py-2 rounded-lg text-sm text-black"
                       value={bulkFilters.status}
-                      onChange={(e) => {
-                        setBulkFilters((p) => ({ ...p, status: e.target.value }));
-                        setBulkPagination((p) => ({ ...p, currentPage: 1 }));
-                      }}
+                      onChange={(e) => handleBulkFilter(e.target.value)}
                     >
                       <option value="">All Statuses</option>
                       <option value="Active">Active</option>
@@ -492,78 +518,110 @@ export default function VouchersManagement() {
                       <option value="Expired">Expired</option>
                       <option value="Inactive">Inactive</option>
                     </select>
-                  </div>
 
-                  {/* Voucher List */}
-                  <div className="space-y-3">
-                    {paginatedBulkChildren.length > 0 ? (
-                      paginatedBulkChildren.map((child, idx) => (
-                        <div key={child.id || idx} className="bg-white p-4 rounded-lg border hover:shadow-md transition-all">
-                          <div className="flex items-center justify-between">
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm flex-1">
-                              <div>
-                                <span className="block text-xs text-gray-500 mb-1">Order Number</span>
-                                <span className="font-medium text-gray-900">{child.orderNumber}</span>
-                              </div>
-                              <div>
-                                <span className="block text-xs text-gray-500 mb-1">Voucher Code</span>
-                                <span className="font-medium text-gray-900">{child.code}</span>
-                              </div>
-                              <div>
-                                <span className="block text-xs text-gray-500 mb-1">Total Amount</span>
-                                <span className="font-medium text-gray-900">${child.totalAmount?.toFixed(2)}</span>
-                              </div>
-                              <div>
-                                <span className="block text-xs text-gray-500 mb-1">Remaining</span>
-                                <span className="font-medium text-gray-900">${child.remainingAmount?.toFixed(2)}</span>
-                              </div>
-                              <div>
-                                <span className="block text-xs text-gray-500 mb-1">Status</span>
-                                <StatusBadge status={child.status} />
-                              </div>
-                              <div>
-                                <span className="block text-xs text-gray-500 mb-1">Last Redemption</span>
-                                <span className="font-medium text-gray-900">
-                                  {child.lastRedemptionDate
-                                    ? new Date(child.lastRedemptionDate).toLocaleDateString()
-                                    : "-"}
-                                </span>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleViewVoucher(child, true)}
-                              className="ml-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center text-gray-500 py-10">No vouchers found.</div>
+                    {bulkPagination.totalCount > 0 && (
+                      <div className="text-sm text-gray-600 ml-auto">
+                        Showing {bulkPagination.from} - {bulkPagination.to} of {bulkPagination.totalCount} vouchers
+                      </div>
                     )}
                   </div>
 
+                  {/* Loading State */}
+                  {bulkLoading && (
+                    <div className="text-center py-10">
+                      <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600" />
+                      <p className="text-gray-600 mt-2">Loading vouchers...</p>
+                    </div>
+                  )}
+
+                  {/* Voucher List */}
+                  {!bulkLoading && (
+                    <div className="space-y-3">
+                      {bulkData?.children && bulkData.children.length > 0 ? (
+                        bulkData.children.map((child, idx) => (
+                          <div key={child.id || idx} className="bg-white p-4 rounded-lg border hover:shadow-md transition-all">
+                            <div className="flex items-center justify-between">
+                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm flex-1">
+                                <div>
+                                  <span className="block text-xs text-gray-500 mb-1">Order Number</span>
+                                  <span className="font-medium text-gray-900">{child.orderNumber}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-xs text-gray-500 mb-1">Voucher Code</span>
+                                  <span className="font-medium text-gray-900">{child.code}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-xs text-gray-500 mb-1">Total Amount</span>
+                                  <span className="font-medium text-gray-900">${child.totalAmount?.toFixed(2)}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-xs text-gray-500 mb-1">Remaining</span>
+                                  <span className="font-medium text-gray-900">${child.remainingAmount?.toFixed(2)}</span>
+                                </div>
+                                <div>
+                                  <span className="block text-xs text-gray-500 mb-1">Status</span>
+                                  <StatusBadge status={child.status} />
+                                </div>
+                                <div>
+                                  <span className="block text-xs text-gray-500 mb-1">Last Redemption</span>
+                                  <span className="font-medium text-gray-900">
+                                    {child.lastRedemptionDate
+                                      ? new Date(child.lastRedemptionDate).toLocaleDateString()
+                                      : "-"}
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleViewVoucher(child, true)}
+                                className="ml-4 p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-500 py-10">No vouchers found matching your filters.</div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Pagination */}
-                  {totalBulkPages > 1 && (
-                    <div className="flex justify-center gap-2 mt-6 text-black">
-                      <button
-                        className="px-3 py-1 border rounded-lg text-sm"
-                        disabled={bulkPagination.currentPage === 1}
-                        onClick={() => setBulkPagination((p) => ({ ...p, currentPage: p.currentPage - 1 }))}
-                      >
-                        Prev
-                      </button>
-                      <span className="text-sm text-gray-700 py-1">
-                        Page {bulkPagination.currentPage} of {totalBulkPages}
-                      </span>
-                      <button
-                        className="px-3 py-1 border rounded-lg text-sm"
-                        disabled={bulkPagination.currentPage === totalBulkPages}
-                        onClick={() => setBulkPagination((p) => ({ ...p, currentPage: p.currentPage + 1 }))}
-                      >
-                        Next
-                      </button>
+                  {!bulkLoading && bulkPagination.totalPages > 1 && (
+                    <div className="flex justify-between items-center mt-6 pt-4 border-t">
+                      <div className="text-sm text-gray-600">
+                        Page {bulkPagination.currentPage} of {bulkPagination.totalPages}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-black"
+                          disabled={bulkPagination.currentPage === 1}
+                          onClick={() => handleBulkPageChange(1)}
+                        >
+                          First
+                        </button>
+                        <button
+                          className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-black"
+                          disabled={bulkPagination.currentPage === 1}
+                          onClick={() => handleBulkPageChange(bulkPagination.currentPage - 1)}
+                        >
+                          Previous
+                        </button>
+                        <button
+                          className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-black"
+                          disabled={bulkPagination.currentPage === bulkPagination.totalPages}
+                          onClick={() => handleBulkPageChange(bulkPagination.currentPage + 1)}
+                        >
+                          Next
+                        </button>
+                        <button
+                          className="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-black"
+                          disabled={bulkPagination.currentPage === bulkPagination.totalPages}
+                          onClick={() => handleBulkPageChange(bulkPagination.totalPages)}
+                        >
+                          Last
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

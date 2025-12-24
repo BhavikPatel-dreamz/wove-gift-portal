@@ -39,8 +39,8 @@ const StepRenderer = () => {
       return <ReviewConfirmStep />;
     case 9:
       return <PaymentStep />;
-    case 10:
-      return <FinalSelectionStep />;
+    // case 10:
+    //   return <FinalSelectionStep />;
     default:
       return <BrandSelectionStep />;
   }

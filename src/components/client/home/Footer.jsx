@@ -1,6 +1,20 @@
 import { Instagram, Facebook, Linkedin } from "lucide-react";
 
 const Footer = () => {
+  const links = [
+    { name: "Home", path: "/" },
+    { name: "How It Works", path: "/work" },
+    { name: "Brands", path: "/gift" },
+    { name: "Reviews", path: "/reviews" }
+  ];
+
+  const links2 = [
+    { name: "Terms & Conditions", path: "/termsandcondition" },
+    { name: "Privacy Policy", path: "/privacy" },
+    { name: "FAQs / Help Center", path: "/gift" },
+    { name: "Contact Us", path: "/contact" }
+  ];
+
   return (
     <>    <footer className="bg-[background: linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%)] text-gray-800 pt-16 pb-[90px] px-6">
       <div className="max-w-[1440px] mx-auto">
@@ -16,24 +30,26 @@ const Footer = () => {
               </div>
               <h3 className="font-bold text-pink-500 text-xl">Wove Gifts</h3>
             </div>
-            
+
             <h4 className="font-semibold text-[#1A1A1A] text-[18px] fontPoppins">
               South Africa's #1 Gift Card Platform
             </h4>
-            
+
             <p className="text-gray-600 text-sm leading-relaxed">
               Making gifting magical, one card at a time
             </p>
-            
+
             <div className="flex gap-3 pt-4">
               {[
                 { Icon: Instagram, href: "#" },
                 { Icon: Facebook, href: "#" },
-                { Icon: () => (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                  </svg>
-                ), href: "#" },
+                {
+                  Icon: () => (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                  ), href: "#"
+                },
                 { Icon: Linkedin, href: "#" }
               ].map(({ Icon, href }, idx) => (
                 <a
@@ -53,19 +69,21 @@ const Footer = () => {
             <h4 className="font-bold text-[#1A1A1A] mb-6 text-[16px] tracking-wide uppercase">
               QUICK LINKS
             </h4>
+
             <ul className="space-y-4">
-              {["Home", "How It Works", "Brands", "Reviews"].map((item, idx) => (
+              {links.map((item, idx) => (
                 <li key={idx}>
                   <a
-                    href="#"
+                    href={item.path}
                     className="text-[#4A4A4A] text-[16px] hover:text-pink-500 transition-colors duration-200"
                   >
-                    {item}
+                    {item.name}
                   </a>
                 </li>
               ))}
             </ul>
           </div>
+
 
           {/* Legal & Support */}
           <div>
@@ -73,18 +91,13 @@ const Footer = () => {
               LEGAL & SUPPORT
             </h4>
             <ul className="space-y-4">
-              {[
-                "Terms & Conditions",
-                "Privacy Policy",
-                "FAQs / Help Center",
-                "Contact Us"
-              ].map((item, idx) => (
+              {links2.map((item, idx) => (
                 <li key={idx}>
                   <a
-                    href="#"
+                    href={item.path}
                     className="text-[#4A4A4A] text-[16px] hover:text-pink-500 transition-colors duration-200"
                   >
-                    {item}
+                    {item.name}
                   </a>
                 </li>
               ))}
@@ -118,11 +131,11 @@ const Footer = () => {
         {/* Copyright */}
       </div>
     </footer>
-        <div className="py-8 border-t border-gray-200 text-center">
-          <p className="text-gray-600 text-sm">
-            © 2025 Wove Gift. All rights reserved.
-          </p>
-        </div>
+      <div className="py-8 border-t border-gray-200 text-center">
+        <p className="text-gray-600 text-sm">
+          © 2025 Wove Gift. All rights reserved.
+        </p>
+      </div>
     </>
 
   );

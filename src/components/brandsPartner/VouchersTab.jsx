@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
-import {currencyList} from "./currency";
+import { currencyList } from "./currency";
 
 const VouchersTab = ({ formData, updateFormData }) => {
   const [denominationValue, setDenominationValue] = useState("");
@@ -197,7 +197,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-medium mb-1 text-gray-700">Currency</label>
-                    <select
+                    {/* <select
                       value={denominationCurrency}
                       onChange={(e) => setDenominationCurrency(e.target.value)}
                       className="w-full border rounded-md px-3 py-2 bg-white"
@@ -207,7 +207,19 @@ const VouchersTab = ({ formData, updateFormData }) => {
                           {cur?.symbol + " " + cur?.code}
                         </option>
                       ))}
+                    </select> */}
+                    <select
+                      value={formData?.currency || ''}
+                      disabled
+                      className="w-full border rounded-md px-3 py-2 bg-gray-100 cursor-not-allowed"
+                    >
+                      {currencies.map((cur) => (
+                        <option key={cur?.code} value={cur?.code}>
+                          {cur?.symbol + " " + cur?.code}
+                        </option>
+                      ))}
                     </select>
+
                   </div>
                   <div>
                     <label className="block text-xs font-medium mb-1 text-gray-700">Amount *</label>
@@ -278,15 +290,14 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 {formData.denominations.map((denom) => {
                   // Check if denomination is expired
                   const isExpired = denom.expiresAt && new Date(denom.expiresAt) < new Date();
-                  
+
                   return (
                     <div
                       key={denom.id}
-                      className={`p-4 border rounded-lg transition-all ${
-                        denom.isActive
+                      className={`p-4 border rounded-lg transition-all ${denom.isActive
                           ? 'bg-white border-gray-200 hover:bg-gray-50'
                           : 'bg-gray-50 border-gray-300 opacity-60'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-1 space-y-3">
@@ -312,11 +323,10 @@ const VouchersTab = ({ formData, updateFormData }) => {
                               {/* Active/Inactive Button */}
                               <button
                                 onClick={() => toggleDenominationActive(denom.id)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                  denom.isActive
+                                className={`px-3 py-1 rounded-full text-xs font-medium ${denom.isActive
                                     ? 'bg-green-100 text-green-700'
                                     : 'bg-gray-200 text-gray-600'
-                                }`}
+                                  }`}
                               >
                                 {denom.isActive ? '✓ Active' : '✕ Inactive'}
                               </button>
@@ -343,27 +353,26 @@ const VouchersTab = ({ formData, updateFormData }) => {
                                 className="w-full border rounded px-3 py-2 text-sm"
                               />
                             </div>
-                          {denom.isExpiry && (
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">
-                                Expiry Date {!formData.isExpiry && '(Optional)'}
-                              </label>
-                              <input
-                                type="date"
-                                value={denom.expiresAt ? new Date(denom.expiresAt).toISOString().split("T")[0] : ""}
-                                onChange={(e) => updateDenomination(denom.id, 'expiresAt', e.target.value || null)}
-                                className={`w-full border rounded px-3 py-2 text-sm ${
-                                  isExpired ? 'border-red-300 bg-red-50' : ''
-                                }`}
-                                min={new Date().toISOString().split("T")[0]}
-                              />
-                              {isExpired && (
-                                <p className="text-xs text-red-600 mt-1">
-                                  This date has passed
-                                </p>
-                              )}
-                            </div>
-                              )}
+                            {denom.isExpiry && (
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                  Expiry Date {!formData.isExpiry && '(Optional)'}
+                                </label>
+                                <input
+                                  type="date"
+                                  value={denom.expiresAt ? new Date(denom.expiresAt).toISOString().split("T")[0] : ""}
+                                  onChange={(e) => updateDenomination(denom.id, 'expiresAt', e.target.value || null)}
+                                  className={`w-full border rounded px-3 py-2 text-sm ${isExpired ? 'border-red-300 bg-red-50' : ''
+                                    }`}
+                                  min={new Date().toISOString().split("T")[0]}
+                                />
+                                {isExpired && (
+                                  <p className="text-xs text-red-600 mt-1">
+                                    This date has passed
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 

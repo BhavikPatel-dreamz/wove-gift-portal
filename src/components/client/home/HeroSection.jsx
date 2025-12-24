@@ -13,27 +13,27 @@ const HeroSection = () => {
     <section className="hero-section">
 
       {/* Decorative Emoji Icons matching the design */}
-      <div className="emoji-float animate-float-1 rotate-[-21.48deg]" style={{ top: '15%', left: '12%', fontSize: '3.5rem', rotate: '21.48 deg' }}>
+      <div className="emoji-float animate-float-1 rotate-[-21.48deg]" style={{ top: '20%', left: '12%', fontSize: '3.5rem', rotate: '21.48 deg' }}>
         <DashboardWishlistIcon />
       </div>
-      <div className="emoji-float animate-float-2 rotate-[19.52deg]" style={{ top: '40%', left: '6%', fontSize: '3.5rem' }}>
+      <div className="emoji-float animate-float-2 rotate-[19.52deg]" style={{ top: '45%', left: '6%', fontSize: '3.5rem' }}>
         <DashboardRingIcon />
       </div>
-      <div className="emoji-float animate-float-3 rotate-[-19.52deg]" style={{ top: '15%', right: '25%', fontSize: '3.5rem' }}>
+      <div className="emoji-float animate-float-3 rotate-[-19.52deg]" style={{ top: '20%', right: '25%', fontSize: '3.5rem' }}>
       <DashboardPartyPopper/>
       </div>
-      <div className="emoji-float animate-float-4 rotate-[-19.52deg]" style={{ top: '40%', right: '15%', fontSize: '3.5rem' }}>
+      <div className="emoji-float animate-float-4 rotate-[-19.52deg]" style={{ top: '45%', right: '15%', fontSize: '3.5rem' }}>
         <DashboardConfettiBall/>
       </div>
-      <div className="emoji-float animate-float-5 rotate-[19.52deg]" style={{ bottom: '20%', left: '20%', fontSize: '3.5rem' }}>
+      <div className="emoji-float animate-float-5 rotate-[19.52deg]" style={{ bottom: '15%', left: '20%', fontSize: '3.5rem' }}>
         <DashboardEmojiIcon/>
       </div>
-      <div className="emoji-float animate-float-6 rotate-[-26.31deg]" style={{ bottom: '20%', right: '25%', fontSize: '3.5rem' }}>
+      <div className="emoji-float animate-float-6 rotate-[-26.31deg]" style={{ bottom: '15%', right: '25%', fontSize: '3.5rem' }}>
         <DashboardGiftIcon/>
       </div>
 
 
-      <div className="max-w-4xl mx-auto text-center px-4 relative z-10 py-10">
+      <div className="max-w-4xl mx-auto text-center px-4 relative z-10 py-10 pt-15">
 
         {/* Main Heading */}
         <h1 className="hero-heading">
@@ -52,7 +52,7 @@ const HeroSection = () => {
         {/* CTA Button */}
         <Link href="/gift">
           <button className="hero-cta font-inter">
-            Start Gifting
+            Send Gift
           </button>
         </Link>
 

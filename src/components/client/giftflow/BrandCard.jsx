@@ -8,6 +8,7 @@ const BrandCard = ({
   isFavorited = false,
   onToggleFavorite,
   onClick,
+  selectedBrand
 }) => {
   const handleCardClick = () => {
     onClick?.(brand);
@@ -20,7 +21,7 @@ const BrandCard = ({
 
   return (
     <div
-      className="bg-white rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all duration-300 relative border border-[#1A1A1A1A]"
+      className={`bg-white rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all duration-300 relative border border-[#1A1A1A1A] ${selectedBrand?.id === brand.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'}`}
       onClick={handleCardClick}
     >
       {/* Favorite Button */}

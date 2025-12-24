@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -8,24 +8,38 @@ import { addToBulk } from '../../../redux/cartSlice';
 const BulkOrderSetup = () => {
   const dispatch = useDispatch();
   const router = useRouter();
-  
-  const { selectedBrand,selectedAmount } = useSelector((state) => state.giftFlowReducer);
-  
+
+  const { selectedBrand, selectedAmount } = useSelector((state) => state.giftFlowReducer);
+
   const [selectedDenomination, setSelectedDenomination] = useState(null);
   const [quantity, setQuantity] = useState('');
   const [error, setError] = useState('');
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Get available denominations from selected brand
   const denominations = selectedBrand?.vouchers?.[0]?.denominations || [];
-  
+
   // Calculate total spend
-  const totalSpend = selectedDenomination && quantity 
+  const totalSpend = selectedDenomination && quantity
     ? (selectedDenomination.value * parseInt(quantity || 0)).toFixed(2)
     : '0.00';
 
   const handleBackToBrands = () => {
     dispatch(goBack());
   };
+
 
   const handleDenominationSelect = (denom) => {
     setSelectedDenomination(denom);
@@ -34,11 +48,11 @@ const BulkOrderSetup = () => {
 
   const handleQuantityChange = (e) => {
     const value = e.target.value;
-    
+
     // Only allow numbers
     if (value === '' || /^\d+$/.test(value)) {
       const numValue = parseInt(value || 0);
-      
+
       // Check maximum limit
       if (numValue > 10000) {
         setError('Maximum 10,000 vouchers per order');
@@ -50,12 +64,12 @@ const BulkOrderSetup = () => {
     }
   };
 
-  useEffect(()=>{
-    if(selectedAmount && selectedAmount!==""){
-        const selectedDenomination = denominations?.filter((data)=> data?.value == selectedAmount?.value)
-        setSelectedDenomination(selectedDenomination[0])
+  useEffect(() => {
+    if (selectedAmount && selectedAmount !== "") {
+      const selectedDenomination = denominations?.filter((data) => data?.value == selectedAmount?.value)
+      setSelectedDenomination(selectedDenomination[0])
     }
-  },[selectedAmount])
+  }, [selectedAmount])
 
 
   const handleAddToBulkOrder = () => {
@@ -64,12 +78,12 @@ const BulkOrderSetup = () => {
       setError('Please select a denomination');
       return;
     }
-    
+
     if (!quantity || parseInt(quantity) === 0) {
       setError('Please enter quantity');
       return;
     }
-    
+
     if (parseInt(quantity) < 1) {
       setError('Minimum quantity is 1');
       return;
@@ -90,7 +104,7 @@ const BulkOrderSetup = () => {
 
     // Dispatch to cart
     dispatch(addToBulk(bulkOrderItem));
-    
+
     // Reset and navigate
     dispatch(goNext());
 
@@ -114,39 +128,56 @@ const BulkOrderSetup = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-[1440px] mx-auto">
         {/* Back Button */}
-        <button
-          onClick={handleBackToBrands}
-          className="flex items-center gap-2 text-pink-500 hover:text-pink-600 mb-6 font-medium transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back to Brands</span>
-        </button>
+        <div className='p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block'>
+          <button
+            onClick={handleBackToBrands}
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+            <span className="text-base font-semibold text-gray-800">Back to Brands</span>
+          </button>
+        </div>
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-block px-4 py-1.5 bg-white border border-pink-300 rounded-full mb-4">
-            <span className="text-pink-500 font-semibold text-sm">Bulk Gifting</span>
+          <div className="w-full flex items-center justify-center mb-4">
+            {/* Left line */}
+            <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
+
+            {/* Center pill */}
+            <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
+              <div className="px-4 py-1.5 bg-white rounded-full">
+                <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                  Bulk Gifting
+                </span>
+              </div>
+            </div>
+
+            {/* Right line */}
+            <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+
+
+
+          <h1 className="text-[40px] md:text-4xl font-bold text-[#1A1A1A] mb-2 fontPoppins">
             Set up your bulk order
           </h1>
-          <p className="text-gray-600">
+          <p className="text-[#4A4A4A] text-base font-medium">
             We'll generate unique codes for each voucher, ready for you to send out.
           </p>
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="max-w-4xl m-auto w-full grid grid-cols-1 md:grid-cols-[275px_1fr] gap-6">
           {/* Left Column - Selected Brand */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Selected Brand</h3>
-            
+          <div className="w-full flex items-center max-w-[275px] rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33] shadow-sm bg-[#F9F9F9]">
             {/* Brand Card */}
-            <div className="flex flex-col items-center text-center">
+            <div className=" flex flex-col items-center text-center">
+              <h3 className="text-[18px] text-center font-semibold text-[#1A1A1A] mb-4">Selected Brand</h3>
               {/* Brand Logo */}
-              <div className="w-32 h-32 mb-4 flex items-center justify-center">
+              <div className="w-24 h-24  flex items-center justify-center">
                 {selectedBrand.logo ? (
                   <img
                     src={selectedBrand.logo}
@@ -154,16 +185,20 @@ const BulkOrderSetup = () => {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                  <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
                     <span className="text-white font-bold text-5xl">
                       {(selectedBrand.brandName || selectedBrand.name || 'B').substring(0, 1).toUpperCase()}
                     </span>
                   </div>
                 )}
               </div>
+              <div className='border-b border-[#D0CECE] h-px w-full my-8'></div>
 
+              <div className='py-[5px] px-[11px] bg-[#AA42FA1A] rounded-[50px] mb-[18px]'>
+                <div className='text-[#AA42FA] text-[14px] font-bold'>{selectedBrand.tagline}</div>
+              </div>
               {/* Brand Name */}
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-[22px] font-semibold fontPoppins text-[#1A1A1A] mb-3.5">
                 {selectedBrand.brandName || selectedBrand.name}
               </h2>
 
@@ -175,72 +210,106 @@ const BulkOrderSetup = () => {
               )}
 
               {/* Description */}
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-base text-[#4A4A4A] leading-relaxed line-clamp-3">
                 {selectedBrand.description || selectedBrand.tagline || 'Premium gift card'}
               </p>
             </div>
           </div>
 
           {/* Right Column - Order Details */}
-          <div className="space-y-6">
+          <div className="space-y-6 w-full border-[1.2px] border-[#1A1A1A33] rounded-[20px] p-6 bg-[#DBDBDB2B]">
             {/* Denomination Selection */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
+            <div className="">
+              <label className="block text-base font-semibold text-[#1A1A1A] mb-3">
                 Denomination
               </label>
-              
-              <div className="relative">
-                <select
-                  value={selectedDenomination?.value || ''}
-                  onChange={(e) => {
-                    const denom = denominations.find(d => d.value === parseFloat(e.target.value));
-                    handleDenominationSelect(denom);
-                  }}
-                  className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white cursor-pointer"
+
+              <div ref={dropdownRef} className="relative w-full">
+                {/* Selected Box */}
+                <div
+                  onClick={() => setOpen(!open)}
+                  className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] bg-white cursor-pointer flex justify-between items-center"
                 >
-                  <option value="">Select Denomination</option>
-                  {denominations.map((denom, index) => (
-                    <option key={index} value={denom.value}>
-                      {denom.currency || 'R'} {denom.value}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  <span className="text-gray-700">
+                    {selectedDenomination?.value
+                      ? `R${selectedDenomination.value.toLocaleString()}`
+                      : "Select Denomination"}
+                  </span>
+
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+                  />
+                </div>
+
+                {/* Dropdown List */}
+                {open && (
+                  <div className="absolute left-0 right-0 mt-2 bg-white rounded-[15px] shadow-md border border-[#1A1A1A33] z-50 overflow-hidden">
+                    {denominations.map((denom, i) => {
+                      const isSelected = selectedDenomination?.value === denom.value;
+                      return (
+                        <div
+                          key={i}
+                          onClick={() => {
+                            handleDenominationSelect(denom);
+                            setOpen(false);
+                          }}
+                          className={`px-4 py-3 cursor-pointer text-gray-700 
+                  ${isSelected ? "bg-[#FFECEC] text-red-500 font-semibold" : ""} 
+                  hover:bg-gray-100`}
+                        >
+                          R{denom.value.toLocaleString()}
+                        </div>
+                      );
+                    })}
+
+                    {/* Custom Amount */}
+                    <div
+                      className="px-4 py-3 cursor-pointer text-gray-700 hover:bg-gray-100"
+                      onClick={() => {
+                        handleDenominationSelect({ value: null });
+                        setOpen(false);
+                      }}
+                    >
+                      Custom Amount
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Quantity Input */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
+            <div className="">
+              <label className="block text-base font-semibold text-[#1A1A1A] mb-3">
                 Quantity
               </label>
-              
+
               <input
                 type="text"
                 value={quantity}
                 onChange={handleQuantityChange}
                 placeholder="e.g., 50 Vouchers"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700"
+                className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
               />
-              
+
               <p className="text-xs text-gray-500 mt-2">
                 Maximum 10,000 vouchers per order
               </p>
             </div>
 
             {/* Total Spend */}
-            <div className="bg-gradient-to-br from-pink-50 to-orange-50 rounded-2xl p-6 border border-pink-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-700">Total Spend</span>
+            <div className="flex justify-between bg-white rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]">
+              <div className="flex flex-col mb-3">
+                <span className="text-base font-bold text-[#1A1A1A]">Total Spend</span>
                 {quantity && selectedDenomination && (
                   <span className="text-xs text-gray-600">
                     {quantity} × {selectedDenomination.currency || 'R'}{selectedDenomination.value}
                   </span>
                 )}
               </div>
-              <p className="text-3xl font-bold text-pink-600">
+              <p className="text-[20px] font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
                 {selectedDenomination?.currency || 'R'}{totalSpend}
               </p>
+
             </div>
 
             {/* Error Message */}
@@ -254,13 +323,18 @@ const BulkOrderSetup = () => {
             <button
               onClick={handleAddToBulkOrder}
               disabled={!selectedDenomination || !quantity || parseInt(quantity) === 0}
-              className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              className="w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               Add to Bulk Order
-              <span className="text-xl">▶</span>
+              <span className="text-xl">
+                <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                </svg>
+              </span>
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );

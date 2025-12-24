@@ -1,6 +1,10 @@
 import React from 'react';
+import { currencyList } from './currency';
+import { useState } from 'react';
 
 const TermsTab = ({ formData, updateFormData }) => {
+    const [currencies] = useState(currencyList);
+  
   // Handle settlement trigger change and clear relevant fields
   const handleSettlementTriggerChange = (value) => {
     updateFormData('settlementTrigger', value);
@@ -100,14 +104,17 @@ const TermsTab = ({ formData, updateFormData }) => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
             <select
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-              value={formData.currency || 'USD'}
-              onChange={(e) => updateFormData('currency', e.target.value)}
+              value={formData?.currency || ''}
+              disabled
+              className="w-full border rounded-md px-3 py-2 bg-gray-100 cursor-not-allowed"
             >
-              <option value="USD">USD</option>
-              <option value="ZAR">ZAR</option>
-              <option value="EUR">EUR</option>
+              {currencies.map((cur) => (
+                <option key={cur?.code} value={cur?.code}>
+                  {cur?.symbol + " " + cur?.code}
+                </option>
+              ))}
             </select>
+
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Order Value (Optional)</label>

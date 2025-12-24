@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import SecurityIcon from "../../../icons/SecurityIcon"
 import HeartColorIcon from "../../../icons/HeartColorIcon"
 import EditIcon from "../../../icons/EditIcon"
+import { ShoppingBasket } from "lucide-react";
 
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
@@ -25,7 +26,12 @@ const ReviewConfirmStep = () => {
     selectedSubCategory,
     editingIndex,
     isEditMode,
+    selectedOccasion
   } = useSelector((state) => state.giftFlowReducer);
+
+  console.log(deliveryMethod,
+    deliveryDetails);
+  
 
   const validateGift = () => {
 
@@ -77,6 +83,7 @@ const ReviewConfirmStep = () => {
       deliveryDetails,
       selectedTiming,
       selectedSubCategory,
+      selectedOccasion
     };
 
     if (isEditMode && editingIndex !== null) {
@@ -84,7 +91,6 @@ const ReviewConfirmStep = () => {
     } else {
       dispatch(addToCart(cartItem));
     }
-    dispatch(resetFlow());
     router.push('/cart');
   };
 
@@ -146,7 +152,7 @@ const ReviewConfirmStep = () => {
             className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
                        transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
             <span className="text-base font-semibold text-gray-800">
               Previous
             </span>
@@ -375,7 +381,7 @@ const ReviewConfirmStep = () => {
                 </div>
               )}
               <div>
-                {/* {isEditMode ? (
+                {isEditMode ? (
                   <button
                     onClick={handleAddToCart}
                     className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
@@ -388,10 +394,10 @@ const ReviewConfirmStep = () => {
                     onClick={handleAddToCart}
                     className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
                   >
-                    <CreditCard className="w-5 h-5" />
-                    Add Another Gift
+                  <ShoppingBasket className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" color="#ED457D" />
+                    Add to Cart
                   </button>
-                )} */}
+                )}
                 {/* <p className="text-center text-xs text-gray-500 mt-2">Use this to add more gifts to your cart.</p> */}
               </div>
               <div>

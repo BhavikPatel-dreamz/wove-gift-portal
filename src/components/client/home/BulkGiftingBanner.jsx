@@ -23,7 +23,7 @@ const BulkGiftingBanner = () => {
                             <div className="bg-emerald-500 rounded-full p-1 flex items-center justify-center">
                                 <Check className="w-3 h-3 md:w-4 md:h-4 text-white" strokeWidth={3} />
                             </div>
-                            <span className="font-medium">Trusted by 500+ Companies</span>
+                            <span className="font-medium text-[#4A4A4A] text-[16px] line-height-[32px]">Trusted by 500+ Companies</span>
                         </div>
                     </div>
                     <div className="relative z-10 order-1 md:order-2 w-full md:w-auto flex justify-center">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Gift, DollarSign, CreditCard, Clock, TrendingUp, Users, Award, Package, AlertCircle, Loader2 } from 'lucide-react';
 
-const Dashboard = () => {
+const Dashboard = ({ shopParam }) => {
   const [timeRange, setTimeRange] = useState('all');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,15 +16,17 @@ const Dashboard = () => {
     try {
       setLoading(true);
       setError(null);
+
+      console.log(`/api/dashboard?period=${timeRange}${shopParam ? `&shop=${shopParam}` : ''}`);
       
-      const response = await fetch(`/api/dashboard?period=${timeRange}`);
-      
+      const response = await fetch(`/api/dashboard?period=${timeRange}${shopParam ? `&shop=${shopParam}` : ''}`);
+
       if (!response.ok) {
         throw new Error('Failed to fetch dashboard data');
       }
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setDashboardData(data);
       } else {
@@ -129,13 +131,13 @@ const Dashboard = () => {
 
   const hasData = dashboardData?.metrics?.giftCards?.totalIssued > 0;
 
- 
-  
+
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -196,7 +198,7 @@ const Dashboard = () => {
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
+
           {/* Monthly Transaction Trends */}
           <ChartCard
             title="Monthly Transaction Trends"
@@ -208,18 +210,18 @@ const Dashboard = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="month" 
+                    <XAxis
+                      dataKey="month"
                       axisLine={false}
                       tickLine={false}
                       style={{ fontSize: '12px' }}
                     />
-                    <YAxis 
+                    <YAxis
                       axisLine={false}
                       tickLine={false}
                       style={{ fontSize: '12px' }}
                     />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{
                         backgroundColor: 'white',
                         border: '1px solid #e5e7eb',
@@ -231,17 +233,17 @@ const Dashboard = () => {
                         return [value, name];
                       }}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey="transactions" 
-                      stroke="#3B82F6" 
+                    <Area
+                      type="monotone"
+                      dataKey="transactions"
+                      stroke="#3B82F6"
                       fill="url(#gradient1)"
                       strokeWidth={3}
                     />
                     <defs>
                       <linearGradient id="gradient1" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1} />
                       </linearGradient>
                     </defs>
                   </AreaChart>
@@ -280,7 +282,7 @@ const Dashboard = () => {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value) => `R${value.toLocaleString()}`}
                       />
                     </PieChart>
@@ -289,8 +291,8 @@ const Dashboard = () => {
                     {brandData.map((brand, index) => (
                       <div key={index} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
+                          <div
+                            className="w-3 h-3 rounded-full"
                             style={{ backgroundColor: brand.color }}
                           />
                           <span className="text-sm font-medium text-gray-700">{brand.name}</span>
@@ -316,7 +318,7 @@ const Dashboard = () => {
 
         {/* Bottom Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+
           {/* Active Brand Partners */}
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-xl text-white">
             <div className="flex items-center gap-4 mb-4">
@@ -344,11 +346,10 @@ const Dashboard = () => {
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-gray-800 mb-2">Weekly Performance</h3>
               <p className="text-sm text-gray-500">
-                Transaction volume over the past week 
+                Transaction volume over the past week
                 {dashboardData?.trends?.weekly?.summary?.weekOverWeekGrowth && (
-                  <span className={`ml-2 font-medium ${
-                    dashboardData.trends.weekly.summary.weekOverWeekGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <span className={`ml-2 font-medium ${dashboardData.trends.weekly.summary.weekOverWeekGrowth >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
                     ({dashboardData.trends.weekly.summary.weekOverWeekGrowth >= 0 ? '+' : ''}
                     {dashboardData.trends.weekly.summary.weekOverWeekGrowth}% vs last week)
                   </span>
@@ -359,18 +360,18 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={weeklyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="day" 
+                  <XAxis
+                    dataKey="day"
                     axisLine={false}
                     tickLine={false}
                     style={{ fontSize: '12px' }}
                   />
-                  <YAxis 
+                  <YAxis
                     axisLine={false}
                     tickLine={false}
                     style={{ fontSize: '12px' }}
                   />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: 'white',
                       border: '1px solid #e5e7eb',
@@ -382,10 +383,10 @@ const Dashboard = () => {
                       return [value, name];
                     }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#10B981" 
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#10B981"
                     strokeWidth={3}
                     dot={{ fill: '#10B981', r: 6 }}
                     activeDot={{ r: 8, stroke: '#10B981', strokeWidth: 2 }}
@@ -395,32 +396,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
-        {/* Getting Started Section - Show only if no data */}
-        {!hasData && (
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-            <div className="max-w-3xl">
-              <h3 className="text-2xl font-semibold text-gray-800 mb-4">Getting Started</h3>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <p className="text-blue-800 font-medium mb-2">No gift orders have been submitted yet</p>
-                <p className="text-blue-700 text-sm">Start your gift card journey by creating your first order</p>
-              </div>
-              <p className="text-gray-600 leading-relaxed mb-6">
-                Once users start submitting gift orders through the frontend, you'll see real-time data and analytics here. 
-                All metrics, charts, and performance data will automatically populate based on actual user activity.
-              </p>
-              <div className="flex gap-4">
-                <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                  Create First Order
-                </button>
-                <button className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                  View Documentation
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
     </div>
   );

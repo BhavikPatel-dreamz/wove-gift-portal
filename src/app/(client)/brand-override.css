@@ -58,7 +58,7 @@ header {
 
 /* Navigation Links */
 .nav-link {
-  color: var(--wave-text-dark) !important;
+  /* color: var(--wave-text-dark) !important; */
   font-size: 14px !important;
   font-weight: 500 !important;
   transition: color 0.2s ease !important;
@@ -144,7 +144,7 @@ button[class*="primary"] {
 .btn-secondary {
   background-color: #ed457d !important; /* same as bg-[#ED457D] */
   color: #fff !important; /* text-white */
-  padding: 8px 16px !important; /* px-4 py-2 */
+  padding: 10px 16px !important; /* px-4 py-2 */
   border-radius: 9999px !important; /* rounded-full */
   font-size: 12px !important; /* text-xs */
   font-weight: 700 !important; /* font-bold */
@@ -332,7 +332,7 @@ h6,
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
-  padding: 5rem 5rem !important;
+  padding: 5.8rem 5rem 4rem 5rem !important;
   position: relative !important;
   overflow: hidden !important;
   min-height: 450px !important;
@@ -393,7 +393,6 @@ h6,
   box-shadow: 0 6px 18px rgba(237, 69, 125, 0.3) !important;
   transition: all 0.3s ease !important;
   cursor: pointer !important;
-  margin-bottom: 2rem !important;
   margin-top: 2rem !important;
 }
 
@@ -425,10 +424,12 @@ h6,
   align-items: center !important;
   justify-content: center !important;
   gap: 0.5rem !important;
-  font-size: 14px !important;
-  color: #1a1a1a !important;
+  font-size: 16px !important;
+  color: #4A4A4A !important;
   margin-top: 1.5rem !important;
   margin-bottom: 0 !important;
+  font-weight: 500;
+  line-height: 32px; /* 200% */
 }
 
 .trust-icon {
@@ -570,7 +571,7 @@ h6,
   user-select: none !important;
   z-index: 1 !important;
   opacity: 1 !important;
-  padding: 11px;
+  padding: 8px;
   background: #fff;
   border-radius: 25px;
 }
@@ -777,8 +778,8 @@ h6,
 
 /* Occasion Card */
 .occasion-card {
-  background: white !important;
-  border-radius: 16px !important;
+  border-radius: 20px !important;
+  background: rgba(217, 217, 217, 0.2) !important; /* D9D9D9 with 20% opacity */
   overflow: hidden !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
   transition: all 0.3s ease !important;
@@ -799,7 +800,7 @@ h6,
 }
 
 .occasion-card-content {
-  padding: 1.25rem !important;
+  padding: 1.25rem 1.25rem 0 1.25rem !important;
   text-align: center !important;
 }
 
@@ -966,14 +967,13 @@ h6,
 .testimonials-section {
   background: linear-gradient(180deg, rgba(221, 153, 255, 0.2) 0%, rgba(221, 153, 255, 0) 100%);
   /* background: linear-gradient(180deg, #F5F0FF 0%, #EFE7FF 100%); */
-  padding: 60px 0 18px;
+    padding: 60px 0 0px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   overflow: hidden; /* kill horizontal scrollbar */
 }
 
 .testimonials-container {
-  max-width: 1440px;
   margin: 0 auto;
   padding: 0 20px;
 }
@@ -1001,7 +1001,7 @@ h6,
 /* ---------------  SLIDER WRAPPER  --------------- */
 .testimonials-slider-wrapper {
   position: relative;
-  width: 100%;
+  width: 90%;
   overflow: hidden;
 }
 
@@ -1014,6 +1014,7 @@ h6,
 .testimonials-slide {
   width: 100%;
   flex-shrink: 0;
+  padding-bottom: 10px;
 }
 
 /* ---------------  4-CARD GRID  --------------- */
@@ -1028,14 +1029,13 @@ h6,
 
 /* ---------------  SINGLE CARD  --------------- */
 .testimonial-card {
-  width: auto;
-  height: 260px;          /* ← fixed height (adjust as needed) */
-  padding: 32px 24px;
+     width: 332px;
+      height: 229px;    /* ← fixed height (adjust as needed) */
+      padding: 32px 24px;
 
-  background: #ffffff;
-  border-radius: 20px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    background: #FFF;
+    box-shadow: 0 4px 10px 0 rgba(221, 153, 255, 0.10);
 
   display: flex;
   flex-direction: column;
@@ -1111,7 +1111,6 @@ h6,
 
 .dot.active {
   background: #e91e63;
-  width: 24px;
   border-radius: 4px;
 }
 

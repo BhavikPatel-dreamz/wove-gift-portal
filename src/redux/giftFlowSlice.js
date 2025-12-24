@@ -7,6 +7,7 @@ const giftFlowSlice = createSlice({
     selectedBrand: null,
     selectedAmount: null,
     selectedOccasion: null,
+    selectedOccasionName: null,
     selectedSubCategory: null,
     selectedTiming: null,
     personalMessage: "",
@@ -71,44 +72,45 @@ const giftFlowSlice = createSlice({
       if (currentStep > 1) {
         state.currentStep = currentStep - 1;
 
-        switch (currentStep) {
-          case 2:
-            state.selectedBrand = null;
-            break;
-          case 3:
-            state.selectedAmount = null;
-            break;
-          case 4:
-            state.selectedOccasion = null;
-            state.subCategories = [];
-            state.currentSubCategoryPage = 1;
-            break;
-          case 5:
-            state.selectedSubCategory = null;
-            break;
-          case 6:
-            state.personalMessage = "";
-            break;
-          case 7:
-            state.selectedTiming = null;
-            break;
-          case 8:
-            state.deliveryMethod = null;
-            state.deliveryDetails = {
-              yourName: "",
-              yourWhatsAppNumber: "",
-              recipientName: "",
-              recipientWhatsAppNumber: "",
-              deliveryTips: [],
-              previewMessage: false,
-              yourFullName: "",
-              yourEmailAddress: "",
-              recipientFullName: "",
-              recipientEmailAddress: "",
-              printDetails: {},
-            };
-            break;
-        }
+        // switch (currentStep) {
+        //   case 2:
+        //     state.selectedBrand = null;
+        //     break;
+        //   case 3:
+        //     state.selectedAmount = null;
+        //     break;
+        //   case 4:
+        //     state.selectedOccasion = null;
+        //     state.selectedOccasionName = null;
+        //     state.subCategories = [];
+        //     state.currentSubCategoryPage = 1;
+        //     break;
+        //   case 5:
+        //     state.selectedSubCategory = null;
+        //     break;
+        //   case 6:
+        //     state.personalMessage = "";
+        //     break;
+        //   case 7:
+        //     state.selectedTiming = null;
+        //     break;
+        //   case 8:
+        //     state.deliveryMethod = null;
+        //     state.deliveryDetails = {
+        //       yourName: "",
+        //       yourWhatsAppNumber: "",
+        //       recipientName: "",
+        //       recipientWhatsAppNumber: "",
+        //       deliveryTips: [],
+        //       previewMessage: false,
+        //       yourFullName: "",
+        //       yourEmailAddress: "",
+        //       recipientFullName: "",
+        //       recipientEmailAddress: "",
+        //       printDetails: {},
+        //     };
+        //     break;
+        // }
       }
     },
 
@@ -116,7 +118,7 @@ const giftFlowSlice = createSlice({
       const increment = action.payload || 1; // Default to 1 if no payload
       state.currentStep = Math.min(10, state.currentStep + increment);
     },
-    
+
     resetFlow: () => {
       return {
         currentStep: 1,
@@ -373,6 +375,9 @@ const giftFlowSlice = createSlice({
     setSelectedOccasion: (state, action) => {
       state.selectedOccasion = action.payload;
     },
+    setSelectedOccasionName: (state, action) => {
+      state.selectedOccasionName = action.payload;
+    },
 
     setSelectedSubCategory: (state, action) => {
       state.selectedSubCategory = action.payload;
@@ -451,6 +456,7 @@ export const {
   setSelectedBrand,
   setSelectedAmount,
   setSelectedOccasion,
+  setSelectedOccasionName,
   setSelectedSubCategory,
   setSearchTerm,
   setSelectedCategory,

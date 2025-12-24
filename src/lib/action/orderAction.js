@@ -982,6 +982,8 @@ async function processSingleOrder(
 
     return { voucherCode, giftCard: giftCardInDb, shopifyGiftCard };
   } catch (error) {
+    console.log("error",error);
+    
     throw new Error(`Failed to process single order: ${error.message}`);
   }
 }

@@ -3,14 +3,14 @@ import React from "react";
 
 const WhyWoveExists = () => {
   return (
-    <section className="max-w-6xl mx-auto py-12">
-      <div className="flex flex-col md:flex-row items-center gap-10 md:gap-20">
+    <section className="max-w-[1440px] mx-auto py-12">
+      <div className="flex flex-col md:flex-row items-center justify-center gap-10 md:gap-20">
         {/* Left content */}
         <div className="flex-1 max-w-xl">
-          <h2 className="font-bold text-3xl md:text-4xl mb-4 leading-tight">
+          <h2 className="font-bold text-[40px] md:text-4xl mb-4 leading-tight fontPoppins">
             Why Wove exists
           </h2>
-          <p className="text-gray-700 text-base md:text-lg mb-8 leading-relaxed">
+          <p className="text-[#4A4A4A] font-medium text-base md:text-lg mb-8 leading-relaxed">
             Gifting should feel joyful, not stressful. We built Wove to turn "What do I buy?" into "That was easy." With access to trusted brands and instant delivery, you choose the vibe fashion, food, wellness, travel and we deliver a beautiful gift card that always fits.
           </p>
 

@@ -23,6 +23,12 @@ export async function POST(request) {
         email: user.email,
         firstName: user.firstName || null,
         lastName: user.lastName || null,
+        phone: user.phone || null,
+        role: user.role || null,
+        isActive: user.isActive || null,
+        isVerified: user.isVerified || null,
+        createdAt: user.createdAt || null,
+        updatedAt: user.updatedAt || null,
       }
     })
   } catch (error) {

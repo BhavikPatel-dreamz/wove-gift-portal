@@ -21,8 +21,11 @@ const BrandSelector = () => {
     favorites,
     premiumBrands,
     loading,
-    error
+    error,
+    selectedBrand
   } = useSelector((state) => state.giftFlowReducer);
+
+  console.log("selectedBrand", premiumBrands,selectedBrand);
 
 
   useEffect(() => {
@@ -118,6 +121,7 @@ const BrandSelector = () => {
           onToggleFavorite={handleToggleFavorite}
           onBrandClick={handleBrandClick}
           premiumBrands={premiumBrands.map(b => b.id)}
+          selectedBrand={selectedBrand}
         />
       </div>
     </div>

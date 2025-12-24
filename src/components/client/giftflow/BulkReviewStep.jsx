@@ -106,7 +106,7 @@ const BulkReviewStep = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-[1440px] mx-auto">
                 {/* Previous Button */}
                 {/* <button
                     onClick={handleBack}
@@ -119,9 +119,9 @@ const BulkReviewStep = () => {
                     <button
                         onClick={() => dispatch(goBack())}
                         className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
-                               transition-all duration-200 shadow-sm hover:shadow-md"
+                               transition-all duration-200 shadow-sm hover:shadow-md" 
                     >
-                        <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+                        <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
                         <span className="text-base font-semibold text-gray-800">
                             Previous
                         </span>
@@ -130,24 +130,38 @@ const BulkReviewStep = () => {
 
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="inline-block px-4 py-1.5 bg-white border border-pink-300 rounded-full mb-4">
-                        <span className="text-pink-500 font-semibold text-sm">Bulk Gifting</span>
+                    <div className="w-full flex items-center justify-center mb-4">
+                        {/* Left line */}
+                        <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
+
+                        {/* Center pill */}
+                        <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
+                            <div className="px-4 py-1.5 bg-white rounded-full">
+                                <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                                    Bulk Gifting
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Right line */}
+                        <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+
+                    <h1 className="text-[40px] md:text-4xl font-bold text-[#1A1A1A] mb-[24px] fontPoppins">
                         Review your bulk gifting order
                     </h1>
-                    <p className="text-gray-600">
+                    <p className="text-[#4A4A4A] font-medium text-base">
                         Once confirmed, you'll receive all voucher codes via email in a CSV file within minutes
                     </p>
                 </div>
 
                 {/* Order Summary Card */}
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
+                <div className="max-w-[688px] m-auto bg-[#F9F9F9] rounded-[20px] p-5 border border-gray-200 shadow-sm mb-6">
                     <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
 
-                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl ">
                         {/* Brand Logo */}
-                        <div className="w-16 h-16 flex-shrink-0">
+                        <div className="w-16 h-16 flex-shrink-0 ">
                             {selectedBrand?.logo ? (
                                 <img
                                     src={selectedBrand.logo}
@@ -164,20 +178,20 @@ const BulkReviewStep = () => {
                         </div>
 
                         {/* Order Details */}
-                        <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div>
+                        <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 ">
+                            <div className='border-r-2 border-[#1a1a1a28]'>
                                 <p className="text-xs text-gray-500 mb-1">Brand</p>
                                 <p className="font-semibold text-gray-900">
                                     {selectedBrand?.brandName || selectedBrand?.name}
                                 </p>
                             </div>
-                            <div>
+                            <div className='border-r-2 border-[#1a1a1a28]'>
                                 <p className="text-xs text-gray-500 mb-1">Denomination</p>
                                 <p className="font-semibold text-gray-900">
                                     {currentBulkOrder.selectedAmount.currency}{currentBulkOrder.selectedAmount.value}
                                 </p>
                             </div>
-                            <div>
+                            <div className='border-r-2 border-[#1a1a1a28]'>
                                 <p className="text-xs text-gray-500 mb-1">Quantity</p>
                                 <p className="font-semibold text-gray-900">{currentBulkOrder.quantity}</p>
                             </div>
@@ -192,94 +206,96 @@ const BulkReviewStep = () => {
                 </div>
 
                 {/* Company Information Card */}
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Company Information</h3>
+                <div className="max-w-[688px] m-auto p-[1px] rounded-[20px] shadow-sm mb-6" style={{ background: 'linear-gradient(114.06deg, #ED457D 11.36%, #FA8F42 90.28%)' }}>
 
-                    <div className="space-y-4">
-                        {/* Company Name */}
-                        <div>
-                            <input
-                                type="text"
-                                placeholder="Your Company Name*"
-                                value={companyInfo.companyName}
-                                onChange={(e) => handleInputChange('companyName', e.target.value)}
-                                className={`w-full px-4 py-3 border ${errors.companyName ? 'border-red-500' : 'border-gray-300'} text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
-                            />
-                            {errors.companyName && (
-                                <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>
-                            )}
-                        </div>
+                    <div className="p-6 bg-[linear-gradient(180deg,#FEF8F6_0%,#FDF7F8_100%)] rounded-[20px]">
+                        <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 fontPoppins">Company Information</h3>
 
-                        {/* VAT Number */}
-                        <div>
-                            <input
-                                type="text"
-                                placeholder="Vat Number (e.g., 4001234567)"
-                                value={companyInfo.vatNumber}
-                                onChange={(e) => handleInputChange('vatNumber', e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none text-black focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                            />
-                        </div>
-
-                        {/* Contact Number and Email */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                            {/* Company Name */}
                             <div>
                                 <input
-                                    type="tel"
-                                    placeholder="Your Contact No.*"
-                                    value={companyInfo.contactNumber}
-                                    onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                                    className={`w-full px-4 py-3 border ${errors.contactNumber ? 'border-red-500' : 'border-gray-300'} rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                    type="text"
+                                    placeholder="Your Company Name*"
+                                    value={companyInfo.companyName}
+                                    onChange={(e) => handleInputChange('companyName', e.target.value)}
+                                    className={`w-full px-4 py-3 border ${errors.companyName ? 'border-red-500' : 'border-[#1A1A1A33]'} text-black rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                 />
-                                {errors.contactNumber && (
-                                    <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>
+                                {errors.companyName && (
+                                    <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>
                                 )}
                             </div>
+
+                            {/* VAT Number */}
                             <div>
                                 <input
-                                    type="email"
-                                    placeholder="Your Contact Email*"
-                                    value={companyInfo.contactEmail}
-                                    onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                                    className={`w-full px-4 py-3 border ${errors.contactEmail ? 'border-red-500' : 'border-gray-300'} rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                    type="text"
+                                    placeholder="Vat Number (e.g., 4001234567)"
+                                    value={companyInfo.vatNumber}
+                                    onChange={(e) => handleInputChange('vatNumber', e.target.value)}
+                                    className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px]  focus:outline-none text-black focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                                 />
-                                {errors.contactEmail && (
-                                    <p className="text-red-500 text-xs mt-1">{errors.contactEmail}</p>
-                                )}
                             </div>
-                        </div>
 
-                        {/* Delivery Options */}
-                        <div className="pt-4 space-y-3">
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="deliveryOption"
-                                    value="csv"
-                                    checked={deliveryOption === 'csv'}
-                                    onChange={(e) => handleDeliveryOptionChange(e.target.value)}
-                                    className="mt-1 w-4 h-4 focus:ring-pink-500 text-black"
-                                />
-                                <div className="flex-1">
-                                    <span className="text-gray-900 font-medium">CSV file with voucher codes will be sent to my email</span>
+                            {/* Contact Number and Email */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <input
+                                        type="tel"
+                                        placeholder="Your Contact No.*"
+                                        value={companyInfo.contactNumber}
+                                        onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                                        className={`w-full px-4 py-3 border ${errors.contactNumber ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                    />
+                                    {errors.contactNumber && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>
+                                    )}
                                 </div>
-                            </label>
-
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="deliveryOption"
-                                    value="email"
-                                    checked={deliveryOption === 'email'}
-                                    onChange={(e) => handleDeliveryOptionChange(e.target.value)}
-                                    className="mt-1 w-4 h-4 focus:ring-pink-500 text-black"
-                                />
-                                <div className="flex-1">
-                                    <span className="text-gray-900 font-medium">Send bulk codes to my email</span>
+                                <div>
+                                    <input
+                                        type="email"
+                                        placeholder="Your Contact Email*"
+                                        value={companyInfo.contactEmail}
+                                        onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                                        className={`w-full px-4 py-3 border ${errors.contactEmail ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                    />
+                                    {errors.contactEmail && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.contactEmail}</p>
+                                    )}
                                 </div>
-                            </label>
+                            </div>
 
-                            {/* <label className="flex items-start gap-3 cursor-pointer">
+                            {/* Delivery Options */}
+                            <div className="pt-4 space-y-3">
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="deliveryOption"
+                                        value="csv"
+                                        checked={deliveryOption === 'csv'}
+                                        onChange={(e) => handleDeliveryOptionChange(e.target.value)}
+                                        className="mt-1 w-4 h-4 focus:ring-pink-500 text-black"
+                                    />
+                                    <div className="flex-1">
+                                        <span className="text-gray-900 font-medium">CSV file with voucher codes will be sent to my email</span>
+                                    </div>
+                                </label>
+
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="deliveryOption"
+                                        value="email"
+                                        checked={deliveryOption === 'email'}
+                                        onChange={(e) => handleDeliveryOptionChange(e.target.value)}
+                                        className="mt-1 w-4 h-4 focus:ring-pink-500 text-black"
+                                    />
+                                    <div className="flex-1">
+                                        <span className="text-gray-900 font-medium">Send bulk codes to my email</span>
+                                    </div>
+                                </label>
+
+                                {/* <label className="flex items-start gap-3 cursor-pointer">
                                 <input
                                     type="radio"
                                     name="deliveryOption"
@@ -292,6 +308,7 @@ const BulkReviewStep = () => {
                                     <span className="text-gray-900 font-medium">Send vouchers to multiple individuals as gifts.</span>
                                 </div>
                             </label> */}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -299,10 +316,13 @@ const BulkReviewStep = () => {
                 {/* Proceed Button */}
                 <button
                     onClick={handleProceedToCheckout}
-                    className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                    className="max-w-[688px] m-auto w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                 >
                     Proceed to Checkout
-                    <span className="text-xl">▶</span>
+                    <span className="text-xl"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                    </svg>
+                    </span>
                 </button>
             </div>
         </div>

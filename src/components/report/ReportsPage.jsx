@@ -5,8 +5,10 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 
-export default function ReportsPage() {
+export default function ReportsPage({ shop }) {
     const [brands, setBrands] = useState([]);
+    const [brandLoading, setbrandLoading] = useState(false);
+
     const [customReport, setCustomReport] = useState({
         startDate: '2025-11-05',
         endDate: '2025-11-31',
@@ -26,12 +28,15 @@ export default function ReportsPage() {
     React.useEffect(() => {
         const fetchBrands = async () => {
             try {
-                const response = await fetch('/api/brand?active=true');
+                setbrandLoading(true);
+                const response = await fetch(`/api/brand?active=true${shop ? `&shop=${shop}` : ''}`);
                 const data = await response.json();
                 if (data.success) {
                     setBrands(data.data);
+                    setbrandLoading(false);
                 }
             } catch (error) {
+                setbrandLoading(false);
                 console.error('Failed to fetch brands:', error);
             }
         };
@@ -97,7 +102,7 @@ export default function ReportsPage() {
         setMessage({ type: '', text: '' });
 
         try {
-            const response = await fetch(`/api/reports/quick?type=${reportId}`);
+            const response = await fetch(`/api/reports/quick?type=${reportId}${shop ? `&shop=${shop}` : ''}`);
             const data = await response.json();
 
             if (response.ok) {
@@ -142,6 +147,7 @@ export default function ReportsPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
+                    shop,
                     startDate: customReport.startDate,
                     endDate: customReport.endDate,
                     brand: customReport.brand,
@@ -606,6 +612,7 @@ export default function ReportsPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    shop,
                     frequency: scheduledReport.frequency,
                     deliveryDay: scheduledReport.deliveryDay,
                     emailRecipients: scheduledReport.emailRecipients,
@@ -830,7 +837,7 @@ export default function ReportsPage() {
                                             >
                                                 <option value="all">All brands</option>
 
-                                                {brands && brands.length > 0 ? (
+                                                {!brandLoading ? (
                                                     brands.map((data) => (
                                                         <option key={data.id} value={data.brandName}>
                                                             {data.brandName}

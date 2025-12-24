@@ -6,9 +6,11 @@ const CardGrid = ({
   favorites = [], 
   onToggleFavorite, 
   onBrandClick, 
-  isLoading = false 
+  isLoading = false,
+  selectedBrand = null
 }) => {
   
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
@@ -51,6 +53,7 @@ const CardGrid = ({
           isFavorited={favorites.includes(brand.id)}
           onToggleFavorite={onToggleFavorite}
           onClick={onBrandClick}
+          selectedBrand={selectedBrand}
         />
       ))}
     </div>

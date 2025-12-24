@@ -1,9 +1,11 @@
 import React from "react";
-import { Star, Sparkles, Send } from "lucide-react";
+import SendIcon from '@/icons/SendIcon';
+import StartIcon from '@/icons/StartIcon';
+import SparklesIcon from '@/icons/SparklesIcon';
 
 const steps = [
   {
-    icon: Star,
+    icon: StartIcon,
     title: "Choose a brand",
     desc: "Filter by country to see local partners.",
     leftClassMd: "md:left-[25%]",
@@ -11,7 +13,7 @@ const steps = [
     zClassMd: "md:z-10",
   },
   {
-    icon: Sparkles,
+    icon: SparklesIcon,
     title: "Personalize",
     desc: "Add a note (and optional video message).",
     leftClassMd: "md:left-[52%]",
@@ -19,7 +21,7 @@ const steps = [
     zClassMd: "md:z-30",
   },
   {
-    icon: Send,
+    icon: SendIcon,
     title: "Send & smile",
     desc: "Instant delivery; easy redemption at checkout.",
     leftClassMd: "md:left-[80%]",
@@ -27,10 +29,10 @@ const steps = [
     zClassMd: "md:z-10",
   },
 ];
-
+ 
 export default function HowItWorksOverlap() {
   return (
-    <section className="max-w-5xl mx-auto px-4 py-20">
+    <section className="max-w-5xl mx-auto px-4 "> 
       <h2 className="text-center font-bold text-3xl md:text-4xl mb-14 text-gray-900">
         How It Works
       </h2>
@@ -43,6 +45,7 @@ export default function HowItWorksOverlap() {
             (
               { icon: Icon, title, desc, leftClassMd, rotateClassMd, zClassMd },
               idx
+              
             ) => (
               <article
                 key={idx}

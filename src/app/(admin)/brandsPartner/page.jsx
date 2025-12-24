@@ -7,6 +7,7 @@ import { createBrandPartner, updateBrand, deleteBrandPartner, getBrandPartner } 
 import { toast } from 'react-hot-toast';
 import { categories } from '../../../lib/resourses';
 import { useRouter, useParams } from 'next/navigation';
+import { History } from 'lucide-react';
 
 
 const BrandManager = () => {
@@ -408,6 +409,10 @@ const BrandManager = () => {
     );
   }
 
+  const redirectToSettlement = (brandId) => {
+    router.push(`/brandsPartner/${brandId}/settlements`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 text-black">
       <div className="max-w-7xl mx-auto">
@@ -698,6 +703,14 @@ const BrandManager = () => {
 
                 {/* Action Buttons */}
                 <div className="flex items-center justify-end gap-2 mt-auto pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => redirectToSettlement(brand.id)}
+                    disabled={actionLoading}
+                    title={brand.isFeature ? 'Unfeature Brand' : 'Feature Brand'}
+                    className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50`}
+                  >
+                   <History size={16} />
+                  </button>
                   <button
                     onClick={() => toggleFeatured(brand.id)}
                     disabled={actionLoading}

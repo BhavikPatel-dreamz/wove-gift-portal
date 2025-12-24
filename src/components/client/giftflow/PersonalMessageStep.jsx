@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { goBack, goNext, setPersonalMessage } from "../../../redux/giftFlowSlice";
 import ProgressIndicator from "./ProgressIndicator";
 import { ArrowLeft } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 
 const PersonalMessageStep = () => {
@@ -12,7 +13,13 @@ const PersonalMessageStep = () => {
   const [error, setError] = useState('');
   const maxChars = 300;
   const minChars = 1;
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode');
+  const isBulkMode = mode === 'bulk';
+  const data  = useSelector((state) => state.giftFlowReducer);
 
+  console.log("data",data);
+  
   const handleMessageChange = (e) => {
     const newMessage = e.target.value;
     if (newMessage.length <= maxChars) {
@@ -62,6 +69,25 @@ const PersonalMessageStep = () => {
         </div>
         {/* Header */}
         <div className="text-center mb-16">
+          {
+            isBulkMode &&
+            <div className="w-full flex items-center justify-center mb-4">
+              {/* Left line */}
+              <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
+
+              {/* Center pill */}
+              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
+                <div className="px-4 py-1.5 bg-white rounded-full">
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                    Bulk Gifting
+                  </span>
+                </div>
+              </div>
+
+              {/* Right line */}
+              <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
+            </div>
+          }
           <h1 className="text-5xl font-bold mb-4 text-black">
             Write from Your Heart
           </h1>
@@ -138,7 +164,11 @@ const PersonalMessageStep = () => {
               }`}
           >
             Schedule Delivery Date
-            <span className="ml-3 text-lg">▶</span>
+            <span className="ml-3 text-lg">
+              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+              </svg>
+            </span>
           </button>
         </div>
 
