@@ -3522,3 +3522,63 @@ function formatDateShort(date) {
     day: "numeric",
   });
 }
+
+export async function getSettlementTabData(brandId, tab) {
+  try {
+    switch (tab) {
+      case "overview":
+        return {
+          success: true,
+          data: await getSettlementOverview(brandId),
+        };
+      case "vouchers":
+        return {
+          success: true,
+          data: await getSettlementVouchers(brandId),
+        };
+      case "contacts":
+        const settlement = await prisma.settlements.findFirst({
+          where: { brandId },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!settlement) {
+          return { success: false, message: "Settlement not found", status: 404 };
+        }
+        return {
+          success: true,
+          data: await getSettlementContacts(settlement.id),
+        };
+      case "banking":
+        const settlementForBanking = await prisma.settlements.findFirst({
+          where: { brandId },
+          orderBy: { createdAt: "desc" },
+        });
+        if (!settlementForBanking) {
+          return { success: false, message: "Settlement not found", status: 404 };
+        }
+        return {
+          success: true,
+          data: await getSettlementBankingDetails(settlementForBanking.id),
+        };
+      case "terms":
+        return {
+          success: true,
+          data: await getSettlementTerms(brandId),
+        };
+      default:
+        return {
+          success: false,
+          message: "Invalid tab",
+          status: 400,
+        };
+    }
+  } catch (error) {
+    console.error(`Error fetching ${tab} data:`, error);
+    return {
+      success: false,
+      message: `Failed to fetch ${tab} data`,
+      error: error.message,
+      status: 500,
+    };
+  }
+}
