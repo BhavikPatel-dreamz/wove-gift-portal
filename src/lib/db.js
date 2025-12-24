@@ -19,7 +19,17 @@ const getPrisma = () => {
   return prisma
 }
 
-export default getPrisma()
+// Export as getter to lazy initialize
+class PrismaProxy {
+  constructor() {
+    return new Proxy({}, {
+      get: (target, prop) => {
+        const instance = getPrisma()
+        return instance[prop]
+      }
+    })
+  }
+}
 
-// For cases where you need lazy initialization at runtime
+export default new PrismaProxy()
 export const getPrismaInstance = getPrisma
