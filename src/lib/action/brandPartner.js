@@ -1296,7 +1296,7 @@ export async function getSettlements(params = {}) {
     const orderBy = { [sortBy]: sortOrder };
 
     // Fetch settlements with optimized query
-    const [allSettlements, totalCount] = await Promise.all([
+    const [allSettlements, _totalCount] = await Promise.all([
       prisma.settlements.findMany({
         where: whereClause,
         orderBy,
@@ -1469,7 +1469,7 @@ async function processIndividualSettlements(allSettlements) {
 
   // Collect all brand IDs and date ranges
   const brandIds = [...new Set(allSettlements.map((s) => s.brandId))];
-  const periodRanges = allSettlements.map((s) => ({
+  const _periodRanges = allSettlements.map((s) => ({
     brandId: s.brandId,
     start: s.periodStart,
     end: s.periodEnd,
@@ -2795,7 +2795,7 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       const redeemedVouchers = order.voucherCodes.filter(
         (v) => v.redemptions && v.redemptions.length > 0
       ).length;
-      const pendingVouchers = totalVouchers - redeemedVouchers;
+      const _pendingVouchers = totalVouchers - redeemedVouchers;
 
       const totalAmount = order.totalAmount || 0;
       const redeemedAmount = order.voucherCodes.reduce((sum, v) => {
@@ -3095,7 +3095,7 @@ export async function getBrandSettlementHistory(brandId, params = {}) {
 
     // === OPTIMIZATION 3: Fetch settlements with pagination FIRST ===
     // Only get the data we need for the current page
-    const [allSettlements, totalCount] = await Promise.all([
+    const [allSettlements] = await Promise.all([
       prisma.settlements.findMany({
         where: whereClause,
         orderBy: { [sortBy]: sortOrder },
@@ -3126,7 +3126,7 @@ export async function getBrandSettlementHistory(brandId, params = {}) {
     }
 
     // === OPTIMIZATION 4: Use Map for O(1) lookups instead of filter ===
-    const settlementMap = new Map(allSettlements.map((s) => [s.id, s]));
+    //const _settlementMap = new Map(allSettlements.map((s) => [s.id, s]));
 
     // Get date range for all settlements
     const minDate = new Date(
