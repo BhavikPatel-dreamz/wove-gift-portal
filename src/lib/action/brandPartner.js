@@ -2934,6 +2934,7 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       const redeemedVouchers = order.voucherCodes.filter(
         (v) => v.isRedeemed || v.remainingValue === 0
       ).length;
+      const pendingVouchers = totalVouchers - redeemedVouchers;
 
       const totalAmount = order.totalAmount || 0;
       const redeemedAmount = order.voucherCodes.reduce((sum, v) => {
