@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 
+// Lazy-load prisma at module level
+let prismaInstance = null;
+const getPrisma = async () => {
+  if (!prismaInstance) {
+    prismaInstance = (await import("../../../lib/db")).default;
+  }
+  return prismaInstance;
+};
+
 export async function GET(request) {
   try {
-    const prisma = (await import("../../../lib/db")).default;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "year";
 
@@ -83,6 +91,7 @@ function buildDateFilter(dateRange, field = "createdAt") {
 
 // Get brand redemption metrics - formatted for frontend
 async function getBrandRedemptionMetrics(dateRange) {
+  const prisma = await getPrisma();
   const dateFilter = buildDateFilter(dateRange);
 
   // Get all active brands
@@ -231,6 +240,7 @@ async function getBrandRedemptionMetrics(dateRange) {
 
 // Get settlement data - formatted for frontend
 async function getSettlementData(dateRange) {
+  const prisma = await getPrisma();
   const dateFilter = buildDateFilter(dateRange);
 
   // Get pending settlements with brand details
