@@ -1,10 +1,10 @@
 import {  NextResponse } from 'next/server'
-import { createSession } from '../../../../lib/action/userAction/session'
 import { loginSchema } from '@/lib/validation'
-import { authenticateUser } from '../../../../lib/action/userAction/auth'
 
 export async function POST(request) {
   try {
+    const { createSession } = await import('../../../../lib/action/userAction/session')
+    const { authenticateUser } = await import('../../../../lib/action/userAction/auth')
     const body = await request.json()
 
     // Validate input
