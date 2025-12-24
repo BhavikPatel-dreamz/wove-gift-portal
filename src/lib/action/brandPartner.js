@@ -1296,7 +1296,7 @@ export async function getSettlements(params = {}) {
     const orderBy = { [sortBy]: sortOrder };
 
     // Fetch settlements with optimized query
-    const [allSettlements, totalCount] = await Promise.all([
+    const [allSettlements] = await Promise.all([
       prisma.settlements.findMany({
         where: whereClause,
         orderBy,
@@ -1399,6 +1399,33 @@ export async function getSettlements(params = {}) {
   }
 }
 
+export async function getSettlementTabData(brandId,tab){
+  try {
+    const res = await getSettlements(brandId,tab);
+    if (res.success) {
+      return {
+        success: true,
+        data: res.data,
+      };
+    } else {
+      return {
+        success: false,
+        message: res.message,
+        error: res.error,
+        status: res.status,
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching settlement details:", error);
+    return {
+      success: false,
+      message: "Failed to fetch settlement details",
+      error: error.message,
+      status: 500,
+    };
+  }
+}
+
 // ==================== CALCULATE SUMMARY ====================
 function calculateSummaryFromProcessed(processedSettlements) {
   return {
@@ -1469,11 +1496,11 @@ async function processIndividualSettlements(allSettlements) {
 
   // Collect all brand IDs and date ranges
   const brandIds = [...new Set(allSettlements.map((s) => s.brandId))];
-  const periodRanges = allSettlements.map((s) => ({
-    brandId: s.brandId,
-    start: s.periodStart,
-    end: s.periodEnd,
-  }));
+  // const periodRanges = allSettlements.map((s) => ({
+  //   brandId: s.brandId,
+  //   start: s.periodStart,
+  //   end: s.periodEnd,
+  // }));
 
   // Batch fetch all orders for all brands
   const allOrders = await prisma.order.findMany({
@@ -2794,7 +2821,7 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       const redeemedVouchers = order.voucherCodes.filter(
         (v) => v.redemptions && v.redemptions.length > 0
       ).length;
-      const pendingVouchers = totalVouchers - redeemedVouchers;
+      // const pendingVouchers = totalVouchers - redeemedVouchers;
 
       const totalAmount = order.totalAmount || 0;
       const redeemedAmount = order.voucherCodes.reduce((sum, v) => {
@@ -3094,7 +3121,7 @@ export async function getBrandSettlementHistory(brandId, params = {}) {
 
     // === OPTIMIZATION 3: Fetch settlements with pagination FIRST ===
     // Only get the data we need for the current page
-    const [allSettlements, totalCount] = await Promise.all([
+    const [allSettlements] = await Promise.all([
       prisma.settlements.findMany({
         where: whereClause,
         orderBy: { [sortBy]: sortOrder },
@@ -3125,7 +3152,7 @@ export async function getBrandSettlementHistory(brandId, params = {}) {
     }
 
     // === OPTIMIZATION 4: Use Map for O(1) lookups instead of filter ===
-    const settlementMap = new Map(allSettlements.map((s) => [s.id, s]));
+    // const settlementMap = new Map(allSettlements.map((s) => [s.id, s]));
 
     // Get date range for all settlements
     const minDate = new Date(
