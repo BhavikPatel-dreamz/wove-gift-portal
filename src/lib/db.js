@@ -1,14 +1,25 @@
 import { PrismaClient } from '@prisma/client'
 
-let prisma
+let prisma = null
 
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({ log: ['warn', 'error'] })
-} else {
-  if (!global.prisma || !global.prisma.shopifySession) {
-    global.prisma = new PrismaClient({ log: ['warn', 'error'] })
+const getPrisma = () => {
+  if (prisma) {
+    return prisma
   }
-  prisma = global.prisma
+
+  if (process.env.NODE_ENV === 'production') {
+    prisma = new PrismaClient({ log: ['warn', 'error'] })
+  } else {
+    if (!global.prisma) {
+      global.prisma = new PrismaClient({ log: ['warn', 'error'] })
+    }
+    prisma = global.prisma
+  }
+
+  return prisma
 }
 
-export default prisma
+export default getPrisma()
+
+// For cases where you need lazy initialization at runtime
+export const getPrismaInstance = getPrisma

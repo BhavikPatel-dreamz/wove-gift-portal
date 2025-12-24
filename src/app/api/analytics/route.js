@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
+import prisma from "../../../lib/db";
 
 export async function GET(request) {
   try {
-    const prisma = (await import("../../../lib/db")).default;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "year";
 

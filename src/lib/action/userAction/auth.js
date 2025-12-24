@@ -1,7 +1,7 @@
+import prisma from "../../db";
 import { hashPassword, verifyPassword } from "./password";
 
 export async function createUser(data) {
-  const prisma = (await import("../../db")).default;
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },
   });
@@ -41,7 +41,6 @@ export async function createUser(data) {
 }
 
 export async function authenticateUser(data) {
-  const prisma = (await import("../../db")).default;
   const user = await prisma.user.findUnique({
     where: { email: data.email },
     select: {
@@ -76,7 +75,6 @@ export async function authenticateUser(data) {
 }
 
 export async function getUserById(userId) {
-  const prisma = (await import("../../db")).default;
   return prisma.user.findUnique({
     where: { id: userId },
     select: {
