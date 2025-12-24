@@ -69,7 +69,7 @@ export async function authenticateUser(data) {
   }
 
   // Remove password from response
-  const { password, ...userWithoutPassword } = user;
+  const { password: _, ...userWithoutPassword } = user;
   
   return userWithoutPassword;
 }

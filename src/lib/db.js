@@ -31,5 +31,6 @@ class PrismaProxy {
   }
 }
 
-export default new PrismaProxy()
+const prismaProxy = new PrismaProxy()
+export default prismaProxy
 export const getPrismaInstance = getPrisma

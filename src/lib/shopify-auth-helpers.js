@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { authenticate, hasValidSession } from './shopify.server.js';
 
 /**
@@ -96,7 +96,7 @@ export async function getShopifySession(request) {
   try {
     const authData = await authenticate(request);
     return authData.session;
-  } catch (error) {
+  } catch (_) {
     return null;
   }
 }
@@ -108,15 +108,17 @@ export async function getShopifyAdmin(request) {
   try {
     const authData = await authenticate(request);
     return authData.admin;
-  } catch (error) {
+  } catch (_) {
     return null;
   }
 }
 
-export default {
+const shopifyAuthHelpers = {
   withShopifyAuth,
   requireShopifyShop,
   verifyShopifyRequest,
   getShopifySession,
   getShopifyAdmin,
 };
+
+export default shopifyAuthHelpers;
