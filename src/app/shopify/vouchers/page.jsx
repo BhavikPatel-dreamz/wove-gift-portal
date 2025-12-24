@@ -66,7 +66,7 @@ export default function VouchersManagement() {
                 shop:shop
             });
 
-            console.log("response",response)
+          
 
             if (response.success) {
                 setVouchers(response.data);
