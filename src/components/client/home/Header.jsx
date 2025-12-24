@@ -45,7 +45,6 @@ const Header = () => {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(countries[0]);
 
-  console.log("session", session);
 
 
   const handleSelect = (country) => {

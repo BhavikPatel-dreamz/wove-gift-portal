@@ -29,10 +29,6 @@ const ReviewConfirmStep = () => {
     selectedOccasion
   } = useSelector((state) => state.giftFlowReducer);
 
-  console.log(deliveryMethod,
-    deliveryDetails);
-  
-
   const validateGift = () => {
 
     if (!selectedBrand) {

@@ -2460,7 +2460,6 @@ export async function getSettlementContacts(settlementId) {
         status: 404,
       };
     }
-    console.log("settlement", settlement);
 
     // Now fetch the brand contacts using the brandId
     const contacts = await prisma.brandContacts.findMany({

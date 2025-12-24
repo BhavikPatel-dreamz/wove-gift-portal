@@ -3,7 +3,6 @@ import React, { useState } from "react";
 
 const SettlementContacts = ({ contacts }) => {
 
-  console.log(contacts);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter contacts based on search query
