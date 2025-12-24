@@ -12,9 +12,7 @@ function ShopifyLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Log Shopify context for debugging
-    console.log("Shopify Layout - Shop:", shop);
-    console.log("Shopify Layout - Host:", searchParams.get("host"));
-    console.log("Shopify Layout - Embedded:", searchParams.get("embedded"));
+
   }, [shop, searchParams]);
 
   return (

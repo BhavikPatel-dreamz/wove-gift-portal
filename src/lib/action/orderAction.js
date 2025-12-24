@@ -367,11 +367,8 @@ async function processBulkOrder(
     const voucherCodes = [];
     const giftCards = [];
 
-    console.log(`🔄 Creating ${quantity} gift cards for bulk order...`);
-
     // Create multiple gift cards
     for (let i = 0; i < quantity; i++) {
-      console.log(`Creating gift card ${i + 1}/${quantity}...`);
 
       // Create Shopify gift card
       const shopifyGiftCard = await createShopifyGiftCard(
@@ -431,7 +428,6 @@ async function processBulkOrder(
 
       // Generate and save tokenized link
       const tokenizedLink = getClaimUrl(selectedBrand);
-      console.log("----------------tokenizedLink", tokenizedLink);
 
       const linkExpiresAt = new Date();
       linkExpiresAt.setDate(linkExpiresAt.getDate() + 7);
@@ -448,8 +444,6 @@ async function processBulkOrder(
       });
       giftCards.push(shopifyGiftCard);
     }
-
-    console.log(`✅ Created ${quantity} gift cards successfully`);
 
     return { voucherCodes, giftCards };
   } catch (error) {
@@ -651,7 +645,6 @@ Thank you for choosing our gift card platform.`,
         ],
       };
 
-      console.log("📧 Sending CSV email to:", companyInfo.contactEmail);
       const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
       console.log("✅ CSV email sent successfully");
@@ -982,8 +975,6 @@ async function processSingleOrder(
 
     return { voucherCode, giftCard: giftCardInDb, shopifyGiftCard };
   } catch (error) {
-    console.log("error",error);
-    
     throw new Error(`Failed to process single order: ${error.message}`);
   }
 }
@@ -992,7 +983,6 @@ async function processSingleOrder(
 async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
   try {
     if (deliveryMethod === "print") {
-      console.log("✅ Print delivery selected - skipping message delivery");
       return { success: true, message: "Print delivery - no message sent" };
     }
 
@@ -1143,7 +1133,6 @@ export const createOrder = async (orderData) => {
 
   try {
     // Step 1: Authentication
-    console.log("Step 1: Authenticating user...");
     const session = await getSession();
     const userId = session?.userId;
 
@@ -1154,17 +1143,14 @@ export const createOrder = async (orderData) => {
     orderData.userId = userId;
 
     // Step 2: Validation
-    console.log("Step 2: Validating order data...");
     validateOrderData(orderData);
 
     const isBulkOrder = orderData.isBulkOrder === true;
 
     // Step 3: Create receiver detail
-    console.log("Step 3: Creating receiver detail...");
     const receiver = await createReceiverDetail(orderData);
 
     // Step 4: Create order record
-    console.log("Step 4: Creating order record...");
     const scheduledFor =
       !isBulkOrder &&
       orderData.selectedTiming?.type === "scheduled" &&
@@ -1190,7 +1176,6 @@ export const createOrder = async (orderData) => {
 
     if (isBulkOrder) {
       // ========== BULK ORDER PROCESSING ==========
-      console.log("Step 5: Processing bulk order...");
       const { voucherCodes, giftCards } = await processBulkOrder(
         orderData.selectedBrand,
         orderData,
@@ -1201,11 +1186,9 @@ export const createOrder = async (orderData) => {
       voucherCodeIds = voucherCodes.map((vc) => vc.id);
 
       // Step 6: Update settlement
-      console.log("Step 6: Updating settlement records...", voucherCodes);
       await updateOrCreateSettlement(orderData.selectedBrand, order);
 
       // Step 7: Send bulk delivery
-      console.log("Step 7: Processing bulk delivery...");
       const deliveryResult = await sendBulkDelivery(
         orderData,
         voucherCodes,
@@ -1213,7 +1196,6 @@ export const createOrder = async (orderData) => {
       );
 
       // Step 8: Create delivery logs for all vouchers
-      console.log("Step 8: Creating delivery logs...");
       for (const voucherCode of voucherCodes) {
         await createDeliveryLog(order, voucherCode.id, orderData);
       }
@@ -1231,7 +1213,6 @@ export const createOrder = async (orderData) => {
       };
     } else {
       // ========== SINGLE ORDER PROCESSING ==========
-      console.log("Step 5: Processing single order...");
       const { voucherCode, giftCard, shopifyGiftCard } =
         await processSingleOrder(
           orderData.selectedBrand,
@@ -1243,11 +1224,9 @@ export const createOrder = async (orderData) => {
       voucherCodeIds = [voucherCode.id];
 
       // Step 6: Update settlement
-      console.log("Step 6: Updating settlement records...");
       await updateOrCreateSettlement(orderData.selectedBrand, order);
 
       // Step 7: Send delivery message
-      console.log("Step 7: Processing delivery...");
       const deliveryResult = await sendDeliveryMessage(
         orderData,
         shopifyGiftCard,

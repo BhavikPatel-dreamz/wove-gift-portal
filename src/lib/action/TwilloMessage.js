@@ -198,11 +198,10 @@ export const SendWhatsappMessages = async (data, giftCard) => {
   try {
 
     // Step 1: Validate input
-    console.log("Step 1: Validating WhatsApp input...");
+ 
     validateWhatsAppInput(data);
 
     // Step 2: Initialize Twilio
-    console.log("Step 2: Initializing Twilio client...");
     const client = initializeTwilioClient();
 
     const { whatsappNumber, senderNumber } = validateWhatsAppInput(data);
@@ -213,7 +212,6 @@ export const SendWhatsappMessages = async (data, giftCard) => {
 
     if (contentSid && contentSid !== "HX...") {
       // Method 1: Using Twilio Content Template
-      console.log("Step 3: Sending templated WhatsApp message...");
 
       const templateVariables = buildWhatsAppTemplateVariables(data, giftCard);
 
@@ -226,7 +224,6 @@ export const SendWhatsappMessages = async (data, giftCard) => {
 
     } else {
       // Method 2: Using text message with media
-      console.log("Step 3: Sending text WhatsApp message with media...");
 
       const messageBody = buildWhatsAppTextMessage(data, giftCard);
       const mediaUrl = getAbsoluteUrl(data?.selectedSubCategory?.image);
@@ -411,11 +408,9 @@ export const SendGiftCardEmail = async (data, giftCard) => {
   try {
 
     // Step 1: Validate input
-    console.log("Step 1: Validating email input...");
     validateEmailInput(data);
 
     // Step 2: Initialize Brevo
-    console.log("Step 2: Initializing Brevo client...");
     const apiInstance = initializeBrevoClient();
     const { senderEmail } = validateEmailInput(data);
 
@@ -428,14 +423,12 @@ export const SendGiftCardEmail = async (data, giftCard) => {
     }
 
     // Step 3: Check for Brevo template
-    console.log("Step 3: Preparing email content...");
     const templateId = process.env.NEXT_BREVO_TEMPLATE_ID;
 
     let sendSmtpEmail;
 
     if (templateId && templateId !== "YOUR_TEMPLATE_ID") {
       // Method 1: Using Brevo Dynamic Template
-      console.log("Step 3a: Using Brevo dynamic template...");
 
       const currency = data?.selectedAmount?.currency || "₹";
       const amount = data?.selectedAmount?.value || "100";
@@ -475,7 +468,6 @@ export const SendGiftCardEmail = async (data, giftCard) => {
       };
     } else {
       // Method 2: Custom HTML email
-      console.log("Step 3b: Using custom HTML email...");
 
       sendSmtpEmail = {
         sender: {
@@ -495,7 +487,6 @@ export const SendGiftCardEmail = async (data, giftCard) => {
     }
 
     // Step 4: Send email
-    console.log("Step 4: Sending email via Brevo...");
     const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
 

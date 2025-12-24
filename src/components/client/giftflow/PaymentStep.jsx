@@ -271,8 +271,6 @@ const PaymentStep = () => {
   const quantity = isBulkMode && currentBulkOrder ? currentBulkOrder.quantity : 1;
   const companyInfo = isBulkMode && currentBulkOrder ? currentBulkOrder.companyInfo : null;
   const bulkDeliveryOption = isBulkMode && currentBulkOrder ? currentBulkOrder.deliveryOption : null;
-
-  console.log(currentBulkOrder, "currentBulkOrder")
   const formatAmount = (amount) => {
     if (typeof amount === 'object' && amount?.value && amount?.currency) {
       return `${amount.currency}${amount.value}`;
@@ -378,7 +376,7 @@ const PaymentStep = () => {
     //  dispatch(goNext());
     setShowThankYou(true)
   }
-  console.log(selectedBrand, "order")
+
 
   if (order) {
     return (

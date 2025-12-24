@@ -16,8 +16,6 @@ const Dashboard = ({ shopParam }) => {
     try {
       setLoading(true);
       setError(null);
-
-      console.log(`/api/dashboard?period=${timeRange}${shopParam ? `&shop=${shopParam}` : ''}`);
       
       const response = await fetch(`/api/dashboard?period=${timeRange}${shopParam ? `&shop=${shopParam}` : ''}`);
 

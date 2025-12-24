@@ -40,7 +40,6 @@ export default function OccasionSelector() {
     }
   };
 
-  console.log("selectedOccasion",selectedOccasion,data);
   
 
   useEffect(() => {

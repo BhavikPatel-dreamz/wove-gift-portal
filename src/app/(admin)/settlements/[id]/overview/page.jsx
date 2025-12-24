@@ -24,7 +24,7 @@ const SettlementDetailsPage = () => {
         setLoading(true);
         try {
             const res = await getSettlementDetails(settlementId);
-            console.log("-----------",res);
+           
             if (res.success) {
                 setSettlement(res.data);
             } else {

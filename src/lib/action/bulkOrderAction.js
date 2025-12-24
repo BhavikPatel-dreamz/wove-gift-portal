@@ -490,7 +490,7 @@ export const createOrder = async (orderData) => {
   let voucherCode = null;
 
   try {
-    console.log("Step 1: Authenticating user...");
+  
     const session = await getSession();
     const userId = session?.userId;
 
@@ -500,13 +500,12 @@ export const createOrder = async (orderData) => {
 
     orderData.userId = userId;
 
-    console.log("Step 2: Validating order data...");
+ 
     validateOrderData(orderData);
 
-    console.log("Step 3: Creating receiver detail...");
+
     const receiver = await createReceiverDetail(orderData.deliveryDetails, orderData.deliveryMethod);
 
-    console.log("Step 4: Creating order record...");
     const scheduledFor =
       orderData.selectedTiming?.type === "scheduled" &&
       orderData.selectedTiming?.dateTime
@@ -521,30 +520,26 @@ export const createOrder = async (orderData) => {
       null
     );
 
-    console.log("Step 5: Creating Shopify gift card...");
+
     const { giftCard: shopifyGiftCard, voucherConfig } =
       await createShopifyGiftCard(orderData.selectedBrand, orderData);
 
-    console.log("Step 6: Saving gift card to database...");
+  
     const giftCardInDb = await saveGiftCardToDb(
       shopifyGiftCard,
       orderData.selectedBrand,
       order
     );
 
-    console.log("Step 7: Creating voucher code...");
     voucherCode = await createVoucherCode(
       order,
       voucherConfig,
       giftCardInDb,
       orderData.selectedBrand,
       shopifyGiftCard
-    );
-
-    console.log("Step 8: Updating settlement records...");
+    ); 
     await updateOrCreateSettlement(orderData.selectedBrand, order);
 
-    console.log("Step 9: Processing delivery...");
     const deliveryResult = await sendDeliveryMessage(
       orderData,
       shopifyGiftCard,
@@ -557,8 +552,6 @@ export const createOrder = async (orderData) => {
         deliveryResult
       );
     }
-
-    console.log("Step 10: Creating delivery log...");
     await createDeliveryLog(order, voucherCode, orderData);
 
 
@@ -630,7 +623,6 @@ export const createBulkOrder = async (cartItems, paymentData) => {
     }
 
     // Step 2: Validate all cart items
-    console.log("Step 2: Validating all cart items...");
     validateBulkOrderData(cartItems);
 
     // Step 3: Process each cart item

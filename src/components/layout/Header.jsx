@@ -19,7 +19,6 @@ const Header = ({ onMenuClick }) => {
   const router = useRouter()
   const { user, logout } = useSession()
 
-  console.log(user);
   const handleLogout = async () => {
     setLoading(true)
 
