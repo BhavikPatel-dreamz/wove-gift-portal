@@ -380,7 +380,14 @@ const giftFlowSlice = createSlice({
     },
 
     setSelectedSubCategory: (state, action) => {
-      state.selectedSubCategory = action.payload;
+      const subCategory = { ...action.payload };
+      if (subCategory && subCategory.createdAt) {
+        subCategory.createdAt = new Date(subCategory.createdAt).toISOString();
+      }
+      if (subCategory && subCategory.updatedAt) {
+        subCategory.updatedAt = new Date(subCategory.updatedAt).toISOString();
+      }
+      state.selectedSubCategory = subCategory;
     },
 
     setOccasions: (state, action) => {

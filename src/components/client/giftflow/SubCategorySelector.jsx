@@ -10,6 +10,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { goBack, goNext, setLoading, setSelectedSubCategory, setSubCategories, setError } from '../../../redux/giftFlowSlice';
 import { useSearchParams } from 'next/navigation';
+import { saveCustomCard } from '../../../lib/action/customCardAction';
 
 // Utility functions
 const createLayer = (type, id, props = {}) => ({
@@ -158,7 +159,7 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
   const [selectedLayer, setSelectedLayer] = useState('title');
   const [isDragging, setIsDragging] = useState(false);
   const [cornerRadius, setCornerRadius] = useState(16);
-  const [canvasSize] = useState({ width: 400, height: 600 });
+  const [canvasSize] = useState({ width: 400, height: 500 });
   const [isGenerating, setIsGenerating] = useState(false);
   const [zoom, setZoom] = useState(1);
 
@@ -250,7 +251,7 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
       startLayerY: layer.y,
       layerId,
       // Store original dimensions to prevent any size changes
-      originalWidth: layer.width || 0,
+originalWidth: layer.width || 0,
       originalHeight: layer.height || 0
     };
 
@@ -549,6 +550,7 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
         });
       };
       
+        
       const base64data = await blobToBase64(blob);
 
       const response = await fetch('/api/save-card', {
@@ -567,18 +569,21 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
       const data = await response.json();
       const imagePath = data.path;
       
-      onSave({
-        id: `custom-${Date.now()}`,
+
+      const result = await saveCustomCard({
         name: titleLayer?.content || 'Custom Card',
         description: descLayer?.content || '',
-        bgColor: bgLayer.bgColor,
-        bgImage: bgLayer.bgImage,
         emoji: emojiLayer?.content || '🎉',
-        layers: layers,
-        cornerRadius: cornerRadius,
-        isCustom: true,
-        imagePath: imagePath || null
+        image: imagePath,
+        category: "CUSTOM",
       });
+
+      console.log("Custom card created successfully:", result);
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      onSave(result.data);
 
     } catch (error) {
       console.error("Failed to save custom card:", error);

@@ -278,7 +278,7 @@ model OccasionCategory {
 }
 
 model CustomCard {
-  id           String   @id @default(cuid())
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
   name         String   @unique
   description  String
   emoji        String?
@@ -287,7 +287,7 @@ model CustomCard {
   isActive     Boolean  @default(true)
   displayOrder Int      @default(0)
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime @default(now()) @updatedAt
 }
 
 model ReceiverDetail {
