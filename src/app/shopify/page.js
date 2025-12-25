@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Gift } from 'lucide-react';
 
 export default function ShopifyAppRoot() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuthAndRedirect = async () => {

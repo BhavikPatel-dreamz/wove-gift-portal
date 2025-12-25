@@ -11,7 +11,6 @@ const SettlementTabs = () => {
 
     // Detect if we're in the brandsPartner route or direct settlements route
     const isBrandPartnerRoute = pathname?.includes('/brandsPartner/');
-    console.log(params,pathname,isBrandPartnerRoute);
     const settlementId = isBrandPartnerRoute ? params.settlementId : params.id;
     const basePath = isBrandPartnerRoute
         ? `/brandsPartner/${brandId}/settlements/${settlementId}`
