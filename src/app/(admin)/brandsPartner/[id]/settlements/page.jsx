@@ -32,6 +32,7 @@ const BrandSettlementHistoryPage = () => {
     status: "",
     year: "all",
     month: "all",
+    sortby: "periodStart_desc",
   });
   const [selectedSettlement, setSelectedSettlement] = useState(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -90,6 +91,19 @@ const BrandSettlementHistoryPage = () => {
         params.status = filters.status;
       }
 
+      if (filters.search) {
+        params.search = filters.search;
+      }
+
+      if (filters.sortby) {
+        const [sortBy, sortOrder] = filters.sortby.split("_");
+        params.sortBy = sortBy;
+        if (sortOrder) {
+          params.sortOrder = sortOrder;
+        }
+      }
+
+
       const result = await getBrandSettlementHistory(id, params);
 
       if (result.success) {
@@ -117,7 +131,7 @@ const BrandSettlementHistoryPage = () => {
     if (id) {
       fetchData();
     }
-  }, [id, filters.status, filters.year, filters.month]);
+  }, [id, filters.status, filters.year, filters.month, filters.sortby, filters.search]);
 
   const handlePageChange = (page) => {
     fetchData(page);
@@ -299,12 +313,17 @@ const BrandSettlementHistoryPage = () => {
     { value: "Disputed", label: "Disputed" },
   ];
 
+  const sortOptions = [
+    { value: "periodStart_desc", label: "Latest First" },
+    { value: "periodStart_asc", label: "Oldest First" },
+  ];
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         {/* Header with Brand Info */}
-        <div className="mb-6">
+        {/* <div className="mb-6">
           <button
             onClick={() => router.push("/settlements")}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
@@ -312,7 +331,7 @@ const BrandSettlementHistoryPage = () => {
             <ArrowLeft className="w-4 h-4" />
             Back to All Settlements
           </button>
-        </div>
+        </div> */}
 
         {/* DynamicTable Component */}
         <DynamicTable
@@ -337,43 +356,12 @@ const BrandSettlementHistoryPage = () => {
               placeholder: "Frequency: All",
               options: yearOptions,
             },
-          ]}
-          actions={[
             {
-              label: "Sort: Latest First",
-              onClick: () => toast.info("Sorting feature coming soon"),
+              name: "sortby",
+              placeholder: "Sort By: Latest First",
+              options: sortOptions,
             },
           ]}
-          customFilters={
-            <div className="flex gap-2">
-              <select
-                value={filters.year}
-                onChange={(e) => handleFilter("year", e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              >
-                <option value="all">All Years</option>
-                {yearOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              {filters.year !== "all" && (
-                <select
-                  value={filters.month}
-                  onChange={(e) => handleFilter("month", e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                >
-                  <option value="all">All Months</option>
-                  {monthOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-          }
           emptyMessage="No settlement history found. Try adjusting your filters."
         />
 
