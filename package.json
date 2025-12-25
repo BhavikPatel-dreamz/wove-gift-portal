@@ -29,6 +29,7 @@
     "@getbrevo/brevo": "^3.0.1",
     "@paypal/paypal-server-sdk": "^1.1.0",
     "@prisma/client": "6.16.1",
+    "@prisma/extension-accelerate": "^3.0.1",
     "@reduxjs/toolkit": "^2.9.0",
     "@sendgrid/mail": "^8.1.6",
     "@shopify/app-bridge": "^3.7.11",
@@ -41,6 +42,7 @@
     "commander": "^11.1.0",
     "emoji-picker-react": "^4.13.3",
     "fs": "^0.0.1-security",
+    "install": "^0.13.0",
     "iron-session": "^8.0.4",
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.3",
@@ -74,5 +76,5 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@10.21.0+sha512.da3337267e400fdd3d479a6c68079ac6db01d8ca4f67572083e722775a796788a7a9956613749e000fac20d424b594f7a791a5f4e2e13581c5ef947f26968a40"
+  "packageManager": "pnpm@10.26.2"
 }

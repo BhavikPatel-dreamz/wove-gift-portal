@@ -1,14 +1,25 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client"
+import { withAccelerate } from "@prisma/extension-accelerate"
 
-let prisma
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({ log: ['warn', 'error'] })
-} else {
-  if (!global.prisma || !global.prisma.shopifySession) {
-    global.prisma = new PrismaClient({ log: ['warn', 'error'] })
+const createPrismaClient = () => {
+  if (!process.env.PRISMA_ACCELERATE_URL) {
+    throw new Error("PRISMA_ACCELERATE_URL is not set")
   }
-  prisma = global.prisma
+
+  return new PrismaClient().$extends(withAccelerate())
 }
 
-export default prisma
+/** @type {ReturnType<typeof createPrismaClient>} */
+let prismaClient
+
+if (global.prisma) {
+  prismaClient = global.prisma
+} else {
+  prismaClient = createPrismaClient()
+}
+
+export const prisma = prismaClient
+
+if (process.env.NODE_ENV !== "production") {
+  global.prisma = prisma
+}
