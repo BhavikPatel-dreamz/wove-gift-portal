@@ -37,7 +37,7 @@ function AuthRequiredContent() {
           <ul className="text-sm text-blue-800 text-left space-y-2">
             <li className="flex items-start">
               <span className="mr-2">•</span>
-              <span>You're trying to access the app directly without proper Shopify authentication</span>
+              <span>Your trying to access the app directly without proper Shopify authentication</span>
             </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>

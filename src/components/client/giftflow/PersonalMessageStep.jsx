@@ -18,7 +18,6 @@ const PersonalMessageStep = () => {
   const isBulkMode = mode === 'bulk';
   const data  = useSelector((state) => state.giftFlowReducer);
 
-  console.log("data",data);
   
   const handleMessageChange = (e) => {
     const newMessage = e.target.value;
