@@ -1,6 +1,6 @@
 "use server";
 
-import prisma from "../db";
+import { prisma } from "../db";
 import { z } from "zod";
 
 const CustomCardSchema = z.object({

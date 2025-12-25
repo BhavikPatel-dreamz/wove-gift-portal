@@ -5,7 +5,7 @@ import {
   LogSeverity
 } from "@shopify/shopify-api";
 import { PrismaSessionStorage } from "./session-storage.js";
-import prisma from "./db.js";
+import { prisma } from "./db.js";
 
 // Validate required environment variables
 const requiredEnvVars = {
