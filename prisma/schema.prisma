@@ -7,8 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== AUTHENTICATION & USERS ====================
-
 model Session {
   id        String   @id @default(cuid())
   userId    String
@@ -160,30 +158,24 @@ model IntegrationSyncLog {
 model Denomination {
   id          String    @id @default(cuid())
   voucherId   String
-  value       Int // Denomination amount
+  value       Int
   currency    String    @default("USD")
   displayName String?
-  isExpiry    Boolean 
+  isExpiry    Boolean
   expiresAt   DateTime?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  voucher Vouchers @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  voucher     Vouchers  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
 
   @@index([voucherId])
   @@index([voucherId, isActive])
   @@map("denominations")
 }
 
-// Update the Vouchers model by:
-// 1. Removing the 'denominations' Json field
-// 2. Adding the relation to Denomination
-
 model Vouchers {
   id                   String             @id @default(cuid())
   denominationType     DenominationStatus @default(fixed)
-  // Remove this line: denominations        Json?
   denominationCurrency String             @default("USD")
   denominationValue    Int?
   maxAmount            Int?
@@ -203,41 +195,39 @@ model Vouchers {
   updatedAt            DateTime           @updatedAt
   isExpiry             Boolean            @default(false)
   expiryPolicy         String?
-
-  // Add this relation
-  denominations Denomination[] // One voucher can have multiple denominations
-  voucherCodes  VoucherCode[]
-  brand         Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  voucherCodes         VoucherCode[]
+  denominations        Denomination[]
+  brand                Brand              @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@map("vouchers")
 }
 
 model VoucherCode {
-  id                String              @id @default(cuid())
-  code              String              @unique
-  orderId           String
-  voucherId         String
-  shopifyGiftCardId String?             @unique
-  shopifyShop       String?
-  shopifySyncError  String?
-  shopifySyncedAt   DateTime?
-  isRedeemed        Boolean             @default(false)
-  redeemedAt        DateTime?
-  originalValue     Int
-  remainingValue    Int
-  expiresAt         DateTime?
-  pin               String?
-  qrCode            String?
-  tokenizedLink     String?
-  linkExpiresAt     DateTime?
+  id                      String              @id @default(cuid())
+  code                    String              @unique
+  orderId                 String
+  voucherId               String
+  shopifyGiftCardId       String?             @unique
+  shopifyShop             String?
+  shopifySyncError        String?
+  shopifySyncedAt         DateTime?
+  isRedeemed              Boolean             @default(false)
+  redeemedAt              DateTime?
+  originalValue           Int
+  remainingValue          Int
+  expiresAt               DateTime?
+  pin                     String?
+  qrCode                  String?
+  tokenizedLink           String?
+  linkExpiresAt           DateTime?
   lastSyncedRedeemedValue String?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  deliveryLogs      DeliveryLog[]
-  order             Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  giftCard          GiftCard?           @relation(fields: [shopifyGiftCardId], references: [id])
-  voucher           Vouchers            @relation(fields: [voucherId], references: [id], onDelete: Cascade)
-  redemptions       VoucherRedemption[]
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  deliveryLogs            DeliveryLog[]
+  order                   Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  giftCard                GiftCard?           @relation(fields: [shopifyGiftCardId], references: [id])
+  voucher                 Vouchers            @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  redemptions             VoucherRedemption[]
 
   @@index([orderId])
   @@index([voucherId])
@@ -288,17 +278,16 @@ model OccasionCategory {
 }
 
 model CustomCard {
-  id           String   @id @default(cuid())
-  title        String
+  id           String   @id @default(dbgenerated("gen_random_uuid()"))
+  name         String   @unique
   description  String
-  bgColor      String?
-  bgImage      String?
   emoji        String?
-  templateType String?
+  image        String?
+  category     String
   isActive     Boolean  @default(true)
+  displayOrder Int      @default(0)
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  orders       Order[]
+  updatedAt    DateTime @default(now()) @updatedAt
 }
 
 model ReceiverDetail {
@@ -319,7 +308,7 @@ model Order {
   subCategoryId    String?
   customCardId     String?
   userId           String
-  bulkOrderNumber String?
+  bulkOrderNumber  String?
   receiverDetailId String
   amount           Int
   quantity         Int                  @default(1)
@@ -346,7 +335,6 @@ model Order {
   updatedAt        DateTime             @updatedAt
   deliveryLogs     DeliveryLog[]
   brand            Brand                @relation(fields: [brandId], references: [id])
-  customCard       CustomCard?          @relation(fields: [customCardId], references: [id])
   occasion         Occasion             @relation(fields: [occasionId], references: [id])
   receiverDetail   ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
   occasionCategory OccasionCategory?    @relation(fields: [subCategoryId], references: [id])
@@ -396,7 +384,7 @@ model Settlements {
   breakageAmount    Int?
   vatAmount         Int?
   netPayable        Int
-  remainingAmount   Int?        @default(0)
+  remainingAmount   Int?                    @default(0)
   status            SettlementPaymentStatus @default(Pending)
   paidAt            DateTime?
   paymentReference  String?
@@ -460,29 +448,26 @@ model AppInstallation {
 }
 
 model GiftCard {
-  id            String    @id @default(cuid())
-  shop          String
-  shopifyId     String?   @unique
-  code          String    @unique
-  initialValue  Float
-  balance       Float
-  customerEmail String?
-  note          String?
-  expiresAt     DateTime?
-  isActive      Boolean   @default(true)
-  isVirtual     Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relation to VoucherCode
-  voucherCode VoucherCode?
-
+  id             String       @id @default(cuid())
+  shop           String
+  shopifyId      String?      @unique
+  code           String       @unique
+  initialValue   Float
+  balance        Float
+  customerEmail  String?
+  note           String?
+  expiresAt      DateTime?
+  isActive       Boolean      @default(true)
+  isVirtual      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   denominationId String?
+  voucherCode    VoucherCode?
 
   @@index([shop])
   @@index([code])
   @@index([customerEmail])
-  @@index([denominationId]) // optional, for faster lookups
+  @@index([denominationId])
 }
 
 enum UserRole {
