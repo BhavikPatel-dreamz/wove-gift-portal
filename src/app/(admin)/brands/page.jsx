@@ -103,6 +103,7 @@ const BrandManager = () => {
         setPagination(result.pagination);
         setStatistics(result.statistics);
         setCategoryStats(result.categoryStats || []);
+        setLoading(false);
       } else {
         toast.error('Failed to load brands');
         setBrands([]);
@@ -110,9 +111,7 @@ const BrandManager = () => {
     } catch (error) {
       toast.error('Error loading brands');
       setBrands([]);
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   // Effect for initial load and filter changes

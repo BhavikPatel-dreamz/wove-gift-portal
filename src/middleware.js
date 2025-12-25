@@ -123,7 +123,8 @@ export function middleware(request) {
     pathname.startsWith('/api/dashboard') || 
     pathname.startsWith('/api/analytics')  ||
     pathname.startsWith(`/api/reports/custom`) ||
-    pathname.startsWith(`/api/reports/schedule`)
+    pathname.startsWith(`/api/reports/schedule`) ||
+    pathname.startsWith('/api/save-card')
     
   ) {
     return NextResponse.next()

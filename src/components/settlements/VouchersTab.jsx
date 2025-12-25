@@ -5,13 +5,18 @@ import toast from "react-hot-toast";
 import { useParams } from "next/navigation";
 import { getSettlementVouchersList } from "../../lib/action/brandPartner";
 import { currencyList } from "../brandsPartner/currency";
+import SearchIcon from "@/icons/SearchIcon";
+import CustomDropdown from "../ui/CustomDropdown";
 
-const VouchersTab = ({settlementId}) => {
+
+const VouchersTab = ({ settlementId }) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState(null);
+    const [voucherStats, setVoucherStats] = useState(null);
     const [pagination, setPagination] = useState({});
-  
+    const [expandedDenominations, setExpandedDenominations] = useState(new Set());
+
     const [filters, setFilters] = useState({
         page: 1,
         limit: 10,
@@ -20,6 +25,13 @@ const VouchersTab = ({settlementId}) => {
         sortBy: "createdAt",
         sortOrder: "desc",
     });
+
+    const filterOptions = [
+        { value: "Paid", label: "Paid" },
+        { value: "Partial", label: "Partial" },
+        { value: "Pending", label: "Pending" },
+        { value: "Disputed", label: "Disputed" },
+    ];
 
     if (!settlementId) {
         return (
@@ -38,6 +50,8 @@ const VouchersTab = ({settlementId}) => {
         fetchVouchers();
     }, [settlementId, filters]);
 
+    console.log("pagination", pagination);
+
     const fetchVouchers = async () => {
         setLoading(true);
         try {
@@ -45,6 +59,7 @@ const VouchersTab = ({settlementId}) => {
             if (res.success) {
                 setData(res.data);
                 setSummary(res.summary);
+                setVoucherStats(res.voucherStats);
                 setPagination(res.pagination);
             } else {
                 toast.error(res.message);
@@ -63,6 +78,7 @@ const VouchersTab = ({settlementId}) => {
         setFilters((prev) => ({ ...prev, status, page: 1 }));
     };
 
+
     const StatusBadge = ({ status }) => {
         const config = {
             Paid: "bg-green-100 text-green-800",
@@ -72,7 +88,7 @@ const VouchersTab = ({settlementId}) => {
         };
 
         return (
-            <span className={`text-xs font-medium px-2.5 py-1 rounded-md ${config[status] || config.Pending}`}>
+            <span className={`text-xs font-medium px-2.5 py-2 rounded-md ${config[status] || config.Pending}`}>
                 {status}
             </span>
         );
@@ -91,108 +107,137 @@ const VouchersTab = ({settlementId}) => {
 
     return (
         <div className="flex flex-col gap-6">
-            {/* Summary Cards */}
-            {summary && data.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-                    <div className="flex flex-col gap-1 rounded-xl p-5 border border-slate-200 bg-white shadow-sm">
-                        <p className="text-slate-500 text-sm font-medium">Base Amount</p>
-                        <p className="text-slate-900 text-2xl font-bold">
-                            {getCurrencySymbol(data[0]?.currency)}{summary.totalPayable?.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                            {data[0]?.settlementTrigger === 'onRedemption' ? 'On Redemption' : 'On Purchase'}
-                        </p>
+            {/* Voucher Statistics Section */}
+            {voucherStats && (
+                <div className="bg-white rounded-xl">
+                    {/* Top Statistics Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div className="flex flex-col gap-2 p-5 border-2 border-[#BEDBFF] bg-[#EFF6FE] rounded-lg">
+                            <p className="text-[#1F59EE] text-sm font-semibold">Total Issued</p>
+                            <p className="text-[#1F59EE] text-[16px] font-bold">{voucherStats.totalIssued}</p>
+                        </div>
+                        <div className="flex flex-col gap-2 p-5 border border-[#E2E8F0] bg-[#F0FDF4] rounded-lg">
+                            <p className="text-[#00813B] text-sm font-semibold">Redeemed</p>
+                            <p className="text-[#00813B] text-[16px] font-bold">{voucherStats.totalRedeemed}</p>
+                        </div>
+                        <div className="flex flex-col gap-2 p-5 border border-[#E2E8F0] bg-[#FAF5FF] rounded-lg">
+                            <p className="text-[#9810FA] text-sm font-semibold">Unredeemed</p>
+                            <p className="text-[#9810FA] text-[16px] font-bold">{voucherStats.totalUnredeemed}</p>
+                        </div>
+                        <div className="flex flex-col gap-2 p-5 border border-[#E2E8F0] bg-[#FFF7ED] rounded-lg">
+                            <p className="text-[#F55101] text-sm font-semibold">Redemption Rate</p>
+                            <p className="text-[#F55101] text-[16px] font-bold">{voucherStats.redemptionRate}%</p>
+                        </div>
                     </div>
-                    <div className="flex flex-col gap-1 rounded-xl p-5 border border-slate-200 bg-white shadow-sm">
-                        <p className="text-slate-500 text-sm font-medium">Commission</p>
-                        <p className="text-slate-900 text-2xl font-bold text-orange-600">
-                            -{getCurrencySymbol(data[0]?.currency)}{summary.totalCommission?.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                            {data[0]?.commissionType === 'Percentage' 
-                                ? `${data[0]?.commissionValue}% of base` 
-                                : `Fixed ${getCurrencySymbol(data[0]?.currency)}${data[0]?.commissionValue}`}
-                        </p>
-                    </div>
-                    <div className="flex flex-col gap-1 rounded-xl p-5 border border-slate-200 bg-white shadow-sm">
-                        <p className="text-slate-500 text-sm font-medium">VAT on Commission</p>
-                        <p className="text-slate-900 text-2xl font-bold text-purple-600">
-                            +{getCurrencySymbol(data[0]?.currency)}{summary.totalVat?.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                            {data[0]?.vatRate}% of commission
-                        </p>
-                    </div>
-                    <div className="flex flex-col gap-1 rounded-xl p-5 border border-slate-200 bg-white shadow-sm">
-                        <p className="text-slate-500 text-sm font-medium">Net Payable</p>
-                        <p className="text-slate-900 text-2xl font-bold text-green-600">
-                            {getCurrencySymbol(data[0]?.currency)}{summary.totalNetPayable?.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                            Base - Commission + VAT
-                        </p>
-                    </div>
-                    <div className="flex flex-col gap-1 rounded-xl p-5 border border-slate-200 bg-white shadow-sm">
-                        <p className="text-slate-500 text-sm font-medium">Success Rate</p>
-                        <p className="text-slate-900 text-2xl font-bold">{summary.successRate}%</p>
-                        <p className="text-xs text-slate-500 mt-1">
-                            {summary.paidCount} of {summary.totalOrders} paid
-                        </p>
+
+                    {/* Simple Denomination Breakdown */}
+                    <div className="mt-6 p-6  border border-[#E2E8F0] rounded-2xl">
+                        <h3 className="text-[#353535] text-[16px] font-semibold mb-4">Denomination Breakdown</h3>
+                        <div className="bg-white rounded-lg overflow-hidden">
+                            <table className="w-full text-sm">
+                                <thead className="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-[16px] font-semibold text-[#1A1A1A]">Value</th>
+                                        <th className="px-6 py-3 text-center text-[16px] font-semibold text-[#1A1A1A]">Issued</th>
+                                        <th className="px-6 py-3 text-center text-[16px] font-semibold text-[#1A1A1A]">Redeemed</th>
+                                        <th className="px-6 py-3 text-center text-[16px] font-semibold text-[#1A1A1A]">Unredeemed</th>
+                                        <th className="px-6 py-3 text-center text-[16px] font-semibold text-[#1A1A1A]">Rate</th>
+                                        <th className="px-6 py-3 text-center text-[16px] font-semibold text-[#1A1A1A]">Expires</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200">
+                                    {voucherStats.denominationBreakdown.map((denom, index) => {
+                                        const currSymbol = getCurrencySymbol(data[0]?.currency);
+                                        const isExpanded = expandedDenominations.has(denom.value);
+
+                                        return (
+                                            <React.Fragment key={index}>
+                                                <tr
+                                                    className="hover:bg-slate-50 cursor-pointer transition-colors"
+                                                >
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-semibold text-sm text-[#1A1A1A]">
+                                                                {currSymbol} {denom.value?.toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="text-[#1F59EE] font-semibold  text-sm">{denom.issued}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="text-[#6BB577] font-semibold  text-sm">{denom.redeemed}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="text-[#FA8F42] font-semibold  text-sm">{denom.unredeemed}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="text-[#8728D8] font-semibold  text-sm">{denom.rate}%</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 font-semibold text-center text-[#1A1A1A] text-sm">
+                                                        {denom.expires ? new Date(denom.expires).toLocaleDateString('en-GB', {
+                                                            day: '2-digit',
+                                                            month: '2-digit',
+                                                            year: 'numeric'
+                                                        }) : "No Expiry"}
+                                                    </td>
+                                                </tr>
+
+
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}
 
-
             {/* Table Container */}
-            <div className="bg-white border border-slate-200 rounded-xl flex flex-col flex-1 min-h-0 shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-xl flex flex-col flex-1 min-h-0">
                 {/* Filters */}
-                <div className="p-4 flex flex-col md:flex-row gap-3 items-center border-b border-slate-200">
-                    <div className="relative w-full md:w-auto md:flex-1">
-                        <svg
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input
-                            className="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-primary focus:border-primary"
-                            placeholder="Search by order ID, sender, or receiver..."
-                            type="text"
-                            value={filters.search}
-                            onChange={(e) => handleSearch(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex gap-3 w-full md:w-auto">
-                        <select
-                            value={filters.status}
-                            onChange={(e) => handleStatusFilter(e.target.value)}
-                            className="w-full md:w-auto text-sm border border-slate-300 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-primary focus:border-primary px-3 py-2"
-                        >
-                            <option value="">Status: All</option>
-                            <option value="Paid">Paid</option>
-                            <option value="Partial">Partial</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Disputed">Disputed</option>
-                        </select>
+                <div className="p-4  items-center border-slate-200">
+                    <h3 className="text-[#353535] text-[16px] font-semibold mb-4">Denomination Breakdown</h3>
+                    <div className="flex flex-col md:flex-row gap-3 items-center">
+                        <div className="relative w-full md:w-auto md:flex-1">
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                <SearchIcon />
+                            </div>
+                            <input
+                                className="w-full placeholder-[#A6A6A6] text-black text-[12px] pl-11 pr-4 py-[11px] border border-gray-300 rounded-lg transition-all"
+                                placeholder="Search by order ID, sender, or receiver..."
+                                type="text"
+                                value={filters.search}
+                                onChange={(e) => handleSearch(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex gap-3 w-full md:w-auto">
+                            <CustomDropdown
+                                options={filterOptions}
+                                placeholder="Status: All"
+                                value={filters?.status || ""}
+                                onChange={(value) => handleStatusFilter(value)}
+                                className="min-w-[200px]"
+                            />
+                        </div>
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto flex-1">
+                <div className="overflow-x-auto flex-1 px-2">
                     <table className="w-full text-sm text-left text-slate-500">
-                        <thead className="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
-                            <tr>
-                                <th className="px-6 py-3 font-semibold" scope="col">Order ID</th>
-                                <th className="px-6 py-3 font-semibold" scope="col">Sender</th>
-                                <th className="px-6 py-3 font-semibold" scope="col">Receiver</th>
-                                <th className="px-6 py-3 font-semibold" scope="col">Vouchers</th>
-                                <th className="px-6 py-3 font-semibold" scope="col">Status</th>
-                                <th className="px-6 py-3 text-right font-semibold" scope="col">Base Amount</th>
-                                <th className="px-6 py-3 text-right font-semibold" scope="col">Commission</th>
-                                <th className="px-6 py-3 text-right font-semibold" scope="col">VAT</th>
-                                <th className="px-6 py-3 text-right font-semibold" scope="col">Net Payable</th>
+                        <thead className="sticky top-0">
+                            <tr className="bg-[#EFEFEF]">
+                                <th className="px-6 py-3 font-semibold text-[#1A1A1A] text-sm" scope="col">Order ID</th>
+                                <th className="px-6 py-3 font-semibold text-[#1A1A1A] text-sm" scope="col">Sender</th>
+                                <th className="px-6 py-3 font-semibold text-[#1A1A1A] text-sm" scope="col">Receiver</th>
+                                <th className="px-6 py-3 font-semibold text-[#1A1A1A] text-sm" scope="col">Vouchers</th>
+                                <th className="px-6 py-3 font-semibold text-[#1A1A1A] text-sm" scope="col">Status</th>
+                                <th className="px-6 py-3 text-right font-semibold text-[#1A1A1A] text-sm" scope="col">Base Amount</th>
+                                {/* <th className="px-6 py-3 text-right font-semibold" scope="col">Commission</th>
+                                        <th className="px-6 py-3 text-right font-semibold" scope="col">VAT</th>
+                                        <th className="px-6 py-3 text-right font-semibold" scope="col">Net Payable</th> */}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
@@ -203,82 +248,79 @@ const VouchersTab = ({settlementId}) => {
                                     return (
                                         <tr key={row.id} className="bg-white hover:bg-slate-50">
                                             <td className="px-6 py-4">
-                                                <div className="font-mono text-xs text-slate-700">
+                                                <div className="font-semibold text-sm text-[#1A1A1A]">
                                                     {row.orderNumber}
                                                 </div>
-                                                <div className="text-xs text-slate-500 mt-1">
+                                                <div className="text-xs text-[#1A1A1A] mt-1">
                                                     {new Date(row.createdAt).toLocaleDateString()}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="font-medium text-slate-900">
+                                                <div className="font-semibold text-sm text-[#1A1A1A]">
                                                     {row.senderName || 'N/A'}
                                                 </div>
-                                                <div className="text-slate-500 text-xs">
+                                                <div className="text-xs text-[#1A1A1A] mt-1">
                                                     {row.senderEmail || 'N/A'}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="font-medium text-slate-900">
+                                                <div className="font-semibold text-sm text-[#1A1A1A]">
                                                     {row.receiverName || 'N/A'}
                                                 </div>
-                                                <div className="text-slate-500 text-xs">
+                                               <div className="text-xs text-[#1A1A1A] mt-1">
                                                     {row.receiverEmail || 'N/A'}
                                                 </div>
-                                                {row.receiverPhone && row.receiverPhone !== "N/A" && (
-                                                    <div className="text-slate-500 text-xs">
-                                                        {row.receiverPhone}
-                                                    </div>
-                                                )}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="text-slate-900 font-medium">
+                                               <div className="font-semibold text-sm text-[#1A1A1A]">
                                                     {row.totalVouchers} voucher{row.totalVouchers !== 1 ? 's' : ''}
                                                 </div>
-                                                <div className="text-xs text-slate-500">
-                                                    {row.redeemedVouchers} redeemed
-                                                </div>
-                                                <div className="text-xs text-green-600 font-medium">
-                                                    {row.redemptionRate}% rate
+                                                <div className="flex gap-2">
+                                                    <div className="text-xs text-[#1A1A1A]">
+                                                        {row.redeemedVouchers} redeemed
+                                                    </div>
+                                                    <div className="text-xs text-[#10B981]">
+                                                        {row.redemptionRate}% rate
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <StatusBadge status={row.status} />
                                             </td>
                                             <td className="px-6 py-4 text-right whitespace-nowrap">
-                                                <div className="text-slate-900 font-bold">
+                                                 <div className="font-semibold text-sm text-[#1A1A1A]">
                                                     {currSymbol}{row.baseAmount?.toLocaleString()}
                                                 </div>
-                                                <div className="text-xs text-slate-500">
+                                                  <div className="text-xs text-[#1A1A1A] mt-1">
                                                     {row.settlementTrigger === 'onRedemption' ? 'Redeemed' : 'Sold'}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right whitespace-nowrap">
-                                                <div className="text-orange-600 font-bold">
-                                                    -{currSymbol}{row.commissionAmount?.toLocaleString()}
-                                                </div>
-                                                <div className="text-xs text-slate-500">
-                                                    {row.commissionType === 'Percentage' 
-                                                        ? `${row.commissionValue}%` 
-                                                        : 'Fixed'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right whitespace-nowrap">
-                                                <div className="text-purple-600 font-bold">
-                                                    +{currSymbol}{row.vatAmount?.toLocaleString()}
-                                                </div>
-                                                <div className="text-xs text-slate-500">
-                                                    {row.vatRate}% of comm.
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right whitespace-nowrap">
-                                                <div className="text-green-600 font-bold text-base">
-                                                    {currSymbol}{row.netPayable?.toLocaleString()}
-                                                </div>
-                                                <div className="text-xs text-slate-500">
-                                                    Final amount
-                                                </div>
-                                            </td>
+                                            {/* <td className="px-6 py-4 text-right whitespace-nowrap">
+                                                        <div className="text-orange-600 font-bold">
+                                                            -{currSymbol}{row.commissionAmount?.toLocaleString()}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500">
+                                                            {row.commissionType === 'Percentage'
+                                                                ? `${row.commissionValue}%`
+                                                                : 'Fixed'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                                                        <div className="text-purple-600 font-bold">
+                                                            +{currSymbol}{row.vatAmount?.toLocaleString()}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500">
+                                                            {row.vatRate}% of comm.
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                                                        <div className="text-green-600 font-bold text-base">
+                                                            {currSymbol}{row.netPayable?.toLocaleString()}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500">
+                                                            Final amount
+                                                        </div>
+                                                    </td> */}
                                         </tr>
                                     );
                                 })
@@ -294,7 +336,7 @@ const VouchersTab = ({settlementId}) => {
                 </div>
 
                 {/* Pagination */}
-                {pagination.totalPages > 0 && (
+                {pagination.totalPages > 1 && (
                     <div className="p-4 flex flex-col sm:flex-row justify-between items-center text-sm text-slate-600 gap-4 border-t border-slate-200">
                         <span>
                             Showing {(pagination.currentPage - 1) * pagination.itemsPerPage + 1} to{" "}
@@ -317,8 +359,8 @@ const VouchersTab = ({settlementId}) => {
                                         key={pageNum}
                                         onClick={() => setFilters((prev) => ({ ...prev, page: pageNum }))}
                                         className={`px-3 py-2 text-sm font-medium border-t border-b ${isActive
-                                                ? "text-white bg-primary border-primary hover:bg-primary/90"
-                                                : "text-slate-600 bg-white border-slate-200 hover:bg-slate-100"
+                                            ? "text-white bg-primary border-primary hover:bg-primary/90"
+                                            : "text-slate-600 bg-white border-slate-200 hover:bg-slate-100"
                                             } focus:z-10 focus:ring-2 focus:ring-primary`}
                                         type="button"
                                     >

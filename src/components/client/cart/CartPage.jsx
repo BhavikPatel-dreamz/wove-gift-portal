@@ -76,7 +76,7 @@ const CartPage = () => {
             <h2 className="mt-6 text-3xl font-bold text-gray-800">Your cart is empty</h2>
             <p className="mt-2 text-lg text-gray-500">Looks like you haven't added any gifts to your cart yet.</p>
             <Link
-              href="/"
+              href="/gift"
               className="mt-8 inline-block px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-semibold text-center"
             >
               Start Gifting Now
