@@ -1,5 +1,6 @@
 import React from "react";
 import { currencyList } from "../brandsPartner/currency";
+import SettlementDashboard from "./SettlementDashboard";
 
 const OverviewTab = ({ settlement }) => {
     const getCurrencySymbol = (code) =>
@@ -13,218 +14,181 @@ const OverviewTab = ({ settlement }) => {
         });
     };
 
-    return (
+  return (
         <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="flex flex-col gap-1.5 rounded-xl border border-zinc-200 bg-white p-5">
-                    <p className="text-sm font-medium text-zinc-600">Total Sold</p>
-                    <p className="text-3xl font-bold tracking-tight text-zinc-900">
-                        {getCurrencySymbol(settlement.currency)}{settlement.totalSoldAmount.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-zinc-500">{settlement.totalSold} Vouchers</p>
-                </div>
-
-                <div className="flex flex-col gap-1.5 rounded-xl border border-zinc-200 bg-white p-5">
-                    <p className="text-sm font-medium text-zinc-600">Total Redeemed</p>
-                    <p className="text-3xl font-bold tracking-tight text-zinc-900">
-                        {getCurrencySymbol(settlement.currency)}{settlement.redeemedAmount.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-zinc-500">
-                        {settlement.totalRedeemed} Vouchers | {settlement.redemptionRate}%
-                    </p>
-                </div>
-
-                <div className="flex flex-col gap-1.5 rounded-xl border border-zinc-200 bg-white p-5">
-                    <p className="text-sm font-medium text-zinc-600">Outstanding Vouchers</p>
-                    <p className="text-3xl font-bold tracking-tight text-[#DC3545]">
-                        {getCurrencySymbol(settlement.currency)}{settlement.outstandingAmount.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-zinc-500">{settlement.outstanding} Vouchers</p>
-                </div>
-
-                <div className="flex flex-col gap-1.5 rounded-xl border border-[#197fe6]/50 bg-[#197fe6]/5 p-5">
-                    <p className="text-sm font-medium text-[#197fe6]">Net Payable</p>
-                    <p className="text-3xl font-bold tracking-tight text-[#197fe6]">
-                        {getCurrencySymbol(settlement.currency)}{settlement.netPayable.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-[#197fe6]/80">Final settlement amount</p>
-                </div>
-            </div>
-            <div className="w-full rounded-lg bg-zinc-100 p-4 text-center text-zinc-700">
-                <p className="text-base font-normal">
-                    This is a <span className="font-bold text-zinc-900 capitalize">{settlement?.settlementTrigger}</span> based settlement.
-                </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
-                {/* Left Column */}
-                <div className="flex flex-col gap-6 lg:gap-8">
-                    <div className="rounded-xl border border-zinc-200 bg-white">
-                        <h3 className="border-b border-zinc-200 px-6 py-4 text-lg font-semibold text-zinc-900">
-                            Settlement Period Info
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2">
-                            <div className="flex flex-col gap-1 p-6 sm:border-r sm:border-zinc-200">
-                                <p className="text-sm text-zinc-500">Start Date</p>
-                                <p className="text-base font-medium text-zinc-900">
+            <div className="space-y-6">
+                {/* Top Row - Settlement Period and Payment Information */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    {/* Settlement Period */}
+                    <div className="rounded-lg border border-gray-200 bg-white p-6">
+                        <div className="mb-4 flex items-center gap-2">
+                            <svg className="h-5 w-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" strokeLinecap="round"/>
+                                <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" strokeLinecap="round"/>
+                                <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" strokeLinecap="round"/>
+                            </svg>
+                            <h3 className="text-base font-semibold text-gray-900">Settlement Period</h3>
+                        </div>
+                        <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-1">Period</p>
+                            <p className="text-sm font-medium text-gray-900">
+                                {formatDate(settlement.periodStart)} - {formatDate(settlement.periodEnd)}
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Start Date</p>
+                                <p className="text-sm font-medium text-gray-900">
                                     {formatDate(settlement.periodStart)}
                                 </p>
                             </div>
-                            <div className="flex flex-col gap-1 p-6">
-                                <p className="text-sm text-zinc-500">End Date</p>
-                                <p className="text-base font-medium text-zinc-900">
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">End Date</p>
+                                <p className="text-sm font-medium text-gray-900">
                                     {formatDate(settlement.periodEnd)}
                                 </p>
                             </div>
                         </div>
-                        {settlement.lastRedemptionDate && (
-                            <div className="border-t border-zinc-200 flex flex-col gap-1 p-6">
-                                <p className="text-sm text-zinc-500">Last Redemption Date</p>
-                                <p className="text-base font-medium text-zinc-900">
-                                    {formatDate(settlement.lastRedemptionDate)}
-                                </p>
+                    </div>
+
+                    {/* Payment Information */}
+                    <div className="rounded-lg border border-gray-200 bg-white p-6">
+                        <div className="mb-4 flex items-center gap-2">
+                            <svg className="h-5 w-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <line x1="12" y1="1" x2="12" y2="23" strokeWidth="2" strokeLinecap="round"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            <h3 className="text-base font-semibold text-gray-900">Payment Information</h3>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500 mb-1">Period</p>
+                            <span className="inline-block rounded bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-700">
+                                {settlement.status}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Financial Breakdown */}
+                <div className="rounded-lg border border-gray-200 bg-white p-6">
+                    <div className="mb-4 flex items-center gap-2">
+                        <svg className="h-5 w-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" strokeLinecap="round"/>
+                            <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" strokeLinecap="round"/>
+                            <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        <h3 className="text-base font-semibold text-gray-900">Financial Breakdown</h3>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-700">Base Amount</span>
+                            <span className="text-sm font-semibold text-gray-900">
+                                {getCurrencySymbol(settlement.currency)}{settlement.baseAmount.toLocaleString()}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-700">
+                                Commission ({settlement.commissionValue}{settlement.commissionType === "Percentage" ? "%" : ""})
+                            </span>
+                            <span className="text-sm font-semibold text-red-600">
+                                -{getCurrencySymbol(settlement.currency)}{settlement.commissionAmount.toLocaleString()}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-700">Breakage</span>
+                            <span className="text-sm font-semibold text-green-600">
+                                +{getCurrencySymbol(settlement.currency)}{settlement.breakageAmount.toLocaleString()}
+                            </span>
+                        </div>
+                        {settlement.vatAmount > 0 && (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700">VAT (5%)</span>
+                                <span className="text-sm font-semibold text-red-600">
+                                    -{getCurrencySymbol(settlement.currency)}{settlement.vatAmount.toLocaleString()}
+                                </span>
                             </div>
                         )}
-                    </div>
-                    <div className="rounded-xl border border-zinc-200 bg-white">
-                        <h3 className="border-b border-zinc-200 px-6 py-4 text-lg font-semibold text-zinc-900">
-                            Financial Breakdown
-                        </h3>
-                        <div className="space-y-4 p-6">
+                        {settlement.adjustments !== 0 && (
                             <div className="flex items-center justify-between">
-                                <span className="text-zinc-500">Base Amount</span>
-                                <span className="font-medium text-zinc-900">
-                                    {getCurrencySymbol(settlement.currency)}{settlement.baseAmount.toLocaleString()}
+                                <span className="text-sm text-gray-700">Adjustments</span>
+                                <span className={`text-sm font-semibold ${settlement.adjustments > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {settlement.adjustments > 0 ? '+' : ''}{getCurrencySymbol(settlement.currency)}{Math.abs(settlement.adjustments).toLocaleString()}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-zinc-500">
-                                    Commission ({settlement.commissionValue}{settlement.commissionType === "Percentage" ? "%" : ""})
-                                </span>
-                                <span className="font-medium text-[#DC3545]">
-                                    -{getCurrencySymbol(settlement.currency)}{settlement.commissionAmount.toLocaleString()}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-zinc-500">Breakage</span>
-                                <span className="font-medium text-[#28A745]">
-                                    +{getCurrencySymbol(settlement.currency)}{settlement.breakageAmount.toLocaleString()}
-                                </span>
-                            </div>
-                            {settlement.vatAmount > 0 && (
-                                <div className="flex items-center justify-between">
-                                    <span className="text-zinc-500">VAT (5%)</span>
-                                    <span className="font-medium text-[#DC3545]">
-                                        -{getCurrencySymbol(settlement.currency)}{settlement.vatAmount.toLocaleString()}
-                                    </span>
-                                </div>
-                            )}
-                            {settlement.adjustments !== 0 && (
-                                <div className="flex items-center justify-between">
-                                    <span className="text-zinc-500">Adjustments</span>
-                                    <span className={`font-medium ${settlement.adjustments > 0 ? 'text-[#28A745]' : 'text-[#DC3545]'}`}>
-                                        {settlement.adjustments > 0 ? '+' : ''}{getCurrencySymbol(settlement.currency)}{Math.abs(settlement.adjustments).toLocaleString()}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="border-t border-zinc-200 p-6 flex items-center justify-between">
-                            <span className="font-bold text-zinc-900">Final Net Payable</span>
-                            <span className="text-xl font-bold text-[#197fe6]">
+                        )}
+                        <div className="border-t border-gray-200 pt-3 flex items-center justify-between">
+                            <span className="text-sm font-bold text-gray-900">Final Net Payable</span>
+                            <span className="text-lg font-bold text-blue-600">
                                 {getCurrencySymbol(settlement.currency)}{settlement.netPayable.toLocaleString()}
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Right Column */}
-                <div className="flex flex-col gap-6 lg:gap-8">
-                    <div className="rounded-xl border border-zinc-200 bg-white">
-                        <h3 className="border-b border-zinc-200 px-6 py-4 text-lg font-semibold text-zinc-900">
-                            Payment Information
-                        </h3>
-                        <div className="divide-y divide-zinc-200 p-6">
-                            <div className="flex justify-between py-3">
-                                <span className="text-zinc-500">Payment Status</span>
-                                <span className={`font-medium ${settlement.status === 'Paid' ? 'text-[#28A745]' :
-                                        settlement.status === 'Pending' ? 'text-[#FFC107]' :
-                                            'text-[#DC3545]'
-                                    }`}>
-                                    {settlement.status}
+                {/* Bottom Row - Voucher and Delivery Summary */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    {/* Voucher Summary */}
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
+                        <h3 className="mb-4 text-base font-semibold text-blue-700">Voucher Summary</h3>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700">Total Issued</span>
+                                <span className="text-sm font-semibold text-gray-900">
+                                    {settlement.voucherSummary.totalIssued}
                                 </span>
                             </div>
-                            <div className="flex justify-between py-3">
-                                <span className="text-zinc-500">Total Paid Amount</span>
-                                <span className="font-medium text-zinc-900">
-                                    {getCurrencySymbol(settlement.currency)}{settlement.totalPaid.toLocaleString()}
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700">Redeemed</span>
+                                <span className="text-sm font-semibold text-teal-600">
+                                    {settlement.voucherSummary.redeemed}
                                 </span>
                             </div>
-                            <div className="flex justify-between py-3">
-                                <span className="text-zinc-500">Outstanding Amount</span>
-                                <span className="font-medium text-zinc-900">
-                                    {getCurrencySymbol(settlement.currency)}{settlement.remainingAmount.toLocaleString()}
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700">Unredeemed</span>
+                                <span className="text-sm font-semibold text-orange-600">
+                                    {settlement.voucherSummary.unredeemed}
                                 </span>
                             </div>
-                            {settlement.lastPaymentDate && (
-                                <div className="flex justify-between py-3">
-                                    <span className="text-zinc-500">Last Payment Date</span>
-                                    <span className="font-medium text-zinc-900">
-                                        {formatDate(settlement.lastPaymentDate)}
-                                    </span>
-                                </div>
-                            )}
-                            {settlement.paymentReference && (
-                                <div className="flex justify-between py-3">
-                                    <span className="text-zinc-500">Payment Reference</span>
-                                    <span className="font-mono rounded bg-zinc-100 px-2 py-1 text-sm text-zinc-900">
-                                        {settlement.paymentReference}
-                                    </span>
-                                </div>
-                            )}
+                        </div>
+                        <div className="mt-4 border-t border-blue-200 pt-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-blue-700">Redemption Rate</span>
+                                <span className="text-sm font-semibold text-blue-600">
+                                    {settlement.redemptionRate}%
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    <div className="rounded-xl border border-zinc-200 bg-white">
-                        <h3 className="border-b border-zinc-200 px-6 py-4 text-lg font-semibold text-zinc-900">
-                            Voucher Summary
-                        </h3>
-                        <div className="p-6">
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-zinc-500">Total Issued</span>
-                                    <span className="font-medium text-zinc-900">
-                                        {settlement.voucherSummary.totalIssued}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-zinc-500">Redeemed</span>
-                                    <span className="font-medium text-[#28A745]">
-                                        {settlement.voucherSummary.redeemed}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-zinc-500">Unredeemed</span>
-                                    <span className="font-medium text-[#DC3545]">
-                                        {settlement.voucherSummary.unredeemed}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-zinc-500">Delivery Status</span>
-                                    <span className="font-medium text-zinc-900">
-                                        {settlement.voucherSummary.deliveryStatus}
-                                    </span>
-                                </div>
+
+                    {/* Delivery Summary */}
+                    <div className="rounded-lg border border-purple-200 bg-purple-50 p-6">
+                        <h3 className="mb-4 text-base font-semibold text-purple-700">Delivery Summary</h3>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700">Total</span>
+                                <span className="text-sm font-semibold text-gray-900">
+                                    {settlement.voucherSummary.totalIssued}
+                                </span>
                             </div>
-                            <div className="mt-6">
-                                <div className="mb-1 flex justify-between text-sm">
-                                    <span className="font-medium text-zinc-900">Redemption Rate</span>
-                                    <span className="text-zinc-500">{settlement.redemptionRate}%</span>
-                                </div>
-                                <div className="h-2.5 w-full rounded-full bg-zinc-200">
-                                    <div
-                                        className="h-2.5 rounded-full bg-[#197fe6]"
-                                        style={{ width: `${settlement.redemptionRate}%` }}
-                                    ></div>
-                                </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700">Delivered</span>
+                                <span className="text-sm font-semibold text-teal-600">
+                                    {settlement.voucherSummary.delivered || 0}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700">Pending</span>
+                                <span className="text-sm font-semibold text-orange-600">
+                                    {settlement.voucherSummary.pending || 0}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700">Failed</span>
+                                <span className="text-sm font-semibold text-red-600">
+                                    {settlement.voucherSummary.failed || 0}
+                                </span>
                             </div>
                         </div>
                     </div>
