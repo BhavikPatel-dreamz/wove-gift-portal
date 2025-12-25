@@ -8,48 +8,14 @@ import { getSettlementDetails } from "../../lib/action/brandPartner";
 import OverviewTab from './OverviewTab';
 
 function SettlementDashboard({ settlement, getCurrencySymbol }) {
-    
-    
-        if (!settlement) {
-            return null;
-        }
-    
-        const getMonthYear = (date) => {
-            if (!date) return "N/A";
-    
-            try {
-                return new Date(date).toLocaleDateString("en-US", {
-                    month: "long",
-                    year: "numeric",
-                });
-            } catch (error) {
-                return "Invalid Date";
-            }
-        };
 
  return (
   <>
-    {/* <div className="relative flex min-h-screen w-full flex-col bg-[#f7f8fa]"> */}
-      {/* <main className="flex w-full flex-1 justify-center py-8 sm:py-12"> */}
-        <div className="flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:px-8">
-
-          {/* Title Section */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-black tracking-tighter text-zinc-900 sm:text-4xl">
-                {getMonthYear(settlement.periodStart)} Settlement
-              </h1>
-              <p className="text-base font-normal text-zinc-500">
-                Review the complete financial breakdown for this period.
-              </p>
-            </div>
-          </div>
-
           {/* Stats Cards */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4">
 
             {/* Total Sold */}
-            <div className="relative flex h-[90px] w-[260px] items-center justify-between rounded-xl bg-blue-50 p-4 shadow-sm">
+            <div className="relative flex h-[90px] w-[260px] border border-[#BEDBFF] items-center justify-between rounded-xl bg-blue-50 p-4 shadow-sm">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium text-blue-600">Total Sold</p>
                 <p className="text-2xl font-bold text-blue-600">
@@ -70,7 +36,7 @@ function SettlementDashboard({ settlement, getCurrencySymbol }) {
             </div>
 
             {/* Total Redeemed */}
-            <div className="relative flex h-[90px] w-[260px] items-center justify-between rounded-xl bg-green-50 p-4 shadow-sm">
+            <div className="relative flex h-[90px] w-[260px] border border-[#E2E8F0] items-center justify-between rounded-xl bg-green-50 p-4 shadow-sm">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium text-green-600">Total Redeemed</p>
                 <p className="text-2xl font-bold text-green-600">
@@ -91,7 +57,7 @@ function SettlementDashboard({ settlement, getCurrencySymbol }) {
             </div>
 
             {/* Outstanding */}
-            <div className="relative flex h-[90px] w-[260px] items-center justify-between rounded-xl bg-purple-50 p-4 shadow-sm">
+            <div className="relative flex h-[90px] w-[260px] border border-[#E2E8F0] items-center justify-between rounded-xl bg-purple-50 p-4 shadow-sm">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium text-purple-600">Outstanding</p>
                 <p className="text-2xl font-bold text-purple-600">
@@ -112,7 +78,7 @@ function SettlementDashboard({ settlement, getCurrencySymbol }) {
             </div>
 
             {/* Amount Owed */}
-            <div className="relative flex h-[90px] w-[260px] items-center justify-between rounded-xl bg-orange-50 p-4 shadow-sm">
+            <div className="relative flex h-[90px] w-[260px] border border-[#E2E8F0] items-center justify-between rounded-xl bg-orange-50 p-4 shadow-sm">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium text-orange-600">Amount Owed</p>
                 <p className="text-2xl font-bold text-orange-600">
@@ -132,11 +98,11 @@ function SettlementDashboard({ settlement, getCurrencySymbol }) {
             </div>
 
           </div>
-        </div>
+     
       {/* </main> */}
 
       {/* Tabs Section */}
-      <SettlementTabs settlementId={settlement.id} />
+  
     {/* </div> */}
   </>
 );
