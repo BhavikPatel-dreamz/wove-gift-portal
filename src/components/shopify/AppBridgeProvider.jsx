@@ -4,11 +4,7 @@ import { Provider } from '@shopify/app-bridge-react';
 import { useSearchParams } from 'next/navigation';
 import { ReactNode } from 'react';
 
-interface AppBridgeProviderProps {
-  children: ReactNode;
-}
-
-export default function AppBridgeProvider({ children }: AppBridgeProviderProps) {
+export default function AppBridgeProvider({ children }) {
   const searchParams = useSearchParams();
   const host = searchParams.get('host');
   const shop = searchParams.get('shop');
