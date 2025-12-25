@@ -2,6 +2,7 @@ ignoredBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
   - core-js
+  - esbuild
   - prisma
   - sharp
   - unrs-resolver
