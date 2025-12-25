@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import AppLayout from "./component/AppLayout";
 
-function ShopifyLayoutContent({ children }: { children: React.ReactNode }) {
+function ShopifyLayoutContent({ children }) {
   const searchParams = useSearchParams();
   const shop = searchParams.get("shop");
 
@@ -26,8 +26,6 @@ function ShopifyLayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function ShopifyLayout({
   children,
-}: {
-  children: React.ReactNode;
 }) {
   return (
     <Suspense
