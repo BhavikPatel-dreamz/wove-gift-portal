@@ -10,6 +10,8 @@ import {
 } from "@tanstack/react-table";
 import { Search, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import SkeletonRow from "./SkeletonRow";
+import CustomDropdown from "../ui/CustomDropdown";
+import SearchIcon from "@/icons/SearchIcon";
 
 const DynamicTable = ({
   data = [],
@@ -97,11 +99,10 @@ const DynamicTable = ({
                   <div
                     key={idx}
                     onClick={() => onPageChange && onPageChange(pageNumber)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${
-                      currentPage === pageNumber
-                        ? "bg-blue-700 text-white shadow-sm"
-                        : "border border-gray-300 hover:bg-white text-gray-700"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${currentPage === pageNumber
+                      ? "bg-blue-700 text-white shadow-sm"
+                      : "border border-gray-300 hover:bg-white text-gray-700"
+                      }`}
                   >
                     {pageNumber}
                   </div>
@@ -123,29 +124,31 @@ const DynamicTable = ({
   };
 
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden ${className}`}>
+    <div className={`bg-white rounded-xl border border-gray-200 shadow-sm ${className}`}>
       {/* Header Section */}
       <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-          <p className="text-gray-600 mt-1.5">{subtitle}</p>
+          <h1 className="text-[20px] font-semibold text-[#1A1A1A]">{title}</h1>
+          <p className="text-[#64748B]  text-[14px] font-normal">{subtitle}</p>
         </div>
 
         {/* Search and Filters */}
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <SearchIcon />
+            </div>
             <input
               type="text"
               value={globalFilter ?? ""}
               onChange={handleSearchChange}
               placeholder={searchPlaceholder}
-              className="w-full text-black pl-11 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              className="w-full placeholder-[#A6A6A6] text-black text-[12px] pl-11 pr-4 py-[11px] border border-gray-300 rounded-lg transition-all"
             />
           </div>
 
           <div className="flex flex-wrap gap-2 text-black">
-            {filters.map((filter, idx) => (
+            {/* {filters.map((filter, idx) => (
               <select
                 key={idx}
                 onChange={(e) => handleFilterChange(filter.name, e.target.value)}
@@ -158,6 +161,16 @@ const DynamicTable = ({
                   </option>
                 ))}
               </select>
+            ))} */}
+            {filters.map((filter, idx) => (
+              <CustomDropdown
+                key={idx}
+                options={filter.options}
+                placeholder={filter.placeholder}
+                value={filter?.value || ""}
+                onChange={(value) => handleFilterChange(filter.name, value)}
+                className="min-w-[200px]"
+              />
             ))}
 
             {actions &&
@@ -184,7 +197,7 @@ const DynamicTable = ({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-6 py-4 text-left text-xs cursor-pointer font-semibold text-gray-600 uppercase tracking-wider hover:bg-gray-100 transition-colors"
+                    className="px-6 py-4 text-left text-xs cursor-pointer font-semibold text-[#4A4A4A] uppercase tracking-wider hover:bg-gray-100 transition-colors"
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-2">
@@ -197,12 +210,12 @@ const DynamicTable = ({
             ))}
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-             {loading ? (
+            {loading ? (
               [...Array(10)].map((_, i) => <SkeletonRow key={i} columns={columns} />)
             ) : table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="text-center py-12">
-                  <p className="text-gray-500 text-sm">{emptyMessage}</p>
+                  <p className="text-xs text-[#1A1A1A]">{emptyMessage}</p>
                 </td>
               </tr>
             ) : (
@@ -211,7 +224,7 @@ const DynamicTable = ({
                   <React.Fragment key={row.id}>
                     <tr className="hover:bg-gray-50 transition-colors">
                       {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-6 py-4 text-sm">
+                        <td key={cell.id} className="px-6 py-4 text-xs text-[#1A1A1A]">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       ))}

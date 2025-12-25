@@ -707,17 +707,19 @@ const BrandManager = () => {
                     onClick={() => redirectToSettlement(brand.id)}
                     disabled={actionLoading}
                     title={brand.isFeature ? 'Unfeature Brand' : 'Feature Brand'}
-                    className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50`}
+                    className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 bg-[#E5E5E5] text-[#4A4A4A] hover:bg-orange-200`}
                   >
-                   <History size={16} />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 12 14" fill="none">
+                      <path d="M11.4809 3.56317V12.6533C11.4809 13.3958 10.8767 14 10.1342 14H3.98994C3.24739 14 2.64326 13.3958 2.64326 12.6533V6.74272C2.83535 6.77468 3.03132 6.7954 3.23243 6.7954C3.37505 6.7954 3.51503 6.7848 3.65328 6.76845V12.6533C3.65328 12.8389 3.80427 12.99 3.98994 12.99H10.1342C10.3198 12.99 10.4708 12.8389 10.4708 12.6533V3.56317C10.4708 3.37749 10.3198 3.2265 10.1342 3.2265H6.80135C6.80135 2.87538 6.74859 2.53696 6.65403 2.21651H10.1342C10.8767 2.21648 11.4809 2.82061 11.4809 3.56317ZM3.17619 6.3523C1.42478 6.3523 0 4.92752 0 3.17619C2.7812e-05 1.42478 1.42478 0 3.17619 0C4.92754 0 6.35238 1.42478 6.35238 3.17619C6.35238 4.92752 4.92754 6.3523 3.17619 6.3523ZM3.17619 5.67894C4.55617 5.67894 5.67897 4.55634 5.67897 3.17619C5.67897 1.79596 4.55634 0.673357 3.17619 0.673357C1.79599 0.673357 0.673357 1.79596 0.673357 3.17619C0.673357 4.55634 1.79616 5.67894 3.17619 5.67894ZM5.08107 3.51288C5.26691 3.51288 5.41773 3.36206 5.41773 3.17622C5.41773 2.99038 5.26691 2.83955 5.08107 2.83955H3.51286V1.51793C3.51286 1.33209 3.36203 1.18126 3.17619 1.18126C2.99035 1.18126 2.83953 1.33209 2.83953 1.51793V3.17622C2.83953 3.36206 2.99035 3.51288 3.17619 3.51288H5.08107ZM8.96685 6.24258H5.31958C5.13374 6.24258 4.98292 6.39341 4.98292 6.57925C4.98292 6.76511 5.13374 6.91591 5.31958 6.91591H8.96685C9.15278 6.91591 9.30352 6.76509 9.30352 6.57925C9.30355 6.39341 9.15278 6.24258 8.96685 6.24258ZM8.97278 8.28479H5.32551C5.13967 8.28479 4.98884 8.43553 4.98884 8.62146C4.98884 8.80738 5.13967 8.95812 5.32551 8.95812H8.97278C9.1587 8.95812 9.30941 8.80738 9.30941 8.62146C9.30941 8.43553 9.15887 8.28479 8.97278 8.28479ZM8.97278 10.4115H5.32551C5.13967 10.4115 4.98884 10.5624 4.98884 10.7482C4.98884 10.9341 5.13967 11.0848 5.32551 11.0848H8.97278C9.1587 11.0848 9.30941 10.9341 9.30941 10.7482C9.30944 10.5624 9.15887 10.4115 8.97278 10.4115Z" fill="#4A4A4A" />
+                    </svg>
                   </button>
                   <button
                     onClick={() => toggleFeatured(brand.id)}
                     disabled={actionLoading}
                     title={brand.isFeature ? 'Unfeature Brand' : 'Feature Brand'}
                     className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${brand.isFeature
-                        ? 'text-orange-500 bg-orange-100 hover:bg-orange-200'
-                        : 'text-gray-400 hover:bg-gray-100 hover:text-orange-500'
+                      ? 'text-orange-500 bg-orange-100 hover:bg-orange-200'
+                      : 'text-gray-400 hover:bg-gray-100 hover:text-orange-500'
                       }`}
                   >
                     <Star size={16} fill={brand.isFeature ? 'currentColor' : 'none'} />
@@ -727,8 +729,8 @@ const BrandManager = () => {
                     disabled={actionLoading}
                     title={brand.isActive ? 'Deactivate Brand' : 'Activate Brand'}
                     className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${brand.isActive
-                        ? 'text-green-500 bg-green-100 hover:bg-green-200'
-                        : 'text-gray-400 hover:bg-gray-100 hover:text-green-500'
+                      ? 'text-green-500 bg-green-100 hover:bg-green-200'
+                      : 'text-gray-400 hover:bg-gray-100 hover:text-green-500'
                       }`}
                   >
                     <Power size={16} />
@@ -804,8 +806,8 @@ const BrandManager = () => {
                       onClick={() => handlePageChange(pageNum)}
                       disabled={loading}
                       className={`px-3 py-2 rounded-lg ${pageNum === pagination.currentPage
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 hover:bg-gray-50'
+                        ? 'bg-blue-600 text-white'
+                        : 'border border-gray-300 hover:bg-gray-50'
                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {pageNum}
