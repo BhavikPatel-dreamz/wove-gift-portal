@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient({ log: ['warn', 'error'] })
-
+import { prisma } from '../src/lib/db';
 async function main() {
   try {
   

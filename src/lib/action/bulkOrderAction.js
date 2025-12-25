@@ -1,10 +1,10 @@
 "use server";
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db";
 import { getSession } from "./userAction/session";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage";
 
-const prisma = new PrismaClient({ log: ['warn', 'error'] })
+
 
 // ==================== CUSTOM ERROR CLASSES ====================
 class ValidationError extends Error {

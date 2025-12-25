@@ -1,8 +1,6 @@
 "use server";
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient({ log: ['warn', 'error'] });
+import { prisma } from "../db";
 
 export async function getVouchers(params = {}) {
   const { page = 1, search = '', status = '', dateFrom, dateTo, userId, userRole, pageSize = 10, shop } = params;
