@@ -1,51 +1,43 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import toast from "react-hot-toast";
-import SettlementContacts from '../../../../../../../components/settlements/SettlementContacts'
-import SettlementTabs from "../../../../../../../components/settlements/SettlementTabs";
+import { useParams } from "next/navigation";
+import SettlementContacts from '../../../../../../../components/settlements/SettlementContacts';
 import { getSettlementContacts } from "../../../../../../../lib/action/brandPartner";
 
 const ContactPage = () => {
-    const router = useRouter();
-    const params = useParams();
-    const settlementId = params.settlementId;
+  const params = useParams();
+  const settlementId = params.settlementId;
+  const [contacts, setContacts] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    const [settlement, setSettlement] = useState(null);
-    const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (settlementId) {
+      fetchContacts();
+    }
+  }, [settlementId]);
 
-    useEffect(() => {
-        if (settlementId) {
-            fetchContacts();
-        }
-    }, [settlementId]);
-
-    const fetchContacts = async () => {
-      try {
-        setLoading(true);
-        const response = await getSettlementContacts(settlementId);
-        if (response.success) {
-          setSettlement(response.data);
-        } 
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const fetchContacts = async () => {
+    setLoading(true);
+    try {
+      const response = await getSettlementContacts(settlementId);
+      if (response.success) {
+        setContacts(response.data);
       }
-    };
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <SettlementContacts contacts={contacts} loading={loading} />
+    </>
 
 
-    return (
-        <div className="relative flex min-h-screen w-full flex-col bg-[#f7f8fa]">
-            <main className="flex w-full flex-1 justify-center py-8 sm:py-12">
-                <div className="flex w-full  flex-col gap-4 px-4 sm:px-6 lg:px-8">
-                    <SettlementTabs brandId={settlement?.brandId} />
-                    <SettlementContacts contacts={settlement} loading={loading} />
-                </div>
-            </main>
-        </div>
-    )
-}
+  );
+};
 
 export default ContactPage;

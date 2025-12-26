@@ -1,11 +1,7 @@
 "use client";
 
-import SettlementTabs from './SettlementTabs';
-import React, { useState, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import toast from "react-hot-toast";
-import { getSettlementDetails } from "../../lib/action/brandPartner";
-import OverviewTab from './OverviewTab';
+import React from "react";
+
 
 function SettlementDashboard({ settlement, getCurrencySymbol }) {
 
@@ -15,7 +11,7 @@ function SettlementDashboard({ settlement, getCurrencySymbol }) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4">
 
             {/* Total Sold */}
-            <div className="relative flex h-[90px] w-[260px] border border-[#BEDBFF] items-center justify-between rounded-xl bg-blue-50 p-4 shadow-sm">
+            <div className="relative flex h-[90px] w-[290px] border border-[#BEDBFF] items-center justify-between rounded-xl bg-blue-50 p-4 shadow-sm">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium text-blue-600">Total Sold</p>
                 <p className="text-2xl font-bold text-blue-600">
@@ -36,7 +32,7 @@ function SettlementDashboard({ settlement, getCurrencySymbol }) {
             </div>
 
             {/* Total Redeemed */}
-            <div className="relative flex h-[90px] w-[260px] border border-[#E2E8F0] items-center justify-between rounded-xl bg-green-50 p-4 shadow-sm">
+            <div className="relative flex h-[90px] w-[290px] border border-[#E2E8F0] items-center justify-between rounded-xl bg-green-50 p-4 shadow-sm">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium text-green-600">Total Redeemed</p>
                 <p className="text-2xl font-bold text-green-600">
@@ -57,7 +53,7 @@ function SettlementDashboard({ settlement, getCurrencySymbol }) {
             </div>
 
             {/* Outstanding */}
-            <div className="relative flex h-[90px] w-[260px] border border-[#E2E8F0] items-center justify-between rounded-xl bg-purple-50 p-4 shadow-sm">
+            <div className="relative flex h-[90px] w-[290px] border border-[#E2E8F0] items-center justify-between rounded-xl bg-purple-50 p-4 shadow-sm">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium text-purple-600">Outstanding</p>
                 <p className="text-2xl font-bold text-purple-600">
@@ -78,7 +74,7 @@ function SettlementDashboard({ settlement, getCurrencySymbol }) {
             </div>
 
             {/* Amount Owed */}
-            <div className="relative flex h-[90px] w-[260px] border border-[#E2E8F0] items-center justify-between rounded-xl bg-orange-50 p-4 shadow-sm">
+            <div className="relative flex h-[90px] w-[290px] border border-[#E2E8F0] items-center justify-between rounded-xl bg-orange-50 p-4 shadow-sm">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium text-orange-600">Amount Owed</p>
                 <p className="text-2xl font-bold text-orange-600">
