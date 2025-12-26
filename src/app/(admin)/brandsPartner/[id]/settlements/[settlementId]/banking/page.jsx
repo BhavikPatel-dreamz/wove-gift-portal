@@ -5,85 +5,118 @@ import { useRouter, useParams } from "next/navigation";
 import toast from "react-hot-toast";
 import SettlementBanking from '../../../../../../../components/settlements/SettlementBanking'
 import SettlementTabs from "../../../../../../../components/settlements/SettlementTabs";
-import { getSettlementBankingDetails } from "../../../../../../../lib/action/brandPartner";
+import { getSettlementBankingDetails, getSettlementDetails } from "../../../../../../../lib/action/brandPartner";
+import SettlementDashboard from "../../../../../../../components/settlements/SettlementDashboard";
 
-const BankingPage = () => {
-    const router = useRouter();
-    const params = useParams();
-    const settlementId = params.settlementId;
+function BankingPage() {
+  const router = useRouter();
+  const params = useParams();
+  const settlementId = params.settlementId;
+  
+  const [banking, setBanking] = useState(null);
+  const [settlement, setSettlement] = useState(null);
+  const [loadingBanking, setLoadingBanking] = useState(true);
+  const [loadingSettlement, setLoadingSettlement] = useState(true);
+  const [error, setError] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
 
-    const [banking, setBanking] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
-    useEffect(() => {
-        if (settlementId) {
-            fetchBankingDetails();
-        }
-    }, [settlementId]);
+  useEffect(() => {
+    if (settlementId) {
+      fetchBankingDetails();
+      fetchSettlementDetails();
+    }
+  }, [settlementId]);
 
-    const fetchBankingDetails = async () => {
-      try {
-        setLoading(true);
-        const response = await getSettlementBankingDetails(settlementId);
-        if (response.success) {
-          setBanking(response.data);
-          setError(null);
-        } else {
-          setError(response.message || "Failed to fetch banking details");
-          toast.error(response.message || "Failed to fetch banking details");
-        }
-      } catch (err) {
-        setError("An error occurred while fetching banking details");
-        toast.error("An error occurred while fetching banking details");
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const fetchBankingDetails = async () => {
+    try {
+      setLoadingBanking(true);
+      const response = await getSettlementBankingDetails(settlementId);
+      if (response.success) {
+        setBanking(response.data);
+        setError(null);
+      } else {
+        setError(response.message || "Failed to fetch banking details");
+        toast.error(response.message || "Failed to fetch banking details");
       }
+    } catch (err) {
+      setError("An error occurred while fetching banking details");
+      toast.error("An error occurred while fetching banking details");
+      console.error(err);
+    } finally {
+      setLoadingBanking(false);
+    }
+  };
+
+  const fetchSettlementDetails = async () => {
+    try {
+      setLoadingSettlement(true);
+      const res = await getSettlementDetails(settlementId);
+      if (res.success) {
+        setSettlement(res.data);
+      } else {
+        toast.error(res.message);
+      }
+    } catch (error) {
+      toast.error("Failed to fetch settlement details");
+      router.push("/settlements");
+    } finally {
+      setLoadingSettlement(false);
+    }
+  };
+
+  const getCurrencySymbol = (code) => {
+    const currencyList = {
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+      INR: "₹",
     };
+    return currencyList[code] || code;
+  };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-[#f7f8fa] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#197fe6] mx-auto mb-4"></div>
-                    <p className="text-zinc-600">Loading banking details...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen bg-[#f7f8fa] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="rounded-lg bg-red-50 p-6">
-                        <svg className="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="mt-2 text-sm font-medium text-red-800">{error}</p>
-                        <button 
-                            onClick={fetchBankingDetails}
-                            className="mt-4 px-4 py-2 bg-[#197fe6] text-white rounded-lg hover:bg-[#197fe6]/90"
-                        >
-                            Retry
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
+  if (!isMounted || loadingBanking || loadingSettlement) {
     return (
-        <div className="relative flex min-h-screen w-full flex-col bg-[#f7f8fa]">
-            <main className="flex w-full flex-1 justify-center py-8 sm:py-12">
-                <div className="flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:px-8">
-                    <SettlementTabs brandId={banking?.brandId} />
-                    <SettlementBanking banking={banking} />
-                </div>
-            </main>
-        </div>
-    )
+      <div className="flex items-center justify-center min-h-screen">
+        Loading banking details...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <div className="text-red-600">{error}</div>
+        <button
+          onClick={fetchBankingDetails}
+          className="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return (
+     <div className="relative flex min-h-screen w-full flex-col bg-[#f7f8fa]">
+                    <div className="flex w-full max-w-7xl flex-col gap-8 px-4 sm:px-6 lg:px-8">
+                      <SettlementDashboard
+                       settlement={settlement}
+                       getCurrencySymbol={getCurrencySymbol}
+                        />
+    
+                        {/* Tabs */}    
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                       <SettlementTabs />
+                       <SettlementBanking banking={banking} />
+                    </div>
+                    </div>
+            </div>
+    
+  );
 }
 
 export default BankingPage;

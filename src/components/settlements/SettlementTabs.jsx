@@ -31,7 +31,7 @@ const SettlementTabs = () => {
     return (
         <>
             {/* Tab Navigation */}
-            <div className="border-b border-zinc-200">
+            <div className="border-b border-zinc-200 mb-6">
                 <nav aria-label="Tabs" className="-mb-px flex space-x-6">
                     {tabs.map((tab) => (
                         <button
