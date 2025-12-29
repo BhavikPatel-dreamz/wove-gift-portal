@@ -21,12 +21,13 @@ const OccasionsSection = ({ occasions = [] }) => {
   }
 
   const handleOccasionSelect = (occasion) => {
-    if (pathname !== "/") {
+    if (pathname === "/") {
+      dispatch(resetFlow());
+      dispatch(setSelectedOccasion(occasion.id));
+      router.push('/gift');
+    } else {
       dispatch(setSelectedOccasion(occasion.id));
       dispatch(setCurrentStep(4));
-    } else {
-      dispatch(resetFlow());
-      router.push('/gift');
     }
   };
 
@@ -110,7 +111,7 @@ const OccasionsSection = ({ occasions = [] }) => {
         {/* Desktop Grid (hidden on mobile) */}
         <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {occasions.slice(0, 4).map((occasion) => (
-            <div key={occasion.id} className="occasion-card">
+            <div key={occasion.id} className="occasion-card cursor-pointer" onClick={() => handleOccasionSelect(occasion)}>
               {occasion.image && (
                 <img
                   src={occasion.image}
@@ -148,7 +149,8 @@ const OccasionsSection = ({ occasions = [] }) => {
             {occasions.slice(0, 4).map((occasion) => (
               <div
                 key={occasion.id}
-                className="occasion-card flex-shrink-0"
+                className="occasion-card flex-shrink-0 cursor-pointer"
+                onClick={() => handleOccasionSelect(occasion)}
                 style={{
                   width: 'calc(100vw - 3rem)',
                   maxWidth: '380px',

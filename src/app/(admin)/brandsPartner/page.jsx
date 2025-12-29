@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { categories } from '../../../lib/resourses';
 import { useRouter, useParams } from 'next/navigation';
 import { History } from 'lucide-react';
+import CustomDropdown from '../../../components/ui/CustomDropdown';
 
 
 const BrandManager = () => {
@@ -506,49 +507,50 @@ const BrandManager = () => {
             </div>
 
             {/* Category Filter */}
-            <select
+            <CustomDropdown
               value={filters.category}
-              onChange={(e) => handleFilterChange('category', e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none min-w-[150px]"
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
+              onChange={(value) => handleFilterChange('category', value)}
+              options={[{ value: 'All Brands', label: 'All Brands' }, ...categories.map(c => ({ value: c, label: c }))]}
+              placeholder="Select Category"
+              className="min-w-[150px]"
+            />
 
             {/* Status Filters */}
-            <select
+            <CustomDropdown
               value={filters.isActive || ''}
-              onChange={(e) => handleFilterChange('isActive', e.target.value || null)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value="">All Status</option>
-              <option value="true">Active Only</option>
-              <option value="false">Inactive Only</option>
-            </select>
+              onChange={(value) => handleFilterChange('isActive', value || null)}
+              options={[
+                { value: 'true', label: 'Active Only' },
+                { value: 'false', label: 'Inactive Only' }
+              ]}
+              placeholder="All Status"
+              className="min-w-[150px]"
+            />
 
-            <select
+            <CustomDropdown
               value={filters.isFeature || ''}
-              onChange={(e) => handleFilterChange('isFeature', e.target.value || null)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value="">All Brands</option>
-              <option value="true">Featured Only</option>
-              <option value="false">Non-Featured</option>
-            </select>
+              onChange={(value) => handleFilterChange('isFeature', value || null)}
+              options={[
+                { value: 'true', label: 'Featured Only' },
+                { value: 'false', label: 'Non-Featured' }
+              ]}
+              placeholder="All Brands"
+              className="min-w-[150px]"
+            />
 
             {/* Sort */}
             <div className="flex gap-2">
-              <select
+              <CustomDropdown
                 value={filters.sortBy}
-                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              >
-                <option value="createdAt">Created Date</option>
-                <option value="brandName">Name</option>
-                <option value="categoryName">Category</option>
-                <option value="updatedAt">Updated Date</option>
-              </select>
+                onChange={(value) => handleFilterChange('sortBy', value)}
+                options={[
+                  { value: 'createdAt', label: 'Created Date' },
+                  { value: 'brandName', label: 'Name' },
+                  { value: 'categoryName', label: 'Category' },
+                  { value: 'updatedAt', label: 'Updated Date' }
+                ]}
+                className="min-w-[150px]"
+              />
               <button
                 onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
                 className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -626,17 +628,19 @@ const BrandManager = () => {
           {/* Items per page selector */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Show:</span>
-            <select
+            <CustomDropdown
               value={pagination.itemsPerPage}
-              onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
-              className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              <option value={4}>4</option>
-              <option value={8}>8</option>
-              <option value={12}>12</option>
-              <option value={24}>24</option>
-              <option value={48}>48</option>
-            </select>
+              onChange={(value) => handleItemsPerPageChange(value)}
+              placeholder=""
+              options={[
+                { value: 4, label: '4' },
+                { value: 8, label: '8' },
+                { value: 12, label: '12' },
+                { value: 24, label: '24' },
+                { value: 48, label: '48' }
+              ]}
+              className="min-w-[70px]"
+            />
             <span className="text-sm text-gray-600">per page</span>
           </div>
         </div>
