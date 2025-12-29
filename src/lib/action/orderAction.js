@@ -406,9 +406,9 @@ async function processBulkOrder(
         const matchedDenomination = voucherConfig?.denominations?.find(
           (d) => d?.value == order?.amount
         );
-        expireDate = matchedDenomination?.expiresAt || null;
+        expireDate = matchedDenomination?.isExpiry === true ? matchedDenomination?.expiresAt || null : null;
       } else {
-        expireDate = voucherConfig?.expiresAt || null;
+        expireDate = voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null;
       }
 
       const voucherCode = await prisma.voucherCode.create({
@@ -943,9 +943,9 @@ async function processSingleOrder(
       const matchedDenomination = voucherConfig?.denominations?.find(
         (d) => d?.value == order?.amount
       );
-      expireDate = matchedDenomination?.expiresAt || null;
+      expireDate = matchedDenomination?.isExpiry === true ? matchedDenomination?.expiresAt || null : null;
     } else {
-      expireDate = voucherConfig?.expiresAt || null;
+      expireDate = voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null;
     }
 
     const voucherCode = await prisma.voucherCode.create({

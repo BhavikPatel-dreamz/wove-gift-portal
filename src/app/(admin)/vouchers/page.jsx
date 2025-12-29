@@ -221,11 +221,11 @@ export default function VouchersManagement() {
 
     return (
       <div className="flex flex-col gap-1">
-        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}>
+        <span className={`inline-flex items-center text-center px-2 justify-center py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}>
           {status}
         </span>
         {statusBreakdown && (
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-center text-gray-500">
             {statusBreakdown.active > 0 && <div>Active: {statusBreakdown.active}</div>}
             {statusBreakdown.redeemed > 0 && <div>Redeemed: {statusBreakdown.redeemed}</div>}
             {statusBreakdown.expired > 0 && <div>Expired: {statusBreakdown.expired}</div>}

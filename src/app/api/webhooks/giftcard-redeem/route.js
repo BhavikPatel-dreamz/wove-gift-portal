@@ -13,7 +13,6 @@ export async function POST(req) {
       );
     }
 
-
     const session = await prisma.shopifySession.findUnique({
       where: { shop: shopDomain },
     });
@@ -61,70 +60,117 @@ export async function POST(req) {
     }
 
     const redemptions = [];
+    let skippedCount = 0;
 
     for (const txn of giftCardTxns) {
       const numericGiftCardId = txn.receipt?.gift_card_id;
-      //const last4 = txn.receipt?.gift_card_last_characters;
       const amountRedeemed = Number(parseFloat(txn.amount));
-
+      const transactionId = txn.id.toString();
 
       if (!numericGiftCardId) continue;
 
       try {
+        // ✅ CHECK IF THIS TRANSACTION WAS ALREADY PROCESSED (COMPOSITE UNIQUE KEY)
+        const existingRedemption = await prisma.voucherRedemption.findFirst({
+          where: {
+            transactionId: transactionId,
+            storeUrl: shopDomain,
+          },
+        });
+
+        if (existingRedemption) {
+          console.log(`⏭️ Transaction ${transactionId} already processed, skipping...`);
+          skippedCount++;
+          continue; // Skip this transaction - PREVENTS DUPLICATES
+        }
+
         const giftCardGid = `gid://shopify/GiftCard/${numericGiftCardId}`;
 
         const giftCard = await prisma.giftCard.findUnique({
           where: { shopifyId: giftCardGid },
         });
-        if (!giftCard) continue;
+        
+        if (!giftCard) {
+          console.log(`⚠️ Gift card ${giftCardGid} not found in database`);
+          continue;
+        }
 
         const voucherCode = await prisma.voucherCode.findUnique({
           where: { shopifyGiftCardId: giftCard.id },
         });
-        if (!voucherCode) continue;
+        
+        if (!voucherCode) {
+          console.log(`⚠️ Voucher code not found for gift card ${giftCard.id}`);
+          continue;
+        }
 
         const currentBalance = voucherCode.remainingValue;
         const actualAmountRedeemed = Math.min(amountRedeemed, currentBalance);
         const balanceAfter = Math.max(0, currentBalance - actualAmountRedeemed);
         const isFullyRedeemed = balanceAfter === 0;
 
-        const redemption = await prisma.voucherRedemption.create({
-          data: {
-            voucherCodeId: voucherCode.id,
-            amountRedeemed: actualAmountRedeemed,
-            balanceAfter,
-            redeemedAt: new Date(txn.processed_at),
-            transactionId: txn.id.toString(),
-            storeUrl: shopDomain,
-          },
-        });
+        // ✅ USE TRANSACTION TO ENSURE ATOMICITY
+        const result = await prisma.$transaction(async (tx) => {
+          // Double-check inside transaction to prevent race conditions
+          const doubleCheck = await tx.voucherRedemption.findFirst({
+            where: {
+              transactionId: transactionId,
+              storeUrl: shopDomain,
+            },
+          });
 
-        await prisma.voucherCode.update({
-          where: { id: voucherCode.id },
-          data: {
-            remainingValue: balanceAfter,
-            isRedeemed: isFullyRedeemed,
-            redeemedAt: isFullyRedeemed
-              ? new Date(txn.processed_at)
-              : voucherCode.redeemedAt,
-            shopifySyncedAt: new Date(),
-          },
-        });
+          if (doubleCheck) {
+            console.log(`⏭️ Transaction ${transactionId} caught in race condition check`);
+            return null;
+          }
 
-        await prisma.order.update({
-          where: { id: voucherCode.orderId },
-          data: {
-            redemptionStatus: isFullyRedeemed
-              ? "Redeemed"
-              : "PartiallyRedeemed",
-            redeemedAt: isFullyRedeemed
-              ? new Date(txn.processed_at)
-              : voucherCode.redeemedAt,
-          },
-        });
+          if (actualAmountRedeemed <= 0) {
+            console.log(
+              `⏭️ Transaction ${transactionId} has zero amount, skipping...`
+            );
+            return null;
+          }
 
-        try {
-          const orderForSettlement = await prisma.order.findUnique({
+          // CREATE REDEMPTION RECORD
+          const redemption = await tx.voucherRedemption.create({
+            data: {
+              voucherCodeId: voucherCode.id,
+              amountRedeemed: actualAmountRedeemed,
+              balanceAfter,
+              redeemedAt: new Date(txn.processed_at),
+              transactionId: transactionId,
+              storeUrl: shopDomain,
+            },
+          });
+
+          // UPDATE VOUCHER CODE
+          await tx.voucherCode.update({
+            where: { id: voucherCode.id },
+            data: {
+              remainingValue: balanceAfter,
+              isRedeemed: isFullyRedeemed,
+              redeemedAt: isFullyRedeemed
+                ? new Date(txn.processed_at)
+                : voucherCode.redeemedAt,
+              shopifySyncedAt: new Date(),
+            },
+          });
+
+          // UPDATE ORDER STATUS
+          await tx.order.update({
+            where: { id: voucherCode.orderId },
+            data: {
+              redemptionStatus: isFullyRedeemed
+                ? "Redeemed"
+                : "PartiallyRedeemed",
+              redeemedAt: isFullyRedeemed
+                ? new Date(txn.processed_at)
+                : voucherCode.redeemedAt,
+            },
+          });
+
+          // UPDATE SETTLEMENT
+          const orderForSettlement = await tx.order.findUnique({
             where: { id: voucherCode.orderId },
             select: {
               brandId: true,
@@ -137,7 +183,7 @@ export async function POST(req) {
               orderForSettlement.createdAt.getMonth() + 1
             ).padStart(2, "0")}`;
 
-            const settlement = await prisma.settlements.findFirst({
+            const settlement = await tx.settlements.findFirst({
               where: {
                 brandId: orderForSettlement.brandId,
                 settlementPeriod,
@@ -145,7 +191,7 @@ export async function POST(req) {
             });
 
             if (settlement) {
-              await prisma.settlements.update({
+              await tx.settlements.update({
                 where: { id: settlement.id },
                 data: {
                   redeemedAmount: { increment: actualAmountRedeemed },
@@ -157,11 +203,17 @@ export async function POST(req) {
               });
             }
           }
-        } catch (settlementError) {
-          console.error("⚠️ Settlement update failed:", settlementError);
+
+          return redemption;
+        });
+
+        if (result) {
+          redemptions.push(result);
+          console.log(`✅ Successfully processed transaction ${transactionId}`);
+        } else {
+          skippedCount++;
         }
 
-        redemptions.push(redemption);
       } catch (dbError) {
         console.error(`❌ Error processing gift card ${numericGiftCardId}:`, dbError);
       }
@@ -169,12 +221,16 @@ export async function POST(req) {
 
     return NextResponse.json({
       success: true,
-      message: "Gift card redemptions processed successfully",
+      message: redemptions.length > 0 
+        ? `Processed ${redemptions.length} new redemption(s), skipped ${skippedCount} duplicate(s)`
+        : `All ${skippedCount} transaction(s) already processed (duplicates prevented)`,
       redemptionsCount: redemptions.length,
+      skippedCount: skippedCount,
       data: redemptions.map((r) => ({
         id: r.id,
         amountRedeemed: r.amountRedeemed,
         balanceAfter: r.balanceAfter,
+        transactionId: r.transactionId,
       })),
     });
   } catch (error) {
