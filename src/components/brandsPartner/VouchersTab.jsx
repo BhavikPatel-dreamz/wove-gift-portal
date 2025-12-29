@@ -289,7 +289,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 </h4>
                 {formData.denominations.map((denom) => {
                   // Check if denomination is expired
-                  const isExpired = denom.expiresAt && new Date(denom.expiresAt) < new Date();
+                  const isExpired = denom.isExpiry
 
                   return (
                     <div
@@ -314,12 +314,6 @@ const VouchersTab = ({ formData, updateFormData }) => {
                               />
                             </div>
                             <div className="flex items-center gap-2">
-                              {/* Expired Badge */}
-                              {isExpired && (
-                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                                  ⚠️ Expired
-                                </span>
-                              )}
                               {/* Active/Inactive Button */}
                               <button
                                 onClick={() => toggleDenominationActive(denom.id)}
@@ -366,11 +360,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
                                     }`}
                                   min={new Date().toISOString().split("T")[0]}
                                 />
-                                {isExpired && (
-                                  <p className="text-xs text-red-600 mt-1">
-                                    This date has passed
-                                  </p>
-                                )}
+                             
                               </div>
                             )}
                           </div>
