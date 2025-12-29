@@ -6,13 +6,13 @@ import Header from '../../../components/client/home/Header';
 import Footer from "../../../components/client/home/Footer"
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { resetFlow } from '../../../redux/giftFlowSlice';
+import { setCurrentStep } from '../../../redux/giftFlowSlice';
 
 const page = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    dispatch(resetFlow());
+    dispatch(setCurrentStep(1));
   }, []);
 
   return (

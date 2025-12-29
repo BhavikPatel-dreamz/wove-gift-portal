@@ -5,6 +5,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "year";
+    const brandId = searchParams.get("brandId");
 
     // Calculate date range
     const dateRange = getDateRange(period);
@@ -12,7 +13,7 @@ export async function GET(request) {
     // Fetch analytics data in parallel
     const [brandRedemptions, settlements] = await Promise.all([
       getBrandRedemptionMetrics(dateRange),
-      getSettlementData(dateRange),
+      getSettlementData(brandId),
     ]);
 
     return NextResponse.json({
@@ -168,13 +169,11 @@ async function getBrandRedemptionMetrics(dateRange) {
         return sum;
       }, 0);
 
-      
       // Calculate redemption rate
       const redemptionRate =
         totalVouchers > 0
           ? Math.round((totalUsedValue / totalIssuedValue) * 100)
           : 0;
-          
 
       return {
         name: brand.brandName,
@@ -183,18 +182,6 @@ async function getBrandRedemptionMetrics(dateRange) {
         redeemed: redeemedVouchers,
         total: totalVouchers,
         brandId: brand.id,
-        debug: {
-          voucherCodesCount: voucherCodesWithRedemptions.length,
-          withRedemptions: voucherCodesWithRedemptions.filter(
-            (vc) => vc._count.redemptions > 0
-          ).length,
-          markedRedeemed: voucherCodesWithRedemptions.filter(
-            (vc) => vc.isRedeemed
-          ).length,
-          valueChanged: voucherCodesWithRedemptions.filter(
-            (vc) => vc.remainingValue < vc.originalValue
-          ).length,
-        },
       };
     })
   );
@@ -217,28 +204,81 @@ async function getBrandRedemptionMetrics(dateRange) {
     "bg-orange-50", // Position 8
   ];
 
-  // Return without debug info for production
-  return filteredBrands.map((brand, index) => {
-    const {  ...brandData } = brand;
-    return {
-      ...brandData,
-      bgColor: bgColors[index],
-      // Uncomment below line to see debug info in response
-      // debug,
-    };
-  });
+  return filteredBrands.map((brand, index) => ({
+    ...brand,
+    bgColor: bgColors[index],
+  }));
 }
 
-// Get settlement data - formatted for frontend
-async function getSettlementData(dateRange) {
-  const dateFilter = buildDateFilter(dateRange);
+// Get settlement data for LAST MONTH ONLY - formatted for frontend
+async function getSettlementData(brandId) {
+  // Calculate last month's date range
+  const now = new Date();
+  
+  // Get last month (month - 1)
+  const lastMonth = now.getMonth() - 1;
+  const yearForLastMonth = lastMonth < 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const adjustedLastMonth = lastMonth < 0 ? 11 : lastMonth;
+  
+  // First day of last month at 00:00:00
+  const lastMonthStart = new Date(yearForLastMonth, adjustedLastMonth, 1, 0, 0, 0, 0);
+  
+  // Last day of last month at 23:59:59.999
+  const lastMonthEnd = new Date(yearForLastMonth, adjustedLastMonth + 1, 0, 23, 59, 59, 999);
+
+  console.log('Last Month Date Range:', {
+    start: lastMonthStart.toISOString(),
+    end: lastMonthEnd.toISOString(),
+    month: lastMonthStart.toLocaleString('default', { month: 'long', year: 'numeric' })
+  });
+
+  // Build where clause based on Settlement schema
+  // Schema fields: periodStart, periodEnd, status
+  const whereClause = {
+    // Check if settlement period overlaps with last month
+    OR: [
+      // Settlement period starts within last month
+      {
+        periodStart: {
+          gte: lastMonthStart,
+          lte: lastMonthEnd,
+        },
+      },
+      // Settlement period ends within last month
+      {
+        periodEnd: {
+          gte: lastMonthStart,
+          lte: lastMonthEnd,
+        },
+      },
+      // Settlement period contains last month
+      {
+        AND: [
+          {
+            periodStart: {
+              lte: lastMonthStart,
+            },
+          },
+          {
+            periodEnd: {
+              gte: lastMonthEnd,
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  // Add brand filter if provided
+  if (brandId) {
+    whereClause.brandId = brandId;
+  }
+
+  console.log('Settlement WHERE clause:', JSON.stringify(whereClause, null, 2));
 
   // Get pending settlements with brand details
   const pendingSettlements = await prisma.settlements.findMany({
-    where: {
-      status: "Pending",
-      ...dateFilter,
-    },
+    where: whereClause,
     include: {
       brand: {
         select: {
@@ -252,14 +292,19 @@ async function getSettlementData(dateRange) {
     orderBy: {
       netPayable: "desc",
     },
-    take: 6, // Top 6 pending settlements
   });
+
+  console.log(`Found ${pendingSettlements.length} settlements for last month`);
 
   // Format settlements to match frontend expectations
   const settlements = pendingSettlements.map((settlement) => ({
     brand: settlement.brand.brandName,
     amount: Math.round(settlement.netPayable),
     status: settlement.status,
+    currency: settlement.brand.currency || "USD",
+    periodStart: settlement.periodStart,
+    periodEnd: settlement.periodEnd,
+    settlementPeriod: settlement.settlementPeriod,
   }));
 
   return settlements;
