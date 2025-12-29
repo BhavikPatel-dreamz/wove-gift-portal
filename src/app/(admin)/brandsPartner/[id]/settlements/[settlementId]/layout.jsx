@@ -117,10 +117,12 @@ const SettlementLayout = ({ children }) => {
                         settlement={settlement} 
                         getCurrencySymbol={getCurrencySymbol} 
                     />
-                     <div className="bg-white rounded-lg p-6">
+                     <div className="bg-white rounded-lg">
                     <SettlementTabs />
+                     <div className="bg-white rounded-lg p-6">
                     {/* Tab Content - Changes based on route */}
                     {children}
+                    </div>
                     </div>
 
                     {/* Action Buttons - Persistent across tabs */}
@@ -128,13 +130,14 @@ const SettlementLayout = ({ children }) => {
                         <button
                             type="button"
                             onClick={() => router.back()}
-                            className="rounded-md border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                            className="rounded-md border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
                         >
                             Close
                         </button>
                         <button
                             type="button"
-                            className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+                            onClick={() => downloadReport(settlementId)}
+                            className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 cursor-pointer"
                         >
                             Download Report
                         </button>

@@ -86,10 +86,10 @@ const SettlementBanking = ({ banking }) => {
           <div>
             <p className="text-sm font-medium text-[#64748B] mb-1">Account Verification</p>
             <p
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold
+              className={`inline-flex items-center gap-1.5 rounded-[9px] px-3 py-1 text-xs font-semibold
     ${banking.accountVerification
                   ? 'bg-green-50 text-green-600'
-                  : 'bg-slate-100 text-slate-500'
+                  : 'bg-[#F43F5E1A] text-[#F43F5E] border border-2  border-[#F43F5E33]'
                 }`}
             >
               {banking.accountVerification ? (
