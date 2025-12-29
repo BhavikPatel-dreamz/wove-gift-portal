@@ -1,6 +1,6 @@
 "use server";
 
-import prisma from '../db';
+import { prisma } from '../db';
 
 export async function getBrandsForClient({
   searchTerm = "",

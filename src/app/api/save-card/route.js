@@ -1,59 +1,44 @@
 import fs from 'fs';
 import path from 'path';
-import { NextResponse } from 'next/server';
 
-export async function POST(req) {
+export default async function handler(req, res) {
   try {
-    const body = await req.json();
     // Check if file exists in request
-    if (!body || !body.file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    if (!req.body || !req.body.file) {
+      return res.status(400).json({ error: 'No file provided' });
     }
 
     // Generate a unique filename if none provided
-    const fileName = body.file.name || `card-${Date.now()}.png`;
+    const fileName = req.body.file.name || `card-${Date.now()}.png`;
     const filePath = path.join(process.cwd(), 'public', 'cards', fileName);
-
+    
     // Ensure cards directory exists
-    const cardsDir = path.join(process.cwd(), 'public', 'cards');
-    if (!fs.existsSync(cardsDir)) {
-      fs.mkdirSync(cardsDir, { recursive: true });
+    if (!fs.existsSync(path.join(process.cwd(), 'public', 'cards'))) {
+      fs.mkdirSync(path.join(process.cwd(), 'public', 'cards'));
     }
-
+    
     // Convert base64 to buffer if needed
     let fileData;
-    if (typeof body.file === 'string') {
+    if (typeof req.body.file === 'string') {
       // Handle base64 string
-      fileData = Buffer.from(body.file.split(',')[1], 'base64');
+      fileData = Buffer.from(req.body.file.split(',')[1], 'base64');
     } else {
-      // Handle file object (assuming it's something with arrayBuffer)
-      // This part might need adjustment depending on what client sends.
-      // If it's a file from FormData, the whole approach needs to change.
-      // For now, assuming it's a structure that can be awaited for an arrayBuffer.
-      // But based on the original code, it's more likely a base64 string or a file object with a name.
-      // The original `req.body.file.arrayBuffer()` is not standard for a JSON body.
-      // Let's stick to the base64 assumption which seems more robust here.
-      // If the client sends a file object, it should be as part of FormData, not a JSON body.
-      // The original code was flawed in its assumptions.
-      // The check `typeof req.body.file === 'string'` is the most likely path.
-      return NextResponse.json({ error: 'File data must be a base64 string.' }, { status: 400 });
+      // Handle file object
+      fileData = Buffer.from(await req.body.file.arrayBuffer());
     }
-
+    
     // Save file
     fs.writeFileSync(filePath, fileData);
-
-    return NextResponse.json({
+    
+    res.status(200).json({ 
       path: `/cards/${fileName}`,
-      success: true,
+      success: true 
     });
   } catch (error) {
     console.error('Error saving card:', error);
-    return NextResponse.json(
-      {
-        error: 'Failed to save card',
-        details: error.message,
-      },
-      { status: 500 }
-    );
+    res.status(500).json({ 
+      error: 'Failed to save card',
+      details: error.message 
+    });
   }
 }

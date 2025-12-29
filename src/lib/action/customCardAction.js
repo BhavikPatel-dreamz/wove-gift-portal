@@ -1,6 +1,6 @@
 "use server";
 
-import prisma from "../db";
+import { prisma } from "../db";
 import { z } from "zod";
 
 const CustomCardSchema = z.object({
@@ -26,6 +26,14 @@ export async function saveCustomCard(data) {
   }
 
   try {
+    //const { name, description, image, emoji, category } = validationResult.data;
+    // const cardData = {
+    //   name,
+    //   description,
+    //   image,
+    //   emoji,
+    //   category,
+    // };
     const newCustomCard = await prisma.customCard.create({
       data: {
         ...validationResult.data,

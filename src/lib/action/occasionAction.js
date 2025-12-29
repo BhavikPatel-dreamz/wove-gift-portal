@@ -1,6 +1,6 @@
 "use server"
 
-import prisma from '../db'
+import { prisma } from '../db'
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';

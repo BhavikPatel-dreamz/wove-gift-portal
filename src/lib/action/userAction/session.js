@@ -2,7 +2,7 @@
 "use server"
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
-import prisma from '../../db'
+import { prisma } from '../../db'
 
 const sessionOptions = {
   password: process.env.SESSION_SECRET,
