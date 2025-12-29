@@ -2746,7 +2746,7 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       include: {
         brand: {
           include: {
-            brandTerms: true, // Include brand terms for commission
+            brandTerms: true,
           },
         },
       },
@@ -2784,8 +2784,16 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
     if (search) {
       whereClause.OR = [
         { id: { contains: search, mode: "insensitive" } },
-        { customerEmail: { contains: search, mode: "insensitive" } },
-        { customerName: { contains: search, mode: "insensitive" } },
+        {
+          receiverDetail: {
+            name: { contains: search, mode: "insensitive" },
+          },
+        },
+        {
+          receiverDetail: {
+            email: { contains: search, mode: "insensitive" },
+          },
+        },
         { senderEmail: { contains: search, mode: "insensitive" } },
         { senderName: { contains: search, mode: "insensitive" } },
       ];
@@ -2799,7 +2807,7 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         take: limitNum,
         orderBy: { [sortBy]: sortOrder },
         include: {
-          receiverDetail: true, // Include receiver details
+          receiverDetail: true,
           voucherCodes: {
             include: {
               redemptions: {
@@ -2815,11 +2823,116 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       prisma.order.count({ where: whereClause }),
     ]);
 
-    // Process orders into voucher data
+    // Fetch ALL orders for statistics (without pagination)
+    const allOrders = await prisma.order.findMany({
+      where: whereClause,
+      include: {
+        voucherCodes: {
+          include: {
+            redemptions: {
+              select: {
+                id: true,
+                amountRedeemed: true,
+                redeemedAt: true,
+                transactionId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Calculate voucher statistics
+    let totalIssued = 0;
+    let totalRedeemed = 0;
+    let totalUnredeemed = 0;
+    const denominationMap = new Map();
+
+    allOrders.forEach((order) => {
+      order.voucherCodes.forEach((voucher) => {
+        totalIssued++;
+        const isFullyRedeemed = voucher.isRedeemed || voucher.remainingValue === 0;
+        
+        if (isFullyRedeemed) {
+          totalRedeemed++;
+        } else {
+          totalUnredeemed++;
+        }
+
+        // Track by denomination (use originalValue as the denomination)
+        const denomination = voucher.originalValue || 0;
+        if (!denominationMap.has(denomination)) {
+          denominationMap.set(denomination, {
+            value: denomination,
+            issued: 0,
+            redeemed: 0,
+            unredeemed: 0,
+            expiresAt: voucher.expiresAt,
+            voucherCodes: [], // Store individual voucher codes
+          });
+        }
+
+        const denom = denominationMap.get(denomination);
+        denom.issued++;
+        if (isFullyRedeemed) {
+          denom.redeemed++;
+        } else {
+          denom.unredeemed++;
+        }
+
+        // Add voucher code details
+        denom.voucherCodes.push({
+          id: voucher.id,
+          code: voucher.code,
+          originalValue: voucher.originalValue,
+          remainingValue: voucher.remainingValue,
+          isRedeemed: voucher.isRedeemed,
+          redeemedAt: voucher.redeemedAt,
+          expiresAt: voucher.expiresAt,
+          orderId: voucher.orderId,
+          redemptions: voucher.redemptions,
+          redemptionCount: voucher.redemptions?.length || 0,
+          totalRedeemedAmount: voucher.redemptions?.reduce(
+            (sum, r) => sum + (r.amountRedeemed || 0),
+            0
+          ) || 0,
+        });
+      });
+    });
+
+    // Calculate redemption rate
+    const redemptionRate = totalIssued > 0 
+      ? ((totalRedeemed / totalIssued) * 100).toFixed(2)
+      : "0.00";
+
+    // Convert denomination map to array and calculate rates
+    const denominationBreakdown = Array.from(denominationMap.values())
+      .map((denom) => ({
+        value: denom.value,
+        issued: denom.issued,
+        redeemed: denom.redeemed,
+        unredeemed: denom.unredeemed,
+        rate: denom.issued > 0 
+          ? ((denom.redeemed / denom.issued) * 100).toFixed(2)
+          : "0.00",
+        expires: denom.expiresAt,
+        // Additional calculated fields
+        totalIssuedValue: denom.value * denom.issued,
+        totalRedeemedValue: denom.value * denom.redeemed,
+        totalUnredeemedValue: denom.value * denom.unredeemed,
+        percentageOfTotal: totalIssued > 0 
+          ? ((denom.issued / totalIssued) * 100).toFixed(1)
+          : "0.0",
+        // Individual voucher codes for this denomination
+        voucherCodes: denom.voucherCodes,
+      }))
+      .sort((a, b) => b.value - a.value); // Sort by value descending
+
+    // Process orders into voucher data (existing logic)
     const voucherData = orders.map((order) => {
       const totalVouchers = order.voucherCodes.length;
       const redeemedVouchers = order.voucherCodes.filter(
-        (v) => v.redemptions && v.redemptions.length > 0
+        (v) => v.isRedeemed || v.remainingValue === 0
       ).length;
       // const pendingVouchers = totalVouchers - redeemedVouchers;
 
@@ -2838,23 +2951,18 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
           ? ((redeemedVouchers / totalVouchers) * 100).toFixed(1)
           : "0.0";
 
-      // ==================== FIXED COMMISSION & VAT CALCULATION ====================
-      // Determine base amount based on settlement trigger
       const baseAmount =
         brandTerms?.settlementTrigger === "onRedemption"
           ? redeemedAmount
           : totalAmount;
 
-      // Calculate commission based on brand terms
       let commissionAmount = 0;
       if (brandTerms) {
         if (brandTerms.commissionType === "Percentage") {
-          // Commission = Base Amount × (Commission % / 100)
           commissionAmount = Math.round(
             (baseAmount * (brandTerms.commissionValue || 0)) / 100
           );
         } else if (brandTerms.commissionType === "Fixed") {
-          // For fixed commission, multiply by number of transactions
           const transactionCount =
             brandTerms.settlementTrigger === "onRedemption"
               ? redeemedVouchers
@@ -2865,17 +2973,10 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         }
       }
 
-      // Calculate VAT on commission (NOT on total amount)
-      // VAT Amount = Commission × (VAT % / 100)
       const vatRate = brandTerms?.vatRate || 0;
       const vatAmount = Math.round((commissionAmount * vatRate) / 100);
-
-      // Calculate net payable
-      // Net Payable = Base Amount - Commission + VAT
-      // (VAT is added because it's charged on top of commission)
       const netPayable = Math.round(baseAmount - commissionAmount + vatAmount);
 
-      // Get last redemption date
       let lastRedemptionDate = null;
       order.voucherCodes.forEach((v) => {
         if (v.redemptions && v.redemptions.length > 0) {
@@ -2888,7 +2989,6 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         }
       });
 
-      // Determine status
       let status = "Pending";
       if (redeemedVouchers === totalVouchers && totalVouchers > 0) {
         status = "Paid";
@@ -2896,10 +2996,9 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         status = "Partial";
       }
 
-      // Check if disputed
       const isExpired = order.voucherCodes.some(
         (v) =>
-          v.expiresAt && new Date(v.expiresAt) < new Date() && !v.isRedeemed
+          v.expiresAt && new Date(v.expiresAt) < new Date() && !v.isRedeemed && v.remainingValue > 0
       );
 
       if (isExpired && redeemedVouchers === 0) {
@@ -2909,10 +3008,8 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       return {
         id: order.id,
         orderNumber: order.orderNumber || order.id,
-        // Sender details
         senderName: order.senderName || "N/A",
         senderEmail: order.senderEmail || "N/A",
-        // Receiver details
         receiverName: order.receiverDetail?.name || "N/A",
         receiverEmail: order.receiverDetail?.email || "N/A",
         receiverPhone: order.receiverDetail?.phone || "N/A",
@@ -2932,7 +3029,7 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         redeemedAmount,
         redeemedVouchers,
         redemptionRate,
-        baseAmount, // Add base amount for reference
+        baseAmount,
         commissionAmount,
         commissionType: brandTerms?.commissionType || "N/A",
         commissionValue: brandTerms?.commissionValue || 0,
@@ -2993,6 +3090,14 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         hasPrevPage: pageNum > 1,
       },
       summary,
+      // Voucher statistics with individual voucher codes
+      voucherStats: {
+        totalIssued,
+        totalRedeemed,
+        totalUnredeemed,
+        redemptionRate,
+        denominationBreakdown,
+      },
       periodInfo: {
         start: periodStart,
         end: periodEnd,

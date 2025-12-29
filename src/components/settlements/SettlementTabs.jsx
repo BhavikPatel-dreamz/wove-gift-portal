@@ -31,22 +31,23 @@ const SettlementTabs = () => {
     return (
         <>
             {/* Tab Navigation */}
-            <div className="border-b border-zinc-200">
-                <nav aria-label="Tabs" className="-mb-px flex space-x-6">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => handleTabChange(tab.path)}
-                            className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-semibold transition-colors ${pathname === tab.path
-                                ? "border-[#197fe6] text-[#197fe6]"
-                                : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
-                                }`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </nav>
-            </div>
+         <div className="border-b border-[#E2E8F0] pt-4 sm:pt-6 pl-3 sm:pl-6">
+       <nav aria-label="Tabs" className="-mb-px flex space-x-4 sm:space-x-6 overflow-x-auto scrollbar-hide">
+        {tabs.map((tab) => (
+            <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.path)}
+                className={`whitespace-nowrap border-b-2 px-1 py-3 text-xs sm:text-sm font-medium transition-colors flex-shrink-0 ${
+                    pathname === tab.path
+                        ? "border-[#1F59EE] text-[#1F59EE] font-semibold"
+                        : "border-transparent text-[#9FA8C3] hover:border-[#9FA8C3] hover:text-[#9FA8C3]"
+                }`}
+            >
+                {tab.label}
+            </button>
+        ))}
+    </nav>
+</div>
         </>
     );
 };
