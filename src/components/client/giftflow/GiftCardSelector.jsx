@@ -8,14 +8,17 @@ const GiftCardSelector = () => {
   const { selectedBrand, selectedAmount } = useSelector((state) => state.giftFlowReducer);
 
   const voucherData = selectedBrand?.vouchers[0];
-  const isFixedDenomination = voucherData?.denominationType === "fixed";
-  const presetAmounts = isFixedDenomination ? voucherData?.denominations || [] : [];
+  const denominationType = voucherData?.denominationType;
+  const presetAmounts = denominationType !== 'amount' ? voucherData?.denominations || [] : [];
   const minAmount = voucherData?.minAmount || 50;
   const maxAmount = voucherData?.maxAmount || 10000;
   const currency = voucherData?.denominationCurrency || "ZAR";
 
+  console.log("voucherData",voucherData);
+  
+
   const [customAmount, setCustomAmount] = useState(
-    selectedAmount && !isFixedDenomination ? selectedAmount.value : minAmount
+    selectedAmount && denominationType !== 'fixed' ? selectedAmount.value : minAmount
   );
   const [localSelectedAmount, setLocalSelectedAmount] = useState(
     selectedAmount || null
@@ -142,7 +145,7 @@ const GiftCardSelector = () => {
         </div>
 
         {/* Amount Cards */}
-        {isFixedDenomination && presetAmounts.length > 0 && (
+        {denominationType !== 'amount' && presetAmounts.length > 0 && (
           <div className="flex justify-center gap-4 flex-wrap">
             {presetAmounts.map((amount) => (
               <button
@@ -200,12 +203,12 @@ const GiftCardSelector = () => {
         )}
 
         {/* Custom Amount Input */}
-        {!isFixedDenomination && (
-          <div className="max-w-4xl mx-auto">
+        {denominationType !== 'fixed' && (
+          <div className="max-w-4xl mx-auto mt-8">
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 {/* Left side - Text */}
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
                     Set Custom Amount
                   </h3>

@@ -117,7 +117,7 @@ const BrandPartnerSchema = z
     internalNotes: z.string().optional().nullable(),
 
     // Voucher Configuration
-    denominationType: z.enum(["fixed", "amount"]).default("fixed"),
+    denominationType: z.enum(["fixed", "amount", "both"]).default("both"),
     denominations: z.array(DenominationSchema).optional().default([]),
     denominationValue: z.any().optional().nullable(),
     denominationCurrency: z.string().default("USD"),
@@ -648,6 +648,8 @@ export async function updateBrandPartner(brandId, formData) {
           termsConditionsURL: validatedData.termsConditionsURL,
           productSku: validatedData.productSku,
         };
+        console.log("voucherData",voucherData);
+        
 
         if (existingBrand.vouchers[0]) {
           const voucherId = existingBrand.vouchers[0].id;

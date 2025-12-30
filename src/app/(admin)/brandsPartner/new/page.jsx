@@ -56,7 +56,7 @@ const AddBrandPartner = () => {
 
     // Vouchers - Fixed structure
     denominations: [],
-    denominationType: 'fixed',
+    denominationType: 'both',
     maxAmount: 0,
     minAmount: 0,
     isExpiry: false,
