@@ -7,10 +7,12 @@ import { ArrowLeft, Edit3, Plus, MoreVertical, Trash2, Copy, Loader2, Search, Fi
 import CreateNewCard from "./CreateNewCard";
 import { getOccasionCategories, updateOccasionCategory, deleteOccasionCategory, getOccasionCategoryById } from "../../lib/action/occasionAction";
 
-const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCardCountChange }) => {
+const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen,setModalOpen, onCardCountChange }) => {
+  console.log("initialOccasion",modalOpen);
+  
   const [occasion, setOccasion] = useState(initialOccasion);
   const [cards, setCards] = useState([]);
-  const [isCreatingCard, setIsCreatingCard] = useState(false);
+  const [isCreatingCard, setIsCreatingCard] = useState(modalOpen ? modalOpen :false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -209,18 +211,18 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
   const inactiveCards = cards.filter(card => !card.active).length;
 
   if (isCreatingCard) {
-    return <CreateNewCard occasion={occasion} onBack={handleBackFromCreateEdit} onSave={handleSaveNewCard} />;
+    return <CreateNewCard occasion={occasion} onBack={handleBackFromCreateEdit} onSave={handleSaveNewCard} setModalOpen={setModalOpen}/>;
   }
 
   if (editingCardId && cardToEdit) {
-    return <CreateNewCard occasion={occasion} onBack={handleBackFromCreateEdit} onSave={handleUpdateCard} initialCardData={cardToEdit} />;
+    return <CreateNewCard occasion={occasion} onBack={handleBackFromCreateEdit} onSave={handleUpdateCard} initialCardData={cardToEdit} setModalOpen={setModalOpen} />;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Enhanced Header */}
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200/50 p-4 mb-4">
+        <div className="bg-white rounded-lg border border-[#E2E8F0] p-4 mb-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex items-center space-x-3">
               <Button
@@ -242,7 +244,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center space-x-2 mb-1">
-                    <h1 className="text-xl font-bold text-gray-900 truncate">{occasion.name}</h1>
+                    <h1 className="text-[22px] font-semibold text-[#1A1A1A] truncate">{occasion.name}</h1>
                     <Badge
                       variant={occasion.active ? 'success' : 'default'}
                       className={occasion.active ? 'bg-green-50 text-green-700 border-green-200 text-xs px-2 py-1' : 'bg-gray-50 text-gray-600 border-gray-200 text-xs px-2 py-1'}
@@ -250,7 +252,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
                       {occasion.active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
-                  <p className="text-gray-600 text-sm leading-relaxed">{occasion.description}</p>
+                  <p className="text-[#64748B] text-sm leading-relaxed font-medium">{occasion.description}</p>
 
                   {/* Stats */}
 
@@ -272,19 +274,23 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
         </div>
 
         {/* Enhanced Controls */}
-        <div className="bg-white rounded-lg border border-gray-200/50 shadow-sm mb-4 text-black">
+        <div className="bg-white rounded-[10px] border border-[#E2E8F0] shadow-[0_0_60px_0_rgba(0,0,0,0.06)] mb-4 text-black">
           <div className="p-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="flex flex-col sm:flex-row gap-3 flex-1">
                 {/* Search */}
                 <div className="relative flex-1 max-w-sm">
-                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5" />
+                  <div className="absolute left-2 top-3.5 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M9.5 16C7.68333 16 6.146 15.3707 4.888 14.112C3.63 12.8533 3.00067 11.316 3 9.5C2.99933 7.684 3.62867 6.14667 4.888 4.888C6.14733 3.62933 7.68467 3 9.5 3C11.3153 3 12.853 3.62933 14.113 4.888C15.373 6.14667 16.002 7.684 16 9.5C16 10.2333 15.8833 10.925 15.65 11.575C15.4167 12.225 15.1 12.8 14.7 13.3L20.3 18.9C20.4833 19.0833 20.575 19.3167 20.575 19.6C20.575 19.8833 20.4833 20.1167 20.3 20.3C20.1167 20.4833 19.8833 20.575 19.6 20.575C19.3167 20.575 19.0833 20.4833 18.9 20.3L13.3 14.7C12.8 15.1 12.225 15.4167 11.575 15.65C10.925 15.8833 10.2333 16 9.5 16ZM9.5 14C10.75 14 11.8127 13.5627 12.688 12.688C13.5633 11.8133 14.0007 10.7507 14 9.5C13.9993 8.24933 13.562 7.187 12.688 6.313C11.814 5.439 10.7513 5.00133 9.5 5C8.24867 4.99867 7.18633 5.43633 6.313 6.313C5.43967 7.18967 5.002 8.252 5 9.5C4.998 10.748 5.43567 11.8107 6.313 12.688C7.19033 13.5653 8.25267 14.0027 9.5 14Z" fill="#A6A6A6" />
+                    </svg>
+                  </div>
                   <input
                     type="text"
                     placeholder="Search card designs..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8 pr-3 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200 text-sm"
+                    className="pl-8 pr-3 py-2 w-full border border-gray-300 rounded-md text-[#4A4A4A] transition-colors duration-200 text-xs"
                   />
                 </div>
 
@@ -293,7 +299,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="appearance-none pl-8 pr-7 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white transition-colors duration-200 text-sm"
+                    className="appearance-none pl-8 pr-7 py-2 border border-gray-300 rounded-md text-[#4A4A4A] bg-white transition-colors duration-200 text-sm"
                   >
                     <option value="all">All Cards</option>
                     <option value="active">Active Only</option>
@@ -307,7 +313,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none pl-8 pr-7 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white transition-colors duration-200 text-sm"
+                    className="appearance-none pl-8 pr-7 py-2 border border-gray-300 rounded-md text-[#4A4A4A] bg-white transition-colors duration-200 text-sm"
                   >
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
@@ -318,36 +324,36 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
               </div>
 
               {/* Results count */}
-              <div className="text-xs text-gray-600">
-                Showing <span className="font-semibold text-gray-900">{filteredAndSortedCards.length}</span> of <span className="font-semibold text-gray-900">{cards.length}</span> cards
+              <div className="text-sm text-[#A6A6A6]">
+                Showing <span className="text-[#4A4A4A]">{filteredAndSortedCards.length}</span> of <span className="text-[#4A4A4A]">{cards.length}</span> cards
               </div>
             </div>
           </div>
         </div>
 
         {/* Card Designs Section */}
-        <div className="bg-white rounded-xl border border-gray-200/50 shadow-sm overflow-hidden">
+        <div className="bg-[#FAFBFC] rounded-t-[10px] border border-[#E5E7EB] overflow-hidden">
           <div className="px-4 py-3 border-b flex justify-between items-center border-gray-200 bg-gradient-to-r from-gray-50 to-white">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Card Designs</h2>
-              <p className="text-gray-600 text-sm">Manage your card design collection</p>
+              <h2 className="text-xl font-semibold text-[#1A1A1A]">Card Designs</h2>
+              <p className="text-[#64748B] text-sm font-medium">Manage your card design collection</p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1.5">
                 <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-xs text-gray-600">
+                <span className="text-sm text-gray-600">
                   <span className="font-semibold text-gray-900">{activeCards}</span> Active
                 </span>
               </div>
               <div className="flex items-center space-x-1.5">
                 <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                <span className="text-xs text-gray-600">
+                <span className="text-sm text-gray-600">
                   <span className="font-semibold text-gray-900">{inactiveCards}</span> Inactive
                 </span>
               </div>
               <div className="flex items-center space-x-1.5">
                 <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
-                <span className="text-xs text-gray-600">
+                <span className="text-sm text-gray-600">
                   <span className="font-semibold text-gray-900">{cards.length}</span> Total
                 </span>
               </div>
@@ -456,7 +462,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
                         <Badge
                           variant={card.active ? 'success' : 'default'}
                           className={`text-xs font-medium ${card.active
-                            ? 'bg-green-100 text-green-800 border-green-200'
+                            ? 'bg-[#DDFCE9] text-[#10B981] border-[#10B981]'
                             : 'bg-gray-100 text-gray-600 border-gray-200'
                             }`}
                         >
@@ -489,20 +495,22 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
 
                     {/* Card Info */}
                     <div className="p-4 border-t border-gray-100">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-gray-900 truncate flex-1 mr-2">{card.title}</h4>
-                        <Toggle
-                          checked={card.active}
-                          onChange={() => handleToggleCardActive(card.id, card.active)}
-                          small
-                          className="flex-shrink-0"
-                        />
+                      <div className="mb-4">
+                        <div className="flex items-start justify-between">
+                          <h4 className="font-semibold text-[18px] text-[#1A1A1A] truncate flex-1 mr-2">{card.title}</h4>
+                          <Toggle
+                            checked={card.active}
+                            onChange={() => handleToggleCardActive(card.id, card.active)}
+                            small
+                            className="flex-shrink-0"
+                          />
+                        </div>
+                        <p className="text-sm text-[#4A4A4A] truncate mb-3">{card.description}</p>
                       </div>
-                      <p className="text-sm text-gray-600 truncate mb-3">{card.description}</p>
-                      <p className="text-sm text-gray-600 truncate mb-3">Category: {card.category}</p>
 
+                      <p className="text-xs text-[#4A4A4A] font-normal truncate">Category: {card.category}</p>
                       {/* Metadata */}
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center justify-between text-xs text-[#4A4A4A]">
                         <span>
                           {new Date(card.createdAt).toLocaleDateString()}
                         </span>
