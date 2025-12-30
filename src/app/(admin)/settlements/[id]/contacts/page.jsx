@@ -14,6 +14,7 @@ const ContactPage = () => {
 
   const [settlement, setSettlement] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (settlementId) {

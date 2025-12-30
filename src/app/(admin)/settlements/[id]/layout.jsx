@@ -131,8 +131,8 @@ const SettlementLayout = ({ children }) => {
                         <SettlementTabs />
                         <div className="bg-white rounded-lg p-6">
                             {/* Pass settlement data to children */}
-                            {children}
-                            {/* {React.cloneElement(children, { settlement })} */}
+                            {/* {children} */}
+                            {React.cloneElement(children, { settlement })}
                         </div>
                     </div>
 
