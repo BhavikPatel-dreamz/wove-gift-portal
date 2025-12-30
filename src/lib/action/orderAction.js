@@ -1,6 +1,6 @@
 "use server";
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db";
 import { getSession } from "./userAction/session";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage";
 import * as brevo from "@getbrevo/brevo";
@@ -8,7 +8,7 @@ import * as brevo from "@getbrevo/brevo";
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
-const prisma = new PrismaClient({ log: ["warn", "error"] });
+
 
 // ==================== CUSTOM ERROR CLASSES ====================
 class ValidationError extends Error {

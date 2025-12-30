@@ -233,11 +233,13 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, onEditOccasion, onCard
               </Button>
 
               <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-xl border border-indigo-100">
-                    {occasion.emoji}
+                {occasion.emoji !== "Select Emoji" && (
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-xl border border-indigo-100">
+                      {occasion.emoji}
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center space-x-2 mb-1">
                     <h1 className="text-xl font-bold text-gray-900 truncate">{occasion.name}</h1>

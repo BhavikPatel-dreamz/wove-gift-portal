@@ -255,17 +255,17 @@ const OccasionsManager = () => {
               <p className="text-gray-600">Manage your occasions and card designs</p>
             </div>
           </div>
-          <Button
+          <button
             onClick={() => {
               setEditingOccasion(null);
               setIsModalOpen(true);
             }}
             disabled={actionLoading}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="bg-blue-600 text-white text-xs font-medium px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {actionLoading ? <Loader className="animate-spin" size={20} /> : <Plus size={20} />}
+            {actionLoading ? <Loader className="animate-spin" size={12} /> : <Plus size={12} />}
             Add New Occasion
-          </Button>
+          </button>
         </div>
 
         {/* Filters and Search */}

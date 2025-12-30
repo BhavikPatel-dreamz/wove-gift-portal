@@ -1,6 +1,6 @@
 "use server"
 
-import prisma from '../db'
+import { prisma } from '../db'
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -15,10 +15,7 @@ const OccasionSchema = z.object({
         .min(1, "Name is required")
         .max(100, "Name must be less than 100 characters")
         .trim(),
-    emoji: z.string()
-        .min(1, "Emoji is required")
-        .max(10, "Emoji must be less than 10 characters")
-        .default('🎉'),
+    emoji: z.string().optional(),
     description: z.string()
         .max(500, "Description must be less than 500 characters")
         .default('')

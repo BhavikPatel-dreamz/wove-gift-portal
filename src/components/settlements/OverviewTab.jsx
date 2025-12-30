@@ -32,11 +32,11 @@ const OverviewTab = ({ settlement }) => {
                         </div>
                         <div className="mb-4">
                             <p className="text-xs text-gray-500 mb-1">Period</p>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 border-b  border-[#D8D8D8] pb-2">
                                 {formatDate(settlement.periodStart)} - {formatDate(settlement.periodEnd)}
                             </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4 border-b border-[#D8D8D8] pb-2">
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Start Date</p>
                                 <p className="text-sm font-medium text-gray-900">

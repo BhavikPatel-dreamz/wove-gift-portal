@@ -1,4 +1,4 @@
-import prisma from "../../db";
+import { prisma } from "../../db";
 import { hashPassword, verifyPassword } from "./password";
 
 export async function createUser(data) {

@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient({ log: ['warn', 'error'] })
-
+import { prisma } from '../src/lib/db';
 async function main() {
   try {
   
@@ -16,7 +15,7 @@ async function main() {
     
     // Create admin user
 
-    const adminUser = await prisma.user.create({
+     await prisma.user.create({
       data: {
         firstName: "Admin",
         lastName: "User",
@@ -33,7 +32,7 @@ async function main() {
     
     // Optionally create a test customer user
 
-    const customerUser = await prisma.user.create({
+     await prisma.user.create({
       data: {
         firstName: "Test",
         lastName: "Customer",

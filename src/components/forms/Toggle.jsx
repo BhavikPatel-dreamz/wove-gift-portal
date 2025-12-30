@@ -8,8 +8,8 @@ const Toggle = ({ label, sublabel, checked, onChange, className = '' }) => {
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-          checked ? 'bg-indigo-600' : 'bg-gray-200'
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#1F59EE] focus:ring-offset-2 ${
+          checked ? 'bg-[#1F59EE]' : 'bg-gray-200'
         }`}
       >
         <span

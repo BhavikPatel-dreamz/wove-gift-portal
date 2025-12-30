@@ -1,7 +1,7 @@
 "use server";
 
 import fetch from "node-fetch";
-import prisma from "../lib/db.js";
+import { prisma } from "../lib/db.js";
 
 const SHOPIFY_API_VERSION = "2025-10";
 
