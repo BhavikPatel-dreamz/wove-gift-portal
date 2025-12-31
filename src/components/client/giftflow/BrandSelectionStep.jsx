@@ -41,6 +41,7 @@ const BrandSelectionStep = () => {
   } = useSelector((state) => state.giftFlowReducer);
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  const [initialLoad, setInitialLoad] = useState(false); // Track initial load
   
   // Cache to track fetched data
   const fetchCacheRef = useRef(new Map());
@@ -54,7 +55,6 @@ const BrandSelectionStep = () => {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
-
   // Fetch categories on mount (only once)
   useEffect(() => {
     const fetchCategories = async () => {
@@ -72,12 +72,7 @@ const BrandSelectionStep = () => {
   // Fetch brands when filters change
   useEffect(() => {
     const fetchBrands = async () => {
-      // Check if we already have premium brands data loaded
-      if (premiumBrands && premiumBrands.length > 0 && !debouncedSearchTerm && selectedCategory === "All Categories" && currentPage === 1) {
-        // Data already exists, no need to fetch
-        return;
-      }
-
+     
       // Create a unique cache key based on filters
       const cacheKey = `${debouncedSearchTerm}-${selectedCategory}-${currentPage}-${sortBy}`;
       
@@ -86,6 +81,7 @@ const BrandSelectionStep = () => {
         const cachedData = fetchCacheRef.current.get(cacheKey);
         dispatch(setPremiumBrands(cachedData.brands));
         dispatch(setPagination(cachedData.pagination));
+        setInitialLoad(false);
         return;
       }
 
@@ -97,6 +93,7 @@ const BrandSelectionStep = () => {
       try {
         isFetchingRef.current = true;
         dispatch(setLoading(true));
+        setInitialLoad(true);
         dispatch(setError(null));
         
         const { success, data, pagination: paginationData, message } = await getBrandsForClient({
@@ -130,11 +127,12 @@ const BrandSelectionStep = () => {
       } finally {
         dispatch(setLoading(false));
         isFetchingRef.current = false;
+        setInitialLoad(false);
       }
     };
 
     fetchBrands();
-  }, [dispatch, debouncedSearchTerm, selectedCategory, currentPage, sortBy, premiumBrands]);
+  }, [dispatch, debouncedSearchTerm, selectedCategory, currentPage, sortBy]);
 
   const handleToggleFavorite = useCallback((brandId) => {
     dispatch(toggleFavorite(brandId));
@@ -206,12 +204,12 @@ const BrandSelectionStep = () => {
           favorites={favorites}
           onToggleFavorite={handleToggleFavorite}
           onBrandClick={handleBrandClick}
-          isLoading={loading}
+          isLoading={loading || initialLoad} // Show loading during initial load too
           selectedBrand={selectedBrand}
         />
 
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
+        {/* Pagination - Only show when not loading and have data */}
+        {!loading && !initialLoad && pagination.totalPages > 1 && (
           <Pagination
             currentPage={pagination.currentPage}
             totalPages={pagination.totalPages}

@@ -98,7 +98,7 @@ const DeliveryMethodStep = () => {
 
   // Validation functions
   const validateEmail = useCallback((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), []);
-  const validatePhoneNumber = useCallback((phone) => /^[0-9]{10,}$/.test(phone.replace(/\s+/g, '')), []);
+  const validatePhoneNumber = useCallback((phone) => /^\+?[0-9]{10,}$/.test(phone.replace(/[\s()-]+/g, '')), []);
 
   const validateWhatsAppForm = useCallback(() => {
     const newErrors = {};

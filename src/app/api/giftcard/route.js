@@ -7,52 +7,129 @@ import { prisma } from "../../../lib/db";
 const SHOPIFY_API_VERSION = "2025-07";
 
 export async function POST(req) {
+  const startTime = Date.now();
+  let logContext = {
+    timestamp: new Date().toISOString(),
+    requestId: Math.random().toString(36).substring(7),
+  };
+
   try {
+    // ============ STEP 0: Parse Request Parameters ============
     const url = new URL(req.url);
     const shop = url.searchParams.get("shop");
     const denominationType = url.searchParams.get("denominationType");
+    const input = await req.json();
 
+    console.log("url", url);
+
+    logContext = {
+      ...logContext,
+      shop,
+      denominationType,
+      input: {
+        ...input,
+        customerEmail: input?.customerEmail || null,
+      },
+    };
+
+    console.log("🚀 [START] Gift Card Creation Request", logContext);
+
+    // Validate shop parameter
     if (!shop) {
+      console.error("❌ [FAIL] Missing shop parameter", logContext);
       return NextResponse.json(
         { error: "Shop parameter is required" },
         { status: 400 }
       );
     }
 
-    const input = await req.json();
-
     const customerEmail = input?.customerEmail || null;
 
+    // Validate denominationType
     if (!denominationType) {
+      console.error("❌ [FAIL] Missing denominationType", logContext);
       return NextResponse.json(
         { error: "denominationType is required" },
         { status: 400 }
       );
     }
 
-    // Fetch stored access token
+    // ============ STEP 1: Fetch Access Token ============
+    console.log("📋 [STEP 1] Fetching access token from database", {
+      ...logContext,
+      step: "fetch_session",
+    });
+
     const session = await prisma.appInstallation.findUnique({
       where: { shop },
     });
+
     if (!session?.accessToken) {
+      console.error("❌ [FAIL] No access token found", {
+        ...logContext,
+        sessionFound: !!session,
+        hasAccessToken: !!session?.accessToken,
+      });
       return NextResponse.json(
         { error: "Shop not installed or access token missing" },
         { status: 401 }
       );
     }
 
-    // Step 1: Find brand and voucher
-    const brand = await prisma.brand.findUnique({
-      where: { domain: shop },
-      include: {
-        vouchers: {
-          where: { isActive: true, denominationType: denominationType },
-          include: { denominations: { where: { isActive: true } } },
+    console.log("✅ [STEP 1] Access token retrieved successfully");
+
+    // ============ STEP 2: Find Brand and Voucher ============
+    console.log("📋 [STEP 2] Fetching brand and vouchers", {
+      ...logContext,
+      step: "fetch_brand",
+      query: {
+        domain: shop,
+        voucherFilter: {
+          isActive: true,
+          denominationType: [denominationType, "both"],
         },
       },
     });
 
+    const brand = await prisma.brand.findUnique({
+      where: { domain: shop },
+      include: {
+        vouchers: {
+          where: {
+            isActive: true,
+            OR: [
+              { denominationType: denominationType },
+              { denominationType: "both" },
+            ],
+          },
+          include: { denominations: { where: { isActive: true } } },
+          orderBy: {
+            denominationType: "asc", // Prefer specific over 'both'
+          },
+        },
+      },
+    });
+
+    console.log("📊 [STEP 2] Brand query result", {
+      ...logContext,
+      brandFound: !!brand,
+      brandId: brand?.id,
+      vouchersCount: brand?.vouchers?.length || 0,
+      vouchers: brand?.vouchers?.map((v) => ({
+        id: v.id,
+        denominationType: v.denominationType,
+        isActive: v.isActive,
+        denominationsCount: v.denominations?.length || 0,
+      })),
+    });
+
     if (!brand || !brand.vouchers.length) {
+      console.error("❌ [FAIL] No active voucher found", {
+        ...logContext,
+        brandExists: !!brand,
+        vouchersLength: brand?.vouchers?.length || 0,
+        requestedDenominationType: denominationType,
+      });
       return NextResponse.json(
         {
           success: false,
@@ -64,6 +141,27 @@ export async function POST(req) {
 
     const voucher = brand.vouchers[0];
 
+    console.log("✅ [STEP 2] Voucher selected", {
+      ...logContext,
+      voucherId: voucher.id,
+      voucherType: voucher.denominationType,
+      denominationsCount: voucher.denominations?.length || 0,
+      denominations: voucher.denominations?.map((d) => ({
+        id: d.id,
+        value: d.value,
+        isActive: d.isActive,
+        isExpiry: d.isExpiry,
+      })),
+    });
+
+    // ============ STEP 3: Handle Denomination Logic ============
+    console.log("📋 [STEP 3] Processing denomination", {
+      ...logContext,
+      step: "process_denomination",
+      voucherType: voucher.denominationType,
+      inputValue: input.denominationValue,
+    });
+
     let denominationValue;
     let selectedDenomId = null;
     let expiresAt = null;
@@ -71,7 +169,13 @@ export async function POST(req) {
 
     // Handle fixed vs variable vouchers
     if (voucher.denominationType === "fixed") {
+      console.log("🔢 [STEP 3a] Processing FIXED denomination");
+
       if (!voucher.denominations.length) {
+        console.error("❌ [FAIL] No active denominations for fixed voucher", {
+          ...logContext,
+          voucherId: voucher.id,
+        });
         return NextResponse.json(
           {
             success: false,
@@ -84,7 +188,13 @@ export async function POST(req) {
       const selectedDenom = voucher.denominations.find(
         (d) => d.value === input.denominationValue
       );
+
       if (!selectedDenom) {
+        console.error("❌ [FAIL] Selected denomination not found", {
+          ...logContext,
+          requestedValue: input.denominationValue,
+          availableDenominations: voucher.denominations.map((d) => d.value),
+        });
         return NextResponse.json(
           { success: false, error: "Selected denomination not found" },
           { status: 400 }
@@ -98,8 +208,21 @@ export async function POST(req) {
         shouldSetExpiry = true;
         expiresAt = selectedDenom.expiresAt;
       }
-    } else {
+
+      console.log("✅ [STEP 3a] Fixed denomination processed", {
+        denominationValue,
+        selectedDenomId,
+        shouldSetExpiry,
+        expiresAt,
+      });
+    } else if (voucher.denominationType === "amount") {
+      console.log("🔢 [STEP 3b] Processing AMOUNT (variable) denomination");
+
       if (!input.denominationValue) {
+        console.error(
+          "❌ [FAIL] Missing denomination value for variable voucher",
+          logContext
+        );
         return NextResponse.json(
           {
             success: false,
@@ -108,19 +231,90 @@ export async function POST(req) {
           { status: 400 }
         );
       }
+
       denominationValue = input.denominationValue;
 
       if (voucher.isExpiry && voucher.expiresAt) {
         shouldSetExpiry = true;
         expiresAt = voucher.expiresAt;
       }
+
+      console.log("✅ [STEP 3b] Variable denomination processed", {
+        denominationValue,
+        shouldSetExpiry,
+        expiresAt,
+      });
+    } else if (voucher.denominationType === "both") {
+      console.log("🔢 [STEP 3c] Processing BOTH (hybrid) denomination");
+
+      if (!input.denominationValue) {
+        console.error(
+          "❌ [FAIL] Missing denomination value for 'both' voucher",
+          logContext
+        );
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Denomination value is required",
+          },
+          { status: 400 }
+        );
+      }
+
+      const selectedDenom = voucher.denominations.find(
+        (d) => d.value === input.denominationValue
+      );
+
+      if (selectedDenom) {
+        console.log(
+          "✓ [STEP 3c] Matched fixed denomination in 'both' voucher",
+          {
+            denominationId: selectedDenom.id,
+            value: selectedDenom.value,
+          }
+        );
+
+        denominationValue = selectedDenom.value;
+        selectedDenomId = selectedDenom.id;
+
+        if (selectedDenom.isExpiry && selectedDenom.expiresAt) {
+          shouldSetExpiry = true;
+          expiresAt = selectedDenom.expiresAt;
+        }
+      } else {
+        console.log("✓ [STEP 3c] Using custom amount for 'both' voucher", {
+          customValue: input.denominationValue,
+        });
+
+        denominationValue = input.denominationValue;
+
+        if (voucher.isExpiry && voucher.expiresAt) {
+          shouldSetExpiry = true;
+          expiresAt = voucher.expiresAt;
+        }
+      }
+
+      console.log("✅ [STEP 3c] 'Both' denomination processed", {
+        denominationValue,
+        selectedDenomId,
+        shouldSetExpiry,
+        expiresAt,
+        matchedFixed: !!selectedDenom,
+      });
     }
 
-    // Step 2: Fetch or create Shopify customer
+    // ============ STEP 4: Fetch or Create Customer ============
     let customerId = null;
     let customerIdNumeric = null;
 
     if (customerEmail) {
+      console.log("📋 [STEP 4] Processing customer", {
+        ...logContext,
+        step: "customer_lookup",
+        customerEmail,
+      });
+
+      // Fetch existing customer
       const customerResponse = await fetch(
         `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
         {
@@ -145,7 +339,16 @@ export async function POST(req) {
       customerId = customerNode?.id || null;
       customerIdNumeric = customerNode?.legacyResourceId || null;
 
+      console.log("📊 [STEP 4] Customer lookup result", {
+        found: !!customerId,
+        customerId,
+        customerIdNumeric,
+      });
+
+      // Create customer if not found
       if (!customerId) {
+        console.log("🔄 [STEP 4] Creating new customer");
+
         const createCustomerResponse = await fetch(
           `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
           {
@@ -180,7 +383,21 @@ export async function POST(req) {
         customerId = createdCustomer?.id;
         customerIdNumeric = createdCustomer?.legacyResourceId;
 
+        console.log("📊 [STEP 4] Customer creation result", {
+          success: !!customerId,
+          customerId,
+          customerIdNumeric,
+          userErrors: createCustomerData?.data?.customerCreate?.userErrors,
+        });
+
         if (!customerId) {
+          console.error("❌ [FAIL] Failed to create customer", {
+            ...logContext,
+            customerEmail,
+            errors:
+              createCustomerData?.data?.customerCreate?.userErrors ||
+              createCustomerData.errors,
+          });
           return NextResponse.json(
             {
               success: false,
@@ -193,12 +410,25 @@ export async function POST(req) {
           );
         }
       }
+
+      console.log("✅ [STEP 4] Customer processed successfully");
+    } else {
+      console.log(
+        "⏭️  [STEP 4] No customer email provided, skipping customer creation"
+      );
     }
 
-    // Step 3: Use REST API to create gift card (returns full code)
+    // ============ STEP 5: Create Gift Card via REST API ============
+    console.log("📋 [STEP 5] Creating gift card in Shopify", {
+      ...logContext,
+      step: "create_gift_card",
+    });
+
+    const value = Number(denominationValue);
+
     const restApiPayload = {
       gift_card: {
-        initial_value: parseFloat(denominationValue.toFixed(2)),
+        initial_value: Number.isNaN(value) ? 0 : Number(value.toFixed(2)),
         note: input.note || null,
       },
     };
@@ -210,12 +440,16 @@ export async function POST(req) {
         .split("T")[0];
     }
 
-    // Add customer ID if exists (use numeric ID for REST API)
+    // Add customer ID if exists
     if (customerIdNumeric) {
       restApiPayload.gift_card.customer_id = parseInt(customerIdNumeric);
     }
 
-    
+    console.log("📤 [STEP 5] REST API payload", {
+      payload: restApiPayload,
+      endpoint: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/gift_cards.json`,
+    });
+
     const createGiftCardResponse = await fetch(
       `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/gift_cards.json`,
       {
@@ -230,7 +464,20 @@ export async function POST(req) {
 
     const createData = await createGiftCardResponse.json();
 
+    console.log("📊 [STEP 5] Shopify gift card creation response", {
+      success: !!createData.gift_card,
+      status: createGiftCardResponse.status,
+      giftCardId: createData.gift_card?.id,
+      errors: createData.errors,
+    });
+
     if (!createData.gift_card) {
+      console.error("❌ [FAIL] Failed to create gift card in Shopify", {
+        ...logContext,
+        responseStatus: createGiftCardResponse.status,
+        errors: createData.errors || createData,
+        payload: restApiPayload,
+      });
       return NextResponse.json(
         {
           success: false,
@@ -242,18 +489,26 @@ export async function POST(req) {
     }
 
     const giftCard = createData.gift_card;
-
-    // ✅ REST API returns the FULL CODE
     const fullGiftCardCode = giftCard.code;
     const shopifyGid = `gid://shopify/GiftCard/${giftCard.id}`;
 
+    console.log("✅ [STEP 5] Gift card created in Shopify", {
+      shopifyGid,
+      code: fullGiftCardCode,
+      initialValue: giftCard.initial_value,
+    });
 
-    // Step 4: Save to local DB with full code
+    // ============ STEP 6: Save to Local Database ============
+    console.log("📋 [STEP 6] Saving gift card to local database", {
+      ...logContext,
+      step: "save_to_db",
+    });
+
     const newLocalGiftCard = await prisma.giftCard.create({
       data: {
         shop,
         shopifyId: shopifyGid,
-        code: fullGiftCardCode, // ✅ Store the FULL unmasked code
+        code: fullGiftCardCode,
         initialValue: parseFloat(giftCard.initial_value),
         balance: parseFloat(giftCard.balance),
         note: giftCard.note,
@@ -268,12 +523,19 @@ export async function POST(req) {
       },
     });
 
-    return NextResponse.json({
+    console.log("✅ [STEP 6] Gift card saved to database", {
+      localId: newLocalGiftCard.id,
+      shopifyId: shopifyGid,
+    });
+
+    // ============ SUCCESS RESPONSE ============
+    const duration = Date.now() - startTime;
+    const successResponse = {
       success: true,
       message: "Gift card created successfully",
       gift_card: {
         id: shopifyGid,
-        code: fullGiftCardCode, // ✅ Full unmasked code (e.g., "ABCD-EFGH-IJKL-47e7")
+        code: fullGiftCardCode,
         maskedCode: giftCard.masked_code
           ? giftCard.masked_code
           : `•••• •••• •••• ${giftCard.last_characters}`,
@@ -293,14 +555,34 @@ export async function POST(req) {
         denominationId: selectedDenomId || null,
         hasExpiry: shouldSetExpiry,
       },
+    };
+
+    console.log("🎉 [SUCCESS] Gift card creation completed", {
+      ...logContext,
+      duration: `${duration}ms`,
+      giftCardId: shopifyGid,
+      localId: newLocalGiftCard.id,
     });
+
+    return NextResponse.json(successResponse);
   } catch (error) {
-    console.error("Error creating gift card:", error);
+    const duration = Date.now() - startTime;
+    console.error("💥 [FATAL ERROR] Unhandled exception", {
+      ...logContext,
+      duration: `${duration}ms`,
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      },
+    });
+
     return NextResponse.json(
       {
         success: false,
         error: error.message,
-        stack: error.stack,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+        requestId: logContext.requestId,
       },
       { status: 500 }
     );

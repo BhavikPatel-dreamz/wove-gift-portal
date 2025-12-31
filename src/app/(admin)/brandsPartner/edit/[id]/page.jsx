@@ -57,7 +57,7 @@ const BrandEdit = () => {
     internalNotes: '',
 
     // Vouchers - Fixed structure
-    denominationType: 'fixed',
+    denominationType: 'both',
     denominations: [],
     maxAmount: 0,
     minAmount: 0,
@@ -208,7 +208,7 @@ const BrandEdit = () => {
           internalNotes: brand.brandTerms?.internalNotes || '',
 
           // Vouchers - FIXED: Properly handle isExpiry boolean
-          denominationType: brand.vouchers?.[0]?.denominationType || 'fixed',
+          denominationType: 'both',
           denominations: brand.vouchers?.[0]?.denominations || [],
           maxAmount: brand.vouchers?.[0]?.maxAmount || 0,
           minAmount: brand.vouchers?.[0]?.minAmount || 0,
@@ -453,6 +453,8 @@ const BrandEdit = () => {
 
     try {
       const submitData = prepareFormDataForSubmission();
+      console.log("submitData",submitData);
+      
       const result = await updateBrandPartner(brandId, submitData);
 
       if (result.success) {
@@ -508,8 +510,8 @@ const BrandEdit = () => {
 
     // Vouchers tab completion
     const isDenominationValid =
-      (formData.denominationType === 'fixed' && formData.denominations?.length > 0) ||
-      (formData.denominationType === 'amount' &&
+      (formData.denominationType === 'both' && formData.denominations?.length > 0) ||
+      (formData.denominationType === 'both' &&
         formData.minAmount > 0 &&
         formData.maxAmount > 0 &&
         formData.minAmount < formData.maxAmount);

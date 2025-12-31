@@ -325,7 +325,7 @@ const SettlementsPage = () => {
               </button>
               <button
                 onClick={() => toast.info("Export feature coming soon...")}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-black  bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <Download className="w-4 h-4" />
                 Export

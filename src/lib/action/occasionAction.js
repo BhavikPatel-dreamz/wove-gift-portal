@@ -15,10 +15,7 @@ const OccasionSchema = z.object({
         .min(1, "Name is required")
         .max(100, "Name must be less than 100 characters")
         .trim(),
-    emoji: z.string()
-        .min(1, "Emoji is required")
-        .max(10, "Emoji must be less than 10 characters")
-        .default('🎉'),
+    emoji: z.string().optional(),
     description: z.string()
         .max(500, "Description must be less than 500 characters")
         .default('')
@@ -351,40 +348,47 @@ export async function deleteOccasion(id) {
 
 export async function getOccasions(params = {}) {
     try {
-        // Convert string parameters to appropriate types
-        const processedParams = {
-            ...params,
-            page: params.page ? parseInt(params.page, 10) : undefined,
-            limit: params.limit ? parseInt(params.limit, 10) : undefined,
-            isActive: params.isActive !== undefined ? String(params.isActive) === 'true' : undefined
-        };
+        // Parse and validate parameters
+        const page = Math.max(1, parseInt(params.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(params.limit) || 12));
+        const search = params.search?.trim() || '';
+        const sortBy = ['name', 'createdAt', 'updatedAt'].includes(params.sortBy) 
+            ? params.sortBy 
+            : 'createdAt';
+        const sortOrder = params.sortOrder === 'asc' ? 'asc' : 'desc';
+        const isActive = params.isActive !== undefined 
+            ? String(params.isActive) === 'true' 
+            : undefined;
 
-        const validationResult = GetOccasionsSchema.safeParse(processedParams);
+        // Validate with schema if you have one
+        const validationResult = GetOccasionsSchema.safeParse({
+            page, limit, search, sortBy, sortOrder, isActive
+        });
         const validationError = handleValidationError(validationResult);
         if (validationError) return validationError;
 
-        const {
-            id,
-            search,
-            isActive,
-            page,
-            limit,
-            sortBy,
-            sortOrder
-        } = validationResult.data;
-
+        // Build where clause
         const where = {};
-        if (id) where.id = id;
+        
+        if (params.id) {
+            where.id = params.id;
+        }
+        
         if (search) {
             where.name = {
                 contains: search,
                 mode: 'insensitive'
             };
         }
-        if (isActive !== undefined) where.isActive = isActive;
+        
+        if (isActive !== undefined) {
+            where.isActive = isActive;
+        }
 
+        // Calculate pagination
         const skip = (page - 1) * limit;
 
+        // Fetch data with parallel queries for better performance
         const [occasions, totalItems] = await Promise.all([
             prisma.occasion.findMany({
                 where,
@@ -395,23 +399,35 @@ export async function getOccasions(params = {}) {
             prisma.occasion.count({ where })
         ]);
 
+        // Calculate total pages
         const totalPages = Math.ceil(totalItems / limit);
 
-        // Add card counts
-        const occasionsWithCounts = await Promise.all(
-            occasions.map(async (occasion) => {
-                const cardCount = await prisma.occasionCategory.count({
-                    where: { occasionId: occasion.id }
-                }).catch(() => 0);
+        // Fetch card counts in batch (more efficient than individual queries)
+        const occasionIds = occasions.map(o => o.id);
+        const cardCounts = await prisma.occasionCategory.groupBy({
+            by: ['occasionId'],
+            where: {
+                occasionId: { in: occasionIds }
+            },
+            _count: {
+                id: true
+            }
+        });
 
-                return {
-                    ...occasion,
-                    cardCount,
-                    active: occasion.isActive,
-                };
-            })
-        );
-    
+        // Create a map for quick lookup
+        const cardCountMap = cardCounts.reduce((acc, item) => {
+            acc[item.occasionId] = item._count.id;
+            return acc;
+        }, {});
+
+        // Add card counts to occasions
+        const occasionsWithCounts = occasions.map(occasion => ({
+            ...occasion,
+            cardCount: cardCountMap[occasion.id] || 0,
+            active: occasion.isActive,
+        }));
+
+        // Build pagination metadata
         const pagination = {
             currentPage: page,
             totalPages,
@@ -419,7 +435,7 @@ export async function getOccasions(params = {}) {
             itemsPerPage: limit,
             hasNextPage: page < totalPages,
             hasPrevPage: page > 1,
-            startIndex: skip + 1,
+            startIndex: totalItems > 0 ? skip + 1 : 0,
             endIndex: Math.min(skip + limit, totalItems),
         };
 
@@ -492,8 +508,7 @@ export async function getOccasionById(id) {
 export async function addOccasionCategory(formData) {
     try {
         // formData is already a FormData object, no need to await req.formData()
-        
-        const parsedData = parseFormData(formData, {
+const parsedData = parseFormData(formData, {
             name: (val) => val?.toString().trim() || '',
             description: (val) => val?.toString().trim() || '',
             emoji: (val) => val?.toString() || '',
@@ -844,6 +859,7 @@ export async function getOccasionCategories(params = {}) {
     }
 }
 
+// ============================================================================\n// GET OCCASION BY ID\n// ============================================================================\n\nexport async function getOccasionById(id) {\n    try {\n        const validationResult = IdSchema.safeParse(id);\n        if (!validationResult.success) {\n            return createStandardResponse(false, \"Invalid ID format\", 400);\n        }\n\n        const occasion = await prisma.occasion.findUnique({\n            where: { id },\n            include: {\n                _count: {\n                    select: { occasionCategories: true },\n                },\n            },\n        });\n\n        if (!occasion) {\n            return createStandardResponse(false, \"Occasion not found\", 404);\n        }\n\n        // Map _count to cardCount for consistency with getOccasions\n        const { _count, ...rest } = occasion;\n        const formattedOccasion = {\n            ...rest,\n            cardCount: _count?.occasionCategories || 0,\n        };\n\n        return createStandardResponse(\n            true,\n            \"Occasion retrieved successfully\",\n            200,\n            formattedOccasion\n        );\n\n    } catch (error) {\n        console.error(`getOccasionById error for id: ${id}:`, error);\n        return createStandardResponse(\n            false,\n            \"Failed to retrieve occasion. Please try again.\",\n            500\n        );\n    }\n}
 export async function getOccasionCategoryById(id) {
     try {
         const validationResult = IdSchema.safeParse(id);

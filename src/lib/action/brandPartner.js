@@ -117,7 +117,7 @@ const BrandPartnerSchema = z
     internalNotes: z.string().optional().nullable(),
 
     // Voucher Configuration
-    denominationType: z.enum(["fixed", "amount"]).default("fixed"),
+    denominationType: z.enum(["fixed", "amount", "both"]).default("both"),
     denominations: z.array(DenominationSchema).optional().default([]),
     denominationValue: z.any().optional().nullable(),
     denominationCurrency: z.string().default("USD"),
@@ -648,6 +648,8 @@ export async function updateBrandPartner(brandId, formData) {
           termsConditionsURL: validatedData.termsConditionsURL,
           productSku: validatedData.productSku,
         };
+        console.log("voucherData",voucherData);
+        
 
         if (existingBrand.vouchers[0]) {
           const voucherId = existingBrand.vouchers[0].id;
@@ -701,7 +703,7 @@ export async function updateBrandPartner(brandId, formData) {
                   ? {
                       create: validatedData.denominations.map((denom) => ({
                         value: denom.value,
-                        currency:
+currency:
                           denom.currency || validatedData.denominationCurrency,
                         displayName: denom.displayName,
                         isExpiry: denom.isExpiry,
@@ -997,8 +999,13 @@ export async function deleteBrandPartner(brandId) {
       };
     }
 
+    // Retrieve brand details including logo
     const existingBrand = await prisma.brand.findUnique({
       where: { id: brandId },
+      select: { 
+        id: true, 
+        logo: true 
+      }
     });
 
     if (!existingBrand) {
@@ -1009,24 +1016,145 @@ export async function deleteBrandPartner(brandId) {
       };
     }
 
-    // Delete brand (cascade will handle related records including denominations)
-    await prisma.brand.delete({
-      where: { id: brandId },
-    });
+    // Use a transaction with increased timeout
+    await prisma.$transaction(
+      async (tx) => {
+        // Step 1: Get all related IDs in parallel
+        const [vouchers, orders, integrations] = await Promise.all([
+          tx.vouchers.findMany({
+            where: { brandId },
+            select: { id: true }
+          }),
+          tx.order.findMany({
+            where: { brandId },
+            select: { id: true }
+          }),
+          tx.integration.findMany({
+            where: { brandId },
+            select: { id: true }
+          })
+        ]);
 
-    // Delete logo file if it exists
+        const voucherIds = vouchers.map(v => v.id);
+        const orderIds = orders.map(o => o.id);
+        const integrationIds = integrations.map(i => i.id);
+
+        // Step 2: Get voucher code IDs if there are vouchers
+        let voucherCodeIds = [];
+        if (voucherIds.length > 0) {
+          const voucherCodes = await tx.voucherCode.findMany({
+            where: { voucherId: { in: voucherIds } },
+            select: { id: true }
+          });
+          voucherCodeIds = voucherCodes.map(vc => vc.id);
+        }
+
+        // Step 3: Delete in correct order (deepest children first)
+        const deletePromises = [];
+
+        // Delete voucher redemptions
+        if (voucherCodeIds.length > 0) {
+          deletePromises.push(
+            tx.voucherRedemption.deleteMany({
+              where: { voucherCodeId: { in: voucherCodeIds } }
+            })
+          );
+        }
+
+        // Delete delivery logs
+        if (orderIds.length > 0 || voucherCodeIds.length > 0) {
+          const deliveryLogWhere = {
+            OR: []
+          };
+          if (orderIds.length > 0) {
+            deliveryLogWhere.OR.push({ orderId: { in: orderIds } });
+          }
+          if (voucherCodeIds.length > 0) {
+            deliveryLogWhere.OR.push({ voucherCodeId: { in: voucherCodeIds } });
+          }
+          
+          deletePromises.push(
+            tx.deliveryLog.deleteMany({ where: deliveryLogWhere })
+          );
+        }
+
+        // Delete integration sync logs
+        if (integrationIds.length > 0) {
+          deletePromises.push(
+            tx.integrationSyncLog.deleteMany({
+              where: { integrationId: { in: integrationIds } }
+            })
+          );
+        }
+
+        // Execute all parallel deletions
+        await Promise.all(deletePromises);
+
+        // Step 4: Delete voucher codes
+        if (voucherCodeIds.length > 0) {
+          await tx.voucherCode.deleteMany({
+            where: { id: { in: voucherCodeIds } }
+          });
+        }
+
+        // Step 5: Delete orders (must be before brand deletion)
+        if (orderIds.length > 0) {
+          await tx.order.deleteMany({
+            where: { id: { in: orderIds } }
+          });
+        }
+
+        // Step 6: Delete denominations and vouchers
+        if (voucherIds.length > 0) {
+          await Promise.all([
+            tx.denomination.deleteMany({
+              where: { voucherId: { in: voucherIds } }
+            }),
+            tx.vouchers.deleteMany({
+              where: { id: { in: voucherIds } }
+            })
+          ]);
+        }
+
+        // Step 7: Delete integrations
+        if (integrationIds.length > 0) {
+          await tx.integration.deleteMany({
+            where: { id: { in: integrationIds } }
+          });
+        }
+
+        // Step 8: Delete all other brand-related data in parallel
+        await Promise.all([
+          tx.settlements.deleteMany({ where: { brandId } }),
+          tx.brandContacts.deleteMany({ where: { brandId } }),
+          tx.brandTerms.deleteMany({ where: { brandId } }),
+          tx.brandBanking.deleteMany({ where: { brandId } })
+        ]);
+
+        // Step 9: Finally delete the brand
+        await tx.brand.delete({
+          where: { id: brandId }
+        });
+      },
+      {
+        maxWait: 15000, // 15 seconds max wait to connect
+        timeout: 30000, // 30 seconds timeout for the transaction
+      }
+    );
+
+    // Delete the logo file from the filesystem
     if (existingBrand.logo) {
       const logoPath = join(process.cwd(), "public", existingBrand.logo);
       try {
         await unlink(logoPath);
       } catch (error) {
-        console.log("Could not delete logo file:", error.message);
+        console.warn(`Could not delete logo file: ${logoPath}`, error.message);
       }
     }
 
     return {
       success: true,
-      message: "Brand partner deleted successfully",
+      message: "Brand partner and all related data deleted successfully.",
       status: 200,
     };
   } catch (error) {
@@ -1035,14 +1163,22 @@ export async function deleteBrandPartner(brandId) {
     if (error.code === "P2025") {
       return {
         success: false,
-        message: "Brand partner not found",
+        message: "Brand partner not found.",
         status: 404,
+      };
+    }
+
+    if (error.code === "P2003") {
+      return {
+        success: false,
+        message: "Cannot delete brand due to foreign key constraints. Some related data may still exist.",
+        status: 400,
       };
     }
 
     return {
       success: false,
-      message: "Internal server error",
+      message: "An internal server error occurred while deleting the brand partner.",
       error: error.message,
       status: 500,
     };

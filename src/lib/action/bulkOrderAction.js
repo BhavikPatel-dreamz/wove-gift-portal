@@ -28,7 +28,7 @@ class ExternalServiceError extends Error {
     super(message);
     this.name = "ExternalServiceError";
     this.statusCode = 502;
-    this.originalError = originalError;
+this.originalError = originalError;
   }
 }
 
@@ -50,7 +50,7 @@ function generateTokenizedLink(voucherCodeId) {
     `${voucherCodeId}-${Date.now()}-${Math.random()}`
   ).toString("base64url");
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.wove.com";
+  const baseUrl = process.env.NEXTAUTH_URL || "https://app.wove.com";
   return `${baseUrl}/redeem/${token}`;
 }
 
@@ -246,7 +246,7 @@ async function createShopifyGiftCard(selectedBrand, orderData) {
   };
 
   const apiUrl = `${
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    process.env.NEXTAUTH_URL || "http://localhost:3000"
   }/api/giftcard?shop=${selectedBrand.domain}&denominationType=${
     voucherConfig.denominationType
   }`;
@@ -326,8 +326,13 @@ async function createVoucherCode(
         (d) => d?.value == order?.amount
       );
       expireDate = matchedDenomination?.expiresAt || null;
-    } else {
+    } else if (voucherConfig?.denominationType === "amount") {
       expireDate = voucherConfig?.expiresAt || null;
+    } else if (voucherConfig?.denominationType === "both") {
+      const matchedDenomination = voucherConfig?.denominations?.find(
+        (d) => d?.value == order?.amount
+      );
+      expireDate = matchedDenomination?.expiresAt || voucherConfig?.expiresAt || null;
     }
 
     const voucherCode = await prisma.voucherCode.create({

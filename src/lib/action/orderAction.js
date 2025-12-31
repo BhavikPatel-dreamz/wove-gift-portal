@@ -196,7 +196,7 @@ async function createOrderRecord(
   scheduledFor
 ) {
   try {
-    const amount = orderData.selectedAmount.value;
+   const amount = Number(orderData.selectedAmount.value);
     const quantity = orderData.quantity || 1;
     const subtotal = amount * quantity;
     const discount = orderData.discountAmount || 0;
@@ -315,18 +315,25 @@ async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig) {
         : orderData.selectedAmount.value,
   };
 
+
   const apiUrl = `${
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    process.env.NEXTAUTH_URL || "http://localhost:3000"
   }/api/giftcard?shop=${selectedBrand.domain}&denominationType=${
     voucherConfig.denominationType
   }`;
 
   try {
+    console.log("apiUrl",apiUrl);
+    
+    
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(giftCardData),
     });
+
+    console.log("response",response);
+    
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -406,9 +413,9 @@ async function processBulkOrder(
         const matchedDenomination = voucherConfig?.denominations?.find(
           (d) => d?.value == order?.amount
         );
-        expireDate = matchedDenomination?.expiresAt || null;
+        expireDate = matchedDenomination?.isExpiry === true ? matchedDenomination?.expiresAt || null : null;
       } else {
-        expireDate = voucherConfig?.expiresAt || null;
+        expireDate = voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null;
       }
 
       const voucherCode = await prisma.voucherCode.create({
@@ -644,8 +651,7 @@ Thank you for choosing our gift card platform.`,
           },
         ],
       };
-
-      const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
       console.log("✅ CSV email sent successfully");
 
@@ -916,6 +922,9 @@ async function processSingleOrder(
       voucherConfig
     );
 
+    console.log("shopifyGiftCard",shopifyGiftCard);
+    
+
     // Save gift card to database
     const giftCardInDb = await prisma.giftCard.upsert({
       where: { shopifyId: shopifyGiftCard.id },
@@ -943,9 +952,14 @@ async function processSingleOrder(
       const matchedDenomination = voucherConfig?.denominations?.find(
         (d) => d?.value == order?.amount
       );
-      expireDate = matchedDenomination?.expiresAt || null;
-    } else {
-      expireDate = voucherConfig?.expiresAt || null;
+      expireDate = matchedDenomination?.isExpiry === true ? matchedDenomination?.expiresAt || null : null;
+    } else if (voucherConfig?.denominationType === "amount") {
+      expireDate = voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null;
+    } else if (voucherConfig?.denominationType === "both") {
+      const matchedDenomination = voucherConfig?.denominations?.find(
+        (d) => d?.value == order?.amount
+      );
+      expireDate = matchedDenomination?.isExpiry === true ? matchedDenomination?.expiresAt : (voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null);
     }
 
     const voucherCode = await prisma.voucherCode.create({

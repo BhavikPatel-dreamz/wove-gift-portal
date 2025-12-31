@@ -1,20 +1,19 @@
 import { Edit, Trash2, Eye } from "lucide-react";
+import Link from "next/link";
 
-const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = false }) => {
+const OccasionCard = ({ occasion, onEdit, onDelete, disabled = false }) => {
   const statusActive = occasion.isActive || occasion.active;
   const statusVariant = statusActive ? "success" : "default";
   const statusText = statusActive ? "Active" : "Inactive";
   const cardCount = occasion.cardCount || occasion._count?.occasionCategories || 0;
 
   const handleEdit = () => !disabled && onEdit?.(occasion);
-  const handleViewCards = () => !disabled && onViewCards?.(occasion);
   const handleDelete = () => !disabled && onDelete?.(occasion.id);
 
   return (
     <div
       className={`group relative bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 flex flex-col
-        hover:shadow-lg hover:-translate-y-1 hover:border-blue-200 ${
-          disabled ? "opacity-60 cursor-not-allowed" : ""
+        hover:shadow-lg hover:-translate-y-1 hover:border-blue-200 ${disabled ? "opacity-60 cursor-not-allowed" : ""
         }`}
     >
       {/* Image / Preview */}
@@ -31,26 +30,19 @@ const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = fals
           />
         ) : null}
         <div
-          className={`w-full h-full flex items-center justify-center text-5xl font-semibold bg-gradient-to-br from-blue-50 to-indigo-50 text-indigo-600 ${
-            occasion.image ? "hidden" : "flex"
-          }`}
+          className={`w-full h-full flex items-center justify-center text-5xl font-semibold bg-gradient-to-br from-blue-50 to-indigo-50 text-indigo-600 ${occasion.image ? "hidden" : "flex"
+            }`}
         >
           {occasion.preview || "✨"}
         </div>
 
         {/* Status Badge */}
         <div
-          className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm backdrop-blur-md ${
-            statusVariant === "success"
-              ? "bg-green-100/90 text-green-800"
-              : "bg-red-100/90 text-red-700"
-          }`}
-        >
-          <span
-            className={`w-2 h-2 rounded-full ${
-              statusVariant === "success" ? "bg-green-500" : "bg-red-500"
+          className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm backdrop-blur-md ${statusVariant === "success"
+            ? 'bg-[#DDFCE9] text-[#10B981] border-[#10B981]'
+            : 'bg-gray-100 text-gray-600 border-gray-200'
             }`}
-          />
+        >
           {statusText}
         </div>
       </div>
@@ -58,34 +50,43 @@ const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = fals
       {/* Content */}
       <div className="p-5 flex flex-col flex-grow">
         <h3
-          className="font-semibold text-lg text-gray-900 mb-1 truncate group-hover:text-blue-600 transition-colors"
+          className="font-semibold text-[18px] text-[#1A1A1A] leading-6 mb-1 truncate group-hover:text-blue-600 transition-colors"
+          style={{ fontFamily: 'Poppins' }}
           title={occasion.name}
         >
           {occasion.name}
         </h3>
         <p
-          className="text-gray-600 text-sm mb-3 line-clamp-2 min-h-[2.5rem]"
+          className="text-[#4A4A4A] text-[14px] leading-5 font-normal mb-4 line-clamp-2"
           title={occasion.description}
         >
           {occasion.description || "No description available"}
         </p>
 
-        <p className="text-xs text-gray-500 mb-3">Type: {occasion.type || "N/A"}</p>
+        <p
+          className="text-xs text-[#364152] font-semibold leading-5 mb-3"
+        >
+          Type: {occasion.type || "N/A"}
+        </p>
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
-          <span className="text-sm font-medium text-gray-600">
+          <span
+            className="text-[14px] font-normal text-[#4A4A4A] leading-5"
+            style={{ fontFamily: 'Inter' }}
+          >
             {cardCount} {cardCount === 1 ? "Card" : "Cards"}
           </span>
 
           <div className="flex items-center gap-2">
-            <IconButton
-              icon={<Eye size={16} />}
-              tooltip="View Cards"
-              onClick={handleViewCards}
-              color="blue"
-              disabled={disabled}
-            />
+            <Link href={`/occasions/${occasion.id}/cards`} passHref>
+              <IconButton
+                icon={<Eye size={16} />}
+                tooltip="View Cards"
+                color="blue"
+                disabled={disabled}
+              />
+            </Link>
             <IconButton
               icon={<Edit size={16} />}
               tooltip="Edit Occasion"
@@ -108,7 +109,7 @@ const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = fals
 };
 
 // Reusable Icon Button Component
-const IconButton = ({ icon, tooltip, onClick, color = "blue", disabled }) => {
+const IconButton = ({ as: Component = 'button', icon, tooltip, onClick, color = "blue", disabled, ...props }) => {
   const colorMap = {
     blue: "hover:text-blue-600 hover:bg-blue-50",
     indigo: "hover:text-indigo-600 hover:bg-indigo-50",
@@ -116,15 +117,16 @@ const IconButton = ({ icon, tooltip, onClick, color = "blue", disabled }) => {
   };
 
   return (
-    <button
+    <Component
       onClick={onClick}
       disabled={disabled}
       title={tooltip}
+      {...props}
       className={`text-gray-400 ${colorMap[color]} p-2 rounded-lg transition-all duration-200 
         hover:scale-110 focus:ring-2 focus:ring-offset-1 focus:ring-${color}-200 disabled:opacity-50`}
     >
       {icon}
-    </button>
+    </Component>
   );
 };
 

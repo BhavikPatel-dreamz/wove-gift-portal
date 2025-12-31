@@ -7,12 +7,12 @@ const CustomEmojiPicker = ({
   value, 
   onChange, 
   required = false, 
-  placeholder = "Select an emoji",
+  placeholder = "Select emoji",
   disabled = false,
   error = null,
   className = "",
-  theme = 'light', // 'light' or 'dark'
-  categories = [], // Optional: limit categories
+  theme = 'light',
+  categories = [],
   searchDisabled = false,
   skinTonesDisabled = false,
   previewConfig = {
@@ -23,10 +23,10 @@ const CustomEmojiPicker = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [emojiName, setEmojiName] = useState('');
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
-  // Detect mobile screen size
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -37,7 +37,6 @@ const CustomEmojiPicker = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target) && 
@@ -57,7 +56,6 @@ const CustomEmojiPicker = ({
     };
   }, [isOpen]);
 
-  // Handle escape key
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape' && isOpen) {
@@ -73,7 +71,6 @@ const CustomEmojiPicker = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Prevent body scroll when dropdown is open on mobile
   useEffect(() => {
     if (isOpen && isMobile) {
       document.body.style.overflow = 'hidden';
@@ -87,14 +84,18 @@ const CustomEmojiPicker = ({
   }, [isOpen, isMobile]);
 
   const handleEmojiSelect = (emojiData) => {
-    // emojiData contains: { emoji, names, originalUnified, unified, etc. }
     onChange(emojiData.emoji);
+    // Store the emoji name for display
+    if (emojiData.names && emojiData.names.length > 0) {
+      setEmojiName(emojiData.names[0]);
+    }
     setIsOpen(false);
   };
 
   const clearSelection = (e) => {
     e.stopPropagation();
     onChange('');
+    setEmojiName('');
   };
 
   const getDropdownClasses = () => {
@@ -113,7 +114,6 @@ const CustomEmojiPicker = ({
     `;
   };
 
-  // Emoji picker configuration
   const emojiPickerProps = {
     onEmojiClick: handleEmojiSelect,
     theme: theme,
@@ -130,18 +130,18 @@ const CustomEmojiPicker = ({
     <div className={`relative ${className}`}>
       {label && (
         <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label} {required && <span className="text-red-500">*</span>}
+          {label} {required && <span className="text-gray-700">*</span>}
         </label>
       )}
       
-      <div className="relative">
+      <div className="relative" ref={dropdownRef}>
         <button
           ref={buttonRef}
           type="button"
           disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen)}
           className={`
-            w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-left bg-white border-2 rounded-xl shadow-sm transition-all duration-200
+             w-full h-[45px] flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-left  border-1 border-gray-300 rounded-lg transition-all duration-200
             ${disabled 
               ? 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-60' 
               : error 
@@ -154,16 +154,20 @@ const CustomEmojiPicker = ({
           aria-haspopup="listbox"
           aria-label={value ? `Selected emoji: ${value}` : placeholder}
         >
-          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1  sm:h-[15px]">
             {value ? (
               <>
-                <span className="text-lg sm:text-2xl flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" role="img" aria-label="Selected emoji">
+                <span className=" text-[12px] h-[15px] sm:text-[14px] text-[#4A4A4A] flex items-center justify-center flex-shrink-0" role="img" aria-label="Selected emoji">
                   {value}
                 </span>
-                <span className="text-gray-700 font-medium text-sm sm:text-base truncate">Emoji selected</span>
+                {emojiName && (
+                  <span className="text-[#4A4A4A] text-[12px] h-[15px] sm:text-[14px] font-medium truncate capitalize">
+                    {emojiName.replace(/_/g, ' ')}
+                  </span>
+                )}
               </>
             ) : (
-              <span className="text-gray-500 text-sm sm:text-base truncate">{placeholder}</span>
+              <span className="text-gray-400 text-sm sm:text-[12px] h-[15px] truncate">{placeholder}</span>
             )}
           </div>
           
@@ -197,33 +201,28 @@ const CustomEmojiPicker = ({
           <p className="mt-1 text-sm text-red-600">{error}</p>
         )}
 
-        {/* Mobile Overlay */}
         {isMobile && isOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-40" />
         )}
 
-        {/* Dropdown/Modal with Emoji Picker */}
         <div className={getDropdownClasses()}>
-          {/* Mobile Header */}
           {isMobile && (
             <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white flex-shrink-0">
-              <h3 className="text-lg font-semibold text-gray-900">Select Emoji</h3>
+              <h4 className="text-[12px] font-medium text-gray-400">Select Emoji</h4>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 rounded-full hover:bg-gray-100 text-gray-500"
                 aria-label="Close emoji picker"
               >
-                <X size={20} />
+                {/* <X size={20} /> */}
               </button>
             </div>
           )}
 
-          {/* Emoji Picker Container */}
           <div className={`${isMobile ? 'flex-1 overflow-hidden' : ''}`}>
             <EmojiPicker {...emojiPickerProps} />
           </div>
 
-          {/* Mobile Footer */}
           {isMobile && (
             <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50">
               <button

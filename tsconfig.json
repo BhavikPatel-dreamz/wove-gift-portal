@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -11,7 +15,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -19,9 +23,53 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/components/forms/Button.jsx", "src/app/(client)/contact/page.jsx", "src/components/shopify/AppBridgeProvider.jsx", "src/app/shopify/layout.jsx", "src/app/shopify/auth-required/page.jsx", "src/app/(client)/page.jsx", "src/components/shopify/ShopifyLink.jsx", "src/icons/WishListIcon.jsx", "src/icons/WhatsupIcon.jsx", "src/icons/StartIcon.jsx", "src/icons/SparklesIcon.jsx", "src/icons/ShieldCheckIcon.jsx", "src/icons/SendIcon.jsx", "src/icons/SecurityIcon.jsx", "src/icons/RightArrow.jsx", "src/icons/PrinterIcon.jsx", "src/icons/PrinterColorIcon.jsx", "src/icons/PackageIcon.jsx", "src/icons/MessageIcon.jsx", "src/icons/MailIcon.jsx", "src/icons/HeartColorIcon.jsx", "src/icons/GlobeIcon.jsx", "src/icons/GiftSmallIcon.jsx", "src/icons/GiftIcon.jsx", "src/icons/GiftCardIcon.jsx", "src/icons/EditIcon.jsx", "src/icons/DashboardWishlistIcon.jsx", "src/icons/DashboardRingIcon.jsx", "src/icons/DashboardPartyPopper.jsx", "src/icons/DashboardGiftIcon.jsx", "src/icons/DashboardEmojiIcon.jsx", "src/icons/DashboardConfettiBall.jsx", "src/icons/BoxIcon.jsx", "src/lib/db.js"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/components/forms/Button.jsx",
+    "src/app/(client)/contact/page.jsx",
+    "src/components/shopify/AppBridgeProvider.jsx",
+    "src/app/shopify/layout.jsx",
+    "src/app/shopify/auth-required/page.jsx",
+    "src/app/(client)/page.jsx",
+    "src/components/shopify/ShopifyLink.jsx",
+    "src/icons/WishListIcon.jsx",
+    "src/icons/WhatsupIcon.jsx",
+    "src/icons/StartIcon.jsx",
+    "src/icons/SparklesIcon.jsx",
+    "src/icons/ShieldCheckIcon.jsx",
+    "src/icons/SendIcon.jsx",
+    "src/icons/SecurityIcon.jsx",
+    "src/icons/RightArrow.jsx",
+    "src/icons/PrinterIcon.jsx",
+    "src/icons/PrinterColorIcon.jsx",
+    "src/icons/PackageIcon.jsx",
+    "src/icons/MessageIcon.jsx",
+    "src/icons/MailIcon.jsx",
+    "src/icons/HeartColorIcon.jsx",
+    "src/icons/GlobeIcon.jsx",
+    "src/icons/GiftSmallIcon.jsx",
+    "src/icons/GiftIcon.jsx",
+    "src/icons/GiftCardIcon.jsx",
+    "src/icons/EditIcon.jsx",
+    "src/icons/DashboardWishlistIcon.jsx",
+    "src/icons/DashboardRingIcon.jsx",
+    "src/icons/DashboardPartyPopper.jsx",
+    "src/icons/DashboardGiftIcon.jsx",
+    "src/icons/DashboardEmojiIcon.jsx",
+    "src/icons/DashboardConfettiBall.jsx",
+    "src/icons/BoxIcon.jsx",
+    "src/lib/db.js",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
