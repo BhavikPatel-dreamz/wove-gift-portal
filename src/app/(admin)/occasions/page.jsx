@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Loader, Search, Edit, Trash2, ChevronLeft, ChevronRight, SortAsc, SortDesc, Eye } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Plus, Loader, Search, Edit, ChevronRight, ChevronLeft, SortAsc, SortDesc, Eye } from "lucide-react";
 import CardDesigns from "@/components/occasions/CardDesigns";
 import Button from "@/components/forms/Button";
 import { getOccasions, addOccasion, updateOccasion, deleteOccasion } from "../../../lib/action/occasionAction";
@@ -19,110 +19,94 @@ const OccasionsManager = () => {
   const [modalOpen, setModalOpen] = useState(false);
 
   // Filter and search states
-  const [filters, setFilters] = useState({
-    search: '',
-    sortBy: 'createdAt',
-    sortOrder: 'desc'
-  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   // Pagination states
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 0,
-    totalItems: 0,
-    itemsPerPage: 12,
-    hasNextPage: false,
-    hasPrevPage: false
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  // Debounce hook for search
-  const useDebounce = (value, delay) => {
-    const [debouncedValue, setDebouncedValue] = useState(value);
+  // Debounce search term
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-    useEffect(() => {
-      const handler = setTimeout(() => {
-        setDebouncedValue(value);
-      }, delay);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
 
-      return () => {
-        clearTimeout(handler);
-      };
-    }, [value, delay]);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-    return debouncedValue;
-  };
-
-  const debouncedSearch = useDebounce(filters.search, 500);
-
-  const fetchOccasions = useCallback(async (resetPage = false) => {
+  // Fetch occasions function
+  const fetchOccasions = useCallback(async () => {
     try {
       setLoading(true);
-      const currentPage = resetPage ? 1 : pagination.currentPage;
 
       const params = {
         page: currentPage,
-        limit: pagination.itemsPerPage,
-        search: debouncedSearch,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder
+        limit: itemsPerPage,
+        search: debouncedSearch || undefined,
+        sortBy: sortBy,
+        sortOrder: sortOrder
       };
 
       const result = await getOccasions(params);
 
       if (result.success) {
         setOccasions(result.data || []);
-        setPagination(result.meta.pagination);
+        
+        if (result.meta?.pagination) {
+          setTotalItems(result.meta.pagination.totalItems);
+          setTotalPages(result.meta.pagination.totalPages);
+        }
       } else {
         toast.error(result.message || "Failed to load occasions");
+        setOccasions([]);
       }
     } catch (error) {
       console.error("Error fetching occasions:", error);
       toast.error("Error loading occasions");
+      setOccasions([]);
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, filters.sortBy, filters.sortOrder, pagination.currentPage, pagination.itemsPerPage]);
+  }, [currentPage, itemsPerPage, debouncedSearch, sortBy, sortOrder]);
 
+  // Fetch on mount and when dependencies change
   useEffect(() => {
-    fetchOccasions(true);
-  }, [debouncedSearch, filters.sortBy, filters.sortOrder]);
+    fetchOccasions();
+  }, [fetchOccasions]);
 
+  // Reset to page 1 when filters change
   useEffect(() => {
-    if (pagination.currentPage > 1) {
-      fetchOccasions(false);
-    }
-  }, [pagination.currentPage]);
+    setCurrentPage(1);
+  }, [debouncedSearch, sortBy, sortOrder, itemsPerPage]);
 
-  const handleFilterChange = (key, value) => {
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleSortByChange = (value) => {
+    setSortBy(value);
+  };
+
+  const handleSortOrderToggle = () => {
+    setSortOrder(prev => prev === "asc" ? "desc" : "asc");
   };
 
   const handlePageChange = (newPage) => {
-    if (newPage >= 1 && newPage <= pagination.totalPages && !loading) {
-      setPagination(prev => ({
-        ...prev,
-        currentPage: newPage
-      }));
+    if (newPage >= 1 && newPage <= totalPages && !loading) {
+      setCurrentPage(newPage);
     }
   };
 
   const handleItemsPerPageChange = (newLimit) => {
-    setPagination(prev => ({
-      ...prev,
-      itemsPerPage: newLimit,
-      currentPage: 1
-    }));
+    setItemsPerPage(parseInt(newLimit));
+    setCurrentPage(1);
   };
-
-  useEffect(() => {
-    if (pagination.itemsPerPage) {
-      fetchOccasions(true);
-    }
-  }, [pagination.itemsPerPage]);
 
   const handleAddOccasion = async (newOccasion) => {
     try {
@@ -140,7 +124,8 @@ const OccasionsManager = () => {
       if (result.success) {
         toast.success("Occasion added successfully");
         setIsModalOpen(false);
-        await fetchOccasions(true);
+        setCurrentPage(1);
+        await fetchOccasions();
         setCurrentView("cards");
         setSelectedOccasion(result?.data);
         setModalOpen(true);
@@ -179,7 +164,7 @@ const OccasionsManager = () => {
         toast.success("Occasion updated successfully");
         setIsModalOpen(false);
         setEditingOccasion(null);
-        await fetchOccasions(false);
+        await fetchOccasions();
       } else {
         toast.error(result.message || "Failed to update occasion");
       }
@@ -202,7 +187,13 @@ const OccasionsManager = () => {
 
       if (result.success) {
         toast.success("Occasion deleted successfully");
-        await fetchOccasions(false);
+        
+        // If we're on the last item of a page (not page 1), go back one page
+        if (occasions.length === 1 && currentPage > 1) {
+          setCurrentPage(prev => prev - 1);
+        } else {
+          await fetchOccasions();
+        }
       } else {
         toast.error(result.message || "Failed to delete occasion");
       }
@@ -225,32 +216,43 @@ const OccasionsManager = () => {
   };
 
   const handleCardCountChange = () => {
-    fetchOccasions(false);
+    fetchOccasions();
   };
 
-  const getPageNumbers = () => {
+  // Generate page numbers for pagination
+  const getPageNumbers = useMemo(() => {
     const pages = [];
-    const totalPages = pagination.totalPages;
-    const currentPage = pagination.currentPage;
-
-    if (totalPages <= 5) {
+    
+    if (totalPages <= 7) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
-    } else if (currentPage <= 3) {
-      pages.push(1, 2, 3, 4, 5);
-    } else if (currentPage >= totalPages - 2) {
-      for (let i = totalPages - 4; i <= totalPages; i++) {
-        pages.push(i);
-      }
     } else {
-      for (let i = currentPage - 2; i <= currentPage + 2; i++) {
-        pages.push(i);
+      if (currentPage <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
       }
     }
-
+    
     return pages;
-  };
+  }, [currentPage, totalPages]);
+
+  // Pagination info
+  const hasPrevPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
+  const startIndex = (currentPage - 1) * itemsPerPage + 1;
+  const endIndex = Math.min(currentPage * itemsPerPage, totalItems);
 
   if (loading && occasions.length === 0) {
     return (
@@ -275,6 +277,9 @@ const OccasionsManager = () => {
       />
     );
   }
+
+  console.log("occasions",occasions);
+  
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 text-black">
@@ -317,8 +322,8 @@ const OccasionsManager = () => {
               <input
                 type="text"
                 placeholder="Search occasions by name..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+                value={searchTerm}
+                onChange={handleSearchChange}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none"
               />
             </div>
@@ -326,8 +331,8 @@ const OccasionsManager = () => {
             {/* Sort */}
             <div className="flex gap-2">
               <select
-                value={filters.sortBy}
-                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                value={sortBy}
+                onChange={(e) => handleSortByChange(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg outline-none"
               >
                 <option value="createdAt">Created Date</option>
@@ -335,10 +340,10 @@ const OccasionsManager = () => {
                 <option value="updatedAt">Updated Date</option>
               </select>
               <button
-                onClick={() => handleFilterChange('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
+                onClick={handleSortOrderToggle}
                 className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                {filters.sortOrder === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />}
+                {sortOrder === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />}
               </button>
             </div>
           </div>
@@ -349,7 +354,7 @@ const OccasionsManager = () => {
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-semibold text-[#1A1A1A]">Occasions List</h2>
             <span className="bg-[rgba(15,100,246,0.10)] text-[#0F64F6] px-2 py-1 rounded-[3px] border border-[rgba(15,100,246,0.20)] text-sm font-medium">
-              {pagination.totalItems} occasions
+              {totalItems} occasions
             </span>
           </div>
 
@@ -357,8 +362,8 @@ const OccasionsManager = () => {
           <div className="flex items-center gap-2">
             <span className="text-sm text-[#A6A6A6]">Show:</span>
             <select
-              value={pagination.itemsPerPage}
-              onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
+              value={itemsPerPage}
+              onChange={(e) => handleItemsPerPageChange(e.target.value)}
               className="px-1 py-1 border border-[#E2E8F0] rounded-lg text-xs outline-none"
             >
               <option value={4}>4</option>
@@ -372,106 +377,98 @@ const OccasionsManager = () => {
         </div>
 
         {/* Occasions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6 relative">
+        <div className="relative">
           {loading && (
-            <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-lg">
+            <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 rounded-lg min-h-[400px]">
               <div className="flex items-center gap-2 bg-white px-4 py-3 rounded-lg shadow-lg">
                 <Loader className="animate-spin text-blue-600" size={20} />
                 <span className="text-gray-700">Loading...</span>
               </div>
             </div>
           )}
-          
-          {occasions.map((occasion) => (
-            <OccasionCard
-              key={occasion.id}
-              occasion={occasion}
-              onEdit={() => handleEditOccasion(occasion)}
-              onDelete={() => handleDeleteOccasion(occasion.id)}
-              onViewCards={handleViewCards}
-              disabled={actionLoading}
-            />
-          ))}
+
+          {occasions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+              {occasions.map((occasion) => (
+                <OccasionCard
+                  key={occasion.id}
+                  occasion={occasion}
+                  onEdit={() => handleEditOccasion(occasion)}
+                  onDelete={() => handleDeleteOccasion(occasion.id)}
+                  onViewCards={handleViewCards}
+                  disabled={actionLoading}
+                />
+              ))}
+            </div>
+          ) : !loading && (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Search size={48} className="mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No occasions found</h3>
+              <p className="text-gray-600 mb-4">
+                {searchTerm ? 'Try adjusting your search criteria' : 'Get started by adding your first occasion'}
+              </p>
+              {!searchTerm && (
+                <Button
+                  onClick={() => {
+                    setEditingOccasion(null);
+                    setIsModalOpen(true);
+                  }}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Add Your First Occasion
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
-        {pagination.totalPages > 1 && (
+        {totalPages > 1 && occasions.length > 0 && (
           <div className="flex justify-between items-center bg-white rounded-lg shadow-sm p-4">
             <div className="text-sm text-gray-600">
-              Page {pagination.currentPage} of {pagination.totalPages}
+              Showing {startIndex} to {endIndex} of {totalItems} occasions
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 inline-block">
-                <button
-                  onClick={() => handlePageChange(pagination.currentPage - 1)}
-                  disabled={!pagination.hasPrevPage || loading}
-                  className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
-                             transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
-                    <defs>
-                      <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
-                        <stop stopColor="#ED457D" />
-                        <stop offset="1" stopColor="#FA8F42" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <span className="text-base font-semibold text-gray-800">Previous</span>
-                </button>
-              </div>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!hasPrevPage || loading}
+                className="p-2 border border-gray-300 text-black cursor-pointer rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
 
               <div className="flex gap-1">
-                {getPageNumbers().map((pageNum) => (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    disabled={loading}
-                    className={`px-3 py-2 rounded-lg ${
-                      pageNum === pagination.currentPage
-                        ? 'bg-blue-600 text-white'
-                        : 'border border-gray-300 hover:bg-gray-50'
-                    } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {pageNum}
-                  </button>
+                {getPageNumbers.map((pageNum, index) => (
+                  pageNum === '...' ? (
+                    <span key={`ellipsis-${index}`} className="px-3 py-1">...</span>
+                  ) : (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      disabled={loading}
+                      className={`px-3 py-1 rounded-lg transition-colors ${
+                        pageNum === currentPage
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {pageNum}
+                    </button>
+                  )
                 ))}
               </div>
 
               <button
-                onClick={() => handlePageChange(pagination.currentPage + 1)}
-                disabled={!pagination.hasNextPage || loading}
-                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!hasNextPage || loading}
+                className="p-2 border border-gray-300 text-black cursor-pointer rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                Next
-                <ChevronRight size={16} />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {occasions.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Search size={48} className="mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No occasions found</h3>
-            <p className="text-gray-600 mb-4">
-              {filters.search ? 'Try adjusting your search criteria' : 'Get started by adding your first occasion'}
-            </p>
-            {!filters.search && (
-              <Button
-                onClick={() => {
-                  setEditingOccasion(null);
-                  setIsModalOpen(true);
-                }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Add Your First Occasion
-              </Button>
-            )}
           </div>
         )}
 

@@ -348,40 +348,47 @@ export async function deleteOccasion(id) {
 
 export async function getOccasions(params = {}) {
     try {
-        // Convert string parameters to appropriate types
-        const processedParams = {
-            ...params,
-            page: params.page ? parseInt(params.page, 10) : undefined,
-            limit: params.limit ? parseInt(params.limit, 10) : undefined,
-            isActive: params.isActive !== undefined ? String(params.isActive) === 'true' : undefined
-        };
+        // Parse and validate parameters
+        const page = Math.max(1, parseInt(params.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(params.limit) || 12));
+        const search = params.search?.trim() || '';
+        const sortBy = ['name', 'createdAt', 'updatedAt'].includes(params.sortBy) 
+            ? params.sortBy 
+            : 'createdAt';
+        const sortOrder = params.sortOrder === 'asc' ? 'asc' : 'desc';
+        const isActive = params.isActive !== undefined 
+            ? String(params.isActive) === 'true' 
+            : undefined;
 
-        const validationResult = GetOccasionsSchema.safeParse(processedParams);
+        // Validate with schema if you have one
+        const validationResult = GetOccasionsSchema.safeParse({
+            page, limit, search, sortBy, sortOrder, isActive
+        });
         const validationError = handleValidationError(validationResult);
         if (validationError) return validationError;
 
-        const {
-            id,
-            search,
-            isActive,
-            page,
-            limit,
-            sortBy,
-            sortOrder
-        } = validationResult.data;
-
+        // Build where clause
         const where = {};
-        if (id) where.id = id;
+        
+        if (params.id) {
+            where.id = params.id;
+        }
+        
         if (search) {
             where.name = {
                 contains: search,
                 mode: 'insensitive'
             };
         }
-        if (isActive !== undefined) where.isActive = isActive;
+        
+        if (isActive !== undefined) {
+            where.isActive = isActive;
+        }
 
+        // Calculate pagination
         const skip = (page - 1) * limit;
 
+        // Fetch data with parallel queries for better performance
         const [occasions, totalItems] = await Promise.all([
             prisma.occasion.findMany({
                 where,
@@ -392,23 +399,35 @@ export async function getOccasions(params = {}) {
             prisma.occasion.count({ where })
         ]);
 
+        // Calculate total pages
         const totalPages = Math.ceil(totalItems / limit);
 
-        // Add card counts
-        const occasionsWithCounts = await Promise.all(
-            occasions.map(async (occasion) => {
-                const cardCount = await prisma.occasionCategory.count({
-                    where: { occasionId: occasion.id }
-                }).catch(() => 0);
+        // Fetch card counts in batch (more efficient than individual queries)
+        const occasionIds = occasions.map(o => o.id);
+        const cardCounts = await prisma.occasionCategory.groupBy({
+            by: ['occasionId'],
+            where: {
+                occasionId: { in: occasionIds }
+            },
+            _count: {
+                id: true
+            }
+        });
 
-                return {
-                    ...occasion,
-                    cardCount,
-                    active: occasion.isActive,
-                };
-            })
-        );
-    
+        // Create a map for quick lookup
+        const cardCountMap = cardCounts.reduce((acc, item) => {
+            acc[item.occasionId] = item._count.id;
+            return acc;
+        }, {});
+
+        // Add card counts to occasions
+        const occasionsWithCounts = occasions.map(occasion => ({
+            ...occasion,
+            cardCount: cardCountMap[occasion.id] || 0,
+            active: occasion.isActive,
+        }));
+
+        // Build pagination metadata
         const pagination = {
             currentPage: page,
             totalPages,
@@ -416,7 +435,7 @@ export async function getOccasions(params = {}) {
             itemsPerPage: limit,
             hasNextPage: page < totalPages,
             hasPrevPage: page > 1,
-            startIndex: skip + 1,
+            startIndex: totalItems > 0 ? skip + 1 : 0,
             endIndex: Math.min(skip + limit, totalItems),
         };
 
