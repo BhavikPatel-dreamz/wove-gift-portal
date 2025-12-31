@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Plus, Loader, Search, Edit, ChevronRight, ChevronLeft, SortAsc, SortDesc, Eye } from "lucide-react";
 import CardDesigns from "@/components/occasions/CardDesigns";
 import Button from "@/components/forms/Button";
@@ -9,6 +10,17 @@ import CreateOccasionModal from "@/components/forms/CreateOccasionModal";
 import OccasionCard from "@/components/forms/OccasionCard";
 
 const OccasionsManager = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // State from URL
+  const currentPage = Number(searchParams.get('page')) || 1;
+  const itemsPerPage = Number(searchParams.get('limit')) || 12;
+  const debouncedSearch = searchParams.get('search') || '';
+  const sortBy = searchParams.get('sortBy') || 'createdAt';
+  const sortOrder = searchParams.get('sortOrder') || 'desc';
+
   const [occasions, setOccasions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -18,27 +30,35 @@ const OccasionsManager = () => {
   const [selectedOccasion, setSelectedOccasion] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Filter and search states
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [sortOrder, setSortOrder] = useState("desc");
+  // Search state
+  const [searchTerm, setSearchTerm] = useState(debouncedSearch);
 
   // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(12);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  // Debounce search term
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
+  // Debounce search term and update URL
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
+      if (searchTerm !== debouncedSearch) {
+        const params = new URLSearchParams(searchParams.toString());
+        if (searchTerm) {
+          params.set('search', searchTerm);
+        } else {
+          params.delete('search');
+        }
+        params.set('page', '1'); // Reset page on new search
+        router.push(`${pathname}?${params.toString()}`);
+      }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, debouncedSearch, pathname, router, searchParams]);
+
+  // Sync search input with URL
+  useEffect(() => {
+    setSearchTerm(debouncedSearch);
+  }, [debouncedSearch]);
 
   // Fetch occasions function
   const fetchOccasions = useCallback(async () => {
@@ -80,32 +100,37 @@ const OccasionsManager = () => {
     fetchOccasions();
   }, [fetchOccasions]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, sortBy, sortOrder, itemsPerPage]);
-
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
   };
 
   const handleSortByChange = (value) => {
-    setSortBy(value);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sortBy', value);
+    params.set('page', '1');
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   const handleSortOrderToggle = () => {
-    setSortOrder(prev => prev === "asc" ? "desc" : "asc");
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sortOrder', sortOrder === 'asc' ? 'desc' : 'asc');
+    params.set('page', '1');
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages && !loading) {
-      setCurrentPage(newPage);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('page', String(newPage));
+      router.push(`${pathname}?${params.toString()}`);
     }
   };
 
   const handleItemsPerPageChange = (newLimit) => {
-    setItemsPerPage(parseInt(newLimit));
-    setCurrentPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('limit', String(newLimit));
+    params.set('page', '1');
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   const handleAddOccasion = async (newOccasion) => {
@@ -124,8 +149,11 @@ const OccasionsManager = () => {
       if (result.success) {
         toast.success("Occasion added successfully");
         setIsModalOpen(false);
-        setCurrentPage(1);
-        await fetchOccasions();
+        
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('page', '1');
+        router.push(`${pathname}?${params.toString()}`);
+
         setCurrentView("cards");
         setSelectedOccasion(result?.data);
         setModalOpen(true);
@@ -188,9 +216,8 @@ const OccasionsManager = () => {
       if (result.success) {
         toast.success("Occasion deleted successfully");
         
-        // If we're on the last item of a page (not page 1), go back one page
         if (occasions.length === 1 && currentPage > 1) {
-          setCurrentPage(prev => prev - 1);
+          handlePageChange(currentPage - 1);
         } else {
           await fetchOccasions();
         }
