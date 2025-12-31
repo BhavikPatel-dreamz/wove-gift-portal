@@ -1,42 +1,10 @@
-import React, { useState, useEffect } from 'react';
+'use client'
+
+import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { Gift, DollarSign, CreditCard, Clock, TrendingUp, Users, Award, Package, AlertCircle, Loader2 } from 'lucide-react';
+import { Gift, DollarSign, CreditCard, Clock, TrendingUp, Users, Award, Package } from 'lucide-react';
 
-const Dashboard = ({ shopParam }) => {
-  const [timeRange, setTimeRange] = useState('all');
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [timeRange]);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch(`/api/dashboard?period=${timeRange}${shopParam ? `&shop=${shopParam}` : ''}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setDashboardData(data);
-      } else {
-        throw new Error(data.message || 'Failed to load data');
-      }
-    } catch (err) {
-      console.error('Dashboard fetch error:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+const Dashboard = ({ dashboardData, shopParam }) => {
 
   const MetricCard = ({ title, value, subtitle, icon: Icon, trend, color = "blue", currency = false }) => {
     const colorClasses = {
@@ -77,36 +45,6 @@ const Dashboard = ({ shopParam }) => {
     </div>
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading dashboard data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-          <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-red-900 mb-2 text-center">Error Loading Dashboard</h3>
-          <p className="text-red-700 text-center mb-4">{error}</p>
-          <button
-            onClick={fetchDashboardData}
-            className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Transform data for charts
   const monthlyData = dashboardData?.trends?.monthly?.map(item => ({
     month: item.monthLabel,
     transactions: Number(item.totalAmount),
@@ -127,39 +65,17 @@ const Dashboard = ({ shopParam }) => {
     orders: Number(item.orderCount),
   })) || [];
 
-  const hasData = dashboardData?.metrics?.giftCards?.totalIssued > 0;
-
-
-
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
 
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Gift Card Analytics</h1>
             <p className="text-gray-600">Monitor your gift card performance and transactions</p>
           </div>
-          {/* <div className="flex gap-2">
-            {['all', 'month', 'quarter', 'year'].map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-                  timeRange === range
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {range === 'all' ? 'All Time' : range}
-              </button>
-            ))}
-          </div> */}
         </div>
 
-        {/* Top Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Gift Cards Issued"
@@ -194,10 +110,8 @@ const Dashboard = ({ shopParam }) => {
           />
         </div>
 
-        {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* Monthly Transaction Trends */}
           <ChartCard
             title="Monthly Transaction Trends"
             subtitle={monthlyData.length > 0 ? "Transaction volume over recent months" : "Awaiting first transaction data"}
@@ -256,7 +170,6 @@ const Dashboard = ({ shopParam }) => {
             </div>
           </ChartCard>
 
-          {/* Top Performing Brands */}
           <ChartCard
             title="Top Performing Brands"
             subtitle={brandData.length > 0 ? "Based on total revenue" : "Awaiting brand performance data"}
@@ -314,10 +227,8 @@ const Dashboard = ({ shopParam }) => {
           </ChartCard>
         </div>
 
-        {/* Bottom Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Active Brand Partners */}
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-xl text-white">
             <div className="flex items-center gap-4 mb-4">
               <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
@@ -339,7 +250,6 @@ const Dashboard = ({ shopParam }) => {
             </div>
           </div>
 
-          {/* Weekly Trend */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-gray-800 mb-2">Weekly Performance</h3>

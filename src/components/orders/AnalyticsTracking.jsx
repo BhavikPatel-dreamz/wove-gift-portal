@@ -1,72 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, DollarSign, Loader2 } from 'lucide-react';
+"use client";
+import React from 'react';
+import { TrendingUp, DollarSign } from 'lucide-react';
 
-const AnalyticsTracking = () => {
-  const [brandRedemptions, setBrandRedemptions] = useState([]);
-  const [settlements, setSettlements] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchAnalyticsData();
-  }, []);
-
-  const fetchAnalyticsData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('/api/analytics?period=year');
-      const data = await response.json();
-      
-      
-      if (data.success) {
-        setBrandRedemptions(data.brandRedemptions || []);
-        setSettlements(data.settlements || []);
-      } else {
-        setError(data.message || 'Failed to load analytics data');
-      }
-    } catch (err) {
-      console.error('Analytics fetch error:', err);
-      setError('Failed to fetch analytics data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading analytics...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-6">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">⚠️</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Analytics</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={fetchAnalyticsData}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+const AnalyticsTracking = ({
+  initialBrandRedemptions = [],
+  initialSettlements = [],
+  initialPeriod = 'year'
+}) => {
+  const brandRedemptions = initialBrandRedemptions;
+  const settlements = initialSettlements;
 
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-[1400px] mx-auto px-6 py-8">
-        
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-xl font-bold text-gray-900">
@@ -77,19 +24,19 @@ const AnalyticsTracking = () => {
 
         {/* Main Content - White Card */}
         <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
-          
+
           {/* Redemption Rate by Brand */}
           <div className="mb-10">
             <h2 className="text-base font-semibold text-gray-900 mb-5">
               Redemption Rate by Brand
             </h2>
-            
+
             {brandRedemptions.length > 0 ? (
               <>
                 {/* First Row - 4 columns */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {brandRedemptions.slice(0, 4).map((brand, index) => (
-                    <div 
+                    <div
                       key={index}
                       className={`${brand.bgColor} rounded-xl p-4`}
                     >
@@ -98,7 +45,7 @@ const AnalyticsTracking = () => {
                         {/* Logo */}
                         <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
                           {brand.logo ? (
-                              <img src={brand.logo} alt={brand.brandName} className="w-12 h-12 rounded-lg" />
+                            <img src={brand.logo} alt={brand.name} className="w-12 h-12 rounded-lg" />
                           ) : (
                             <span className="text-xl">🎁</span>
                           )}
@@ -108,7 +55,7 @@ const AnalyticsTracking = () => {
                           {brand.name}
                         </h3>
                       </div>
-                      
+
                       {/* Stats Row */}
                       <div className="flex items-center justify-between">
                         {/* Percentage */}
@@ -123,12 +70,12 @@ const AnalyticsTracking = () => {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Second Row - 3 columns (if more than 4 brands) */}
                 {brandRedemptions.length > 4 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                     {brandRedemptions.slice(4, 8).map((brand, index) => (
-                      <div 
+                      <div
                         key={index + 4}
                         className={`${brand.bgColor} rounded-xl p-4`}
                       >
@@ -151,7 +98,7 @@ const AnalyticsTracking = () => {
                             {brand.name}
                           </h3>
                         </div>
-                        
+
                         {/* Stats Row */}
                         <div className="flex items-center justify-between">
                           {/* Percentage */}
@@ -182,11 +129,11 @@ const AnalyticsTracking = () => {
             <h2 className="text-base font-semibold text-gray-900 mb-5">
               Settlement Overview
             </h2>
-            
+
             {settlements.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {settlements.map((settlement, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="bg-white rounded-xl p-4 border border-gray-200"
                   >
@@ -197,7 +144,7 @@ const AnalyticsTracking = () => {
                           {settlement.brand}
                         </h3>
                         <p className="text-xl font-semibold text-green-600">
-                          {settlement.amount.toLocaleString()}
+                          ₹{settlement.amount.toLocaleString()}
                         </p>
                       </div>
                       {/* Status Badge */}

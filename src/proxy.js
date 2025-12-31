@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
-export function middleware(request) {
+export function proxy(request) {
   const { pathname } = request.nextUrl
 
   // Public routes - no authentication required
