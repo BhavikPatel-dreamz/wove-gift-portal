@@ -508,8 +508,7 @@ export async function getOccasionById(id) {
 export async function addOccasionCategory(formData) {
     try {
         // formData is already a FormData object, no need to await req.formData()
-        
-        const parsedData = parseFormData(formData, {
+const parsedData = parseFormData(formData, {
             name: (val) => val?.toString().trim() || '',
             description: (val) => val?.toString().trim() || '',
             emoji: (val) => val?.toString() || '',
@@ -860,6 +859,7 @@ export async function getOccasionCategories(params = {}) {
     }
 }
 
+// ============================================================================\n// GET OCCASION BY ID\n// ============================================================================\n\nexport async function getOccasionById(id) {\n    try {\n        const validationResult = IdSchema.safeParse(id);\n        if (!validationResult.success) {\n            return createStandardResponse(false, \"Invalid ID format\", 400);\n        }\n\n        const occasion = await prisma.occasion.findUnique({\n            where: { id },\n            include: {\n                _count: {\n                    select: { occasionCategories: true },\n                },\n            },\n        });\n\n        if (!occasion) {\n            return createStandardResponse(false, \"Occasion not found\", 404);\n        }\n\n        // Map _count to cardCount for consistency with getOccasions\n        const { _count, ...rest } = occasion;\n        const formattedOccasion = {\n            ...rest,\n            cardCount: _count?.occasionCategories || 0,\n        };\n\n        return createStandardResponse(\n            true,\n            \"Occasion retrieved successfully\",\n            200,\n            formattedOccasion\n        );\n\n    } catch (error) {\n        console.error(`getOccasionById error for id: ${id}:`, error);\n        return createStandardResponse(\n            false,\n            \"Failed to retrieve occasion. Please try again.\",\n            500\n        );\n    }\n}
 export async function getOccasionCategoryById(id) {
     try {
         const validationResult = IdSchema.safeParse(id);

@@ -152,11 +152,10 @@ const OccasionsManager = () => {
         
         const params = new URLSearchParams(searchParams.toString());
         params.set('page', '1');
-        router.push(`${pathname}?${params.toString()}`);
+        
+        // Redirect to the new cards page for the newly created occasion
+        router.push(`/occasions/${result.data.id}/cards`);
 
-        setCurrentView("cards");
-        setSelectedOccasion(result?.data);
-        setModalOpen(true);
       } else {
         toast.error(result.message || "Failed to add occasion");
       }
@@ -422,7 +421,6 @@ const OccasionsManager = () => {
                   occasion={occasion}
                   onEdit={() => handleEditOccasion(occasion)}
                   onDelete={() => handleDeleteOccasion(occasion.id)}
-                  onViewCards={handleViewCards}
                   disabled={actionLoading}
                 />
               ))}

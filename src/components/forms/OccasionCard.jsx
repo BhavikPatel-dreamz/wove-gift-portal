@@ -1,13 +1,13 @@
 import { Edit, Trash2, Eye } from "lucide-react";
+import Link from "next/link";
 
-const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = false }) => {
+const OccasionCard = ({ occasion, onEdit, onDelete, disabled = false }) => {
   const statusActive = occasion.isActive || occasion.active;
   const statusVariant = statusActive ? "success" : "default";
   const statusText = statusActive ? "Active" : "Inactive";
   const cardCount = occasion.cardCount || occasion._count?.occasionCategories || 0;
 
   const handleEdit = () => !disabled && onEdit?.(occasion);
-  const handleViewCards = () => !disabled && onViewCards?.(occasion);
   const handleDelete = () => !disabled && onDelete?.(occasion.id);
 
   return (
@@ -79,13 +79,14 @@ const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = fals
           </span>
 
           <div className="flex items-center gap-2">
-            <IconButton
-              icon={<Eye size={16} />}
-              tooltip="View Cards"
-              onClick={handleViewCards}
-              color="blue"
-              disabled={disabled}
-            />
+            <Link href={`/occasions/${occasion.id}/cards`} passHref>
+              <IconButton
+                icon={<Eye size={16} />}
+                tooltip="View Cards"
+                color="blue"
+                disabled={disabled}
+              />
+            </Link>
             <IconButton
               icon={<Edit size={16} />}
               tooltip="Edit Occasion"
@@ -108,7 +109,7 @@ const OccasionCard = ({ occasion, onEdit, onViewCards, onDelete, disabled = fals
 };
 
 // Reusable Icon Button Component
-const IconButton = ({ icon, tooltip, onClick, color = "blue", disabled }) => {
+const IconButton = ({ as: Component = 'button', icon, tooltip, onClick, color = "blue", disabled, ...props }) => {
   const colorMap = {
     blue: "hover:text-blue-600 hover:bg-blue-50",
     indigo: "hover:text-indigo-600 hover:bg-indigo-50",
@@ -116,15 +117,16 @@ const IconButton = ({ icon, tooltip, onClick, color = "blue", disabled }) => {
   };
 
   return (
-    <button
+    <Component
       onClick={onClick}
       disabled={disabled}
       title={tooltip}
+      {...props}
       className={`text-gray-400 ${colorMap[color]} p-2 rounded-lg transition-all duration-200 
         hover:scale-110 focus:ring-2 focus:ring-offset-1 focus:ring-${color}-200 disabled:opacity-50`}
     >
       {icon}
-    </button>
+    </Component>
   );
 };
 
