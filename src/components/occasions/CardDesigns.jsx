@@ -3,7 +3,7 @@ import Button from "../forms/Button";
 import Badge from "../forms/Badge";
 import Card from "../forms/Card";
 import Toggle from "../forms/Toggle";
-import { ArrowLeft, Edit3, Plus, MoreVertical, Trash2, Copy, Loader2, Search, Filter, SortDesc, ChevronLeft, Loader } from "lucide-react";
+import { ArrowLeft, Edit3, Plus, MoreVertical, Trash2, Copy, Loader2, Search, Filter, SortDesc, ChevronLeft, ChevronRight, Loader } from "lucide-react";
 import CreateNewCard from "./CreateNewCard";
 import { getOccasionCategories, updateOccasionCategory, deleteOccasionCategory, getOccasionCategoryById } from "../../lib/action/occasionAction";
 
@@ -21,6 +21,9 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen,setModalOpen
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all"); // all, active, inactive
   const [sortBy, setSortBy] = useState("newest"); // newest, oldest, name
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCards, setTotalCards] = useState(0);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -45,9 +48,12 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen,setModalOpen
 
         const result = await getOccasionCategories({
           occasionId: occasion.id,
-          isActive: undefined,
-          page: 1,
-          limit: 100
+          isActive: filterStatus === 'all' ? undefined : filterStatus === 'active',
+          page: currentPage,
+          limit: 10, // Testing limit
+          search: searchTerm,
+          sortBy: sortBy === 'name' ? 'name' : 'createdAt',
+          sortOrder: sortBy === 'oldest' ? 'asc' : 'desc',
         });
 
         if (result.success) {
@@ -64,6 +70,8 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen,setModalOpen
           }));
 
           setCards(transformedCards);
+          setTotalPages(result.meta.pagination.totalPages);
+          setTotalCards(result.meta.pagination.totalItems);
         } else {
           setError(result.message || 'Failed to fetch card designs');
         }
@@ -78,7 +86,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen,setModalOpen
     if (occasion.id) {
       fetchCards();
     }
-  }, [occasion.id]);
+  }, [occasion.id, currentPage, searchTerm, filterStatus, sortBy]);
 
   const handleSaveNewCard = (newCardData) => {
     const newCard = {
@@ -185,27 +193,8 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen,setModalOpen
     setCardToEdit(null);
   };
 
-  // Filter and sort cards
-  const filteredAndSortedCards = cards
-    .filter(card => {
-      if (searchTerm && !card.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
-      if (filterStatus === 'active' && !card.active) return false;
-      if (filterStatus === 'inactive' && card.active) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'oldest':
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        case 'name':
-          return a.title.localeCompare(b.title);
-        case 'newest':
-        default:
-          return new Date(b.createdAt) - new Date(a.createdAt);
-      }
-    });
+  // Cards are now filtered and sorted by the server.
+  const filteredAndSortedCards = cards;
 
   const activeCards = cards.filter(card => card.active).length;
   const inactiveCards = cards.filter(card => !card.active).length;
@@ -325,7 +314,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen,setModalOpen
 
               {/* Results count */}
               <div className="text-sm text-[#A6A6A6]">
-                Showing <span className="text-[#4A4A4A]">{filteredAndSortedCards.length}</span> of <span className="text-[#4A4A4A]">{cards.length}</span> cards
+                Showing <span className="text-[#4A4A4A]">{filteredAndSortedCards.length}</span> of <span className="text-[#4A4A4A]">{totalCards}</span> cards
               </div>
             </div>
           </div>
@@ -354,7 +343,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen,setModalOpen
               <div className="flex items-center space-x-1.5">
                 <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
                 <span className="text-sm text-gray-600">
-                  <span className="font-semibold text-gray-900">{cards.length}</span> Total
+                  <span className="font-semibold text-gray-900">{totalCards}</span> Total
                 </span>
               </div>
             </div>
@@ -546,6 +535,31 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen,setModalOpen
                   </Card>
                 ))}
               </div>
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-8">
+                  <nav className="flex items-center space-x-2">
+                    <Button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      variant="outline"
+                      className="px-3 py-1"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <span className="text-sm text-gray-600">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      variant="outline"
+                      className="px-3 py-1"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </nav>
+                </div>
+              )}
             </div>
           )}
         </div>
