@@ -1,7 +1,7 @@
 "use client"
 import React, { useRef } from 'react';
 import { Upload, Globe, Loader, X } from 'lucide-react';
-import { categories } from '../../lib/resourses';
+import { Categories } from '../../lib/resourses';
 import toast from 'react-hot-toast';
 
 const BrandForm = ({ 
@@ -178,7 +178,7 @@ const BrandForm = ({
               disabled={actionLoading}
             >
               <option value="">Select a category</option>
-              {categories.map(category => (
+              {Categories.map(category => (
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>

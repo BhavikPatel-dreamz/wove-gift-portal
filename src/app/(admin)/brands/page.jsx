@@ -5,7 +5,7 @@ import Modal from '@/components/Modal';
 import BrandForm from '@/components/forms/BrandForm';
 import { addBrand, updateBrand, deleteBrand, getBrands, getBrandStats } from '../../../lib/action/brandAction';
 import { toast } from 'react-hot-toast';
-import { categories } from '../../../lib/resourses';
+import { Categories } from '../../../lib/resourses';
 
 const BrandManager = () => {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -490,7 +490,7 @@ const BrandManager = () => {
               onChange={(e) => handleFilterChange('category', e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none min-w-[150px]"
             >
-              {categories.map(category => (
+              {Categories.map(category => (
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
