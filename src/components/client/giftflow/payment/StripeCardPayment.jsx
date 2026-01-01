@@ -1,49 +1,40 @@
 import React, { useState } from "react";
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import toast from 'react-hot-toast';
 
-const StripeCardPayment = ({ total, isProcessing, onPayment }) => {
+const StripeCardPayment = ({ clientSecret, isProcessing, onPaymentSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [cardError, setCardError] = useState(null);
 
   const handleCardPayment = async () => {
-    if (!stripe || !elements) return;
+    if (!stripe || !elements) {
+      return;
+    }
 
     setCardError(null);
-    const cardElement = elements.getElement(CardElement);
 
     try {
-      const { error, token } = await stripe.createToken(cardElement);
+      // Confirm payment using Stripe's confirmPayment
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + '/payment/success',
+        },
+        redirect: 'if_required', // Don't redirect, handle inline
+      });
+
       if (error) {
+        // Payment failed
         setCardError(error.message);
         toast.error(error.message);
         return;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/payment/process-card`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: token.id,
-          amount: total,
-          currency: 'usd',
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        await onPayment({
-          method: 'card',
-          token: token.id,
-          chargeId: result.chargeId,
-          brand: token.card.brand,
-          last4: token.card.last4
-        });
-      } else {
-        setCardError(result.error || 'Payment failed');
-        toast.error(result.error || 'Payment failed');
+      if (paymentIntent && paymentIntent.status === 'succeeded') {
+        // Payment succeeded - notify parent
+        // Webhook will update DB, we just poll for status
+        onPaymentSuccess(paymentIntent);
       }
     } catch (err) {
       setCardError("Payment failed. Please try again.");
@@ -53,24 +44,20 @@ const StripeCardPayment = ({ total, isProcessing, onPayment }) => {
 
   return (
     <div className="space-y-4">
+      {/* Stripe Payment Element */}
       <div className="p-4 border border-gray-300 rounded-lg">
-        <CardElement
+        <PaymentElement
           options={{
-            hidePostalCode: true,
-            style: {
-              base: {
-                fontSize: '16px',
-                color: '#1f2937',
-                '::placeholder': { color: '#9ca3af' },
-              },
-              invalid: { color: '#ef4444' },
-            },
+            layout: "tabs",
           }}
         />
       </div>
 
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-pink-500 focus:ring-pink-500" />
+        <input 
+          type="checkbox" 
+          className="w-4 h-4 rounded border-gray-300 text-pink-500 focus:ring-pink-500" 
+        />
         <span className="text-sm text-gray-700">Securely save this card for future gifts</span>
       </label>
 

@@ -5,7 +5,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { goBack } from "../../../redux/giftFlowSlice";
-import { createOrder } from "../../../lib/action/orderAction";
+import { createPendingOrder, getOrderStatus } from "../../../lib/action/orderAction";
 import convertToSubcurrency from "../../../lib/convertToSubcurrency";
 
 // Import components
@@ -16,6 +16,7 @@ import PaymentSummary from "./payment/PaymentSummary";
 import BulkPaymentSummary from "./payment/BulkPaymentSummary";
 import SuccessScreen from "./payment/SuccessScreen";
 import ThankYouScreen from "./payment/ThankYouScreen";
+import BillingAddressForm from "./payment/BillingAddressForm";
 
 if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
@@ -33,11 +34,24 @@ const PaymentStep = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
-  const [voucherCode, setVoucherCode] = useState(null);
+  const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
   const [showThankYou, setShowThankYou] = useState(false);
+  const [clientSecret, setClientSecret] = useState(null);
+  const [pendingOrderId, setPendingOrderId] = useState(null);
+  
+  // ✅ NEW: Billing address state
+  const [billingAddress, setBillingAddress] = useState({
+    line1: '',
+    line2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: 'IN',
+  });
+  const [addressErrors, setAddressErrors] = useState({});
 
-  // Redux selectors
+  // Redux selectors (existing code)
   const {
     selectedBrand,
     selectedAmount: giftFlowAmount,
@@ -59,7 +73,31 @@ const PaymentStep = () => {
   const companyInfo = isBulkMode && currentBulkOrder ? currentBulkOrder.companyInfo : null;
   const bulkDeliveryOption = isBulkMode && currentBulkOrder ? currentBulkOrder.deliveryOption : null;
 
-  // Helper functions
+  // ✅ Validate billing address
+  const validateBillingAddress = () => {
+    const errors = {};
+    
+    if (!billingAddress.line1 || billingAddress.line1.trim() === '') {
+      errors.line1 = 'Address is required';
+    }
+    if (!billingAddress.city || billingAddress.city.trim() === '') {
+      errors.city = 'City is required';
+    }
+    if (!billingAddress.state || billingAddress.state.trim() === '') {
+      errors.state = 'State is required';
+    }
+    if (!billingAddress.postalCode || billingAddress.postalCode.trim() === '') {
+      errors.postalCode = 'Postal code is required';
+    }
+    if (!billingAddress.country || billingAddress.country.trim() === '') {
+      errors.country = 'Country is required';
+    }
+
+    setAddressErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Helper functions (existing)
   const formatAmount = (amount) => {
     if (typeof amount === 'object' && amount?.value && amount?.currency) {
       return `${amount.currency}${amount.value}`;
@@ -80,11 +118,21 @@ const PaymentStep = () => {
     return totalAmount + serviceFee;
   };
 
-  // Payment handler
-  const handlePayment = async (paymentData) => {
+  // ✅ UPDATED: Initiate payment with billing address
+  const handleInitiatePayment = async () => {
+    // Validate billing address first
+    if (!validateBillingAddress()) {
+      toast.error('Please fill in all required billing address fields');
+      return null;
+    }
+
+    if (clientSecret && pendingOrderId) {
+      return { clientSecret, orderId: pendingOrderId };
+    }
+
     setIsProcessing(true);
     setError(null);
-    const toastId = toast.loading('Processing your order...');
+    const toastId = toast.loading('Preparing your order...');
 
     try {
       const orderData = isBulkMode ? {
@@ -96,11 +144,10 @@ const PaymentStep = () => {
         deliveryOption: bulkDeliveryOption,
         selectedOccasion,
         selectedSubCategory,
-        selectedPaymentMethod: 'card',
-        paymentData,
         totalAmount: calculateTotal(),
         isBulkOrder: true,
         totalSpend: currentBulkOrder.totalSpend,
+        billingAddress, // ✅ Include billing address
       } : {
         selectedBrand,
         selectedAmount,
@@ -110,30 +157,73 @@ const PaymentStep = () => {
         selectedOccasion,
         selectedSubCategory,
         selectedTiming,
-        selectedPaymentMethod: 'card',
-        paymentData,
         totalAmount: calculateTotal(),
         isBulkOrder: false,
+        billingAddress, // ✅ Include billing address
       };
 
-      const result = await createOrder(orderData);
+      const result = await createPendingOrder(orderData);
       
       if (result?.success) {
-        setOrder(result?.data?.order);
-        setVoucherCode(result?.data?.voucherCode);
-        toast.success(
-          isBulkMode ? 'Bulk order placed successfully!' : 'Order placed successfully!', 
-          { id: toastId }
-        );
+        setPendingOrderId(result.data.orderId);
+        setClientSecret(result.data.clientSecret);
+        toast.success('Ready to process payment', { id: toastId });
+        return {
+          clientSecret: result.data.clientSecret,
+          orderId: result.data.orderId
+        };
       } else {
         setError(result.error);
         toast.error(result.error, { id: toastId });
+        return null;
       }
     } catch (error) {
-      setError("An unexpected error occurred.");
-      toast.error('An unexpected error occurred.', { id: toastId });
+      setError("Failed to prepare order.");
+      toast.error('Failed to prepare order.', { id: toastId });
+      return null;
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Payment success handler (existing code)
+  const handlePaymentSuccess = (paymentIntent) => {
+    setPaymentSubmitted(true);
+    pollOrderStatus(pendingOrderId);
+  };
+
+  // Poll order status (existing code)
+  const pollOrderStatus = async (orderId, attempts = 0) => {
+    const maxAttempts = 20;
+    
+    try {
+      console.log('Polling order status for:', orderId, 'attempt:', attempts);
+      const response = await getOrderStatus(orderId);
+      console.log('Order status response:', response);
+      
+      if (response.paymentStatus === 'COMPLETED') {
+        setOrder(response.order);
+        toast.success('Order placed successfully!');
+        setIsProcessing(false);
+      } else if (response.paymentStatus === 'FAILED') {
+        setError('Payment failed. Please try again.');
+        toast.error('Payment failed');
+        setIsProcessing(false);
+      } else if (attempts < maxAttempts) {
+        setTimeout(() => pollOrderStatus(orderId, attempts + 1), 1000);
+      } else {
+        toast.error('Payment is being processed. Check your email for confirmation.');
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error('Error polling order status:', error);
+      if (attempts < maxAttempts) {
+        setTimeout(() => pollOrderStatus(orderId, attempts + 1), 1000);
+      } else {
+        setError('Could not verify payment status due to a network error. Please check your email for confirmation.');
+        toast.error('Failed to confirm payment status.');
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -141,7 +231,7 @@ const PaymentStep = () => {
     setShowThankYou(true);
   };
 
-  // Render success screens
+  // Render success screens (existing code)
   if (order) {
     if (showThankYou) {
       return <ThankYouScreen />;
@@ -159,51 +249,54 @@ const PaymentStep = () => {
     );
   }
 
+  if (paymentSubmitted) {
+    return (
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center">
+            <div className="max-w-md">
+                <div className="mb-4">
+                    <svg className="mx-auto h-16 w-16 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Payment Received!</h1>
+                <p className="text-gray-600">
+                    We've received your payment and are now confirming your order. You'll receive an email confirmation shortly.
+                </p>
+                {pendingOrderId && (
+                    <p className="text-sm text-gray-500 mt-4">
+                        Order ID: <span className="font-medium">{pendingOrderId}</span>
+                    </p>
+                )}
+                <div className="mt-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-4 border-pink-500 border-t-transparent mx-auto"></div>
+                    <p className="text-sm text-gray-500 mt-2">Confirming your order status...</p>
+                </div>
+            </div>
+        </div>
+    );
+  }
+
   // Main payment form
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
       <Toaster />
       
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Header (existing code) */}
         <div className="mb-8">
-          {/* Back Button */}
           <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
             <button
               onClick={() => dispatch(goBack())}
-              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
-                         transition-all duration-200 shadow-sm hover:shadow-md"
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md"
             >
-              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
                 <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
-                <defs>
-                  <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#ED457D" />
-                    <stop offset="1" stopColor="#FA8F42" />
-                  </linearGradient>
-                </defs>
               </svg>
               <span className="text-base font-semibold text-gray-800">Previous</span>
             </button>
           </div>
 
-          {/* Bulk Mode Badge */}
-          {isBulkMode && (
-            <div className="w-full flex items-center justify-center mb-4">
-              <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
-              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
-                <div className="px-4 py-1.5 bg-white rounded-full">
-                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
-                    Bulk Gifting
-                  </span>
-                </div>
-              </div>
-              <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
-            </div>
-          )}
-
-          {/* Title */}
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 text-center mt-6">
             {isBulkMode ? 'Complete your payment securely' : "You're almost there!"}
           </h1>
           <p className="text-gray-600 text-center">
@@ -215,8 +308,15 @@ const PaymentStep = () => {
 
         {/* Two Column Layout */}
         <div className="grid lg:grid-cols-2 gap-6">
-          {/* Left Column - Payment Method */}
+          {/* Left Column - Payment Details */}
           <div className="space-y-6">
+            {/* ✅ NEW: Billing Address Form */}
+            <BillingAddressForm
+              address={billingAddress}
+              onChange={setBillingAddress}
+              errors={addressErrors}
+            />
+
             <PaymentMethodSelector
               selectedTab={selectedPaymentTab}
               onTabChange={setSelectedPaymentTab}
@@ -224,27 +324,47 @@ const PaymentStep = () => {
             />
 
             {/* Stripe Payment Form */}
-            {selectedPaymentTab === 'card' && (
+            {selectedPaymentTab === 'card' && clientSecret && (
               <Elements
                 stripe={stripePromise}
                 options={{
-                  mode: "payment",
-                  amount: convertToSubcurrency(calculateTotal()),
-                  currency: "usd",
+                  clientSecret: clientSecret,
+                  appearance: { theme: 'stripe' },
                 }}
               >
                 <StripeCardPayment
-                  total={convertToSubcurrency(calculateTotal())}
+                  clientSecret={clientSecret}
                   isProcessing={isProcessing}
-                  onPayment={handlePayment}
+                  onInitiatePayment={handleInitiatePayment}
+                  onPaymentSuccess={handlePaymentSuccess}
                 />
               </Elements>
             )}
+
+            {/* Show initiate button if no clientSecret yet */}
+            {selectedPaymentTab === 'card' && !clientSecret && (
+              <button
+                onClick={handleInitiatePayment}
+                disabled={isProcessing}
+                className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white py-4 px-6 rounded-xl font-semibold text-base transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed shadow-lg"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span>Preparing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Proceed to Payment</span>
+                    <span>→</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
-          {/* Right Column - Gift Details & Summary */}
+          {/* Right Column - Existing summary components */}
           <div className="space-y-6">
-            {/* Gift Details (Single Mode Only) */}
             {!isBulkMode && (
               <GiftDetailsCard
                 selectedBrand={selectedBrand}
@@ -261,7 +381,6 @@ const PaymentStep = () => {
               />
             )}
 
-            {/* Payment Summary */}
             {isBulkMode ? (
               <BulkPaymentSummary
                 currentBulkOrder={currentBulkOrder}
@@ -281,7 +400,6 @@ const PaymentStep = () => {
               />
             )}
 
-            {/* Company Details for Bulk Orders */}
             {isBulkMode && companyInfo && (
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
                 <h3 className="text-base font-bold text-gray-900 mb-4">Company Details</h3>

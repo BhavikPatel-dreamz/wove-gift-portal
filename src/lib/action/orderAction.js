@@ -9,7 +9,6 @@ const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
 
-
 // ==================== CUSTOM ERROR CLASSES ====================
 class ValidationError extends Error {
   constructor(message) {
@@ -158,7 +157,6 @@ async function createReceiverDetail(orderData) {
     const isBulkOrder = orderData.isBulkOrder === true;
 
     if (isBulkOrder) {
-      // For bulk orders, use company info
       return await prisma.receiverDetail.create({
         data: {
           name: orderData.companyInfo.companyName,
@@ -167,7 +165,6 @@ async function createReceiverDetail(orderData) {
         },
       });
     } else {
-      // For single gift orders, use delivery details
       const { deliveryDetails, deliveryMethod } = orderData;
       return await prisma.receiverDetail.create({
         data: {
@@ -189,6 +186,404 @@ async function createReceiverDetail(orderData) {
   }
 }
 
+// Generate export description for Indian RBI compliance
+function generateExportDescription(orderData, orderNumber) {
+  const isBulkOrder = orderData.isBulkOrder === true;
+  const brandName = orderData.selectedBrand?.brandName || "Gift Card";
+  const quantity = orderData.quantity || 1;
+  const amount = orderData.selectedAmount?.value || 0;
+
+  if (isBulkOrder) {
+    return `Gift card purchase - ${brandName} - Bulk order of ${quantity} vouchers - Order #${orderNumber}`;
+  } else {
+    return `Gift card purchase - ${brandName} - ${quantity}x ${
+      orderData.selectedAmount?.currency || "INR"
+    }${amount} - Order #${orderNumber}`;
+  }
+}
+
+// ==================== STEP 1: CREATE PENDING ORDER + PAYMENT INTENT ====================
+export const createPendingOrder = async (orderData) => {
+  try {
+    const session = await getSession();
+    const userId = session?.userId;
+
+    if (!userId) {
+      throw new AuthenticationError("User not authenticated");
+    }
+
+    orderData.userId = userId;
+    validateOrderData(orderData);
+
+    const isBulkOrder = orderData.isBulkOrder === true;
+    const receiver = await createReceiverDetail(orderData);
+
+    // Calculate amounts
+    const amount = Number(orderData.selectedAmount.value);
+    const quantity = orderData.quantity || 1;
+    const subtotal = amount * quantity;
+    const discount = orderData.discountAmount || 0;
+    const totalAmount = subtotal - discount;
+
+    // Create order with PENDING status
+    const orderBase = {
+      orderNumber: generateOrderNumber(),
+      brandId: orderData.selectedBrand.id,
+      occasionId: orderData.selectedOccasion,
+      subCategoryId: orderData.selectedSubCategory?.isCustom ? null : orderData.selectedSubCategory?.id,
+      customCardId: orderData.selectedSubCategory?.isCustom ? orderData.selectedSubCategory?.id : null,
+      userId: String(userId),
+      receiverDetailId: receiver.id,
+      amount,
+      quantity,
+      subtotal,
+      discount,
+      totalAmount,
+      currency: orderData.selectedAmount.currency || "USD",
+      paymentMethod: "stripe",
+      customImageUrl: orderData.customImageUrl || null,
+      customVideoUrl: orderData.customVideoUrl || null,
+      paymentStatus: "PENDING",
+      redemptionStatus: "Issued",
+      isActive: true,
+    };
+
+    let order;
+    if (isBulkOrder) {
+      order = await prisma.order.create({
+        data: {
+          ...orderBase,
+          bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+          deliveryMethod: "email",
+          message: orderData.personalMessage || "",
+          senderName: orderData.companyInfo.companyName,
+          sendType: "sendImmediately",
+          scheduledFor: null,
+          senderEmail: orderData.companyInfo.contactEmail,
+        },
+      });
+    } else {
+      const scheduledFor = orderData.selectedTiming?.type === "scheduled" && orderData.selectedTiming?.dateTime
+        ? new Date(orderData.selectedTiming.dateTime)
+        : null;
+
+      order = await prisma.order.create({
+        data: {
+          ...orderBase,
+          deliveryMethod: orderData.deliveryMethod || "whatsapp",
+          message: orderData.personalMessage || "",
+          senderName: orderData.deliveryDetails?.yourFullName || null,
+          sendType: orderData.selectedTiming?.type === "immediate" ? "sendImmediately" : "scheduleLater",
+          scheduledFor,
+          senderEmail: orderData.deliveryDetails?.yourEmailAddress || null,
+        },
+      });
+    }
+
+    console.log("✅ Pending order created:", order.orderNumber);
+
+    // ✅ INDIAN EXPORT COMPLIANCE - Collect required billing info
+    const Stripe = (await import("stripe")).default;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+    // Extract customer details
+    const customerName = isBulkOrder
+      ? orderData.companyInfo.companyName
+      : orderData.deliveryDetails?.yourFullName || "Customer";
+
+    const customerEmail = isBulkOrder
+      ? orderData.companyInfo.contactEmail
+      : orderData.deliveryDetails?.yourEmailAddress || null;
+
+    // ✅ CRITICAL: Billing address is REQUIRED for Indian exports
+    if (!orderData.billingAddress) {
+      throw new ValidationError("Billing address is required for payment processing");
+    }
+
+    const customerAddress = {
+      line1: orderData.billingAddress.line1,
+      line2: orderData.billingAddress.line2 || null,
+      city: orderData.billingAddress.city,
+      state: orderData.billingAddress.state,
+      postal_code: orderData.billingAddress.postalCode,
+      country: orderData.billingAddress.country, // Required
+    };
+
+    // Create Stripe customer with address
+    const customer = await stripe.customers.create({
+      name: customerName,
+      email: customerEmail,
+      address: customerAddress,
+      metadata: {
+        userId: String(userId),
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+      },
+    });
+
+    // Generate export description for RBI compliance
+    const exportDescription = generateExportDescription(orderData, order.orderNumber);
+
+    // Create PaymentIntent with all required fields
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(totalAmount * 100), // Convert to cents
+      currency: (orderData.selectedAmount.currency || "USD").toLowerCase(),
+      customer: customer.id, // ✅ REQUIRED
+      description: exportDescription, // ✅ REQUIRED for RBI compliance
+      
+      metadata: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        brandName: orderData.selectedBrand?.brandName || "Gift Card",
+        quantity: String(quantity),
+        exportDescription: exportDescription,
+        userId: String(userId),
+      },
+
+      // Shows on customer's bank statement
+      statement_descriptor: "GIFT CARD",
+      statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
+
+      automatic_payment_methods: {
+        enabled: true,
+      },
+
+      // ✅ Shipping address (optional but recommended)
+      shipping: customerAddress.line1 !== "N/A" ? {
+        name: customerName,
+        address: customerAddress,
+      } : null,
+    });
+
+    // Update order with payment details
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        paymentIntentId: paymentIntent.id,
+      },
+    });
+
+    console.log("✅ PaymentIntent created with compliance data:", {
+      customer: customer.id,
+      exportDescription,
+      address: customerAddress,
+    });
+
+    return {
+      success: true,
+      data: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        clientSecret: paymentIntent.client_secret,
+        customerId: customer.id,
+      },
+    };
+  } catch (error) {
+    console.error("❌ Pending order creation failed:", error);
+
+    if (error instanceof ValidationError || error instanceof AuthenticationError) {
+      return {
+        success: false,
+        error: error.message,
+        statusCode: error.statusCode,
+        errorType: error.name,
+      };
+    }
+
+    return {
+      success: false,
+      error: error.message || "An unexpected error occurred",
+      statusCode: 500,
+      errorType: "InternalServerError",
+    };
+  }
+};
+
+// ==================== STEP 2: COMPLETE ORDER (Called by Webhook) ====================
+export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
+  let voucherCodeIds = [];
+
+  try {
+    // Get the pending order
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        brand: {
+          include: {
+            vouchers: {
+              include: {
+                denominations: true,
+              },
+            },
+          },
+        },
+        receiverDetail: true,
+      },
+    });
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    if (order.paymentStatus === "COMPLETED") {
+      console.log("Order already completed:", orderId);
+      return { success: true, message: "Order already completed" };
+    }
+
+    const isBulkOrder = !!order.bulkOrderNumber;
+    const selectedBrand = order.brand;
+
+    // Get voucher configuration
+    if (!selectedBrand.vouchers || selectedBrand.vouchers.length === 0) {
+      throw new ValidationError("Brand does not have voucher configuration");
+    }
+    const voucherConfig = selectedBrand.vouchers[0];
+
+    // Update order with payment details
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: "COMPLETED",
+        paymentIntentId: paymentDetails.paymentIntentId,
+        paidAt: new Date(),
+      },
+    });
+
+    // Reconstruct orderData for processing
+    const orderData = {
+      selectedBrand,
+      selectedAmount: {
+        value: order.amount,
+        currency: order.currency,
+      },
+      quantity: order.quantity,
+      isBulkOrder,
+      companyInfo: isBulkOrder
+        ? {
+            companyName: order.senderName,
+            contactEmail: order.senderEmail,
+            contactNumber: order.receiverDetail.phone,
+          }
+        : null,
+      deliveryOption: isBulkOrder ? "email" : null,
+      deliveryMethod: order.deliveryMethod,
+      deliveryDetails: !isBulkOrder
+        ? {
+            recipientFullName: order.receiverDetail.name,
+            recipientEmailAddress: order.receiverDetail.email,
+            recipientWhatsAppNumber: order.receiverDetail.phone,
+          }
+        : null,
+      personalMessage: order.message,
+    };
+
+    if (isBulkOrder) {
+      // Process bulk order
+      const { voucherCodes, giftCards } = await processBulkOrder(
+        selectedBrand,
+        orderData,
+        order,
+        voucherConfig
+      );
+
+      voucherCodeIds = voucherCodes.map((vc) => vc.id);
+
+      await updateOrCreateSettlement(selectedBrand, order);
+
+      const deliveryResult = await sendBulkDelivery(
+        orderData,
+        voucherCodes,
+        giftCards
+      );
+
+      for (const voucherCode of voucherCodes) {
+        await createDeliveryLog(order, voucherCode.id, orderData);
+      }
+
+      console.log("✅ Bulk order completed:", order.orderNumber);
+
+      return {
+        success: true,
+        data: {
+          order,
+          voucherCodes,
+          giftCards,
+          deliveryResult,
+        },
+      };
+    } else {
+      // Process single order
+      const { voucherCode, giftCard, shopifyGiftCard } =
+        await processSingleOrder(
+          selectedBrand,
+          orderData,
+          order,
+          voucherConfig
+        );
+
+      voucherCodeIds = [voucherCode.id];
+
+      await updateOrCreateSettlement(selectedBrand, order);
+
+      const deliveryResult = await sendDeliveryMessage(
+        orderData,
+        shopifyGiftCard,
+        orderData.deliveryMethod
+      );
+
+      if (!deliveryResult.success && orderData.deliveryMethod !== "print") {
+        throw new ExternalServiceError(
+          `Message delivery failed: ${deliveryResult.message}`,
+          deliveryResult
+        );
+      }
+
+      await createDeliveryLog(order, voucherCode.id, orderData);
+
+      console.log("✅ Order completed:", order.orderNumber);
+
+      return {
+        success: true,
+        data: {
+          order,
+          voucherCode,
+          giftCard,
+        },
+      };
+    }
+  } catch (error) {
+    console.error("❌ Order completion failed:", error);
+
+    // Mark order as failed
+    if (orderId) {
+      await prisma.order
+        .update({
+          where: { id: orderId },
+          data: {
+            paymentStatus: "FAILED",
+          },
+        })
+        .catch(() => null);
+    }
+
+    // Delete any created voucher codes
+    if (voucherCodeIds.length > 0) {
+      await prisma.voucherCode
+        .deleteMany({
+          where: { id: { in: voucherCodeIds } },
+        })
+        .catch(() => null);
+    }
+
+    return {
+      success: false,
+      error: error.message || "Failed to complete order",
+      statusCode: 500,
+      errorType: "InternalServerError",
+    };
+  }
+};
+
 async function createOrderRecord(
   selectedBrand,
   orderData,
@@ -196,7 +591,7 @@ async function createOrderRecord(
   scheduledFor
 ) {
   try {
-   const amount = Number(orderData.selectedAmount.value);
+    const amount = Number(orderData.selectedAmount.value);
     const quantity = orderData.quantity || 1;
     const subtotal = amount * quantity;
     const discount = orderData.discountAmount || 0;
@@ -315,7 +710,6 @@ async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig) {
         : orderData.selectedAmount.value,
   };
 
-
   const apiUrl = `${
     process.env.NEXTAUTH_URL || "http://localhost:3000"
   }/api/giftcard?shop=${selectedBrand.domain}&denominationType=${
@@ -323,17 +717,15 @@ async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig) {
   }`;
 
   try {
-    console.log("apiUrl",apiUrl);
-    
-    
+    console.log("apiUrl", apiUrl);
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(giftCardData),
     });
 
-    console.log("response",response);
-    
+    console.log("response", response);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -376,7 +768,6 @@ async function processBulkOrder(
 
     // Create multiple gift cards
     for (let i = 0; i < quantity; i++) {
-
       // Create Shopify gift card
       const shopifyGiftCard = await createShopifyGiftCard(
         selectedBrand,
@@ -413,9 +804,15 @@ async function processBulkOrder(
         const matchedDenomination = voucherConfig?.denominations?.find(
           (d) => d?.value == order?.amount
         );
-        expireDate = matchedDenomination?.isExpiry === true ? matchedDenomination?.expiresAt || null : null;
+        expireDate =
+          matchedDenomination?.isExpiry === true
+            ? matchedDenomination?.expiresAt || null
+            : null;
       } else {
-        expireDate = voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null;
+        expireDate =
+          voucherConfig?.isExpiry === true
+            ? voucherConfig?.expiresAt || null
+            : null;
       }
 
       const voucherCode = await prisma.voucherCode.create({
@@ -651,7 +1048,7 @@ Thank you for choosing our gift card platform.`,
           },
         ],
       };
-const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+      const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
       console.log("✅ CSV email sent successfully");
 
@@ -922,8 +1319,7 @@ async function processSingleOrder(
       voucherConfig
     );
 
-    console.log("shopifyGiftCard",shopifyGiftCard);
-    
+    console.log("shopifyGiftCard", shopifyGiftCard);
 
     // Save gift card to database
     const giftCardInDb = await prisma.giftCard.upsert({
@@ -952,14 +1348,25 @@ async function processSingleOrder(
       const matchedDenomination = voucherConfig?.denominations?.find(
         (d) => d?.value == order?.amount
       );
-      expireDate = matchedDenomination?.isExpiry === true ? matchedDenomination?.expiresAt || null : null;
+      expireDate =
+        matchedDenomination?.isExpiry === true
+          ? matchedDenomination?.expiresAt || null
+          : null;
     } else if (voucherConfig?.denominationType === "amount") {
-      expireDate = voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null;
+      expireDate =
+        voucherConfig?.isExpiry === true
+          ? voucherConfig?.expiresAt || null
+          : null;
     } else if (voucherConfig?.denominationType === "both") {
       const matchedDenomination = voucherConfig?.denominations?.find(
         (d) => d?.value == order?.amount
       );
-      expireDate = matchedDenomination?.isExpiry === true ? matchedDenomination?.expiresAt : (voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null);
+      expireDate =
+        matchedDenomination?.isExpiry === true
+          ? matchedDenomination?.expiresAt
+          : voucherConfig?.isExpiry === true
+          ? voucherConfig?.expiresAt || null
+          : null;
     }
 
     const voucherCode = await prisma.voucherCode.create({
@@ -1545,101 +1952,44 @@ export async function getOrderById(orderId) {
   }
 }
 
-export async function updateOrderPaymentStatus(orderId, paymentData) {
-  try {
-    const { status, paymentIntentId, paidAt } = paymentData;
 
-    const updatedOrder = await prisma.$transaction(async (tx) => {
-      const order = await tx.order.update({
-        where: { id: orderId },
-        data: {
-          paymentStatus: status,
-          paymentIntentId,
-          paidAt: status === "COMPLETED" ? paidAt || new Date() : null,
-        },
-      });
-
-      // If payment completed and delivery is immediate, trigger delivery
-      if (status === "COMPLETED" && order.sendType === "sendImmediately") {
-        await tx.deliveryLog.updateMany({
-          where: {
-            orderId,
-            status: "PENDING",
-          },
-          data: {
-            status: "PENDING", // Ready to be picked up by delivery service
-          },
-        });
-      }
-
-      return order;
-    });
-
-    return {
-      success: true,
-      data: updatedOrder,
-    };
-  } catch (error) {
-    console.error("Error updating order payment status:", error);
-    return {
-      success: false,
-      message: "Failed to update payment status",
-      error: error.message,
-    };
+export async function getOrderStatus(orderId) {
+  if (!orderId) {
+    throw new Error("Order ID is required");
   }
-}
 
-export async function resendVoucher(orderId, voucherCodeId) {
-  try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        receiverDetail: true,
-        voucherCodes: {
-          where: { id: voucherCodeId },
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      brand: true,
+      receiverDetail: true,
+      voucherCodes: {
+        include: {
+          voucher: true,
         },
       },
-    });
+    },
+  });
 
-    if (!order) {
-      return {
-        success: false,
-        message: "Order not found",
-      };
-    }
-
-    if (order.voucherCodes.length === 0) {
-      return {
-        success: false,
-        message: "Voucher code not found",
-      };
-    }
-
-    // Create new delivery log entry
-    await prisma.deliveryLog.create({
-      data: {
-        orderId: order.id,
-        voucherCodeId,
-        method: order.deliveryMethod,
-        recipient:
-          order.deliveryMethod === "email"
-            ? order.receiverDetail.email
-            : order.receiverDetail.phone,
-        status: "PENDING",
-        attemptCount: 0,
-      },
-    });
-
-    return {
-      success: true,
-      message: "Voucher will be resent shortly",
-    };
-  } catch (error) {
-    console.error("Error resending voucher:", error);
+  if (!order) {
     return {
       success: false,
-      message: "Failed to resend voucher",
-      error: error.message,
+      error: "Order not found",
     };
   }
+
+  return {
+    success: true,
+    paymentStatus: order.paymentStatus,
+    order: {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      amount: order.amount,
+      currency: order.currency,
+      paymentStatus: order.paymentStatus,
+      createdAt: order.createdAt,
+      brand: order.brand,
+      voucherCodes: order.voucherCodes,
+    },
+  };
 }
