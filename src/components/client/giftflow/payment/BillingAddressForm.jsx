@@ -11,9 +11,6 @@ const BillingAddressForm = ({ address, onChange, errors = {} }) => {
       <h3 className="text-lg font-bold text-gray-900 mb-4">
         Billing Address <span className="text-red-500">*</span>
       </h3>
-      <p className="text-sm text-gray-600 mb-4">
-        Required for payment processing as per Indian regulations
-      </p>
 
       <div className="space-y-4">
         {/* Address Line 1 */}
