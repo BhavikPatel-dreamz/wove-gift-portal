@@ -43,7 +43,7 @@ const GiftDetailsCard = ({
       </div>
 
       {/* Brand Display */}
-      <div className="flex items-center gap-4  rounded-xl mb-4">
+      <div className="flex flex-col md:flex-row items-center gap-4  rounded-xl mb-4">
         <div className="flex gap-4 items-center">
           <div className="w-16 h-16 shrink-0">
             {selectedBrand?.logo ? (

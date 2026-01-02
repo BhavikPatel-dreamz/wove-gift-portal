@@ -14,8 +14,8 @@ const GiftCardSelector = () => {
   const maxAmount = voucherData?.maxAmount || 10000;
   const currency = voucherData?.denominationCurrency || "ZAR";
 
-  console.log("voucherData",voucherData);
-  
+  console.log("voucherData", voucherData);
+
 
   const [customAmount, setCustomAmount] = useState(
     selectedAmount && denominationType !== 'fixed' ? selectedAmount.value : minAmount
@@ -136,7 +136,7 @@ const GiftCardSelector = () => {
 
         {/* Header */}
         <div className="text-center mb-12 ">
-          <h1 className="text-4xl font-bold text-gray-900 mb-5">
+          <h1 className="text-4xl font-bold text-gray-900 mb-5 mt-2">
             Choose Your Gift Amount
           </h1>
           <p className="text-gray-600 text-base">
@@ -204,9 +204,10 @@ const GiftCardSelector = () => {
 
         {/* Custom Amount Input */}
         {denominationType !== 'fixed' && (
-          <div className="max-w-4xl mx-auto mt-8">
-            <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
+          <div className="max-w-4xl mx-auto mt-8 px-4 sm:px-0">
+            <div className="bg-white rounded-2xl p-5 sm:p-6 border-2 border-gray-200 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+
                 {/* Left side - Text */}
                 <div className="shrink-0">
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
@@ -218,28 +219,32 @@ const GiftCardSelector = () => {
                 </div>
 
                 {/* Right side - Input and Button */}
-                <div className="flex items-center gap-5">
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-700 text-base font-medium">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+
+                  {/* Input */}
+                  <div className="relative w-full sm:w-72">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-base font-medium">
                       {currency}
                     </div>
                     <input
                       type="text"
                       value={customAmount}
                       onChange={(e) => setCustomAmount(e.target.value)}
-                      className="w-70 pl-15 pr-4 py-3 border-1 border-[#1A1A1A33]  border-opacity-20 rounded-3xl text-base font-medium ransition-all bg-white text-gray-900 placeholder-gray-400"
+                      className="w-full pl-12 pr-4 py-3 border border-[#1A1A1A33] rounded-3xl text-base font-medium transition-all bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400"
                       placeholder="Enter Your Amount"
                     />
                   </div>
 
+                  {/* Button */}
                   <button
-                    className="bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white px-6 py-3 rounded-3xl font-bold transition-all duration-200 shadow-md hover:shadow-lg whitespace-nowrap flex items-center gap-2"
                     onClick={handleCustomAmountSelect}
+                    className="w-full sm:w-auto bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white px-6 py-3 rounded-3xl font-bold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
                   >
                     Select
                     <span className="text-xs font-medium">▶</span>
                   </button>
                 </div>
+
               </div>
             </div>
           </div>

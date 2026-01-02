@@ -127,7 +127,7 @@ export default function OccasionSelector() {
               <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
             </div>
           }
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 mt-2">
             What's the Occasion?
           </h1>
           <p className="text-gray-600 text-base max-w-2xl mx-auto">
