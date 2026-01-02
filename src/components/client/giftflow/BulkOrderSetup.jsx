@@ -28,6 +28,8 @@ const BulkOrderSetup = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  console.log(selectedBrand, selectedAmount);
+
   // Get available denominations from selected brand
   const denominations = selectedBrand?.vouchers?.[0]?.denominations || [];
 
@@ -65,11 +67,16 @@ const BulkOrderSetup = () => {
   };
 
   useEffect(() => {
-    if (selectedAmount && selectedAmount !== "") {
-      const selectedDenomination = denominations?.filter((data) => data?.value == selectedAmount?.value)
-      setSelectedDenomination(selectedDenomination[0])
+    if (selectedAmount && selectedAmount.value) {
+      const matchingDenomination = denominations.find(d => d.value === selectedAmount.value);
+      if (matchingDenomination) {
+        setSelectedDenomination(matchingDenomination);
+      } else {
+        // It's a custom amount, so use the selectedAmount object from Redux.
+        setSelectedDenomination(selectedAmount);
+      }
     }
-  }, [selectedAmount])
+  }, [selectedAmount, denominations]);
 
 
   const handleAddToBulkOrder = () => {
@@ -172,12 +179,19 @@ const BulkOrderSetup = () => {
         {/* Main Content Grid */}
         <div className="max-w-4xl m-auto w-full grid grid-cols-1 md:grid-cols-[275px_1fr] gap-6">
           {/* Left Column - Selected Brand */}
-          <div className="w-full flex items-center max-w-[275px] rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33] shadow-sm bg-[#F9F9F9]">
-            {/* Brand Card */}
-            <div className=" flex flex-col items-center text-center">
-              <h3 className="text-[18px] text-center font-semibold text-[#1A1A1A] mb-4">Selected Brand</h3>
+          <div className="w-full flex justify-center">
+            <div className="flex flex-col items-center text-center justify-center
+                  max-w-[275px] w-full
+                  rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]
+                  shadow-sm bg-[#F9F9F9]">
+
+              {/* Title */}
+              <h3 className="text-[18px] font-semibold text-[#1A1A1A] mb-4">
+                Selected Brand
+              </h3>
+
               {/* Brand Logo */}
-              <div className="w-24 h-24  flex items-center justify-center">
+              <div className="w-24 h-24 flex items-center justify-center mb-4">
                 {selectedBrand.logo ? (
                   <img
                     src={selectedBrand.logo}
@@ -185,20 +199,26 @@ const BulkOrderSetup = () => {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
                     <span className="text-white font-bold text-5xl">
-                      {(selectedBrand.brandName || selectedBrand.name || 'B').substring(0, 1).toUpperCase()}
+                      {(selectedBrand.brandName || selectedBrand.name || 'B')
+                        .substring(0, 1)
+                        .toUpperCase()}
                     </span>
                   </div>
                 )}
               </div>
-              <div className='border-b border-[#D0CECE] h-px w-full my-8'></div>
 
-              <div className='py-[5px] px-[11px] bg-[#AA42FA1A] rounded-[50px] mb-[18px]'>
-                <div className='text-[#AA42FA] text-[14px] font-bold'>{selectedBrand.tagline}</div>
+              {/* Divider */}
+              <div className="border-b border-[#D0CECE] h-px w-full my-4"></div>
+
+              {/* Tagline */}
+              <div className="py-[5px] px-[11px] bg-[#AA42FA1A] rounded-[50px] mb-[18px]">
+                <div className="text-[#AA42FA] text-[14px] font-bold">{selectedBrand.tagline}</div>
               </div>
+
               {/* Brand Name */}
-              <h2 className="text-[22px] font-semibold fontPoppins text-[#1A1A1A] mb-3.5">
+              <h2 className="text-[22px] font-semibold font-['Poppins'] text-[#1A1A1A] mb-3.5">
                 {selectedBrand.brandName || selectedBrand.name}
               </h2>
 
@@ -216,13 +236,15 @@ const BulkOrderSetup = () => {
             </div>
           </div>
 
+
           {/* Right Column - Order Details */}
           <div className="space-y-6 w-full border-[1.2px] border-[#1A1A1A33] rounded-[20px] p-6 bg-[#DBDBDB2B]">
             {/* Denomination Selection */}
             <div className="">
-              <label className="block text-base font-semibold text-[#1A1A1A] mb-3">
+              <label className="block font-['Inter'] text-[16px] font-semibold leading-[16px] text-[#1A1A1A] mb-3">
                 Denomination
               </label>
+
 
               <div ref={dropdownRef} className="relative w-full">
                 {/* Selected Box */}
@@ -230,9 +252,9 @@ const BulkOrderSetup = () => {
                   onClick={() => setOpen(!open)}
                   className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] bg-white cursor-pointer flex justify-between items-center"
                 >
-                  <span className="text-gray-700">
+                  <span className=" text-[14x] font-semibold leading-[16px] text-[#000]">
                     {selectedDenomination?.value
-                      ? `R${selectedDenomination.value.toLocaleString()}`
+                      ? `${selectedDenomination.currency} ${selectedDenomination.value.toLocaleString()}`
                       : "Select Denomination"}
                   </span>
 
@@ -253,18 +275,18 @@ const BulkOrderSetup = () => {
                             handleDenominationSelect(denom);
                             setOpen(false);
                           }}
-                          className={`px-4 py-3 cursor-pointer text-gray-700 
+                          className={`px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000]
                   ${isSelected ? "bg-[#FFECEC] text-red-500 font-semibold" : ""} 
                   hover:bg-gray-100`}
                         >
-                          R{denom.value.toLocaleString()}
+                          {denom.currency} {denom.value.toLocaleString()}
                         </div>
                       );
                     })}
 
                     {/* Custom Amount */}
                     <div
-                      className="px-4 py-3 cursor-pointer text-gray-700 hover:bg-gray-100"
+                      className="px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000] hover:bg-gray-100"
                       onClick={() => {
                         handleDenominationSelect({ value: null });
                         setOpen(false);
@@ -297,16 +319,19 @@ const BulkOrderSetup = () => {
             </div>
 
             {/* Total Spend */}
-            <div className="flex justify-between bg-white rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]">
-              <div className="flex flex-col mb-3">
-                <span className="text-base font-bold text-[#1A1A1A]">Total Spend</span>
+            <div className="flex justify-between bg-white items-center rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]">
+              <div className="flex flex-col">
+                <span className="font-['Inter'] text-[16px] font-bold leading-[16px] text-[#1A1A1A]">
+                  Total Spend
+                </span>
                 {quantity && selectedDenomination && (
-                  <span className="text-xs text-gray-600">
+                  <span className="font-['Inter'] text-[16px] font-medium leading-[16px] text-[#8C8C8C] mt-2">
                     {quantity} × {selectedDenomination.currency || 'R'}{selectedDenomination.value}
                   </span>
                 )}
+
               </div>
-              <p className="text-[20px] font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
+             <p className="font-['Inter'] text-[20px] font-bold leading-[16px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
                 {selectedDenomination?.currency || 'R'}{totalSpend}
               </p>
 

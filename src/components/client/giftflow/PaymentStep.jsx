@@ -39,7 +39,7 @@ const PaymentStep = () => {
   const [showThankYou, setShowThankYou] = useState(false);
   const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderId, setPendingOrderId] = useState(null);
-  
+
   // ✅ NEW: Billing address state
   const [billingAddress, setBillingAddress] = useState({
     line1: '',
@@ -76,7 +76,7 @@ const PaymentStep = () => {
   // ✅ Validate billing address
   const validateBillingAddress = () => {
     const errors = {};
-    
+
     if (!billingAddress.line1 || billingAddress.line1.trim() === '') {
       errors.line1 = 'Address is required';
     }
@@ -163,7 +163,7 @@ const PaymentStep = () => {
       };
 
       const result = await createPendingOrder(orderData);
-      
+
       if (result?.success) {
         setPendingOrderId(result.data.orderId);
         setClientSecret(result.data.clientSecret);
@@ -195,12 +195,12 @@ const PaymentStep = () => {
   // Poll order status (existing code)
   const pollOrderStatus = async (orderId, attempts = 0) => {
     const maxAttempts = 20;
-    
+
     try {
       console.log('Polling order status for:', orderId, 'attempt:', attempts);
       const response = await getOrderStatus(orderId);
       console.log('Order status response:', response);
-      
+
       if (response.paymentStatus === 'COMPLETED') {
         setOrder(response.order);
         toast.success('Order placed successfully!');
@@ -251,28 +251,28 @@ const PaymentStep = () => {
 
   if (paymentSubmitted) {
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center">
-            <div className="max-w-md">
-                <div className="mb-4">
-                    <svg className="mx-auto h-16 w-16 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Payment Received!</h1>
-                <p className="text-gray-600">
-                    We've received your payment and are now confirming your order. You'll receive an email confirmation shortly.
-                </p>
-                {pendingOrderId && (
-                    <p className="text-sm text-gray-500 mt-4">
-                        Order ID: <span className="font-medium">{pendingOrderId}</span>
-                    </p>
-                )}
-                <div className="mt-6">
-                    <div className="animate-spin rounded-full h-8 w-8 border-4 border-pink-500 border-t-transparent mx-auto"></div>
-                    <p className="text-sm text-gray-500 mt-2">Confirming your order status...</p>
-                </div>
-            </div>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center">
+        <div className="max-w-md">
+          <div className="mb-4">
+            <svg className="mx-auto h-16 w-16 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Payment Received!</h1>
+          <p className="text-gray-600">
+            We've received your payment and are now confirming your order. You'll receive an email confirmation shortly.
+          </p>
+          {pendingOrderId && (
+            <p className="text-sm text-gray-500 mt-4">
+              Order ID: <span className="font-medium">{pendingOrderId}</span>
+            </p>
+          )}
+          <div className="mt-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-pink-500 border-t-transparent mx-auto"></div>
+            <p className="text-sm text-gray-500 mt-2">Confirming your order status...</p>
+          </div>
         </div>
+      </div>
     );
   }
 
@@ -280,19 +280,20 @@ const PaymentStep = () => {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
       <Toaster />
-      
+
       <div className="max-w-6xl mx-auto">
         {/* Header (existing code) */}
         <div className="mb-8">
-          <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+          <div className="p-0.5 rounded-full bg-linear-to-r max-h-fit max-w-fit from-pink-500 to-orange-400 inline-block">
             <button
               onClick={() => dispatch(goBack())}
-              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md"
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
+                                              transition-all duration-200 shadow-sm hover:shadow-md"
             >
-              <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
-                <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
-              </svg>
-              <span className="text-base font-semibold text-gray-800">Previous</span>
+              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+              <span className="text-base font-semibold text-gray-800">
+                Previous
+              </span>
             </button>
           </div>
 
@@ -365,7 +366,7 @@ const PaymentStep = () => {
 
           {/* Right Column - Existing summary components */}
           <div className="space-y-6">
-            {!isBulkMode && (
+            {/* {!isBulkMode && ( */}
               <GiftDetailsCard
                 selectedBrand={selectedBrand}
                 selectedAmount={selectedAmount}
@@ -379,7 +380,7 @@ const PaymentStep = () => {
                 quantity={quantity}
                 companyInfo={companyInfo}
               />
-            )}
+            {/* )} */}
 
             {isBulkMode ? (
               <BulkPaymentSummary
