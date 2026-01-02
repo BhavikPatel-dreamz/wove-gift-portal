@@ -219,7 +219,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
         columnHelper.accessor("orderNumber", {
             header: "Order Number",
             cell: (info) => (
-                <div className="flex items-center w-45 ">
+                <div className="flex items-center w-40">
                     <span className="font-semibold text-gray-900">{info.getValue()}</span>
                 </div>
             ),
@@ -227,7 +227,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
         columnHelper.accessor("bulkOrderNumber", {
             header: "Bulk Order Number",
             cell: (info) => (
-                <div className="font-semibold text-gray-900 w-45">
+                <div className="font-semibold text-gray-900 w-40">
                     {info.getValue() || '-'}
                 </div>
             ),

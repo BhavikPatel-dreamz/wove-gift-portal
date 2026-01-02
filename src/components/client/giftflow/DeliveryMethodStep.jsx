@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, X } from "lucide-react";
 import { goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
@@ -8,6 +8,8 @@ import PrinterIcon from '../../../icons/PrinterIcon';
 import EmailForm from "./EmailForm";
 import WhatsAppForm from "./WhatsAppForm";
 import PrintForm from "./PrintForm";
+import { useSession } from "@/contexts/SessionContext";
+
 
 const DELIVERY_METHODS = [
   {
@@ -38,6 +40,9 @@ const DELIVERY_METHODS = [
 
 const DeliveryMethodStep = () => {
   const dispatch = useDispatch();
+  const session = useSession();
+
+  console.log(session);
 
   const {
     deliveryMethod,
@@ -66,6 +71,17 @@ const DeliveryMethodStep = () => {
     yourPhoneCountryCode: deliveryDetails.yourPhoneCountryCode || '+91',
     printDetails: deliveryDetails.printDetails || {}
   });
+
+  useEffect(() => {
+    if (session?.user) {
+      setFormData(prev => ({
+        ...prev,
+        yourName: session.user.firstName + " " + session.user.lastName || '',
+        yourFullName: session.user.firstName + " " + session.user.lastName || '',
+        yourEmailAddress: session.user.email || '',
+      }));
+    }
+  }, [session, showModal]);
 
   // Check if method has been completed
   const isMethodCompleted = useMemo(() => {
@@ -156,11 +172,30 @@ const DeliveryMethodStep = () => {
     setShowModal(true);
     setErrors({});
     dispatch(setDeliveryMethod(method));
-  }, [dispatch]);
+
+    const sessionName = session?.user?.name || '';
+    const sessionEmail = session?.user?.email || '';
+
+    setFormData({
+      yourName: sessionName,
+      yourCountryCode: '+91',
+      yourWhatsAppNumber: '',
+      recipientName: '',
+      recipientCountryCode: '+91',
+      recipientWhatsAppNumber: '',
+      yourFullName: sessionName,
+      yourEmailAddress: sessionEmail,
+      recipientFullName: '',
+      recipientEmailAddress: '',
+      yourPhoneNumber: '',
+      yourPhoneCountryCode: '+91',
+      printDetails: {}
+    });
+  }, [dispatch, session]);
 
   const handleInputChange = useCallback((field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    dispatch(updateDeliveryDetail({ field, value }));
+    dispatch(updateDeliveryDetail({ field, value })); // ✅ Dispatch after state update
 
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -284,15 +319,20 @@ const DeliveryMethodStep = () => {
 
   return (
     <div className="min-h-screen bg-white px-8 py-30">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Back Button */}
-        <button
-          onClick={() => dispatch(goBack())}
-          className="flex items-center gap-3 px-4 py-3.5 rounded-full border-2 border-rose-400 bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md group"
-        >
-          <ArrowLeft className="w-5 h-5 text-rose-500 group-hover:-translate-x-0.5 transition-transform duration-200" />
-          <span className="text-base font-semibold text-gray-800">Previous</span>
-        </button>
+        <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+          <button
+            onClick={() => dispatch(goBack())}
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
+                       transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
+            <span className="text-base font-semibold text-gray-800">
+              Previous
+            </span>
+          </button>
+        </div>
 
         {/* Header */}
         <div className="text-center mb-12">
@@ -303,7 +343,7 @@ const DeliveryMethodStep = () => {
         </div>
 
         {/* Delivery Method Selection */}
-        <div className="mb-12">
+        <div className="mb-12 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {DELIVERY_METHODS.map(renderMethodCard)}
           </div>
