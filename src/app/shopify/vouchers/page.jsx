@@ -239,7 +239,7 @@ export default function VouchersManagement() {
     };
 
     const ActionButtons = ({ row }) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 max-w-10">
             <button
                 onClick={() => row.isBulkOrder ? handleViewBulkOrder(row) : handleViewVoucher(row)}
                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -258,7 +258,7 @@ export default function VouchersManagement() {
             cell: (info) => {
                 const row = info.row.original;
                 return (
-                    <div className="flex items-center w-45 ">
+                    <div className="flex items-center w-40">
                         <span className="font-semibold text-gray-900">{info.getValue()}</span>
                     </div>
                 );
@@ -269,7 +269,7 @@ export default function VouchersManagement() {
             cell: (info) => {
                 const row = info.row.original;
                 return (
-                    <div className="font-semibold text-gray-900 w-45">
+                    <div className="font-semibold text-gray-900 w-40">
                         {info.getValue() || '-'}
                         {/* {row.isBulkOrder && (
               <div className="mt-1">
@@ -297,7 +297,7 @@ export default function VouchersManagement() {
                 cell: (info) => {
                     const user = info.getValue();
                     return (
-                        <div>
+                        <div className="max-w-20">
                             <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
                             <div className="text-xs text-gray-500">{user?.email}</div>
                         </div>
