@@ -6,15 +6,15 @@ const ReviewTab = ({ formData, validationErrors }) => {
     <div className="space-y-8">
       {/* Brand Summary */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Brand Summary</h3>
+        <h3 className="mb-4 font-inter text-[16px] font-semibold capitalize text-[#4A4A4A] leading-normal">Brand Summary</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-medium text-gray-900">Brand Name</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Brand Name</h4>
             <p className="text-gray-600">{formData.brandName || 'No tagline'}</p>
             <p className="text-gray-500 text-sm mt-1">Other</p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Primary Color</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Primary Color</h4>
             <div className="flex items-center space-x-2 mt-1">
               <div
                 className="w-4 h-4 rounded border"
@@ -24,11 +24,11 @@ const ReviewTab = ({ formData, validationErrors }) => {
             </div>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Website</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Website</h4>
             <p className="text-gray-600">{formData.website || 'Not set'}</p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Slug</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Slug</h4>
             <p className="text-gray-600">{formData.brandName ? `brands/${formData.brandName.toLowerCase().replace(/\s+/g, '-')}-auto-generated` : 'brands/auto-generated'}</p>
           </div>
         </div>
@@ -36,22 +36,22 @@ const ReviewTab = ({ formData, validationErrors }) => {
 
       {/* Commercial Terms */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Commercial Terms</h3>
+        <h3 className="mb-4 font-inter text-[16px] font-semibold capitalize text-[#4A4A4A] leading-normal">Commercial Terms</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-medium text-gray-900">Settlement</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Settlement</h4>
             <p className="text-gray-600">on purchase</p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Commission</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Commission</h4>
             <p className="text-gray-600">0%</p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Contract Start</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Contract Start</h4>
             <p className="text-gray-600">2022-08-16</p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">VAT Rate</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">VAT Rate</h4>
             <p className="text-gray-600">15%</p>
           </div>
         </div>
@@ -59,22 +59,22 @@ const ReviewTab = ({ formData, validationErrors }) => {
 
       {/* Settlement & Banking */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Settlement & Banking</h3>
+        <h3 className="mb-4 font-inter text-[16px] font-semibold capitalize text-[#4A4A4A] leading-normal">Settlement & Banking</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-medium text-gray-900">Frequency</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Frequency</h4>
             <p className="text-gray-600">{formData.settlementFrequency.toLowerCase()}</p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Method</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Method</h4>
             <p className="text-gray-600">EFT</p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Bank</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Bank</h4>
             <p className="text-gray-600">{formData.bankNameDetails || 'Not set'}</p>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Account</h4>
+           <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">Account</h4>
             <p className="text-gray-600">{formData.accountNumberDetails || 'Not set'}</p>
           </div>
         </div>
@@ -82,7 +82,7 @@ const ReviewTab = ({ formData, validationErrors }) => {
 
       {/* Contacts */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Contacts ({formData.contacts.length})</h3>
+        <h3 className="mb-4 font-inter text-[16px] font-semibold capitalize text-[#4A4A4A] leading-normal">Contacts ({formData.contacts.length})</h3>
         {formData.contacts.map((contact, index) => (
           <div key={contact.id} className="border-b border-gray-200 last:border-b-0 pb-4 mb-4 last:mb-0">
             <div className="flex items-center justify-between">

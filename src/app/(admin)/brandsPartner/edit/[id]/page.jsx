@@ -292,14 +292,14 @@ const BrandEdit = () => {
   };
 
 
-  
+
   const updateFormData = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
-  
+
 
   const updateIntegration = (id, field, value) => {
     setFormData(prev => ({
@@ -453,8 +453,8 @@ const BrandEdit = () => {
 
     try {
       const submitData = prepareFormDataForSubmission();
-      console.log("submitData",submitData);
-      
+      console.log("submitData", submitData);
+
       const result = await updateBrandPartner(brandId, submitData);
 
       if (result.success) {
@@ -594,18 +594,18 @@ const BrandEdit = () => {
               <ChevronLeft size={20} />
             </button>
             <div>
-              <h1 className="text-xl font-semibold">Edit Brand Partner</h1>
-              <p className="text-sm text-gray-600">Update brand information and settings</p>
+              <h1 className="font-poppins text-[22px] font-semibold leading-[20px] text-[#1A1A1A]">Edit Brand Partner</h1>
+              <p className="font-inter text-sm font-medium leading-[18px] text-[#64748B] mt-1">Update brand information and settings</p>
               <div className="flex items-center space-x-2 mt-1">
-                <span className="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                <span className="font-inter text-[10px] font-bold leading-[20px] text-[#0F64F6] bg-blue-100 px-2 py-1 rounded inline-block">
                   {formData.brandName || 'Brand'}
                 </span>
                 {hasChanges && (
-                  <span className="inline-block bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs">
+                  <span className="font-inter text-[10px] font-bold leading-[20px] text-[#E27800] bg-orange-100 px-2 py-1 rounded inline-block">
                     Unsaved Changes
                   </span>
                 )}
-                <span className="text-xs text-gray-500">
+                <span className="font-inter text-[12px] font-medium leading-[20px] text-[#A6A6A6]">
                   {completedTabs.length}/{tabs.length - 1} sections completed
                 </span>
               </div>
@@ -651,8 +651,8 @@ const BrandEdit = () => {
               onClick={() => !saving && setActiveTab(tab.id)}
               disabled={saving}
               className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 transition-colors duration-200 ${activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
             >
               <div className="flex items-center space-x-2">
