@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { goBack, goNext, setSelectedAmount } from "../../../redux/giftFlowSlice";
+import { useSearchParams } from "next/navigation";
+
 const GiftCardSelector = () => {
   const dispatch = useDispatch();
   const { selectedBrand, selectedAmount } = useSelector((state) => state.giftFlowReducer);
@@ -14,8 +16,9 @@ const GiftCardSelector = () => {
   const maxAmount = voucherData?.maxAmount || 10000;
   const currency = voucherData?.denominationCurrency || "ZAR";
 
-  console.log("voucherData", voucherData);
-
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode');
+  const isBulkMode = mode === 'bulk';
 
   const [customAmount, setCustomAmount] = useState(
     selectedAmount && denominationType !== 'fixed' ? selectedAmount.value : minAmount
@@ -39,7 +42,7 @@ const GiftCardSelector = () => {
     }
 
     const customVoucher = {
-      id: `custom-${Date.now()}`, // unique id
+      id: `custom-${Date.now()}`,
       value: customAmount,
       currency: currency,
     };
@@ -67,75 +70,101 @@ const GiftCardSelector = () => {
   return (
     <div
       className="
-    min-h-screen 
-    bg-[linear-gradient(0deg,#fff,#fff),_linear-gradient(126.43deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)]
-    py-30 px-4
-  "
+        min-h-screen 
+        bg-[linear-gradient(0deg,#fff,#fff),_linear-gradient(126.43deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)]
+        py-30 px-4
+      "
     >
-      <div className="max-w-7xl mx-auto">
-        {/* Back Button */}
+     <div className="max-w-7xl mx-auto px-4 sm:px-6">
+         {/* Back Button and Bulk Mode Indicator */}
+        <div className="relative flex flex-col items-start gap-4 mb-6
+                md:flex-row md:items-center md:justify-between md:gap-0">
 
-        <button
-          className="
-    relative w-full inline-flex items-center justify-center gap-2
-    px-5 py-3 rounded-full font-semibold text-base
-    text-[#4A4A4A] bg-white border border-transparent
-    transition-all duration-300 overflow-hidden group cursor-pointer max-w-[200px]
-  "
-          onClick={handleBackClick}
-        >
-          {/* Outer gradient border */}
-          <span
+          {/* Previous Button */}
+          <button
             className="
-      absolute inset-0 rounded-full p-[1.5px]
-      bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
-    "
+              relative inline-flex items-center justify-center gap-2
+              px-5 py-3 rounded-full font-semibold text-base
+              text-[#4A4A4A] bg-white border border-transparent
+              transition-all duration-300 overflow-hidden group cursor-pointer
+            "
+            onClick={() => dispatch(goBack())}
           >
+            {/* Outer gradient border */}
+            <span
+              className="
+                absolute inset-0 rounded-full p-[1.5px]
+                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+              "
+            ></span>
+            <span
+              className="
+                absolute inset-[1.5px] rounded-full bg-white
+                transition-all duration-300
+                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+              "
+            ></span>
 
-          </span>
-          <span
-            className="
-      absolute inset-[1.5px] rounded-full bg-white
-      transition-all duration-300
-      group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
-    "
-          ></span>
+            {/* Button content */}
+            <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+              <svg
+                width="8"
+                height="9"
+                viewBox="0 0 8 9"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300 group-hover:[&>path]:fill-white"
+              >
+                <path
+                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                  fill="url(#paint0_linear_584_1923)"
+                />
+                <defs>
+                  <linearGradient
+                    id="paint0_linear_584_1923"
+                    x1="7.5"
+                    y1="3.01721"
+                    x2="-9.17006"
+                    y2="13.1895"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stopColor="#ED457D" />
+                    <stop offset="1" stopColor="#FA8F42" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              Previous
+            </div>
+          </button>
 
-          {/* Button content */}
-          <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-            <svg
-              width="8"
-              height="9"
-              viewBox="0 0 8 9"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="transition-all duration-300 group-hover:[&>path]:fill-white"
+          {/* Bulk Gifting Indicator */}
+          {isBulkMode && (
+            <div
+              className="
+        flex items-center gap-3 justify-center w-full
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+      "
             >
-              <path
-                d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
-                fill="url(#paint0_linear_584_1923)"
-              />
-              <defs>
-                <linearGradient
-                  id="paint0_linear_584_1923"
-                  x1="7.5"
-                  y1="3.01721"
-                  x2="-9.17006"
-                  y2="13.1895"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop stopColor="#ED457D" />
-                  <stop offset="1" stopColor="#FA8F42" />
-                </linearGradient>
-              </defs>
-            </svg>
-            Back to Brands
-          </div>
-        </button>
+              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
+              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+                <div className="px-4 py-1.5 bg-white rounded-full">
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                    Bulk Gifting
+                  </span>
+                </div>
+              </div>
+
+              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+            </div>
+          )}
+
+          {/* Desktop spacer only */}
+          <div className="md:block w-[140px]" />
+        </div>
 
         {/* Header */}
-        <div className="text-center mb-12 ">
+        <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-5 mt-2">
             Choose Your Gift Amount
           </h1>
@@ -150,10 +179,11 @@ const GiftCardSelector = () => {
             {presetAmounts.map((amount) => (
               <button
                 key={amount.id}
-                className={`relative bg-white rounded-xl border-2 p-8 w-45 transition-all duration-200 hover:shadow-md ${localSelectedAmount?.id === amount.id
-                  ? 'border-purple-400 shadow-lg scale-105'
-                  : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                className={`relative bg-white rounded-xl border-2 p-8 w-45 transition-all duration-200 hover:shadow-md ${
+                  localSelectedAmount?.id === amount.id
+                    ? 'border-purple-400 shadow-lg scale-105'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
                 onClick={() => handleAmountClick(amount)}
               >
                 {/* Gift Box Emoji */}

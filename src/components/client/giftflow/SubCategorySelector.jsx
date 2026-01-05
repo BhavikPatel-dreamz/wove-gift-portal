@@ -33,9 +33,8 @@ const textColors = ['#FFFFFF', '#000000', '#1F2937', '#374151', '#FF6B35', '#416
 const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
   return (
     <div
-      className={`absolute ${layer.locked ? 'cursor-not-allowed' : 'cursor-move'} ${
-        isSelected ? 'ring-2 ring-blue-500' : ''
-      }`}
+      className={`absolute ${layer.locked ? 'cursor-not-allowed' : 'cursor-move'} ${isSelected ? 'ring-2 ring-blue-500' : ''
+        }`}
       style={{
         left: `${layer.x}%`,
         top: `${layer.y}%`,
@@ -83,10 +82,10 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
                   fontSize: `${layer.scale * 60}px`,
                   lineHeight: 1,
                   pointerEvents: 'none',
-}}
+                }}
               >
                 {layer.content}
-</div>
+              </div>
             );
           case 'image':
             return (
@@ -251,7 +250,7 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
       startLayerY: layer.y,
       layerId,
       // Store original dimensions to prevent any size changes
-originalWidth: layer.width || 0,
+      originalWidth: layer.width || 0,
       originalHeight: layer.height || 0
     };
 
@@ -363,101 +362,101 @@ originalWidth: layer.width || 0,
   const exportCard = useCallback(async () => {
     if (!cardRef.current) return;
     setIsGenerating(true);
-  
+
     try {
-        const canvas = document.createElement('canvas');
-        const scale = 2;
-        canvas.width = canvasSize.width * scale;
-        canvas.height = canvasSize.height * scale;
-        const ctx = canvas.getContext('2d');
-    
-        const bgLayer = layers.find(l => l.id === 'bg');
-        if (bgLayer.bgImage) {
-            const img = new window.Image();
-            await new Promise((resolve) => {
-                img.onload = resolve;
-                img.onerror = resolve;
-                img.src = bgLayer.bgImage;
-            });
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        } else {
-            ctx.fillStyle = bgLayer.bgColor;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-    
-        for (const layer of layers.slice(1)) {
-            ctx.save();
-            ctx.globalAlpha = layer.opacity / 100;
-    
-            const x = (layer.x / 100) * canvas.width;
-            const y = (layer.y / 100) * canvas.height;
-            const rotation = layer.rotation || 0;
-    
-            ctx.translate(x, y);
-            ctx.rotate(rotation * Math.PI / 180);
-    
-            if (layer.type === 'text') {
-                const fontStyle = layer.fontStyle === 'italic' ? 'italic ' : '';
-                const fontWeight = layer.fontWeight || 'normal';
-                ctx.font = `${fontStyle}${fontWeight} ${layer.fontSize * scale}px ${layer.fontFamily}`;
-                ctx.fillStyle = layer.color;
-                ctx.textAlign = layer.textAlign;
-                ctx.textBaseline = 'middle';
-                ctx.fillText(layer.content, 0, 0);
-            } else if (layer.type === 'emoji') {
-                ctx.font = `${layer.scale * 60 * scale}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(layer.content, 0, 0);
-            } else if (layer.type === 'image') {
-                const img = new window.Image();
-                await new Promise((resolve) => {
-                    img.onload = resolve;
-                    img.onerror = resolve;
-                    img.src = layer.src;
-                });
-                const width = layer.width * scale;
-                const height = layer.height * scale;
-                ctx.drawImage(img, -width / 2, -height / 2, width, height);
-            }
-    
-            ctx.restore();
-        }
-  
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        if (!blob) {
-            throw new Error("Canvas blob is empty");
-        }
+      const canvas = document.createElement('canvas');
+      const scale = 2;
+      canvas.width = canvasSize.width * scale;
+      canvas.height = canvasSize.height * scale;
+      const ctx = canvas.getContext('2d');
 
-        const blobToBase64 = (blob) => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = (error) => reject(error);
-            });
-        };
-
-        const base64data = await blobToBase64(blob);
-
-        const response = await fetch('/api/save-card', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ file: base64data }),
+      const bgLayer = layers.find(l => l.id === 'bg');
+      if (bgLayer.bgImage) {
+        const img = new window.Image();
+        await new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+          img.src = bgLayer.bgImage;
         });
-      
-        if (response.ok) {
-            const result = await response.json();
-            alert(`Card saved successfully at ${result.path}`);
-        } else {
-            const errorData = await response.json().catch(() => ({ error: 'Failed to save card' }));
-            throw new Error(errorData.details || errorData.error || 'Failed to save card');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.fillStyle = bgLayer.bgColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      for (const layer of layers.slice(1)) {
+        ctx.save();
+        ctx.globalAlpha = layer.opacity / 100;
+
+        const x = (layer.x / 100) * canvas.width;
+        const y = (layer.y / 100) * canvas.height;
+        const rotation = layer.rotation || 0;
+
+        ctx.translate(x, y);
+        ctx.rotate(rotation * Math.PI / 180);
+
+        if (layer.type === 'text') {
+          const fontStyle = layer.fontStyle === 'italic' ? 'italic ' : '';
+          const fontWeight = layer.fontWeight || 'normal';
+          ctx.font = `${fontStyle}${fontWeight} ${layer.fontSize * scale}px ${layer.fontFamily}`;
+          ctx.fillStyle = layer.color;
+          ctx.textAlign = layer.textAlign;
+          ctx.textBaseline = 'middle';
+          ctx.fillText(layer.content, 0, 0);
+        } else if (layer.type === 'emoji') {
+          ctx.font = `${layer.scale * 60 * scale}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(layer.content, 0, 0);
+        } else if (layer.type === 'image') {
+          const img = new window.Image();
+          await new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+            img.src = layer.src;
+          });
+          const width = layer.width * scale;
+          const height = layer.height * scale;
+          ctx.drawImage(img, -width / 2, -height / 2, width, height);
         }
+
+        ctx.restore();
+      }
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) {
+        throw new Error("Canvas blob is empty");
+      }
+
+      const blobToBase64 = (blob) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+        });
+      };
+
+      const base64data = await blobToBase64(blob);
+
+      const response = await fetch('/api/save-card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: base64data }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Card saved successfully at ${result.path}`);
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to save card' }));
+        throw new Error(errorData.details || errorData.error || 'Failed to save card');
+      }
     } catch (error) {
-        console.error('Export failed:', error);
-        alert(`Failed to save card. Please try again. Error: ${error.message}`);
+      console.error('Export failed:', error);
+      alert(`Failed to save card. Please try again. Error: ${error.message}`);
     } finally {
-        setIsGenerating(false);
+      setIsGenerating(false);
     }
   }, [layers, canvasSize]);
 
@@ -534,7 +533,7 @@ originalWidth: layer.width || 0,
     try {
       const canvas = await drawCanvas();
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      
+
       if (!blob) {
         throw new Error("Canvas blob is empty");
       }
@@ -549,8 +548,8 @@ originalWidth: layer.width || 0,
           reader.onerror = (error) => reject(error);
         });
       };
-      
-        
+
+
       const base64data = await blobToBase64(blob);
 
       const response = await fetch('/api/save-card', {
@@ -568,7 +567,7 @@ originalWidth: layer.width || 0,
 
       const data = await response.json();
       const imagePath = data.path;
-      
+
 
       const result = await saveCustomCard({
         name: titleLayer?.content || 'Custom Card',
@@ -694,15 +693,15 @@ originalWidth: layer.width || 0,
                   height: `${canvasSize.height}px`,
                   borderRadius: `${cornerRadius}px`,
                   // FIXED: Proper background handling
-                  ...(bgLayer?.bgImage 
-                    ? { 
-                        backgroundImage: `url(${bgLayer.bgImage})`,
-                        backgroundColor: 'transparent' 
-                      }
-                    : { 
-                        backgroundColor: bgLayer?.bgColor || '#FFFFFF',
-                        backgroundImage: 'none'
-                      }),
+                  ...(bgLayer?.bgImage
+                    ? {
+                      backgroundImage: `url(${bgLayer.bgImage})`,
+                      backgroundColor: 'transparent'
+                    }
+                    : {
+                      backgroundColor: bgLayer?.bgColor || '#FFFFFF',
+                      backgroundImage: 'none'
+                    }),
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   cursor: isDragging ? 'grabbing' : 'default',
@@ -720,12 +719,12 @@ originalWidth: layer.width || 0,
                 ))}
               </div>
             </div>
-            
+
             {/* Background status indicator */}
             <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-              <div 
+              <div
                 className="w-4 h-4 rounded border border-gray-300"
-                style={{ 
+                style={{
                   backgroundColor: bgLayer?.bgImage ? 'transparent' : bgLayer?.bgColor,
                   backgroundImage: bgLayer?.bgImage ? `url(${bgLayer.bgImage})` : 'none',
                   backgroundSize: 'cover'
@@ -797,16 +796,15 @@ originalWidth: layer.width || 0,
                               // Clear any existing background image
                               if (bgImageInputRef.current) bgImageInputRef.current.value = '';
                               // Update with new color
-                              updateLayer('bg', { 
-                                bgColor: color, 
-                                bgImage: null 
+                              updateLayer('bg', {
+                                bgColor: color,
+                                bgImage: null
                               });
                             }}
-                            className={`w-7 h-7 rounded transition-transform hover:scale-110 ${
-                              selectedLayerData.bgColor === color && !selectedLayerData.bgImage 
-                                ? 'ring-3 ring-blue-500 ring-offset-2' 
-                                : 'ring-1 ring-gray-300'
-                            }`}
+                            className={`w-7 h-7 rounded transition-transform hover:scale-110 ${selectedLayerData.bgColor === color && !selectedLayerData.bgImage
+                              ? 'ring-3 ring-blue-500 ring-offset-2'
+                              : 'ring-1 ring-gray-300'
+                              }`}
                             style={{ backgroundColor: color }}
                             title={color}
                           />
@@ -821,9 +819,9 @@ originalWidth: layer.width || 0,
                       {selectedLayerData.bgImage && (
                         <button
                           onClick={() => {
-                            updateLayer('bg', { 
-                              bgImage: null, 
-                              bgColor: '#FFFFFF' 
+                            updateLayer('bg', {
+                              bgImage: null,
+                              bgColor: '#FFFFFF'
                             });
                           }}
                           className="w-full mt-2 py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 transition-colors"
@@ -831,12 +829,12 @@ originalWidth: layer.width || 0,
                           Remove Image (Use Color)
                         </button>
                       )}
-                      <input 
-                        ref={bgImageInputRef} 
-                        type="file" 
-                        className="hidden" 
-                        accept="image/*" 
-                        onChange={(e) => handleImageUpload(e, true)} 
+                      <input
+                        ref={bgImageInputRef}
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e, true)}
                       />
                     </div>
                   )}
@@ -920,7 +918,7 @@ originalWidth: layer.width || 0,
                   {selectedLayerData.type === 'image' && (
                     <div className="bg-gray-50 rounded-xl p-4">
                       <h3 className="text-sm font-semibold mb-3">Image Controls</h3>
-                      
+
                       <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
@@ -1227,32 +1225,96 @@ export default function SubCategorySelector() {
   return (
     <div className="min-h-screen bg-[#FFF] py-30">
       <div className="max-w-7xl mx-auto px-6">
-        {/* Back Button */}
-        <div className="p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 inline-block mb-8">
-          <button onClick={() => dispatch(goBack())} className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md">
-            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path>
-              <defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop>
-              </linearGradient></defs>
-            </svg>
-            <span className="text-base font-semibold text-gray-800">Previous</span>
-          </button>
-        </div>
+        {/* Back Button and Bulk Mode Indicator */}
+        <div className="relative flex flex-col items-start gap-4 mb-6
+                md:flex-row md:items-center md:justify-between md:gap-0">
 
-        {/* Header */}
-        <div className="text-center mb-10">
+          {/* Previous Button */}
+          <button
+            className="
+              relative inline-flex items-center justify-center gap-2
+              px-5 py-3 rounded-full font-semibold text-base
+              text-[#4A4A4A] bg-white border border-transparent
+              transition-all duration-300 overflow-hidden group cursor-pointer
+            "
+            onClick={() => dispatch(goBack())}
+          >
+            {/* Outer gradient border */}
+            <span
+              className="
+                absolute inset-0 rounded-full p-[1.5px]
+                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+              "
+            ></span>
+            <span
+              className="
+                absolute inset-[1.5px] rounded-full bg-white
+                transition-all duration-300
+                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+              "
+            ></span>
+
+            {/* Button content */}
+            <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+              <svg
+                width="8"
+                height="9"
+                viewBox="0 0 8 9"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300 group-hover:[&>path]:fill-white"
+              >
+                <path
+                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                  fill="url(#paint0_linear_584_1923)"
+                />
+                <defs>
+                  <linearGradient
+                    id="paint0_linear_584_1923"
+                    x1="7.5"
+                    y1="3.01721"
+                    x2="-9.17006"
+                    y2="13.1895"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stopColor="#ED457D" />
+                    <stop offset="1" stopColor="#FA8F42" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              Previous
+            </div>
+          </button>
+
+          {/* Bulk Gifting Indicator */}
           {isBulkMode && (
-            <div className="w-full flex items-center justify-center mb-4">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
-              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42] mx-4">
+            <div
+              className="
+        flex items-center gap-3 justify-center w-full
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+      "
+            >
+              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+
+              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 py-1.5 bg-white rounded-full">
-                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">Bulk Gifting</span>
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                    Bulk Gifting
+                  </span>
                 </div>
               </div>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
+
+              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
+
+          {/* Desktop spacer only */}
+          <div className="md:block w-[140px]" />
+        </div>
+
+
+        {/* Header */}
+        <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
             Pick a {selectedOccasionName} Design They'll Love
           </h1>

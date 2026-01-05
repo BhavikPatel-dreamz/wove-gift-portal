@@ -16,7 +16,7 @@ export default function OccasionSelector() {
     currentOccasionPage,
     selectedOccasion
   } = useSelector((state) => state.giftFlowReducer);
-  const data  = useSelector((state) => state.giftFlowReducer);
+  const data = useSelector((state) => state.giftFlowReducer);
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
@@ -40,7 +40,7 @@ export default function OccasionSelector() {
     }
   };
 
-  
+
 
   useEffect(() => {
     if (occasions.length === 0) {
@@ -92,30 +92,78 @@ export default function OccasionSelector() {
   return (
     <div className="min-h-screen bg-gray-50  py-30">
       <div className="max-w-7xl mx-auto px-6">
-        {/* Back Button */}
-        <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+        {/* Back Button and Bulk Mode Indicator */}
+        <div className="relative flex flex-col items-start gap-4 mb-6
+                md:flex-row md:items-center md:justify-between md:gap-0">
+
+          {/* Previous Button */}
           <button
+            className="
+              relative inline-flex items-center justify-center gap-2
+              px-5 py-3 rounded-full font-semibold text-base
+              text-[#4A4A4A] bg-white border border-transparent
+              transition-all duration-300 overflow-hidden group cursor-pointer
+            "
             onClick={() => dispatch(goBack())}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
-               transition-all duration-200 shadow-sm hover:shadow-md"
           >
-            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
-            <span className="text-base font-semibold text-gray-800">
+            {/* Outer gradient border */}
+            <span
+              className="
+                absolute inset-0 rounded-full p-[1.5px]
+                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+              "
+            ></span>
+            <span
+              className="
+                absolute inset-[1.5px] rounded-full bg-white
+                transition-all duration-300
+                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+              "
+            ></span>
+
+            {/* Button content */}
+            <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+              <svg
+                width="8"
+                height="9"
+                viewBox="0 0 8 9"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300 group-hover:[&>path]:fill-white"
+              >
+                <path
+                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                  fill="url(#paint0_linear_584_1923)"
+                />
+                <defs>
+                  <linearGradient
+                    id="paint0_linear_584_1923"
+                    x1="7.5"
+                    y1="3.01721"
+                    x2="-9.17006"
+                    y2="13.1895"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stopColor="#ED457D" />
+                    <stop offset="1" stopColor="#FA8F42" />
+                  </linearGradient>
+                </defs>
+              </svg>
               Previous
-            </span>
+            </div>
           </button>
-        </div>
 
-        {/* Header */}
-        <div className="text-center mb-10">
-          {
-            isBulkMode &&
-            <div className="w-full flex items-center justify-center mb-4">
-              {/* Left line */}
-              <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
+          {/* Bulk Gifting Indicator */}
+          {isBulkMode && (
+            <div
+              className="
+        flex items-center gap-3 justify-center w-full
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+      "
+            >
+              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
-              {/* Center pill */}
-              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
+              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 py-1.5 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
@@ -123,10 +171,16 @@ export default function OccasionSelector() {
                 </div>
               </div>
 
-              {/* Right line */}
-              <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
+              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
-          }
+          )}
+
+          {/* Desktop spacer only */}
+          <div className="md:block w-[140px]" />
+        </div>
+
+        {/* Header */}
+        <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 mt-2">
             What's the Occasion?
           </h1>

@@ -4,7 +4,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
-import { goBack } from "../../../redux/giftFlowSlice";
+import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
 import { createPendingOrder, getOrderStatus } from "../../../lib/action/orderAction";
 import convertToSubcurrency from "../../../lib/convertToSubcurrency";
 
@@ -278,95 +278,149 @@ const PaymentStep = () => {
 
   // Main payment form
   return (
-  <div className="min-h-screen bg-gray-50 px-4 py-12 sm:py-16 md:px-8 md:py-20">
-  <Toaster />
+    <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
+      <Toaster />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        {/* Back Button and Bulk Mode Indicator */}
+        <div className="relative flex flex-col items-start gap-4 mb-6
+                                        md:flex-row md:items-center md:justify-between md:gap-0">
 
-  <div className="max-w-6xl mx-auto">
-    {/* Header */}
-    <div className="mb-6 sm:mb-8 mt-3">
-      <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
-        <button
-          onClick={() => dispatch(goBack())}
-          className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-3 rounded-full 
-                     bg-white hover:bg-rose-50 transition-all duration-200 
-                     shadow-sm hover:shadow-md"
-        >
-          <svg
-            width="8"
-            height="9"
-            viewBox="0 0 8 9"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
-              fill="url(#grad)"
-            />
-            <defs>
-              <linearGradient id="grad" x1="7.5" y1="3" x2="-9" y2="13">
-                <stop stopColor="#ED457D" />
-                <stop offset="1" stopColor="#FA8F42" />
-              </linearGradient>
-            </defs>
-          </svg>
-
-          <span className="text-sm sm:text-base font-semibold text-gray-800">
-            Previous
-          </span>
-        </button>
-      </div>
-
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center mt-6">
-        {isBulkMode
-          ? 'Complete your payment securely'
-          : "You're almost there!"}
-      </h1>
-
-      <p className="text-sm sm:text-base text-gray-600 text-center mt-2 max-w-2xl mx-auto">
-        {isBulkMode
-          ? 'Your vouchers will be generated instantly after payment'
-          : "Let's deliver your beautiful gift and make someone's day absolutely wonderful"}
-      </p>
-    </div>
-
-    {/* Two Column Layout */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-      {/* Left Column */}
-      <div className="space-y-5 sm:space-y-6">
-        <BillingAddressForm
-          address={billingAddress}
-          onChange={setBillingAddress}
-          errors={addressErrors}
-        />
-
-        <PaymentMethodSelector
-          selectedTab={selectedPaymentTab}
-          onTabChange={setSelectedPaymentTab}
-          isBulkMode={isBulkMode}
-        />
-
-        {selectedPaymentTab === 'card' && clientSecret && (
-          <Elements
-            stripe={stripePromise}
-            options={{
-              clientSecret,
-              appearance: { theme: 'stripe' },
-            }}
-          >
-            <StripeCardPayment
-              clientSecret={clientSecret}
-              isProcessing={isProcessing}
-              onInitiatePayment={handleInitiatePayment}
-              onPaymentSuccess={handlePaymentSuccess}
-            />
-          </Elements>
-        )}
-
-        {selectedPaymentTab === 'card' && !clientSecret && (
+          {/* Previous Button */}
           <button
-            onClick={handleInitiatePayment}
-            disabled={isProcessing}
-            className="w-full bg-gradient-to-r from-pink-500 to-orange-500 
+            className="
+                                      relative inline-flex items-center justify-center gap-2
+                                      px-5 py-3 rounded-full font-semibold text-base
+                                      text-[#4A4A4A] bg-white border border-transparent
+                                      transition-all duration-300 overflow-hidden group cursor-pointer
+                                    "
+            onClick={() => { isBulkMode ? dispatch(setCurrentStep(7)) : dispatch(goBack()) }}
+          >
+            {/* Outer gradient border */}
+            <span
+              className="
+                                        absolute inset-0 rounded-full p-[1.5px]
+                                        bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                                      "
+            ></span>
+            <span
+              className="
+                                        absolute inset-[1.5px] rounded-full bg-white
+                                        transition-all duration-300
+                                        group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+                                      "
+            ></span>
+
+            {/* Button content */}
+            <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+              <svg
+                width="8"
+                height="9"
+                viewBox="0 0 8 9"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300 group-hover:[&>path]:fill-white"
+              >
+                <path
+                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                  fill="url(#paint0_linear_584_1923)"
+                />
+                <defs>
+                  <linearGradient
+                    id="paint0_linear_584_1923"
+                    x1="7.5"
+                    y1="3.01721"
+                    x2="-9.17006"
+                    y2="13.1895"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stopColor="#ED457D" />
+                    <stop offset="1" stopColor="#FA8F42" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              Previous
+            </div>
+          </button>
+
+          {/* Bulk Gifting Indicator */}
+          {isBulkMode && (
+            <div
+              className="
+                                flex items-center gap-3 justify-center w-full
+                                md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+                              "
+            >
+              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+
+              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+                <div className="px-4 py-1.5 bg-white rounded-full">
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                    Bulk Gifting
+                  </span>
+                </div>
+              </div>
+
+              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+            </div>
+          )}
+
+          {/* Desktop spacer only */}
+          <div className="md:block w-[140px]" />
+        </div>
+
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center mt-6">
+            {isBulkMode
+              ? 'Complete your payment securely'
+              : "You're almost there!"}
+          </h1>
+
+          <p className="text-sm sm:text-base text-gray-600 text-center mt-2 max-w-2xl mx-auto">
+            {isBulkMode
+              ? 'Your vouchers will be generated instantly after payment'
+              : "Let's deliver your beautiful gift and make someone's day absolutely wonderful"}
+          </p>
+        </div>
+
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+          {/* Left Column */}
+          <div className="space-y-5 sm:space-y-6">
+            <BillingAddressForm
+              address={billingAddress}
+              onChange={setBillingAddress}
+              errors={addressErrors}
+            />
+
+            <PaymentMethodSelector
+              selectedTab={selectedPaymentTab}
+              onTabChange={setSelectedPaymentTab}
+              isBulkMode={isBulkMode}
+            />
+
+            {selectedPaymentTab === 'card' && clientSecret && (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: { theme: 'stripe' },
+                }}
+              >
+                <StripeCardPayment
+                  clientSecret={clientSecret}
+                  isProcessing={isProcessing}
+                  onInitiatePayment={handleInitiatePayment}
+                  onPaymentSuccess={handlePaymentSuccess}
+                />
+              </Elements>
+            )}
+
+            {selectedPaymentTab === 'card' && !clientSecret && (
+              <button
+                onClick={handleInitiatePayment}
+                disabled={isProcessing}
+                className="w-full bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
                        disabled:from-gray-300 disabled:to-gray-400
                        text-white py-3 sm:py-4 px-6 rounded-xl
@@ -374,72 +428,72 @@ const PaymentStep = () => {
                        transition-all duration-200
                        flex items-center justify-center gap-2
                        shadow-lg disabled:cursor-not-allowed"
-          >
-            {isProcessing ? (
-              <>
-                <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                Preparing...
-              </>
-            ) : (
-              <>
-                Proceed to Payment <span>→</span>
-              </>
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                    Preparing...
+                  </>
+                ) : (
+                  <>
+                    Proceed to Payment <span>→</span>
+                  </>
+                )}
+              </button>
             )}
-          </button>
-        )}
-      </div>
+          </div>
 
-      {/* Right Column */}
-      <div className="space-y-5 sm:space-y-6">
-        <GiftDetailsCard {...{
-          selectedBrand,
-          selectedAmount,
-          selectedSubCategory,
-          selectedOccasionName,
-          personalMessage,
-          deliveryMethod,
-          deliveryDetails,
-          formatAmount,
-          isBulkMode,
-          quantity,
-          companyInfo,
-        }} />
+          {/* Right Column */}
+          <div className="space-y-5 sm:space-y-6">
+            <GiftDetailsCard {...{
+              selectedBrand,
+              selectedAmount,
+              selectedSubCategory,
+              selectedOccasionName,
+              personalMessage,
+              deliveryMethod,
+              deliveryDetails,
+              formatAmount,
+              isBulkMode,
+              quantity,
+              companyInfo,
+            }} />
 
-        {isBulkMode ? (
-          <BulkPaymentSummary
-            currentBulkOrder={currentBulkOrder}
-            quantity={quantity}
-            selectedAmount={selectedAmount}
-            calculateServiceFee={calculateServiceFee}
-            calculateTotal={calculateTotal}
-          />
-        ) : (
-          <PaymentSummary
-            selectedAmount={selectedAmount}
-            formatAmount={formatAmount}
-            calculateServiceFee={calculateServiceFee}
-            calculateTotal={calculateTotal}
-            isBulkMode={isBulkMode}
-            quantity={quantity}
-          />
+            {isBulkMode ? (
+              <BulkPaymentSummary
+                currentBulkOrder={currentBulkOrder}
+                quantity={quantity}
+                selectedAmount={selectedAmount}
+                calculateServiceFee={calculateServiceFee}
+                calculateTotal={calculateTotal}
+              />
+            ) : (
+              <PaymentSummary
+                selectedAmount={selectedAmount}
+                formatAmount={formatAmount}
+                calculateServiceFee={calculateServiceFee}
+                calculateTotal={calculateTotal}
+                isBulkMode={isBulkMode}
+                quantity={quantity}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mt-6">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
+              <span className="text-red-600 font-bold">!</span>
+              <div>
+                <p className="font-semibold text-red-800">Payment Error</p>
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
-
-    {/* Error */}
-    {error && (
-      <div className="mt-6">
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-          <span className="text-red-600 font-bold">!</span>
-          <div>
-            <p className="font-semibold text-red-800">Payment Error</p>
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-</div>
   );
 };
 

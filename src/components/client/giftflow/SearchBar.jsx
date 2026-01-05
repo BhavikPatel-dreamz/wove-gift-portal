@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { ChevronDown, Search, Filter } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 const SearchBar = ({
   placeholder,
@@ -10,6 +11,9 @@ const SearchBar = ({
   onCategoryChange,
 }) => {
   const [open, setOpen] = useState(false);
+   const searchParams = useSearchParams();
+  const mode = searchParams.get('mode');
+  const isBulkMode = mode === 'bulk';
 
   return (
     <div className="relative w-full">
@@ -21,11 +25,32 @@ const SearchBar = ({
           background: "linear-gradient(126deg, #FBDCE3 31.7%, #FDE6DB 87.04%)",
         }}
       >
+
+          {
+            isBulkMode &&
+            <div className="w-full flex items-center justify-center mb-4">
+              {/* Left line */}
+              <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
+
+              {/* Center pill */}
+              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
+                <div className="px-4 py-1.5 bg-white rounded-full">
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                    Bulk Gifting
+                  </span>
+                </div>
+              </div>
+
+              {/* Right line */}
+              <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
+            </div>
+          }
+
         <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
-          Pick Your Perfect Brand
+          {isBulkMode ? "Choose the Perfect Brand to Gift" : "Pick Your Perfect Brand"}
         </h1>
         <p className="text-gray-600 text-sm sm:text-base max-w-md mx-auto px-2">
-          Choose from our curated brands to make their day unforgettable
+         {isBulkMode ? "Pick from our trusted partners for bulk orders" : "Choose from our curated brands to make their day unforgettable"}
         </p>
       </div>
 
