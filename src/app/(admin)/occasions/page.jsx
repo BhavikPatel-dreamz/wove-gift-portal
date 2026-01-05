@@ -8,6 +8,7 @@ import { getOccasions, addOccasion, updateOccasion, deleteOccasion } from "../..
 import { toast } from "react-hot-toast";
 import CreateOccasionModal from "@/components/forms/CreateOccasionModal";
 import OccasionCard from "@/components/forms/OccasionCard";
+import CustomDropdown from "../../../components/ui/CustomDropdown";
 
 const OccasionsManager = () => {
   const router = useRouter();
@@ -77,7 +78,7 @@ const OccasionsManager = () => {
 
       if (result.success) {
         setOccasions(result.data || []);
-        
+
         if (result.meta?.pagination) {
           setTotalItems(result.meta.pagination.totalItems);
           setTotalPages(result.meta.pagination.totalPages);
@@ -149,10 +150,10 @@ const OccasionsManager = () => {
       if (result.success) {
         toast.success("Occasion added successfully");
         setIsModalOpen(false);
-        
+
         const params = new URLSearchParams(searchParams.toString());
         params.set('page', '1');
-        
+
         // Redirect to the new cards page for the newly created occasion
         router.push(`/occasions/${result.data.id}/cards`);
 
@@ -214,7 +215,7 @@ const OccasionsManager = () => {
 
       if (result.success) {
         toast.success("Occasion deleted successfully");
-        
+
         if (occasions.length === 1 && currentPage > 1) {
           handlePageChange(currentPage - 1);
         } else {
@@ -248,7 +249,7 @@ const OccasionsManager = () => {
   // Generate page numbers for pagination
   const getPageNumbers = useMemo(() => {
     const pages = [];
-    
+
     if (totalPages <= 7) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -270,7 +271,7 @@ const OccasionsManager = () => {
         pages.push(totalPages);
       }
     }
-    
+
     return pages;
   }, [currentPage, totalPages]);
 
@@ -304,11 +305,11 @@ const OccasionsManager = () => {
     );
   }
 
-  console.log("occasions",occasions);
-  
+  console.log("occasions", occasions);
+
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 text-black">
+    <div className="min-h-screen bg-gray-50 p-1 md:p-6 text-black">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
@@ -344,27 +345,42 @@ const OccasionsManager = () => {
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <div className="absolute left-4 top-4 transform -translate-y-1/2 text-gray-400 h-3.5 w-3.5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M9.5 16C7.68333 16 6.146 15.3707 4.888 14.112C3.63 12.8533 3.00067 11.316 3 9.5C2.99933 7.684 3.62867 6.14667 4.888 4.888C6.14733 3.62933 7.68467 3 9.5 3C11.3153 3 12.853 3.62933 14.113 4.888C15.373 6.14667 16.002 7.684 16 9.5C16 10.2333 15.8833 10.925 15.65 11.575C15.4167 12.225 15.1 12.8 14.7 13.3L20.3 18.9C20.4833 19.0833 20.575 19.3167 20.575 19.6C20.575 19.8833 20.4833 20.1167 20.3 20.3C20.1167 20.4833 19.8833 20.575 19.6 20.575C19.3167 20.575 19.0833 20.4833 18.9 20.3L13.3 14.7C12.8 15.1 12.225 15.4167 11.575 15.65C10.925 15.8833 10.2333 16 9.5 16ZM9.5 14C10.75 14 11.8127 13.5627 12.688 12.688C13.5633 11.8133 14.0007 10.7507 14 9.5C13.9993 8.24933 13.562 7.187 12.688 6.313C11.814 5.439 10.7513 5.00133 9.5 5C8.24867 4.99867 7.18633 5.43633 6.313 6.313C5.43967 7.18967 5.002 8.252 5 9.5C4.998 10.748 5.43567 11.8107 6.313 12.688C7.19033 13.5653 8.25267 14.0027 9.5 14Z"
+                    fill="#A6A6A6"
+                  />
+                </svg>
+              </div>
               <input
                 type="text"
                 placeholder="Search occasions by name..."
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg outline-none"
+                className="w-full pl-10 pr-10 text-sm py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
 
             {/* Sort */}
             <div className="flex gap-2">
-              <select
+              <CustomDropdown
                 value={sortBy}
-                onChange={(e) => handleSortByChange(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg outline-none"
-              >
-                <option value="createdAt">Created Date</option>
-                <option value="name">Name</option>
-                <option value="updatedAt">Updated Date</option>
-              </select>
+                onChange={(e) => handleSortByChange(e)}
+                options={[
+                  { value: "createdAt", label: "Created Date" },
+                  { value: "name", label: "Name" },
+                  { value: "updatedAt", label: "Updated Date" },
+                ]}
+                placeholder="Select Category"
+                className="min-w-[150px] text-sm"
+              />
               <button
                 onClick={handleSortOrderToggle}
                 className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -376,31 +392,38 @@ const OccasionsManager = () => {
         </div>
 
         {/* Occasions Header with Pagination Info */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold text-[#1A1A1A]">Occasions List</h2>
-            <span className="bg-[rgba(15,100,246,0.10)] text-[#0F64F6] px-2 py-1 rounded-[3px] border border-[rgba(15,100,246,0.20)] text-sm font-medium">
+        <div className="flex flex-row justify-between items-start md:items-center mb-6 gap-4 md:gap-0">
+          {/* Title + count */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
+            <h2 className="text-lg sm:text-xl font-semibold text-[#1A1A1A]">
+              Occasions List
+            </h2>
+            <span className="bg-[rgba(15,100,246,0.10)] text-[#0F64F6] px-2 py-0.5 sm:py-1 rounded-[3px] border border-[rgba(15,100,246,0.20)] text-xs sm:text-sm font-medium">
               {totalItems} occasions
             </span>
           </div>
 
           {/* Items per page selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-[#A6A6A6]">Show:</span>
-            <select
+          <div className="flex flex-row sm:flex-row items-center gap-2 w-full sm:w-auto mt-3 md:mt-0">
+            <span className="text-xs sm:text-sm text-[#A6A6A6]">Show:</span>
+            <CustomDropdown
               value={itemsPerPage}
-              onChange={(e) => handleItemsPerPageChange(e.target.value)}
-              className="px-1 py-1 border border-[#E2E8F0] rounded-lg text-xs outline-none"
-            >
-              <option value={4}>4</option>
-              <option value={8}>8</option>
-              <option value={12}>12</option>
-              <option value={24}>24</option>
-              <option value={48}>48</option>
-            </select>
-            <span className="text-sm text-[#A6A6A6]">per page</span>
+              onChange={(e) => handleItemsPerPageChange(e)}
+              options={[
+                { value: 4, label: 4 },
+                { value: 8, label: 8 },
+                { value: 12, label: 12 },
+                { value: 24, label: 24 },
+                { value: 48, label: 48 },
+              ]}
+              placeholder={itemsPerPage}
+              className="text-xs sm:text-sm outline-none w-full sm:w-auto max-w-15"
+            />
+            <span className="text-xs sm:text-sm text-[#A6A6A6]">per page</span>
           </div>
         </div>
+
+
 
         {/* Occasions Grid */}
         <div className="relative">
@@ -474,11 +497,10 @@ const OccasionsManager = () => {
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
                       disabled={loading}
-                      className={`px-3 py-1 rounded-lg transition-colors ${
-                        pageNum === currentPage
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      className={`px-3 py-1 rounded-lg transition-colors ${pageNum === currentPage
+                        ? 'bg-blue-600 text-white'
+                        : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {pageNum}
                     </button>

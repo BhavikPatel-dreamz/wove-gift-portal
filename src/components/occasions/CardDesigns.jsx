@@ -356,7 +356,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto">
         {/* Enhanced Header */}
         <div className="bg-white rounded-lg border border-[#E2E8F0] p-4 mb-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
