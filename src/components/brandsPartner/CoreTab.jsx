@@ -190,7 +190,7 @@ const CoreTab = ({ formData, updateFormData }) => {
             <select
               value={formData?.currency || ''}
               onChange={(e) => updateFormData('currency', e.target.value)}
-              className="w-full border rounded-md px-3 py-2 bg-white"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
             >
               {currencies.map((cur) => (
                 <option key={cur?.code} value={cur?.code}>

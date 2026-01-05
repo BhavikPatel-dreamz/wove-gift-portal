@@ -29,9 +29,9 @@ const CustomDropdown = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-2 py-2 bg-white border border-[#4A4A4A] rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all flex items-center justify-between text-left"
+        className="w-full px-2 py-2.5 bg-white border border-[#4A4A4A] rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all flex items-center justify-between text-left"
       >
-        <span className={selectedValue ? "text-gray-900" : "text-gray-500"}>
+        <span className="font-inter text-sm font-normal text-[#4A4A4A]">
           {displayText}
         </span>
         <ChevronDown 
@@ -47,7 +47,7 @@ const CustomDropdown = ({
           />
           <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
             <div
-              className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-500"
+             className="px-4 py-2 cursor-pointer font-inter text-sm font-normal text-[#4A4A4A] hover:bg-blue-50"
               onClick={() => handleSelect("")}
             >
               {placeholder}

@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams, usePathname } from 'next/navigation';
 import { ChevronLeft, Save, X, Loader, AlertTriangle, CheckCircle } from 'lucide-react';
 import { getBrandPartnerDetails, updateBrandPartner } from '../../../../../lib/action/brandPartner';
 import { toast } from 'react-hot-toast';
@@ -17,13 +17,22 @@ import ReviewTab from '@/components/brandsPartner/ReviewTab';
 const BrandEdit = () => {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const brandId = params?.id;
+  const mode = searchParams.get('mode');
+  const isReviewMode = mode === 'review';
 
   const [activeTab, setActiveTab] = useState('core');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') || 'core';
+    setActiveTab(tabFromUrl);
+  }, [searchParams]);
 
   // Enhanced formData initialization with all banking fields
   const [formData, setFormData] = useState({
@@ -291,7 +300,13 @@ const BrandEdit = () => {
     }
   };
 
-
+  const handleTabChange = (tabId) => {
+    if (saving) return;
+    setActiveTab(tabId);
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set('tab', tabId);
+    router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
+  };
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({
@@ -580,6 +595,36 @@ const BrandEdit = () => {
     );
   }
 
+  if (isReviewMode) {
+    return (
+      <div className="min-h-screen bg-gray-50 text-black">
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                className="p-2 hover:bg-gray-100 rounded-lg"
+                onClick={() => router.back()}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <div>
+                <h1 className="font-poppins text-[22px] font-semibold leading-[20px] text-[#1A1A1A]">Review Brand Partner</h1>
+                <p className="font-inter text-sm font-medium leading-[18px] text-[#64748B] mt-1">
+                  Reviewing details for <span className="font-bold">{formData.brandName}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <ReviewTab formData={formData} validationErrors={[]} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 text-black">
       {/* Header */}
@@ -648,7 +693,7 @@ const BrandEdit = () => {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => !saving && setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               disabled={saving}
               className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 transition-colors duration-200 ${activeTab === tab.id
                 ? 'border-blue-500 text-blue-600'
