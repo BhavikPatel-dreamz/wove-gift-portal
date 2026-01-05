@@ -683,7 +683,7 @@ const BrandEdit = () => {
       )}
 
       {/* Content */}
-      <div className="px-6 py-8">
+      <div className="py-8">
         <div className={`transition-opacity duration-200 ${saving ? 'opacity-50 pointer-events-none' : ''}`}>
           {renderTabContent()}
         </div>
