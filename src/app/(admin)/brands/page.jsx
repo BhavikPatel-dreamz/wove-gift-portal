@@ -396,7 +396,7 @@ const BrandManager = () => {
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-[#155dfc] rounded-xl flex items-center justify-center">
               <div className="text-white text-lg">📊</div>
             </div>
             <div>
@@ -411,7 +411,7 @@ const BrandManager = () => {
               setShowAddForm(true);
             }}
             disabled={actionLoading}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="bg-[#155dfc] text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
             {actionLoading ? <Loader className="animate-spin" size={20} /> : <Plus size={20} />}
             Add New Brand
@@ -710,7 +710,7 @@ const BrandManager = () => {
                     <button
                       onClick={() => toggleFeatured(brand.id)}
                       disabled={actionLoading}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${brand.isFeature ? 'bg-blue-600' : 'bg-gray-300'
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${brand.isFeature ? 'bg-[#155dfc]' : 'bg-gray-300'
                         }`}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${brand.isFeature ? 'translate-x-6' : 'translate-x-1'

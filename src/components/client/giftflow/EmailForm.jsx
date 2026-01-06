@@ -2,11 +2,29 @@ import React from 'react';
 import { Mail } from 'lucide-react';
 import { EditIcon } from 'lucide-react';
 import Image from 'next/image';
+import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
+import { useDispatch } from 'react-redux';
 
 const EmailForm = ({ formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage }) => {
+
+    const dispatch = useDispatch();
+
+    const goToMessageStep = () => {
+        dispatch(setCurrentStep(5));
+    }
+
+    const goToAmountStep = () => {
+        dispatch(setCurrentStep(2));
+    }
+
+    const goToOccationCategoryStep = () => {
+        dispatch(setCurrentStep(4));
+    }
+
+
+
     return (
         <div className="text-black">
-
             {/* Main Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-2 pb-8">
                 <div>
@@ -190,9 +208,25 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         {/* Personal Message */}
                                         {personalMessage && (
                                             <div className="p-3 mb-5 text-left border-l-2 border-gray-300 relative">
-                                                <div className="absolute top-2 right-2 cursor-pointer">
-                                                    <EditIcon />
-                                                </div>
+                                                <button onClick={goToMessageStep}>
+                                                    <div className="absolute top-2 right-2 cursor-pointer">
+                                                        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <rect x="0.46875" y="0.46875" width="29.0625" height="29.0625" rx="14.5312" fill="white" />
+                                                            <rect x="0.46875" y="0.46875" width="29.0625" height="29.0625" rx="14.5312" stroke="url(#paint0_linear_1071_3067)" strokeWidth="0.9375" />
+                                                            <path d="M9.375 18.4125V20.3125C9.375 20.4875 9.5125 20.625 9.6875 20.625H11.5875C11.6688 20.625 11.75 20.5938 11.8062 20.5313L18.6312 13.7125L16.2875 11.3688L9.46875 18.1875C9.40625 18.25 9.375 18.325 9.375 18.4125ZM20.4437 11.9C20.5017 11.8422 20.5477 11.7735 20.579 11.6979C20.6104 11.6223 20.6265 11.5412 20.6265 11.4594C20.6265 11.3775 20.6104 11.2965 20.579 11.2209C20.5477 11.1453 20.5017 11.0766 20.4437 11.0188L18.9813 9.55625C18.9234 9.49831 18.8547 9.45234 18.7791 9.42098C18.7035 9.38962 18.6225 9.37347 18.5406 9.37347C18.4588 9.37347 18.3777 9.38962 18.3021 9.42098C18.2265 9.45234 18.1578 9.49831 18.1 9.55625L16.9563 10.7L19.3 13.0438L20.4437 11.9Z" fill="url(#paint1_linear_1071_3067)" />
+                                                            <defs>
+                                                                <linearGradient id="paint0_linear_1071_3067" x1="-2.08158e-07" y1="11.0377" x2="28.5565" y2="23.7874" gradientUnits="userSpaceOnUse">
+                                                                    <stop stopColor="#ED457D" />
+                                                                    <stop offset="1" stopColor="#FA8F42" />
+                                                                </linearGradient>
+                                                                <linearGradient id="paint1_linear_1071_3067" x1="9.375" y1="13.5132" x2="20.0851" y2="18.295" gradientUnits="userSpaceOnUse">
+                                                                    <stop stopColor="#ED457D" />
+                                                                    <stop offset="1" stopColor="#FA8F42" />
+                                                                </linearGradient>
+                                                            </defs>
+                                                        </svg>
+                                                    </div>
+                                                </button>
                                                 <p className="text-xs text-gray-900 font-medium">
                                                     “{personalMessage}”
                                                 </p>
@@ -204,9 +238,25 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
 
                                             {/* Image */}
                                             <div className="w-full sm:w-36 h-36 rounded-xl overflow-hidden relative shadow-md">
-                                                <div className="absolute top-1 right-1 z-10 cursor-pointer bg-white rounded-full">
-                                                    <EditIcon />
-                                                </div>
+                                                <button onClick={goToOccationCategoryStep}>
+                                                    <div className="absolute top-1 right-1 z-10 cursor-pointer bg-white rounded-full">
+                                                        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <rect x="0.46875" y="0.46875" width="29.0625" height="29.0625" rx="14.5312" fill="white" />
+                                                            <rect x="0.46875" y="0.46875" width="29.0625" height="29.0625" rx="14.5312" stroke="url(#paint0_linear_1071_3067)" strokeWidth="0.9375" />
+                                                            <path d="M9.375 18.4125V20.3125C9.375 20.4875 9.5125 20.625 9.6875 20.625H11.5875C11.6688 20.625 11.75 20.5938 11.8062 20.5313L18.6312 13.7125L16.2875 11.3688L9.46875 18.1875C9.40625 18.25 9.375 18.325 9.375 18.4125ZM20.4437 11.9C20.5017 11.8422 20.5477 11.7735 20.579 11.6979C20.6104 11.6223 20.6265 11.5412 20.6265 11.4594C20.6265 11.3775 20.6104 11.2965 20.579 11.2209C20.5477 11.1453 20.5017 11.0766 20.4437 11.0188L18.9813 9.55625C18.9234 9.49831 18.8547 9.45234 18.7791 9.42098C18.7035 9.38962 18.6225 9.37347 18.5406 9.37347C18.4588 9.37347 18.3777 9.38962 18.3021 9.42098C18.2265 9.45234 18.1578 9.49831 18.1 9.55625L16.9563 10.7L19.3 13.0438L20.4437 11.9Z" fill="url(#paint1_linear_1071_3067)" />
+                                                            <defs>
+                                                                <linearGradient id="paint0_linear_1071_3067" x1="-2.08158e-07" y1="11.0377" x2="28.5565" y2="23.7874" gradientUnits="userSpaceOnUse">
+                                                                    <stop stopColor="#ED457D" />
+                                                                    <stop offset="1" stopColor="#FA8F42" />
+                                                                </linearGradient>
+                                                                <linearGradient id="paint1_linear_1071_3067" x1="9.375" y1="13.5132" x2="20.0851" y2="18.295" gradientUnits="userSpaceOnUse">
+                                                                    <stop stopColor="#ED457D" />
+                                                                    <stop offset="1" stopColor="#FA8F42" />
+                                                                </linearGradient>
+                                                            </defs>
+                                                        </svg>
+                                                    </div>
+                                                </button>
                                                 <Image
                                                     src={selectedSubCategory?.image}
                                                     alt="Gift card"
@@ -225,9 +275,25 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                                 </div>
 
                                                 <div className="relative">
-                                                    <div className="absolute top-0 right-0 cursor-pointer">
-                                                        <EditIcon />
-                                                    </div>
+                                                    <button onClick={goToAmountStep}>
+                                                        <div className="absolute top-0 right-0 cursor-pointer">
+                                                            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                <rect x="0.46875" y="0.46875" width="29.0625" height="29.0625" rx="14.5312" fill="white" />
+                                                                <rect x="0.46875" y="0.46875" width="29.0625" height="29.0625" rx="14.5312" stroke="url(#paint0_linear_1071_3067)" strokeWidth="0.9375" />
+                                                                <path d="M9.375 18.4125V20.3125C9.375 20.4875 9.5125 20.625 9.6875 20.625H11.5875C11.6688 20.625 11.75 20.5938 11.8062 20.5313L18.6312 13.7125L16.2875 11.3688L9.46875 18.1875C9.40625 18.25 9.375 18.325 9.375 18.4125ZM20.4437 11.9C20.5017 11.8422 20.5477 11.7735 20.579 11.6979C20.6104 11.6223 20.6265 11.5412 20.6265 11.4594C20.6265 11.3775 20.6104 11.2965 20.579 11.2209C20.5477 11.1453 20.5017 11.0766 20.4437 11.0188L18.9813 9.55625C18.9234 9.49831 18.8547 9.45234 18.7791 9.42098C18.7035 9.38962 18.6225 9.37347 18.5406 9.37347C18.4588 9.37347 18.3777 9.38962 18.3021 9.42098C18.2265 9.45234 18.1578 9.49831 18.1 9.55625L16.9563 10.7L19.3 13.0438L20.4437 11.9Z" fill="url(#paint1_linear_1071_3067)" />
+                                                                <defs>
+                                                                    <linearGradient id="paint0_linear_1071_3067" x1="-2.08158e-07" y1="11.0377" x2="28.5565" y2="23.7874" gradientUnits="userSpaceOnUse">
+                                                                        <stop stopColor="#ED457D" />
+                                                                        <stop offset="1" stopColor="#FA8F42" />
+                                                                    </linearGradient>
+                                                                    <linearGradient id="paint1_linear_1071_3067" x1="9.375" y1="13.5132" x2="20.0851" y2="18.295" gradientUnits="userSpaceOnUse">
+                                                                        <stop stopColor="#ED457D" />
+                                                                        <stop offset="1" stopColor="#FA8F42" />
+                                                                    </linearGradient>
+                                                                </defs>
+                                                            </svg>
+                                                        </div>
+                                                    </button>
                                                     <p className="text-xs text-gray-700">Amount</p>
                                                     <p className="text-sm font-semibold text-[#DC3415]">
                                                         {selectedAmount.currency}

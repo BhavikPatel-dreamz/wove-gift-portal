@@ -3,7 +3,7 @@ import React from "react";
 
 const BulkGifting = () => {
   return (
-    <div className="max-w-[1440px] mx-auto mt-10 mb-14">
+    <div className="max-w-[70%] mx-auto mt-10 mb-14">
       {/* Main container with custom styles and fade effect */}
       <div className="relative">
         {/* Card with gradient border mask */}

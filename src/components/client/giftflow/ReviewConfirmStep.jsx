@@ -141,7 +141,7 @@ const ReviewConfirmStep = () => {
   };
 
   return (
-    <div className="max-w-[1440px] m-auto min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
+    <div className="max-w-7xl m-auto min-h-screen bg-gray-50 px-4 py-30 md:px-4 md:py-30">
       <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
         <button
           onClick={() => dispatch(goBack())}
