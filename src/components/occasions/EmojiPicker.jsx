@@ -155,7 +155,7 @@ const CustomEmojiPicker = ({
             focus:outline-none focus:ring-2
           `}
         >
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 text-sm">
             {value ? (
               <>
                 <span className="text-lg">{value}</span>

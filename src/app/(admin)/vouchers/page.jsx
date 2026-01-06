@@ -30,6 +30,7 @@ export default async function VouchersPage({ searchParams }) {
 
   const vouchersData = await getVouchers(queryParams);
 
+  
   return (
     <VouchersClient
       initialVouchers={vouchersData.data || []}

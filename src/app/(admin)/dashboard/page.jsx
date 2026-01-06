@@ -33,7 +33,7 @@ export default async function DashboardPage({ searchParams }) {
   })
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-0 md:px-4">
       {role === "ADMIN" && (
         <Dashboard dashboardData={dashboardData} shopParam={user.shopId} />
       )}

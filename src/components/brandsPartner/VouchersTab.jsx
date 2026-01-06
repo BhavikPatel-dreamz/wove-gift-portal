@@ -236,9 +236,10 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 Add New Denomination
               </p>
 
-              <div className="grid grid-cols-3 gap-3 mb-3">
+              {/* Row 1 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                 <div>
-                  <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-1.5">
+                  <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
                     Currency
                   </label>
                   <select
@@ -253,8 +254,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
                     ))}
                   </select>
                 </div>
+
                 <div>
-                  <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-1.5">
+                  <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
                     Amount*
                   </label>
                   <input
@@ -265,8 +267,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-1.5">
+                  <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
                     Display Name
                   </label>
                   <input
@@ -279,9 +282,10 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 items-end">
+              {/* Row 2 */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                 <div>
-                  <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-1.5">
+                  <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
                     Expiry Date*
                   </label>
                   <input
@@ -292,6 +296,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   />
                 </div>
+
                 <div className="flex items-center h-[38px]">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -305,29 +310,29 @@ const VouchersTab = ({ formData, updateFormData }) => {
                     </span>
                   </label>
                 </div>
-                <div className="col-span-1 flex flex-col justify-end items-end">
+
+                <div className="flex justify-end md:justify-end">
                   <button
                     onClick={addDenomination}
-                    className="w-[140px] bg-[#175EFD] hover:bg-blue-700 text-white px-2 py-3 rounded-md text-sm font-medium transition-colors"
+                    className="w-full md:w-[140px] bg-[#175EFD] hover:bg-blue-700 text-white px-2 py-3 rounded-md text-sm font-medium transition-colors"
                   >
                     + Add New Brand
                   </button>
                 </div>
               </div>
 
-            <p className="font-inter text-xs font-medium leading-5 text-[#1F59EE] mt-2">
-                * Required fields. Display name defaults to '
-                {formData?.currency || "USD"}' if left empty.
+              <p className="font-inter text-xs font-medium leading-5 text-[#1F59EE] mt-3 break-words">
+                * Required fields. Display name defaults to '{formData?.currency || "USD"}' if left empty.
               </p>
             </div>
           </div>
+
         </div>
       </div>
-      {/* ---   */}
       {/* Active Denominations List */}
       {formData.denominations?.length > 0 && (
-        <div className="space-y-3 pt-6">
-          <p className="font-inter text-base font-semibold capitalize text-[#4A4A4A]">
+        <div className="space-y-4 pt-6">
+          <p className="font-inter text-base font-semibold text-[#4A4A4A]">
             Active Denomination (
             {formData.denominations.filter((d) => d.isActive).length}/
             {formData.denominations.length})
@@ -337,15 +342,18 @@ const VouchersTab = ({ formData, updateFormData }) => {
             <div
               key={denom.id}
               className={`border rounded-lg p-4 transition-all ${denom.isActive
-                ? "bg-white border-gray-200"
-                : "bg-gray-50 border-gray-300 opacity-60"
+                  ? "bg-white border-gray-200"
+                  : "bg-gray-50 border-gray-300 opacity-60"
                 }`}
             >
-              <div className="flex items-start gap-3">
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-3">
+              {/* Header Row */}
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Left */}
+                <div className="flex-1 space-y-4">
+                  {/* Display Name + Status */}
+                  <div className="flex flex-col sm:flex-row sm:items-end gap-3">
                     <div className="flex-1">
-                      <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
+                      <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-2">
                         Display Name
                       </label>
                       <input
@@ -362,22 +370,22 @@ const VouchersTab = ({ formData, updateFormData }) => {
                         className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
                     </div>
-                    <div className="pt-8">
-                      <button
-                        onClick={() => toggleDenominationActive(denom.id)}
-                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${denom.isActive
+
+                    <button
+                      onClick={() => toggleDenominationActive(denom.id)}
+                      className={`w-full sm:w-auto px-4 py-2 rounded-md text-sm font-medium transition-colors ${denom.isActive
                           ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
                           : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
-                          }`}
-                      >
-                        {denom.isActive ? "Active" : "Inactive"}
-                      </button>
-                    </div>
+                        }`}
+                    >
+                      {denom.isActive ? "Active" : "Inactive"}
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
+                      <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-2">
                         Currency
                       </label>
                       <input
@@ -387,8 +395,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
                         className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-gray-50 text-gray-500"
                       />
                     </div>
+
                     <div>
-                      <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
+                      <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-2">
                         Amount*
                       </label>
                       <input
@@ -404,8 +413,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
                         className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
                     </div>
+
                     <div>
-                      <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
+                      <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-2">
                         Expiry Date
                       </label>
                       <input
@@ -424,32 +434,35 @@ const VouchersTab = ({ formData, updateFormData }) => {
                             e.target.value || null
                           )
                         }
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                         min={new Date().toISOString().split("T")[0]}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
-                <button
-                  onClick={() => removeDenomination(denom.id)}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded transition-colors mt-8"
-                  title="Remove denomination"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                {/* Remove */}
+                <div className="flex justify-end md:pt-8">
+                  <button
+                    onClick={() => removeDenomination(denom.id)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded transition-colors"
+                    title="Remove denomination"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           ))}

@@ -599,7 +599,7 @@ const BrandEdit = () => {
     return (
       <div className="min-h-screen bg-gray-50 text-black">
         <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center space-x-4">
               <button
                 className="p-2 hover:bg-gray-100 rounded-lg"
@@ -616,8 +616,8 @@ const BrandEdit = () => {
             </div>
           </div>
         </div>
-        <div className="p-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="p-2 md:p-6">
+          <div className="bg-white rounded-lg shadow-sm pd-2 md:p-6">
             <ReviewTab formData={formData} validationErrors={[]} />
           </div>
         </div>
@@ -629,7 +629,7 @@ const BrandEdit = () => {
     <div className="min-h-screen bg-gray-50 text-black">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center space-x-4">
             <button
               className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 transition-colors duration-200"
@@ -656,7 +656,7 @@ const BrandEdit = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full sm:w-auto">
             <button
               onClick={handleCancel}
               disabled={saving}
@@ -689,7 +689,7 @@ const BrandEdit = () => {
 
       {/* Navigation Tabs */}
       <div className="bg-white border-b border-gray-200 px-6">
-        <div className="flex space-x-8 overflow-x-auto">
+        <div className="flex gap-6 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -700,7 +700,7 @@ const BrandEdit = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span>{tab.label}</span>
                 {completedTabs.includes(tab.id) && (
                   <CheckCircle className="text-green-500" size={16} />
@@ -714,10 +714,10 @@ const BrandEdit = () => {
       {/* Required Fields Warning */}
       {validationErrors.length > 0 && (
         <div className="bg-red-50 border-l-4 border-red-400 px-6 py-3">
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <AlertTriangle className="text-red-500" size={16} />
             <span className="text-sm font-medium text-red-800">Required Fields Missing</span>
-            <span className="text-sm text-red-600">
+            <span className="text-sm text-red-600 break-words">
               {validationErrors.length} field{validationErrors.length > 1 ? 's' : ''} need attention
             </span>
           </div>
@@ -728,7 +728,7 @@ const BrandEdit = () => {
       )}
 
       {/* Content */}
-      <div className="px-6 py-8">
+      <div className="px-4 py-6 sm:px-6 sm:py-8">
         <div className={`transition-opacity duration-200 ${saving ? 'opacity-50 pointer-events-none' : ''}`}>
           {renderTabContent()}
         </div>
