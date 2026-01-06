@@ -260,7 +260,26 @@ const Header = () => {
                         </button>
                       </Link>
                     ) : (
-                      <button className="btn-secondary text-xs lg:text-sm px-3 lg:px-4 py-2" onClick={() => router.push('/my-gift')}>
+                      <button
+                        onClick={() => router.push('/my-gift')}
+                        className="
+    inline-flex items-center gap-2
+    cursor-pointer
+    bg-[#ED457D] text-white
+    text-xs lg:text-sm font-bold
+    px-3 lg:px-4 py-2
+    rounded-full
+    border-none
+    transition-all duration-300 ease-in-out
+    hover:bg-[#D93B6E]
+    hover:-translate-y-0.5
+    hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
+    active:translate-y-0
+    active:scale-[0.96]
+    active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
+  "
+                      >
+
                         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="18" viewBox="0 0 17 18" fill="none">
                           <path d="M8.36364 0C9.47272 0 10.5364 0.459739 11.3206 1.27808C12.1049 2.09642 12.5455 3.20633 12.5455 4.36364C12.5455 5.52095 12.1049 6.63085 11.3206 7.44919C10.5364 8.26753 9.47272 8.72727 8.36364 8.72727C7.25455 8.72727 6.19089 8.26753 5.40664 7.44919C4.6224 6.63085 4.18182 5.52095 4.18182 4.36364C4.18182 3.20633 4.6224 2.09642 5.40664 1.27808C6.19089 0.459739 7.25455 0 8.36364 0ZM8.36364 17.4545C8.36364 17.4545 16.7273 17.4545 16.7273 15.2727C16.7273 12.6545 12.65 9.81818 8.36364 9.81818C4.07727 9.81818 0 12.6545 0 15.2727C0 17.4545 8.36364 17.4545 8.36364 17.4545Z" fill="white" />
                         </svg>
@@ -274,7 +293,22 @@ const Header = () => {
                     )}
 
                     <button
-                      className="btn-secondary text-xs lg:text-sm px-3 lg:px-4 py-2"
+                      className="
+    inline-flex items-center gap-2
+    cursor-pointer
+    bg-[#ED457D] text-white
+    text-xs lg:text-sm font-bold
+    px-3 lg:px-4 py-2
+    rounded-full
+    border-none
+    transition-all duration-300 ease-in-out
+    hover:bg-[#D93B6E]
+    hover:-translate-y-0.5
+    hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
+    active:translate-y-0
+    active:scale-[0.96]
+    active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
+  "
                       onClick={handleLogout}
                     >
                       Logout

@@ -1,7 +1,17 @@
+"use client"
 import Link from "next/link";
 import React from "react";
+import { useDispatch } from "react-redux";
+import { setCurrentStep, resetFlow } from "@/redux/giftFlowSlice";
 
 const BulkGifting = () => {
+  const dispatch = useDispatch();
+
+  const handleClick = () => {
+    dispatch(resetFlow());
+    dispatch(setCurrentStep(1));
+  };
+
   return (
     <div className="max-w-[70%] mx-auto mt-10 mb-14">
       {/* Main container with custom styles and fade effect */}
@@ -41,6 +51,7 @@ const BulkGifting = () => {
             <Link
               className="text-white rounded-3xl gap-2 py-3.5 cursor-pointer bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 transition px-5 font-semibold inline-flex items-center text-sm"
               href="/gift?mode=bulk"
+              onClick={handleClick}
             >
               Explore Bulk Gifting
 

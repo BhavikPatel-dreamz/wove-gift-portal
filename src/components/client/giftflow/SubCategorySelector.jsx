@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { goBack, goNext, setLoading, setSelectedSubCategory, setSubCategories, setError } from '../../../redux/giftFlowSlice';
 import { useSearchParams } from 'next/navigation';
 import { saveCustomCard } from '../../../lib/action/customCardAction';
+import CustomEmojiPicker from '../../occasions/EmojiPicker';
 
 // Utility functions
 const createLayer = (type, id, props = {}) => ({
@@ -25,7 +26,6 @@ const createLayer = (type, id, props = {}) => ({
   ...props
 });
 
-const emojis = ['🎉', '🎂', '🎁', '🎈', '💝', '🌟', '🎊', '🥳', '💐', '🌹', '❤️', '🎵', '⭐', '🔥', '✨'];
 const bgColors = ['#FF6B35', '#FF8A5C', '#E55A2B', '#2D5A3D', '#3B6B4F', '#F5F3E7', '#FFFFFF', '#F8F9FA', '#4169E1', '#9370DB', '#FF69B4', '#32CD32'];
 const textColors = ['#FFFFFF', '#000000', '#1F2937', '#374151', '#FF6B35', '#4169E1', '#32CD32', '#FF69B4', '#8B4513', '#2D5A3D'];
 
@@ -478,7 +478,7 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
         const img = new window.Image();
         await new Promise(resolve => {
           img.onload = resolve;
-          img.onerror = resolve; // so it doesn't hang
+          img.onerror = resolve;
           img.src = bgLayer.bgImage;
         });
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -549,7 +549,6 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
         });
       };
 
-
       const base64data = await blobToBase64(blob);
 
       const response = await fetch('/api/save-card', {
@@ -567,7 +566,6 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
 
       const data = await response.json();
       const imagePath = data.path;
-
 
       const result = await saveCustomCard({
         name: titleLayer?.content || 'Custom Card',
@@ -606,93 +604,90 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 text-black">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 text-black">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-7xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Custom Card Creator</h2>
-            <p className="text-sm text-gray-500 mt-1">Design your perfect card</p>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Card Creator</h2>
+            <p className="text-xs text-gray-500 hidden sm:block">Design your perfect card</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={exportCard}
               disabled={isGenerating}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-600 disabled:opacity-50 flex items-center gap-1.5"
             >
               {isGenerating ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Exporting...
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="hidden sm:inline">Exporting...</span>
                 </>
               ) : (
                 <>
-                  <Download size={16} />
-                  Export
+                  <Download size={14} className="sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Export</span>
                 </>
               )}
             </button>
             <button
               onClick={onCancel}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+              className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
             >
-              <X size={20} />
+              <X size={18} className="sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Tools */}
-          <div className="w-16 bg-gray-50 border-r border-gray-100 flex flex-col py-4 gap-2">
+        <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
+          {/* Left Tools - Horizontal on mobile, vertical on desktop */}
+          <div className="lg:w-14 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex lg:flex-col py-2 px-2 lg:py-3 lg:px-0 gap-1.5 lg:gap-2 overflow-x-auto lg:overflow-x-visible">
             <button
               onClick={() => addLayer('text', { content: 'New Text', textAlign: 'center' })}
-              className="tool-btn"
+              className="tool-btn shrink-0"
               title="Add Text"
             >
-              <Type size={18} />
+              <Type size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
             <button
               onClick={() => imageInputRef.current?.click()}
-              className="tool-btn"
+              className="tool-btn shrink-0"
               title="Add Image"
             >
-              <ImageIcon size={18} />
+              <ImageIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
               <input ref={imageInputRef} type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, false)} />
             </button>
             <button
               onClick={() => addLayer('emoji', { content: '🎉' })}
-              className="tool-btn"
+              className="tool-btn shrink-0"
               title="Add Emoji"
             >
-              <span className="text-lg">😊</span>
+              <span className="text-base sm:text-lg">😊</span>
             </button>
-            <div className="h-px bg-gray-200 my-2" />
-            <div className="text-center">
-              <div className="text-xs text-gray-500 mb-2">Zoom</div>
-              <div className="flex flex-col items-center gap-1">
-                <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="tool-btn-sm">
-                  <ZoomIn size={14} />
-                </button>
-                <div className="text-xs font-medium text-gray-700">{Math.round(zoom * 100)}%</div>
-                <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="tool-btn-sm">
-                  <ZoomOut size={14} />
-                </button>
-              </div>
+            <div className="w-px lg:w-auto lg:h-px bg-gray-200 lg:my-1" />
+            <div className="flex lg:flex-col items-center gap-1 shrink-0">
+              <div className="text-[10px] text-gray-500 hidden lg:block mb-1">Zoom</div>
+              <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="tool-btn-sm">
+                <ZoomIn size={12} className="sm:w-[14px] sm:h-[14px]" />
+              </button>
+              <div className="text-[10px] sm:text-xs font-medium text-gray-700">{Math.round(zoom * 100)}%</div>
+              <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="tool-btn-sm">
+                <ZoomOut size={12} className="sm:w-[14px] sm:h-[14px]" />
+              </button>
             </div>
           </div>
 
           {/* Canvas Area */}
-          <div className="flex-1 flex flex-col items-center justify-center p-8 overflow-auto">
+          <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 lg:p-6 overflow-auto bg-gray-50">
             <div className="relative" style={{ transform: `scale(${zoom})`, transition: 'transform 0.2s' }}>
               <div
                 ref={cardRef}
-                className="shadow-lg border border-gray-200"
+                className="shadow-xl border border-gray-300"
                 style={{
                   width: `${canvasSize.width}px`,
                   height: `${canvasSize.height}px`,
                   borderRadius: `${cornerRadius}px`,
-                  // FIXED: Proper background handling
                   ...(bgLayer?.bgImage
                     ? {
                       backgroundImage: `url(${bgLayer.bgImage})`,
@@ -721,57 +716,60 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
             </div>
 
             {/* Background status indicator */}
-            <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+            <div className="mt-2 sm:mt-3 flex items-center gap-1.5 text-xs text-gray-600">
               <div
-                className="w-4 h-4 rounded border border-gray-300"
+                className="w-3 h-3 sm:w-4 sm:h-4 rounded border border-gray-300"
                 style={{
                   backgroundColor: bgLayer?.bgImage ? 'transparent' : bgLayer?.bgColor,
                   backgroundImage: bgLayer?.bgImage ? `url(${bgLayer.bgImage})` : 'none',
                   backgroundSize: 'cover'
                 }}
               />
-              <span>
+              <span className="hidden sm:inline">
                 Background: {bgLayer?.bgImage ? 'Image' : `Color (${bgLayer?.bgColor || '#FFFFFF'})`}
+              </span>
+              <span className="sm:hidden">
+                {bgLayer?.bgImage ? 'Image BG' : 'Color BG'}
               </span>
             </div>
           </div>
 
           {/* Right Properties Panel */}
-          <div className="w-80 border-l border-gray-100 overflow-y-auto">
-            <div className="p-6 space-y-6">
+          <div className="w-full lg:w-90 xl:w-90 border-t lg:border-t-0 lg:border-l border-gray-200 overflow-y-auto max-h-[40vh] lg:max-h-none">
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
               {/* Layers Panel */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Layers size={16} />
-                    <h3 className="text-sm font-semibold">Layers</h3>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Layers size={14} className="sm:w-4 sm:h-4" />
+                    <h3 className="text-xs sm:text-sm font-semibold">Layers</h3>
                   </div>
-                  <span className="text-xs text-gray-500">{layers.length} items</span>
+                  <span className="text-[10px] sm:text-xs text-gray-500">{layers.length}</span>
                 </div>
-                <div className="space-y-1 max-h-48 overflow-y-auto">
+                <div className="space-y-1 max-h-32 sm:max-h-48 overflow-y-auto">
                   {[...layers].reverse().map(layer => (
                     <div
                       key={layer.id}
                       onClick={() => !layer.locked && setSelectedLayer(layer.id)}
-                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${selectedLayer === layer.id ? 'bg-blue-50 border border-blue-100' : 'bg-white hover:bg-gray-50'}`}
+                      className={`flex items-center justify-between p-1.5 sm:p-2 rounded-lg cursor-pointer transition-colors ${selectedLayer === layer.id ? 'bg-blue-50 border border-blue-200' : 'bg-white hover:bg-gray-50 border border-transparent'}`}
                     >
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleLock(layer.id); }}
-                          className="p-1 hover:bg-gray-200 rounded"
+                          className="p-0.5 sm:p-1 hover:bg-gray-200 rounded shrink-0"
                         >
-                          {layer.locked ? <Lock size={12} /> : <Unlock size={12} />}
+                          {layer.locked ? <Lock size={10} className="sm:w-3 sm:h-3" /> : <Unlock size={10} className="sm:w-3 sm:h-3" />}
                         </button>
-                        <span className="text-sm truncate">{layer.name}</span>
+                        <span className="text-xs sm:text-sm truncate">{layer.name}</span>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-0.5 sm:gap-1 shrink-0">
                         {layer.id !== 'bg' && (
                           <>
-                            <button onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id); }} className="p-1 hover:bg-gray-200 rounded">
-                              <Copy size={12} />
+                            <button onClick={(e) => { e.stopPropagation(); duplicateLayer(layer.id); }} className="p-0.5 sm:p-1 hover:bg-gray-200 rounded">
+                              <Copy size={10} className="sm:w-3 sm:h-3" />
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); deleteLayer(layer.id); }} className="p-1 hover:bg-red-100 text-red-600 rounded">
-                              <Trash2 size={12} />
+                            <button onClick={(e) => { e.stopPropagation(); deleteLayer(layer.id); }} className="p-0.5 sm:p-1 hover:bg-red-100 text-red-600 rounded">
+                              <Trash2 size={10} className="sm:w-3 sm:h-3" />
                             </button>
                           </>
                         )}
@@ -783,26 +781,24 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
 
               {/* Layer Properties */}
               {selectedLayerData && (
-                <div className="space-y-4">
-                  {/* Background - FIXED */}
+                <div className="space-y-3">
+                  {/* Background */}
                   {selectedLayerData.type === 'background' && (
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <h3 className="text-sm font-semibold mb-3">Background</h3>
-                      <div className="grid grid-cols-6 gap-2 mb-3">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h3 className="text-xs sm:text-sm font-semibold mb-2">Background</h3>
+                      <div className="grid grid-cols-6 gap-1.5 mb-2">
                         {bgColors.map(color => (
                           <button
                             key={color}
                             onClick={() => {
-                              // Clear any existing background image
                               if (bgImageInputRef.current) bgImageInputRef.current.value = '';
-                              // Update with new color
                               updateLayer('bg', {
                                 bgColor: color,
                                 bgImage: null
                               });
                             }}
-                            className={`w-7 h-7 rounded transition-transform hover:scale-110 ${selectedLayerData.bgColor === color && !selectedLayerData.bgImage
-                              ? 'ring-3 ring-blue-500 ring-offset-2'
+                            className={`w-6 h-6 sm:w-7 sm:h-7 rounded transition-transform hover:scale-110 ${selectedLayerData.bgColor === color && !selectedLayerData.bgImage
+                              ? 'ring-2 ring-blue-500 ring-offset-1'
                               : 'ring-1 ring-gray-300'
                               }`}
                             style={{ backgroundColor: color }}
@@ -812,9 +808,9 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
                       </div>
                       <button
                         onClick={() => bgImageInputRef.current?.click()}
-                        className="w-full py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                        className="w-full py-2 border border-gray-300 rounded-lg text-xs sm:text-sm hover:bg-gray-50 transition-colors"
                       >
-                        {selectedLayerData.bgImage ? 'Change Background Image' : 'Upload Background Image'}
+                        {selectedLayerData.bgImage ? 'Change Image' : 'Upload Image'}
                       </button>
                       {selectedLayerData.bgImage && (
                         <button
@@ -824,9 +820,9 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
                               bgColor: '#FFFFFF'
                             });
                           }}
-                          className="w-full mt-2 py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 transition-colors"
+                          className="w-full mt-1.5 py-2 border border-red-300 text-red-600 rounded-lg text-xs sm:text-sm hover:bg-red-50 transition-colors"
                         >
-                          Remove Image (Use Color)
+                          Remove Image
                         </button>
                       )}
                       <input
@@ -841,52 +837,52 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
 
                   {/* Text */}
                   {selectedLayerData.type === 'text' && (
-                    <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                      <h3 className="text-sm font-semibold">Text</h3>
+                    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                      <h3 className="text-xs sm:text-sm font-semibold">Text</h3>
                       <textarea
                         value={selectedLayerData.content}
                         onChange={(e) => updateLayer(selectedLayer, { content: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        className="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm"
                         rows={2}
                       />
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5">
                         <button
                           onClick={() => updateLayer(selectedLayer, { fontWeight: selectedLayerData.fontWeight === 'bold' ? 'normal' : 'bold' })}
-                          className={`py-2 rounded ${selectedLayerData.fontWeight === 'bold' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                          className={`py-1.5 sm:py-2 rounded transition-colors ${selectedLayerData.fontWeight === 'bold' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                         >
-                          <Bold size={14} className="mx-auto" />
+                          <Bold size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />
                         </button>
                         <button
                           onClick={() => updateLayer(selectedLayer, { fontStyle: selectedLayerData.fontStyle === 'italic' ? 'normal' : 'italic' })}
-                          className={`py-2 rounded ${selectedLayerData.fontStyle === 'italic' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                          className={`py-1.5 sm:py-2 rounded transition-colors ${selectedLayerData.fontStyle === 'italic' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                         >
-                          <Italic size={14} className="mx-auto" />
+                          <Italic size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />
                         </button>
                         <button
                           onClick={() => updateLayer(selectedLayer, { textDecoration: selectedLayerData.textDecoration === 'underline' ? 'none' : 'underline' })}
-                          className={`py-2 rounded ${selectedLayerData.textDecoration === 'underline' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                          className={`py-1.5 sm:py-2 rounded transition-colors ${selectedLayerData.textDecoration === 'underline' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                         >
-                          <Underline size={14} className="mx-auto" />
+                          <Underline size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />
                         </button>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-1.5">
                         {['left', 'center', 'right'].map(align => (
                           <button
                             key={align}
                             onClick={() => updateLayer(selectedLayer, { textAlign: align })}
-                            className={`py-2 rounded ${selectedLayerData.textAlign === align ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                            className={`py-1.5 sm:py-2 rounded transition-colors ${selectedLayerData.textAlign === align ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                           >
-                            {align === 'left' && <AlignLeft size={14} className="mx-auto" />}
-                            {align === 'center' && <AlignCenter size={14} className="mx-auto" />}
-                            {align === 'right' && <AlignRight size={14} className="mx-auto" />}
+                            {align === 'left' && <AlignLeft size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />}
+                            {align === 'center' && <AlignCenter size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />}
+                            {align === 'right' && <AlignRight size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />}
                           </button>
                         ))}
                       </div>
                       <div>
-                        <label className="text-xs text-gray-600 block mb-1">Font Size: {selectedLayerData.fontSize}px</label>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => updateLayer(selectedLayer, { fontSize: Math.max(8, selectedLayerData.fontSize - 2) })} className="p-1 bg-gray-200 rounded">
-                            <Minus size={12} />
+                        <label className="text-[10px] sm:text-xs text-gray-600 block mb-1">Font Size: {selectedLayerData.fontSize}px</label>
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => updateLayer(selectedLayer, { fontSize: Math.max(8, selectedLayerData.fontSize - 2) })} className="p-1 bg-gray-200 rounded hover:bg-gray-300">
+                            <Minus size={10} className="sm:w-3 sm:h-3" />
                           </button>
                           <input
                             type="range"
@@ -896,17 +892,17 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
                             onChange={(e) => updateLayer(selectedLayer, { fontSize: Number(e.target.value) })}
                             className="flex-1"
                           />
-                          <button onClick={() => updateLayer(selectedLayer, { fontSize: Math.min(72, selectedLayerData.fontSize + 2) })} className="p-1 bg-gray-200 rounded">
-                            <Plus size={12} />
+                          <button onClick={() => updateLayer(selectedLayer, { fontSize: Math.min(72, selectedLayerData.fontSize + 2) })} className="p-1 bg-gray-200 rounded hover:bg-gray-300">
+                            <Plus size={10} className="sm:w-3 sm:h-3" />
                           </button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {textColors.map(color => (
                           <button
                             key={color}
                             onClick={() => updateLayer(selectedLayer, { color })}
-                            className={`w-6 h-6 rounded ${selectedLayerData.color === color ? 'ring-2 ring-blue-500' : ''}`}
+                            className={`w-5 h-5 sm:w-6 sm:h-6 rounded transition-transform hover:scale-110 ${selectedLayerData.color === color ? 'ring-2 ring-blue-500 ring-offset-1' : 'ring-1 ring-gray-300'}`}
                             style={{ backgroundColor: color }}
                           />
                         ))}
@@ -916,11 +912,11 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
 
                   {/* Image */}
                   {selectedLayerData.type === 'image' && (
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <h3 className="text-sm font-semibold mb-3">Image Controls</h3>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h3 className="text-xs sm:text-sm font-semibold mb-2">Image Controls</h3>
 
-                      <div className="mb-4 p-3 bg-white rounded-lg border border-gray-200">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="mb-3 p-2 bg-white rounded-lg border border-gray-200">
+                        <div className="grid grid-cols-2 gap-1.5 text-[10px] sm:text-xs">
                           <div>
                             <span className="text-gray-500">Position:</span>
                             <div className="font-medium">X: {Math.round(selectedLayerData.x)}%</div>
@@ -930,23 +926,23 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
                             <div className="font-medium">Y: {Math.round(selectedLayerData.y)}%</div>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Drag the image in canvas to change position
+                        <p className="text-[10px] text-gray-500 mt-1">
+                          Drag to move
                         </p>
                       </div>
 
-                      <div className="space-y-4">
+                      <div className="space-y-2.5">
                         <div>
                           <div className="flex justify-between mb-1">
-                            <span className="text-xs font-medium">Width: {Math.round(selectedLayerData.width)}px</span>
+                            <span className="text-[10px] sm:text-xs font-medium">Width: {Math.round(selectedLayerData.width)}px</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => handleImageResize(selectedLayerData.width - 10, selectedLayerData.height)}
-                              className="p-1.5 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                              className="p-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
                               disabled={selectedLayerData.width <= 20}
                             >
-                              <Minus size={14} />
+                              <Minus size={10} className="sm:w-[14px] sm:h-[14px]" />
                             </button>
                             <input
                               type="range"
@@ -958,25 +954,25 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
                             />
                             <button
                               onClick={() => handleImageResize(selectedLayerData.width + 10, selectedLayerData.height)}
-                              className="p-1.5 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                              className="p-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
                               disabled={selectedLayerData.width >= 400}
                             >
-                              <Plus size={14} />
+                              <Plus size={10} className="sm:w-[14px] sm:h-[14px]" />
                             </button>
                           </div>
                         </div>
 
                         <div>
                           <div className="flex justify-between mb-1">
-                            <span className="text-xs font-medium">Height: {Math.round(selectedLayerData.height)}px</span>
+                            <span className="text-[10px] sm:text-xs font-medium">Height: {Math.round(selectedLayerData.height)}px</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => handleImageResize(selectedLayerData.width, selectedLayerData.height - 10)}
-                              className="p-1.5 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                              className="p-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
                               disabled={selectedLayerData.height <= 20}
                             >
-                              <Minus size={14} />
+                              <Minus size={10} className="sm:w-[14px] sm:h-[14px]" />
                             </button>
                             <input
                               type="range"
@@ -988,10 +984,10 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
                             />
                             <button
                               onClick={() => handleImageResize(selectedLayerData.width, selectedLayerData.height + 10)}
-                              className="p-1.5 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                              className="p-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
                               disabled={selectedLayerData.height >= 400}
                             >
-                              <Plus size={14} />
+                              <Plus size={10} className="sm:w-[14px] sm:h-[14px]" />
                             </button>
                           </div>
                         </div>
@@ -1001,21 +997,14 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
 
                   {/* Emoji */}
                   {selectedLayerData.type === 'emoji' && (
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <h3 className="text-sm font-semibold mb-3">Emoji</h3>
-                      <div className="grid grid-cols-5 gap-2 mb-3">
-                        {emojis.map(emoji => (
-                          <button
-                            key={emoji}
-                            onClick={() => updateLayer(selectedLayer, { content: emoji })}
-                            className="text-xl hover:bg-gray-200 rounded p-1"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-600 block mb-1">Scale: {selectedLayerData.scale.toFixed(1)}x</label>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h3 className="text-xs sm:text-sm font-semibold mb-2">Emoji</h3>
+                      <CustomEmojiPicker
+                        value={selectedLayerData.content}
+                        onChange={(emoji) => updateLayer(selectedLayer, { content: emoji })}
+                      />
+                      <div className="mt-2">
+                        <label className="text-[10px] sm:text-xs text-gray-600 block mb-1">Scale: {selectedLayerData.scale.toFixed(1)}x</label>
                         <input
                           type="range"
                           min="0.5"
@@ -1031,11 +1020,11 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
 
                   {/* Common Settings */}
                   {selectedLayerData.type !== 'background' && (
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <h3 className="text-sm font-semibold mb-3">Settings</h3>
-                      <div className="space-y-3">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h3 className="text-xs sm:text-sm font-semibold mb-2">Settings</h3>
+                      <div className="space-y-2">
                         <div>
-                          <label className="text-xs text-gray-600 block mb-1">Rotation: {selectedLayerData.rotation || 0}°</label>
+                          <label className="text-[10px] sm:text-xs text-gray-600 block mb-1">Rotation: {selectedLayerData.rotation || 0}°</label>
                           <input
                             type="range"
                             min="0"
@@ -1046,7 +1035,7 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-gray-600 block mb-1">Opacity: {selectedLayerData.opacity}%</label>
+                          <label className="text-[10px] sm:text-xs text-gray-600 block mb-1">Opacity: {selectedLayerData.opacity}%</label>
                           <input
                             type="range"
                             min="0"
@@ -1061,10 +1050,10 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
                   )}
 
                   {/* Canvas Settings */}
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold mb-3">Canvas</h3>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <h3 className="text-xs sm:text-sm font-semibold mb-2">Canvas</h3>
                     <div>
-                      <label className="text-xs text-gray-600 block mb-1">Corner Radius: {cornerRadius}px</label>
+                      <label className="text-[10px] sm:text-xs text-gray-600 block mb-1">Corner Radius: {cornerRadius}px</label>
                       <input
                         type="range"
                         min="0"
@@ -1081,7 +1070,7 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
               {/* Save Button */}
               <button
                 onClick={handleSave}
-                className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-blue-700"
+                className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all"
               >
                 Save & Continue
               </button>
@@ -1092,8 +1081,8 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
 
       <style jsx>{`
         .tool-btn {
-          width: 40px;
-          height: 40px;
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1101,16 +1090,30 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
           color: #4B5563;
           background: white;
           border: 1px solid #E5E7EB;
-          margin: 0 auto;
           cursor: pointer;
+          transition: all 0.15s;
+        }
+        @media (min-width: 640px) {
+          .tool-btn {
+            width: 36px;
+            height: 36px;
+          }
+        }
+        @media (min-width: 1024px) {
+          .tool-btn {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+          }
         }
         .tool-btn:hover {
           background: #F3F4F6;
           border-color: #D1D5DB;
+          transform: translateY(-1px);
         }
         .tool-btn-sm {
-          width: 32px;
-          height: 32px;
+          width: 26px;
+          height: 26px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1119,23 +1122,49 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
           background: white;
           border: 1px solid #E5E7EB;
           cursor: pointer;
+          transition: all 0.15s;
+        }
+        @media (min-width: 640px) {
+          .tool-btn-sm {
+            width: 30px;
+            height: 30px;
+          }
         }
         .tool-btn-sm:hover {
           background: #F3F4F6;
+          transform: translateY(-1px);
         }
         input[type="range"] {
           -webkit-appearance: none;
           height: 4px;
-          background: #D1D5DB;
+          background: #E5E7EB;
           border-radius: 2px;
         }
         input[type="range"]::-webkit-slider-thumb {
           -webkit-appearance: none;
-          width: 16px;
-          height: 16px;
+          width: 14px;
+          height: 14px;
           background: #3B82F6;
           border-radius: 50%;
           cursor: pointer;
+          transition: all 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+          background: #2563EB;
+          transform: scale(1.1);
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
+          background: #3B82F6;
+          border-radius: 50%;
+          cursor: pointer;
+          border: none;
+          transition: all 0.15s;
+        }
+        input[type="range"]::-moz-range-thumb:hover {
+          background: #2563EB;
+          transform: scale(1.1);
         }
       `}</style>
     </div>
