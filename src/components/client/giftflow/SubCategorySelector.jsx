@@ -158,9 +158,24 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
   const [selectedLayer, setSelectedLayer] = useState('title');
   const [isDragging, setIsDragging] = useState(false);
   const [cornerRadius, setCornerRadius] = useState(16);
-  const [canvasSize] = useState({ width: 400, height: 500 });
+  const [canvasSize, setCanvasSize] = useState({ width: 400, height: 500 });
   const [isGenerating, setIsGenerating] = useState(false);
   const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setCanvasSize({ width: 288, height: 360 });
+      } else {
+        setCanvasSize({ width: 400, height: 500 });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); 
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Drag tracking with original size preservation
   const dragRef = useRef({
@@ -353,10 +368,10 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
     if (!selectedLayerData || selectedLayerData.type !== 'image') return;
 
     updateLayer(selectedLayer, {
-      width: Math.max(20, Math.min(400, newWidth)),
-      height: Math.max(20, Math.min(400, newHeight))
+      width: Math.max(20, Math.min(canvasSize.width, newWidth)),
+      height: Math.max(20, Math.min(canvasSize.height, newHeight))
     });
-  }, [selectedLayerData, selectedLayer, updateLayer]);
+  }, [selectedLayerData, selectedLayer, updateLayer, canvasSize]);
 
   // Export
   const exportCard = useCallback(async () => {
@@ -465,7 +480,6 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
     const titleLayer = layers.find(l => l.id === 'title');
     const descLayer = layers.find(l => l.id === 'description');
     const emojiLayer = layers.find(l => l.id === 'emoji');
-
     const drawCanvas = async () => {
       const canvas = document.createElement('canvas');
       const scale = 2;
