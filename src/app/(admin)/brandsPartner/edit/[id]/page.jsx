@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams, usePathname } from 'next/navigation';
 import { ChevronLeft, Save, X, Loader, AlertTriangle, CheckCircle } from 'lucide-react';
 import { getBrandPartnerDetails, updateBrandPartner } from '../../../../../lib/action/brandPartner';
 import { toast } from 'react-hot-toast';
@@ -17,13 +17,22 @@ import ReviewTab from '@/components/brandsPartner/ReviewTab';
 const BrandEdit = () => {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const brandId = params?.id;
+  const mode = searchParams.get('mode');
+  const isReviewMode = mode === 'review';
 
   const [activeTab, setActiveTab] = useState('core');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab') || 'core';
+    setActiveTab(tabFromUrl);
+  }, [searchParams]);
 
   // Enhanced formData initialization with all banking fields
   const [formData, setFormData] = useState({
@@ -291,15 +300,21 @@ const BrandEdit = () => {
     }
   };
 
+  const handleTabChange = (tabId) => {
+    if (saving) return;
+    setActiveTab(tabId);
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set('tab', tabId);
+    router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
+  };
 
-  
   const updateFormData = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
-  
+
 
   const updateIntegration = (id, field, value) => {
     setFormData(prev => ({
@@ -453,8 +468,8 @@ const BrandEdit = () => {
 
     try {
       const submitData = prepareFormDataForSubmission();
-      console.log("submitData",submitData);
-      
+      console.log("submitData", submitData);
+
       const result = await updateBrandPartner(brandId, submitData);
 
       if (result.success) {
@@ -580,11 +595,41 @@ const BrandEdit = () => {
     );
   }
 
+  if (isReviewMode) {
+    return (
+      <div className="min-h-screen bg-gray-50 text-black">
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                className="p-2 hover:bg-gray-100 rounded-lg"
+                onClick={() => router.back()}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <div>
+                <h1 className="font-poppins text-[22px] font-semibold leading-[20px] text-[#1A1A1A]">Review Brand Partner</h1>
+                <p className="font-inter text-sm font-medium leading-[18px] text-[#64748B] mt-1">
+                  Reviewing details for <span className="font-bold">{formData.brandName}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="p-2 md:p-6">
+          <div className="bg-white rounded-lg shadow-sm pd-2 md:p-6">
+            <ReviewTab formData={formData} validationErrors={[]} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 text-black">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center space-x-4">
             <button
               className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 transition-colors duration-200"
@@ -594,24 +639,24 @@ const BrandEdit = () => {
               <ChevronLeft size={20} />
             </button>
             <div>
-              <h1 className="text-xl font-semibold">Edit Brand Partner</h1>
-              <p className="text-sm text-gray-600">Update brand information and settings</p>
+              <h1 className="font-poppins text-[22px] font-semibold leading-[20px] text-[#1A1A1A]">Edit Brand Partner</h1>
+              <p className="font-inter text-sm font-medium leading-[18px] text-[#64748B] mt-1">Update brand information and settings</p>
               <div className="flex items-center space-x-2 mt-1">
-                <span className="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                <span className="font-inter text-[10px] font-bold leading-[20px] text-[#0F64F6] bg-blue-100 px-2 py-1 rounded inline-block">
                   {formData.brandName || 'Brand'}
                 </span>
                 {hasChanges && (
-                  <span className="inline-block bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs">
+                  <span className="font-inter text-[10px] font-bold leading-[20px] text-[#E27800] bg-orange-100 px-2 py-1 rounded inline-block">
                     Unsaved Changes
                   </span>
                 )}
-                <span className="text-xs text-gray-500">
+                <span className="font-inter text-[12px] font-medium leading-[20px] text-[#A6A6A6]">
                   {completedTabs.length}/{tabs.length - 1} sections completed
                 </span>
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full sm:w-auto">
             <button
               onClick={handleCancel}
               disabled={saving}
@@ -644,18 +689,18 @@ const BrandEdit = () => {
 
       {/* Navigation Tabs */}
       <div className="bg-white border-b border-gray-200 px-6">
-        <div className="flex space-x-8 overflow-x-auto">
+        <div className="flex gap-6 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => !saving && setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               disabled={saving}
               className={`py-4 border-b-2 font-medium text-sm whitespace-nowrap disabled:opacity-50 transition-colors duration-200 ${activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
             >
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span>{tab.label}</span>
                 {completedTabs.includes(tab.id) && (
                   <CheckCircle className="text-green-500" size={16} />
@@ -669,10 +714,10 @@ const BrandEdit = () => {
       {/* Required Fields Warning */}
       {validationErrors.length > 0 && (
         <div className="bg-red-50 border-l-4 border-red-400 px-6 py-3">
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <AlertTriangle className="text-red-500" size={16} />
             <span className="text-sm font-medium text-red-800">Required Fields Missing</span>
-            <span className="text-sm text-red-600">
+            <span className="text-sm text-red-600 break-words">
               {validationErrors.length} field{validationErrors.length > 1 ? 's' : ''} need attention
             </span>
           </div>
@@ -683,7 +728,7 @@ const BrandEdit = () => {
       )}
 
       {/* Content */}
-      <div className="px-6 py-8">
+      <div className="px-4 py-6 sm:px-6 sm:py-8">
         <div className={`transition-opacity duration-200 ${saving ? 'opacity-50 pointer-events-none' : ''}`}>
           {renderTabContent()}
         </div>

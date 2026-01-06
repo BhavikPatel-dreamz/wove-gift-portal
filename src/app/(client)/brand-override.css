@@ -108,64 +108,6 @@ header {
 /* ===== BUTTON STYLES ===== */
 
 /* Primary Button - Pink Gradient */
-.btn-primary,
-.bg-blue-500,
-.bg-blue-600,
-button[class*="primary"] {
-  background: linear-gradient(
-    114.06deg,
-    #ed457d 11.36%,
-    #fa8f42 90.28%
-  ) !important;
-  border: none !important;
-  color: white !important;
-  border-radius: 50px !important;
-  padding: 10px 20px !important;
-  font-weight: 600 !important;
-  font-size: 13px !important;
-  box-shadow: 0 4px 12px rgba(237, 69, 125, 0.25) !important;
-  transition: all 0.3s ease !important;
-  cursor: pointer !important;
-}
-
-.btn-primary:hover,
-.bg-blue-500:hover,
-.bg-blue-600:hover,
-.hover\:bg-blue-600:hover {
-  background: linear-gradient(
-    114.06deg,
-    #d93b6e 11.36%,
-    #e87d35 90.28%
-  ) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 16px rgba(237, 69, 125, 0.35) !important;
-}
-
-.btn-secondary {
-  background-color: #ed457d !important; /* same as bg-[#ED457D] */
-  color: #fff !important; /* text-white */
-  padding: 10px 16px !important; /* px-4 py-2 */
-  border-radius: 9999px !important; /* rounded-full */
-  font-size: 12px !important; /* text-xs */
-  font-weight: 700 !important; /* font-bold */
-  display: inline-flex !important; /* flex */
-  align-items: center !important; /* items-center */
-  gap: 8px !important; /* gap-2 */
-  cursor: pointer !important; /* cursor-pointer */
-  border: none !important;
-  transition: all 0.3s ease !important; /* smooth animation */
-}
-
-.btn-secondary:hover {
-  background-color: #d93b6e !important; /* slightly darker pink */
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 10px rgba(237, 69, 125, 0.35) !important;
-}
-
-.btn-secondary:active {
-  transform: translateY(0) scale(0.96) !important;
-  box-shadow: 0 2px 6px rgba(237, 69, 125, 0.25) !important;
-}
 
 /* Outline Button */
 .btn-outline {
@@ -230,7 +172,7 @@ body,
 
 /* ===== TEXT COLORS ===== */
 
-h1,
+/* h1,
 h2,
 h3,
 h4,
@@ -239,7 +181,7 @@ h6,
 .heading {
   color: var(--wave-text-dark) !important;
   font-weight: 700 !important;
-}
+} */
 
 .text-pink,
 .text-primary {

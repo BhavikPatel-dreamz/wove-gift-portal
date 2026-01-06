@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext } from '../../../redux/giftFlowSlice';
 import { updateBulkCompanyInfo } from '../../../redux/cartSlice';
 
@@ -11,6 +11,11 @@ const BulkReviewStep = () => {
 
     const { selectedBrand } = useSelector((state) => state.giftFlowReducer);
     const { bulkItems } = useSelector((state) => state.cart);
+
+    const searchParams = useSearchParams();
+    const mode = searchParams.get('mode');
+    const isBulkMode = mode === 'bulk';
+
 
     // Get the most recent bulk item (last added)
     const currentBulkOrder = bulkItems[bulkItems.length - 1];
@@ -106,48 +111,97 @@ const BulkReviewStep = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
-            <div className="max-w-[1440px] mx-auto">
-                {/* Previous Button */}
-                {/* <button
-                    onClick={handleBack}
-                    className="flex items-center gap-2 text-pink-500 hover:text-pink-600 mb-6 font-medium transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span>Previous</span>
-                </button> */}
-                <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                {/* Back Button and Bulk Mode Indicator */}
+                <div className="relative flex flex-col items-start gap-4 mb-6
+                                md:flex-row md:items-center md:justify-between md:gap-0">
+
+                    {/* Previous Button */}
                     <button
+                        className="
+                              relative inline-flex items-center justify-center gap-2
+                              px-5 py-3 rounded-full font-semibold text-base
+                              text-[#4A4A4A] bg-white border border-transparent
+                              transition-all duration-300 overflow-hidden group cursor-pointer
+                            "
                         onClick={() => dispatch(goBack())}
-                        className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
-                               transition-all duration-200 shadow-sm hover:shadow-md" 
                     >
-                        <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
-                        <span className="text-base font-semibold text-gray-800">
+                        {/* Outer gradient border */}
+                        <span
+                            className="
+                                absolute inset-0 rounded-full p-[1.5px]
+                                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                              "
+                        ></span>
+                        <span
+                            className="
+                                absolute inset-[1.5px] rounded-full bg-white
+                                transition-all duration-300
+                                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+                              "
+                        ></span>
+
+                        {/* Button content */}
+                        <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+                            <svg
+                                width="8"
+                                height="9"
+                                viewBox="0 0 8 9"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                            >
+                                <path
+                                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                                    fill="url(#paint0_linear_584_1923)"
+                                />
+                                <defs>
+                                    <linearGradient
+                                        id="paint0_linear_584_1923"
+                                        x1="7.5"
+                                        y1="3.01721"
+                                        x2="-9.17006"
+                                        y2="13.1895"
+                                        gradientUnits="userSpaceOnUse"
+                                    >
+                                        <stop stopColor="#ED457D" />
+                                        <stop offset="1" stopColor="#FA8F42" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
                             Previous
-                        </span>
+                        </div>
                     </button>
+
+                    {/* Bulk Gifting Indicator */}
+                    {isBulkMode && (
+                        <div
+                            className="
+                        flex items-center gap-3 justify-center w-full
+                        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+                      "
+                        >
+                            <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+
+                            <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+                                <div className="px-4 py-1.5 bg-white rounded-full">
+                                    <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                                        Bulk Gifting
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+                        </div>
+                    )}
+
+                    {/* Desktop spacer only */}
+                    <div className="md:block w-[140px]" />
                 </div>
 
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <div className="w-full flex items-center justify-center mb-4">
-                        {/* Left line */}
-                        <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
-
-                        {/* Center pill */}
-                        <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
-                            <div className="px-4 py-1.5 bg-white rounded-full">
-                                <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
-                                    Bulk Gifting
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Right line */}
-                        <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
-                    </div>
-
-                    <h1 className="text-[40px] md:text-4xl font-bold text-[#1A1A1A] mb-[24px] fontPoppins">
+                <div className="text-center mb-12">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1A1A1A] mb-6 fontPoppins text-center">
                         Review your bulk gifting order
                     </h1>
                     <p className="text-[#4A4A4A] font-medium text-base">
@@ -159,9 +213,9 @@ const BulkReviewStep = () => {
                 <div className="max-w-[688px] m-auto bg-[#F9F9F9] rounded-[20px] p-5 border border-gray-200 shadow-sm mb-6">
                     <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
 
-                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl ">
+                    <div className="flex items-center gap-4 px-4 bg-gray-50 rounded-xl ">
                         {/* Brand Logo */}
-                        <div className="w-16 h-16 flex-shrink-0 ">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16">
                             {selectedBrand?.logo ? (
                                 <img
                                     src={selectedBrand.logo}
@@ -178,26 +232,30 @@ const BulkReviewStep = () => {
                         </div>
 
                         {/* Order Details */}
-                        <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 ">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             <div className='border-r-2 border-[#1a1a1a28]'>
-                                <p className="text-xs text-gray-500 mb-1">Brand</p>
-                                <p className="font-semibold text-gray-900">
+                                <p className="text-[#1A1A1A] font-poppins text-base font-semibold leading-5 mb-1">
+                                    Brand
+                                </p>
+
+                                <p className="text-[#4A4A4A] font-inter text-base font-normal leading-[18px]">
                                     {selectedBrand?.brandName || selectedBrand?.name}
                                 </p>
+
                             </div>
                             <div className='border-r-2 border-[#1a1a1a28]'>
-                                <p className="text-xs text-gray-500 mb-1">Denomination</p>
-                                <p className="font-semibold text-gray-900">
+                                <p className="text-[#1A1A1A] font-poppins text-base font-semibold leading-5 mb-1">Denomination</p>
+                                <p className="text-[#4A4A4A] font-inter text-base font-normal leading-[18px]">
                                     {currentBulkOrder.selectedAmount.currency}{currentBulkOrder.selectedAmount.value}
                                 </p>
                             </div>
                             <div className='border-r-2 border-[#1a1a1a28]'>
-                                <p className="text-xs text-gray-500 mb-1">Quantity</p>
-                                <p className="font-semibold text-gray-900">{currentBulkOrder.quantity}</p>
+                                <p className="text-[#1A1A1A] font-poppins text-base font-semibold leading-5 mb-1">Quantity</p>
+                                <p className="text-[#4A4A4A] font-inter text-base font-normal leading-[18px]">{currentBulkOrder.quantity}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500 mb-1">Total Amount</p>
-                                <p className="font-bold text-pink-600 text-lg">
+                                <p className="text-[#1A1A1A] font-poppins text-base font-semibold leading-5 mb-1">Total Amount</p>
+                                <p className="font-inter text-[20px] font-bold leading-[16px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] bg-clip-text text-transparent">
                                     {currentBulkOrder.selectedAmount.currency}{currentBulkOrder.totalSpend.toFixed(2)}
                                 </p>
                             </div>
@@ -219,7 +277,7 @@ const BulkReviewStep = () => {
                                     placeholder="Your Company Name*"
                                     value={companyInfo.companyName}
                                     onChange={(e) => handleInputChange('companyName', e.target.value)}
-                                    className={`w-full px-4 py-3 border ${errors.companyName ? 'border-red-500' : 'border-[#1A1A1A33]'} text-black rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                    className={`w-full px-4 py-3 border bg-white ${errors.companyName ? 'border-red-500' : 'border-[#1A1A1A33]'} text-black rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                 />
                                 {errors.companyName && (
                                     <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>
@@ -233,7 +291,7 @@ const BulkReviewStep = () => {
                                     placeholder="Vat Number (e.g., 4001234567)"
                                     value={companyInfo.vatNumber}
                                     onChange={(e) => handleInputChange('vatNumber', e.target.value)}
-                                    className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px]  focus:outline-none text-black focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                    className="w-full px-4 py-3 border bg-white border-[#1A1A1A33] rounded-[15px]  focus:outline-none text-black focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                                 />
                             </div>
 
@@ -245,7 +303,7 @@ const BulkReviewStep = () => {
                                         placeholder="Your Contact No.*"
                                         value={companyInfo.contactNumber}
                                         onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                                        className={`w-full px-4 py-3 border ${errors.contactNumber ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                        className={`w-full px-4 py-3 bg-white border ${errors.contactNumber ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                     />
                                     {errors.contactNumber && (
                                         <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>
@@ -257,13 +315,20 @@ const BulkReviewStep = () => {
                                         placeholder="Your Contact Email*"
                                         value={companyInfo.contactEmail}
                                         onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                                        className={`w-full px-4 py-3 border ${errors.contactEmail ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                        className={`w-full px-4 py-3 bg-white border ${errors.contactEmail ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                     />
                                     {errors.contactEmail && (
                                         <p className="text-red-500 text-xs mt-1">{errors.contactEmail}</p>
                                     )}
                                 </div>
                             </div>
+
+                            <div className='flex gap-2'>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M13.385 4.10536L10.2305 0.660492C9.8465 0.250084 9.308 0.00447932 8.693 0.00447932H4.15325C2.99975 -0.0779223 2 0.988499 2 2.21892V13.7031C1.99951 14.005 2.05489 14.304 2.16297 14.5829C2.27106 14.8619 2.42971 15.1153 2.62984 15.3287C2.82996 15.5421 3.06762 15.7113 3.32917 15.8265C3.59073 15.9417 3.87103 16.0006 4.154 16H11.846C12.129 16.0006 12.4093 15.9417 12.6708 15.8265C12.9324 15.7113 13.17 15.5421 13.3702 15.3287C13.5703 15.1153 13.7289 14.8619 13.837 14.5829C13.9451 14.304 14.0005 14.005 14 13.7031V5.66459C14 5.09018 13.769 4.51577 13.385 4.10536ZM5.69225 6.48461H8C8.3075 6.48461 8.615 6.73101 8.615 7.14062C8.615 7.55103 8.38475 7.79663 8 7.79663H5.69225C5.61118 7.79782 5.53071 7.78166 5.45559 7.74911C5.38048 7.71656 5.31224 7.66828 5.25491 7.60713C5.19758 7.54598 5.15232 7.47319 5.1218 7.39306C5.09129 7.31293 5.07614 7.2271 5.07725 7.14062C5.07725 6.73021 5.38475 6.48461 5.69225 6.48461ZM10.3077 11.0783H5.69225C5.38475 11.0783 5.07725 10.8319 5.07725 10.4223C5.07725 10.0127 5.3075 9.76627 5.69225 9.76627H10.3077C10.6152 9.76627 10.9227 10.0119 10.9227 10.4223C10.9227 10.8327 10.6152 11.0783 10.3077 11.0783Z" fill="#39AE41" />
+                                </svg>
+                                <span className="text-[#1A1A1A] font-inter text-xs font-medium leading-4">
+                                    CSV file with voucher codes will be sent to your Contact email</span></div>
 
                             {/* Delivery Options */}
                             <div className="pt-4 space-y-3">

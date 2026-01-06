@@ -1,4 +1,5 @@
 import React from 'react';
+import { currencyList } from "../brandsPartner/currency";
 
 const DetailItem = ({ label, value, isBadge, badgeColor }) => (
   <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-200">
@@ -16,11 +17,16 @@ const DetailItem = ({ label, value, isBadge, badgeColor }) => (
 export default function VoucherDetails({ voucher }) {
   if (!voucher) return null;
 
+  const getCurrencySymbol = (code) =>
+  currencyList.find((c) => c.code === code)?.symbol || "";
+
   const { 
     code, user, voucherType, totalAmount, remainingAmount, partialRedemption, 
     redemptionHistory, totalRedeemed, pendingAmount, redemptionCount, 
-    lastRedemptionDate, expiryDate, status, orderNumber 
+    lastRedemptionDate, expiryDate, status, orderNumber, currency
   } = voucher;
+
+  const currencySymbol = getCurrencySymbol(currency);
 
   const statusConfig = {
     Redeemed: { text: 'Redeemed', color: 'text-green-700 bg-green-100' },
@@ -56,10 +62,10 @@ export default function VoucherDetails({ voucher }) {
           <h3 className="text-md font-semibold text-gray-800">Value & Redemption</h3>
           <dl className="mt-2 divide-y divide-gray-200">
             <DetailItem label="Voucher Type" value={voucherType} />
-            <DetailItem label="Total Amount" value={`$${totalAmount.toFixed(2)}`} />
-            <DetailItem label="Remaining Amount" value={`$${remainingAmount.toFixed(2)}`} />
-            <DetailItem label="Total Redeemed" value={`$${totalRedeemed.toFixed(2)}`} />
-            <DetailItem label="Pending Amount" value={`$${pendingAmount.toFixed(2)}`} />
+            <DetailItem label="Total Amount" value={`${currencySymbol}${(totalAmount || 0).toFixed(2)}`} />
+            <DetailItem label="Remaining Amount" value={`${currencySymbol}${(remainingAmount || 0).toFixed(2)}`} />
+            <DetailItem label="Total Redeemed" value={`${currencySymbol}${(totalRedeemed || 0).toFixed(2)}`} />
+            <DetailItem label="Pending Amount" value={`${currencySymbol}${(pendingAmount || 0).toFixed(2)}`} />
             <DetailItem label="Redemption Count" value={redemptionCount} />
             <DetailItem label="Last Redemption" value={lastRedemptionDate ? new Date(lastRedemptionDate).toLocaleString() : 'N/A'} />
           </dl>
@@ -81,8 +87,8 @@ export default function VoucherDetails({ voucher }) {
                   {redemptionHistory.map((item, index) => (
                     <tr key={index}>
                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{new Date(item.redeemedAt).toLocaleString()}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-red-600">-${item.amountRedeemed.toFixed(2)}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-green-600">${item.balanceAfter.toFixed(2)}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-red-600">-{currencySymbol}{item.amountRedeemed.toFixed(2)}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-green-600">{currencySymbol}{item.balanceAfter.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

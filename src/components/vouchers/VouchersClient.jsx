@@ -9,6 +9,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import Modal from "@/components/Modal";
 import VoucherDetails from "@/components/vouchers/VoucherDetails";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { currencyList } from "../brandsPartner/currency";
 
 export default function VouchersClient({ initialVouchers, initialPagination, user }) {
     const router = useRouter();
@@ -20,6 +21,9 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
     // The 'vouchers' and 'pagination' states are derived directly from props.
     const vouchers = initialVouchers;
     const pagination = initialPagination;
+
+    console.log("vouchers",vouchers);
+
 
     const [syncing, setSyncing] = useState(false);
     const [error, setError] = useState(null);
@@ -44,6 +48,9 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
         search: "",
         status: "",
     });
+
+    const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "";
 
     // Handlers now update the URL search parameters
     const handleUpdateParams = (updates) => {
@@ -256,11 +263,11 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
         ] : []),
         columnHelper.accessor("totalAmount", {
             header: "Total Amount",
-            cell: (info) => <div className="text-gray-900 font-medium">${info.getValue()?.toFixed(2)}</div>,
+            cell: (info) => <div className="text-gray-900 font-medium">{getCurrencySymbol(info.row.original.currency)}{info.getValue()?.toFixed(2)}</div>,
         }),
         columnHelper.accessor("remainingAmount", {
             header: "Remaining Amount",
-            cell: (info) => <div className="text-gray-900 font-medium">${info.getValue()?.toFixed(2)}</div>,
+            cell: (info) => <div className="text-gray-900 font-medium">{getCurrencySymbol(info.row.original.currency)}{info.getValue()?.toFixed(2)}</div>,
         }),
         columnHelper.accessor("status", {
             header: "Status",
@@ -365,11 +372,11 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                       <div className="text-xs text-blue-600 font-semibold mb-1">Total Amount</div>
-                      <div className="text-2xl font-bold text-blue-900">${bulkData?.totalAmount?.toFixed(2) || '0.00'}</div>
+                      <div className="text-2xl font-bold text-blue-900">{getCurrencySymbol(bulkData?.currency)}{bulkData?.totalAmount?.toFixed(2) || '0.00'}</div>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                       <div className="text-xs text-green-600 font-semibold mb-1">Remaining</div>
-                      <div className="text-2xl font-bold text-green-900">${bulkData?.remainingAmount?.toFixed(2) || '0.00'}</div>
+                      <div className="text-2xl font-bold text-green-900">{getCurrencySymbol(bulkData?.currency)}{bulkData?.remainingAmount?.toFixed(2) || '0.00'}</div>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
                       <div className="text-xs text-purple-600 font-semibold mb-1">Order Count</div>
@@ -462,12 +469,12 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                                   <span className="font-medium text-gray-900">{child.code}</span>
                                 </div>
                                 <div>
-                                  <span className="block text-xs text-gray-500 mb-1">Total Amount</span>
-                                  <span className="font-medium text-gray-900">${child.totalAmount?.toFixed(2)}</span>
+                                  <span className="block text-xs text-gray-500 mb-1">Total</span>
+                                  <span className="font-medium text-gray-900">{child.totalAmount?.toFixed(2)}</span>
                                 </div>
                                 <div>
                                   <span className="block text-xs text-gray-500 mb-1">Remaining</span>
-                                  <span className="font-medium text-gray-900">${child.remainingAmount?.toFixed(2)}</span>
+                                  <span className="font-medium text-gray-900">{child.remainingAmount?.toFixed(2)}</span>
                                 </div>
                                 <div>
                                   <span className="block text-xs text-gray-500 mb-1">Status</span>

@@ -1,13 +1,23 @@
+"use client"
 import Link from "next/link";
 import React from "react";
+import { useDispatch } from "react-redux";
+import { setCurrentStep, resetFlow } from "@/redux/giftFlowSlice";
 
 const WhyWoveExists = () => {
+  const dispatch = useDispatch();
+
+  const handleClick = () => {
+    dispatch(resetFlow());
+    dispatch(setCurrentStep(1));
+  };
+
   return (
     <section className="max-w-[1440px] mx-auto py-12">
       <div className="flex flex-col md:flex-row items-center justify-center gap-10 md:gap-20">
         {/* Left content */}
         <div className="flex-1 max-w-xl">
-          <h2 className="font-bold text-[40px] md:text-4xl mb-4 leading-tight fontPoppins">
+          <h2 className="text-[#1A1A1A] font-poppins text-[40px] font-semibold leading-[44px] mb-4">
             Why Wove exists
           </h2>
           <p className="text-[#4A4A4A] font-medium text-base md:text-lg mb-8 leading-relaxed">
@@ -18,15 +28,17 @@ const WhyWoveExists = () => {
             <Link
               className="bg-gradient-to-r from-pink-500 to-orange-400 text-white font-medium rounded-full px-6 py-3 hover:brightness-110 transition "
               href="/gift"
+              onClick={handleClick}
             >
               Start Gifting <span className='pl-2'>▸</span>
             </Link>
 
             <Link
-             className="border border-pink-500 text-pink-500 font-medium rounded-full px-6 py-3 hover:bg-pink-50 transition"
+              className="border border-pink-500 text-pink-500 font-medium rounded-full px-6 py-3 hover:bg-pink-50 transition"
               href="/gift?mode=bulk"
+              onClick={handleClick}
             >
-                Explore Bulk Gifting <span className='pl-2'>▸</span>
+              Explore Bulk Gifting <span className='pl-2'>▸</span>
             </Link>
           </div>
         </div>

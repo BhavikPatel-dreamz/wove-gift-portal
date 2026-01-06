@@ -105,32 +105,32 @@ const CoreTab = ({ formData, updateFormData }) => {
     <div className="space-y-8">
       {/* Auto-generate From Website */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-medium text-blue-800 mb-2">Auto-generate From Website</h4>
+        <h4 className="font-inter text-sm font-semibold capitalize text-[#1F59EE] mb-2">Auto-generate From Website</h4>
         <div className="flex items-center space-x-3">
           <input
             type="url"
             placeholder="https://brand-website.com"
-            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-xs font-semibold leading-5 text-[#4A4A4A]"
             value={formData.autoGenUrl || ''}
             onChange={(e) => updateFormData('autoGenUrl', e.target.value)}
           />
         </div>
-        <p className="text-sm text-blue-600 mt-2">
+        <p className="font-inter text-[10px] font-semibold capitalize text-[#1F59EE] mt-2">
           Fetch a brand website URL to automatically populate metadata, logo, and colors when possible.
         </p>
       </div>
 
       {/* Basic Information */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Basic Information</h3>
+        <h3 className="font-inter text-base font-semibold capitalize text-[#4A4A4A] mb-4">Basic Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
               Brand Name *
             </label>
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
               placeholder="Enter brand name"
               value={formData.brandName || ''}
               onChange={(e) => updateFormData('brandName', e.target.value)}
@@ -138,11 +138,11 @@ const CoreTab = ({ formData, updateFormData }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
               Category *
             </label>
             <select
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
               value={formData.categoryName || ''}
               onChange={(e) => updateFormData('categoryName', e.target.value)}
               required
@@ -161,24 +161,24 @@ const CoreTab = ({ formData, updateFormData }) => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
               Tagline
             </label>
             <input
               type="text"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
               placeholder="Enter brand tagline"
               value={formData.tagline || ''}
               onChange={(e) => updateFormData('tagline', e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
               Website URL *
             </label>
             <input
               type="url"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
               placeholder="https://brand-website.com"
               value={formData.website || ''}
               onChange={(e) => updateFormData('website', e.target.value)}
@@ -190,7 +190,7 @@ const CoreTab = ({ formData, updateFormData }) => {
             <select
               value={formData?.currency || ''}
               onChange={(e) => updateFormData('currency', e.target.value)}
-              className="w-full border rounded-md px-3 py-2 bg-white"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
             >
               {currencies.map((cur) => (
                 <option key={cur?.code} value={cur?.code}>
@@ -201,11 +201,11 @@ const CoreTab = ({ formData, updateFormData }) => {
           </div>
         </div>
         <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
             Description *
           </label>
           <textarea
-            className="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+           className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
             placeholder="Enter brand description"
             value={formData.description || ''}
             onChange={(e) => updateFormData('description', e.target.value)}
@@ -218,10 +218,10 @@ const CoreTab = ({ formData, updateFormData }) => {
 
       {/* Visual Identity */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Visual Identity</h3>
+        <h3 className="font-inter text-base font-semibold capitalize text-[#4A4A4A] mb-4">Visual Identity</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
               Brand Logo *
             </label>
 
@@ -295,7 +295,7 @@ const CoreTab = ({ formData, updateFormData }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
               Primary Color
             </label>
             <div className="flex items-center space-x-3">
@@ -314,7 +314,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                 pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+           <p className="font-inter text-xs font-normal leading-5 text-[#7E7E7E] mt-1">
               Used for brand theming and UI elements
             </p>
           </div>
@@ -323,7 +323,7 @@ const CoreTab = ({ formData, updateFormData }) => {
 
       {/* Status & Display */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Status & Display</h3>
+       <h3 className="font-inter text-base font-semibold capitalize text-[#4A4A4A] mb-4">Status & Display</h3>
         <div className="space-y-4">
           <label className="flex items-start cursor-pointer">
             <input
@@ -333,8 +333,8 @@ const CoreTab = ({ formData, updateFormData }) => {
               onChange={(e) => updateFormData('isActive', e.target.checked)}
             />
             <div>
-              <span className="font-medium">Active on Frontend</span>
-              <p className="text-sm text-gray-500">
+              <span className="font-inter text-sm font-semibold capitalize text-[#4A4A4A]">Active on Frontend</span>
+             <p className="font-inter text-xs font-medium leading-5 text-[#A5A5A5]">
                 Make this brand visible to customers on the website
               </p>
             </div>
@@ -347,8 +347,8 @@ const CoreTab = ({ formData, updateFormData }) => {
               onChange={(e) => updateFormData('isFeature', e.target.checked)}
             />
             <div>
-              <span className="font-medium">Featured Brand</span>
-              <p className="text-sm text-gray-500">
+              <span className="font-inter text-sm font-semibold capitalize text-[#4A4A4A]">Featured Brand</span>
+             <p className="font-inter text-xs font-medium leading-5 text-[#A5A5A5]">
                 Display prominently in featured brand sections and homepage
               </p>
             </div>
@@ -358,9 +358,9 @@ const CoreTab = ({ formData, updateFormData }) => {
 
       {/* Additional Notes */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium mb-4">Additional Information</h3>
+        <h3 className="font-inter text-base font-semibold capitalize text-[#4A4A4A] mb-4">Additional Information</h3>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
             Internal Notes
           </label>
           <textarea
@@ -369,7 +369,7 @@ const CoreTab = ({ formData, updateFormData }) => {
             value={formData.notes || ''}
             onChange={(e) => updateFormData('notes', e.target.value)}
           />
-          <p className="text-xs text-gray-500 mt-1">
+         <p className="font-inter text-[10px] font-medium leading-5 text-[#4A4A4A]">
             These notes are only visible to admin users
           </p>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext } from '../../../redux/giftFlowSlice';
 import { addToBulk } from '../../../redux/cartSlice';
 
@@ -16,6 +16,9 @@ const BulkOrderSetup = () => {
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode');
+  const isBulkMode = mode === 'bulk';
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -27,6 +30,8 @@ const BulkOrderSetup = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  console.log(selectedBrand, selectedAmount);
 
   // Get available denominations from selected brand
   const denominations = selectedBrand?.vouchers?.[0]?.denominations || [];
@@ -65,11 +70,16 @@ const BulkOrderSetup = () => {
   };
 
   useEffect(() => {
-    if (selectedAmount && selectedAmount !== "") {
-      const selectedDenomination = denominations?.filter((data) => data?.value == selectedAmount?.value)
-      setSelectedDenomination(selectedDenomination[0])
+    if (selectedAmount && selectedAmount.value) {
+      const matchingDenomination = denominations.find(d => d.value === selectedAmount.value);
+      if (matchingDenomination) {
+        setSelectedDenomination(matchingDenomination);
+      } else {
+        // It's a custom amount, so use the selectedAmount object from Redux.
+        setSelectedDenomination(selectedAmount);
+      }
     }
-  }, [selectedAmount])
+  }, [selectedAmount, denominations]);
 
 
   const handleAddToBulkOrder = () => {
@@ -128,39 +138,96 @@ const BulkOrderSetup = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
-      <div className="max-w-[1440px] mx-auto">
-        {/* Back Button */}
-        <div className='p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block'>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        {/* Back Button and Bulk Mode Indicator */}
+        <div className="relative flex flex-col items-start gap-4 mb-6
+                md:flex-row md:items-center md:justify-between md:gap-0">
+
+          {/* Previous Button */}
           <button
-            onClick={handleBackToBrands}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 transition-all duration-200 shadow-sm hover:shadow-md"
+            className="
+              relative inline-flex items-center justify-center gap-2
+              px-5 py-3 rounded-full font-semibold text-base
+              text-[#4A4A4A] bg-white border border-transparent
+              transition-all duration-300 overflow-hidden group cursor-pointer
+            "
+            onClick={() => dispatch(goBack())}
           >
-            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
-            <span className="text-base font-semibold text-gray-800">Back to Brands</span>
+            {/* Outer gradient border */}
+            <span
+              className="
+                absolute inset-0 rounded-full p-[1.5px]
+                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+              "
+            ></span>
+            <span
+              className="
+                absolute inset-[1.5px] rounded-full bg-white
+                transition-all duration-300
+                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+              "
+            ></span>
+
+            {/* Button content */}
+            <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+              <svg
+                width="8"
+                height="9"
+                viewBox="0 0 8 9"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300 group-hover:[&>path]:fill-white"
+              >
+                <path
+                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                  fill="url(#paint0_linear_584_1923)"
+                />
+                <defs>
+                  <linearGradient
+                    id="paint0_linear_584_1923"
+                    x1="7.5"
+                    y1="3.01721"
+                    x2="-9.17006"
+                    y2="13.1895"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stopColor="#ED457D" />
+                    <stop offset="1" stopColor="#FA8F42" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              Previous
+            </div>
           </button>
+
+          {/* Bulk Gifting Indicator */}
+          {isBulkMode && (
+            <div
+              className="
+        flex items-center gap-3 justify-center w-full
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+      "
+            >
+              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+
+              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+                <div className="px-4 py-1.5 bg-white rounded-full">
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                    Bulk Gifting
+                  </span>
+                </div>
+              </div>
+
+              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+            </div>
+          )}
+
+          {/* Desktop spacer only */}
+          <div className="md:block w-[140px]" />
         </div>
 
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-full flex items-center justify-center mb-4">
-            {/* Left line */}
-            <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
-
-            {/* Center pill */}
-            <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
-              <div className="px-4 py-1.5 bg-white rounded-full">
-                <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
-                  Bulk Gifting
-                </span>
-              </div>
-            </div>
-
-            {/* Right line */}
-            <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
-          </div>
-
-
-
+        <div className="text-center mb-12">
           <h1 className="text-[40px] md:text-4xl font-bold text-[#1A1A1A] mb-2 fontPoppins">
             Set up your bulk order
           </h1>
@@ -172,12 +239,19 @@ const BulkOrderSetup = () => {
         {/* Main Content Grid */}
         <div className="max-w-4xl m-auto w-full grid grid-cols-1 md:grid-cols-[275px_1fr] gap-6">
           {/* Left Column - Selected Brand */}
-          <div className="w-full flex items-center max-w-[275px] rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33] shadow-sm bg-[#F9F9F9]">
-            {/* Brand Card */}
-            <div className=" flex flex-col items-center text-center">
-              <h3 className="text-[18px] text-center font-semibold text-[#1A1A1A] mb-4">Selected Brand</h3>
+          <div className="w-full flex justify-center">
+            <div className="flex flex-col items-center text-center justify-center
+                  max-w-[275px] w-full
+                  rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]
+                  shadow-sm bg-[#F9F9F9]">
+
+              {/* Title */}
+              <h3 className="text-[18px] font-semibold text-[#1A1A1A] mb-4">
+                Selected Brand
+              </h3>
+
               {/* Brand Logo */}
-              <div className="w-24 h-24  flex items-center justify-center">
+              <div className="w-24 h-24 flex items-center justify-center mb-4">
                 {selectedBrand.logo ? (
                   <img
                     src={selectedBrand.logo}
@@ -185,20 +259,26 @@ const BulkOrderSetup = () => {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                  <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
                     <span className="text-white font-bold text-5xl">
-                      {(selectedBrand.brandName || selectedBrand.name || 'B').substring(0, 1).toUpperCase()}
+                      {(selectedBrand.brandName || selectedBrand.name || 'B')
+                        .substring(0, 1)
+                        .toUpperCase()}
                     </span>
                   </div>
                 )}
               </div>
-              <div className='border-b border-[#D0CECE] h-px w-full my-8'></div>
 
-              <div className='py-[5px] px-[11px] bg-[#AA42FA1A] rounded-[50px] mb-[18px]'>
-                <div className='text-[#AA42FA] text-[14px] font-bold'>{selectedBrand.tagline}</div>
+              {/* Divider */}
+              <div className="border-b border-[#D0CECE] h-px w-full my-4"></div>
+
+              {/* Tagline */}
+              <div className="py-[5px] px-[11px] bg-[#AA42FA1A] rounded-[50px] mb-[18px]">
+                <div className="text-[#AA42FA] text-[14px] font-bold">{selectedBrand.tagline}</div>
               </div>
+
               {/* Brand Name */}
-              <h2 className="text-[22px] font-semibold fontPoppins text-[#1A1A1A] mb-3.5">
+              <h2 className="text-[22px] font-semibold font-['Poppins'] text-[#1A1A1A] mb-3.5">
                 {selectedBrand.brandName || selectedBrand.name}
               </h2>
 
@@ -216,13 +296,15 @@ const BulkOrderSetup = () => {
             </div>
           </div>
 
+
           {/* Right Column - Order Details */}
           <div className="space-y-6 w-full border-[1.2px] border-[#1A1A1A33] rounded-[20px] p-6 bg-[#DBDBDB2B]">
             {/* Denomination Selection */}
             <div className="">
-              <label className="block text-base font-semibold text-[#1A1A1A] mb-3">
+              <label className="block font-['Inter'] text-[16px] font-semibold leading-[16px] text-[#1A1A1A] mb-3">
                 Denomination
               </label>
+
 
               <div ref={dropdownRef} className="relative w-full">
                 {/* Selected Box */}
@@ -230,9 +312,9 @@ const BulkOrderSetup = () => {
                   onClick={() => setOpen(!open)}
                   className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] bg-white cursor-pointer flex justify-between items-center"
                 >
-                  <span className="text-gray-700">
+                  <span className=" text-[14x] font-semibold leading-[16px] text-[#000]">
                     {selectedDenomination?.value
-                      ? `R${selectedDenomination.value.toLocaleString()}`
+                      ? `${selectedDenomination.currency} ${selectedDenomination.value.toLocaleString()}`
                       : "Select Denomination"}
                   </span>
 
@@ -253,18 +335,18 @@ const BulkOrderSetup = () => {
                             handleDenominationSelect(denom);
                             setOpen(false);
                           }}
-                          className={`px-4 py-3 cursor-pointer text-gray-700 
+                          className={`px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000]
                   ${isSelected ? "bg-[#FFECEC] text-red-500 font-semibold" : ""} 
                   hover:bg-gray-100`}
                         >
-                          R{denom.value.toLocaleString()}
+                          {denom.currency} {denom.value.toLocaleString()}
                         </div>
                       );
                     })}
 
                     {/* Custom Amount */}
                     <div
-                      className="px-4 py-3 cursor-pointer text-gray-700 hover:bg-gray-100"
+                      className="px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000] hover:bg-gray-100"
                       onClick={() => {
                         handleDenominationSelect({ value: null });
                         setOpen(false);
@@ -297,16 +379,19 @@ const BulkOrderSetup = () => {
             </div>
 
             {/* Total Spend */}
-            <div className="flex justify-between bg-white rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]">
-              <div className="flex flex-col mb-3">
-                <span className="text-base font-bold text-[#1A1A1A]">Total Spend</span>
+            <div className="flex justify-between bg-white items-center rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]">
+              <div className="flex flex-col">
+                <span className="font-['Inter'] text-[16px] font-bold leading-[16px] text-[#1A1A1A]">
+                  Total Spend
+                </span>
                 {quantity && selectedDenomination && (
-                  <span className="text-xs text-gray-600">
+                  <span className="font-['Inter'] text-[16px] font-medium leading-[16px] text-[#8C8C8C] mt-2">
                     {quantity} × {selectedDenomination.currency || 'R'}{selectedDenomination.value}
                   </span>
                 )}
+
               </div>
-              <p className="text-[20px] font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
+              <p className="font-['Inter'] text-[20px] font-bold leading-[16px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
                 {selectedDenomination?.currency || 'R'}{totalSpend}
               </p>
 

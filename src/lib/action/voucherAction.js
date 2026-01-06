@@ -127,6 +127,7 @@ export async function getVouchers(params = {}) {
             user: order.user,
             totalAmount,
             remainingAmount,
+            currency: order.currency,
             status: activeCount > 0 ? 'Active' : (redeemedCount > 0 ? 'Redeemed' : 'Expired'),
             statusBreakdown: { active: activeCount, redeemed: redeemedCount, expired: expiredCount },
             lastRedemptionDate: children[0]?.lastRedemptionDate,
@@ -299,6 +300,7 @@ export async function getBulkOrderDetails(params = {}) {
         user: order.user,
         totalAmount,
         remainingAmount,
+        currency: order.currency,
         status: activeCount > 0 ? 'Active' : (redeemedCount > 0 ? 'Redeemed' : 'Expired'),
         statusBreakdown: { 
           active: activeCount, 
@@ -360,6 +362,7 @@ function mapVoucherCode(vc) {
     voucherType: vc.voucher?.denominationType,
     totalAmount: vc.originalValue || 0,
     remainingAmount: vc.remainingValue || 0,
+    currency: vc.order?.currency,
     partialRedemption: vc.voucher?.partialRedemption,
     redemptionHistory: vc.redemptions.map(r => ({
       amountRedeemed: r.amountRedeemed || 0,

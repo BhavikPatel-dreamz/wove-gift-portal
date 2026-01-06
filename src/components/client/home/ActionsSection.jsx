@@ -6,9 +6,12 @@ import WishListIcon from '@/icons/WishListIcon';
 import GiftCardIcon from '@/icons/GiftCardIcon';
 import BoxIcon from '@/icons/BoxIcon';
 import RightArrow from '@/icons/RightArrow';
+import { useDispatch } from 'react-redux';
+import { setCurrentStep, resetFlow } from '@/redux/giftFlowSlice';
 
 const ActionSelectionCards = (props) => {
   const router = useRouter();
+  const dispatch = useDispatch();
   const { 
     title = "Choose Your Action",
     subtitle = "Browse brands, send individual gift cards, or purchase in bulk"
@@ -24,6 +27,7 @@ const ActionSelectionCards = (props) => {
       borderColor: "gradient-border-orange",
       iconBg: "bg-[#fdf6f0]",
       path: "/gift?mode=single"
+      
     },
     {
       icon: <GiftCardIcon/>,
@@ -49,6 +53,10 @@ const ActionSelectionCards = (props) => {
   
 
   const handleCardClick = (card) => {
+    if (card.path.startsWith('/gift')) {
+      dispatch(resetFlow());
+      dispatch(setCurrentStep(1));
+    }
     router.push(card.path);
   };
 

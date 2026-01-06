@@ -87,6 +87,9 @@ export default function VouchersManagement() {
         }
     };
 
+    console.log("vouchers",vouchers);
+    
+
     const fetchBulkOrderDetails = async (bulkOrderNumber, orderNumber) => {
         setBulkLoading(true);
         try {

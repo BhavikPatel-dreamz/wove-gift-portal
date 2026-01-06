@@ -32,7 +32,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
   const [totalCards, setTotalCards] = useState(0);
   const dropdownRef = useRef(null);
 
-   // Pagination info
+  // Pagination info
   const hasPrevPage = currentPage > 1;
   const hasNextPage = currentPage < totalPages;
   const startIndex = (currentPage - 1) * itemsPerPage + 1;
@@ -297,33 +297,33 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
     setCardToEdit(null);
   }, []);
 
-    const getPageNumbers = useMemo(() => {
-      const pages = [];
-      
-      if (totalPages <= 7) {
-        for (let i = 1; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        if (currentPage <= 4) {
-          for (let i = 1; i <= 5; i++) pages.push(i);
-          pages.push('...');
-          pages.push(totalPages);
-        } else if (currentPage >= totalPages - 3) {
-          pages.push(1);
-          pages.push('...');
-          for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
-        } else {
-          pages.push(1);
-          pages.push('...');
-          for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
-          pages.push('...');
-          pages.push(totalPages);
-        }
+  const getPageNumbers = useMemo(() => {
+    const pages = [];
+
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
       }
-      
-      return pages;
-    }, [currentPage, totalPages]);
+    } else {
+      if (currentPage <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
+  }, [currentPage, totalPages]);
 
   const handleClearFilters = useCallback(() => {
     setLocalSearchTerm("");
@@ -355,8 +355,8 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-3 sm:px-4">
+      <div className="max-w-7xl mx-auto">
         {/* Enhanced Header */}
         <div className="bg-white rounded-lg border border-[#E2E8F0] p-4 mb-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -379,8 +379,8 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h1 className="text-[22px] font-semibold text-[#1A1A1A] truncate">{occasion.name}</h1>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#1A1A1A] truncate max-w-[220px] sm:max-w-none">{occasion.name}</h1>
                     <Badge
                       variant={occasion.active ? 'success' : 'default'}
                       className={occasion.active ? 'bg-green-50 text-green-700 border-green-200 text-xs px-2 py-1' : 'bg-gray-50 text-gray-600 border-gray-200 text-xs px-2 py-1'}
@@ -457,7 +457,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
               </div>
 
               {/* Results count */}
-              <div className="text-sm text-[#A6A6A6]">
+              <div className="text-xs sm:text-sm text-[#A6A6A6] self-start lg:self-auto">
                 Showing <span className="text-[#4A4A4A] font-medium">{cards.length}</span> of <span className="text-[#4A4A4A] font-medium">{totalCards}</span> cards
               </div>
             </div>
@@ -466,36 +466,54 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
 
         {/* Card Designs Section */}
         <div className="bg-[#FAFBFC] rounded-t-[10px] border border-[#E5E7EB] overflow-hidden">
-          <div className="px-4 py-3 border-b flex justify-between items-center border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+          <div className="
+  px-4 py-4 border-b border-gray-200
+  bg-gradient-to-r from-gray-50 to-white
+  flex flex-col gap-3
+  sm:flex-row sm:items-center sm:justify-between
+">
+            {/* Title */}
             <div>
-              <h2 className="text-xl font-semibold text-[#1A1A1A]">Card Designs</h2>
-              <p className="text-[#64748B] text-sm font-medium">Manage your card design collection</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-[#1A1A1A]">
+                Card Designs
+              </h2>
+              <p className="text-[#64748B] text-xs sm:text-sm font-medium">
+                Manage your card design collection
+              </p>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-1.5">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-sm text-gray-600">
+
+            {/* Stats */}
+            <div className="
+    flex flex-wrap gap-x-4 gap-y-2
+    sm:flex-nowrap sm:items-center
+  ">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-green-400 rounded-full" />
+                <span className="text-xs sm:text-sm text-gray-600">
                   <span className="font-semibold text-gray-900">{activeCards}</span> Active
                 </span>
               </div>
-              <div className="flex items-center space-x-1.5">
-                <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                <span className="text-sm text-gray-600">
+
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-gray-300 rounded-full" />
+                <span className="text-xs sm:text-sm text-gray-600">
                   <span className="font-semibold text-gray-900">{inactiveCards}</span> Inactive
                 </span>
               </div>
-              <div className="flex items-center space-x-1.5">
-                <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
-                <span className="text-sm text-gray-600">
+
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-indigo-400 rounded-full" />
+                <span className="text-xs sm:text-sm text-gray-600">
                   <span className="font-semibold text-gray-900">{totalCards}</span> Total
                 </span>
               </div>
             </div>
           </div>
 
+
           {/* Occasions Header with Pagination Info */}
-          <div className="flex justify-between items-center m-4">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 m-4">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-xl font-semibold text-[#1A1A1A]">Occasions List</h2>
               <span className="bg-[rgba(15,100,246,0.10)] text-[#0F64F6] px-2 py-1 rounded-[3px] border border-[rgba(15,100,246,0.20)] text-sm font-medium">
                 {totalCards} occasions
@@ -722,8 +740,8 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
                             onClick={() => handlePageChange(pageNum)}
                             disabled={loading}
                             className={`px-3 py-1 rounded-lg transition-colors ${pageNum === currentPage
-                                ? 'bg-blue-600 text-white'
-                                : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                              ? 'bg-blue-600 text-white'
+                              : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
                               } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
                             {pageNum}
