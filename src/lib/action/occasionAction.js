@@ -318,17 +318,23 @@ export async function deleteOccasion(id) {
         await deleteImageFile(occasionData.image);
 
         // Delete occasion and related records in transaction
-        await prisma.$transaction(async (tx) => {
-            // Delete related occasion categories
-            await tx.occasionCategory.deleteMany({
-                where: { occasionId: validId }
-            });
+       await prisma.$transaction(async (tx) => {
+    // 1. Delete orders referencing this occasion
+    await tx.order.deleteMany({
+        where: { occasionId: validId }
+    });
 
-            // Delete the occasion
-            await tx.occasion.delete({
-                where: { id: validId }
-            });
-        });
+    // 2. Delete occasion categories
+    await tx.occasionCategory.deleteMany({
+        where: { occasionId: validId }
+    });
+
+    // 3. Delete the occasion
+    await tx.occasion.delete({
+        where: { id: validId }
+    });
+});
+
 
         return createStandardResponse(
             true,
