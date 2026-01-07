@@ -1,4 +1,5 @@
 import React from "react";
+import { currencyList } from "../../../brandsPartner/currency";
 
 const PaymentSummary = ({ 
   selectedAmount, 
@@ -9,9 +10,13 @@ const PaymentSummary = ({
   quantity
 }) => {
   // Helper function to get currency symbol
+
+   const getCurrencySymbol = (code) =>
+      currencyList.find((c) => c.code === code)?.symbol || "";
+
   const getCurrency = () => {
     if (typeof selectedAmount === 'object' && selectedAmount?.currency) {
-      return selectedAmount.currency;
+      return getCurrencySymbol(selectedAmount.currency);
     }
     return 'R';
   };
