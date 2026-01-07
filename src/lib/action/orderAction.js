@@ -230,8 +230,12 @@ export const createPendingOrder = async (orderData) => {
       orderNumber: generateOrderNumber(),
       brandId: orderData.selectedBrand.id,
       occasionId: orderData.selectedOccasion,
-      subCategoryId: orderData.selectedSubCategory?.isCustom ? null : orderData.selectedSubCategory?.id,
-      customCardId: orderData.selectedSubCategory?.isCustom ? orderData.selectedSubCategory?.id : null,
+      subCategoryId: orderData.selectedSubCategory?.isCustom
+        ? null
+        : orderData.selectedSubCategory?.id,
+      customCardId: orderData.selectedSubCategory?.isCustom
+        ? orderData.selectedSubCategory?.id
+        : null,
       userId: String(userId),
       receiverDetailId: receiver.id,
       amount,
@@ -253,7 +257,9 @@ export const createPendingOrder = async (orderData) => {
       order = await prisma.order.create({
         data: {
           ...orderBase,
-          bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+          bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(
+            Math.random() * 10000
+          )}`,
           deliveryMethod: "email",
           message: orderData.personalMessage || "",
           senderName: orderData.companyInfo.companyName,
@@ -263,9 +269,11 @@ export const createPendingOrder = async (orderData) => {
         },
       });
     } else {
-      const scheduledFor = orderData.selectedTiming?.type === "scheduled" && orderData.selectedTiming?.dateTime
-        ? new Date(orderData.selectedTiming.dateTime)
-        : null;
+      const scheduledFor =
+        orderData.selectedTiming?.type === "scheduled" &&
+        orderData.selectedTiming?.dateTime
+          ? new Date(orderData.selectedTiming.dateTime)
+          : null;
 
       order = await prisma.order.create({
         data: {
@@ -273,7 +281,10 @@ export const createPendingOrder = async (orderData) => {
           deliveryMethod: orderData.deliveryMethod || "whatsapp",
           message: orderData.personalMessage || "",
           senderName: orderData.deliveryDetails?.yourFullName || null,
-          sendType: orderData.selectedTiming?.type === "immediate" ? "sendImmediately" : "scheduleLater",
+          sendType:
+            orderData.selectedTiming?.type === "immediate"
+              ? "sendImmediately"
+              : "scheduleLater",
           scheduledFor,
           senderEmail: orderData.deliveryDetails?.yourEmailAddress || null,
         },
@@ -297,7 +308,9 @@ export const createPendingOrder = async (orderData) => {
 
     // ✅ CRITICAL: Billing address is REQUIRED for Indian exports
     if (!orderData.billingAddress) {
-      throw new ValidationError("Billing address is required for payment processing");
+      throw new ValidationError(
+        "Billing address is required for payment processing"
+      );
     }
 
     const customerAddress = {
@@ -322,7 +335,10 @@ export const createPendingOrder = async (orderData) => {
     });
 
     // Generate export description for RBI compliance
-    const exportDescription = generateExportDescription(orderData, order.orderNumber);
+    const exportDescription = generateExportDescription(
+      orderData,
+      order.orderNumber
+    );
 
     // Create PaymentIntent with all required fields
     const paymentIntent = await stripe.paymentIntents.create({
@@ -330,7 +346,7 @@ export const createPendingOrder = async (orderData) => {
       currency: (orderData.selectedAmount.currency || "USD").toLowerCase(),
       customer: customer.id, // ✅ REQUIRED
       description: exportDescription, // ✅ REQUIRED for RBI compliance
-      
+
       metadata: {
         orderId: order.id,
         orderNumber: order.orderNumber,
@@ -349,10 +365,13 @@ export const createPendingOrder = async (orderData) => {
       },
 
       // ✅ Shipping address (optional but recommended)
-      shipping: customerAddress.line1 !== "N/A" ? {
-        name: customerName,
-        address: customerAddress,
-      } : null,
+      shipping:
+        customerAddress.line1 !== "N/A"
+          ? {
+              name: customerName,
+              address: customerAddress,
+            }
+          : null,
     });
 
     // Update order with payment details
@@ -381,7 +400,10 @@ export const createPendingOrder = async (orderData) => {
   } catch (error) {
     console.error("❌ Pending order creation failed:", error);
 
-    if (error instanceof ValidationError || error instanceof AuthenticationError) {
+    if (
+      error instanceof ValidationError ||
+      error instanceof AuthenticationError
+    ) {
       return {
         success: false,
         error: error.message,
@@ -418,8 +440,19 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
           },
         },
         receiverDetail: true,
+
+        // 👇 Occasion full details
+        occasion: {
+          include: {
+            occasionCategories: true, // if you want all sub-categories too
+          },
+        },
+
+        // 👇 Selected sub-category full details
+        occasionCategory: true,
       },
     });
+
 
     if (!order) {
       throw new Error("Order not found");
@@ -452,6 +485,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
     // Reconstruct orderData for processing
     const orderData = {
       selectedBrand,
+      selectedSubCategory: order.occasionCategory,
       selectedAmount: {
         value: order.amount,
         currency: order.currency,
@@ -1951,7 +1985,6 @@ export async function getOrderById(orderId) {
     };
   }
 }
-
 
 export async function getOrderStatus(orderId) {
   if (!orderId) {
