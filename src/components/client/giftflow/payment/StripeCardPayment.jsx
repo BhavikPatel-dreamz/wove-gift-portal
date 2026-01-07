@@ -6,6 +6,7 @@ const StripeCardPayment = ({ clientSecret, isProcessing, onPaymentSuccess }) => 
   const stripe = useStripe();
   const elements = useElements();
   const [cardError, setCardError] = useState(null);
+  const [localProcessing, setLocalProcessing] = useState(false);
 
   const handleCardPayment = async () => {
     if (!stripe || !elements) {
@@ -13,6 +14,8 @@ const StripeCardPayment = ({ clientSecret, isProcessing, onPaymentSuccess }) => 
     }
 
     setCardError(null);
+    setLocalProcessing(true);
+    const toastId = toast.loading('Processing payment...');
 
     try {
       // Confirm payment using Stripe's confirmPayment
@@ -27,20 +30,25 @@ const StripeCardPayment = ({ clientSecret, isProcessing, onPaymentSuccess }) => 
       if (error) {
         // Payment failed
         setCardError(error.message);
-        toast.error(error.message);
+        toast.error(error.message, { id: toastId });
+        setLocalProcessing(false);
         return;
       }
 
       if (paymentIntent && paymentIntent.status === 'succeeded') {
         // Payment succeeded - notify parent
-        // Webhook will update DB, we just poll for status
+        toast.success('Payment successful!', { id: toastId });
         onPaymentSuccess(paymentIntent);
+        // Don't set localProcessing to false here - parent will handle the flow
       }
     } catch (err) {
       setCardError("Payment failed. Please try again.");
-      toast.error("Payment failed. Please try again.");
+      toast.error("Payment failed. Please try again.", { id: toastId });
+      setLocalProcessing(false);
     }
   };
+
+  const isButtonDisabled = !stripe || isProcessing || localProcessing;
 
   return (
     <div className="space-y-4">
@@ -62,17 +70,20 @@ const StripeCardPayment = ({ clientSecret, isProcessing, onPaymentSuccess }) => 
       </label>
 
       {cardError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          {cardError}
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
+          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <span>{cardError}</span>
         </div>
       )}
 
       <button
         onClick={handleCardPayment}
-        disabled={!stripe || isProcessing}
+        disabled={isButtonDisabled}
         className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white py-4 px-6 rounded-xl font-semibold text-base transition-all duration-200 flex items-center justify-center gap-2 disabled:cursor-not-allowed shadow-lg"
       >
-        {isProcessing ? (
+        {(isProcessing || localProcessing) ? (
           <>
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
             <span>Processing...</span>
