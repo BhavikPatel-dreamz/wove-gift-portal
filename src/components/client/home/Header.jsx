@@ -316,10 +316,25 @@ const Header = () => {
                   </>
                 ) : (
                   <Link href="/login">
-                    <button className="btn-secondary text-xs lg:text-sm px-3 lg:px-4 py-2">
-                      <User size={16} className="lg:w-[18px] lg:h-[18px]" />
-                      <span className="hidden lg:inline">Login / Register</span>
-                      <span className="lg:hidden">Login</span>
+                    <button
+                      className="
+    inline-flex items-center gap-2
+    cursor-pointer
+    bg-[#ED457D] text-white
+    text-xs lg:text-sm font-bold
+    px-3 lg:px-4 py-2
+    rounded-full
+    border-none
+    transition-all duration-300 ease-in-out
+    hover:bg-[#D93B6E]
+    hover:-translate-y-0.5
+    hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
+    active:translate-y-0
+    active:scale-[0.96]
+    active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
+  ">
+                      <User size={18} className="sm:w-5 sm:h-5" />
+                      <span className="hidden lg:inline">Login</span>
                     </button>
                   </Link>
                 )}

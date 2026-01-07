@@ -17,6 +17,7 @@ import SuccessScreen from "../giftflow/payment/SuccessScreen";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
 import BillingAddressForm from "../giftflow/payment/BillingAddressForm";
 import { ShoppingCart } from 'lucide-react';
+import { currencyList } from '../../brandsPartner/currency';
 
 if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
@@ -56,10 +57,14 @@ const CheckoutPage = () => {
     setCartItems(items);
   }, []);
 
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "";
+
+
   // Helper functions
   const formatAmount = (amount) => {
     if (typeof amount === 'object' && amount?.value && amount?.currency) {
-      return `${amount.currency}${amount.value}`;
+      return `${getCurrencySymbol(amount.currency)}${amount.value}`;
     }
     if (typeof amount === 'number') {
       return `R${amount}`;
