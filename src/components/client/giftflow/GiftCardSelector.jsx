@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { goBack, goNext, setSelectedAmount } from "../../../redux/giftFlowSlice";
 import { useSearchParams } from "next/navigation";
+import { currencyList } from "../../../components/brandsPartner/currency";
 
 const GiftCardSelector = () => {
   const dispatch = useDispatch();
@@ -27,6 +28,9 @@ const GiftCardSelector = () => {
     selectedAmount || null
   );
 
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "R";
+
   const handleAmountClick = (amount) => {
     setLocalSelectedAmount(amount);
     dispatch(setSelectedAmount(amount));
@@ -37,7 +41,11 @@ const GiftCardSelector = () => {
 
   const handleCustomAmountSelect = () => {
     if (customAmount < minAmount || customAmount > maxAmount) {
-      alert(`Amount must be between ${currency} ${minAmount} and ${currency} ${maxAmount}`);
+      alert(
+        `Amount must be between ${getCurrencySymbol(
+          currency
+        )} ${minAmount} and ${getCurrencySymbol(currency)} ${maxAmount}`
+      );
       return;
     }
 
@@ -224,7 +232,7 @@ const GiftCardSelector = () => {
                 {/* Amount */}
                 <div className="text-center">
                   <div className="text-lg font-semibold text-gray-800">
-                    {amount.currency}{amount.value}
+                    {getCurrencySymbol(amount.currency)}{amount.value}
                   </div>
                 </div>
               </button>
@@ -254,13 +262,13 @@ const GiftCardSelector = () => {
                   {/* Input */}
                   <div className="relative w-full sm:w-72">
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-base font-medium">
-                      {currency}
+                      {getCurrencySymbol(currency)}
                     </div>
                     <input
                       type="text"
                       value={customAmount}
                       onChange={(e) => setCustomAmount(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 border border-[#1A1A1A33] rounded-3xl text-base font-medium transition-all bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                      className="w-full pl-8 pr-4 py-3 border border-[#1A1A1A33] rounded-3xl text-base font-medium transition-all bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400"
                       placeholder="Enter Your Amount"
                     />
                   </div>

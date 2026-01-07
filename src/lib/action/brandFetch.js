@@ -127,17 +127,3 @@ export const getBrands = async () => {
     throw new Error("Could not fetch brands.");
   }
 };
-
-export const getOccasions = async () => {
-  try {
-    const occasions = await prisma.occasion.findMany({
-      where: {
-        isActive: true,
-      }
-    });
-    return occasions;
-  } catch (error) {
-    console.error("Error fetching occasions:", error);
-    throw new Error("Could not fetch occasions.");
-  }
-};

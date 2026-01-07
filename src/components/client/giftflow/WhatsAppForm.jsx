@@ -45,14 +45,14 @@ const WhatsAppForm = ({
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 sm:px-8 pb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 sm:px-8 pb-6">
         {/* Left Side - Form */}
         <div className="space-y-6">
           {/* Your Details Section */}
           <div className="rounded-2xl border border-gray-200">
-            <div className="bg-green-50 flex items-start mb-4 border-b border-[#39AE41] p-4">
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mr-3 shrink-0">
-                <div className="absolute inset-0 bg-[#39AE41] opacity-20 rounded-xl"></div>
+            <div className="bg-green-50 flex items-start mb-4 border-b border-[#39AE41] p-4 rounded-t-2xl">
+              <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mr-3 shrink-0">
+                <div className="absolute inset-0 bg-[#39AE41] opacity-20 rounded-2xl"></div>
                 <svg
                   width="28"
                   height="28"
@@ -124,9 +124,9 @@ const WhatsAppForm = ({
 
           {/* Recipient Details Section */}
           <div className="rounded-2xl border border-gray-200">
-            <div className="bg-green-50 flex items-start mb-4 border-b border-[#39AE41] p-4">
-              <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mr-3 shrink-0">
-                <div className="absolute inset-0 bg-[#39AE41] opacity-20 rounded-xl"></div>
+            <div className="bg-green-50 flex items-start mb-4 border-b border-[#39AE41] p-4 rounded-t-2xl">
+              <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mr-3 shrink-0">
+                <div className="absolute inset-0 bg-[#39AE41] opacity-20 rounded-2xl"></div>
                 <svg
                   width="28"
                   height="28"

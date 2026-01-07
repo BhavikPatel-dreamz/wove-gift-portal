@@ -1,4 +1,5 @@
 import React from "react";
+import { currencyList } from "../../../brandsPartner/currency";
 
 const BulkPaymentSummary = ({ 
   currentBulkOrder, 
@@ -7,6 +8,10 @@ const BulkPaymentSummary = ({
   calculateServiceFee, 
   calculateTotal 
 }) => {
+
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "R";
+  
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
       <h2 className="text-lg font-bold text-gray-900 mb-6">Payment Summary</h2>
@@ -25,15 +30,15 @@ const BulkPaymentSummary = ({
           </div>
         </div>
         <span className="font-semibold text-gray-900">
-          {selectedAmount?.currency}{calculateTotal()}
+          {getCurrencySymbol(selectedAmount?.currency)}{calculateTotal()}
         </span>
       </div>
 
       {/* Breakdown Section */}
       <div className="space-y-3 text-gray-700">
         <div className="flex justify-between items-center">
-          <span>Vouchers ({quantity} × {selectedAmount?.currency}{selectedAmount?.value})</span>
-          <span className="font-semibold">{selectedAmount?.currency}{quantity * selectedAmount?.value}</span>
+          <span>Vouchers ({quantity} × {getCurrencySymbol(selectedAmount?.currency)}{selectedAmount?.value})</span>
+          <span className="font-semibold">{getCurrencySymbol(selectedAmount?.currency)}{quantity * selectedAmount?.value}</span>
         </div>
 
         <div className="flex justify-between items-center">
@@ -41,7 +46,7 @@ const BulkPaymentSummary = ({
           {calculateServiceFee() === 0 ? (
             <span className="font-semibold text-green-600">Free</span>
           ) : (
-            <span className="font-semibold">{selectedAmount?.currency}{calculateServiceFee()}</span>
+            <span className="font-semibold">{getCurrencySymbol(selectedAmount?.currency)}{calculateServiceFee()}</span>
           )}
         </div>
       </div>
@@ -51,7 +56,7 @@ const BulkPaymentSummary = ({
         <div className="flex justify-between items-center">
           <span className="text-lg font-bold text-gray-900">Total:</span>
           <span className="text-2xl font-bold text-[#F25A5A]">
-            {selectedAmount?.currency}{calculateTotal()}
+            {getCurrencySymbol(selectedAmount?.currency)}{calculateTotal()}
           </span>
         </div>
       </div>

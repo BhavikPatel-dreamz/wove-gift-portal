@@ -7,6 +7,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import convertToSubcurrency from '../../../lib/convertToSubcurrency';
 import GiftSmallIcon from '../../../icons/GiftSmallIcon';
 import Header from '../../../components/client/home/Header';
+import { currencyList } from '../../brandsPartner/currency';
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || 'pk_test_placeholder');
@@ -250,6 +251,9 @@ const CheckoutPage = () => {
   const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
   const printRef = useRef();
 
+  const getCurrencySymbol = (code) =>
+      currencyList.find((c) => c.code === code)?.symbol || "R";
+
   useEffect(() => {
     const items = JSON.parse(localStorage.getItem('cart')) || [];
     if (items.length === 0) {
@@ -261,7 +265,7 @@ const CheckoutPage = () => {
 
   const formatAmount = (amount) => {
     if (typeof amount === 'object' && amount?.value && amount?.currency) {
-      return `${amount.currency} ${amount.value}`;
+      return `${getCurrencySymbol(amount.currency)} ${amount.value}`;
     }
     return `R${amount || 0}`;
   };

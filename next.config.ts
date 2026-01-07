@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '20mb', // default is 1mb, increase as needed
     },
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+    ],
+  },
   async headers() {
     return [
       {
@@ -23,4 +31,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
