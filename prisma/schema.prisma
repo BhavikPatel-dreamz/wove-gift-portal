@@ -274,7 +274,6 @@ model OccasionCategory {
   updatedAt    DateTime @updatedAt
   occasionId   String
   occasion     Occasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
-  orders       Order[]
 }
 
 model CustomCard {
@@ -307,6 +306,7 @@ model Order {
   occasionId       String
   subCategoryId    String?
   customCardId     String?
+  isCustom         Boolean?
   userId           String
   bulkOrderNumber  String?
   receiverDetailId String
@@ -337,7 +337,6 @@ model Order {
   brand            Brand                @relation(fields: [brandId], references: [id])
   occasion         Occasion             @relation(fields: [occasionId], references: [id])
   receiverDetail   ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
-  occasionCategory OccasionCategory?    @relation(fields: [subCategoryId], references: [id])
   user             User                 @relation(fields: [userId], references: [id])
   voucherCodes     VoucherCode[]
 
