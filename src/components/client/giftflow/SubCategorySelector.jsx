@@ -113,12 +113,12 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
 };
 
 // Fixed: Advanced Card Creator with proper dragging
-const AdvancedCardCreator = ({ onSave, onCancel }) => {
+const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName='Birthday' }) => {
   const [layers, setLayers] = useState([
     createLayer('background', 'bg', {
       bgColor: '#FFFFFF',
       bgImage: null,
-      locked: true,
+      locked: false,
       name: 'Background'
     }),
     createLayer('emoji', 'emoji', {
@@ -129,7 +129,7 @@ const AdvancedCardCreator = ({ onSave, onCancel }) => {
       y: 30,
     }),
     createLayer('text', 'title', {
-      content: 'Happy Birthday!',
+      content: `Happy ${selectedOccasionName}!`,
       fontSize: 36,
       fontWeight: 'bold',
       color: '#1F2937',
@@ -1199,7 +1199,7 @@ export default function SubCategorySelector() {
     if (!selectedOccasion) return;
     try {
       dispatch(setLoading(true));
-      const response = await getOccasionCategories({ occasionId: selectedOccasion, limit: 8, page });
+      const response = await getOccasionCategories({ occasionId: selectedOccasion, limit: 11, page });
 
       if (response.success) {
         dispatch(setSubCategories({
@@ -1430,7 +1430,7 @@ export default function SubCategorySelector() {
         )}
       </div>
 
-      {isCustomizing && <AdvancedCardCreator onSave={handleCustomCardSave} onCancel={() => setIsCustomizing(false)} />}
+      {isCustomizing && <AdvancedCardCreator onSave={handleCustomCardSave} onCancel={() => setIsCustomizing(false)} selectedOccasionName={selectedOccasionName} />}
     </div>
   );
 }

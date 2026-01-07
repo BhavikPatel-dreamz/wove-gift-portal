@@ -20,7 +20,7 @@ const CartPage = () => {
   const session = useSession();
   const router = useRouter();
   const dispatch = useDispatch();
-  
+
   // Add state to track if component has mounted
   const [isMounted, setIsMounted] = useState(false);
 
@@ -225,17 +225,29 @@ const CartPage = () => {
                 <div className="space-y-3 text-lg">
                   <div className="flex justify-between font-['Poppins'] font-medium text-[16px] leading-[20px] tracking-[0.25px] text-[#4A4A4A]">
                     <span>Subtotal</span>
-                    <span>R{calculateTotal()}</span>
+                    <span>
+                      {cartItems?.length > 0
+                        ? `${getCurrencySymbol(cartItems[0]?.selectedAmount?.currency)} ${calculateTotal()}`
+                        : '—'}
+                    </span>
+
                   </div>
                   <div className="flex justify-between font-['Poppins'] font-medium text-[16px] leading-[20px] tracking-[0.25px] text-[#4A4A4A]">
                     <span>Service Fee (3%)</span>
-                    <span className="font-semibold">R {calculateServiceFee()}</span>
+                    <span className="font-semibold">
+                      {cartItems?.length > 0
+                        ? `${getCurrencySymbol(cartItems[0]?.selectedAmount?.currency)} ${calculateServiceFee()}`
+                        : '—'}</span>
                   </div>
                 </div>
                 <div className="h-px my-5 w-full bg-[rgba(26,26,26,0.10)]"></div>
                 <div className="flex justify-between font-['Poppins'] font-semibold text-[18px] leading-[20px] tracking-[0.25px] text-[#1A1A1A]">
                   <span>Subtotal</span>
-                  <span>R{calculateTotal()}</span>
+                  <span>
+                    {cartItems?.length > 0
+                      ? `${getCurrencySymbol(cartItems[0]?.selectedAmount?.currency)} ${calculateTotal()}`
+                      : '—'}
+                      </span>
                 </div>
                 <Button onClick={handleProceedToPayment} className="w-full mt-8 text-lg py-3">
                   {session ? 'Proceed to Payment' : 'Login to Continue'}

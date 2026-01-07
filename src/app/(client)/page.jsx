@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { Suspense } from 'react';
 import Header from '../../components/client/home/Header';
 import HeroSection from '../../components/client/home/HeroSection';
 import ProcessSection from '../../components/client/home/ProcessSection';
@@ -10,18 +9,24 @@ import ActionsSection from '../../components/client/home/ActionsSection';
 import Features from '../../components/client/home/Features';
 import Footer from '../../components/client/home/Footer';
 import BulkGiftingBanner from "../../components/client/home/BulkGiftingBanner"
-import { getBrands, getOccasions } from '../../lib/action/brandFetch';
+import { getBrands } from '../../lib/action/brandFetch';
+import { getOccasions } from '@/lib/action/occasionAction';
 
+// Create async component for occasions
+async function OccasionsContent() {
+  const occasions = await getOccasions({ isActive: true, limit: 8, page: 1,sortOrder:"desc" });
+  
+  return (
+    <OccasionsSection 
+      title="Celebrate Every Day"
+      subtitle="Because any day is a good day to make someone smile."
+      occasions={occasions?.data}
+    />
+  );
+}
 
 export default async function Home() {
   const brands = await getBrands();
-  const occasions = await getOccasions();
-
-  const occasionsData = {
-    title: "Celebrate Every Day",
-    subtitle: "Because any day is a good day to make someone smile.",
-    occasions: occasions
-  };
 
   const brandsData = {
     title: "Featured Brands You'll Love",
@@ -29,14 +34,18 @@ export default async function Home() {
     brands: brands
   };
   
-
   return (
     <div className="min-h-screen">
       <Header/>
       <HeroSection/>
       <Features/>
       <ProcessSection />
-      <OccasionsSection {...occasionsData} />
+      
+      {/* Wrap OccasionsSection with Suspense and skeleton fallback */}
+      <Suspense fallback={<OccasionsSection isLoading={true} />}>
+        <OccasionsContent />
+      </Suspense>
+      
       <BrandsSection {...brandsData} />
       <TestimonialsSection />
       <BulkGiftingBanner/>

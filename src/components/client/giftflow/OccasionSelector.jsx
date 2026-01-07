@@ -20,10 +20,11 @@ export default function OccasionSelector() {
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
+
   const fetchOccasions = async (page) => {
     try {
       dispatch(setLoading(true));
-      const response = await getOccasions({ isActive: true, limit: 8, page });
+      const response = await getOccasions({ isActive: true, limit: 8, page,sortOrder:"desc" });
       if (response.success) {
         dispatch(setOccasions({
           data: response.data,
