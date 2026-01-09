@@ -1,3 +1,4 @@
+"use client"
 import React from 'react';
 import { Gift, Sparkles, Shield, Globe } from 'lucide-react';
 import Link from 'next/link';
@@ -7,8 +8,18 @@ import DashboardEmojiIcon from '@/icons/DashboardEmojiIcon';
 import DashboardPartyPopper from '@/icons/DashboardPartyPopper';
 import DashboardGiftIcon from '@/icons/DashboardGiftIcon';
 import DashboardConfettiBall from '@/icons/DashboardConfettiBall';
+import { useDispatch } from 'react-redux';
+import { resetFlow, setCurrentStep } from '@/redux/giftFlowSlice';
 
 const HeroSection = () => {
+    const dispatch = useDispatch();
+  
+ const handleClick = () => {
+    dispatch(resetFlow());
+    dispatch(setCurrentStep(1));
+  };
+
+
   return (
     <section className="hero-section">
 
@@ -51,7 +62,7 @@ const HeroSection = () => {
 
         {/* CTA Button */}
         <Link href="/gift">
-          <button className="hero-cta font-inter">
+          <button className="hero-cta font-inter" onClick={handleClick}>
             Send Gift
           </button>
         </Link>

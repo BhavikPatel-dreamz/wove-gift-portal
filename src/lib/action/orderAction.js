@@ -230,10 +230,11 @@ export const createPendingOrder = async (orderData) => {
       orderNumber: generateOrderNumber(),
       brandId: orderData.selectedBrand.id,
       occasionId: orderData.selectedOccasion,
-      subCategoryId: orderData.selectedSubCategory?.isCustom
+      isCustom: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" ? true : false,
+      subCategoryId: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" 
         ? null
         : orderData.selectedSubCategory?.id,
-      customCardId: orderData.selectedSubCategory?.isCustom
+      customCardId: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" 
         ? orderData.selectedSubCategory?.id
         : null,
       userId: String(userId),
@@ -447,9 +448,6 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
             occasionCategories: true, // if you want all sub-categories too
           },
         },
-
-        // 👇 Selected sub-category full details
-        occasionCategory: true,
       },
     });
 
@@ -482,10 +480,23 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
       },
     });
 
+    console.log("order details ==============>", order);
+    let occasionCategoryDetails = null;
+    if(!order?.isCustom){
+      occasionCategoryDetails = await prisma.occasionCategory.findUnique({
+        where: { id: order.subCategoryId },
+      });
+    } else {
+       occasionCategoryDetails = await prisma.customCard.findUnique({
+        where: { id: order.customCardId },
+      });
+    }
+
+     console.log("occasionCategoryDetails ==============>", occasionCategoryDetails);
     // Reconstruct orderData for processing
     const orderData = {
       selectedBrand,
-      selectedSubCategory: order.occasionCategory,
+      selectedSubCategory: occasionCategoryDetails,
       selectedAmount: {
         value: order.amount,
         currency: order.currency,
@@ -636,10 +647,11 @@ async function createOrderRecord(
       orderNumber: generateOrderNumber(),
       brandId: selectedBrand.id,
       occasionId: orderData.selectedOccasion,
-      subCategoryId: orderData.selectedSubCategory?.isCustom
+      isCustom: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" ? true : false,
+      subCategoryId: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM"
         ? null
         : orderData.selectedSubCategory?.id,
-      customCardId: orderData.selectedSubCategory?.isCustom
+      customCardId: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" 
         ? orderData.selectedSubCategory?.id
         : null,
       userId: String(orderData.userId),
@@ -1946,7 +1958,6 @@ export async function getOrderById(orderId) {
         user: {
           select: { id: true, email: true, firstName: true, lastName: true },
         },
-        occasionCategory: true,
         customCard: true,
         voucherCodes: {
           include: {

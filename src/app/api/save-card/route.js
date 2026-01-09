@@ -1,44 +1,49 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
+import { NextResponse } from "next/server";
 
-export default async function handler(req, res) {
+export async function POST(req) {
   try {
-    // Check if file exists in request
-    if (!req.body || !req.body.file) {
-      return res.status(400).json({ error: 'No file provided' });
+    const body = await req.json();
+
+    if (!body || !body.file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Generate a unique filename if none provided
-    const fileName = req.body.file.name || `card-${Date.now()}.png`;
-    const filePath = path.join(process.cwd(), 'public', 'cards', fileName);
-    
-    // Ensure cards directory exists
-    if (!fs.existsSync(path.join(process.cwd(), 'public', 'cards'))) {
-      fs.mkdirSync(path.join(process.cwd(), 'public', 'cards'));
+    const fileName = `card-${Date.now()}.png`;
+    const cardsDir = path.join(process.cwd(), "public", "cards");
+    const filePath = path.join(cardsDir, fileName);
+
+    if (!fs.existsSync(cardsDir)) {
+      fs.mkdirSync(cardsDir, { recursive: true });
     }
-    
-    // Convert base64 to buffer if needed
-    let fileData;
-    if (typeof req.body.file === 'string') {
-      // Handle base64 string
-      fileData = Buffer.from(req.body.file.split(',')[1], 'base64');
-    } else {
-      // Handle file object
-      fileData = Buffer.from(await req.body.file.arrayBuffer());
+
+    const base64Data = body.file.split(",")[1];
+    if (!base64Data) {
+      return NextResponse.json(
+        { error: "Invalid base64 data" },
+        { status: 400 }
+      );
     }
-    
-    // Save file
+    const fileData = Buffer.from(base64Data, "base64");
+
     fs.writeFileSync(filePath, fileData);
-    
-    res.status(200).json({ 
-      path: `/cards/${fileName}`,
-      success: true 
-    });
+
+    return NextResponse.json(
+      {
+        path: `/cards/${fileName}`,
+        success: true,
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Error saving card:', error);
-    res.status(500).json({ 
-      error: 'Failed to save card',
-      details: error.message 
-    });
+    console.error("Failed to save card:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to save card",
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
