@@ -1,54 +1,48 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import toast from "react-hot-toast";
-import OverviewTab from "../../../../../../../components/settlements/OverviewTab";
+import React from "react";
+import { notFound, redirect } from "next/navigation";
+import OverviewTab from "@/components/settlements/OverviewTab";
 import { getSettlementDetails } from "../../../../../../../lib/action/brandPartner";
 
-const SettlementDetailsPage = () => {
-    const params = useParams();
-    const settlementId = params.settlementId;
-    const [settlement, setSettlement] = useState(null);
-    const [loading, setLoading] = useState(true);
+// Server Component - Fetches data on the server
+const SettlementDetailsPage = async ({ params }) => {
+    // Await params to get the dynamic route parameter
+    const { settlementId } = await params;
 
-    useEffect(() => {
-        if (settlementId) {
-            fetchSettlementDetails();
+    // Fetch settlement details on the server
+    let settlement = null;
+    let error = null;
+
+    console.log("Settlement ID:", settlementId);
+
+    try {
+        const res = await getSettlementDetails(settlementId);
+  console.log("res data:", res);
+        if (res.success) {
+            settlement = res.data;
+        } else {
+            error = res.message;
         }
-    }, [settlementId]);
-
-    const fetchSettlementDetails = async () => {
-        setLoading(true);
-        try {
-            const res = await getSettlementDetails(settlementId);
-            if (res.success) {
-                setSettlement(res.data);
-            } else {
-                toast.error(res.message);
-            }
-        } catch (error) {
-            toast.error("Failed to fetch settlement details");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="bg-white rounded-lg p-6">
-                <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#197fe6]"></div>
-                </div>
-            </div>
-        );
+    } catch (err) {
+        console.error("Failed to fetch settlement details:", err);
+        error = "Failed to fetch settlement details";
     }
+
+    // Handle errors - redirect to settlements page
+    if (error || !settlement) {
+        redirect("/settlements");
+    }
+
+    // If settlement not found
+    if (!settlement) {
+        notFound();
+    }
+
+    console.log("Settlement data:", settlement);
 
     return (
         <>
             <OverviewTab settlement={settlement} />
         </>
-
     );
 };
 

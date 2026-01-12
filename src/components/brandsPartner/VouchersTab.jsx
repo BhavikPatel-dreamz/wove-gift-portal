@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { currencyList } from "./currency";
 
@@ -8,6 +8,23 @@ const VouchersTab = ({ formData, updateFormData }) => {
   const [displayName, setDisplayName] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [currencies] = useState(currencyList);
+  const [logoPreview, setLogoPreview] = useState(null);
+
+  useEffect(() => {
+    if (formData.logo) {
+      if (typeof formData.logo === 'string') {
+        setLogoPreview(formData.logo);
+      } else if (formData.logo instanceof File) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoPreview(reader.result);
+        };
+        reader.readAsDataURL(formData.logo);
+      }
+    } else {
+      setLogoPreview(null);
+    }
+  }, [formData.logo]);
 
   const addDenomination = () => {
     if (!denominationValue || isNaN(denominationValue)) {
@@ -314,9 +331,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 <div className="flex justify-end md:justify-end">
                   <button
                     onClick={addDenomination}
-                    className="w-full md:w-[140px] bg-[#175EFD] hover:bg-blue-700 text-white px-2 py-3 rounded-md text-sm font-medium transition-colors"
+                    className="w-full max-w-fit px-2 bg-[#175EFD] hover:bg-blue-700 text-white px-2 py-3 rounded-md text-sm font-medium transition-colors"
                   >
-                    + Add New Brand
+                    + Add New Voucher
                   </button>
                 </div>
               </div>

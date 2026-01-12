@@ -79,7 +79,7 @@ const BankingTab = ({ formData, updateFormData }) => {
             >
               <option value="EFT">EFT (Electronic Funds Transfer)</option>
               <option value="wire_transfer">Wire Transfer</option>
-              <option value="Manual">Manual Processing</option>
+              <option value="manual">Manual Processing</option>
               <option value="paypal">paypal</option>
               <option value="stripe">stripe</option>
             </select>

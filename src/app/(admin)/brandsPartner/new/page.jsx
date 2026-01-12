@@ -51,7 +51,7 @@ const AddBrandPartner = () => {
     contractEnd: '',
     goLiveDate: new Date().toISOString().split('T')[0],
     renewContract: false,
-    vatRate: 15,
+    vatRate: 0,
     internalNotes: '',
 
     // Vouchers - Fixed structure
