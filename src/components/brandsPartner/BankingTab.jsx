@@ -42,7 +42,6 @@ const BankingTab = ({ formData, updateFormData }) => {
               value={formData.settlementFrequency || 'monthly'}
               onChange={(e) => updateFormData('settlementFrequency', e.target.value)}
             >
-              <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
               <option value="quarterly">Quarterly</option>
             </select>

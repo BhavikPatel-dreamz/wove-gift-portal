@@ -2,7 +2,7 @@
 
 client_id = "c9f2dae08ce0d37db022b21b202c7e9d"
 name = "test-new-app"
-application_url = "https://643b4d09d0f8.ngrok-free.app/shopify/main"
+application_url = "https://dd-19.dynamicdreamz.com/shopify/main"
 embedded = true
 
 [build]
@@ -13,7 +13,7 @@ api_version = "2025-07"
 
   [[webhooks.subscriptions]]
   topics = [ "orders/create" ]
-  uri = "https://643b4d09d0f8.ngrok-free.app/api/webhooks/giftcard-redeem"
+  uri = "https://dd-19.dynamicdreamz.com/api/webhooks/giftcard-redeem"
 
 [access.admin]
 direct_api_mode = "offline"
@@ -26,12 +26,12 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://643b4d09d0f8.ngrok-free.app/auth/callback",
-  "https://643b4d09d0f8.ngrok-free.app/auth/shopify/callback",
-  "https://643b4d09d0f8.ngrok-free.app/api/auth/callback",
-  "https://643b4d09d0f8.ngrok-free.app/api/shopify/auth/callback",
-  "https://643b4d09d0f8.ngrok-free.app/shopify/main",
-  "https://643b4d09d0f8.ngrok-free.app/shopify"
+  "https://dd-19.dynamicdreamz.com/auth/callback",
+  "https://dd-19.dynamicdreamz.com/auth/shopify/callback",
+  "https://dd-19.dynamicdreamz.com/api/auth/callback",
+  "https://dd-19.dynamicdreamz.com/api/shopify/auth/callback",
+  "https://dd-19.dynamicdreamz.com/shopify/main",
+  "https://dd-19.dynamicdreamz.com/shopify"
 ]
 
 [pos]

@@ -5,11 +5,17 @@ export default async function SettlementsPage({ searchParams }) {
   // Await searchParams
   const resolvedSearchParams = await searchParams;
   
-  // Get period from query params, default to 'year'
-  const period = resolvedSearchParams?.period || "year";
+  // Get parameters from query
+  const year = resolvedSearchParams?.filterMonth?.split("-")[0] || null;
+  const month = resolvedSearchParams?.filterMonth?.split("-")[1] || null;
+  const search = resolvedSearchParams?.search || null;
 
-  // Fetch brand analytics data on server side
-  const analyticsData = await fetchBrandAnalytics(period);
+  // Fetch brand analytics data on server side with filters
+  const analyticsData = await fetchBrandAnalytics({
+    filterYear: year,
+    filterMonth: month,
+    search: search,
+  });
 
   return (
     <div>

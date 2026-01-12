@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { addBrand, deleteBrand, updateBrand } from '../../../lib/action/brandAction';
+import { prisma } from '../../../lib/db';
 
 
 export async function POST(req) {

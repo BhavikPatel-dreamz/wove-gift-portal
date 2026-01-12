@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import SettlementDashboard from "../../../../../../components/settlements/SettlementDashboard";
 import { getSettlementDetails } from "../../../../../../lib/action/brandPartner";
 import SettlementTabs from "../../../../../../components/settlements/SettlementTabs";
+import { currencyList } from "../../../../../../components/brandsPartner/currency";
 
 const SettlementLayout = ({ children }) => {
     const router = useRouter();
@@ -39,15 +40,8 @@ const SettlementLayout = ({ children }) => {
         }
     };
 
-    const getCurrencySymbol = (code) => {
-        const currencyList = {
-            USD: "$",
-            EUR: "€",
-            GBP: "£",
-            INR: "₹",
-        };
-        return currencyList[code] || code;
-    };
+   const getCurrencySymbol = (code) =>
+       currencyList.find((c) => c.code === code)?.symbol || "$";
 
     const getMonthYear = (date) => {
         if (!date) return "N/A";

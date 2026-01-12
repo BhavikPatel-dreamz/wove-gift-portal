@@ -27,7 +27,17 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
-  },
-};
+    },
+    webpack: (config, { isServer }) => {
+        if (!isServer) {
+             config.resolve.fallback.fs = false
+             config.resolve.fallback.dns = false
+             config.resolve.fallback.net = false
+        }
 
-export default nextConfig;
+        return config;
+    }
+  };
+  
+  export default nextConfig;
+  

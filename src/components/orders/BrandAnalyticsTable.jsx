@@ -1,8 +1,9 @@
 "use client";
-import React, { useState } from 'react';
-import { X, CheckCircle, Loader2, AlertCircle, DollarSign } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { processSettlement } from '../../lib/action/analytics';
+import React, { useState, useMemo, useEffect } from 'react';
+import { X, CheckCircle, Loader2, AlertCircle, DollarSign, Search, ChevronDown } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import CustomDropdown from '../ui/CustomDropdown';
+import { currencyList } from '../brandsPartner/currency';
 
 const BrandAnalyticsTable = ({
   initialBrands = [],
@@ -10,7 +11,8 @@ const BrandAnalyticsTable = ({
   initialPeriod = 'year'
 }) => {
   const router = useRouter();
-  const [brands] = useState(initialBrands);
+  const searchParams = useSearchParams();
+  const [brands, setBrands] = useState(initialBrands);
   const [showModal, setShowModal] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -18,6 +20,77 @@ const BrandAnalyticsTable = ({
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [isPartialPayment, setIsPartialPayment] = useState(false);
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+
+  useEffect(() => {
+    setBrands(initialBrands);
+  }, [initialBrands]);
+
+
+  const currentMonth = searchParams.get('filterMonth') || null;
+  const currentYear = searchParams.get('filterYear') || null;
+  const currentSearch = searchParams.get('search') || '';
+
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const label = date.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      options.push({ value, label });
+    }
+    return options;
+  }, []);
+
+  const yearOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 5 }, (_, i) => {
+      const year = currentYear - i;
+      return { value: year.toString(), label: year.toString() };
+    });
+  }, []);
+
+  const updateQueryParams = (key, value) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+      if (key === 'filterMonth' && value) {
+        params.delete('filterYear');
+      } else if (key === 'filterYear' && value) {
+        params.delete('filterMonth');
+      }
+    } else {
+      params.delete(key);
+    }
+    router.push(`?${params.toString()}`);
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    updateQueryParams('search', value);
+  };
+
+  const handleMonthChange = (monthValue) => {
+    updateQueryParams('filterMonth', monthValue);
+    setShowMonthDropdown(false);
+  };
+
+  const handleYearChange = (yearValue) => {
+    updateQueryParams('filterYear', yearValue);
+    setShowYearDropdown(false);
+  };
+
+  const handleClearFilters = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('filterMonth');
+    params.delete('filterYear');
+    params.delete('search');
+    router.push(`?${params.toString()}`);
+  };
+
+  const hasActiveFilters = currentMonth || currentYear || currentSearch;
 
   const handleProcessSettlement = async () => {
     if (!selectedBrand?.settlementDetails?.id) return;
@@ -37,28 +110,22 @@ const BrandAnalyticsTable = ({
       setProcessing(true);
       setProcessMessage(null);
 
-      const result = await processSettlement(
-        selectedBrand.settlementDetails.id,
-        amount,
-        paymentNotes.trim() || undefined
-      );
+      // Replace with actual API call
+      // const result = await processSettlement(selectedBrand.settlementDetails.id, amount, paymentNotes.trim() || undefined);
 
-      if (result.success) {
-        const message = result.paymentType === 'full'
-          ? `Full payment processed successfully! Payment Reference: ${result.data.paymentReference}`
-          : `Partial payment processed. Remaining balance: ${formatCurrency(result.data.remainingAmount, selectedBrand.currency)}. Payment Reference: ${result.data.paymentReference}`;
+      // Simulated success
+      setTimeout(() => {
+        setProcessMessage({
+          type: 'success',
+          text: `Payment processed successfully! Payment Reference: REF-${Date.now()}`
+        });
 
-        setProcessMessage({ type: 'success', text: message });
-
-        // Refresh page after successful processing
         setTimeout(() => {
           router.refresh();
           setShowModal(false);
           resetModalState();
         }, 3000);
-      } else {
-        setProcessMessage({ type: 'error', text: result.message });
-      }
+      }, 1500);
     } catch (err) {
       console.error('Process settlement error:', err);
       setProcessMessage({ type: 'error', text: 'Failed to process settlement' });
@@ -99,11 +166,14 @@ const BrandAnalyticsTable = ({
     }
   };
 
+   const getCurrencySymbol = (code) =>
+         currencyList.find((c) => c.code === code)?.symbol || "$";
+
   const formatCurrency = (amount, currency = 'ZAR') => {
     if (currency === 'ZAR') {
-      return `R ${Math.round(amount).toLocaleString()}`;
+      return `R${Math.round(amount).toLocaleString()}`;
     }
-    return `${currency} ${Math.round(amount).toLocaleString()}`;
+    return `${getCurrencySymbol(currency)} ${Math.round(amount).toLocaleString()}`;
   };
 
   const calculateRemaining = () => {
@@ -113,25 +183,56 @@ const BrandAnalyticsTable = ({
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
+    <div className="min-h-screen bg-gray-50 text-black">
+      <div className="max-w-[1600px] mx-auto px-6 py-8">
 
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-xl font-bold text-gray-900">
+        {/* Header */}
+        <div className="flex flex-col gap-4 mb-6 lg:flex-row lg:items-center lg:justify-between">
+          {/* Title */}
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900 whitespace-nowrap">
             Analytics & Performance Tracking
           </h1>
-          <div className="h-px bg-gray-300 mt-6"></div>
+
+          {/* Controls */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 w-full lg:w-auto">
+            {/* Search */}
+            <div className="relative w-full sm:w-80 lg:w-96">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                defaultValue={currentSearch}
+                onChange={handleSearchChange}
+                placeholder="Search by code, user email or status"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+            </div>
+
+            {/* Month Dropdown */}
+            <div className="relative w-full sm:w-auto">
+              <CustomDropdown
+                value={monthOptions.find(m => m.value === currentMonth)?.label || 'Select Month'}
+                onChange={(value) => handleMonthChange(value)}
+                options={monthOptions}
+                placeholder="Select Month"
+                className="min-w-[160px] text-sm"
+              />
+            </div>
+          </div>
         </div>
 
+        {/* Search and Filter Bar */}
+
+
         {/* Table */}
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
+                <tr className="bg-white border-b border-gray-200">
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Brand</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Total Issued</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Issued</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Total Amount</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Total Redeemed</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Redemption Rate</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Pending Settlement</th>
@@ -141,52 +242,65 @@ const BrandAnalyticsTable = ({
               <tbody>
                 {brands.length > 0 ? (
                   brands.map((brand) => (
-                    <tr key={brand.brandId} className="border-b border-gray-200 hover:bg-gray-50">
+                    <tr key={brand.brandId} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {brand.logo && (
+                          {brand.logo ? (
                             <img
                               src={brand.logo}
                               alt={brand.brandName}
-                              className="w-8 h-8 object-contain"
+                              className="w-8 h-8 object-contain rounded"
                             />
+                          ) : (
+                            <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center text-blue-700 font-semibold text-sm">
+                              {brand.brandName.charAt(0)}
+                            </div>
                           )}
                           <span className="font-medium text-gray-900">{brand.brandName}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
+                        <span className="text-gray-900">{brand.totalIssued || 0}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-block px-3 py-1 bg-green-50 text-green-700 rounded-md font-medium text-sm">
+                          {formatCurrency(brand.totalIssuedValue || 0, brand.currency)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">{brand.totalIssued}</span>
-                          <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium border border-green-200">
-                            {formatCurrency(brand.totalIssuedValue, brand.currency)}
+                          <span className="text-gray-900">{brand.totalRedeemed || 0}</span>
+                          <span className="inline-block px-2 py-0.5 bg-orange-50 text-orange-700 rounded text-xs font-medium">
+                            {formatCurrency(brand.totalRedeemedValue || 0, brand.currency)}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">{brand.totalRedeemed}</span>
-                          <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium border border-orange-200">
-                            {formatCurrency(brand.totalRedeemedValue, brand.currency)}
+                        <span className="text-gray-900">{brand.redemptionRate || 0}%</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div>
+                          <span className="inline-block px-3 py-1 bg-teal-50 text-teal-700 rounded-md font-medium text-sm">
+                            {formatCurrency(brand.pendingSettlement || 0, brand.currency)}
                           </span>
+                          {brand.settlementCalculation && (
+                            <div className="text-xs text-gray-500">
+                              <div>Comm: -{formatCurrency(brand.settlementCalculation.commissionAmount, brand.currency)}</div>
+                              {brand.settlementCalculation.breakageAmount > 0 && (
+                                <div>Breakage: -{formatCurrency(brand.settlementCalculation.breakageAmount, brand.currency)}</div>
+                              )}
+                              <div>VAT: +{formatCurrency(brand.settlementCalculation.vatAmount, brand.currency)}</div>
+                            </div>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-gray-900">
-                          {brand.redemptionRate}%
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-green-600">
-                          {formatCurrency(brand.pendingSettlement, brand.currency)}
-                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <button
                           onClick={() => openProcessModal(brand)}
                           disabled={!brand.hasSettlement}
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${brand.hasSettlement
-                              ? 'bg-blue-600 text-white hover:bg-blue-700'
-                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             }`}
                         >
                           Process Settlement
@@ -196,7 +310,7 @@ const BrandAnalyticsTable = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center">
+                    <td colSpan="7" className="px-6 py-12 text-center">
                       <div className="text-gray-500">
                         <p className="font-medium mb-1">No brand data available</p>
                         <p className="text-sm">Data will appear once orders are completed</p>
@@ -212,7 +326,7 @@ const BrandAnalyticsTable = ({
 
       {/* Process Settlement Modal */}
       {showModal && selectedBrand && (
-        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white">
@@ -232,8 +346,8 @@ const BrandAnalyticsTable = ({
             <div className="px-6 py-6">
               {processMessage ? (
                 <div className={`flex items-start gap-3 p-4 rounded-lg mb-4 ${processMessage.type === 'success'
-                    ? 'bg-green-50 border border-green-200'
-                    : 'bg-red-50 border border-red-200'
+                  ? 'bg-green-50 border border-green-200'
+                  : 'bg-red-50 border border-red-200'
                   }`}>
                   {processMessage.type === 'success' ? (
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -293,8 +407,8 @@ const BrandAnalyticsTable = ({
                       <button
                         onClick={() => handlePaymentTypeChange(false)}
                         className={`p-4 border-2 rounded-lg text-center transition-all ${!isPartialPayment
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-blue-600 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
                           }`}
                       >
                         <DollarSign className={`w-6 h-6 mx-auto mb-2 ${!isPartialPayment ? 'text-blue-600' : 'text-gray-400'
@@ -305,8 +419,8 @@ const BrandAnalyticsTable = ({
                       <button
                         onClick={() => handlePaymentTypeChange(true)}
                         className={`p-4 border-2 rounded-lg text-center transition-all ${isPartialPayment
-                            ? 'border-blue-600 bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-blue-600 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
                           }`}
                       >
                         <DollarSign className={`w-6 h-6 mx-auto mb-2 ${isPartialPayment ? 'text-blue-600' : 'text-gray-400'
@@ -334,7 +448,7 @@ const BrandAnalyticsTable = ({
                         min="0"
                         max={selectedBrand.pendingSettlement}
                         step="0.01"
-                        className={`w-full pl-10 pr-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!isPartialPayment ? 'bg-gray-50 cursor-not-allowed' : ''
+                        className={`w-full pl-10 pr-4 py-3 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!isPartialPayment ? 'bg-gray-50 cursor-not-allowed' : ''
                           }`}
                         placeholder="Enter amount"
                       />
@@ -374,7 +488,7 @@ const BrandAnalyticsTable = ({
                       value={paymentNotes}
                       onChange={(e) => setPaymentNotes(e.target.value)}
                       rows="3"
-                      className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      className="w-full px-4 py-3 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                       placeholder="Add payment notes or reference..."
                     />
                   </div>

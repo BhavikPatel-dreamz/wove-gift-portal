@@ -141,7 +141,7 @@ const TermsTab = ({ formData, updateFormData }) => {
         </div>
       </div>
 
-      {formData.settlementTrigger === 'onPurchase' && (
+      {/* {formData.settlementTrigger === 'onPurchase' && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h3 className="font-inter text-base font-semibold capitalize text-[#4A4A4A] mb-4">Breakage Policy</h3>
           <div>
@@ -195,7 +195,7 @@ const TermsTab = ({ formData, updateFormData }) => {
             )}
           </div>
         </div>
-      )}
+      )} */}
 
       {formData.settlementTrigger === 'onRedemption' && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">

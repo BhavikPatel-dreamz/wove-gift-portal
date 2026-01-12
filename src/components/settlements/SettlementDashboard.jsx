@@ -1,8 +1,12 @@
 "use client";
 
 import React from "react";
+import { currencyList } from "../brandsPartner/currency";
 
-function StatCard({ title, amount, currency, color, icon, getCurrencySymbol }) {
+const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "$";
+
+function StatCard({ title, amount, currency, color, icon }) {
   const colorClasses = {
     blue: {
       bg: "bg-[#EFF6FE]",
@@ -47,7 +51,7 @@ function StatCard({ title, amount, currency, color, icon, getCurrencySymbol }) {
   );
 }
 
-function SettlementDashboard({ settlement, getCurrencySymbol }) {
+function SettlementDashboard({ settlement }) {
   const stats = [
     {
       title: "Total Sold",
