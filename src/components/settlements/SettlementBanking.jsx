@@ -1,6 +1,9 @@
 import React from 'react';
 
 const SettlementBanking = ({ banking }) => {
+
+  console.log(banking);
+
   if (!banking) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -80,6 +83,11 @@ const SettlementBanking = ({ banking }) => {
           <div>
             <p className="text-sm font-medium text-[#64748B] mb-1">Settlement Frequency</p>
             <p className="text-sm font-semibold text-[#4A4A4A]">{banking.settlementFrequency}</p>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-[#64748B] mb-1">Settlement Date</p>
+            <p className="text-sm font-semibold text-[#4A4A4A]">{banking.dayOfMonth}</p>
           </div>
 
           {/* Settlement Frequency */}

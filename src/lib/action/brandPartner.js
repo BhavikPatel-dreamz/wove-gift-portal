@@ -2648,19 +2648,25 @@ export async function getSettlementContacts(settlementId) {
   }
 }
 
-export async function getSettlementTerms(brandId) {
+export async function getSettlementTerms(settlementId) {
   try {
-    const settlement = await prisma.settlements.findFirst({
-      where: { brandId },
-      orderBy: { createdAt: "desc" },
+ // First, get the settlement to retrieve the brandId
+    const settlement = await prisma.settlements.findUnique({
+      where: { id: settlementId },
+      select: { brandId: true },
     });
 
+    // Check if settlement exists
     if (!settlement) {
-      return { success: false, message: "Settlement not found", status: 404 };
+      return {
+        success: false,
+        message: "Settlement not found",
+        status: 404,
+      };
     }
 
     const terms = await prisma.brandTerms.findFirst({
-      where: { brandId },
+       where: { brandId: settlement.brandId },
     });
 
     return { success: true, data: terms };

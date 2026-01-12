@@ -1,3 +1,4 @@
+"use server"
 
 import { prisma } from '../db'
 
@@ -151,6 +152,63 @@ async function getBrandRedemptionMetrics(dateRange) {
     bgColor: bgColors[index],
   }));
 }
+function getDateRanges(period = null, filterMonth = null, filterYear = null) {
+  const now = new Date();
+  let start, end;
+
+  // ✅ numeric month + year
+  if (filterMonth && filterYear) {
+    const year = Number(filterYear);
+    const month = Number(filterMonth);
+
+    start = new Date(year, month - 1, 1);
+    end = new Date(year, month, 0, 23, 59, 59, 999);
+
+    return { start, end };
+  }
+
+  if (filterYear) {
+    start = new Date(Number(filterYear), 0, 1);
+    end = new Date(Number(filterYear), 11, 31, 23, 59, 59, 999);
+    return { start, end };
+  }
+
+  end = now;
+
+  switch (period) {
+    case "today":
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      break;
+    case "week":
+      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case "month":
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    case "quarter":
+      const quarter = Math.floor(now.getMonth() / 3);
+      start = new Date(now.getFullYear(), quarter * 3, 1);
+      break;
+    case "year":
+      start = new Date(now.getFullYear(), 0, 1);
+      break;
+    default:
+      return { start: null, end: null };
+  }
+
+  return { start, end };
+}
+
+
+function buildDateFilters(dateRange, field = "createdAt") {
+  if (!dateRange.start || !dateRange.end) return {};
+  return {
+    [field]: {
+      gte: dateRange.start,
+      lte: dateRange.end,
+    },
+  };
+}
 
 // Get settlement data for LAST MONTH ONLY - formatted for frontend
 async function getSettlementData(brandId) {
@@ -252,27 +310,66 @@ async function getSettlementData(brandId) {
   return settlements;
 }
 
-export async function fetchBrandAnalytics(period = "year") {
+export async function fetchBrandAnalytics({ filterMonth = null, filterYear = null, search = null } = {}) {
   try {
     // Calculate date range
-    const dateRange = getDateRange(period);
-    const dateFilter = buildDateFilter(dateRange);
+    console.log("*******", filterMonth, filterYear, search );
+    
+     // Parse filterMonth if provided (format: "YYYY-MM")
+    let period = null;
+    let parsedYear = filterYear;
+    let parsedMonth = filterMonth;
+    
+    if (filterMonth && typeof filterMonth === 'string' && filterMonth.includes('-')) {
+      const [year, month] = filterMonth.split('-');
+      parsedYear = parseInt(year);
+      parsedMonth = parseInt(month);
+    }
+    
+    const dateRange = getDateRanges(period, parsedMonth, parsedYear);
+    const dateFilter = buildDateFilters(dateRange);
 
-    // Get all active brands
+   // Build search filter
+    const searchFilter = search && typeof search === 'string' ? {
+      brandName: {
+        contains: search,
+        mode: 'insensitive'
+      }
+    } : {};
+
+    // Get all active brands with their terms
     const brands = await prisma.brand.findMany({
-      where: { isActive: true },
+      where: { 
+        isActive: true,
+        ...searchFilter
+      },
       select: {
         id: true,
         brandName: true,
         logo: true,
         currency: true,
+        brandTerms: {
+          select: {
+            settlementTrigger: true,
+            commissionType: true,
+            commissionValue: true,
+            breakageShare: true,
+            vatRate: true,
+          },
+        },
       },
       orderBy: { brandName: "asc" },
     });
-
+    
     // Get analytics data for each brand
     const brandAnalytics = await Promise.all(
       brands.map(async (brand) => {
+        const settlementTrigger = brand.brandTerms?.settlementTrigger || "onPurchase";
+        const commissionType = brand.brandTerms?.commissionType || "Percentage";
+        const commissionValue = brand.brandTerms?.commissionValue || 0;
+        const breakageShare = brand.brandTerms?.breakageShare || 0;
+        const vatRate = brand.brandTerms?.vatRate || 0;
+
         // Get all voucher codes for this brand
         const voucherCodes = await prisma.voucherCode.findMany({
           where: {
@@ -286,6 +383,7 @@ export async function fetchBrandAnalytics(period = "year") {
             isRedeemed: true,
             originalValue: true,
             remainingValue: true,
+            expiresAt: true,
             _count: {
               select: { redemptions: true },
             },
@@ -294,12 +392,16 @@ export async function fetchBrandAnalytics(period = "year") {
 
         const totalIssued = voucherCodes.length;
 
-        // Total sold value (sum of all settlements for this brand)
-        const totalSoldAgg = await prisma.settlements.aggregate({
-          _sum: { totalSoldAmount: true },
-          where: { brandId: brand.id, ...dateFilter },
+        // Total issued value (always from orders/purchases)
+        const totalIssuedValueAgg = await prisma.order.aggregate({
+          _sum: { totalAmount: true },
+          where: { 
+            brandId: brand.id, 
+            paymentStatus: "COMPLETED",
+            ...dateFilter 
+          },
         });
-        const totalIssuedValue = totalSoldAgg._sum.totalSoldAmount || 0;
+        const totalIssuedValue = totalIssuedValueAgg._sum.totalAmount || 0;
 
         // Count redeemed vouchers
         const redeemedVouchers = voucherCodes.filter(
@@ -316,31 +418,98 @@ export async function fetchBrandAnalytics(period = "year") {
           0
         );
 
-        // Redemption rate
-        const redemptionRate =
-          totalIssued > 0
-            ? Math.round((totalRedeemedValue / totalIssuedValue) * 100)
-            : 0.0;
+        // Calculate breakage (expired vouchers)
+        const now = new Date();
+        const expiredVouchers = voucherCodes.filter(
+          (vc) => vc.expiresAt && new Date(vc.expiresAt) < now && vc.remainingValue > 0
+        );
+        const breakageAmount = expiredVouchers.reduce(
+          (sum, vc) => sum + vc.remainingValue,
+          0
+        );
+        const adjustedBreakage = breakageShare
+          ? Math.round((breakageAmount * breakageShare) / 100)
+          : 0;
 
-        // Aggregate settlements to compute paid vs sold
+        // Settlement calculations based on trigger
+        let baseAmount = 0;
+        let commissionAmount = 0;
+        let vatAmount = 0;
+        let netPayable = 0;
+        let commissionDisplay = "";
+        let vatDisplay = "";
+
+        if (settlementTrigger === "onPurchase") {
+          // Settlement based on total sold/purchased amount
+          baseAmount = totalIssuedValue;
+          
+          // Commission calculation
+          if (commissionType === "Percentage") {
+            commissionAmount = Math.round((baseAmount * commissionValue) / 100);
+            commissionDisplay = `-₹${commissionAmount.toLocaleString()} (${commissionValue}%)`;
+          } else {
+            commissionAmount = Math.round(commissionValue * totalIssued);
+            commissionDisplay = `-₹${commissionAmount.toLocaleString()} (Fixed)`;
+          }
+
+          // VAT on commission
+          if (vatRate > 0) {
+            vatAmount = Math.round((commissionAmount * vatRate) / 100);
+            vatDisplay = `+₹${vatAmount.toLocaleString()} (${vatRate}% on comm.)`;
+          } else {
+            vatDisplay = "₹0";
+          }
+
+          // Net = Base - Commission - Breakage + VAT
+          netPayable = baseAmount - commissionAmount - adjustedBreakage + vatAmount;
+
+        } else if (settlementTrigger === "onRedemption") {
+          // Settlement based on actual redemption amount
+          baseAmount = totalRedeemedValue;
+
+          // Commission calculation on redeemed amount
+          if (commissionType === "Percentage") {
+            commissionAmount = Math.round((baseAmount * commissionValue) / 100);
+            commissionDisplay = `-₹${commissionAmount.toLocaleString()} (${commissionValue}%)`;
+          } else {
+            commissionAmount = Math.round(commissionValue * totalRedeemed);
+            commissionDisplay = `-₹${commissionAmount.toLocaleString()} (Fixed)`;
+          }
+
+          // VAT on commission
+          if (vatRate > 0) {
+            vatAmount = Math.round((commissionAmount * vatRate) / 100);
+            vatDisplay = `+₹${vatAmount.toLocaleString()} (${vatRate}% on comm.)`;
+          } else {
+            vatDisplay = "₹0";
+          }
+
+          // Net = Base - Commission + VAT (no breakage on redemption)
+          netPayable = baseAmount - commissionAmount + vatAmount;
+        }
+
+        // Redemption rate (always redeemed value / issued value)
+        const redemptionRate =
+          totalIssuedValue > 0
+            ? Math.round((totalRedeemedValue / totalIssuedValue) * 100)
+            : 0;
+
+        // Get existing settlements
         const settlementsAgg = await prisma.settlements.groupBy({
           by: ["status"],
           where: { brandId: brand.id, ...dateFilter },
-          _sum: { totalSoldAmount: true, netPayable: true },
+          _sum: { netPayable: true },
         });
 
-        const totalSoldAmount = settlementsAgg.reduce(
-          (sum, s) => sum + (s._sum.totalSoldAmount || 0),
-          0
-        );
+        // Total paid amount
         const totalPaidAmount = settlementsAgg
           .filter((s) => s.status === "Paid")
           .reduce((sum, s) => sum + (s._sum.netPayable || 0), 0);
 
-        // Pending settlement dynamically
-        const pendingSettlement = totalSoldAmount - totalPaidAmount;
+        // Pending settlement calculation
+        const pendingSettlement = Math.max(0, netPayable - totalPaidAmount);
 
-        // Latest settlement for details
+        // Latest settlement for reference
         const latestSettlement = await prisma.settlements.findFirst({
           where: { brandId: brand.id, ...dateFilter },
           orderBy: { createdAt: "desc" },
@@ -352,6 +521,7 @@ export async function fetchBrandAnalytics(period = "year") {
             breakageAmount: true,
             vatAmount: true,
             netPayable: true,
+            remainingAmount: true,
             status: true,
           },
         });
@@ -361,12 +531,26 @@ export async function fetchBrandAnalytics(period = "year") {
           brandName: brand.brandName,
           logo: brand.logo,
           currency: brand.currency || "ZAR",
+          settlementTrigger,
           totalIssued,
           totalIssuedValue,
           totalRedeemed,
           totalRedeemedValue,
           redemptionRate,
           pendingSettlement,
+          settlementCalculation: {
+            baseAmount,
+            commissionAmount,
+            commissionDisplay,
+            commissionType,
+            commissionValue,
+            breakageAmount: adjustedBreakage,
+            vatAmount,
+            vatDisplay,
+            vatRate,
+            netPayable,
+            trigger: settlementTrigger,
+          },
           settlementDetails: latestSettlement
             ? {
                 id: latestSettlement.id,
@@ -376,12 +560,12 @@ export async function fetchBrandAnalytics(period = "year") {
                 breakage: latestSettlement.breakageAmount || 0,
                 vat: latestSettlement.vatAmount || 0,
                 totalPayable: latestSettlement.netPayable,
+                remainingAmount: latestSettlement.remainingAmount || 0,
                 status: latestSettlement.status,
-                totalSoldAmount,
                 totalPaidAmount,
               }
             : null,
-          hasSettlement: !!latestSettlement,
+          hasSettlement: pendingSettlement > 0,
         };
       })
     );
@@ -395,7 +579,7 @@ export async function fetchBrandAnalytics(period = "year") {
     return {
       success: true,
       data: filteredBrands,
-      period,
+      period: filterMonth || filterYear || 'all',
       summary: {
         totalBrands: filteredBrands.length,
         totalVouchersIssued: filteredBrands.reduce(
@@ -410,6 +594,8 @@ export async function fetchBrandAnalytics(period = "year") {
           (sum, b) => sum + b.pendingSettlement,
           0
         ),
+        onPurchaseBrands: filteredBrands.filter(b => b.settlementTrigger === "onPurchase").length,
+        onRedemptionBrands: filteredBrands.filter(b => b.settlementTrigger === "onRedemption").length,
       },
     };
   } catch (error) {
@@ -417,12 +603,14 @@ export async function fetchBrandAnalytics(period = "year") {
     return {
       success: false,
       data: [],
-      period,
+      period: filterMonth || filterYear || 'all',
       summary: {
         totalBrands: 0,
         totalVouchersIssued: 0,
         totalVouchersRedeemed: 0,
         totalPendingSettlements: 0,
+        onPurchaseBrands: 0,
+        onRedemptionBrands: 0,
       },
     };
   }

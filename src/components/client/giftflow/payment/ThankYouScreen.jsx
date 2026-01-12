@@ -3,7 +3,7 @@ import React from "react";
 const ThankYouScreen = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="rounded-2xl p-12 text-center">
+      <div className="rounded-2xl p-5 text-center">
         <h1 className="text-[40px] font-bold text-[#1A1A1A] mb-4 fontPoppins">
           Thanks for your purchase!
         </h1>

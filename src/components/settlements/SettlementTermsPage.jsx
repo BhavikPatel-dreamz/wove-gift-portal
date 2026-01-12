@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getSettlementTerms } from '../../lib/action/brandPartner';
 import { useParams } from 'next/navigation';
+import { currencyList } from '../brandsPartner/currency';
 
 
 const SettlementTermsPage = () => {
@@ -35,6 +36,9 @@ const SettlementTermsPage = () => {
       </div>
     );
   }
+
+     const getCurrencySymbol = (code) =>
+         currencyList.find((c) => c.code === code)?.symbol || "$";
 
   if (error) {
     return (
@@ -80,7 +84,7 @@ const SettlementTermsPage = () => {
                   Minimum Order Value
                 </p>
                 <p className="text-sm font-normal text-gray-900">
-                  {terms?.minimumOrderValue ? `R ${terms.minimumOrderValue}` : '-'}
+                  {terms?.minOrderValue ? `${getCurrencySymbol(terms.currency)} ${terms.minOrderValue}` : '-'}
                 </p>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -88,7 +92,7 @@ const SettlementTermsPage = () => {
                   Minimum Discount
                 </p>
                 <p className="text-sm font-normal text-gray-900">
-                  {terms?.minimumDiscount ? `R ${terms.minimumDiscount}` : '-'}
+                  {terms?.maxDiscount ? `${getCurrencySymbol(terms.currency)} ${terms.maxDiscount}` : '-'}
                 </p>
               </div>
             </div>
@@ -142,7 +146,7 @@ const SettlementTermsPage = () => {
           </div>
 
           {/* Breakage Policy Card */}
-          <div className="rounded-lg border border-gray-200 bg-white">
+          {/* <div className="rounded-lg border border-gray-200 bg-white">
             <div className="border-b border-gray-200 px-5 py-4">
               <h2 className="text-base font-semibold text-gray-900">
                 Breakage Policy
@@ -166,7 +170,7 @@ const SettlementTermsPage = () => {
                 </p>
               </div>
             </div>
-          </div>
+          </div> */}
 
         </div>
       </main>

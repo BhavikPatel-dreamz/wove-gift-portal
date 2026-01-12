@@ -22,12 +22,13 @@ const SuccessScreen = ({
               </p>
             </div>
           ) : (
-            <div>
+            <div className="mt-25">
+              <img src={"/Success.gif"} alt={"Success"} className="w-26 h-26 m-auto mb-4" />
               <h1 className="text-[40px] font-bold text-[#1A1A1A] mb-4 fontPoppins">
                 Gift Sent Successfully
               </h1>
               <p className="font-normal text-[16px] text-[#4A4A4A] mb-6">
-                Your beautiful H&M gift card is on its way to Friend!
+                {`Your beautiful ${selectedBrand.brandName} gift card is on its way to Friend!`}
               </p>
             </div>
           )}

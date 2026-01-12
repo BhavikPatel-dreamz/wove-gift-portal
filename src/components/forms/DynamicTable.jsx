@@ -126,7 +126,7 @@ const DynamicTable = ({
   return (
     <div className={`bg-white rounded-xl border border-gray-200 shadow-sm ${className}`}>
       {/* Header Section */}
-      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white rounded-t-xl">
         <div className="mb-6">
           <h1 className="text-[20px] font-semibold text-[#1A1A1A]">{title}</h1>
           <p className="text-[#64748B]  text-[14px] font-normal">{subtitle}</p>
