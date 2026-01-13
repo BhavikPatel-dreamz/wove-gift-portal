@@ -1,12 +1,12 @@
 import React from "react";
 import { currencyList } from "../brandsPartner/currency";
-import SettlementDashboard from "./SettlementDashboard";
 
 const OverviewTab = ({ settlement }) => {
     const getCurrencySymbol = (code) =>
         currencyList.find((c) => c.code === code)?.symbol || "$";
 
     const formatDate = (date) => {
+        if (!date) return "N/A";
         return new Date(date).toLocaleDateString("en-US", {
             day: "2-digit",
             month: "short",
@@ -14,7 +14,14 @@ const OverviewTab = ({ settlement }) => {
         });
     };
 
-  return (
+    const formatCurrency = (amount) => {
+        if (amount === null || amount === undefined) return "0";
+        return amount.toLocaleString();
+    };
+
+    console.log(settlement,"paymentd");
+
+    return (
         <>
             <div className="space-y-6">
                 {/* Top Row - Settlement Period and Payment Information */}
@@ -32,7 +39,7 @@ const OverviewTab = ({ settlement }) => {
                         </div>
                         <div className="mb-4">
                             <p className="text-xs text-gray-500 mb-1">Period</p>
-                            <p className="text-sm font-medium text-gray-900 border-b  border-[#D8D8D8] pb-2">
+                            <p className="text-sm font-medium text-gray-900 border-b border-[#D8D8D8] pb-2">
                                 {formatDate(settlement.periodStart)} - {formatDate(settlement.periodEnd)}
                             </p>
                         </div>
@@ -50,6 +57,20 @@ const OverviewTab = ({ settlement }) => {
                                 </p>
                             </div>
                         </div>
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Frequency</p>
+                                <p className="text-sm font-medium text-gray-900 capitalize">
+                                    {settlement.frequency}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Settlement Trigger</p>
+                                <p className="text-sm font-medium text-gray-900">
+                                    {settlement.settlementTrigger === "onRedemption" ? "On Redemption" : "On Purchase"}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Payment Information */}
@@ -61,11 +82,49 @@ const OverviewTab = ({ settlement }) => {
                             </svg>
                             <h3 className="text-base font-semibold text-gray-900">Payment Information</h3>
                         </div>
-                        <div>
-                            <p className="text-xs text-gray-500 mb-1">Period</p>
-                            <span className="inline-block rounded bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-700">
-                                {settlement.status}
-                            </span>
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Status</p>
+                                <span className={`inline-block rounded px-2.5 py-1 text-xs font-medium ${
+                                    settlement.status === "Paid" 
+                                        ? "bg-green-100 text-green-700"
+                                        : settlement.status === "PartiallyPaid"
+                                        ? "bg-blue-100 text-blue-700"
+                                        : "bg-orange-100 text-orange-700"
+                                }`}>
+                                    {settlement.status}
+                                </span>
+                            </div>
+                            {settlement.lastPaymentDate && (
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">Last Payment Date</p>
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {formatDate(settlement.lastPaymentDate)}
+                                    </p>
+                                </div>
+                            )}
+                            {settlement.paymentReference && (
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">Payment Reference</p>
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {settlement.paymentReference}
+                                    </p>
+                                </div>
+                            )}
+                            <div className="border-t border-gray-200 pt-3 grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">Total Paid</p>
+                                    <p className="text-sm font-semibold text-green-600">
+                                        {getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.totalPaid)}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">Remaining</p>
+                                    <p className="text-sm font-semibold text-orange-600">
+                                        {getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.remainingAmount)}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -83,9 +142,11 @@ const OverviewTab = ({ settlement }) => {
                     </div>
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700">Base Amount</span>
+                            <span className="text-sm text-gray-700">
+                                Base Amount ({settlement.settlementTrigger === "onRedemption" ? "Redeemed" : "Sold"})
+                            </span>
                             <span className="text-sm font-semibold text-gray-900">
-                                {getCurrencySymbol(settlement.currency)}{settlement.baseAmount.toLocaleString()}
+                                {getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.baseAmount)}
                             </span>
                         </div>
                         <div className="flex items-center justify-between">
@@ -93,20 +154,22 @@ const OverviewTab = ({ settlement }) => {
                                 Commission ({settlement.commissionValue}{settlement.commissionType === "Percentage" ? "%" : ""})
                             </span>
                             <span className="text-sm font-semibold text-red-600">
-                                -{getCurrencySymbol(settlement.currency)}{settlement.commissionAmount.toLocaleString()}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-700">Breakage</span>
-                            <span className="text-sm font-semibold text-green-600">
-                                +{getCurrencySymbol(settlement.currency)}{settlement.breakageAmount.toLocaleString()}
+                                -{getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.commissionAmount)}
                             </span>
                         </div>
                         {settlement.vatAmount > 0 && (
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-700">VAT (5%)</span>
+                                <span className="text-sm text-gray-700">VAT ({settlement.vatRate}%)</span>
+                                <span className="text-sm font-semibold text-green-600">
+                                    +{getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.vatAmount)}
+                                </span>
+                            </div>
+                        )}
+                        {settlement.breakageAmount > 0 && (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-700">Breakage</span>
                                 <span className="text-sm font-semibold text-red-600">
-                                    -{getCurrencySymbol(settlement.currency)}{settlement.vatAmount.toLocaleString()}
+                                    -{getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.breakageAmount)}
                                 </span>
                             </div>
                         )}
@@ -114,14 +177,14 @@ const OverviewTab = ({ settlement }) => {
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-700">Adjustments</span>
                                 <span className={`text-sm font-semibold ${settlement.adjustments > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {settlement.adjustments > 0 ? '+' : ''}{getCurrencySymbol(settlement.currency)}{Math.abs(settlement.adjustments).toLocaleString()}
+                                    {settlement.adjustments > 0 ? '+' : ''}{getCurrencySymbol(settlement.currency)}{formatCurrency(Math.abs(settlement.adjustments))}
                                 </span>
                             </div>
                         )}
                         <div className="border-t border-gray-200 pt-3 flex items-center justify-between">
                             <span className="text-sm font-bold text-gray-900">Final Net Payable</span>
                             <span className="text-lg font-bold text-blue-600">
-                                {getCurrencySymbol(settlement.currency)}{settlement.netPayable.toLocaleString()}
+                                {getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.netPayable)}
                             </span>
                         </div>
                     </div>
@@ -136,19 +199,19 @@ const OverviewTab = ({ settlement }) => {
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-700">Total Issued</span>
                                 <span className="text-sm font-semibold text-gray-900">
-                                    {settlement.voucherSummary.totalIssued}
+                                    {settlement.voucherSummary?.totalIssued || 0}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-700">Redeemed</span>
                                 <span className="text-sm font-semibold text-teal-600">
-                                    {settlement.voucherSummary.redeemed}
+                                    {settlement.voucherSummary?.redeemed || 0}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-700">Unredeemed</span>
                                 <span className="text-sm font-semibold text-orange-600">
-                                    {settlement.voucherSummary.unredeemed}
+                                    {settlement.voucherSummary?.unredeemed || 0}
                                 </span>
                             </div>
                         </div>
@@ -156,7 +219,7 @@ const OverviewTab = ({ settlement }) => {
                             <div className="flex items-center justify-between">
                                 <span className="text-sm font-semibold text-blue-700">Redemption Rate</span>
                                 <span className="text-sm font-semibold text-blue-600">
-                                    {settlement.redemptionRate}%
+                                    {settlement.redemptionRate || 0}%
                                 </span>
                             </div>
                         </div>
@@ -169,25 +232,33 @@ const OverviewTab = ({ settlement }) => {
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-700">Total</span>
                                 <span className="text-sm font-semibold text-gray-900">
-                                    {settlement.voucherSummary.totalIssued}
+                                    {settlement.voucherSummary?.totalIssued || 0}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-700">Delivered</span>
                                 <span className="text-sm font-semibold text-teal-600">
-                                    {settlement.voucherSummary.delivered || 0}
+                                    {settlement.voucherSummary?.delivered || 0}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-700">Pending</span>
                                 <span className="text-sm font-semibold text-orange-600">
-                                    {settlement.voucherSummary.pending || 0}
+                                    {settlement.voucherSummary?.pending || 0}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-700">Failed</span>
                                 <span className="text-sm font-semibold text-red-600">
-                                    {settlement.voucherSummary.failed || 0}
+                                    {settlement.voucherSummary?.failed || 0}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="mt-4 border-t border-purple-200 pt-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-purple-700">Status</span>
+                                <span className="text-sm font-semibold text-purple-600">
+                                    {settlement.voucherSummary?.deliveryStatus || "Pending"}
                                 </span>
                             </div>
                         </div>

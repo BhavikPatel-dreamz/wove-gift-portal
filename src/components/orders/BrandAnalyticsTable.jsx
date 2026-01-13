@@ -4,6 +4,7 @@ import { X, CheckCircle, Loader2, AlertCircle, DollarSign, Search, ChevronDown }
 import { useRouter, useSearchParams } from 'next/navigation';
 import CustomDropdown from '../ui/CustomDropdown';
 import { currencyList } from '../brandsPartner/currency';
+import { processSettlement } from "@/lib/action/analytics";
 
 const BrandAnalyticsTable = ({
   initialBrands = [],
@@ -27,6 +28,8 @@ const BrandAnalyticsTable = ({
     setBrands(initialBrands);
   }, [initialBrands]);
 
+  console.log(initialBrands, "initialBrands");
+
 
   const currentMonth = searchParams.get('filterMonth') || null;
   const currentYear = searchParams.get('filterYear') || null;
@@ -48,12 +51,12 @@ const BrandAnalyticsTable = ({
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 5 }, (_, i) => {
       const year = currentYear - i;
-      return { value: year.toString(), label: year.toString() };
+      return { value: year?.toString(), label: year?.toString() };
     });
   }, []);
 
   const updateQueryParams = (key, value) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString());
     if (value) {
       params.set(key, value);
       if (key === 'filterMonth' && value) {
@@ -64,7 +67,7 @@ const BrandAnalyticsTable = ({
     } else {
       params.delete(key);
     }
-    router.push(`?${params.toString()}`);
+    router.push(`?${params?.toString()}`);
   };
 
   const handleSearchChange = (e) => {
@@ -83,17 +86,17 @@ const BrandAnalyticsTable = ({
   };
 
   const handleClearFilters = () => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString());
     params.delete('filterMonth');
     params.delete('filterYear');
     params.delete('search');
-    router.push(`?${params.toString()}`);
+    router.push(`?${params?.toString()}`);
   };
 
-  const hasActiveFilters = currentMonth || currentYear || currentSearch;
 
   const handleProcessSettlement = async () => {
-    if (!selectedBrand?.settlementDetails?.id) return;
+      console.log(selectedBrand, "selectedBrand");
+    if (!selectedBrand?.id) return;
 
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -101,8 +104,8 @@ const BrandAnalyticsTable = ({
       return;
     }
 
-    if (amount > selectedBrand.pendingSettlement) {
-      setProcessMessage({ type: 'error', text: 'Payment amount cannot exceed pending settlement amount' });
+    if (amount > selectedBrand.remainingAmount) {
+      setProcessMessage({ type: 'error', text: 'Payment amount cannot exceed outstanding amount' });
       return;
     }
 
@@ -110,33 +113,35 @@ const BrandAnalyticsTable = ({
       setProcessing(true);
       setProcessMessage(null);
 
-      // Replace with actual API call
-      // const result = await processSettlement(selectedBrand.settlementDetails.id, amount, paymentNotes.trim() || undefined);
+      const result = await processSettlement(
+        selectedBrand.id,
+        amount,
+        paymentNotes.trim() || undefined
+      );
 
-      // Simulated success
-      setTimeout(() => {
+      if (result.success) {
         setProcessMessage({
-          type: 'success',
-          text: `Payment processed successfully! Payment Reference: REF-${Date.now()}`
+          type: "success",
+          text: `Payment processed successfully! ${result.data.paymentReference
+              ? `Payment Reference: ${result.data.paymentReference}`
+              : ""
+            }`,
         });
-
-        setTimeout(() => {
-          router.refresh();
-          setShowModal(false);
-          resetModalState();
-        }, 3000);
-      }, 1500);
+      } else {
+        throw new Error(result.message || "Failed to process payment");
+      }
     } catch (err) {
-      console.error('Process settlement error:', err);
-      setProcessMessage({ type: 'error', text: 'Failed to process settlement' });
+      console.error("Process settlement error:", err);
+      setProcessMessage({ type: 'error', text: err.message || 'Failed to process settlement' });
     } finally {
       setProcessing(false);
     }
   };
 
   const openProcessModal = (brand) => {
+
     setSelectedBrand(brand);
-    setPaymentAmount(brand.pendingSettlement.toString());
+    setPaymentAmount(brand.remainingAmount?.toString());
     setIsPartialPayment(false);
     setShowModal(true);
     resetModalState();
@@ -160,14 +165,14 @@ const BrandAnalyticsTable = ({
   const handlePaymentTypeChange = (isPartial) => {
     setIsPartialPayment(isPartial);
     if (!isPartial && selectedBrand) {
-      setPaymentAmount(selectedBrand.pendingSettlement.toString());
+      setPaymentAmount(selectedBrand.remainingAmount?.toString());
     } else {
       setPaymentAmount('');
     }
   };
 
-   const getCurrencySymbol = (code) =>
-         currencyList.find((c) => c.code === code)?.symbol || "$";
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "$";
 
   const formatCurrency = (amount, currency = 'ZAR') => {
     if (currency === 'ZAR') {
@@ -179,7 +184,7 @@ const BrandAnalyticsTable = ({
   const calculateRemaining = () => {
     if (!selectedBrand || !paymentAmount) return 0;
     const amount = parseFloat(paymentAmount);
-    return isNaN(amount) ? selectedBrand.pendingSettlement : selectedBrand.pendingSettlement - amount;
+    return isNaN(amount) ? selectedBrand.remainingAmount : selectedBrand.remainingAmount - amount;
   };
 
   return (
@@ -241,64 +246,54 @@ const BrandAnalyticsTable = ({
               </thead>
               <tbody>
                 {brands.length > 0 ? (
-                  brands.map((brand) => (
-                    <tr key={brand.brandId} className="border-b border-gray-100 hover:bg-gray-50">
+                  brands.map((brand, index) => (
+                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {brand.logo ? (
+                          {brand?.brand?.logo ? (
                             <img
-                              src={brand.logo}
-                              alt={brand.brandName}
+                              src={brand?.brand?.logo}
+                              alt={brand?.brand?.name || "Brand"}
                               className="w-8 h-8 object-contain rounded"
                             />
                           ) : (
                             <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center text-blue-700 font-semibold text-sm">
-                              {brand.brandName.charAt(0)}
+                              {brand?.brand?.brandName?.charAt(0)}
                             </div>
                           )}
-                          <span className="font-medium text-gray-900">{brand.brandName}</span>
+                          <span className="font-medium text-gray-900">{brand?.brand?.brandName || "Brand"}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-gray-900">{brand.totalIssued || 0}</span>
+                        <span className="text-gray-900">{brand.totalSold || 0}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-block px-3 py-1 bg-green-50 text-green-700 rounded-md font-medium text-sm">
-                          {formatCurrency(brand.totalIssuedValue || 0, brand.currency)}
+                          {formatCurrency(brand.totalSoldAmount || 0, brand.currency)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-900">{brand.totalRedeemed || 0}</span>
                           <span className="inline-block px-2 py-0.5 bg-orange-50 text-orange-700 rounded text-xs font-medium">
-                            {formatCurrency(brand.totalRedeemedValue || 0, brand.currency)}
+                            {formatCurrency(brand.redeemedAmount || 0, brand.currency)}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-gray-900">{brand.redemptionRate || 0}%</span>
+                        <span className="text-gray-900">{brand.totalSoldAmount && brand.redeemedAmount ? `${((brand.redeemedAmount / brand.totalSoldAmount) * 100).toFixed(2)}%` : "0%"}</span>
                       </td>
                       <td className="px-6 py-4">
                         <div>
                           <span className="inline-block px-3 py-1 bg-teal-50 text-teal-700 rounded-md font-medium text-sm">
-                            {formatCurrency(brand.pendingSettlement || 0, brand.currency)}
+                            {formatCurrency(brand.remainingAmount || 0, brand.currency)}
                           </span>
-                          {brand.settlementCalculation && (
-                            <div className="text-xs text-gray-500">
-                              <div>Comm: -{formatCurrency(brand.settlementCalculation.commissionAmount, brand.currency)}</div>
-                              {brand.settlementCalculation.breakageAmount > 0 && (
-                                <div>Breakage: -{formatCurrency(brand.settlementCalculation.breakageAmount, brand.currency)}</div>
-                              )}
-                              <div>VAT: +{formatCurrency(brand.settlementCalculation.vatAmount, brand.currency)}</div>
-                            </div>
-                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <button
                           onClick={() => openProcessModal(brand)}
-                          disabled={!brand.hasSettlement}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${brand.hasSettlement
+                          disabled={brand.remainingAmount == 0}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${brand.remainingAmount !== 0
                             ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             }`}
@@ -364,15 +359,15 @@ const BrandAnalyticsTable = ({
                   {/* Brand Info */}
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-6">
                     <div className="flex items-center gap-3 mb-3">
-                      {selectedBrand.logo && (
+                      {selectedBrand.brand.logo && (
                         <img
-                          src={selectedBrand.logo}
-                          alt={selectedBrand.brandName}
+                          src={selectedBrand.brand.logo}
+                          alt={selectedBrand.brand.brandName}
                           className="w-10 h-10 object-contain"
                         />
                       )}
                       <span className="font-semibold text-gray-900 text-lg">
-                        {selectedBrand.brandName}
+                        {selectedBrand.brand.brandName}
                       </span>
                     </div>
 
@@ -380,19 +375,19 @@ const BrandAnalyticsTable = ({
                       <div className="flex justify-between">
                         <span className="text-gray-600">Total Issued:</span>
                         <span className="font-medium text-gray-900">
-                          {selectedBrand.totalIssued} vouchers
+                          {formatCurrency(selectedBrand.totalSoldAmount, selectedBrand.currency)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Total Redeemed:</span>
                         <span className="font-medium text-gray-900">
-                          {selectedBrand.totalRedeemed} vouchers
+                          {formatCurrency(selectedBrand.redeemedAmount, selectedBrand.currency)}
                         </span>
                       </div>
                       <div className="flex justify-between pt-2 border-t border-gray-200">
                         <span className="text-gray-900 font-medium">Total Pending:</span>
                         <span className="font-bold text-green-600 text-lg">
-                          {formatCurrency(selectedBrand.pendingSettlement, selectedBrand.currency)}
+                          {formatCurrency(selectedBrand.remainingAmount, selectedBrand.currency)}
                         </span>
                       </div>
                     </div>
@@ -446,7 +441,7 @@ const BrandAnalyticsTable = ({
                         onChange={(e) => setPaymentAmount(e.target.value)}
                         disabled={!isPartialPayment}
                         min="0"
-                        max={selectedBrand.pendingSettlement}
+                        max={selectedBrand.remainingAmount}
                         step="0.01"
                         className={`w-full pl-10 pr-4 py-3 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!isPartialPayment ? 'bg-gray-50 cursor-not-allowed' : ''
                           }`}
@@ -455,7 +450,7 @@ const BrandAnalyticsTable = ({
                     </div>
                     {isPartialPayment && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Maximum: {formatCurrency(selectedBrand.pendingSettlement, selectedBrand.currency)}
+                        Maximum: {formatCurrency(selectedBrand.remainingAmount, selectedBrand.currency)}
                       </p>
                     )}
                   </div>
@@ -507,7 +502,7 @@ const BrandAnalyticsTable = ({
             {!processMessage && (
               <div className="flex gap-3 px-6 py-4 bg-gray-50 rounded-b-2xl border-t border-gray-200">
                 <button
-                  onClick={closeModal}
+                 onClick={closeModal}
                   disabled={processing}
                   className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50"
                 >
@@ -524,7 +519,7 @@ const BrandAnalyticsTable = ({
                       Processing...
                     </>
                   ) : (
-                    `Process Payment`
+                    'Process Payment'
                   )}
                 </button>
               </div>

@@ -199,11 +199,13 @@ function buildDateFilter(dateRange) {
 async function getGiftCardsMetrics(dateRange, brandId = null) {
   const dateFilter = buildDateFilter(dateRange);
 
-  // Get all voucher codes with their values
-  const whereClause = { ...dateFilter };
-  if (brandId) {
-    whereClause.order = { brandId };
-  }
+  const whereClause = { 
+    ...dateFilter,
+    order: {
+      paymentStatus: 'COMPLETED', // Only paid orders
+      ...(brandId ? { brandId } : {})
+    }
+  };
 
   const voucherCodes = await prisma.voucherCode.findMany({
     where: whereClause,
@@ -312,11 +314,13 @@ async function getGiftCardsMetrics(dateRange, brandId = null) {
 async function getRedemptionMetrics(dateRange, brandId = null) {
   const dateFilter = buildDateFilter(dateRange);
 
-  // Get all voucher codes with their redemption data
-  const whereClause = { ...dateFilter };
-  if (brandId) {
-    whereClause.order = { brandId };
-  }
+ const whereClause = { 
+    ...dateFilter,
+    order: {
+      paymentStatus: 'COMPLETED', // Only paid orders
+      ...(brandId ? { brandId } : {})
+    }
+  };
 
   const voucherCodes = await prisma.voucherCode.findMany({
     where: whereClause,
@@ -546,26 +550,22 @@ async function getMonthlyTransactionTrends(dateRange, brandId = null) {
       AVG("totalAmount")::float as "avgOrderValue",
       SUM("discount")::float as "totalDiscount"
     FROM "Order"
-  `;
+    WHERE "paymentStatus" = 'COMPLETED'
+  `; // ✅ FIXED: Added paymentStatus filter
   
   const params = [];
-  let whereAdded = false;
   
   if (brandId) {
-    query += ` WHERE "brandId" = $${params.length + 1}`;
+    query += ` AND "brandId" = $${params.length + 1}`;
     params.push(brandId);
-    whereAdded = true;
   }
   
   if (dateRange.start) {
-    query += whereAdded ? ` AND` : ` WHERE`;
-    query += ` "createdAt" >= $${params.length + 1}::timestamp`;
+    query += ` AND "createdAt" >= $${params.length + 1}::timestamp`;
     params.push(dateRange.start);
-    whereAdded = true;
   }
   if (dateRange.end) {
-    query += whereAdded ? ` AND` : ` WHERE`;
-    query += ` "createdAt" <= $${params.length + 1}::timestamp`;
+    query += ` AND "createdAt" <= $${params.length + 1}::timestamp`;
     params.push(dateRange.end);
   }
   
@@ -596,8 +596,12 @@ async function getMonthlyTransactionTrends(dateRange, brandId = null) {
 // Top Performing Brands - FIXED VERSION
 async function getTopPerformingBrands(dateRange, brandId = null, limit = 10) {
   const dateFilter = buildDateFilter(dateRange);
+  const whereFilter = {
+    ...dateFilter,
+    paymentStatus: 'COMPLETED' // ✅ Only paid orders
+  };
   if (brandId) {
-    dateFilter.brandId = brandId;
+    whereFilter.brandId = brandId;
   }
 
   const topBrands = await prisma.order.groupBy({
@@ -611,9 +615,7 @@ async function getTopPerformingBrands(dateRange, brandId = null, limit = 10) {
     _avg: {
       totalAmount: true,
     },
-    where: {
-      ...dateFilter,
-    },
+    where: whereFilter, // ✅ FIXED: Now uses whereFilter with paymentStatus
     orderBy: {
       _sum: {
         totalAmount: "desc",
@@ -636,7 +638,7 @@ async function getTopPerformingBrands(dateRange, brandId = null, limit = 10) {
     },
   }) : [];
 
-  // Calculate metrics for each brand using the same logic as second API
+  // Calculate metrics for each brand
   const enrichedBrands = await Promise.all(
     topBrands.map(async (brand) => {
       const brandDetails = brands.find((b) => b.id === brand.brandId);
@@ -646,6 +648,7 @@ async function getTopPerformingBrands(dateRange, brandId = null, limit = 10) {
         where: {
           order: {
             brandId: brand.brandId,
+            paymentStatus: 'COMPLETED', // ✅ FIXED: Added paymentStatus filter
             ...dateFilter,
           },
         },
@@ -661,8 +664,6 @@ async function getTopPerformingBrands(dateRange, brandId = null, limit = 10) {
           },
         },
       });
-
-      //const totalVouchers = voucherCodesWithRedemptions.length;
 
       // Calculate total issued value
       const totalIssuedValue = voucherCodesWithRedemptions.reduce(
@@ -683,7 +684,7 @@ async function getTopPerformingBrands(dateRange, brandId = null, limit = 10) {
         return sum;
       }, 0);
 
-      // Calculate redemption rate based on value (same as second API)
+      // Calculate redemption rate based on value
       const redemptionRate =
         totalIssuedValue > 0
           ? parseFloat(((totalUsedValue / totalIssuedValue) * 100).toFixed(2))
@@ -732,6 +733,7 @@ async function getWeeklyPerformance(brandId = null) {
       LEFT JOIN "Order" o
         ON DATE(o."createdAt") = date_series.day
         AND o."brandId" = ${brandId}
+        AND o."paymentStatus" = 'COMPLETED'
       GROUP BY date_series.day
       ORDER BY date_series.day ASC
     `
@@ -752,9 +754,11 @@ async function getWeeklyPerformance(brandId = null) {
       ) AS date_series
       LEFT JOIN "Order" o
         ON DATE(o."createdAt") = date_series.day
+        AND o."paymentStatus" = 'COMPLETED'
       GROUP BY date_series.day
       ORDER BY date_series.day ASC
     `;
+  // ✅ FIXED: Added paymentStatus = 'COMPLETED' to both queries
 
   // Calculate week-over-week comparison
   const currentWeekTotal = weeklyData.reduce(
@@ -769,13 +773,16 @@ async function getWeeklyPerformance(brandId = null) {
       WHERE "createdAt" >= CURRENT_DATE - interval '13 days'
         AND "createdAt" < CURRENT_DATE - interval '6 days'
         AND "brandId" = ${brandId}
+        AND "paymentStatus" = 'COMPLETED'
     `
     : await prisma.$queryRaw`
       SELECT COALESCE(SUM("totalAmount"), 0)::float as total
       FROM "Order"
       WHERE "createdAt" >= CURRENT_DATE - interval '13 days'
         AND "createdAt" < CURRENT_DATE - interval '6 days'
+        AND "paymentStatus" = 'COMPLETED'
     `;
+  // ✅ FIXED: Added paymentStatus = 'COMPLETED' to both queries
 
   const previousWeekTotal = Number(previousWeekData[0]?.total || 0);
   const weekOverWeekGrowth = calculateGrowthRate(
@@ -792,6 +799,7 @@ async function getWeeklyPerformance(brandId = null) {
     },
   };
 }
+
 
 // Active Brand Partners
 async function getActiveBrandPartners(brandId = null) {
@@ -870,8 +878,12 @@ async function getActiveBrandPartners(brandId = null) {
 // Revenue Metrics
 async function getRevenueMetrics(dateRange, brandId = null) {
   const dateFilter = buildDateFilter(dateRange);
+  const whereFilter = {
+    ...dateFilter,
+    paymentStatus: 'COMPLETED' // ✅ Only paid orders
+  };
   if (brandId) {
-    dateFilter.brandId = brandId;
+    whereFilter.brandId = brandId;
   }
 
   const revenue = await prisma.order.aggregate({
@@ -884,9 +896,7 @@ async function getRevenueMetrics(dateRange, brandId = null) {
       totalAmount: true,
     },
     _count: true,
-    where: {
-      ...dateFilter,
-    },
+    where: whereFilter, // ✅ FIXED: Now uses whereFilter with paymentStatus
   });
 
   // Revenue by payment method
@@ -894,9 +904,7 @@ async function getRevenueMetrics(dateRange, brandId = null) {
     by: ["paymentMethod"],
     _sum: { totalAmount: true },
     _count: true,
-    where: {
-      ...dateFilter,
-    },
+    where: whereFilter, // ✅ FIXED: Now uses whereFilter with paymentStatus
   });
 
   return {
@@ -916,7 +924,10 @@ async function getRevenueMetrics(dateRange, brandId = null) {
 // Customer Metrics
 async function getCustomerMetrics(dateRange, brandId = null) {
   const dateFilter = buildDateFilter(dateRange);
-  const orderFilter = { ...dateFilter };
+  const orderFilter = { 
+    ...dateFilter,
+    paymentStatus: 'COMPLETED' // ✅ FIXED: Added paymentStatus filter
+  };
   if (brandId) {
     orderFilter.brandId = brandId;
   }
@@ -925,11 +936,13 @@ async function getCustomerMetrics(dateRange, brandId = null) {
   let repeatQuery = `
     SELECT COUNT(DISTINCT "userId")::int as count
     FROM "Order"
-    WHERE "userId" IN (
+    WHERE "paymentStatus" = 'COMPLETED'
+      AND "userId" IN (
       SELECT "userId"
       FROM "Order"
-      WHERE 1=1
+      WHERE "paymentStatus" = 'COMPLETED'
   `;
+  // ✅ FIXED: Added paymentStatus filters to both outer and inner queries
   
   const repeatParams = [];
   
@@ -972,7 +985,6 @@ async function getCustomerMetrics(dateRange, brandId = null) {
             : undefined,
         },
       }),
-      // Customers with more than 1 order
       prisma.$queryRawUnsafe(repeatQuery, ...repeatParams),
     ]);
 
@@ -990,18 +1002,21 @@ async function getCustomerMetrics(dateRange, brandId = null) {
   };
 }
 
+
 // Occasion Metrics
 async function getOccasionMetrics(dateRange, brandId = null) {
   const dateFilter = buildDateFilter(dateRange);
+  const whereFilter = {
+    ...dateFilter,
+    paymentStatus: 'COMPLETED' // ✅ Only paid orders
+  };
   if (brandId) {
-    dateFilter.brandId = brandId;
+    whereFilter.brandId = brandId;
   }
 
   // Check if there are any completed orders
   const ordersWithOccasions = await prisma.order.count({
-    where: {
-      ...dateFilter,
-    },
+    where: whereFilter, // ✅ FIXED: Now uses whereFilter with paymentStatus
   });
 
   // Return empty array if no orders found
@@ -1013,9 +1028,7 @@ async function getOccasionMetrics(dateRange, brandId = null) {
     by: ["occasionId"],
     _count: true,
     _sum: { totalAmount: true },
-    where: {
-      ...dateFilter,
-    },
+    where: whereFilter, // ✅ Already correct
     orderBy: {
       _count: {
         occasionId: "desc",

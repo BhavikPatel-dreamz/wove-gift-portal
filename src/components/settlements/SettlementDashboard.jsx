@@ -37,11 +37,11 @@ function StatCard({ title, amount, currency, color, icon }) {
   const colors = colorClasses[color];
 
   return (
-    <div className={`relative flex h-[90px] w-full border ${colors.border} items-center justify-between rounded-xl ${colors.bg} p-4  transition-transform hover:scale-105`}>
+    <div className={`relative flex h-[90px] w-full border ${colors.border} items-center justify-between rounded-xl ${colors.bg} p-4 transition-transform hover:scale-105`}>
       <div className="flex flex-col gap-1">
         <p className={`text-sm sm:text-base font-medium ${colors.text}`}>{title}</p>
         <p className={`text-base sm:text-lg font-semibold ${colors.text}`}>
-          {getCurrencySymbol(currency)} {amount.toLocaleString()}
+          {getCurrencySymbol(currency)}{amount?.toLocaleString() || "0"}
         </p>
       </div>
       <div className={`flex h-10 w-10 flex-shrink-0 mb-5 items-center justify-center rounded-lg ${colors.iconBg}`}>
@@ -52,28 +52,49 @@ function StatCard({ title, amount, currency, color, icon }) {
 }
 
 function SettlementDashboard({ settlement }) {
+  // Debug log to check settlement data
+  console.log("Settlement Dashboard Data:", {
+    totalSoldAmount: settlement?.totalSoldAmount,
+    redeemedAmount: settlement?.redeemedAmount,
+    outstandingAmount: settlement?.outstandingAmount,
+    netPayable: settlement?.netPayable,
+  });
+
+  if (!settlement) {
+    return (
+      <div className="w-full">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:gap-5">
+          <div className="h-[90px] rounded-xl bg-gray-100 animate-pulse"></div>
+          <div className="h-[90px] rounded-xl bg-gray-100 animate-pulse"></div>
+          <div className="h-[90px] rounded-xl bg-gray-100 animate-pulse"></div>
+          <div className="h-[90px] rounded-xl bg-gray-100 animate-pulse"></div>
+        </div>
+      </div>
+    );
+  }
+
   const stats = [
     {
       title: "Total Sold",
-      amount: settlement.totalSoldAmount,
+      amount: settlement.totalSoldAmount || 0,
       color: "blue",
       icon: "/Frame (4).svg"
     },
     {
       title: "Total Redeemed",
-      amount: settlement.redeemedAmount,
+      amount: settlement.redeemedAmount || 0,
       color: "green",
       icon: "/Frame (1).svg"
     },
     {
       title: "Outstanding",
-      amount: settlement.outstandingAmount,
+      amount: settlement.outstandingAmount || 0,
       color: "purple",
       icon: "/Frame (2).svg"
     },
     {
       title: "Amount Owed",
-      amount: settlement.netPayable,
+      amount: settlement.netPayable || 0,
       color: "orange",
       icon: "/Frame (3).svg"
     }
@@ -88,10 +109,9 @@ function SettlementDashboard({ settlement }) {
             key={index}
             title={stat.title}
             amount={stat.amount}
-            currency={settlement.currency}
+            currency={settlement.currency || "USD"}
             color={stat.color}
             icon={stat.icon}
-            getCurrencySymbol={getCurrencySymbol}
           />
         ))}
       </div>

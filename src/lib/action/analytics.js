@@ -312,11 +312,9 @@ async function getSettlementData(brandId) {
 
 export async function fetchBrandAnalytics({ filterMonth = null, filterYear = null, search = null } = {}) {
   try {
-    // Calculate date range
-    console.log("*******", filterMonth, filterYear, search );
+    console.log("*******", filterMonth, filterYear, search);
     
-     // Parse filterMonth if provided (format: "YYYY-MM")
-    let period = null;
+    // Parse filterMonth if provided (format: "YYYY-MM")
     let parsedYear = filterYear;
     let parsedMonth = filterMonth;
     
@@ -325,11 +323,31 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
       parsedYear = parseInt(year);
       parsedMonth = parseInt(month);
     }
-    
-    const dateRange = getDateRanges(period, parsedMonth, parsedYear);
-    const dateFilter = buildDateFilters(dateRange);
 
-   // Build search filter
+    // ==================== DATE RANGE FILTER ====================
+    let startDate, endDate;
+
+    if (parsedMonth && parsedYear) {
+      startDate = new Date(parsedYear, parsedMonth - 1, 1);
+      endDate = new Date(parsedYear, parsedMonth, 0, 23, 59, 59, 999);
+    } else if (parsedYear) {
+      startDate = new Date(parsedYear, 0, 1);
+      endDate = new Date(parsedYear, 11, 31, 23, 59, 59, 999);
+    } else {
+      // Default to last month if no filters
+      const now = new Date();
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    }
+
+    const dateFilter = {
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      }
+    };
+
+    // Build search filter
     const searchFilter = search && typeof search === 'string' ? {
       brandName: {
         contains: search,
@@ -337,7 +355,7 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
       }
     } : {};
 
-    // Get all active brands with their terms
+    // Get all active brands with their complete details
     const brands = await prisma.brand.findMany({
       where: { 
         isActive: true,
@@ -364,238 +382,308 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
     // Get analytics data for each brand
     const brandAnalytics = await Promise.all(
       brands.map(async (brand) => {
-        const settlementTrigger = brand.brandTerms?.settlementTrigger || "onPurchase";
-        const commissionType = brand.brandTerms?.commissionType || "Percentage";
-        const commissionValue = brand.brandTerms?.commissionValue || 0;
-        const breakageShare = brand.brandTerms?.breakageShare || 0;
-        const vatRate = brand.brandTerms?.vatRate || 0;
+        const brandTerms = brand.brandTerms;
+        const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
+        const commissionType = brandTerms?.commissionType || "Percentage";
+        const commissionValue = brandTerms?.commissionValue || 0;
+        const breakageShare = brandTerms?.breakageShare || 0;
+        const vatRate = brandTerms?.vatRate || 0;
+        const currency = brand.currency || "ZAR";
 
-        // Get all voucher codes for this brand
-        const voucherCodes = await prisma.voucherCode.findMany({
-          where: {
-            order: {
-              brandId: brand.id,
-              ...dateFilter,
-            },
-          },
-          select: {
-            id: true,
-            isRedeemed: true,
-            originalValue: true,
-            remainingValue: true,
-            expiresAt: true,
-            _count: {
-              select: { redemptions: true },
-            },
-          },
-        });
-
-        const totalIssued = voucherCodes.length;
-
-        // Total issued value (always from orders/purchases)
-        const totalIssuedValueAgg = await prisma.order.aggregate({
-          _sum: { totalAmount: true },
+        // Get existing settlements for this brand in the period (FIRST - to match getSettlements logic)
+        const settlements = await prisma.settlements.findMany({
           where: { 
-            brandId: brand.id, 
-            paymentStatus: "COMPLETED",
-            ...dateFilter 
+            brandId: brand.id,
+            periodStart: {
+              gte: startDate,
+              lte: endDate,
+            }
           },
-        });
-        const totalIssuedValue = totalIssuedValueAgg._sum.totalAmount || 0;
-
-        // Count redeemed vouchers
-        const redeemedVouchers = voucherCodes.filter(
-          (vc) =>
-            vc._count.redemptions > 0 ||
-            vc.isRedeemed ||
-            vc.remainingValue < vc.originalValue
-        );
-        const totalRedeemed = redeemedVouchers.length;
-
-        // Calculate total redeemed value
-        const totalRedeemedValue = voucherCodes.reduce(
-          (sum, vc) => sum + (vc.originalValue - vc.remainingValue),
-          0
-        );
-
-        // Calculate breakage (expired vouchers)
-        const now = new Date();
-        const expiredVouchers = voucherCodes.filter(
-          (vc) => vc.expiresAt && new Date(vc.expiresAt) < now && vc.remainingValue > 0
-        );
-        const breakageAmount = expiredVouchers.reduce(
-          (sum, vc) => sum + vc.remainingValue,
-          0
-        );
-        const adjustedBreakage = breakageShare
-          ? Math.round((breakageAmount * breakageShare) / 100)
-          : 0;
-
-        // Settlement calculations based on trigger
-        let baseAmount = 0;
-        let commissionAmount = 0;
-        let vatAmount = 0;
-        let netPayable = 0;
-        let commissionDisplay = "";
-        let vatDisplay = "";
-
-        if (settlementTrigger === "onPurchase") {
-          // Settlement based on total sold/purchased amount
-          baseAmount = totalIssuedValue;
-          
-          // Commission calculation
-          if (commissionType === "Percentage") {
-            commissionAmount = Math.round((baseAmount * commissionValue) / 100);
-            commissionDisplay = `-₹${commissionAmount.toLocaleString()} (${commissionValue}%)`;
-          } else {
-            commissionAmount = Math.round(commissionValue * totalIssued);
-            commissionDisplay = `-₹${commissionAmount.toLocaleString()} (Fixed)`;
-          }
-
-          // VAT on commission
-          if (vatRate > 0) {
-            vatAmount = Math.round((commissionAmount * vatRate) / 100);
-            vatDisplay = `+₹${vatAmount.toLocaleString()} (${vatRate}% on comm.)`;
-          } else {
-            vatDisplay = "₹0";
-          }
-
-          // Net = Base - Commission - Breakage + VAT
-          netPayable = baseAmount - commissionAmount - adjustedBreakage + vatAmount;
-
-        } else if (settlementTrigger === "onRedemption") {
-          // Settlement based on actual redemption amount
-          baseAmount = totalRedeemedValue;
-
-          // Commission calculation on redeemed amount
-          if (commissionType === "Percentage") {
-            commissionAmount = Math.round((baseAmount * commissionValue) / 100);
-            commissionDisplay = `-₹${commissionAmount.toLocaleString()} (${commissionValue}%)`;
-          } else {
-            commissionAmount = Math.round(commissionValue * totalRedeemed);
-            commissionDisplay = `-₹${commissionAmount.toLocaleString()} (Fixed)`;
-          }
-
-          // VAT on commission
-          if (vatRate > 0) {
-            vatAmount = Math.round((commissionAmount * vatRate) / 100);
-            vatDisplay = `+₹${vatAmount.toLocaleString()} (${vatRate}% on comm.)`;
-          } else {
-            vatDisplay = "₹0";
-          }
-
-          // Net = Base - Commission + VAT (no breakage on redemption)
-          netPayable = baseAmount - commissionAmount + vatAmount;
-        }
-
-        // Redemption rate (always redeemed value / issued value)
-        const redemptionRate =
-          totalIssuedValue > 0
-            ? Math.round((totalRedeemedValue / totalIssuedValue) * 100)
-            : 0;
-
-        // Get existing settlements
-        const settlementsAgg = await prisma.settlements.groupBy({
-          by: ["status"],
-          where: { brandId: brand.id, ...dateFilter },
-          _sum: { netPayable: true },
-        });
-
-        // Total paid amount
-        const totalPaidAmount = settlementsAgg
-          .filter((s) => s.status === "Paid")
-          .reduce((sum, s) => sum + (s._sum.netPayable || 0), 0);
-
-        // Pending settlement calculation
-        const pendingSettlement = Math.max(0, netPayable - totalPaidAmount);
-
-        // Latest settlement for reference
-        const latestSettlement = await prisma.settlements.findFirst({
-          where: { brandId: brand.id, ...dateFilter },
-          orderBy: { createdAt: "desc" },
           select: {
             id: true,
+            status: true,
+            totalSold: true,
             totalSoldAmount: true,
+            totalRedeemed: true,
             redeemedAmount: true,
+            outstanding: true,
+            outstandingAmount: true,
             commissionAmount: true,
             breakageAmount: true,
             vatAmount: true,
             netPayable: true,
+            totalPaid: true,
             remainingAmount: true,
-            status: true,
+            createdAt: true,
           },
+          orderBy: { createdAt: "desc" },
         });
+
+        // Get latest settlement for reference
+        const latestSettlement = settlements[0] || null;
+
+        // If settlement exists, use its calculated values (like getSettlements does)
+        let totalIssued = 0;
+        let totalIssuedValue = 0;
+        let totalRedeemed = 0;
+        let totalRedeemedValue = 0;
+        let outstandingCount = 0;
+        let outstandingAmount = 0;
+        let expiredCount = 0;
+        let totalBreakageValue = 0;
+
+        if (latestSettlement) {
+          // Use settlement data directly (this is what getSettlements shows)
+          totalIssued = latestSettlement.totalSold || 0;
+          totalIssuedValue = latestSettlement.totalSoldAmount || 0;
+          totalRedeemed = latestSettlement.totalRedeemed || 0;
+          totalRedeemedValue = latestSettlement.redeemedAmount || 0;
+          outstandingCount = latestSettlement.outstanding || 0;
+          outstandingAmount = latestSettlement.outstandingAmount || 0;
+          totalBreakageValue = latestSettlement.breakageAmount || 0;
+        } else {
+          // Fallback: Calculate from voucher codes if no settlement exists
+          const voucherCodes = await prisma.voucherCode.findMany({
+            where: {
+              order: {
+                brandId: brand.id,
+                paymentStatus: "COMPLETED",
+                ...dateFilter,
+              },
+            },
+            select: {
+              id: true,
+              isRedeemed: true,
+              originalValue: true,
+              remainingValue: true,
+              expiresAt: true,
+              _count: {
+                select: { redemptions: true },
+              },
+            },
+          });
+
+          totalIssued = voucherCodes.length;
+
+          // Total issued value
+          const totalIssuedValueAgg = await prisma.order.aggregate({
+            _sum: { totalAmount: true },
+            where: { 
+              brandId: brand.id, 
+              paymentStatus: "COMPLETED",
+              ...dateFilter 
+            },
+          });
+          totalIssuedValue = totalIssuedValueAgg._sum.totalAmount || 0;
+
+          // Count redeemed vouchers
+          const redeemedVouchers = voucherCodes.filter(
+            (vc) =>
+              vc._count.redemptions > 0 ||
+              vc.isRedeemed ||
+              vc.remainingValue < vc.originalValue
+          );
+          totalRedeemed = redeemedVouchers.length;
+
+          // Calculate total redeemed value
+          totalRedeemedValue = voucherCodes.reduce(
+            (sum, vc) => sum + (vc.originalValue - vc.remainingValue),
+            0
+          );
+
+          // Calculate outstanding
+          const outstandingVouchers = voucherCodes.filter(
+            (vc) => vc.remainingValue > 0 && vc._count.redemptions === 0
+          );
+          outstandingCount = outstandingVouchers.length;
+          outstandingAmount = voucherCodes.reduce(
+            (sum, vc) => sum + vc.remainingValue,
+            0
+          );
+
+          // Calculate breakage
+          const now = new Date();
+          const expiredVouchers = voucherCodes.filter(
+            (vc) => vc.expiresAt && new Date(vc.expiresAt) < now && vc.remainingValue > 0
+          );
+          expiredCount = expiredVouchers.length;
+          totalBreakageValue = expiredVouchers.reduce(
+            (sum, vc) => sum + vc.remainingValue,
+            0
+          );
+        }
+
+        // ==================== SETTLEMENT CALCULATIONS ====================
+        
+        // If settlement exists, use its pre-calculated values (MATCH getSettlements exactly)
+        let baseAmount = 0;
+        let commissionAmount = 0;
+        let vatAmount = 0;
+        let breakageAmount = 0;
+        let netPayable = 0;
+
+        if (latestSettlement) {
+          // Use values from settlement (this is what getSettlements displays)
+          baseAmount = settlementTrigger === "onRedemption" 
+            ? (latestSettlement.redeemedAmount || 0)
+            : (latestSettlement.totalSoldAmount || 0);
+          
+          commissionAmount = latestSettlement.commissionAmount || 0;
+          vatAmount = latestSettlement.vatAmount || 0;
+          breakageAmount = latestSettlement.breakageAmount || 0;
+          netPayable = latestSettlement.netPayable || 0;
+        } else {
+          // Calculate if no settlement exists (fallback calculation)
+          baseAmount = settlementTrigger === "onRedemption" 
+            ? totalRedeemedValue 
+            : totalIssuedValue;
+
+          // Calculate commission based on type
+          if (baseAmount > 0) {
+            if (commissionType === "Percentage") {
+              commissionAmount = Math.round((baseAmount * commissionValue) / 100);
+            } else if (commissionType === "Fixed") {
+              const itemCount = settlementTrigger === "onRedemption"
+                ? totalRedeemed
+                : totalIssued;
+              commissionAmount = Math.round(commissionValue * itemCount);
+            }
+          }
+
+          // Calculate VAT on commission
+          vatAmount = Math.round((commissionAmount * vatRate) / 100);
+
+          // Calculate breakage
+          breakageAmount = breakageShare && totalBreakageValue > 0
+            ? Math.round((totalBreakageValue * breakageShare) / 100)
+            : 0;
+
+          // Calculate net payable
+          netPayable = baseAmount - commissionAmount + vatAmount - breakageAmount;
+        }
+
+        // Calculate total paid amount (from all Paid settlements)
+        const totalPaidAmount = settlements
+          .filter((s) => s.status === "Paid")
+          .reduce((sum, s) => sum + (s.totalPaid || 0), 0);
+
+        // Calculate pending settlement (what still needs to be paid)
+        const pendingSettlement = Math.max(0, netPayable - totalPaidAmount);
+
+        // Redemption rate (always redeemed value / issued value)
+        const redemptionRate = totalIssuedValue > 0
+          ? Math.round((totalRedeemedValue / totalIssuedValue) * 100)
+          : 0;
 
         return {
           brandId: brand.id,
           brandName: brand.brandName,
           logo: brand.logo,
-          currency: brand.currency || "ZAR",
+          currency,
+          
+          // Settlement configuration
           settlementTrigger,
+          
+          // Voucher counts (from settlement or calculated)
           totalIssued,
-          totalIssuedValue,
           totalRedeemed,
+          outstanding: outstandingCount,
+          expired: expiredCount,
+          
+          // Amounts (from settlement or calculated)
+          totalIssuedValue,
           totalRedeemedValue,
+          outstandingAmount,
+          
+          // Performance metrics
           redemptionRate,
-          pendingSettlement,
+          
+          // Settlement calculations (MATCHING getSettlements exactly)
           settlementCalculation: {
             baseAmount,
             commissionAmount,
-            commissionDisplay,
             commissionType,
             commissionValue,
-            breakageAmount: adjustedBreakage,
+            commissionPercentage: commissionType === "Percentage" ? commissionValue : null,
+            commissionFixed: commissionType === "Fixed" ? commissionValue : null,
+            breakageAmount,
+            totalBreakageValue,
+            breakageShare,
             vatAmount,
-            vatDisplay,
             vatRate,
             netPayable,
             trigger: settlementTrigger,
           },
-          settlementDetails: latestSettlement
-            ? {
-                id: latestSettlement.id,
-                totalSold: latestSettlement.totalSoldAmount,
-                redeemed: latestSettlement.redeemedAmount,
-                commission: latestSettlement.commissionAmount,
-                breakage: latestSettlement.breakageAmount || 0,
-                vat: latestSettlement.vatAmount || 0,
-                totalPayable: latestSettlement.netPayable,
-                remainingAmount: latestSettlement.remainingAmount || 0,
-                status: latestSettlement.status,
-                totalPaidAmount,
-              }
-            : null,
+          
+          // Payment tracking
+          totalPaidAmount,
+          pendingSettlement,
+          
+          // Settlement details (if exists)
+          settlementDetails: latestSettlement ? {
+            id: latestSettlement.id,
+            status: latestSettlement.status,
+            netPayable: latestSettlement.netPayable,
+            totalPaid: latestSettlement.totalPaid || 0,
+            remainingAmount: latestSettlement.remainingAmount || 0,
+            createdAt: latestSettlement.createdAt,
+          } : null,
+          
           hasSettlement: pendingSettlement > 0,
         };
       })
     );
 
-    // Filter & sort brands
+    // Filter brands with activity
     const filteredBrands = brandAnalytics
       .filter((b) => b.totalIssued > 0 || b.totalIssuedValue > 0)
       .sort((a, b) => b.totalIssuedValue - a.totalIssuedValue);
+
+    // Determine filter label
+    let filterLabel;
+    if (parsedMonth && parsedYear) {
+      filterLabel = new Date(parsedYear, parsedMonth - 1).toLocaleString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+    } else if (parsedYear) {
+      filterLabel = parsedYear.toString();
+    } else {
+      filterLabel = startDate.toLocaleString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+    }
 
     // Summary totals
     return {
       success: true,
       data: filteredBrands,
-      period: filterMonth || filterYear || 'all',
       summary: {
         totalBrands: filteredBrands.length,
-        totalVouchersIssued: filteredBrands.reduce(
-          (sum, b) => sum + b.totalIssued,
-          0
-        ),
-        totalVouchersRedeemed: filteredBrands.reduce(
-          (sum, b) => sum + b.totalRedeemed,
-          0
-        ),
-        totalPendingSettlements: filteredBrands.reduce(
-          (sum, b) => sum + b.pendingSettlement,
-          0
-        ),
+        totalVouchersIssued: filteredBrands.reduce((sum, b) => sum + b.totalIssued, 0),
+        totalVouchersRedeemed: filteredBrands.reduce((sum, b) => sum + b.totalRedeemed, 0),
+        totalIssuedValue: filteredBrands.reduce((sum, b) => sum + b.totalIssuedValue, 0),
+        totalRedeemedValue: filteredBrands.reduce((sum, b) => sum + b.totalRedeemedValue, 0),
+        totalOutstandingAmount: filteredBrands.reduce((sum, b) => sum + b.outstandingAmount, 0),
+        totalCommissionAmount: filteredBrands.reduce((sum, b) => sum + b.settlementCalculation.commissionAmount, 0),
+        totalVatAmount: filteredBrands.reduce((sum, b) => sum + b.settlementCalculation.vatAmount, 0),
+        totalBreakageAmount: filteredBrands.reduce((sum, b) => sum + b.settlementCalculation.breakageAmount, 0),
+        totalNetPayable: filteredBrands.reduce((sum, b) => sum + b.settlementCalculation.netPayable, 0),
+        totalPaidAmount: filteredBrands.reduce((sum, b) => sum + b.totalPaidAmount, 0),
+        totalPendingSettlements: filteredBrands.reduce((sum, b) => sum + b.pendingSettlement, 0),
         onPurchaseBrands: filteredBrands.filter(b => b.settlementTrigger === "onPurchase").length,
         onRedemptionBrands: filteredBrands.filter(b => b.settlementTrigger === "onRedemption").length,
+      },
+      filters: {
+        appliedMonth: filterMonth,
+        appliedYear: filterYear,
+        appliedSearch: search,
+        period: filterLabel,
+        dateRange: {
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+        },
       },
     };
   } catch (error) {
@@ -603,15 +691,29 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
     return {
       success: false,
       data: [],
-      period: filterMonth || filterYear || 'all',
       summary: {
         totalBrands: 0,
         totalVouchersIssued: 0,
         totalVouchersRedeemed: 0,
+        totalIssuedValue: 0,
+        totalRedeemedValue: 0,
+        totalOutstandingAmount: 0,
+        totalCommissionAmount: 0,
+        totalVatAmount: 0,
+        totalBreakageAmount: 0,
+        totalNetPayable: 0,
+        totalPaidAmount: 0,
         totalPendingSettlements: 0,
         onPurchaseBrands: 0,
         onRedemptionBrands: 0,
       },
+      filters: {
+        appliedMonth: filterMonth,
+        appliedYear: filterYear,
+        appliedSearch: search,
+        period: 'all',
+      },
+      error: error.message,
     };
   }
 }
@@ -685,91 +787,63 @@ export async function processSettlement(settlementId, partialAmount, notes) {
         where: { id: settlementId },
         data: {
           status: "Paid",
-          paidAt: new Date(),
-          paymentReference,
-          commissionAmount: Math.round(commissionAmount),
-          vatAmount: Math.round(vatAmount),
-          netPayable: Math.round(netPayable),
+          totalPaid: netPayable,
           remainingAmount: 0,
-          notes:
-            notes ||
-            `Full payment of ${paymentToApply} processed (Commission: ${commissionAmount}, VAT: ${vatAmount})`,
+          lastPaymentDate: new Date(),
+          paymentCount: { increment: 1 },
+          paymentHistory: {
+            push: {
+              id: settlementId,
+              amount: paymentToApply,
+              paidAt: new Date(),
+              reference: paymentReference,
+              notes: notes || `Full payment of ${paymentToApply} processed.`,
+            },
+          },
         },
       });
 
       return {
         success: true,
-        message: `Full settlement of ${paymentToApply} processed successfully for ${settlement.brand.brandName}`,
-        paymentType: "full",
-        data: {
-          settlement: updatedSettlement,
-          amountPaid: paymentToApply,
-          remainingAmount: 0,
-          paymentReference,
-        },
+        message: "Full payment processed successfully",
+        data: updatedSettlement,
       };
-    }
+    } else {
+      // PARTIAL PAYMENT
+      const updatedTotalPaid = (settlement.totalPaid || 0) + paymentToApply;
 
-    // PARTIAL PAYMENT
-    const [updatedSettlement, newSettlement] = await prisma.$transaction([
-      prisma.settlements.update({
+      const updatedSettlement = await prisma.settlements.update({
         where: { id: settlementId },
         data: {
-          status: "Paid",
-          paidAt: new Date(),
-          netPayable: paymentToApply,
-          paymentReference,
-          commissionAmount: Math.round(commissionAmount),
-          vatAmount: Math.round(vatAmount),
-          remainingAmount: Math.round(remainingAmount),
-          notes:
-            notes ||
-            `Partial payment of ${paymentToApply} processed. Remaining: ${remainingAmount.toFixed(
-              2
-            )} (Commission: ${commissionAmount}, VAT: ${vatAmount})`,
+          status: "Partial",
+          totalPaid: updatedTotalPaid,
+          remainingAmount: remainingAmount,
+          lastPaymentDate: new Date(),
+          paymentCount: { increment: 1 },
+          paymentHistory: {
+            push: {
+              id: settlementId,
+              amount: paymentToApply,
+              paidAt: new Date(),
+              reference: paymentReference,
+              notes: notes || `Partial payment of ${paymentToApply} processed.`,
+            },
+          },
         },
-      }),
-      prisma.settlements.create({
-        data: {
-          brandId: settlement.brandId,
-          settlementPeriod: settlement.settlementPeriod,
-          periodStart: settlement.periodStart,
-          periodEnd: settlement.periodEnd,
-          totalSold: 0,
-          totalSoldAmount: 0,
-          totalRedeemed: 0,
-          redeemedAmount: 0,
-          outstanding: 0,
-          outstandingAmount: 0,
-          commissionAmount: 0,
-          breakageAmount: 0,
-          vatAmount: 0,
-          netPayable: Math.round(remainingAmount),
-          remainingAmount: Math.round(remainingAmount),
-          status: "Pending",
-          notes: `Remaining balance from settlement ${settlementId}. Original: ${netPayable}, Paid: ${paymentToApply}, Remaining: ${remainingAmount}`,
-        },
-      }),
-    ]);
+      });
 
-    return {
-      success: true,
-      message: `Partial payment of ${paymentToApply} processed successfully for ${settlement.brand.brandName}`,
-      paymentType: "partial",
-      data: {
-        paidSettlement: updatedSettlement,
-        newSettlement,
-        amountPaid: paymentToApply,
-        remainingAmount,
-        paymentReference,
-      },
-    };
+      return {
+        success: true,
+        message: `Partial payment of ${paymentToApply} processed successfully`,
+        data: updatedSettlement,
+      };
+    }
   } catch (error) {
-    console.error("Process Settlement Error:", error);
+    console.error("Error processing settlement:", error);
     return {
       success: false,
-      message: "Failed to process settlement",
-      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error",
+      message: "An error occurred while processing the settlement.",
+      error: error.message,
     };
   }
 }

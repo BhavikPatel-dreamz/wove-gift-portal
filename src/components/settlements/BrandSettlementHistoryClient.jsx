@@ -37,6 +37,9 @@ const BrandSettlementHistoryClient = ({
         []
     );
 
+    console.log(("brandInfo",brandInfo));
+    
+
     const sortOptions = useMemo(
         () => [
             { value: "periodStart_desc", label: "Latest First" },
@@ -111,16 +114,46 @@ const BrandSettlementHistoryClient = ({
         [router, brandId]
     );
 
-    console.log("initialData", initialData);
-
     const getCurrencySymbol = (code) =>
         currencyList.find((c) => c.code === code)?.symbol || "$";
 
+    // Fixed formatDateRange function
+    function formatDateRange(input) {
+        if (!input || typeof input !== 'string') return 'N/A';
+        
+        const monthMap = {
+            Jan: '01', Feb: '02', Mar: '03', Apr: '04',
+            May: '05', Jun: '06', Jul: '07', Aug: '08',
+            Sep: '09', Oct: '10', Nov: '11', Dec: '12'
+        };
 
+        try {
+            const parts = input.split(' - ');
+            if (parts.length !== 2) return input;
+
+            const [start, end] = parts;
+
+            const format = (dateStr) => {
+                if (!dateStr) return '';
+                const cleanDateStr = dateStr.replace(',', '').trim();
+                const dateParts = cleanDateStr.split(' ');
+                if (dateParts.length !== 3) return dateStr;
+                
+                const [month, day, year] = dateParts;
+                const dayPadded = String(day).padStart(2, '0');
+                return `${dayPadded}/${monthMap[month] || '00'}/${year}`;
+            };
+
+            return `${format(start)} - ${format(end)}`;
+        } catch (error) {
+            console.error('Error formatting date range:', error);
+            return input;
+        }
+    }
 
     const StatusBadge = useMemo(
         () =>
-            ({ status , row}) => {
+            ({ status, row }) => {
                 const statusConfig = {
                     Pending: {
                         icon: Clock,
@@ -155,7 +188,7 @@ const BrandSettlementHistoryClient = ({
                             title="View Overview"
                             aria-label="View Overview"
                         >
-                        <Eye className="w-5 h-5" />
+                            <Eye className="w-5 h-5" />
                         </Link>
                         <span
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}
@@ -166,7 +199,7 @@ const BrandSettlementHistoryClient = ({
                     </div>
                 );
             },
-        []
+        [brandId]
     );
 
     const ActionButtons = useMemo(
@@ -202,102 +235,149 @@ const BrandSettlementHistoryClient = ({
 
     const columnHelper = createColumnHelper();
 
-    function formatDateRange(input) {
-        const monthMap = {
-            Jan: '01', Feb: '02', Mar: '03', Apr: '04',
-            May: '05', Jun: '06', Jul: '07', Aug: '08',
-            Sep: '09', Oct: '10', Nov: '11', Dec: '12'
-        };
-
-        const [start, end] = input.split(' - ');
-
-        const format = (dateStr) => {
-            const [month, day, year] = dateStr.replace(',', '').split(' ');
-            return `${day.padStart(2, '0')}/${monthMap[month]}/${year}`;
-        };
-
-        return `${format(start)}-${format(end)}`;
-    }
-
-
     const customColumns = useMemo(
         () => [
             columnHelper.accessor("settlementPeriod", {
                 header: "PERIOD",
                 cell: (info) => (
-                    <div className="font-semibold text-[#1A1A1A]">{formatDateRange(info.getValue())}</div>
-                ),
-            }),
-            columnHelper.accessor("totalSold", {
-                header: "SOLD",
-                cell: (info) => (
-                    <div>
-                        <div className="font-semibold text-[#1A1A1A]">
-                            {formatCurrency(info.row.original.baseAmount)}
-                        </div>
-                        <div className="text-xs text-gray-500">{info.getValue()} Units</div>
+                    <div className="font-semibold text-[#1A1A1A] text-xs">
+                        {formatDateRange(info.getValue())}
                     </div>
                 ),
+            }),
+            columnHelper.accessor((row) => {
+                // Base amount based on settlement trigger
+                return row.settlementTrigger === "onRedemption"
+                    ? row.redeemedAmount
+                    : row.totalSoldAmount;
+            }, {
+                id: "baseAmount",
+                header: "BASE AMOUNT",
+                cell: (info) => {
+                    const row = info.row.original;
+                    const baseAmount = info.getValue() || 0;
+                    const trigger = row.settlementTrigger || row.brandTerms?.settlementTrigger;
+                    
+                    return (
+                        <div>
+                            <div className="font-semibold text-[#1A1A1A]">
+                                {getCurrencySymbol(row.currency)}
+                                {baseAmount.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                                {row.totalSold || 0} Units • {trigger === "onRedemption" ? "Redeemed" : "Sold"}
+                            </div>
+                        </div>
+                    );
+                },
             }),
             columnHelper.accessor("totalRedeemed", {
                 header: "REDEEMED",
                 cell: (info) => {
-                    const redeemedAmount =
-                        info.row.original.baseAmount *
-                        (info.row.original.redemptionRate / 100);
+                    const row = info.row.original;
+                    const redeemedAmount = row.redeemedAmount || 0;
+                    const totalSoldAmount = row.totalSoldAmount || 0;
+                    const redemptionRate = totalSoldAmount > 0 
+                        ? Math.round((redeemedAmount / totalSoldAmount) * 100)
+                        : 0;
+                    
                     return (
                         <div>
                             <div className="font-semibold text-[#1A1A1A]">
-                                {formatCurrency(redeemedAmount)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                                {info.getValue()} • {info.row.original.redemptionRate}%
+                                {getCurrencySymbol(row.currency)}
+                                {redeemedAmount.toLocaleString()}
                             </div>
                         </div>
                     );
                 },
             }),
             columnHelper.accessor("netPayable", {
-                header: "Net Payable",
-                cell: (info) => (
-                    <div>
-                        <div className="text-[#1A1A1A] font-semibold text-xs">{getCurrencySymbol(info.row.original.currency)}{info.getValue()?.toLocaleString()}</div>
-                        <div className="text-xs text-[#64748B] ">
-                            -{info.row.original.commissionType === 'Percentage'
-                                ? `${info.row.original.commissionValue}%`
-                                : 'Fixed'} Commission on Base Amount
+                header: "NET PAYABLE",
+                cell: (info) => {
+                    const row = info.row.original;
+                    const netPayable = info.getValue() || 0;
+                    const commissionType = row.brandTerms?.commissionType;
+                    const commissionValue = row.brandTerms?.commissionValue || 0;
+                    const vatRate = row.vatRate || row.brandTerms?.vatRate || 0;
+                    const commissionAmount = row.commissionAmount || 0;
+                    const vatAmount = row.vatAmount || 0;
+                    
+                    return (
+                        <div className="space-y-0.5">
+                            <div className="text-[#1A1A1A] font-semibold">
+                                {getCurrencySymbol(row.currency)}
+                                {netPayable.toLocaleString()}
+                            </div>
+                            {commissionAmount >= 1 && commissionType && (
+                                <div className="text-xs text-red-600">
+                                    -{commissionValue}% Commission on Base Amount
+                                </div>
+                            )}
+                            {vatRate >= 1 && vatAmount >= 1 && (
+                                <div className="text-xs text-green-600">
+                                    +{vatRate}% VAT on Commission
+                                </div>
+                            )}
                         </div>
-                        <div className="text-xs text-gray-500">+{info.row.original.vatRate}% VAT on Commission</div>
-                    </div>
-                ),
+                    );
+                },
             }),
             columnHelper.accessor("remainingAmount", {
                 header: "OUTSTANDING",
-                cell: (info) => (
-                    <div className="font-semibold text-[#1A1A1A]">
-                        {formatCurrency(info.getValue())}
-                    </div>
-                ),
+                cell: (info) => {
+                    const amount = info.getValue() || 0;
+                    const row = info.row.original;
+                    const totalPaid = row.totalPaid || 0;
+                    
+                    const isFullyPaid = amount === 0 && totalPaid > 0;
+                    const hasOutstanding = amount > 0;
+                    
+                    return (
+                        <div>
+                            <div className={`font-semibold ${isFullyPaid ? 'text-green-600' : hasOutstanding ? 'text-orange-600' : 'text-gray-900'}`}>
+                                {getCurrencySymbol(row.currency)}
+                                {amount.toLocaleString()}
+                            </div>
+                            {totalPaid > 0 && (
+                                <div className="text-xs text-[#64748B]">
+                                    Paid: {getCurrencySymbol(row.currency)}
+                                    {totalPaid.toLocaleString()}
+                                </div>
+                            )}
+                        </div>
+                    );
+                },
             }),
-            columnHelper.accessor("updatedAt", {
+            columnHelper.accessor("lastPaymentDate", {
                 header: "LAST PAYMENT",
-                cell: (info) => (
-                    <div className="font-semibold text-[#1A1A1A]">
-                        {formatDate(info.getValue())}
-                    </div>
-                ),
+                cell: (info) => {
+                    const row = info.row.original;
+                    return (
+                        <div className="text-sm">
+                            {info.getValue() ? (
+                                <>
+                                    <div className="text-[#1A1A1A] font-semibold text-xs">
+                                        {formatDate(info.getValue())}
+                                    </div>
+                                    {row.paymentCount > 1 && (
+                                        <div className="text-xs text-blue-600">
+                                            +{row.paymentCount - 1} more
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <span className="text-gray-400 text-xs">No payments</span>
+                            )}
+                        </div>
+                    );
+                },
             }),
             columnHelper.accessor("status", {
                 header: "STATUS",
                 cell: (info) => <StatusBadge status={info.getValue()} row={info.row.original} />,
             }),
-            //   columnHelper.display({
-            //     id: "actions",
-            //     header: "",
-            //     cell: ({ row }) => <ActionButtons row={row} />,
-            //   }),
         ],
-        [columnHelper, formatCurrency, formatDate, StatusBadge, ActionButtons]
+        [columnHelper, getCurrencySymbol, formatDate, StatusBadge]
     );
 
     if (error) {
@@ -343,9 +423,9 @@ const BrandSettlementHistoryClient = ({
                     onPageChange={handlePageChange}
                     onSearch={handleSearch}
                     onFilter={handleFilter}
-                    title={`${brandInfo?.name || "Brand"} History`}
+                    title={`${brandInfo?.name || "Brand"} Settlement History`}
                     subtitle="Monitor and manage brand settlements"
-                    searchPlaceholder="Search by code, user email or status"
+                    searchPlaceholder="Search by settlement ID or period"
                     filters={[
                         {
                             name: "status",

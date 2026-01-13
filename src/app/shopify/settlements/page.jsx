@@ -254,7 +254,7 @@ const SettlementsPage = () => {
       cell: (info) => (
         <div>
           <div className="text-gray-900 font-semibold">
-            {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
+            {getCurrencySymbol(info.row.original.currency)}{info.getValue()?.toLocaleString()}
           </div>
           <div className="text-xs text-gray-500">
             {info.row.original.totalSold} vouchers
@@ -269,7 +269,7 @@ const SettlementsPage = () => {
         return (
           <div>
             <div className="text-green-700 font-semibold">
-              {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
+              {getCurrencySymbol(info.row.original.currency)}{info.getValue()?.toLocaleString()}
             </div>
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <TrendingUp className="w-3 h-3" />
@@ -286,11 +286,11 @@ const SettlementsPage = () => {
         return (
           <div>
             <div className="text-gray-900 font-bold">
-              {getCurrencySymbol(info.row.original.currency)}{info.getValue().toLocaleString()}
+              {getCurrencySymbol(info.row.original.currency)}{info.getValue()?.toLocaleString()}
             </div>
             {row.commissionAmount > 0 && (
               <div className="text-xs text-gray-500">
-                Commission: {getCurrencySymbol(info.row.original.currency)}{row.commissionAmount.toLocaleString()}
+                Commission: {getCurrencySymbol(info.row.original.currency)}{row.commissionAmount?.toLocaleString()}
               </div>
             )}
           </div>
@@ -307,7 +307,7 @@ const SettlementsPage = () => {
               amount > 0 ? "text-red-600" : "text-green-600"
             }`}
           >
-            {getCurrencySymbol(info.row.original.currency)}{amount.toLocaleString()}
+            {getCurrencySymbol(info.row.original.currency)}{amount?.toLocaleString()}
           </div>
         );
       },
@@ -360,7 +360,7 @@ const SettlementsPage = () => {
                   <DollarSign className="w-5 h-5 text-blue-500" />
                 </div>
                 <div className="text-2xl font-bold text-gray-900">
-                  {getCurrencySymbol(data && data[0]?.currency)}{summary.totalPayable.toLocaleString()}
+                  {getCurrencySymbol(data && data[0]?.currency)}{summary.totalPayable?.toLocaleString()}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   {summary.totalSettlements} settlements
@@ -373,7 +373,7 @@ const SettlementsPage = () => {
                   <CheckCircle className="w-5 h-5 text-green-500" />
                 </div>
                 <div className="text-2xl font-bold text-green-600">
-                  {getCurrencySymbol(data && data[0]?.currency)}{summary.totalPaid.toLocaleString()}
+                  {getCurrencySymbol(data && data[0]?.currency)}{summary.totalPaid?.toLocaleString()}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   {summary.paidCount} completed
@@ -386,7 +386,7 @@ const SettlementsPage = () => {
                   <AlertTriangle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="text-2xl font-bold text-amber-600">
-                  {getCurrencySymbol(data && data[0]?.currency)}{summary.totalRemaining.toLocaleString()}
+                  {getCurrencySymbol(data && data[0]?.currency)}{summary.totalRemaining?.toLocaleString()}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   {summary.pendingCount} pending
