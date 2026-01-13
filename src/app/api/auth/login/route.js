@@ -7,7 +7,7 @@ export async function POST(request) {
   try {
     const body = await request.json()
 
-    // Validate input
+    // Validate input 
     const validatedData = loginSchema.parse(body)
 
     // Authenticate user
@@ -33,10 +33,7 @@ export async function POST(request) {
     })
   } catch (error) {
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' }, // Don't leak specific error
-        { status: 401 }
-      )
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json(

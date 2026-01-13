@@ -12,9 +12,11 @@ export default function AuthForm({ type = 'login' }) {
     lastName: '',
     confirmPassword: '',
   })
-  const [error, setError] = useState('')
+  const [error, setError] = useState([])
   const [loading, setLoading] = useState(false)
   const [currentType, setCurrentType] = useState(type)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const router = useRouter()
 
   const handleChange = (e) => {
@@ -23,12 +25,12 @@ export default function AuthForm({ type = 'login' }) {
   }
 
   const handleSubmit = async () => {
-    setError('')
+    setError([])
 
     // Client-side validation for signup
     if (currentType === 'signup') {
       if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match')
+        setError([{ path: ['confirmPassword'], message: 'Passwords do not match' }])
         return
       }
     }
@@ -53,16 +55,32 @@ export default function AuthForm({ type = 'login' }) {
       })
 
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Something went wrong')
+      
+      if (!response.ok) {
+        // Handle the error response
+        if (data.error) {
+          try {
+            // Parse the error string to array
+            const parsedErrors = JSON.parse(data.error)
+            setError(Array.isArray(parsedErrors) ? parsedErrors : [])
+          } catch {
+            // If parsing fails, treat as general error
+            setError([{ path: ['form'], message: data.error }])
+          }
+        } else {
+          setError([{ path: ['form'], message: 'An error occurred' }])
+        }
+        return
+      }
 
-      if(data?.user?.role === 'ADMIN'){
-         router.push('/dashboard')
+      if (data?.user?.role === 'ADMIN') {
+        router.push('/dashboard')
       } else {
         router.push('/')
       }
       router.refresh()
     } catch (err) {
-      setError(err.message || 'Something went wrong')
+      setError([{ path: ['form'], message: err.message || 'Something went wrong' }])
     } finally {
       setLoading(false)
     }
@@ -71,6 +89,12 @@ export default function AuthForm({ type = 'login' }) {
   const handleSocialLogin = (provider) => {
     alert(`${provider} login clicked`)
   }
+
+  const getError = (field) =>
+    error?.find((e) => e.path?.[0] === field)?.message
+
+  const getGeneralError = () =>
+    error?.find((e) => e.path?.[0] === 'form')?.message
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
@@ -86,7 +110,7 @@ export default function AuthForm({ type = 'login' }) {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,6 +127,11 @@ export default function AuthForm({ type = 'login' }) {
                   placeholder="Enter Email address"
                 />
               </div>
+                {getError('email') && (
+                  <span className="text-red-500 text-xs mb-3 block">
+                    {getError('email')}
+                  </span>
+                )}
 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -111,18 +140,40 @@ export default function AuthForm({ type = 'login' }) {
                   </svg>
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                  className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
                   placeholder="Enter your password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                >
+                  {showPassword ? (
+                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  
+                  ) : (
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  )}
+                </button>
               </div>
+                {getError('password') && (
+                  <span className="text-red-500 text-xs mb-3 block">
+                    {getError('password')}
+                  </span>
+                )}
 
-              {error && (
-                <p className="text-red-600 text-sm text-center">{error}</p>
+              {getGeneralError() && (
+                <p className="text-red-600 text-sm text-center">{getGeneralError()}</p>
               )}
 
               <button
@@ -201,7 +252,7 @@ export default function AuthForm({ type = 'login' }) {
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,6 +269,11 @@ export default function AuthForm({ type = 'login' }) {
                   placeholder="First Name"
                 />
               </div>
+                {getError('firstName') && (
+                  <span className="text-red-500 text-xs mb-3 block">
+                    {getError('firstName')}
+                  </span>
+                )}
 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -235,6 +291,11 @@ export default function AuthForm({ type = 'login' }) {
                   placeholder="Last Name"
                 />
               </div>
+                {getError('lastName') && (
+                  <span className="text-red-500 text-xs mb-3 block">
+                    {getError('lastName')}
+                  </span>
+                )}
 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -252,6 +313,11 @@ export default function AuthForm({ type = 'login' }) {
                   placeholder="Enter Email address"
                 />
               </div>
+                {getError('email') && (
+                  <span className="text-red-500 text-xs mb-3 block">
+                    {getError('email')}
+                  </span>
+                )}
 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -260,15 +326,37 @@ export default function AuthForm({ type = 'login' }) {
                   </svg>
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                  className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
                   placeholder="Create Password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                >
+                  {showPassword ? (
+                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                   </svg>
+                   
+                  ) : (
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  )}
+                </button>
               </div>
+                {getError('password') && (
+                  <span className="text-red-500 text-xs mb-3 block">
+                    {getError('password')}
+                  </span>
+                )}
 
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -277,18 +365,40 @@ export default function AuthForm({ type = 'login' }) {
                   </svg>
                 </div>
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   id="confirmPassword"
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                  className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
                   placeholder="Confirm Password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                >
+                  {showConfirmPassword ? (
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                   
+                  ) : (
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                  )}
+                </button>
               </div>
+                {getError('confirmPassword') && (
+                  <span className="text-red-500 text-xs mb-3 block">
+                    {getError('confirmPassword')}
+                  </span>
+                )}
 
-              {error && (
-                <p className="text-red-600 text-sm text-center">{error}</p>
+              {getGeneralError() && (
+                <p className="text-red-600 text-sm text-center">{getGeneralError()}</p>
               )}
 
               <button

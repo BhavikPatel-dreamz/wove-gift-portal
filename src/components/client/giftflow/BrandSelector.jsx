@@ -27,7 +27,6 @@ const BrandSelector = () => {
 
   console.log("selectedBrand", premiumBrands,selectedBrand);
 
-
   useEffect(() => {
     const fetchBrands = async () => {
       try {

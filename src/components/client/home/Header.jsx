@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from '@/contexts/SessionContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { destroySession } from '../../../lib/action/userAction/session';
 import { usePathname, useRouter } from 'next/navigation';
@@ -44,7 +44,7 @@ const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(countries[0]);
-
+  const [openDropdown, setOpenDropdown] = useState(false);
 
 
   const handleSelect = (country) => {
@@ -78,10 +78,32 @@ const Header = () => {
     setMobileMenuOpen(false);
   };
   const pathname = usePathname();
+  
 
   const activeTab = Object.keys(navLinks).find(
     (key) => navLinks[key] === pathname
   );
+  const dropdownRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpenDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+  const linkClass = (path) =>
+    `block px-6 py-2 text-sm rounded-md transition
+     ${
+       pathname === path
+         ? "text-black font-semibold bg-gray-100"
+         : "text-gray-700 hover:bg-gray-100"
+     }`;
 
 
   return (
@@ -259,40 +281,90 @@ const Header = () => {
                           </span>
                         </button>
                       </Link>
-                    ) : (
-                      <button
-                        onClick={() => router.push('/my-gift')}
-                        className="
-    inline-flex items-center gap-2
-    cursor-pointer
-    bg-[#ED457D] text-white
-    text-xs lg:text-sm font-bold
-    px-3 lg:px-4 py-2
-    rounded-full
-    border-none
-    transition-all duration-300 ease-in-out
-    hover:bg-[#D93B6E]
-    hover:-translate-y-0.5
-    hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
-    active:translate-y-0
-    active:scale-[0.96]
-    active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
-  "
-                      >
-
-                        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="18" viewBox="0 0 17 18" fill="none">
-                          <path d="M8.36364 0C9.47272 0 10.5364 0.459739 11.3206 1.27808C12.1049 2.09642 12.5455 3.20633 12.5455 4.36364C12.5455 5.52095 12.1049 6.63085 11.3206 7.44919C10.5364 8.26753 9.47272 8.72727 8.36364 8.72727C7.25455 8.72727 6.19089 8.26753 5.40664 7.44919C4.6224 6.63085 4.18182 5.52095 4.18182 4.36364C4.18182 3.20633 4.6224 2.09642 5.40664 1.27808C6.19089 0.459739 7.25455 0 8.36364 0ZM8.36364 17.4545C8.36364 17.4545 16.7273 17.4545 16.7273 15.2727C16.7273 12.6545 12.65 9.81818 8.36364 9.81818C4.07727 9.81818 0 12.6545 0 15.2727C0 17.4545 8.36364 17.4545 8.36364 17.4545Z" fill="white" />
-                        </svg>
-                        <span className="hidden xl:inline">
-                          {session.user.firstName + " " + session.user.lastName}
-                        </span>
-                        <span className="xl:hidden">
-                          {session.user.role === 'ADMIN' ? 'Admin' : 'Dash'}
-                        </span>
-                      </button>
-                    )}
-
+                    ) : (<div className="relative inline-block text-left" ref={dropdownRef}>
                     <button
+                      onClick={() => setOpenDropdown(!openDropdown)}
+                      className="
+                        inline-flex items-center gap-2 
+                        cursor-pointer
+                        bg-[#ED457D] text-white
+                        text-xs lg:text-sm font-bold
+                        px-3 lg:px-4 py-2
+                        rounded-full
+                        border-none
+                        transition-all duration-300 ease-in-out
+                        hover:bg-[#D93B6E]
+                        hover:-translate-y-0.5
+                        hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
+                        active:translate-y-0
+                        active:scale-[0.96]
+                        active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
+                      "
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="17"
+                        height="18"
+                        viewBox="0 0 17 18"
+                        fill="none"
+                      >
+                        <path
+                          d="M8.36364 0C9.47272 0 10.5364 0.459739 11.3206 1.27808C12.1049 2.09642 12.5455 3.20633 12.5455 4.36364C12.5455 5.52095 12.1049 6.63085 11.3206 7.44919C10.5364 8.26753 9.47272 8.72727 8.36364 8.72727C7.25455 8.72727 6.19089 8.26753 5.40664 7.44919C4.6224 6.63085 4.18182 5.52095 4.18182 4.36364C4.18182 3.20633 4.6224 2.09642 5.40664 1.27808C6.19089 0.459739 7.25455 0 8.36364 0ZM8.36364 17.4545C8.36364 17.4545 16.7273 17.4545 16.7273 15.2727C16.7273 12.6545 12.65 9.81818 8.36364 9.81818C4.07727 9.81818 0 12.6545 0 15.2727C0 17.4545 8.36364 17.4545 8.36364 17.4545Z"
+                          fill="white"
+                        />
+                      </svg>
+                      <span className="hidden xl:inline">
+                        {session.user.firstName + " " + session.user.lastName}
+                      </span>
+                      <span className="xl:hidden">
+                        {session.user.role === "ADMIN" ? "Admin" : "Dash"}
+                      </span>
+                    </button>
+              
+                    {openDropdown && (
+                      <div className="origin-top-right absolute mt-2 w-56 rounded-[20px] shadow-lg bg-white ring-opacity-5  z-50">
+                        <div className="pt-2.5">
+                          <button className="w-full text-left px-6 py-2 text-base  font-semibold text-black hover:text-gray-900 focus:outline-none">
+                            My Profile
+                          </button>
+                        </div>                                                                                                                          
+                        <div className="">
+                          <Link
+                            href="/my-gift"
+                            className={linkClass("/my-gift")}
+                          >
+                            Vouchers & Gift Cards
+                          
+                          </Link>
+                          <Link
+                            href="/support"
+                            className={linkClass("/support")}
+                          >
+                            Support & Requests
+                          </Link>
+                          <Link
+                            href="/track-request"
+                            className={linkClass("/track-request")}
+                          >
+                            Track Request Status
+                          </Link>
+                        </div>
+                        <div className="pb-2 border-t border-gray-200">
+                          <Link
+                            href="#"
+                            className="block px-6 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                            onClick={handleLogout}
+                          >
+                              Sign Out
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                    
+
+                    {/* <button
                       className="
     inline-flex items-center gap-2
     cursor-pointer
@@ -312,7 +384,7 @@ const Header = () => {
                       onClick={handleLogout}
                     >
                       Logout
-                    </button>
+                    </button> */}
                   </>
                 ) : (
                   <Link href="/login">
@@ -428,7 +500,8 @@ const Header = () => {
 
                   Login / Register
                 </button>
-              ) : session ? (
+              )
+               : session ? (
                 <>
                   {(session.user.role === 'ADMIN' || session.user.role === 'CUSTOMER') && (
                     <Link href="/dashboard">
@@ -445,7 +518,8 @@ const Header = () => {
                     Logout
                   </button>
                 </>
-              ) : (
+              ) 
+              : (
                 <Link href="/login">
                   <button className="w-full flex items-center justify-center gap-2 sm:gap-3 bg-[#ED457D] text-white py-3 sm:py-3.5 md:py-4 rounded-full text-sm sm:text-base font-medium hover:bg-[#d63d6e] transition-colors">
                     <svg
@@ -482,6 +556,7 @@ const Header = () => {
           </div>
         )}
       </header>
+
     </>
   );
 };
