@@ -2939,35 +2939,105 @@ export async function getSettlementDetails(settlementId) {
     // Sort payment history by date
     paymentHistory.sort((a, b) => new Date(b.paidAt) - new Date(a.paidAt));
 
-    // Fetch delivery logs for voucher summary
-    const orders = await prisma.order.findMany({
+    // ===== VOUCHER SUMMARY - COMPREHENSIVE CALCULATION =====
+    // Fetch all voucher codes for this brand and period from orders
+    const voucherCodes = await prisma.voucherCode.findMany({
       where: {
-        brandId,
-        createdAt: {
-          gte: periodStart,
-          lte: periodEnd,
+        order: {
+          brandId: brandId,
+          createdAt: {
+            gte: periodStart,
+            lte: periodEnd,
+          },
+          paymentStatus: "COMPLETED",
         },
       },
       include: {
-        voucherCodes: {
-          include: {
-            deliveryLogs: true,
-          },
+        deliveryLogs: {
+          orderBy: {
+            createdAt: 'desc'
+          }
         },
+        redemptions: {
+          orderBy: {
+            redeemedAt: 'desc'
+          }
+        },
+        order: true,
       },
     });
 
-    // Calculate delivery summary
-    const allVouchers = orders.flatMap((o) => o.voucherCodes);
-    const totalIssued = allVouchers.length;
-    const redeemed = allVouchers.filter((v) => v.isRedeemed).length;
-    const unredeemed = totalIssued - redeemed;
+    // Calculate voucher metrics
+    const totalIssued = voucherCodes.length;
+    
+    // Count redeemed vouchers - check multiple sources for accuracy
+    let redeemedCount = 0;
+    let unredeemedCount = 0;
+    
+    voucherCodes.forEach(voucher => {
+      // A voucher is considered redeemed if:
+      // 1. isRedeemed flag is true, OR
+      // 2. It has redemption records, OR
+      // 3. remainingValue < originalValue
+      const hasRedemptions = voucher.redemptions && voucher.redemptions.length > 0;
+      const isPartiallyRedeemed = voucher.remainingValue < voucher.originalValue;
+      const isFullyRedeemed = voucher.isRedeemed || voucher.remainingValue === 0;
+      
+      if (hasRedemptions || isPartiallyRedeemed || isFullyRedeemed) {
+        redeemedCount++;
+      } else {
+        unredeemedCount++;
+      }
+    });
 
     // Delivery status calculation
-    const allDeliveryLogs = allVouchers.flatMap(v => v.deliveryLogs || []);
-    const delivered = allDeliveryLogs.filter(log => log.status === "DELIVERED").length;
-    const pending = allDeliveryLogs.filter(log => log.status === "PENDING" || log.status === "SENT").length;
-    const failed = allDeliveryLogs.filter(log => log.status === "FAILED" || log.status === "BOUNCED").length;
+    let delivered = 0;
+    let pending = 0;
+    let failed = 0;
+
+    voucherCodes.forEach(voucher => {
+      if (voucher.deliveryLogs && voucher.deliveryLogs.length > 0) {
+        // Get the latest delivery log status
+        const latestLog = voucher.deliveryLogs[0];
+        
+        if (latestLog.status === "DELIVERED") {
+          delivered++;
+        } else if (latestLog.status === "PENDING" || latestLog.status === "SENT") {
+          pending++;
+        } else if (latestLog.status === "FAILED" || latestLog.status === "BOUNCED") {
+          failed++;
+        }
+      } else {
+        // No delivery logs means it's pending
+        pending++;
+      }
+    });
+
+    // Determine overall delivery status
+    let deliveryStatus = "Pending";
+    if (delivered === totalIssued && totalIssued > 0) {
+      deliveryStatus = "All Delivered";
+    } else if (delivered > 0 && delivered < totalIssued) {
+      deliveryStatus = "Partially Delivered";
+    } else if (failed > 0 && delivered === 0) {
+      deliveryStatus = "Failed";
+    } else if (pending === totalIssued && totalIssued > 0) {
+      deliveryStatus = "Pending";
+    }
+
+    // Calculate accurate redemption rate from actual voucher data
+    const actualRedemptionRate = totalIssued > 0
+      ? Math.round((redeemedCount / totalIssued) * 100)
+      : 0;
+
+    // If there's a mismatch with settlement data, log it for debugging
+    if (redeemedCount !== aggregatedData.totalRedeemed) {
+      console.warn('Redemption mismatch detected:', {
+        voucherCodesRedeemed: redeemedCount,
+        settlementRedeemed: aggregatedData.totalRedeemed,
+        settlementPeriod: `${periodStart} - ${periodEnd}`
+      });
+    }
 
     const settlementDetails = {
       id: settlementIds.join(","),
@@ -3002,7 +3072,7 @@ export async function getSettlementDetails(settlementId) {
       breakageAmount,
       vatAmount,
       vatRate: brandTerms?.vatRate || 0,
-      adjustments: 0, // Can be calculated if needed
+      adjustments: 0,
       netPayable,
 
       // Payment Info
@@ -3014,20 +3084,20 @@ export async function getSettlementDetails(settlementId) {
       paymentHistory,
       paymentCount: paymentHistory.length,
 
-      // Voucher Summary
+      // Voucher Summary - ACCURATE FROM ACTUAL VOUCHER DATA
       voucherSummary: {
         totalIssued,
-        redeemed,
-        unredeemed,
+        redeemed: redeemedCount,
+        unredeemed: unredeemedCount,
         delivered,
         pending,
         failed,
-        deliveryStatus: delivered === totalIssued && totalIssued > 0 ? "All Delivered" : "Pending",
-        redemptionRate,
+        deliveryStatus,
+        redemptionRate: actualRedemptionRate, // Use calculated rate from actual vouchers
       },
 
       // Dates
-      lastRedemptionDate: null, // Can be calculated from orders if needed
+      lastRedemptionDate: null,
       createdAt: firstSettlement.createdAt,
       updatedAt: new Date(
         Math.max(...settlements.map((s) => new Date(s.updatedAt)))
