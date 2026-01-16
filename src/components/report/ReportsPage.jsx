@@ -5,10 +5,46 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from 'react-hot-toast';
 
+// Confirmation Modal Component
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Confirm", cancelText = "Cancel" }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+                    <p className="text-gray-600 mb-6">{message}</p>
+
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                            {cancelText}
+                        </button>
+                        <button
+                            onClick={() => {
+                                onConfirm();
+                                onClose();
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                        >
+                            {confirmText}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+
 export default function ReportsPage({ shop }) {
     const [brands, setBrands] = useState([]);
     const [brandLoading, setBrandLoading] = useState(false);
-
+    const [scheduleToDelete, setScheduleToDelete] = useState(null);
     const [customReport, setCustomReport] = useState({
         startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
@@ -25,7 +61,7 @@ export default function ReportsPage({ shop }) {
     });
 
     const [scheduledReport, setScheduledReport] = useState({
-        frequency: '',
+        frequency: 'weekly',
         deliveryDay: '',
         emailRecipients: '',
         reportTypes: {
@@ -37,6 +73,9 @@ export default function ReportsPage({ shop }) {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [loadingFormat, setLoadingFormat] = useState(null); // 'csv' | 'pdf' | null
+    const [scheduledReports, setScheduledReports] = useState([]);
+    const [isEditing, setIsEditing] = useState(null); // Holds ID of report being edited
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     // Fetch brands on component mount
     React.useEffect(() => {
@@ -126,7 +165,7 @@ export default function ReportsPage({ shop }) {
             }
         } catch (error) {
             // setMessage({ type: 'error', text: 'An error occurred while generating the report' });
-            toast.error('An error occurred while generating the report');
+            toast.error(data.message || 'An error occurred while generating the report');
         } finally {
             setLoading(false);
         }
@@ -658,7 +697,7 @@ export default function ReportsPage({ shop }) {
                 // setMessage({ type: 'success', text: 'Report scheduled successfully!' });
                 toast.success('Report scheduled successfully!');
                 setScheduledReport({
-                    frequency: '',
+                    frequency: 'weekly',
                     deliveryDay: '',
                     emailRecipients: '',
                     reportTypes: {
@@ -666,17 +705,77 @@ export default function ReportsPage({ shop }) {
                         performanceReports: false,
                     }
                 });
+                fetchScheduledReports();
             } else {
                 // setMessage({ type: 'error', text: data.message || 'Failed to schedule report' });
                 toast.error(error.response?.data?.message || 'Failed to schedule report.');
             }
         } catch (error) {
             // setMessage({ type: 'error', text: 'An error occurred while scheduling the report' });
-                toast.error('An error occurred while scheduling the report');
+            toast.error('An error occurred while scheduling the report');
         } finally {
             setLoading(false);
         }
     };
+
+
+    // Fetch scheduled reports
+    const fetchScheduledReports = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(`/api/reports/schedule`);
+            const data = await response.json();
+            if (data.success) {
+                setScheduledReports(data.data);
+            } else {
+                toast.error(data.message || 'Failed to load scheduled reports');
+            }
+        } catch (error) {
+            console.error('Failed to fetch scheduled reports:', error);
+            toast.error('Failed to load scheduled reports');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchScheduledReports();
+    }, []);
+
+    // Handle Delete Schedule
+    const confirmDeleteSchedule = async (id) => {
+        if (!scheduleToDelete) return;
+
+        try {
+            const response = await fetch(`/api/reports/schedule?id=${scheduleToDelete}`, {
+                method: 'DELETE',
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                toast.success('Scheduled report cancelled successfully!');
+                fetchScheduledReports();
+                setScheduleToDelete(null);
+                setShowDeleteModal(false);
+            } else {
+                toast.error(data.message || 'Failed to cancel scheduled report');
+            }
+        } catch (error) {
+            console.error('Failed to delete scheduled report:', error);
+            toast.error('An error occurred while cancelling the report');
+        } finally {
+            setScheduleToDelete(null);
+            setShowDeleteModal(false);
+        }
+    };
+
+
+    const handleDeleteSchedule = (id) => {
+        setScheduleToDelete(id);
+        setShowDeleteModal(true);
+    };
+
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
@@ -717,9 +816,9 @@ export default function ReportsPage({ shop }) {
                         {quickReports.map((report) => (
                             <button
                                 key={report.id}
-                                onClick={() => handleQuickReport(report.id)}
+                                // onClick={() => handleQuickReport(report.id)}
                                 disabled={loading}
-                                className={`${report.color} border-2 rounded-xl p-6 text-left transition-all hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+                                className={`${report.color} border-2 rounded-xl p-6 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
                                 <div className={`${report.iconBg} w-12 h-12 rounded-lg flex items-center justify-center text-2xl mb-4`}>
                                     {report.icon}
@@ -869,7 +968,7 @@ export default function ReportsPage({ shop }) {
                                     disabled={loading}
                                     className="flex-1 bg-white text-gray-700 px-6 py-3 rounded-lg font-medium border-2 border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                 {loadingFormat === 'pdf' ? (
+                                    {loadingFormat === 'pdf' ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
                                         <FileText className="w-4 h-4" />
@@ -946,121 +1045,195 @@ export default function ReportsPage({ shop }) {
                 </div>
 
                 {/* Scheduled Reports */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
                     <div className="mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">Scheduled Reports</h2>
-                        <p className="text-gray-600 text-sm mt-1">Setup automated report delivery to your inbox</p>
+                        <h2 className="text-xl font-bold text-gray-900">{isEditing ? 'Edit Scheduled Report' : 'Schedule New Report'}</h2>
+                        <p className="text-gray-600 text-sm mt-1">Automate report delivery to your inbox</p>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Left Column */}
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Frequency <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <select
-                                        value={scheduledReport.frequency}
-                                        onChange={(e) => setScheduledReport({ ...scheduledReport, frequency: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                                    >
-                                        <option value="">Select Frequency</option>
-                                        <option value="daily">Daily</option>
-                                        <option value="weekly">Weekly</option>
-                                        <option value="monthly">Monthly</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                                </div>
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Frequency <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                value={scheduledReport.frequency}
+                                onChange={(e) => setScheduledReport({ ...scheduledReport, frequency: e.target.value, deliveryDay: '' })}
+                                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            >
+                                <option value="">Select Frequency</option>
+                                {/* <option value="daily">Daily</option> */}
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Delivery Day <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <select
-                                        value={scheduledReport.deliveryDay}
-                                        onChange={(e) => setScheduledReport({ ...scheduledReport, deliveryDay: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                                    >
-                                        <option value="">Select Day</option>
-                                        <option value="monday">Monday</option>
-                                        <option value="tuesday">Tuesday</option>
-                                        <option value="wednesday">Wednesday</option>
-                                        <option value="thursday">Thursday</option>
-                                        <option value="friday">Friday</option>
-                                        <option value="saturday">Saturday</option>
-                                        <option value="sunday">Sunday</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                                </div>
-                            </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Delivery Day <span className="text-red-500">*</span>
+                            </label>
+                            {scheduledReport.frequency === 'weekly' ? (
+                                <select
+                                    value={scheduledReport.deliveryDay}
+                                    onChange={(e) => setScheduledReport({ ...scheduledReport, deliveryDay: e.target.value })}
+                                    className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                >
+                                    <option value="">Select Day</option>
+                                    <option value="monday">Monday</option>
+                                    <option value="tuesday">Tuesday</option>
+                                    <option value="wednesday">Wednesday</option>
+                                    <option value="thursday">Thursday</option>
+                                    <option value="friday">Friday</option>
+                                    <option value="saturday">Saturday</option>
+                                    <option value="sunday">Sunday</option>
+                                </select>
+                            ) : scheduledReport.frequency === 'monthly' ? (
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="28"
+                                    placeholder="Day of month (1-28)"
+                                    value={scheduledReport.deliveryDay}
+                                    onChange={(e) => setScheduledReport({ ...scheduledReport, deliveryDay: e.target.value })}
+                                    className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                />
+                            ) : (
+                                <input
+                                    type="text"
+                                    value="Every day at 9 AM"
+                                    disabled
+                                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                                />
+                            )}
+                        </div>
 
+                        <div className="lg:col-span-2">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Email Recipient(s) <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="john@example.com, jane@example.com"
+                                value={scheduledReport.emailRecipients}
+                                onChange={(e) => setScheduledReport({ ...scheduledReport, emailRecipients: e.target.value })}
+                                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            />
+                        </div>
+
+                        <div className="lg:col-span-4">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Report Types <span className="text-red-500">*</span>
+                            </label>
+                            <div className="flex flex-wrap gap-4">
+                                {Object.keys(scheduledReport.reportTypes).map((type) => (
+                                    <label key={type} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={scheduledReport.reportTypes[type]}
+                                            onChange={(e) => setScheduledReport({
+                                                ...scheduledReport,
+                                                reportTypes: { ...scheduledReport.reportTypes, [type]: e.target.checked }
+                                            })}
+                                            className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                                        />
+                                        {type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-4 flex justify-end gap-4">
+                            {isEditing && (
+                                <button
+                                    onClick={handleCancelEdit}
+                                    disabled={loading}
+                                    className="px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg shadow-sm hover:bg-gray-300 transition disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                            )}
                             <button
                                 onClick={handleScheduleReport}
                                 disabled={loading}
-                                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
                             >
-                                {loading ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Calendar className="w-4 h-4" />
-                                )}
-                                Schedule Report
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calendar className="w-5 h-5" />}
+                                {isEditing ? 'Update Schedule' : 'Schedule Report'}
                             </button>
-                        </div>
-
-                        {/* Right Column */}
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Email Recipients <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="email"
-                                    value={scheduledReport.emailRecipients}
-                                    onChange={(e) => setScheduledReport({ ...scheduledReport, emailRecipients: e.target.value })}
-                                    placeholder="email@example.com"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Report Types <span className="text-red-500">*</span>
-                                </label>
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input
-                                            type="checkbox"
-                                            checked={scheduledReport.reportTypes.settlementSummary}
-                                            onChange={(e) => setScheduledReport({
-                                                ...scheduledReport,
-                                                reportTypes: { ...scheduledReport.reportTypes, settlementSummary: e.target.checked }
-                                            })}
-                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                        />
-                                        <span className="text-sm text-gray-700">Settlement Summary</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
-                                        <input
-                                            type="checkbox"
-                                            checked={scheduledReport.reportTypes.performanceReports}
-                                            onChange={(e) => setScheduledReport({
-                                                ...scheduledReport,
-                                                reportTypes: { ...scheduledReport.reportTypes, performanceReports: e.target.checked }
-                                            })}
-                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                        />
-                                        <span className="text-sm text-gray-700">Performance Reports</span>
-                                    </label>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Existing Scheduled Reports */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div className="p-6 border-b">
+                        <h2 className="text-xl font-bold text-gray-900">Active Schedules</h2>
+                        <p className="text-gray-600 text-sm mt-1">Manage your existing automated report schedules</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Frequency</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Recipients</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Reports</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Next Delivery</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
+                                    <th scope="col" className="relative px-6 py-3">
+                                        <span className="sr-only">Actions</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {scheduledReports.length > 0 ? scheduledReports.map((report) => (
+                                    <tr key={report.id}>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900 capitalize">{report.frequency}</div>
+                                            <div className="text-xs text-gray-500">on {report.deliveryDay}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 max-w-xs truncate">{report.emailRecipients}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            <ul className="list-disc list-inside">
+                                                {Array.isArray(report.reportTypes) && report.reportTypes.map(rt => <li key={rt}>{rt.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</li>)}
+                                            </ul>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(report.nextDeliveryDate).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${report.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                {report.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <div className="flex gap-4">
+                                                {/* <button onClick={() => handleEditSchedule(report)} className="text-blue-600 hover:text-blue-900">Edit</button> */}
+                                                <button onClick={() => handleDeleteSchedule(report.id)} className="text-red-600 hover:text-red-900 cursor-pointer">Cancel</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan="6" className="text-center py-10 text-gray-500">
+                                            No scheduled reports found.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <ConfirmationModal
+                    isOpen={showDeleteModal}
+                    onClose={() => {
+                        setShowDeleteModal(false);
+                        setScheduleToDelete(null);
+                    }}
+                    onConfirm={confirmDeleteSchedule}
+                    title="Cancel Scheduled Report"
+                    message="Are you sure you want to cancel this scheduled report? This action cannot be undone."
+                    confirmText="Yes, Cancel"
+                    cancelText="No, Keep"
+                />
             </div>
         </div>
     );

@@ -429,6 +429,24 @@ model AuditLog {
   @@index([createdAt])
 }
 
+model ScheduledReport {
+  id                String                @id @default(cuid())
+  shop              String?
+  frequency         String // daily, weekly, monthly
+  deliveryDay       String // e.g., "monday" or "15"
+  emailRecipients   String // comma-separated
+  reportTypes       Json
+  nextDeliveryDate  DateTime
+  lastDeliveryDate  DateTime?
+  status            ScheduledReportStatus @default(Active)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([shop])
+  @@index([status])
+  @@index([nextDeliveryDate])
+}
+
 model ShopifySession {
   id          String    @id @default(cuid())
   shop        String    @unique
@@ -575,4 +593,10 @@ enum SettlementPaymentStatus {
   Partial
   InReview
   Disputed
+}
+
+enum ScheduledReportStatus {
+  Active
+  Paused
+  Cancelled
 }

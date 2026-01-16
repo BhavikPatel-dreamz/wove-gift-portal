@@ -5,7 +5,7 @@ import { prisma } from "../../../../lib/db";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { frequency, deliveryDay, emailRecipients, reportTypes } = body;
+    const { shop, frequency, deliveryDay, emailRecipients, reportTypes } = body;
 
     // Validate required fields
     if (!frequency || !deliveryDay || !emailRecipients || !reportTypes || reportTypes.length === 0) {
@@ -33,39 +33,21 @@ export async function POST(request) {
     // Calculate next delivery date
     const nextDeliveryDate = calculateNextDeliveryDate(frequency, deliveryDay);
 
-    // Store scheduled report in AuditLog (for demo purposes)
-    // In production, create a dedicated ScheduledReport table
-    const scheduleRecord = await prisma.auditLog.create({
+    const scheduleRecord = await prisma.scheduledReport.create({
       data: {
-        action: "SCHEDULE_REPORT",
-        entity: "Report",
-        entityId: `${frequency}-${deliveryDay}-${Date.now()}`,
-        changes: {
-          frequency,
-          deliveryDay,
-          emailRecipients,
-          reportTypes,
-          nextDeliveryDate: nextDeliveryDate.toISOString(),
-          status: "Active",
-          createdAt: new Date().toISOString(),
-        },
-        ipAddress: request.headers.get("x-forwarded-for") || "unknown",
-        userAgent: request.headers.get("user-agent") || "unknown",
+        shop,
+        frequency,
+        deliveryDay,
+        emailRecipients,
+        reportTypes,
+        nextDeliveryDate,
       },
     });
 
     return NextResponse.json({
       success: true,
       message: "Report scheduled successfully",
-      data: {
-        id: scheduleRecord.id,
-        frequency,
-        deliveryDay,
-        emailRecipients,
-        reportTypes,
-        nextDeliveryDate: nextDeliveryDate.toISOString(),
-        status: "Active",
-      },
+      data: scheduleRecord,
     });
   } catch (error) {
     console.error("Schedule Report API Error:", error);
@@ -84,12 +66,23 @@ export async function POST(request) {
 }
 
 // GET: Retrieve all scheduled reports
-export async function GET() {
+export async function GET(request) {
   try {
-    const scheduledReports = await prisma.auditLog.findMany({
+    const { searchParams } = new URL(request.url);
+    // const shop = searchParams.get("shop");
+
+    // if (!shop) {
+    //   return NextResponse.json(
+    //     { success: false, message: "Shop parameter is required" },
+    //     { status: 400 }
+    //   );
+    // }
+
+    const scheduledReports = await prisma.scheduledReport.findMany({
       where: {
-        action: "SCHEDULE_REPORT",
-        entity: "Report",
+        status: {
+          not: "Cancelled",
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -97,23 +90,9 @@ export async function GET() {
       take: 100,
     });
 
-    const reports = scheduledReports
-      .filter((log) => log.changes?.status !== "Cancelled")
-      .map((log) => ({
-        id: log.id,
-        frequency: log.changes?.frequency,
-        deliveryDay: log.changes?.deliveryDay,
-        emailRecipients: log.changes?.emailRecipients,
-        reportTypes: log.changes?.reportTypes || [],
-        nextDeliveryDate: log.changes?.nextDeliveryDate,
-        lastDeliveryDate: log.changes?.lastDeliveryDate,
-        status: log.changes?.status || "Active",
-        createdAt: log.createdAt,
-      }));
-
     return NextResponse.json({
       success: true,
-      data: reports,
+      data: scheduledReports,
     });
   } catch (error) {
     console.error("Get Scheduled Reports API Error:", error);
@@ -144,7 +123,7 @@ export async function DELETE(request) {
       );
     }
 
-    const report = await prisma.auditLog.findUnique({
+    const report = await prisma.scheduledReport.findUnique({
       where: { id },
     });
 
@@ -155,14 +134,10 @@ export async function DELETE(request) {
       );
     }
 
-    await prisma.auditLog.update({
+    await prisma.scheduledReport.update({
       where: { id },
       data: {
-        changes: {
-          ...report.changes,
-          status: "Cancelled",
-          cancelledAt: new Date().toISOString(),
-        },
+        status: "Cancelled",
       },
     });
 
@@ -199,7 +174,7 @@ export async function PUT(request) {
       );
     }
 
-    const report = await prisma.auditLog.findUnique({
+    const report = await prisma.scheduledReport.findUnique({
       where: { id },
     });
 
@@ -227,40 +202,31 @@ export async function PUT(request) {
       }
     }
 
+    const dataToUpdate = {};
+    if (frequency) dataToUpdate.frequency = frequency;
+    if (deliveryDay) dataToUpdate.deliveryDay = deliveryDay;
+    if (emailRecipients) dataToUpdate.emailRecipients = emailRecipients;
+    if (reportTypes) dataToUpdate.reportTypes = reportTypes;
+    if (status) dataToUpdate.status = status;
+
+
     // Calculate new next delivery date if frequency or delivery day changed
-    let nextDeliveryDate = report.changes?.nextDeliveryDate;
     if (frequency || deliveryDay) {
-      nextDeliveryDate = calculateNextDeliveryDate(
-        frequency || report.changes?.frequency,
-        deliveryDay || report.changes?.deliveryDay
-      ).toISOString();
+      dataToUpdate.nextDeliveryDate = calculateNextDeliveryDate(
+        frequency || report.frequency,
+        deliveryDay || report.deliveryDay
+      );
     }
 
-    const updatedChanges = {
-      ...report.changes,
-      frequency: frequency || report.changes?.frequency,
-      deliveryDay: deliveryDay || report.changes?.deliveryDay,
-      emailRecipients: emailRecipients || report.changes?.emailRecipients,
-      reportTypes: reportTypes || report.changes?.reportTypes,
-      status: status || report.changes?.status,
-      nextDeliveryDate,
-      updatedAt: new Date().toISOString(),
-    };
-
-    await prisma.auditLog.update({
+    const updatedReport = await prisma.scheduledReport.update({
       where: { id },
-      data: {
-        changes: updatedChanges,
-      },
+      data: dataToUpdate,
     });
 
     return NextResponse.json({
       success: true,
       message: "Scheduled report updated successfully",
-      data: {
-        id,
-        ...updatedChanges,
-      },
+      data: updatedReport,
     });
   } catch (error) {
     console.error("Update Scheduled Report API Error:", error);
