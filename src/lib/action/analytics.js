@@ -781,6 +781,23 @@ export async function processSettlement(settlementId, partialAmount, notes) {
       .substr(2, 9)
       .toUpperCase()}`;
 
+    // Get existing payment history and append new payment
+    const existingHistory = Array.isArray(settlement.paymentHistory) 
+      ? settlement.paymentHistory 
+      : [];
+
+    const newPaymentRecord = {
+      id: `PAYMENT-${Date.now()}`, // Unique payment ID
+      settlementId: settlementId,
+      amount: paymentToApply,
+      paidAt: new Date().toISOString(),
+      reference: paymentReference,
+      notes: notes || `Payment of ${paymentToApply} processed.`,
+    };
+
+    // Append new payment to existing history
+    const updatedPaymentHistory = [...existingHistory, newPaymentRecord];
+
     // FULL PAYMENT
     if (isFullPayment) {
       const updatedSettlement = await prisma.settlements.update({
@@ -789,17 +806,11 @@ export async function processSettlement(settlementId, partialAmount, notes) {
           status: "Paid",
           totalPaid: netPayable,
           remainingAmount: 0,
+          paidAt: new Date(),
           lastPaymentDate: new Date(),
-          paymentCount: { increment: 1 },
-          paymentHistory: {
-            push: {
-              id: settlementId,
-              amount: paymentToApply,
-              paidAt: new Date(),
-              reference: paymentReference,
-              notes: notes || `Full payment of ${paymentToApply} processed.`,
-            },
-          },
+          paymentCount: (settlement.paymentCount || 0) + 1,
+          paymentReference: paymentReference,
+          paymentHistory: updatedPaymentHistory,
         },
       });
 
@@ -819,22 +830,15 @@ export async function processSettlement(settlementId, partialAmount, notes) {
           totalPaid: updatedTotalPaid,
           remainingAmount: remainingAmount,
           lastPaymentDate: new Date(),
-          paymentCount: { increment: 1 },
-          paymentHistory: {
-            push: {
-              id: settlementId,
-              amount: paymentToApply,
-              paidAt: new Date(),
-              reference: paymentReference,
-              notes: notes || `Partial payment of ${paymentToApply} processed.`,
-            },
-          },
+          paymentCount: (settlement.paymentCount || 0) + 1,
+          paymentReference: paymentReference,
+          paymentHistory: updatedPaymentHistory,
         },
       });
 
       return {
         success: true,
-        message: `Partial payment of ${paymentToApply} processed successfully`,
+        message: `Partial payment of ${paymentToApply} processed successfully. Remaining: ${remainingAmount.toFixed(2)}`,
         data: updatedSettlement,
       };
     }

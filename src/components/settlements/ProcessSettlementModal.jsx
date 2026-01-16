@@ -56,11 +56,10 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
       if (result.success) {
         setProcessMessage({
           type: "success",
-          text: `Payment processed successfully! ${
-            result.data.paymentReference
-              ? `Payment Reference: ${result.data.paymentReference}`
-              : ""
-          }`,
+          text: `Payment processed successfully! ${result.data.paymentReference
+            ? `Payment Reference: ${result.data.paymentReference}`
+            : ""
+            }`,
         });
         setTimeout(() => {
           onSuccess();
@@ -96,37 +95,36 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
     return isNaN(amount) ? settlement.remainingAmount : settlement.remainingAmount - amount;
   };
 
-  return (
+ return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh]">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white rounded-2xl">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+        {/* Modal Header - Fixed */}
+        
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0 bg-white rounded-t-2xl">
           <h3 className="text-lg font-semibold text-gray-900">Process Settlement</h3>
-          <button 
-            onClick={onClose} 
-            disabled={processing} 
+          <button
+            onClick={onClose}
+            disabled={processing}
             className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="px-6 py-6">
+        {/* Modal Body - Scrollable */}
+        <div className="px-6 py-6 overflow-y-auto flex-1 min-h-0">
           {processMessage ? (
-            <div className={`flex items-start gap-3 p-4 rounded-lg mb-4 ${
-              processMessage.type === 'success' 
-                ? 'bg-green-50 border border-green-200' 
-                : 'bg-red-50 border border-red-200'
-            }`}>
+            <div className={`flex items-start gap-3 p-4 rounded-lg mb-4 ${processMessage.type === 'success'
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-red-50 border border-red-200'
+              }`}>
               {processMessage.type === 'success' ? (
                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               ) : (
                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               )}
-              <p className={`text-sm ${
-                processMessage.type === 'success' ? 'text-green-800' : 'text-red-800'
-              }`}>
+              <p className={`text-sm ${processMessage.type === 'success' ? 'text-green-800' : 'text-red-800'
+                }`}>
                 {processMessage.text}
               </p>
             </div>
@@ -147,30 +145,48 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
                   </span>
                 </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Settlement Period:</span>
+                <div className="space-y-3 text-sm">
+                  {/* Settlement Period */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Settlement Period</span>
                     <span className="font-medium text-gray-900">
                       {settlement.settlementPeriod}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Issued:</span>
-                    <span className="font-medium text-gray-900">
-                      {settlement.totalSold} vouchers
-                    </span>
+
+                  {/* Total Issued */}
+                  <div className="flex items-start justify-between">
+                    <span className="text-gray-500">Total Issued</span>
+                    <div className="text-right">
+                      <p className="font-medium text-gray-900">
+                        {formatCurrency(settlement.totalSoldAmount, settlement.currency)}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {settlement.totalSold} vouchers
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Redeemed:</span>
-                    <span className="font-medium text-gray-900">
-                      {settlement.totalRedeemed} vouchers
-                    </span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-gray-200">
-                    <span className="text-gray-900 font-medium">Total Outstanding:</span>
-                    <span className="font-bold text-green-600 text-lg">
-                      {formatCurrency(settlement.remainingAmount, settlement.currency)}
-                    </span>
+
+                  {/* Total Redeemed (conditional) */}
+                  {settlement.settlementTrigger === "onRedemption" && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-500">Total Redeemed</span>
+                      <span className="font-medium text-gray-900">
+                        {formatCurrency(settlement.redeemedAmount, settlement.currency)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200 pt-3 mt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-900">
+                        Total Outstanding
+                      </span>
+                      <span className="text-lg font-semibold text-green-600">
+                        {formatCurrency(settlement.remainingAmount, settlement.currency)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -183,29 +199,25 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => handlePaymentTypeChange(false)}
-                    className={`p-4 border-2 rounded-lg text-center transition-all ${
-                      !isPartialPayment
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={`p-4 border-2 rounded-lg text-center transition-all ${!isPartialPayment
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
                   >
-                    <DollarSign className={`w-6 h-6 mx-auto mb-2 ${
-                      !isPartialPayment ? 'text-blue-600' : 'text-gray-400'
-                    }`} />
+                    <DollarSign className={`w-6 h-6 mx-auto mb-2 ${!isPartialPayment ? 'text-blue-600' : 'text-gray-400'
+                      }`} />
                     <div className="font-medium text-gray-900">Full Payment</div>
                     <div className="text-xs text-gray-500 mt-1">Pay entire amount</div>
                   </button>
                   <button
                     onClick={() => handlePaymentTypeChange(true)}
-                    className={`p-4 border-2 rounded-lg text-center transition-all ${
-                      isPartialPayment
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={`p-4 border-2 rounded-lg text-center transition-all ${isPartialPayment
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
                   >
-                    <DollarSign className={`w-6 h-6 mx-auto mb-2 ${
-                      isPartialPayment ? 'text-blue-600' : 'text-gray-400'
-                    }`} />
+                    <DollarSign className={`w-6 h-6 mx-auto mb-2 ${isPartialPayment ? 'text-blue-600' : 'text-gray-400'
+                      }`} />
                     <div className="font-medium text-gray-900">Partial Payment</div>
                     <div className="text-xs text-gray-500 mt-1">Pay custom amount</div>
                   </button>
@@ -229,9 +241,8 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
                     min="0"
                     max={settlement.remainingAmount}
                     step="0.01"
-                    className={`w-full pl-10 pr-4 py-3 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      !isPartialPayment ? 'bg-gray-50 cursor-not-allowed' : ''
-                    }`}
+                    className={`w-full pl-10 pr-4 py-3 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!isPartialPayment ? 'bg-gray-50 cursor-not-allowed' : ''
+                      }`}
                     placeholder="Enter amount"
                   />
                 </div>
@@ -286,9 +297,9 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
           )}
         </div>
 
-        {/* Modal Footer */}
+        {/* Modal Footer - Fixed */}
         {!processMessage && (
-          <div className="flex gap-3 px-6 py-4 bg-gray-50 rounded-b-2xl border-t border-gray-200">
+          <div className="flex gap-3 px-6 py-4 bg-gray-50 rounded-b-2xl border-t border-gray-200 flex-shrink-0">
             <button
               onClick={onClose}
               disabled={processing}

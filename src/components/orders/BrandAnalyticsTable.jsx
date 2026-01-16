@@ -433,7 +433,7 @@ const BrandAnalyticsTable = ({
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-                        {selectedBrand.currency === 'ZAR' ? 'R' : selectedBrand.currency}
+                        {selectedBrand.currency === 'ZAR' ? 'R' : getCurrencySymbol(selectedBrand.currency)}
                       </span>
                       <input
                         type="number"
