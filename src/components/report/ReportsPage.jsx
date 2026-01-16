@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Calendar, Download, FileText, AlertCircle, ChevronDown, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { toast } from 'react-hot-toast';
 
 export default function ReportsPage({ shop }) {
     const [brands, setBrands] = useState([]);
@@ -49,7 +50,8 @@ export default function ReportsPage({ shop }) {
                 }
             } catch (error) {
                 console.error('Failed to fetch brands:', error);
-                setMessage({ type: 'error', text: 'Failed to load brands' });
+                // setMessage({ type: 'error', text: 'Failed to load brands' });
+                toast.error('Failed to load brands');
             } finally {
                 setBrandLoading(false);
             }
@@ -115,12 +117,16 @@ export default function ReportsPage({ shop }) {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
 
-                setMessage({ type: 'success', text: 'Report downloaded successfully!' });
+                // setMessage({ type: 'success', text: 'Report downloaded successfully!' });
+                toast.success('Report downloaded successfully!');
+
             } else {
-                setMessage({ type: 'error', text: data.message || 'Failed to generate report' });
+                // setMessage({ type: 'error', text: data.message || 'Failed to generate report' });
+                toast.error(data.message || 'Failed to generate report');
             }
         } catch (error) {
-            setMessage({ type: 'error', text: 'An error occurred while generating the report' });
+            // setMessage({ type: 'error', text: 'An error occurred while generating the report' });
+            toast.error('An error occurred while generating the report');
         } finally {
             setLoading(false);
         }
@@ -136,14 +142,17 @@ export default function ReportsPage({ shop }) {
         );
 
         if (selectedReports.length === 0) {
-            setMessage({ type: "error", text: "Please select at least one report type" });
+            // setMessage({ type: "error", text: "Please select at least one report type" });
+            toast.error("Please select at least one report type");
+
             setLoading(false);
             setLoadingFormat(null);
             return;
         }
 
         if (!customReport.startDate || !customReport.endDate) {
-            setMessage({ type: "error", text: "Please select start and end dates" });
+            // setMessage({ type: "error", text: "Please select start and end dates" });
+            toast.error("Please select start and end dates");
             setLoading(false);
             setLoadingFormat(null);
             return;
@@ -183,7 +192,8 @@ export default function ReportsPage({ shop }) {
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                setMessage({ type: "success", text: "CSV downloaded successfully!" });
+                // setMessage({ type: "success", text: "CSV downloaded successfully!" });
+                toast.success("CSV downloaded successfully!");
                 setLoadingFormat(null);
                 return;
             }
@@ -575,8 +585,10 @@ export default function ReportsPage({ shop }) {
                 }
 
                 pdf.save(`custom-report-${dateStr}.pdf`);
-                setMessage({ type: "success", text: "PDF generated successfully!" });
+                // setMessage({ type: "success", text: "PDF generated successfully!" });
+                toast.success("PDF generated successfully!");
                 setLoadingFormat(null);
+
                 return;
             }
 
@@ -590,11 +602,15 @@ export default function ReportsPage({ shop }) {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            setMessage({ type: "success", text: "JSON downloaded successfully!" });
+            // setMessage({ type: "success", text: "JSON downloaded successfully!" });
+            toast.success("JSON downloaded successfully!");
+
 
         } catch (err) {
             console.error(err);
-            setMessage({ type: "error", text: err.message || "Failed to generate report" });
+            // setMessage({ type: "error", text: err.message || "Failed to generate report" });
+            toast.error("Failed to generate report. Please try again.");
+
         } finally {
             setLoading(false);
             setLoadingFormat(null);
@@ -610,13 +626,15 @@ export default function ReportsPage({ shop }) {
         );
 
         if (!scheduledReport.frequency || !scheduledReport.deliveryDay || selectedReportTypes.length === 0) {
-            setMessage({ type: 'error', text: 'Please fill all required fields and select at least one report type' });
+            // setMessage({ type: 'error', text: 'Please fill all required fields and select at least one report type' });
+            toast.error('Please fill all the required fields');
             setLoading(false);
             return;
         }
 
         if (!scheduledReport.emailRecipients) {
-            setMessage({ type: 'error', text: 'Please enter email recipient(s)' });
+            // setMessage({ type: 'error', text: 'Please enter email recipient(s)' });
+            toast.error('Please enter email recipient(s)');
             setLoading(false);
             return;
         }
@@ -637,7 +655,8 @@ export default function ReportsPage({ shop }) {
             const data = await response.json();
 
             if (response.ok) {
-                setMessage({ type: 'success', text: 'Report scheduled successfully!' });
+                // setMessage({ type: 'success', text: 'Report scheduled successfully!' });
+                toast.success('Report scheduled successfully!');
                 setScheduledReport({
                     frequency: '',
                     deliveryDay: '',
@@ -648,10 +667,12 @@ export default function ReportsPage({ shop }) {
                     }
                 });
             } else {
-                setMessage({ type: 'error', text: data.message || 'Failed to schedule report' });
+                // setMessage({ type: 'error', text: data.message || 'Failed to schedule report' });
+                toast.error(error.response?.data?.message || 'Failed to schedule report.');
             }
         } catch (error) {
-            setMessage({ type: 'error', text: 'An error occurred while scheduling the report' });
+            // setMessage({ type: 'error', text: 'An error occurred while scheduling the report' });
+                toast.error('An error occurred while scheduling the report');
         } finally {
             setLoading(false);
         }
@@ -836,7 +857,7 @@ export default function ReportsPage({ shop }) {
                                     disabled={loading}
                                     className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                  {loadingFormat === 'csv' ? (
+                                    {loadingFormat === 'csv' ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
                                         <Download className="w-4 h-4" />
@@ -848,7 +869,7 @@ export default function ReportsPage({ shop }) {
                                     disabled={loading}
                                     className="flex-1 bg-white text-gray-700 px-6 py-3 rounded-lg font-medium border-2 border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                     {loadingFormat === 'pdf' ? (
+                                 {loadingFormat === 'pdf' ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
                                     ) : (
                                         <FileText className="w-4 h-4" />
