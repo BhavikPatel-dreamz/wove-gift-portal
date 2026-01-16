@@ -62,7 +62,7 @@ const BrandEdit = () => {
     contractEnd: '',
     goLiveDate: new Date().toISOString().split('T')[0],
     renewContract: false,
-    vatRate: 15,
+    vatRate: 0,
     internalNotes: '',
 
     // Vouchers - Fixed structure
@@ -213,14 +213,14 @@ const BrandEdit = () => {
             new Date(brand.brandTerms.goLiveDate).toISOString().split('T')[0] :
             new Date().toISOString().split('T')[0],
           renewContract: brand.brandTerms?.renewContract || false,
-          vatRate: brand.brandTerms?.vatRate || 15,
+          vatRate: brand.brandTerms?.vatRate || 0,
           internalNotes: brand.brandTerms?.internalNotes || '',
 
-          // Vouchers - FIXED: Properly handle isExpiry boolean
+// Vouchers - FIXED: Properly handle isExpiry boolean
           denominationType: 'both',
           denominations: brand.vouchers?.[0]?.denominations || [],
           maxAmount: brand.vouchers?.[0]?.maxAmount || 0,
-          minAmount: brand.vouchers?.[0]?.minAmount || 0,
+minAmount: brand.vouchers?.[0]?.minAmount || 0,
           // FIX: Use Boolean() to ensure proper boolean conversion
           isExpiry: Boolean(brand.vouchers?.[0]?.isExpiry),
           expiryValue: brand.vouchers?.[0]?.expiryValue || '365',
@@ -314,6 +314,8 @@ const BrandEdit = () => {
       [field]: value
     }));
   };
+
+  console.log(formData);
 
 
   const updateIntegration = (id, field, value) => {
@@ -514,7 +516,10 @@ const BrandEdit = () => {
     }
 
     // Terms tab completion
-    if (formData.commissionValue > 0 && formData.settlementTrigger) {
+    if (
+      formData.settlementTrigger === 'onPurchase' ||
+      (formData.settlementTrigger === 'onRedemption' && formData.contractStart && formData.contractEnd)
+    ) {
       completedTabs.push('terms');
     }
 

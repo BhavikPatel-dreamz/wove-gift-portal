@@ -16,14 +16,9 @@ import {
   Calculator,
   Info,
 } from "lucide-react";
+import { currencyList } from "../brandsPartner/currency";
 
-// Mock currency list - replace with your actual import
-const currencyList = [
-  { code: "USD", symbol: "$" },
-  { code: "EUR", symbol: "€" },
-  { code: "GBP", symbol: "£" },
-  { code: "INR", symbol: "₹" },
-];
+
 
 const SettlementDetailsModal = ({ isOpen, onClose, brandId, onFetchTabData }) => {
   const [activeTab, setActiveTab] = useState("overview");

@@ -1,25 +1,22 @@
 import BrandAnalyticsTable from "../../../../components/orders/BrandAnalyticsTable";
 import { fetchBrandAnalytics } from "../../../../lib/action/analytics";
+import { getSettlements } from "../../../../lib/action/brandPartner";
 
 export default async function SettlementsPage({ searchParams }) {
-  // Await searchParams
-  const resolvedSearchParams = await searchParams;
-  
-  // Get parameters from query
-  const year = resolvedSearchParams?.filterMonth?.split("-")[0] || null;
-  const month = resolvedSearchParams?.filterMonth?.split("-")[1] || null;
-  const search = resolvedSearchParams?.search || null;
+  const params = await searchParams;
 
-  // Fetch brand analytics data on server side with filters
-  const analyticsData = await fetchBrandAnalytics({
-    filterYear: year,
-    filterMonth: month,
-    search: search,
-  });
+  const parameters = {
+    search: params.search || "",
+    filterMonth: params.filterMonth || null,
+    filterYear: params.filterYear || null,
+  };
 
+  const analyticsData = await getSettlements(parameters);
+
+  console.log(analyticsData);
   return (
     <div>
-      <BrandAnalyticsTable 
+      <BrandAnalyticsTable
         initialBrands={analyticsData.data || []}
         initialSummary={analyticsData.summary || {}}
         initialPeriod={analyticsData.period}

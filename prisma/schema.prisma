@@ -382,9 +382,13 @@ model Settlements {
   breakageAmount    Int?
   vatAmount         Int?
   netPayable        Int
+  totalPaid         Int?                    @default(0)
   remainingAmount   Int?                    @default(0)
   status            SettlementPaymentStatus @default(Pending)
   paidAt            DateTime?
+  lastPaymentDate   DateTime?
+  paymentCount      Int?                    @default(0)
+  paymentHistory    Json?
   paymentReference  String?
   notes             String?
   createdAt         DateTime                @default(now())
@@ -568,6 +572,7 @@ enum SendStatus {
 enum SettlementPaymentStatus {
   Pending
   Paid
+  Partial
   InReview
   Disputed
 }

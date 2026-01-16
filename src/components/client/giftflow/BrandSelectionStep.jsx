@@ -41,9 +41,8 @@ const BrandSelectionStep = () => {
   } = useSelector((state) => state.giftFlowReducer);
 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
-  const [initialLoad, setInitialLoad] = useState(false); // Track initial load
-  
-  // Cache to track fetched data
+  const [initialLoad, setInitialLoad] = useState(false); 
+
   const fetchCacheRef = useRef(new Map());
   const isFetchingRef = useRef(false);
 

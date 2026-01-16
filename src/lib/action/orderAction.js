@@ -244,7 +244,7 @@ export const createPendingOrder = async (orderData) => {
       subtotal,
       discount,
       totalAmount,
-      currency: orderData.selectedAmount.currency || "USD",
+currency: orderData.selectedAmount.currency || "USD",
       paymentMethod: "stripe",
       customImageUrl: orderData.customImageUrl || null,
       customVideoUrl: orderData.customVideoUrl || null,
@@ -542,7 +542,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
       );
 
       for (const voucherCode of voucherCodes) {
-        await createDeliveryLog(order, voucherCode.id, orderData);
+        await createDeliveryLog(order, voucherCode.id, orderData, deliveryResult);
       }
 
       console.log("✅ Bulk order completed:", order.orderNumber);
@@ -583,7 +583,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
         );
       }
 
-      await createDeliveryLog(order, voucherCode.id, orderData);
+      await createDeliveryLog(order, voucherCode.id, orderData, deliveryResult);
 
       console.log("✅ Order completed:", order.orderNumber);
 
@@ -1186,7 +1186,7 @@ Thank you for choosing our gift card platform.`,
               },</p>
               <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a; line-height: 1.6;">Your bulk gift card order has been successfully processed. Below are all your voucher codes.</p>
               
-              <div style="background-color: #f8f9fa; border-left: 4px solid #ff6b9d; padding: 20px; margin-bottom: 24px; border-radius: 8px;">
+<div style="background-color: #f8f9fa; border-left: 4px solid #ff6b9d; padding: 20px; margin-bottom: 24px; border-radius: 8px;">
                 <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a;">📊 Order Summary</h3>
                 <table role="presentation" style="width: 100%; border-collapse: collapse;">
                   <tr>
@@ -1468,7 +1468,12 @@ async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
   }
 }
 
-async function createDeliveryLog(order, voucherCodeId, orderData) {
+async function createDeliveryLog(
+  order,
+  voucherCodeId,
+  orderData,
+  deliveryResult
+) {
   try {
     const isBulkOrder = orderData.isBulkOrder === true;
     let recipient = "Print delivery";
@@ -1481,12 +1486,14 @@ async function createDeliveryLog(order, voucherCodeId, orderData) {
       recipient = orderData.deliveryDetails.recipientWhatsAppNumber;
     }
 
-    const status =
-      orderData.deliveryMethod === "print" || isBulkOrder
-        ? "DELIVERED"
-        : order.scheduledFor
-        ? "PENDING"
-        : "PENDING";
+    let status = "PENDING";
+    if (orderData.deliveryMethod === "print" || isBulkOrder) {
+      status = "DELIVERED";
+    } else if (order.scheduledFor) {
+      status = "PENDING";
+    } else if (deliveryResult) {
+      status = deliveryResult.success ? "DELIVERED" : "FAILED";
+    }
 
     return await prisma.deliveryLog.create({
       data: {
@@ -1496,9 +1503,15 @@ async function createDeliveryLog(order, voucherCodeId, orderData) {
         recipient,
         status,
         attemptCount:
-          orderData.deliveryMethod === "print" || isBulkOrder ? 1 : 0,
+          orderData.deliveryMethod === "print" ||
+          isBulkOrder ||
+          (deliveryResult && deliveryResult.success)
+            ? 1
+            : 0,
         deliveredAt:
-          orderData.deliveryMethod === "print" || isBulkOrder
+          orderData.deliveryMethod === "print" ||
+          isBulkOrder ||
+          (deliveryResult && deliveryResult.success)
             ? new Date()
             : null,
       },
@@ -1784,7 +1797,6 @@ export async function getOrders(params = {}) {
     const skip = (pageNum - 1) * limitNum;
 
     const whereClause = {};
-
     // Search functionality
     if (search) {
       whereClause.OR = [

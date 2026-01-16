@@ -8,23 +8,30 @@ export default async function DashboardPage({ searchParams }) {
   const session = await getSession()
 
   // Redirect if no session
-  if (!session || !session.user) {
+  if (!session?.user) {
     redirect('/login')
   }
 
-  const user = session.user
-  const role = user?.role
+  const { user } = session
+  const { role, shopDomain, shopId } = user
 
-  // Get query parameters from URL
+  // Await searchParams (Next.js 15+ requirement)
   const params = await searchParams
+  
+  // Extract and validate parameters
   const period = params?.period || 'all'
   const startDate = params?.startDate
   const endDate = params?.endDate
   
-  // Get shop domain - if admin can filter by shop, otherwise use user's shop
-  const shop = role === 'ADMIN' ? params?.shop || user.shopDomain : user.shopDomain
+  // Determine shop filter based on role
+  const shop = role === 'ADMIN' ? (params?.shop || shopDomain) : shopDomain
 
-  // Fetch dashboard data directly from server function (no API call)
+  // Authorization check - only admins can access dashboard
+  if (role !== 'ADMIN') {
+    redirect('/unauthorized') // or wherever non-admins should go
+  }
+
+  // Fetch dashboard data
   const dashboardData = await getDashboardData({
     period,
     startDate,
@@ -34,9 +41,10 @@ export default async function DashboardPage({ searchParams }) {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 px-0 md:px-4">
-      {role === "ADMIN" && (
-        <Dashboard dashboardData={dashboardData} shopParam={user.shopId} />
-      )}
+      <Dashboard 
+        dashboardData={dashboardData} 
+        shopParam={shopId}
+      />
     </main>
   )
 }

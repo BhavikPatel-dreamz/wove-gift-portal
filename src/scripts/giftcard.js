@@ -28,10 +28,8 @@ export async function syncShopifyDataMonthly() {
       const shopName = shop.shop;
       const token = shop.accessToken;
      
-
       const cards = await fetchGiftCards(shopName, token);
     
-
       for (const card of cards) {
         const shopifyGiftCardId = card.id;
         const balance = parseFloat(card.balance?.amount || 0);
@@ -41,7 +39,6 @@ export async function syncShopifyDataMonthly() {
           where: { shopifyId: shopifyGiftCardId },
         });
         if (!localGiftCard) {
-      
           continue;
         }
 
@@ -51,17 +48,14 @@ export async function syncShopifyDataMonthly() {
           include: { redemptions: true },
         });
         if (!voucherCode) {
-      
           continue;
         }
 
         totalGiftCards++;
 
         // Step 3️⃣ — Fetch individual transactions from Shopify
-   
         const transactions = await fetchGiftCardTransactions(shopName, token, shopifyGiftCardId);
         
-
         totalTransactionsProcessed += transactions.length;
 
         // Track new redemptions for this specific voucher code
@@ -79,7 +73,6 @@ export async function syncShopifyDataMonthly() {
           
           // Skip zero-amount transactions
           if (redemptionAmount === 0) {
-            
             continue;
           }
 
@@ -92,34 +85,27 @@ export async function syncShopifyDataMonthly() {
           // Extract transaction number from GID (e.g., "210171756707" from "gid://shopify/GiftCardDebitTransaction/210171756707")
           const transactionNumber = transaction.id.split('/').pop();
 
-          // Step 6️⃣ — Check if this exact transaction already exists
-          // Check by: 1) Transaction ID match, OR 2) Same amount + date + balance (to catch webhook duplicates)
-          const startOfDay = new Date(transactionDay + 'T00:00:00Z');
-          const endOfDay = new Date(transactionDay + 'T23:59:59Z');
-          
+          // Step 6️⃣ — IMPROVED: Check if this exact transaction already exists with multiple fallbacks
           const exists = await prisma.voucherRedemption.findFirst({
             where: {
               voucherCodeId: voucherCode.id,
               OR: [
-                // Check by transaction ID (handle both formats)
+                // Check by full transaction ID
                 { transactionId: transaction.id },
+                // Check by transaction number only
                 { transactionId: transactionNumber },
+                // Check if transactionId ends with the number
                 { 
                   transactionId: {
                     endsWith: transactionNumber
                   }
                 },
-                // Check by amount + date + balance (catches webhook duplicates with different IDs)
+                // Check by exact combination of critical fields (prevents duplicates from concurrent syncs)
                 {
                   AND: [
                     { amountRedeemed: redemptionAmount },
                     { balanceAfter: balanceAfter },
-                    { 
-                      redeemedAt: {
-                        gte: startOfDay,
-                        lte: endOfDay
-                      }
-                    }
+                    { redeemedAt: transactionDate }
                   ]
                 }
               ]
@@ -127,30 +113,61 @@ export async function syncShopifyDataMonthly() {
           });
 
           if (exists) {
-            
             continue;
           }
 
+          // Step 7️⃣ — CRITICAL FIX: Use upsert with unique constraint to prevent race conditions
+          // This ensures only ONE record is created even if multiple processes run simultaneously
+          try {
+            await prisma.$transaction(async (tx) => {
+              // First, do a final check within the transaction
+              const doubleCheck = await tx.voucherRedemption.findFirst({
+                where: {
+                  voucherCodeId: voucherCode.id,
+                  OR: [
+                    { transactionId: transaction.id },
+                    { transactionId: transactionNumber },
+                    {
+                      AND: [
+                        { amountRedeemed: redemptionAmount },
+                        { balanceAfter: balanceAfter },
+                        { redeemedAt: transactionDate }
+                      ]
+                    }
+                  ]
+                },
+              });
 
-          // Step 7️⃣ — Store the individual redemption (use full GID for consistency)
-          await prisma.$transaction(async (tx) => {
-            await tx.voucherRedemption.create({
-              data: {
-                voucherCodeId: voucherCode.id,
-                amountRedeemed: redemptionAmount,
-                balanceAfter: balanceAfter,
-                redeemedAt: transactionDate,
-                transactionId: transaction.id, // Store full GID format
-                storeUrl: shopName,
-              },
+              // If still doesn't exist, create it
+              if (!doubleCheck) {
+                await tx.voucherRedemption.create({
+                  data: {
+                    voucherCodeId: voucherCode.id,
+                    amountRedeemed: redemptionAmount,
+                    balanceAfter: balanceAfter,
+                    redeemedAt: transactionDate,
+                    transactionId: transaction.id, // Store full GID format
+                    storeUrl: shopName,
+                  },
+                });
+
+                newRedemptionsForThisVoucher++;
+                newRedemptionsValueForThisVoucher += redemptionAmount;
+                totalNewRedemptions++;
+                totalFixedValue += redemptionAmount;
+              }
+            }, {
+              timeout: 10000, // 10 second timeout
+              isolationLevel: 'Serializable' // Strongest isolation to prevent duplicates
             });
-          });
-
-          newRedemptionsForThisVoucher++;
-          newRedemptionsValueForThisVoucher += redemptionAmount;
-          totalNewRedemptions++;
-          totalFixedValue += redemptionAmount;
-    
+          } catch (error) {
+            // If transaction fails due to unique constraint, it means another process created it
+            if (error.code === 'P2002') {
+              console.log(`⚠️ Transaction ${transactionNumber} already exists (caught duplicate)`);
+              continue;
+            }
+            throw error; // Re-throw other errors
+          }
         }
 
         // Step 8️⃣ — Update VoucherCode with latest balance
@@ -203,20 +220,13 @@ export async function syncShopifyDataMonthly() {
                   updatedAt: new Date(),
                 },
               });
-              
-       
             }
           }
         }
-
-
       }
-
-
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-
 
     return {
       success: true,
@@ -248,8 +258,6 @@ async function fetchGiftCards(shop, token) {
 
   const startDate = lastMonth.toISOString().split("T")[0];
   const endDate = today.toISOString().split("T")[0];
-
-
 
   while (hasNextPage) {
     const query = `

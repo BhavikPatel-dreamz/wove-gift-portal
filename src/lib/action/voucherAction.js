@@ -47,11 +47,12 @@ export async function getVouchers(params = {}) {
       if (dateTo) baseWhere.createdAt.lte = new Date(dateTo);
     }
 
-    // Step 1: Fetch all orders that match the criteria
+    // Step 1: Fetch all orders that match the criteria - INCLUDE BRAND
     let orders = await prisma.order.findMany({
       where: baseWhere,
       include: {
         user: true,
+        brand: true, // Add brand information
         voucherCodes: {
           include: {
             voucher: true,
@@ -73,7 +74,8 @@ export async function getVouchers(params = {}) {
           order.bulkOrderNumber?.toLowerCase().includes(searchLower) ||
           order.user?.email?.toLowerCase().includes(searchLower) ||
           order.user?.firstName?.toLowerCase().includes(searchLower) ||
-          order.user?.lastName?.toLowerCase().includes(searchLower);
+          order.user?.lastName?.toLowerCase().includes(searchLower) ||
+          order.brand?.brandName?.toLowerCase().includes(searchLower);
         
         const matchesVoucherCode = order.voucherCodes.some(vc => 
           vc.code?.toLowerCase().includes(searchLower)
@@ -96,7 +98,8 @@ export async function getVouchers(params = {}) {
         const voucherCodes = order.voucherCodes.map(vc => ({
           ...vc,
           order: order,
-          user: order.user
+          user: order.user,
+          brand: order.brand // Pass brand to voucher code
         }));
 
         const children = voucherCodes.map(vc => mapVoucherCode(vc));
@@ -125,6 +128,8 @@ export async function getVouchers(params = {}) {
             orderNumber: order.orderNumber,
             code: `${voucherCodes.length} Vouchers`,
             user: order.user,
+            brand: order.brand, // Add brand to bulk order
+            brandName: order.brand?.brandName,
             totalAmount,
             remainingAmount,
             currency: order.currency,
@@ -143,7 +148,8 @@ export async function getVouchers(params = {}) {
           const mappedVoucher = mapVoucherCode({
             ...vc,
             order: order,
-            user: order.user
+            user: order.user,
+            brand: order.brand // Pass brand to voucher code
           });
 
           // Apply status filter
@@ -223,11 +229,12 @@ export async function getBulkOrderDetails(params = {}) {
       where.bulkOrderNumber = bulkOrderNumber;
     }
 
-    // Fetch the specific order
+    // Fetch the specific order - INCLUDE BRAND
     const orders = await prisma.order.findMany({
       where,
       include: {
         user: true,
+        brand: true, // Add brand information
         voucherCodes: {
           include: {
             voucher: true,
@@ -256,7 +263,8 @@ export async function getBulkOrderDetails(params = {}) {
       allVoucherCodes.push({
         ...vc,
         order: order,
-        user: order.user
+        user: order.user,
+        brand: order.brand // Pass brand to voucher code
       });
     });
 
@@ -268,7 +276,8 @@ export async function getBulkOrderDetails(params = {}) {
       const searchLower = search.toLowerCase();
       children = children.filter(child => 
         child.code?.toLowerCase().includes(searchLower) ||
-        child.orderNumber?.toLowerCase().includes(searchLower)
+        child.orderNumber?.toLowerCase().includes(searchLower) ||
+        child.brandName?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -298,6 +307,8 @@ export async function getBulkOrderDetails(params = {}) {
         bulkOrderNumber: order.bulkOrderNumber,
         orderNumber: order.orderNumber,
         user: order.user,
+        brand: order.brand, // Add brand to response
+        brandName: order.brand?.brandName,
         totalAmount,
         remainingAmount,
         currency: order.currency,
@@ -359,6 +370,8 @@ function mapVoucherCode(vc) {
     id: vc.id,
     code: vc.code,
     user: vc.order?.user || vc.user,
+    brand: vc.brand || vc.order?.brand, // Add brand object
+    brandName: vc.brand?.brandName || vc.order?.brand?.brandName, // Add brand name
     voucherType: vc.voucher?.denominationType,
     totalAmount: vc.originalValue || 0,
     remainingAmount: vc.remainingValue || 0,

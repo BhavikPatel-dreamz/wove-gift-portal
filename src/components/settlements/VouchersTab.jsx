@@ -45,7 +45,6 @@ const VouchersTab = ({
         return currencyList.find((c) => c.code === code)?.symbol || "$";
     }, []);
 
-
     const fetchVouchers = useCallback(async () => {
         if (!settlementId) return;
 
@@ -120,6 +119,15 @@ const VouchersTab = ({
         );
     }
 
+    console.log("Vouchers Tab Data:", {
+    settlementId,
+    initialData,
+    initialSummary,
+    initialVoucherStats,
+    initialPagination,
+    initialFilters
+});
+
     return (
         <div className="flex flex-col gap-6 p-3">
             {/* Statistics Cards */}
@@ -127,34 +135,31 @@ const VouchersTab = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="flex w-full h-[85px] flex-col justify-center gap-2 p-6 bg-[#EFF6FE] border border-[#BEDBFF] rounded-xl">
                         <p className="text-[#1F59EE] text-[14px] font-semibold">Total Issued</p>
-                        <p className="text-[#1F59EE] text-[16px] font-medium">{voucherStats.totalIssued}</p>
+                        <p className="text-[#1F59EE] text-[16px] font-medium">{voucherStats.totalIssued || 0}</p>
                     </div>
                     <div className="flex w-full h-[85px] justify-center flex-col gap-2 p-6 bg-[#F0FDF4] border border-[#E2E8F0] rounded-xl">
                         <p className="text-[#00813B] text-[14px] font-semibold">Redeemed</p>
                         <p className="text-[#00813B] text-[16px] font-medium">
-                            {String(voucherStats.totalRedeemed).padStart(2, '0')}
+                            {voucherStats.totalRedeemed || 0}
                         </p>
                     </div>
                     <div className="flex w-full h-[85px] justify-center flex-col gap-2 p-6 bg-[#FAF5FF] border border-[#E2E8F0] rounded-xl">
                         <p className="text-[#9810FA] text-[14px] font-semibold">Unredeemed</p>
-                        <p className="text-[#9810FA] text-[16px] font-medium">{voucherStats.totalUnredeemed}</p>
+                        <p className="text-[#9810FA] text-[16px] font-medium">{voucherStats.totalUnredeemed || 0}</p>
                     </div>
                     <div className="flex w-full h-[85px] justify-center flex-col gap-2 p-6 bg-[#FFF7ED] border border-[#E2E8F0] rounded-xl">
                         <p className="text-[#F55101] text-[14px] font-semibold">Redemption Rate</p>
-                        <p className="text-[#F55101] text-[16px] font-medium">{voucherStats.redemptionRate}%</p>
+                        <p className="text-[#F55101] text-[16px] font-medium">{voucherStats.redemptionRate || 0}%</p>
                     </div>
                 </div>
             )}
 
-            {/* <VoucherFilters filterOptions={filterOptions} /> */}
-
-            {/* Denomination Breakdown Table */}
+            {/* Desktop Table View */}
             <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="p-6 border-b border-gray-200">
                     <h3 className="text-[14px] font-semibold text-[#4A4A4A] capitalize font-inter leading-normal">
-                        Denomination Breakdown
+                        Voucher Orders
                     </h3>
-
                 </div>
 
                 <div className="overflow-x-auto">
@@ -163,34 +168,47 @@ const VouchersTab = ({
                             <tr className="bg-gray-50 border-b border-gray-200">
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Order ID</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Customer</th>
-                                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
-                                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Value</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Total Value</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Redeemed</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                             {data && data.length > 0 ? (
                                 data.map((row, index) => {
                                     const currSymbol = getCurrencySymbol(row.currency);
-                                    const redeemedAmount = row.baseAmount * (row.redeemedVouchers / row.totalVouchers || 0);
+                                    const totalValue = row.totalSold || 0;
+                                    const redeemedAmount = row.redeemedAmount || 0;
+                                    const totalVouchers = row.totalVouchers || 0;
+                                    const redeemedVouchers = row.redeemedVouchers || 0;
 
                                     return (
                                         <tr key={row.id || index} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
                                                 {row.orderNumber}
                                             </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {row.senderName || row.receiverName || 'N/A'}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {row.senderEmail || row.receiverEmail || 'N/A'}
+                                                </div>
+                                            </td>
+                                          
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                {row.senderName || row.receiverName || 'N/A'}<br />
-                                                {row.senderEmail || row.receiverEmail || 'N/A'}
+                                                {currSymbol}{totalValue.toLocaleString()}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <StatusBadge status={row.redeemedVouchers > 0 ? 'Redeemed' : 'Pending'} />
+                                                <div className="text-sm font-medium text-green-600">
+                                                    {currSymbol}{redeemedAmount.toLocaleString()}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    Outstanding: {currSymbol}{(totalValue - redeemedAmount).toLocaleString()}
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                {currSymbol} {row.totalSold?.toLocaleString()}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                {currSymbol} {redeemedAmount.toLocaleString()}
+                                            <td className="px-6 py-4">
+                                                <StatusBadge status={row.status} />
                                             </td>
                                         </tr>
                                     );
@@ -218,17 +236,20 @@ const VouchersTab = ({
             {/* Mobile Card View */}
             <div className="md:hidden space-y-3">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                    <h3 className="text-base font-semibold text-gray-900">Denomination Breakdown</h3>
+                    <h3 className="text-base font-semibold text-gray-900">Voucher Orders</h3>
                 </div>
 
                 {data && data.length > 0 ? (
                     data.map((row, index) => {
                         const currSymbol = getCurrencySymbol(row.currency);
-                        const redeemedAmount = row.baseAmount * (row.redeemedVouchers / row.totalVouchers || 0);
+                        const totalValue = row.totalSold || 0;
+                        const redeemedAmount = row.redeemedAmount || 0;
+                        const totalVouchers = row.totalVouchers || 0;
+                        const redeemedVouchers = row.redeemedVouchers || 0;
 
                         return (
                             <div key={row.id || index} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
-                                {/* Order ID and Payment Status */}
+                                {/* Order ID and Status */}
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">Order ID</p>
@@ -240,30 +261,47 @@ const VouchersTab = ({
                                 {/* Customer Info */}
                                 <div className="border-t border-gray-100 pt-3">
                                     <p className="text-xs text-gray-500 mb-1">Customer</p>
-                                    <p className="text-sm font-medium text-gray-900">{row.senderName || row.receiverName || 'N/A'}</p>
-                                    <p className="text-xs text-gray-600 mt-0.5">{row.senderEmail || row.receiverEmail || 'N/A'}</p>
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {row.senderName || row.receiverName || 'N/A'}
+                                    </p>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        {row.senderEmail || row.receiverEmail || 'N/A'}
+                                    </p>
+                                </div>
+
+                                {/* Voucher Count */}
+                                <div className="border-t border-gray-100 pt-3">
+                                    <p className="text-xs text-gray-500 mb-1">Vouchers</p>
+                                    <p className="text-sm font-semibold text-gray-900">
+                                        {redeemedVouchers} / {totalVouchers} redeemed
+                                    </p>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                        {row.redemptionRate}% redemption rate
+                                    </p>
                                 </div>
 
                                 {/* Value and Redeemed Amount */}
                                 <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-3">
                                     <div>
-                                        <p className="text-xs text-gray-500 mb-1">Value</p>
+                                        <p className="text-xs text-gray-500 mb-1">Total Value</p>
                                         <p className="text-sm font-semibold text-gray-900">
-                                            {currSymbol} {row.baseAmount?.toLocaleString()}
+                                            {currSymbol}{totalValue.toLocaleString()}
                                         </p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">Redeemed</p>
-                                        <p className="text-sm font-semibold text-gray-900">
-                                            {currSymbol} {redeemedAmount.toLocaleString()}
+                                        <p className="text-sm font-semibold text-green-600">
+                                            {currSymbol}{redeemedAmount.toLocaleString()}
                                         </p>
                                     </div>
                                 </div>
 
-                                {/* Redemption Status */}
+                                {/* Outstanding Amount */}
                                 <div className="border-t border-gray-100 pt-3">
-                                    <p className="text-xs text-gray-500 mb-2">Redemption Status</p>
-                                    <StatusBadge status={row.redeemedVouchers > 0 ? 'Redeemed' : 'Pending'} />
+                                    <p className="text-xs text-gray-500 mb-1">Outstanding</p>
+                                    <p className="text-sm font-semibold text-orange-600">
+                                        {currSymbol}{(totalValue - redeemedAmount).toLocaleString()}
+                                    </p>
                                 </div>
                             </div>
                         );
