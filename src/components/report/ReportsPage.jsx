@@ -1,17 +1,16 @@
 "use client"
 import React, { useState } from 'react';
-import { Calendar, Download, FileText, FileSpreadsheet, AlertCircle, ChevronDown } from 'lucide-react';
+import { Calendar, Download, FileText, AlertCircle, ChevronDown, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-
 export default function ReportsPage({ shop }) {
     const [brands, setBrands] = useState([]);
-    const [brandLoading, setbrandLoading] = useState(false);
+    const [brandLoading, setBrandLoading] = useState(false);
 
     const [customReport, setCustomReport] = useState({
-        startDate: '2025-11-05',
-        endDate: '2025-11-31',
+        startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
         brand: 'all',
         status: 'all',
         reports: {
@@ -24,31 +23,10 @@ export default function ReportsPage({ shop }) {
         }
     });
 
-    // Fetch brands on component mount
-    React.useEffect(() => {
-        const fetchBrands = async () => {
-            try {
-                setbrandLoading(true);
-                const response = await fetch(`/api/brand?active=true${shop ? `&shop=${shop}` : ''}`);
-                const data = await response.json();
-                if (data.success) {
-                    setBrands(data.data);
-                    setbrandLoading(false);
-                }
-            } catch (error) {
-                setbrandLoading(false);
-                console.error('Failed to fetch brands:', error);
-            }
-        };
-        fetchBrands();
-    }, []);
-
-
-
     const [scheduledReport, setScheduledReport] = useState({
         frequency: '',
         deliveryDay: '',
-        emailRecipients: 'XYZ@gmail.com',
+        emailRecipients: '',
         reportTypes: {
             settlementSummary: false,
             performanceReports: false,
@@ -57,12 +35,33 @@ export default function ReportsPage({ shop }) {
 
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [loadingFormat, setLoadingFormat] = useState(null); // 'csv' | 'pdf' | null
+
+    // Fetch brands on component mount
+    React.useEffect(() => {
+        const fetchBrands = async () => {
+            try {
+                setBrandLoading(true);
+                const response = await fetch(`/api/brand?active=true${shop ? `&shop=${shop}` : ''}`);
+                const data = await response.json();
+                if (data.success) {
+                    setBrands(data.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch brands:', error);
+                setMessage({ type: 'error', text: 'Failed to load brands' });
+            } finally {
+                setBrandLoading(false);
+            }
+        };
+        fetchBrands();
+    }, [shop]);
 
     const quickReports = [
         {
             id: 'daily-settlement',
             title: 'Daily Settlement',
-            description: 'Generate and download instant report',
+            description: 'Today\'s settlement summary',
             icon: '📊',
             color: 'bg-blue-50 border-blue-200',
             iconBg: 'bg-blue-100',
@@ -71,7 +70,7 @@ export default function ReportsPage({ shop }) {
         {
             id: 'weekly-summary',
             title: 'Weekly Summary',
-            description: 'Generate and download instant report',
+            description: 'Last 7 days performance',
             icon: '📈',
             color: 'bg-green-50 border-green-200',
             iconBg: 'bg-green-100',
@@ -80,7 +79,7 @@ export default function ReportsPage({ shop }) {
         {
             id: 'monthly-report',
             title: 'Monthly Report',
-            description: 'Generate and download instant report',
+            description: 'Current month overview',
             icon: '📋',
             color: 'bg-purple-50 border-purple-200',
             iconBg: 'bg-purple-100',
@@ -89,7 +88,7 @@ export default function ReportsPage({ shop }) {
         {
             id: 'unredeemed-liability',
             title: 'Unredeemed Liability',
-            description: 'Generate and download instant report',
+            description: 'Outstanding voucher value',
             icon: '🎁',
             color: 'bg-orange-50 border-orange-200',
             iconBg: 'bg-orange-100',
@@ -106,7 +105,6 @@ export default function ReportsPage({ shop }) {
             const data = await response.json();
 
             if (response.ok) {
-                // Trigger download
                 const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -131,6 +129,7 @@ export default function ReportsPage({ shop }) {
     const handleCustomReportDownload = async (format) => {
         setLoading(true);
         setMessage({ type: "", text: "" });
+        setLoadingFormat(format);
 
         const selectedReports = Object.keys(customReport.reports).filter(
             (key) => customReport.reports[key]
@@ -139,6 +138,14 @@ export default function ReportsPage({ shop }) {
         if (selectedReports.length === 0) {
             setMessage({ type: "error", text: "Please select at least one report type" });
             setLoading(false);
+            setLoadingFormat(null);
+            return;
+        }
+
+        if (!customReport.startDate || !customReport.endDate) {
+            setMessage({ type: "error", text: "Please select start and end dates" });
+            setLoading(false);
+            setLoadingFormat(null);
             return;
         }
 
@@ -151,7 +158,7 @@ export default function ReportsPage({ shop }) {
                     startDate: customReport.startDate,
                     endDate: customReport.endDate,
                     brand: customReport.brand,
-                    status: customReport.status,
+                    status: customReport.status === 'all' ? null : customReport.status,
                     reports: selectedReports,
                     format,
                 }),
@@ -177,19 +184,18 @@ export default function ReportsPage({ shop }) {
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
                 setMessage({ type: "success", text: "CSV downloaded successfully!" });
-                setLoading(false);
+                setLoadingFormat(null);
                 return;
             }
 
             const data = await response.json();
 
-            // Handle PDF with detailed data
+            // Handle PDF
             if (format === "pdf") {
                 const pdf = new jsPDF();
                 const pageHeight = pdf.internal.pageSize.getHeight();
                 let yPos = 20;
 
-                // Helper function to format currency
                 const formatCurrency = (amount) => {
                     if (amount === null || amount === undefined) return 'Rs 0';
                     return `Rs ${Number(amount).toLocaleString('en-IN')}`;
@@ -203,16 +209,20 @@ export default function ReportsPage({ shop }) {
                 };
 
                 // Title
-                pdf.setFontSize(16);
+                pdf.setFontSize(18);
                 pdf.setFont(undefined, 'bold');
-                pdf.text(`Custom Report (${data.period?.startDate} to ${data.period?.endDate})`, 14, yPos);
+                pdf.text(`Custom Report`, 14, yPos);
                 pdf.setFont(undefined, 'normal');
+                pdf.setFontSize(10);
+                yPos += 6;
+                pdf.text(`Period: ${data.period?.startDate} to ${data.period?.endDate}`, 14, yPos);
+                yPos += 5;
+                pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, yPos);
                 yPos += 10;
 
                 // SALES SUMMARY
                 if (data.data?.salesSummary) {
                     const sd = data.data.salesSummary;
-
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
@@ -232,7 +242,8 @@ export default function ReportsPage({ shop }) {
                                 ["Avg Order Value", formatCurrency(sd.summary.avgOrderValue)],
                             ],
                             theme: 'grid',
-                            headStyles: { fillColor: [41, 128, 185] },
+                            headStyles: { fillColor: [41, 128, 185], fontSize: 10 },
+                            styles: { fontSize: 9 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -240,7 +251,9 @@ export default function ReportsPage({ shop }) {
                     if (sd.revenueByPaymentMethod?.length > 0) {
                         checkAddPage(50);
                         pdf.setFontSize(12);
+                        pdf.setFont(undefined, 'bold');
                         pdf.text("Revenue by Payment Method", 14, yPos);
+                        pdf.setFont(undefined, 'normal');
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
@@ -251,6 +264,7 @@ export default function ReportsPage({ shop }) {
                                 formatCurrency(i.revenue)
                             ]),
                             theme: 'striped',
+                            styles: { fontSize: 9 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -258,18 +272,21 @@ export default function ReportsPage({ shop }) {
                     if (sd.dailyBreakdown?.length > 0) {
                         checkAddPage(50);
                         pdf.setFontSize(12);
+                        pdf.setFont(undefined, 'bold');
                         pdf.text("Daily Breakdown", 14, yPos);
+                        pdf.setFont(undefined, 'normal');
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
                             head: [["Date", "Orders", "Revenue", "Quantity"]],
-                            body: sd.dailyBreakdown.map(i => [
+                            body: sd.dailyBreakdown.slice(0, 30).map(i => [
                                 i.date,
                                 i.orders.toLocaleString(),
                                 formatCurrency(i.revenue),
                                 i.quantity.toLocaleString()
                             ]),
                             theme: 'striped',
+                            styles: { fontSize: 8 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -277,20 +294,18 @@ export default function ReportsPage({ shop }) {
                     if (sd.orders?.length > 0) {
                         checkAddPage(50);
                         pdf.setFontSize(12);
-                        pdf.text(`Orders Details (${sd.orders.length})`, 14, yPos);
+                        pdf.setFont(undefined, 'bold');
+                        pdf.text(`Recent Orders (${Math.min(sd.orders.length, 50)})`, 14, yPos);
+                        pdf.setFont(undefined, 'normal');
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
-                            head: [["Order #", "Brand", "Customer", "Email", "Amount", "Discount", "Qty", "Payment", "Date"]],
-                            body: sd.orders.map(o => [
+                            head: [["Order #", "Brand", "Customer", "Amount", "Date"]],
+                            body: sd.orders.slice(0, 50).map(o => [
                                 o.orderNumber,
                                 o.brandName,
                                 o.customer,
-                                o.customerEmail,
                                 formatCurrency(o.amount),
-                                formatCurrency(o.discount),
-                                o.quantity,
-                                o.paymentMethod,
                                 o.date
                             ]),
                             theme: 'striped',
@@ -303,7 +318,6 @@ export default function ReportsPage({ shop }) {
                 // REDEMPTION DETAILS
                 if (data.data?.redemptionDetails) {
                     const rd = data.data.redemptionDetails;
-
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
@@ -325,7 +339,8 @@ export default function ReportsPage({ shop }) {
                                 ["Redemption Rate", `${rd.summary.redemptionRate}%`],
                             ],
                             theme: 'grid',
-                            headStyles: { fillColor: [46, 204, 113] },
+                            headStyles: { fillColor: [46, 204, 113], fontSize: 10 },
+                            styles: { fontSize: 9 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -333,21 +348,20 @@ export default function ReportsPage({ shop }) {
                     if (rd.vouchers?.length > 0) {
                         checkAddPage(50);
                         pdf.setFontSize(12);
-                        pdf.text(`Voucher Details (${rd.vouchers.length})`, 14, yPos);
+                        pdf.setFont(undefined, 'bold');
+                        pdf.text(`Voucher Details (${Math.min(rd.vouchers.length, 50)})`, 14, yPos);
+                        pdf.setFont(undefined, 'normal');
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
-                            head: [["Code", "Order #", "Brand", "Original", "Remaining", "Used", "Status", "Issued", "Count"]],
-                            body: rd.vouchers.slice(0, 100).map(v => [
+                            head: [["Code", "Brand", "Original", "Remaining", "Status", "Date"]],
+                            body: rd.vouchers.slice(0, 50).map(v => [
                                 v.code,
-                                v.orderNumber,
                                 v.brandName,
                                 formatCurrency(v.originalValue),
                                 formatCurrency(v.remainingValue),
-                                formatCurrency(v.usedValue),
                                 v.status,
-                                v.issuedDate,
-                                v.redemptionCount
+                                v.issuedDate
                             ]),
                             theme: 'striped',
                             styles: { fontSize: 7 },
@@ -359,7 +373,6 @@ export default function ReportsPage({ shop }) {
                 // SETTLEMENT REPORTS
                 if (data.data?.settlementReports) {
                     const sr = data.data.settlementReports;
-
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
@@ -378,7 +391,8 @@ export default function ReportsPage({ shop }) {
                                 ["Total VAT", formatCurrency(sr.summary.totalVAT)],
                             ],
                             theme: 'grid',
-                            headStyles: { fillColor: [230, 126, 34] },
+                            headStyles: { fillColor: [230, 126, 34], fontSize: 10 },
+                            styles: { fontSize: 9 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -386,7 +400,9 @@ export default function ReportsPage({ shop }) {
                     if (sr.summary?.byStatus?.length > 0) {
                         checkAddPage(40);
                         pdf.setFontSize(12);
+                        pdf.setFont(undefined, 'bold');
                         pdf.text("By Status", 14, yPos);
+                        pdf.setFont(undefined, 'normal');
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
@@ -397,6 +413,7 @@ export default function ReportsPage({ shop }) {
                                 formatCurrency(s.amount)
                             ]),
                             theme: 'striped',
+                            styles: { fontSize: 9 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -404,24 +421,21 @@ export default function ReportsPage({ shop }) {
                     if (sr.settlements?.length > 0) {
                         checkAddPage(50);
                         pdf.setFontSize(12);
+                        pdf.setFont(undefined, 'bold');
                         pdf.text(`Settlement Details (${sr.settlements.length})`, 14, yPos);
+                        pdf.setFont(undefined, 'normal');
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
-                            head: [["Brand", "Period", "Sold", "Redeemed", "Outstanding", "Commission", "VAT", "Net", "Status"]],
+                            head: [["Brand", "Period", "Net Payable", "Status"]],
                             body: sr.settlements.map(s => [
                                 s.brandName,
                                 s.settlementPeriod,
-                                s.totalSold,
-                                s.totalRedeemed,
-                                s.outstanding,
-                                formatCurrency(s.commissionAmount),
-                                formatCurrency(s.vatAmount),
                                 formatCurrency(s.netPayable),
                                 s.status
                             ]),
                             theme: 'striped',
-                            styles: { fontSize: 7 },
+                            styles: { fontSize: 8 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -430,7 +444,6 @@ export default function ReportsPage({ shop }) {
                 // TRANSACTION LOG
                 if (data.data?.transactionLog) {
                     const tl = data.data.transactionLog;
-
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
@@ -439,20 +452,18 @@ export default function ReportsPage({ shop }) {
                     yPos += 7;
 
                     if (tl.transactions?.length > 0) {
-                        pdf.setFontSize(12);
+                        pdf.setFontSize(10);
                         pdf.text(`Total Transactions: ${tl.totalTransactions}`, 14, yPos);
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
-                            head: [["Order #", "Date", "Brand", "Customer", "Receiver", "Amount", "Payment"]],
-                            body: tl.transactions.map(t => [
+                            head: [["Order #", "Brand", "Customer", "Amount", "Date"]],
+                            body: tl.transactions.slice(0, 50).map(t => [
                                 t.orderNumber,
-                                new Date(t.date).toLocaleDateString(),
                                 t.brandName,
                                 t.customer.name,
-                                t.receiver.name,
                                 formatCurrency(t.totalAmount),
-                                t.paymentMethod
+                                new Date(t.date).toLocaleDateString()
                             ]),
                             theme: 'striped',
                             styles: { fontSize: 7 },
@@ -464,7 +475,6 @@ export default function ReportsPage({ shop }) {
                 // BRAND PERFORMANCE
                 if (data.data?.brandPerformance) {
                     const bp = data.data.brandPerformance;
-
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
@@ -482,7 +492,8 @@ export default function ReportsPage({ shop }) {
                                 ["Avg Redemption Rate", `${bp.summary.avgRedemptionRate}%`],
                             ],
                             theme: 'grid',
-                            headStyles: { fillColor: [155, 89, 182] },
+                            headStyles: { fillColor: [155, 89, 182], fontSize: 10 },
+                            styles: { fontSize: 9 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -490,24 +501,21 @@ export default function ReportsPage({ shop }) {
                     if (bp.brands?.length > 0) {
                         checkAddPage(50);
                         pdf.setFontSize(12);
+                        pdf.setFont(undefined, 'bold');
                         pdf.text(`Brand Details (${bp.brands.length})`, 14, yPos);
+                        pdf.setFont(undefined, 'normal');
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
-                            head: [["Brand", "Category", "Orders", "Revenue", "Qty", "Vouchers", "Redeemed", "Rate", "Avg Order"]],
+                            head: [["Brand", "Orders", "Revenue", "Redemption Rate"]],
                             body: bp.brands.map(b => [
                                 b.brandName,
-                                b.category,
                                 b.totalOrders,
                                 formatCurrency(b.totalRevenue),
-                                b.totalQuantity,
-                                b.vouchersIssued,
-                                b.vouchersRedeemed,
-                                `${b.redemptionRate}%`,
-                                formatCurrency(b.avgOrderValue)
+                                `${b.redemptionRate}%`
                             ]),
                             theme: 'striped',
-                            styles: { fontSize: 7 },
+                            styles: { fontSize: 8 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -516,7 +524,6 @@ export default function ReportsPage({ shop }) {
                 // LIABILITY SNAPSHOT
                 if (data.data?.liabilitySnapshot) {
                     const ls = data.data.liabilitySnapshot;
-
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
@@ -538,7 +545,8 @@ export default function ReportsPage({ shop }) {
                                 ["Total Brands", ls.summary.totalBrands.toLocaleString()],
                             ],
                             theme: 'grid',
-                            headStyles: { fillColor: [231, 76, 60] },
+                            headStyles: { fillColor: [231, 76, 60], fontSize: 10 },
+                            styles: { fontSize: 9 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -546,18 +554,18 @@ export default function ReportsPage({ shop }) {
                     if (ls.byBrand?.length > 0) {
                         checkAddPage(50);
                         pdf.setFontSize(12);
+                        pdf.setFont(undefined, 'bold');
                         pdf.text("Liability by Brand", 14, yPos);
+                        pdf.setFont(undefined, 'normal');
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
-                            head: [["Brand", "Vouchers", "Liability", "Active", "Partial", "Expired"]],
+                            head: [["Brand", "Vouchers", "Liability", "Active"]],
                             body: ls.byBrand.map(b => [
                                 b.brandName,
                                 b.totalVouchers.toLocaleString(),
                                 formatCurrency(b.totalLiability),
-                                b.active,
-                                b.partiallyRedeemed,
-                                b.expired
+                                b.active
                             ]),
                             theme: 'striped',
                             styles: { fontSize: 8 },
@@ -568,7 +576,7 @@ export default function ReportsPage({ shop }) {
 
                 pdf.save(`custom-report-${dateStr}.pdf`);
                 setMessage({ type: "success", text: "PDF generated successfully!" });
-                setLoading(false);
+                setLoadingFormat(null);
                 return;
             }
 
@@ -583,15 +591,15 @@ export default function ReportsPage({ shop }) {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             setMessage({ type: "success", text: "JSON downloaded successfully!" });
-            setLoading(false);
 
         } catch (err) {
             console.error(err);
             setMessage({ type: "error", text: err.message || "Failed to generate report" });
+        } finally {
             setLoading(false);
+            setLoadingFormat(null);
         }
     };
-
 
     const handleScheduleReport = async () => {
         setLoading(true);
@@ -603,6 +611,12 @@ export default function ReportsPage({ shop }) {
 
         if (!scheduledReport.frequency || !scheduledReport.deliveryDay || selectedReportTypes.length === 0) {
             setMessage({ type: 'error', text: 'Please fill all required fields and select at least one report type' });
+            setLoading(false);
+            return;
+        }
+
+        if (!scheduledReport.emailRecipients) {
+            setMessage({ type: 'error', text: 'Please enter email recipient(s)' });
             setLoading(false);
             return;
         }
@@ -624,7 +638,6 @@ export default function ReportsPage({ shop }) {
 
             if (response.ok) {
                 setMessage({ type: 'success', text: 'Report scheduled successfully!' });
-                // Reset form
                 setScheduledReport({
                     frequency: '',
                     deliveryDay: '',
@@ -649,35 +662,52 @@ export default function ReportsPage({ shop }) {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Quick Reports</h1>
-                    <p className="text-gray-600 mt-1">Generate and download instant report</p>
+                    <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
+                    <p className="text-gray-600 mt-1">Generate comprehensive reports and schedule automated deliveries</p>
                 </div>
 
                 {/* Message Alert */}
                 {message.text && (
-                    <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+                    <div className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${message.type === 'success'
+                        ? 'bg-green-50 text-green-800 border border-green-200'
+                        : 'bg-red-50 text-red-800 border border-red-200'
                         }`}>
-                        <AlertCircle className="w-5 h-5 mt-0.5" />
-                        <p>{message.text}</p>
+                        {message.type === 'success' ? (
+                            <CheckCircle2 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                        ) : (
+                            <XCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                        )}
+                        <div className="flex-1">
+                            <p className="font-medium">{message.text}</p>
+                        </div>
+                        <button
+                            onClick={() => setMessage({ type: '', text: '' })}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            ×
+                        </button>
                     </div>
                 )}
 
                 {/* Quick Reports Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    {quickReports.map((report) => (
-                        <button
-                            key={report.id}
-                            onClick={() => handleQuickReport(report.id)}
-                            disabled={loading}
-                            className={`${report.color} border-2 rounded-xl p-6 text-left transition-all hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                            <div className={`${report.iconBg} w-12 h-12 rounded-lg flex items-center justify-center text-2xl mb-4`}>
-                                {report.icon}
-                            </div>
-                            <h3 className={`${report.textColor} font-semibold text-lg mb-1`}>{report.title}</h3>
-                            <p className="text-gray-600 text-sm">{report.description}</p>
-                        </button>
-                    ))}
+                <div className="mb-8">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Reports</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {quickReports.map((report) => (
+                            <button
+                                key={report.id}
+                                onClick={() => handleQuickReport(report.id)}
+                                disabled={loading}
+                                className={`${report.color} border-2 rounded-xl p-6 text-left transition-all hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                                <div className={`${report.iconBg} w-12 h-12 rounded-lg flex items-center justify-center text-2xl mb-4`}>
+                                    {report.icon}
+                                </div>
+                                <h3 className={`${report.textColor} font-semibold text-lg mb-1`}>{report.title}</h3>
+                                <p className="text-gray-600 text-sm">{report.description}</p>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Custom Report Builder */}
@@ -692,39 +722,37 @@ export default function ReportsPage({ shop }) {
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Settlement Frequency<span className="text-red-500">*</span>
+                                    Date Range <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs text-gray-600 mb-2">Start Date</label>
-                                        <div className="relative">
-                                            <input
-                                                type="date"
-                                                value={customReport.startDate}
-                                                onChange={(e) => setCustomReport({ ...customReport, startDate: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
+                                        <input
+                                            type="date"
+                                            value={customReport.startDate}
+                                            onChange={(e) => setCustomReport({ ...customReport, startDate: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-xs text-gray-600 mb-2">End Date</label>
-                                        <div className="relative">
-                                            <input
-                                                type="date"
-                                                value={customReport.endDate}
-                                                onChange={(e) => setCustomReport({ ...customReport, endDate: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
+                                        <input
+                                            type="date"
+                                            value={customReport.endDate}
+                                            onChange={(e) => setCustomReport({ ...customReport, endDate: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
                                     </div>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Remittance Email</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Report Types <span className="text-red-500">*</span>
+                                </label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
                                                 checked={customReport.reports.salesSummary}
@@ -736,7 +764,7 @@ export default function ReportsPage({ shop }) {
                                             />
                                             <span className="text-sm text-gray-700">Sales Summary</span>
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
                                                 checked={customReport.reports.redemptionDetails}
@@ -748,7 +776,7 @@ export default function ReportsPage({ shop }) {
                                             />
                                             <span className="text-sm text-gray-700">Redemption Details</span>
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
                                                 checked={customReport.reports.settlementReports}
@@ -762,7 +790,7 @@ export default function ReportsPage({ shop }) {
                                         </label>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
                                                 checked={customReport.reports.transactionLog}
@@ -774,7 +802,7 @@ export default function ReportsPage({ shop }) {
                                             />
                                             <span className="text-sm text-gray-700">Transaction Log</span>
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
                                                 checked={customReport.reports.brandPerformance}
@@ -786,7 +814,7 @@ export default function ReportsPage({ shop }) {
                                             />
                                             <span className="text-sm text-gray-700">Brand Performance</span>
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                        <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
                                                 checked={customReport.reports.liabilitySnapshot}
@@ -808,7 +836,11 @@ export default function ReportsPage({ shop }) {
                                     disabled={loading}
                                     className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                    <Download className="w-4 h-4" />
+                                  {loadingFormat === 'csv' ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Download className="w-4 h-4" />
+                                    )}
                                     Download CSV
                                 </button>
                                 <button
@@ -816,7 +848,11 @@ export default function ReportsPage({ shop }) {
                                     disabled={loading}
                                     className="flex-1 bg-white text-gray-700 px-6 py-3 rounded-lg font-medium border-2 border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
-                                    <FileText className="w-4 h-4" />
+                                     {loadingFormat === 'pdf' ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <FileText className="w-4 h-4" />
+                                    )}
                                     Download PDF
                                 </button>
                             </div>
@@ -834,12 +870,12 @@ export default function ReportsPage({ shop }) {
                                                 value={customReport.brand}
                                                 onChange={(e) => setCustomReport({ ...customReport, brand: e.target.value })}
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                                disabled={brandLoading}
                                             >
                                                 <option value="all">All brands</option>
-
                                                 {!brandLoading ? (
                                                     brands.map((data) => (
-                                                        <option key={data.id} value={data.brandName}>
+                                                        <option key={data.id} value={data.id}>
                                                             {data.brandName}
                                                         </option>
                                                     ))
@@ -847,12 +883,11 @@ export default function ReportsPage({ shop }) {
                                                     <option disabled>Loading brands...</option>
                                                 )}
                                             </select>
-
                                             <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs text-gray-600 mb-2">Status</label>
+                                        <label className="block text-xs text-gray-600 mb-2">Payment Status</label>
                                         <div className="relative">
                                             <select
                                                 value={customReport.status}
@@ -862,9 +897,26 @@ export default function ReportsPage({ shop }) {
                                                 <option value="all">All status</option>
                                                 <option value="completed">Completed</option>
                                                 <option value="pending">Pending</option>
+                                                <option value="processing">Processing</option>
+                                                <option value="failed">Failed</option>
                                             </select>
                                             <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div className="flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-medium text-blue-900">Report Tips</p>
+                                        <ul className="text-xs text-blue-700 mt-2 space-y-1">
+                                            <li>• Select multiple report types for comprehensive analysis</li>
+                                            <li>• CSV format is best for data manipulation in Excel</li>
+                                            <li>• PDF format provides formatted, print-ready reports</li>
+                                            <li>• Filter by brand to get specific merchant insights</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
@@ -876,14 +928,16 @@ export default function ReportsPage({ shop }) {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                     <div className="mb-6">
                         <h2 className="text-xl font-bold text-gray-900">Scheduled Reports</h2>
-                        <p className="text-gray-600 text-sm mt-1">Setup Automated Report Delivery</p>
+                        <p className="text-gray-600 text-sm mt-1">Setup automated report delivery to your inbox</p>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Left Column */}
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Frequency</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Frequency <span className="text-red-500">*</span>
+                                </label>
                                 <div className="relative">
                                     <select
                                         value={scheduledReport.frequency}
@@ -900,7 +954,9 @@ export default function ReportsPage({ shop }) {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Delivery Day</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Delivery Day <span className="text-red-500">*</span>
+                                </label>
                                 <div className="relative">
                                     <select
                                         value={scheduledReport.deliveryDay}
@@ -925,7 +981,11 @@ export default function ReportsPage({ shop }) {
                                 disabled={loading}
                                 className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                <Calendar className="w-4 h-4" />
+                                {loading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Calendar className="w-4 h-4" />
+                                )}
                                 Schedule Report
                             </button>
                         </div>
@@ -933,20 +993,25 @@ export default function ReportsPage({ shop }) {
                         {/* Right Column */}
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Email Recipients</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Email Recipients <span className="text-red-500">*</span>
+                                </label>
                                 <input
                                     type="email"
                                     value={scheduledReport.emailRecipients}
                                     onChange={(e) => setScheduledReport({ ...scheduledReport, emailRecipients: e.target.value })}
-                                    placeholder="XYZ@gmail.com"
+                                    placeholder="email@example.com"
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Report Types</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Report Types <span className="text-red-500">*</span>
+                                </label>
                                 <div className="space-y-2">
-                                    <label className="flex items-center gap-2 cursor-pointer">
+                                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                         <input
                                             type="checkbox"
                                             checked={scheduledReport.reportTypes.settlementSummary}
@@ -958,7 +1023,7 @@ export default function ReportsPage({ shop }) {
                                         />
                                         <span className="text-sm text-gray-700">Settlement Summary</span>
                                     </label>
-                                    <label className="flex items-center gap-2 cursor-pointer">
+                                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                         <input
                                             type="checkbox"
                                             checked={scheduledReport.reportTypes.performanceReports}

@@ -4,8 +4,9 @@ import { prisma } from "../../../../lib/db";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { startDate, endDate, brand, status, reports, format } = body;
+    const { startDate, endDate, brand, status, reports, format, shop } = body;
 
+    // Validation
     if (!startDate || !endDate || !reports || reports.length === 0) {
       return NextResponse.json(
         { success: false, message: "Missing required fields" },
@@ -17,12 +18,26 @@ export async function POST(request) {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
+    // Build where clause
     const whereClause = {
       createdAt: { gte: start, lte: end },
     };
 
+    // Add shop filter if provided
+    if (shop) {
+      whereClause.brand = {
+        domain: shop
+      };
+    }
+
+    // Add brand filter - FIX: Use brand ID instead of brand name
     if (brand && brand !== "all") {
       whereClause.brandId = brand;
+    }
+
+    // Add status filter
+    if (status && status !== "all") {
+      whereClause.paymentStatus = status.toUpperCase();
     }
 
     // Generate selected reports
@@ -37,7 +52,7 @@ export async function POST(request) {
           reportData.redemptionDetails = await generateRedemptionDetails(whereClause, start, end);
           break;
         case "settlementReports":
-          reportData.settlementReports = await generateSettlementReports(start, end, brand);
+          reportData.settlementReports = await generateSettlementReports(start, end, brand, shop);
           break;
         case "transactionLog":
           reportData.transactionLog = await generateTransactionLog(whereClause);
@@ -46,7 +61,7 @@ export async function POST(request) {
           reportData.brandPerformance = await generateBrandPerformance(whereClause);
           break;
         case "liabilitySnapshot":
-          reportData.liabilitySnapshot = await generateLiabilitySnapshot(brand);
+          reportData.liabilitySnapshot = await generateLiabilitySnapshot(brand, shop);
           break;
       }
     }
@@ -74,6 +89,7 @@ export async function POST(request) {
       filters: {
         brand: brand || "all",
         status: status || "all",
+        shop: shop || "all",
       },
       format,
       generatedAt: new Date().toISOString(),
@@ -239,10 +255,16 @@ async function generateRedemptionDetails(whereClause) {
   };
 }
 
-async function generateSettlementReports(startDate, endDate, brandFilter) {
+async function generateSettlementReports(startDate, endDate, brandFilter, shop) {
   const whereClause = {
     createdAt: { gte: startDate, lte: endDate },
   };
+
+  if (shop) {
+    whereClause.brand = {
+      domain: shop
+    };
+  }
 
   if (brandFilter && brandFilter !== "all") {
     whereClause.brandId = brandFilter;
@@ -259,13 +281,19 @@ async function generateSettlementReports(startDate, endDate, brandFilter) {
   const statusSummary = {
     Pending: { count: 0, amount: 0 },
     Paid: { count: 0, amount: 0 },
+    Partial: { count: 0, amount: 0 },
     InReview: { count: 0, amount: 0 },
     Disputed: { count: 0, amount: 0 },
   };
 
   settlements.forEach((s) => {
-    statusSummary[s.status].count += 1;
-    statusSummary[s.status].amount += s.netPayable;
+    if (s.status) {
+      if (!statusSummary[s.status]) {
+        statusSummary[s.status] = { count: 0, amount: 0 };
+      }
+      statusSummary[s.status].count += 1;
+      statusSummary[s.status].amount += s.netPayable;
+    }
   });
 
   return {
@@ -422,10 +450,24 @@ async function generateBrandPerformance(whereClause) {
   };
 }
 
-async function generateLiabilitySnapshot(brandFilter) {
+async function generateLiabilitySnapshot(brandFilter, shop) {
   const whereClause = {
     OR: [{ isRedeemed: false }, { remainingValue: { gt: 0 } }],
   };
+
+  if (shop || brandFilter) {
+    whereClause.order = {};
+    
+    if (shop) {
+      whereClause.order.brand = {
+        domain: shop
+      };
+    }
+    
+    if (brandFilter && brandFilter !== "all") {
+      whereClause.order.brandId = brandFilter;
+    }
+  }
 
   const voucherCodes = await prisma.voucherCode.findMany({
     where: whereClause,
@@ -443,11 +485,6 @@ async function generateLiabilitySnapshot(brandFilter) {
 
   voucherCodes.forEach((vc) => {
     const brandId = vc.order.brand.id;
-
-    if (brandFilter && brandFilter !== "all" && brandId !== brandFilter) {
-      return;
-    }
-
     const brandName = vc.order.brand.brandName;
 
     if (!liabilityByBrand[brandId]) {
@@ -492,7 +529,7 @@ async function generateLiabilitySnapshot(brandFilter) {
   };
 }
 
-// ==================== ENHANCED CSV CONVERTER ====================
+// ==================== CSV CONVERTER ====================
 function convertToCSV(reportData, startDate, endDate) {
   let csv = "";
   const escape = (value) => {
