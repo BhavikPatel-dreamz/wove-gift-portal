@@ -61,8 +61,11 @@ export default function ReportsPage({ shop }) {
     });
 
     const [scheduledReport, setScheduledReport] = useState({
+        brandId: 'all',
         frequency: 'weekly',
         deliveryDay: '',
+        deliveryMonth: '',
+        deliveryYear: new Date().getFullYear().toString(),
         emailRecipients: '',
         reportTypes: {
             settlementSummary: false,
@@ -137,39 +140,20 @@ export default function ReportsPage({ shop }) {
         }
     ];
 
-    const handleQuickReport = async (reportId) => {
-        setLoading(true);
-        setMessage({ type: '', text: '' });
-
-        try {
-            const response = await fetch(`/api/reports/quick?type=${reportId}${shop ? `&shop=${shop}` : ''}`);
-            const data = await response.json();
-
-            if (response.ok) {
-                const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${reportId}-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-
-                // setMessage({ type: 'success', text: 'Report downloaded successfully!' });
-                toast.success('Report downloaded successfully!');
-
-            } else {
-                // setMessage({ type: 'error', text: data.message || 'Failed to generate report' });
-                toast.error(data.message || 'Failed to generate report');
-            }
-        } catch (error) {
-            // setMessage({ type: 'error', text: 'An error occurred while generating the report' });
-            toast.error(data.message || 'An error occurred while generating the report');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const months = [
+        { value: '1', label: 'January' },
+        { value: '2', label: 'February' },
+        { value: '3', label: 'March' },
+        { value: '4', label: 'April' },
+        { value: '5', label: 'May' },
+        { value: '6', label: 'June' },
+        { value: '7', label: 'July' },
+        { value: '8', label: 'August' },
+        { value: '9', label: 'September' },
+        { value: '10', label: 'October' },
+        { value: '11', label: 'November' },
+        { value: '12', label: 'December' }
+    ];
 
     const handleCustomReportDownload = async (format) => {
         setLoading(true);
@@ -649,7 +633,6 @@ export default function ReportsPage({ shop }) {
             console.error(err);
             // setMessage({ type: "error", text: err.message || "Failed to generate report" });
             toast.error("Failed to generate report. Please try again.");
-
         } finally {
             setLoading(false);
             setLoadingFormat(null);
@@ -679,20 +662,26 @@ export default function ReportsPage({ shop }) {
         }
 
         try {
+             const payload = {
+                shop,
+                brandId: scheduledReport.brandId,
+                frequency: scheduledReport.frequency,
+                deliveryDay: scheduledReport.deliveryDay,
+                deliveryMonth: scheduledReport.frequency !== 'weekly' ? scheduledReport.deliveryMonth : null,
+                deliveryYear: scheduledReport.frequency === 'yearly' ? scheduledReport.deliveryYear : null,
+                emailRecipients: scheduledReport.emailRecipients,
+                reportTypes: selectedReportTypes
+            };
+
             const response = await fetch('/api/reports/schedule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    shop,
-                    frequency: scheduledReport.frequency,
-                    deliveryDay: scheduledReport.deliveryDay,
-                    emailRecipients: scheduledReport.emailRecipients,
-                    reportTypes: selectedReportTypes
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
-
+            
+            console.log("response",data,response)
             if (response.ok) {
                 // setMessage({ type: 'success', text: 'Report scheduled successfully!' });
                 toast.success('Report scheduled successfully!');
@@ -708,14 +697,59 @@ export default function ReportsPage({ shop }) {
                 fetchScheduledReports();
             } else {
                 // setMessage({ type: 'error', text: data.message || 'Failed to schedule report' });
-                toast.error(error.response?.data?.message || 'Failed to schedule report.');
+                toast.error(data.message || 'Failed to schedule report.');
             }
         } catch (error) {
             // setMessage({ type: 'error', text: 'An error occurred while scheduling the report' });
+            console.log("error",error)
             toast.error('An error occurred while scheduling the report');
         } finally {
             setLoading(false);
         }
+    };
+
+    const getDeliveryDayOptions = () => {
+        if (scheduledReport.frequency === 'weekly') {
+            return [
+                { value: 'monday', label: 'Monday' },
+                { value: 'tuesday', label: 'Tuesday' },
+                { value: 'wednesday', label: 'Wednesday' },
+                { value: 'thursday', label: 'Thursday' },
+                { value: 'friday', label: 'Friday' },
+                { value: 'saturday', label: 'Saturday' },
+                { value: 'sunday', label: 'Sunday' }
+            ];
+        } else {
+            // For monthly and yearly, return days 1-28
+            return Array.from({ length: 28 }, (_, i) => ({
+                value: (i + 1).toString(),
+                label: `${i + 1}${getOrdinalSuffix(i + 1)}`
+            }));
+        }
+    };
+
+    const getOrdinalSuffix = (num) => {
+        const j = num % 10;
+        const k = num % 100;
+        if (j === 1 && k !== 11) return 'st';
+        if (j === 2 && k !== 12) return 'nd';
+        if (j === 3 && k !== 13) return 'rd';
+        return 'th';
+    };
+
+
+    const formatScheduleDisplay = (report) => {
+        let display = '';
+        if (report.frequency === 'weekly') {
+            display = `Every ${report.deliveryDay}`;
+        } else if (report.frequency === 'monthly') {
+            const monthName = months.find(m => m.value === report.deliveryMonth)?.label || '';
+            display = `${report.deliveryDay}${getOrdinalSuffix(parseInt(report.deliveryDay))} of ${monthName}`;
+        } else if (report.frequency === 'yearly') {
+            const monthName = months.find(m => m.value === report.deliveryMonth)?.label || '';
+            display = `${monthName} ${report.deliveryDay}${getOrdinalSuffix(parseInt(report.deliveryDay))}, ${report.deliveryYear}`;
+        }
+        return display;
     };
 
 
@@ -811,7 +845,7 @@ export default function ReportsPage({ shop }) {
 
                 {/* Quick Reports Grid */}
                 <div className="mb-8">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Reports</h2>
+                    {/* <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Reports</h2> */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {quickReports.map((report) => (
                             <button
@@ -1047,86 +1081,139 @@ export default function ReportsPage({ shop }) {
                 {/* Scheduled Reports */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
                     <div className="mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">{isEditing ? 'Edit Scheduled Report' : 'Schedule New Report'}</h2>
+                        <h2 className="text-xl font-bold text-gray-900">
+                            {isEditing ? 'Edit Scheduled Report' : 'Schedule New Report'}
+                        </h2>
                         <p className="text-gray-600 text-sm mt-1">Automate report delivery to your inbox</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Brand</label>
+                            <div className="relative">
+                                <select
+                                    value={scheduledReport.brandId}
+                                    onChange={(e) => setScheduledReport({ ...scheduledReport, brandId: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                    disabled={brandLoading}
+                                >
+                                    <option value="all">All brands</option>
+                                    {brands.map((data) => (
+                                        <option key={data.id} value={data.id}>
+                                            {data.brandName}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Frequency <span className="text-red-500">*</span>
                             </label>
-                            <select
-                                value={scheduledReport.frequency}
-                                onChange={(e) => setScheduledReport({ ...scheduledReport, frequency: e.target.value, deliveryDay: '' })}
-                                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                            >
-                                <option value="">Select Frequency</option>
-                                {/* <option value="daily">Daily</option> */}
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </select>
+                            <div className="relative">
+                                <select
+                                    value={scheduledReport.frequency}
+                                    onChange={(e) => setScheduledReport({
+                                        ...scheduledReport,
+                                        frequency: e.target.value,
+                                        deliveryDay: '',
+                                        deliveryMonth: '',
+                                        deliveryYear: new Date().getFullYear().toString()
+                                    })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                >
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                    {/* <option value="yearly">Yearly</option> */}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Delivery Day <span className="text-red-500">*</span>
                             </label>
-                            {scheduledReport.frequency === 'weekly' ? (
+                            <div className="relative">
                                 <select
                                     value={scheduledReport.deliveryDay}
                                     onChange={(e) => setScheduledReport({ ...scheduledReport, deliveryDay: e.target.value })}
-                                    className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                                 >
                                     <option value="">Select Day</option>
-                                    <option value="monday">Monday</option>
-                                    <option value="tuesday">Tuesday</option>
-                                    <option value="wednesday">Wednesday</option>
-                                    <option value="thursday">Thursday</option>
-                                    <option value="friday">Friday</option>
-                                    <option value="saturday">Saturday</option>
-                                    <option value="sunday">Sunday</option>
+                                    {getDeliveryDayOptions().map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
                                 </select>
-                            ) : scheduledReport.frequency === 'monthly' ? (
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="28"
-                                    placeholder="Day of month (1-28)"
-                                    value={scheduledReport.deliveryDay}
-                                    onChange={(e) => setScheduledReport({ ...scheduledReport, deliveryDay: e.target.value })}
-                                    className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                                />
-                            ) : (
-                                <input
-                                    type="text"
-                                    value="Every day at 9 AM"
-                                    disabled
-                                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                                />
-                            )}
+                                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
                         </div>
 
-                        <div className="lg:col-span-2">
+                        {(scheduledReport.frequency === 'monthly' || scheduledReport.frequency === 'yearly') && (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Delivery Month <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={scheduledReport.deliveryMonth}
+                                        onChange={(e) => setScheduledReport({ ...scheduledReport, deliveryMonth: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                    >
+                                        <option value="">Select Month</option>
+                                        {months.map(month => (
+                                            <option key={month.value} value={month.value}>
+                                                {month.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                                </div>
+                            </div>
+                        )}
+
+                        {scheduledReport.frequency === 'yearly' && (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Delivery Year <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    min={new Date().getFullYear()}
+                                    max={new Date().getFullYear() + 10}
+                                    value={scheduledReport.deliveryYear}
+                                    onChange={(e) => setScheduledReport({ ...scheduledReport, deliveryYear: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="2026"
+                                />
+                            </div>
+                        )}
+
+                        <div className={scheduledReport.frequency === 'weekly' ? 'md:col-span-2 lg:col-span-3' : ''}>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Email Recipient(s) <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
-                                placeholder="john@example.com, jane@example.com"
+                                placeholder="email@example.com, another@example.com"
                                 value={scheduledReport.emailRecipients}
                                 onChange={(e) => setScheduledReport({ ...scheduledReport, emailRecipients: e.target.value })}
-                                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
+                            <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
                         </div>
 
-                        <div className="lg:col-span-4">
+                        <div className="md:col-span-2 lg:col-span-3">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Report Types <span className="text-red-500">*</span>
                             </label>
                             <div className="flex flex-wrap gap-4">
                                 {Object.keys(scheduledReport.reportTypes).map((type) => (
-                                    <label key={type} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                    <label key={type} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                         <input
                                             type="checkbox"
                                             checked={scheduledReport.reportTypes[type]}
@@ -1134,20 +1221,22 @@ export default function ReportsPage({ shop }) {
                                                 ...scheduledReport,
                                                 reportTypes: { ...scheduledReport.reportTypes, [type]: e.target.checked }
                                             })}
-                                            className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300"
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                         />
-                                        {type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                        <span className="text-sm text-gray-700">
+                                            {type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                        </span>
                                     </label>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="lg:col-span-4 flex justify-end gap-4">
+                        <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3">
                             {isEditing && (
                                 <button
                                     onClick={handleCancelEdit}
                                     disabled={loading}
-                                    className="px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg shadow-sm hover:bg-gray-300 transition disabled:opacity-50"
+                                    className="px-6 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
@@ -1155,16 +1244,20 @@ export default function ReportsPage({ shop }) {
                             <button
                                 onClick={handleScheduleReport}
                                 disabled={loading}
-                                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+                                className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                             >
-                                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Calendar className="w-5 h-5" />}
+                                {loading ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <Calendar className="w-5 h-5" />
+                                )}
                                 {isEditing ? 'Update Schedule' : 'Schedule Report'}
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Existing Scheduled Reports */}
+                {/* Active Schedules Table */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                     <div className="p-6 border-b">
                         <h2 className="text-xl font-bold text-gray-900">Active Schedules</h2>
@@ -1174,47 +1267,76 @@ export default function ReportsPage({ shop }) {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Frequency</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Recipients</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Reports</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Next Delivery</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
-                                    <th scope="col" className="relative px-6 py-3">
-                                        <span className="sr-only">Actions</span>
-                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Brand</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Schedule</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Recipients</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Report Types</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Next Delivery</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {scheduledReports.length > 0 ? scheduledReports.map((report) => (
-                                    <tr key={report.id}>
+                                    <tr key={report.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900 capitalize">{report.frequency}</div>
-                                            <div className="text-xs text-gray-500">on {report.deliveryDay}</div>
+                                            <div className="text-sm font-medium text-gray-900">
+                                                {report.brand?.brandName || 'All Brands'}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 max-w-xs truncate">{report.emailRecipients}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            <ul className="list-disc list-inside">
-                                                {Array.isArray(report.reportTypes) && report.reportTypes.map(rt => <li key={rt}>{rt.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</li>)}
-                                            </ul>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(report.nextDeliveryDate).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${report.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                            <div className="text-sm text-gray-900 font-medium capitalize">{report.frequency}</div>
+                                            <div className="text-xs text-gray-500">{formatScheduleDisplay(report)}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-600 max-w-xs truncate" title={report.emailRecipients}>
+                                                {report.emailRecipients}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-600">
+                                                {Array.isArray(report.reportTypes) && report.reportTypes.map((rt, idx) => (
+                                                    <div key={idx} className="text-xs">
+                                                        • {rt.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm text-gray-600">
+                                                {new Date(report.nextDeliveryDate).toLocaleDateString()}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {new Date(report.nextDeliveryDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${report.status === 'Active'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {report.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex gap-4">
-                                                {/* <button onClick={() => handleEditSchedule(report)} className="text-blue-600 hover:text-blue-900">Edit</button> */}
-                                                <button onClick={() => handleDeleteSchedule(report.id)} className="text-red-600 hover:text-red-900 cursor-pointer">Cancel</button>
+                                            <div className="flex justify-end gap-3">
+                                                <button
+                                                    onClick={() => handleDeleteSchedule(report.id)}
+                                                    className="text-red-600 hover:text-red-900 font-medium"
+                                                >
+                                                    Remove
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan="6" className="text-center py-10 text-gray-500">
-                                            No scheduled reports found.
+                                        <td colSpan="7" className="px-6 py-12 text-center">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <Calendar className="w-12 h-12 text-gray-300 mb-3" />
+                                                <p className="text-gray-500 font-medium">No scheduled reports found</p>
+                                                <p className="text-gray-400 text-sm mt-1">Create your first scheduled report above</p>
+                                            </div>
                                         </td>
                                     </tr>
                                 )}
@@ -1222,6 +1344,8 @@ export default function ReportsPage({ shop }) {
                         </table>
                     </div>
                 </div>
+
+
                 <ConfirmationModal
                     isOpen={showDeleteModal}
                     onClose={() => {

@@ -5,12 +5,34 @@ import { prisma } from "../../../../lib/db";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { shop, frequency, deliveryDay, emailRecipients, reportTypes } = body;
+    const { shop, frequency, deliveryDay, deliveryMonth, deliveryYear, emailRecipients, reportTypes, brandId } = body;
 
     // Validate required fields
-    if (!frequency || !deliveryDay || !emailRecipients || !reportTypes || reportTypes.length === 0) {
+    if (!frequency || !emailRecipients || !reportTypes || reportTypes.length === 0) {
       return NextResponse.json(
-        { success: false, message: "All fields are required" },
+        { success: false, message: "Frequency, email recipients, and report types are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate based on frequency
+    if (frequency === 'weekly' && !deliveryDay) {
+      return NextResponse.json(
+        { success: false, message: "Delivery day is required for weekly reports" },
+        { status: 400 }
+      );
+    }
+
+    if (frequency === 'monthly' && (!deliveryDay || !deliveryMonth)) {
+      return NextResponse.json(
+        { success: false, message: "Delivery day and month are required for monthly reports" },
+        { status: 400 }
+      );
+    }
+
+    if (frequency === 'yearly' && (!deliveryDay || !deliveryMonth || !deliveryYear)) {
+      return NextResponse.json(
+        { success: false, message: "Delivery day, month, and year are required for yearly reports" },
         { status: 400 }
       );
     }
@@ -31,13 +53,16 @@ export async function POST(request) {
     }
 
     // Calculate next delivery date
-    const nextDeliveryDate = calculateNextDeliveryDate(frequency, deliveryDay);
+    const nextDeliveryDate = calculateNextDeliveryDate(frequency, deliveryDay, deliveryMonth, deliveryYear);
 
     const scheduleRecord = await prisma.scheduledReport.create({
       data: {
         shop,
+        brandId: brandId === 'all' ? null : brandId,
         frequency,
         deliveryDay,
+        deliveryMonth: deliveryMonth || null,
+        deliveryYear: deliveryYear || null,
         emailRecipients,
         reportTypes,
         nextDeliveryDate,
@@ -68,20 +93,17 @@ export async function POST(request) {
 // GET: Retrieve all scheduled reports
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    // const shop = searchParams.get("shop");
-
-    // if (!shop) {
-    //   return NextResponse.json(
-    //     { success: false, message: "Shop parameter is required" },
-    //     { status: 400 }
-    //   );
-    // }
-
     const scheduledReports = await prisma.scheduledReport.findMany({
       where: {
         status: {
           not: "Cancelled",
+        },
+      },
+      include: {
+        brand: {
+          select: {
+            brandName: true,
+          },
         },
       },
       orderBy: {
@@ -165,7 +187,7 @@ export async function DELETE(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, frequency, deliveryDay, emailRecipients, reportTypes, status } = body;
+    const { id, frequency, deliveryDay, deliveryMonth, deliveryYear, emailRecipients, reportTypes, status, brandId } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -205,16 +227,22 @@ export async function PUT(request) {
     const dataToUpdate = {};
     if (frequency) dataToUpdate.frequency = frequency;
     if (deliveryDay) dataToUpdate.deliveryDay = deliveryDay;
+    if (deliveryMonth) dataToUpdate.deliveryMonth = deliveryMonth;
+    if (deliveryYear) dataToUpdate.deliveryYear = deliveryYear;
     if (emailRecipients) dataToUpdate.emailRecipients = emailRecipients;
     if (reportTypes) dataToUpdate.reportTypes = reportTypes;
     if (status) dataToUpdate.status = status;
+    if (body.hasOwnProperty('brandId')) {
+        dataToUpdate.brandId = brandId === 'all' ? null : brandId;
+    }
 
-
-    // Calculate new next delivery date if frequency or delivery day changed
-    if (frequency || deliveryDay) {
+    // Calculate new next delivery date if frequency or delivery parameters changed
+    if (frequency || deliveryDay || deliveryMonth || deliveryYear) {
       dataToUpdate.nextDeliveryDate = calculateNextDeliveryDate(
         frequency || report.frequency,
-        deliveryDay || report.deliveryDay
+        deliveryDay || report.deliveryDay,
+        deliveryMonth || report.deliveryMonth,
+        deliveryYear || report.deliveryYear
       );
     }
 
@@ -246,15 +274,11 @@ export async function PUT(request) {
 
 // ==================== HELPER FUNCTIONS ====================
 
-function calculateNextDeliveryDate(frequency, deliveryDay) {
+function calculateNextDeliveryDate(frequency, deliveryDay, deliveryMonth, deliveryYear) {
   const today = new Date();
   let nextDate = new Date(today);
 
   switch (frequency) {
-    case "daily":
-      nextDate.setDate(today.getDate() + 1);
-      break;
-
     case "weekly":
       const daysOfWeek = {
         sunday: 0,
@@ -279,8 +303,27 @@ function calculateNextDeliveryDate(frequency, deliveryDay) {
 
     case "monthly":
       const dayOfMonth = parseInt(deliveryDay) || 1;
-      nextDate.setMonth(today.getMonth() + 1);
-      nextDate.setDate(Math.min(dayOfMonth, 28)); // Avoid invalid dates
+      const monthValue = parseInt(deliveryMonth) || 1;
+      
+      // Set to the specified month and day
+      nextDate.setMonth(monthValue - 1); // Months are 0-indexed
+      nextDate.setDate(Math.min(dayOfMonth, 28));
+      
+      // If the date has passed this year, move to next year
+      if (nextDate <= today) {
+        nextDate.setFullYear(today.getFullYear() + 1);
+      }
+      break;
+
+    case "yearly":
+      const yearValue = parseInt(deliveryYear) || today.getFullYear();
+      const yearMonth = parseInt(deliveryMonth) || 1;
+      const yearDay = parseInt(deliveryDay) || 1;
+      
+      nextDate = new Date(yearValue, yearMonth - 1, Math.min(yearDay, 28));
+      
+      // If the date has already passed, it will be delivered on the specified date
+      // No need to adjust since it's a one-time yearly delivery
       break;
 
     default:

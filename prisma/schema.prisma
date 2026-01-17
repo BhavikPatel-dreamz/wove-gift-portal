@@ -64,6 +64,7 @@ model Brand {
   orders        Order[]
   settlements   Settlements[]
   vouchers      Vouchers[]
+  ScheduledReport ScheduledReport[]
 }
 
 model BrandContacts {
@@ -139,7 +140,7 @@ model Integration {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   brandId        String
-  brand          Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
+brand          Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
   syncLogs       IntegrationSyncLog[]
 }
 
@@ -432,17 +433,22 @@ model AuditLog {
 model ScheduledReport {
   id                String                @id @default(cuid())
   shop              String?
-  frequency         String // daily, weekly, monthly
-  deliveryDay       String // e.g., "monday" or "15"
-  emailRecipients   String // comma-separated
+  brandId           String?
+  frequency         String                // weekly, monthly, yearly
+  deliveryDay       String                // e.g., "monday" for weekly, "15" for monthly/yearly
+  deliveryMonth     String?               // e.g., "1" for January (for monthly/yearly)
+  deliveryYear      String?               // e.g., "2026" (for yearly)
+  emailRecipients   String                // comma-separated
   reportTypes       Json
   nextDeliveryDate  DateTime
   lastDeliveryDate  DateTime?
   status            ScheduledReportStatus @default(Active)
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
+  brand             Brand?                @relation(fields: [brandId], references: [id])
 
   @@index([shop])
+  @@index([brandId])
   @@index([status])
   @@index([nextDeliveryDate])
 }
