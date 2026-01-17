@@ -5,12 +5,34 @@ import { prisma } from "../../../../lib/db";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { frequency, deliveryDay, emailRecipients, reportTypes } = body;
+    const { shop, frequency, deliveryDay, deliveryMonth, deliveryYear, emailRecipients, reportTypes, brandId } = body;
 
     // Validate required fields
-    if (!frequency || !deliveryDay || !emailRecipients || !reportTypes || reportTypes.length === 0) {
+    if (!frequency || !emailRecipients || !reportTypes || reportTypes.length === 0) {
       return NextResponse.json(
-        { success: false, message: "All fields are required" },
+        { success: false, message: "Frequency, email recipients, and report types are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate based on frequency
+    if (frequency === 'weekly' && !deliveryDay) {
+      return NextResponse.json(
+        { success: false, message: "Delivery day is required for weekly reports" },
+        { status: 400 }
+      );
+    }
+
+    if (frequency === 'monthly' && (!deliveryDay || !deliveryMonth)) {
+      return NextResponse.json(
+        { success: false, message: "Delivery day and month are required for monthly reports" },
+        { status: 400 }
+      );
+    }
+
+    if (frequency === 'yearly' && (!deliveryDay || !deliveryMonth || !deliveryYear)) {
+      return NextResponse.json(
+        { success: false, message: "Delivery day, month, and year are required for yearly reports" },
         { status: 400 }
       );
     }
@@ -31,41 +53,26 @@ export async function POST(request) {
     }
 
     // Calculate next delivery date
-    const nextDeliveryDate = calculateNextDeliveryDate(frequency, deliveryDay);
+    const nextDeliveryDate = calculateNextDeliveryDate(frequency, deliveryDay, deliveryMonth, deliveryYear);
 
-    // Store scheduled report in AuditLog (for demo purposes)
-    // In production, create a dedicated ScheduledReport table
-    const scheduleRecord = await prisma.auditLog.create({
+    const scheduleRecord = await prisma.scheduledReport.create({
       data: {
-        action: "SCHEDULE_REPORT",
-        entity: "Report",
-        entityId: `${frequency}-${deliveryDay}-${Date.now()}`,
-        changes: {
-          frequency,
-          deliveryDay,
-          emailRecipients,
-          reportTypes,
-          nextDeliveryDate: nextDeliveryDate.toISOString(),
-          status: "Active",
-          createdAt: new Date().toISOString(),
-        },
-        ipAddress: request.headers.get("x-forwarded-for") || "unknown",
-        userAgent: request.headers.get("user-agent") || "unknown",
+        shop,
+        brandId: brandId === 'all' ? null : brandId,
+        frequency,
+        deliveryDay,
+        deliveryMonth: deliveryMonth || null,
+        deliveryYear: deliveryYear || null,
+        emailRecipients,
+        reportTypes,
+        nextDeliveryDate,
       },
     });
 
     return NextResponse.json({
       success: true,
       message: "Report scheduled successfully",
-      data: {
-        id: scheduleRecord.id,
-        frequency,
-        deliveryDay,
-        emailRecipients,
-        reportTypes,
-        nextDeliveryDate: nextDeliveryDate.toISOString(),
-        status: "Active",
-      },
+      data: scheduleRecord,
     });
   } catch (error) {
     console.error("Schedule Report API Error:", error);
@@ -84,12 +91,20 @@ export async function POST(request) {
 }
 
 // GET: Retrieve all scheduled reports
-export async function GET() {
+export async function GET(request) {
   try {
-    const scheduledReports = await prisma.auditLog.findMany({
+    const scheduledReports = await prisma.scheduledReport.findMany({
       where: {
-        action: "SCHEDULE_REPORT",
-        entity: "Report",
+        status: {
+          not: "Cancelled",
+        },
+      },
+      include: {
+        brand: {
+          select: {
+            brandName: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -97,23 +112,9 @@ export async function GET() {
       take: 100,
     });
 
-    const reports = scheduledReports
-      .filter((log) => log.changes?.status !== "Cancelled")
-      .map((log) => ({
-        id: log.id,
-        frequency: log.changes?.frequency,
-        deliveryDay: log.changes?.deliveryDay,
-        emailRecipients: log.changes?.emailRecipients,
-        reportTypes: log.changes?.reportTypes || [],
-        nextDeliveryDate: log.changes?.nextDeliveryDate,
-        lastDeliveryDate: log.changes?.lastDeliveryDate,
-        status: log.changes?.status || "Active",
-        createdAt: log.createdAt,
-      }));
-
     return NextResponse.json({
       success: true,
-      data: reports,
+      data: scheduledReports,
     });
   } catch (error) {
     console.error("Get Scheduled Reports API Error:", error);
@@ -144,7 +145,7 @@ export async function DELETE(request) {
       );
     }
 
-    const report = await prisma.auditLog.findUnique({
+    const report = await prisma.scheduledReport.findUnique({
       where: { id },
     });
 
@@ -155,14 +156,10 @@ export async function DELETE(request) {
       );
     }
 
-    await prisma.auditLog.update({
+    await prisma.scheduledReport.update({
       where: { id },
       data: {
-        changes: {
-          ...report.changes,
-          status: "Cancelled",
-          cancelledAt: new Date().toISOString(),
-        },
+        status: "Cancelled",
       },
     });
 
@@ -190,7 +187,7 @@ export async function DELETE(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, frequency, deliveryDay, emailRecipients, reportTypes, status } = body;
+    const { id, frequency, deliveryDay, deliveryMonth, deliveryYear, emailRecipients, reportTypes, status, brandId } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -199,7 +196,7 @@ export async function PUT(request) {
       );
     }
 
-    const report = await prisma.auditLog.findUnique({
+    const report = await prisma.scheduledReport.findUnique({
       where: { id },
     });
 
@@ -227,40 +224,37 @@ export async function PUT(request) {
       }
     }
 
-    // Calculate new next delivery date if frequency or delivery day changed
-    let nextDeliveryDate = report.changes?.nextDeliveryDate;
-    if (frequency || deliveryDay) {
-      nextDeliveryDate = calculateNextDeliveryDate(
-        frequency || report.changes?.frequency,
-        deliveryDay || report.changes?.deliveryDay
-      ).toISOString();
+    const dataToUpdate = {};
+    if (frequency) dataToUpdate.frequency = frequency;
+    if (deliveryDay) dataToUpdate.deliveryDay = deliveryDay;
+    if (deliveryMonth) dataToUpdate.deliveryMonth = deliveryMonth;
+    if (deliveryYear) dataToUpdate.deliveryYear = deliveryYear;
+    if (emailRecipients) dataToUpdate.emailRecipients = emailRecipients;
+    if (reportTypes) dataToUpdate.reportTypes = reportTypes;
+    if (status) dataToUpdate.status = status;
+    if (body.hasOwnProperty('brandId')) {
+        dataToUpdate.brandId = brandId === 'all' ? null : brandId;
     }
 
-    const updatedChanges = {
-      ...report.changes,
-      frequency: frequency || report.changes?.frequency,
-      deliveryDay: deliveryDay || report.changes?.deliveryDay,
-      emailRecipients: emailRecipients || report.changes?.emailRecipients,
-      reportTypes: reportTypes || report.changes?.reportTypes,
-      status: status || report.changes?.status,
-      nextDeliveryDate,
-      updatedAt: new Date().toISOString(),
-    };
+    // Calculate new next delivery date if frequency or delivery parameters changed
+    if (frequency || deliveryDay || deliveryMonth || deliveryYear) {
+      dataToUpdate.nextDeliveryDate = calculateNextDeliveryDate(
+        frequency || report.frequency,
+        deliveryDay || report.deliveryDay,
+        deliveryMonth || report.deliveryMonth,
+        deliveryYear || report.deliveryYear
+      );
+    }
 
-    await prisma.auditLog.update({
+    const updatedReport = await prisma.scheduledReport.update({
       where: { id },
-      data: {
-        changes: updatedChanges,
-      },
+      data: dataToUpdate,
     });
 
     return NextResponse.json({
       success: true,
       message: "Scheduled report updated successfully",
-      data: {
-        id,
-        ...updatedChanges,
-      },
+      data: updatedReport,
     });
   } catch (error) {
     console.error("Update Scheduled Report API Error:", error);
@@ -280,15 +274,11 @@ export async function PUT(request) {
 
 // ==================== HELPER FUNCTIONS ====================
 
-function calculateNextDeliveryDate(frequency, deliveryDay) {
+function calculateNextDeliveryDate(frequency, deliveryDay, deliveryMonth, deliveryYear) {
   const today = new Date();
   let nextDate = new Date(today);
 
   switch (frequency) {
-    case "daily":
-      nextDate.setDate(today.getDate() + 1);
-      break;
-
     case "weekly":
       const daysOfWeek = {
         sunday: 0,
@@ -313,8 +303,27 @@ function calculateNextDeliveryDate(frequency, deliveryDay) {
 
     case "monthly":
       const dayOfMonth = parseInt(deliveryDay) || 1;
-      nextDate.setMonth(today.getMonth() + 1);
-      nextDate.setDate(Math.min(dayOfMonth, 28)); // Avoid invalid dates
+      const monthValue = parseInt(deliveryMonth) || 1;
+      
+      // Set to the specified month and day
+      nextDate.setMonth(monthValue - 1); // Months are 0-indexed
+      nextDate.setDate(Math.min(dayOfMonth, 28));
+      
+      // If the date has passed this year, move to next year
+      if (nextDate <= today) {
+        nextDate.setFullYear(today.getFullYear() + 1);
+      }
+      break;
+
+    case "yearly":
+      const yearValue = parseInt(deliveryYear) || today.getFullYear();
+      const yearMonth = parseInt(deliveryMonth) || 1;
+      const yearDay = parseInt(deliveryDay) || 1;
+      
+      nextDate = new Date(yearValue, yearMonth - 1, Math.min(yearDay, 28));
+      
+      // If the date has already passed, it will be delivered on the specified date
+      // No need to adjust since it's a one-time yearly delivery
       break;
 
     default:
