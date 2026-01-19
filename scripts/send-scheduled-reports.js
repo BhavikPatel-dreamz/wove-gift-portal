@@ -835,6 +835,7 @@ async function generateBrandPerformance(whereClause) {
     `    Period: ${startDate.toISOString()} to ${endDate.toISOString()}`,
   );
 
+  // Get brand performance with voucher redemption data
   const performanceResults = await prisma.$queryRaw`
     SELECT
       b.id AS "brandId",
@@ -843,6 +844,7 @@ async function generateBrandPerformance(whereClause) {
       COALESCE(SUM(o."totalAmount"), 0)::float AS "totalRevenue",
       COUNT(DISTINCT vc.id)::int AS "vouchersIssued",
       COUNT(DISTINCT CASE WHEN vc."isRedeemed" = true OR vc."remainingValue" = 0 THEN vc.id END)::int AS "vouchersRedeemed",
+      COUNT(DISTINCT CASE WHEN vc."remainingValue" > 0 AND vc."remainingValue" < vc."originalValue" THEN vc.id END)::int AS "vouchersPartiallyRedeemed",
       COALESCE(SUM(vc."originalValue"), 0)::float AS "totalIssuedValue",
       COALESCE(SUM(vc."originalValue" - vc."remainingValue"), 0)::float AS "totalRedeemedValue"
     FROM
@@ -921,10 +923,31 @@ async function generateBrandPerformance(whereClause) {
       totalPaid: 0,
       totalPending: 0,
     };
-    const redemptionRate =
+    
+    // Calculate redemption rate by value (amount redeemed / amount issued)
+    // This gives more accurate representation of actual redemption
+    const redemptionRateByValue =
+      p.totalIssuedValue > 0
+        ? parseFloat(((p.totalRedeemedValue / p.totalIssuedValue) * 100).toFixed(1))
+        : 0;
+
+    // Calculate redemption rate by count (for reference)
+    const redemptionRateByCount =
       p.vouchersIssued > 0
         ? parseFloat(((p.vouchersRedeemed / p.vouchersIssued) * 100).toFixed(1))
         : 0;
+
+    // Use value-based redemption rate as primary metric
+    // Include partially redeemed vouchers in the calculation
+    const totalRedeemedOrPartial = p.vouchersRedeemed + p.vouchersPartiallyRedeemed;
+    const redemptionRateWithPartial =
+      p.vouchersIssued > 0
+        ? parseFloat(((totalRedeemedOrPartial / p.vouchersIssued) * 100).toFixed(1))
+        : 0;
+
+    console.log(`    Brand: ${p.brandName}`);
+    console.log(`      Issued: ${p.vouchersIssued}, Redeemed: ${p.vouchersRedeemed}, Partial: ${p.vouchersPartiallyRedeemed}`);
+    console.log(`      Rate by value: ${redemptionRateByValue}%, Rate by count: ${redemptionRateByCount}%`);
 
     return {
       brandId: p.brandId,
@@ -933,7 +956,11 @@ async function generateBrandPerformance(whereClause) {
       totalRevenue: p.totalRevenue,
       vouchersIssued: p.vouchersIssued,
       vouchersRedeemed: p.vouchersRedeemed,
-      redemptionRate,
+      vouchersPartiallyRedeemed: p.vouchersPartiallyRedeemed,
+      // Use value-based redemption rate (most accurate for gift cards)
+      redemptionRate: redemptionRateByValue,
+      totalIssuedValue: p.totalIssuedValue,
+      totalRedeemedValue: p.totalRedeemedValue,
       totalSettlementAmount: settlementData.totalSettlementAmount,
       totalPaid: settlementData.totalPaid,
       totalPending: settlementData.totalPending,
@@ -957,14 +984,13 @@ async function generateBrandPerformance(whereClause) {
     },
   );
 
-  const totalIssued = brandsData.reduce((sum, b) => sum + b.vouchersIssued, 0);
-  const totalRedeemed = brandsData.reduce(
-    (sum, b) => sum + b.vouchersRedeemed,
-    0,
-  );
+  // Calculate average redemption rate by total value redeemed vs issued
+  const totalIssuedValue = brandsData.reduce((sum, b) => sum + b.totalIssuedValue, 0);
+  const totalRedeemedValue = brandsData.reduce((sum, b) => sum + b.totalRedeemedValue, 0);
+  
   summary.avgRedemptionRate =
-    totalIssued > 0
-      ? parseFloat(((totalRedeemed / totalIssued) * 100).toFixed(1))
+    totalIssuedValue > 0
+      ? parseFloat(((totalRedeemedValue / totalIssuedValue) * 100).toFixed(1))
       : 0;
 
   return {
@@ -973,6 +999,7 @@ async function generateBrandPerformance(whereClause) {
     topBrands: brandsData.slice(0, 10),
   };
 }
+
 
 async function generateLiabilitySnapshot(brandFilter, shop) {
   console.log("    Fetching liability snapshot...");
@@ -1213,18 +1240,18 @@ function addBrandPerformanceSection(doc, reportData, yPos, margin, pageWidth) {
     doc.text(`Brand Details (${bp.brands.length})`, margin, yPos);
     yPos += 5;
 
+    // Only show PENDING column (not paid)
     const brandData = bp.brands.map((b) => [
       b.brandName.substring(0, 20),
-      b.totalOrders?.toLocaleString(),
-      `₹${b.totalRevenue?.toLocaleString()}`,
-      `${b.redemptionRate}%`,
-      `₹${b.totalPaid?.toLocaleString()}`,
-      `₹${b.totalRemaining?.toLocaleString()}`,
+      b.totalOrders?.toLocaleString() || "0",
+      `₹${Math.round(b.totalRevenue || 0).toLocaleString()}`,
+      `${b.redemptionRate || 0}%`,
+      `₹${Math.round(b.totalPending || 0).toLocaleString()}`,
     ]);
 
     autoTable(doc, {
       startY: yPos,
-      head: [["Brand", "Orders", "Revenue", "Redeem %", "Paid", "Pending"]],
+      head: [["Brand", "Orders", "Revenue", "Redeem %", "Pending"]],
       body: brandData,
       theme: "striped",
       headStyles: { fillColor: [37, 99, 235] },
