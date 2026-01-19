@@ -11,6 +11,12 @@ import autoTable from "jspdf-autotable";
 const getCurrencySymbol = (code) =>
   currencyList.find((c) => c.code === code)?.symbol || "₹";
 
+
+function formatCurrencyForPDF(amount, currencyCode) {
+  const symbol = getCurrencySymbol(currencyCode);
+  return `${symbol}${amount.toLocaleString()}`;
+}
+
 function calculateSettlementFinancials(settlement) {
   const onRedemption =
     settlement.brand?.brandTerms?.settlementTrigger === "onRedemption";
@@ -1087,6 +1093,9 @@ function addSettlementSection(doc, reportData, yPos, margin, pageWidth) {
   console.log("  → Adding Settlement Reports section...");
   yPos = checkAndAddPage(doc, yPos, 80);
   const sr = reportData.settlementReports;
+  
+  // Get currency from first settlement or default to INR
+  const currency = sr.recentSettlements?.[0]?.currency || "INR";
 
   doc.setFillColor(240, 249, 255);
   doc.rect(margin, yPos, pageWidth - 2 * margin, 8, "F");
@@ -1102,12 +1111,12 @@ function addSettlementSection(doc, reportData, yPos, margin, pageWidth) {
 
   const settlementMetrics = [
     ["Total Settlements", sr.summary.totalSettlements.toLocaleString()],
-    ["Base Amount", `₹${sr.summary.totalBaseAmount.toLocaleString()}`],
-    ["Net Payable", `₹${sr.summary.totalNetPayable.toLocaleString()}`],
-    ["Total Paid", `₹${sr.summary.totalPaid.toLocaleString()}`],
-    ["Remaining", `₹${sr.summary.totalRemaining.toLocaleString()}`],
-    ["Total Commission", `₹${sr.summary.totalCommission.toLocaleString()}`],
-    ["Total VAT", `₹${sr.summary.totalVAT.toLocaleString()}`],
+    ["Base Amount", formatCurrencyForPDF(sr.summary.totalBaseAmount, currency)],
+    ["Net Payable", formatCurrencyForPDF(sr.summary.totalNetPayable, currency)],
+    ["Total Paid", formatCurrencyForPDF(sr.summary.totalPaid, currency)],
+    ["Remaining", formatCurrencyForPDF(sr.summary.totalRemaining, currency)],
+    ["Total Commission", formatCurrencyForPDF(sr.summary.totalCommission, currency)],
+    ["Total VAT", formatCurrencyForPDF(sr.summary.totalVAT, currency)],
   ];
 
   autoTable(doc, {
@@ -1132,9 +1141,9 @@ function addSettlementSection(doc, reportData, yPos, margin, pageWidth) {
     const statusData = sr.summary.byStatus.map((s) => [
       s.status,
       s.count.toLocaleString(),
-      `₹${s.netPayable.toLocaleString()}`,
-      `₹${s.paid.toLocaleString()}`,
-      `₹${s.remaining.toLocaleString()}`,
+      formatCurrencyForPDF(s.netPayable, currency),
+      formatCurrencyForPDF(s.paid, currency),
+      formatCurrencyForPDF(s.remaining, currency),
     ]);
 
     autoTable(doc, {
@@ -1164,10 +1173,10 @@ function addSettlementSection(doc, reportData, yPos, margin, pageWidth) {
         s.brandName.substring(0, 15),
         s.settlementPeriod,
         `${s.totalSold}/${s.totalRedeemed}`,
-        `₹${s.baseAmount.toLocaleString()}`,
-        `₹${s.netPayable.toLocaleString()}`,
-        `₹${s.totalPaid.toLocaleString()}`,
-        `₹${s.remainingAmount.toLocaleString()}`,
+        formatCurrencyForPDF(s.baseAmount, s.currency || currency),
+        formatCurrencyForPDF(s.netPayable, s.currency || currency),
+        formatCurrencyForPDF(s.totalPaid, s.currency || currency),
+        formatCurrencyForPDF(s.remainingAmount, s.currency || currency),
         s.status,
       ]);
 
@@ -1197,6 +1206,9 @@ function addBrandPerformanceSection(doc, reportData, yPos, margin, pageWidth) {
   console.log("  → Adding Brand Performance section...");
   yPos = checkAndAddPage(doc, yPos, 80);
   const bp = reportData.brandPerformance;
+  
+  // Default currency
+  const defaultCurrency = "ZAR";
 
   doc.setFillColor(240, 249, 255);
   doc.rect(margin, yPos, pageWidth - 2 * margin, 8, "F");
@@ -1212,13 +1224,10 @@ function addBrandPerformanceSection(doc, reportData, yPos, margin, pageWidth) {
 
   const brandMetrics = [
     ["Total Brands", bp.summary.totalBrands.toLocaleString()],
-    ["Total Revenue", `₹${bp.summary.totalRevenue.toLocaleString()}`],
-    [
-      "Total Settlement Amount",
-      `₹${bp.summary.totalSettlementAmount.toLocaleString()}`,
-    ],
-    ["Total Paid", `₹${bp.summary.totalPaid.toLocaleString()}`],
-    ["Total Pending", `₹${bp.summary.totalPending.toLocaleString()}`],
+    ["Total Revenue", formatCurrencyForPDF(bp.summary.totalRevenue, defaultCurrency)],
+    ["Total Settlement Amount", formatCurrencyForPDF(bp.summary.totalSettlementAmount, defaultCurrency)],
+    ["Total Paid", formatCurrencyForPDF(bp.summary.totalPaid, defaultCurrency)],
+    ["Total Pending", formatCurrencyForPDF(bp.summary.totalPending, defaultCurrency)],
     ["Avg Redemption Rate", `${bp.summary.avgRedemptionRate}%`],
   ];
 
@@ -1240,13 +1249,12 @@ function addBrandPerformanceSection(doc, reportData, yPos, margin, pageWidth) {
     doc.text(`Brand Details (${bp.brands.length})`, margin, yPos);
     yPos += 5;
 
-    // Only show PENDING column (not paid)
     const brandData = bp.brands.map((b) => [
       b.brandName.substring(0, 20),
       b.totalOrders?.toLocaleString() || "0",
-      `₹${Math.round(b.totalRevenue || 0).toLocaleString()}`,
+      formatCurrencyForPDF(Math.round(b.totalRevenue || 0), defaultCurrency),
       `${b.redemptionRate || 0}%`,
-      `₹${Math.round(b.totalPending || 0).toLocaleString()}`,
+      formatCurrencyForPDF(Math.round(b.totalPending || 0), defaultCurrency),
     ]);
 
     autoTable(doc, {
