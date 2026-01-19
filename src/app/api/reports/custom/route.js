@@ -8,13 +8,12 @@ export async function POST(request) {
 
     // Validation
     if (!startDate || !endDate || !reports || reports.length === 0) {
-      return NextResponse.json(
+return NextResponse.json(
         { success: false, message: "Missing required fields" },
         { status: 400 }
       );
     }
-
-    const start = new Date(startDate);
+const start = new Date(startDate);
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
@@ -52,7 +51,7 @@ export async function POST(request) {
           reportData.redemptionDetails = await generateRedemptionDetails(whereClause, start, end);
           break;
         case "settlementReports":
-          reportData.settlementReports = await generateSettlementReports(start, end, brand, shop);
+          reportData.settlementReports = await generateSettlementReports(start, end, brand, shop, status);
           break;
         case "transactionLog":
           reportData.transactionLog = await generateTransactionLog(whereClause);
@@ -255,7 +254,7 @@ async function generateRedemptionDetails(whereClause) {
   };
 }
 
-async function generateSettlementReports(startDate, endDate, brandFilter, shop) {
+async function generateSettlementReports(startDate, endDate, brandFilter, shop, statusFilter) {
   const whereClause = {
     createdAt: { gte: startDate, lte: endDate },
   };
@@ -270,13 +269,49 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop) 
     whereClause.brandId = brandFilter;
   }
 
+  if (statusFilter && statusFilter !== "all") {
+    whereClause.status = statusFilter;
+  }
+
   const settlements = await prisma.settlements.findMany({
     where: whereClause,
     include: {
-      brand: { select: { brandName: true, brandTerms: true } },
+      brand: {
+        include: {
+          brandTerms: true,
+        }
+      },
     },
     orderBy: { createdAt: "desc" },
   });
+
+  const recalculatedSettlements = [];
+  for (const s of settlements) {
+    const redemptions = await prisma.voucherRedemption.findMany({
+      where: {
+        redeemedAt: { gte: s.periodStart, lte: s.periodEnd },
+        voucherCode: {
+          order: {
+            brandId: s.brandId,
+          },
+        },
+      },
+    });
+
+    const redeemedAmount = redemptions.reduce((sum, r) => sum + r.amountRedeemed, 0);
+    const commissionRate = s.brand.brandTerms?.commission ?? 0;
+    const commissionAmount = redeemedAmount * (commissionRate / 100);
+    const netPayable = redeemedAmount - commissionAmount;
+
+    recalculatedSettlements.push({
+      ...s,
+      totalRedeemed: redemptions.length,
+      redeemedAmount,
+      commissionAmount,
+      netPayable,
+    });
+  }
+
 
   const statusSummary = {
     Pending: { count: 0, amount: 0 },
@@ -286,7 +321,7 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop) 
     Disputed: { count: 0, amount: 0 },
   };
 
-  settlements.forEach((s) => {
+  recalculatedSettlements.forEach((s) => {
     if (s.status) {
       if (!statusSummary[s.status]) {
         statusSummary[s.status] = { count: 0, amount: 0 };
@@ -298,13 +333,13 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop) 
 
   return {
     summary: {
-      totalSettlements: settlements.length,
-      totalAmount: settlements.reduce((sum, s) => sum + s.netPayable, 0),
-      totalCommission: settlements.reduce((sum, s) => sum + s.commissionAmount, 0),
-      totalVAT: settlements.reduce((sum, s) => sum + (s.vatAmount || 0), 0),
+      totalSettlements: recalculatedSettlements.length,
+      totalAmount: recalculatedSettlements.reduce((sum, s) => sum + s.netPayable, 0),
+      totalCommission: recalculatedSettlements.reduce((sum, s) => sum + s.commissionAmount, 0),
+      totalVAT: recalculatedSettlements.reduce((sum, s) => sum + (s.vatAmount || 0), 0),
       byStatus: Object.entries(statusSummary).map(([status, data]) => ({ status, ...data })),
     },
-    settlements: settlements.map((s) => ({
+    settlements: recalculatedSettlements.map((s) => ({
       brandName: s.brand.brandName,
       settlementPeriod: s.settlementPeriod,
       periodStart: s.periodStart.toISOString().split("T")[0],
@@ -557,7 +592,6 @@ function convertToCSV(reportData, startDate, endDate) {
       csv += `Total Quantity,${sd.summary.totalQuantity}\n`;
       csv += `Avg Order Value,${sd.summary.avgOrderValue}\n\n`;
     }
-
     if (sd.revenueByPaymentMethod?.length > 0) {
       csv += `\nRevenue by Payment Method\n`;
       csv += `Payment Method,Orders,Revenue\n`;
