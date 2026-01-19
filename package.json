@@ -21,7 +21,8 @@
     "gift-cards:list": "node scripts/gift-card-manager.js --action=list",
     "gift-cards:stats": "node scripts/gift-card-manager.js --action=stats",
     "sync:shopify": "node src/scripts/sync-shopify-data.js",
-    "postinstall": "pnpm prisma generate"
+    "postinstall": "pnpm prisma generate",
+    "cron:start": "node scripts/scheduler.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
