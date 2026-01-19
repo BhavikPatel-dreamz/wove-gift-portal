@@ -25,6 +25,8 @@ const giftFlowSlice = createSlice({
       recipientEmailAddress: "",
       printDetails: {},
     },
+    isConfirmed:false,
+    isPaymentConfirmed: false,
 
     // Brand filtering & pagination
     searchTerm: "",
@@ -248,6 +250,13 @@ const giftFlowSlice = createSlice({
     setSortBy: (state, action) => {
       state.sortBy = action.payload;
       state.currentPage = 1; // Reset to page 1 on sort change
+    },
+
+    setIsConfirmed: (state, action) => {
+      state.isConfirmed = action.payload;
+    },
+    setIsPaymentConfirmed: (state, action) => {
+      state.isPaymentConfirmed = action.payload;
     },
 
     setCurrentPage: (state, action) => {
@@ -484,6 +493,8 @@ export const {
   setLoading,
   setError,
   setSelectedPaymentMethod,
+  setIsConfirmed,
+  setIsPaymentConfirmed,
 } = giftFlowSlice.actions;
 
 export default giftFlowSlice.reducer;
