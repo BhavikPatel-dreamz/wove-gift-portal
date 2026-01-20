@@ -1,10 +1,172 @@
 'use client'
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { Gift, DollarSign, CreditCard, Clock, TrendingUp, Users, Award, Package } from 'lucide-react';
+import { Gift, DollarSign, CreditCard, Clock, TrendingUp, Users, Award, Package, Calendar, X } from 'lucide-react';
 
 const Dashboard = ({ dashboardData, shopParam }) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+
+  const handlePeriodChange = (period) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('period', period);
+    // Reset custom dates if a predefined period is chosen
+    params.delete('startDate');
+    params.delete('endDate');
+    setShowCustomDatePicker(false);
+    router.push(`/dashboard?${params.toString()}`);
+  };
+
+  const handleCustomDateSubmit = () => {
+    if (!customStartDate || !customEndDate) {
+      alert('Please select both start and end dates');
+      return;
+    }
+
+    if (new Date(customStartDate) > new Date(customEndDate)) {
+      alert('Start date cannot be after end date');
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('period', 'custom');
+    params.set('startDate', customStartDate);
+    params.set('endDate', customEndDate);
+    router.push(`/dashboard?${params.toString()}`);
+    setShowCustomDatePicker(false);
+  };
+
+  const clearCustomDates = () => {
+    setCustomStartDate('');
+    setCustomEndDate('');
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('startDate');
+    params.delete('endDate');
+    params.set('period', 'month');
+    router.push(`/dashboard?${params.toString()}`);
+    setShowCustomDatePicker(false);
+  };
+
+  const PeriodFilter = () => {
+    const period = searchParams.get('period') || 'month';
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const isCustom = period === 'custom' && startDate && endDate;
+
+    const periods = [
+      { value: 'day', label: 'Today' },
+      { value: 'week', label: 'This Week' },
+      { value: 'month', label: 'This Month' },
+      { value: 'year', label: 'This Year' },
+    ];
+
+    return (
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center space-x-1 p-1 rounded-lg ">
+            {periods.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => handlePeriodChange(p.value)}
+                className={`
+        px-3 py-1.5 rounded-md transition-colors
+        font-inter text-[14px] font-semibold leading-[18px]
+        ${period === p.value && !isCustom
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-[#4A577F]/70 hover:bg-gray-200'
+                  }
+      `}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+
+          <button
+            onClick={() => setShowCustomDatePicker(!showCustomDatePicker)}
+            className={`
+    flex items-center gap-2
+    px-3 py-1.5 rounded-lg transition-colors
+    font-inter text-[14px] font-semibold leading-[18px]
+    ${isCustom
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-[#4A577F]/70 hover:bg-gray-200'
+              }
+  `}
+          >
+            <Calendar className="w-4 h-4" />
+            Custom Range
+          </button>
+
+        </div>
+
+        {isCustom && (
+          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+            <span className="text-sm text-blue-900 font-medium">
+              {new Date(startDate).toLocaleDateString()} - {new Date(endDate).toLocaleDateString()}
+            </span>
+            <button
+              onClick={clearCustomDates}
+              className="ml-auto p-1 hover:bg-blue-100 rounded-full transition-colors"
+              title="Clear custom dates"
+            >
+              <X className="w-4 h-4 text-blue-700" />
+            </button>
+          </div>
+        )}
+
+        {showCustomDatePicker && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg text-black">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3">Select Custom Date Range</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleCustomDateSubmit}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Apply
+              </button>
+              <button
+                onClick={() => setShowCustomDatePicker(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const MetricCard = ({ title, value, subtitle, icon: Icon, trend, color = "blue", currency = false }) => {
     const colorClasses = {
@@ -69,11 +231,12 @@ const Dashboard = ({ dashboardData, shopParam }) => {
     <div className="min-h-screen bg-gray-50 px-1 py-6 md:py-6 md:px-6">
       <div className="max-w-7xl mx-auto space-y-6">
 
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col items-center md:flex-row justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Gift Card Analytics</h1>
             <p className="text-gray-600">Monitor your gift card performance and transactions</p>
           </div>
+          <PeriodFilter />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

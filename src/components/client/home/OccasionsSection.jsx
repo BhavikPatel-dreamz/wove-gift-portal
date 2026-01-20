@@ -2,7 +2,7 @@
 import { useDispatch } from 'react-redux';
 import { usePathname, useRouter } from 'next/navigation';
 import { setSelectedOccasion, setCurrentStep, resetFlow } from '@/redux/giftFlowSlice';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 const OccasionsSection = ({ occasions = [], isLoading = false }) => {
   const dispatch = useDispatch();
@@ -17,6 +17,21 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
   const sliderRef = useRef(null);
   const desktopSliderRef = useRef(null);
   const [isHovering, setIsHovering] = useState(false);
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+  const autoScrollRef = useRef(null);
+  const scrollAnimationRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile on mount
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Show skeleton while loading
   if (isLoading) {
@@ -38,43 +53,188 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
     }
   };
 
-  useEffect(() => {
-    const slider = desktopSliderRef.current;
-    if (!slider || isHovering) return;
+  // Smooth scroll function using requestAnimationFrame with Promise return
+  const smoothScrollTo = useCallback((element, target, duration = 300) => {
+    return new Promise((resolve) => {
+      if (!element) {
+        resolve();
+        return;
+      }
+      
+      const start = element.scrollLeft;
+      const change = target - start;
+      const startTime = performance.now();
+      
+      if (scrollAnimationRef.current) {
+        cancelAnimationFrame(scrollAnimationRef.current);
+      }
+      
+      const animateScroll = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smoother transition (easeInOutQuad)
+        const easeProgress = progress < 0.5 
+          ? 2 * progress * progress 
+          : -1 + (4 - 2 * progress) * progress;
+        
+        element.scrollLeft = start + change * easeProgress;
+        
+        if (progress < 1) {
+          scrollAnimationRef.current = requestAnimationFrame(animateScroll);
+        } else {
+          scrollAnimationRef.current = null;
+          resolve();
+        }
+      };
+      
+      scrollAnimationRef.current = requestAnimationFrame(animateScroll);
+    });
+  }, []);
 
-    const scroll = () => {
-      const cardWidth = slider.querySelector('.occasion-card')?.offsetWidth;
-      if (!cardWidth) return;
-      const gap = 24;
-      const scrollAmount = cardWidth + gap;
-
-      if (slider.scrollLeft + slider.clientWidth >= slider.scrollWidth) {
-        slider.scrollTo({ left: 0, behavior: 'smooth' });
+  // Auto-scroll function for both desktop and mobile
+  const startAutoScroll = useCallback(() => {
+    if (!occasions.length || isAutoScrolling) return;
+    
+    const scroll = async () => {
+      if (isHovering || isDragging) return;
+      
+      if (isMobile) {
+        // Mobile slider
+        const slider = sliderRef.current;
+        if (!slider) return;
+        
+        const cardWidth = slider.children[0]?.offsetWidth || 0;
+        const gap = 24;
+        const slideWidth = cardWidth + gap;
+        const maxScroll = slider.scrollWidth - slider.clientWidth;
+        const currentScroll = slider.scrollLeft;
+        const currentIndex = Math.round(currentScroll / slideWidth);
+        
+        if (currentIndex >= occasions.length - 1) {
+          // Go back to first slide
+          setIsAutoScrolling(true);
+          await smoothScrollTo(slider, 0, 400);
+          setIsAutoScrolling(false);
+        } else {
+          // Go to next slide
+          const nextScroll = (currentIndex + 1) * slideWidth;
+          await smoothScrollTo(slider, nextScroll, 600);
+        }
       } else {
-        slider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        // Desktop slider
+        const slider = desktopSliderRef.current;
+        if (!slider || isHovering) return;
+        
+        const cards = slider.querySelectorAll('.occasion-card');
+        if (cards.length === 0) return;
+        
+        const cardWidth = cards[0].offsetWidth;
+        const gap = 24;
+        const scrollAmount = cardWidth + gap;
+        const maxScroll = slider.scrollWidth - slider.clientWidth;
+        const currentScroll = slider.scrollLeft;
+        
+        if (currentScroll >= maxScroll - 10) {
+          // Go back to first slide
+          setIsAutoScrolling(true);
+          await smoothScrollTo(slider, 0, 400);
+          setIsAutoScrolling(false);
+        } else {
+          // Go to next slide
+          const nextScroll = currentScroll + scrollAmount;
+          await smoothScrollTo(slider, nextScroll, 600);
+        }
       }
     };
 
-    const interval = setInterval(scroll, 2000);
+    // Clear any existing interval
+    if (autoScrollRef.current) {
+      clearInterval(autoScrollRef.current);
+    }
 
-    return () => clearInterval(interval);
-  }, [isHovering]);
+    // Start auto-scroll interval
+    autoScrollRef.current = setInterval(() => {
+      if (!isDragging && !isHovering) {
+        scroll();
+      }
+    }, 2500);
 
-  // Dragging handlers
+  }, [isMobile, isHovering, isDragging, isAutoScrolling, occasions.length, smoothScrollTo]);
+
+  // Start/stop auto-scroll based on conditions
+  useEffect(() => {
+    if (occasions.length === 0) return;
+
+    // Start auto-scroll
+    startAutoScroll();
+
+    // Cleanup
+    return () => {
+      if (autoScrollRef.current) {
+        clearInterval(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+      if (scrollAnimationRef.current) {
+        cancelAnimationFrame(scrollAnimationRef.current);
+        scrollAnimationRef.current = null;
+      }
+    };
+  }, [startAutoScroll, occasions.length]);
+
+  // Handle hover for desktop
+  useEffect(() => {
+    if (!isMobile) {
+      if (isHovering) {
+        // Pause auto-scroll on hover
+        if (autoScrollRef.current) {
+          clearInterval(autoScrollRef.current);
+          autoScrollRef.current = null;
+        }
+      } else {
+        // Resume auto-scroll when not hovering
+        startAutoScroll();
+      }
+    }
+  }, [isHovering, isMobile, startAutoScroll]);
+
+  // Dragging handlers for mobile
   const handleMouseDown = (e) => {
+    if (isAutoScrolling || !sliderRef.current) return;
     setIsDragging(true);
     setStartX(e.pageX - sliderRef.current.offsetLeft);
     setScrollLeft(sliderRef.current.scrollLeft);
+    if (scrollAnimationRef.current) {
+      cancelAnimationFrame(scrollAnimationRef.current);
+      scrollAnimationRef.current = null;
+    }
+    
+    // Pause auto-scroll during drag
+    if (autoScrollRef.current) {
+      clearInterval(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
   };
 
   const handleTouchStart = (e) => {
+    if (isAutoScrolling || !sliderRef.current) return;
     setIsDragging(true);
     setStartX(e.touches[0].pageX - sliderRef.current.offsetLeft);
     setScrollLeft(sliderRef.current.scrollLeft);
+    if (scrollAnimationRef.current) {
+      cancelAnimationFrame(scrollAnimationRef.current);
+      scrollAnimationRef.current = null;
+    }
+    
+    // Pause auto-scroll during drag
+    if (autoScrollRef.current) {
+      clearInterval(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
   };
 
   const handleMouseMove = (e) => {
-    if (!isDragging) return;
+    if (!isDragging || isAutoScrolling || !sliderRef.current) return;
     e.preventDefault();
     const x = e.pageX - sliderRef.current.offsetLeft;
     const walk = (x - startX) * 2;
@@ -82,33 +242,44 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
   };
 
   const handleTouchMove = (e) => {
-    if (!isDragging) return;
+    if (!isDragging || isAutoScrolling || !sliderRef.current) return;
     const x = e.touches[0].pageX - sliderRef.current.offsetLeft;
     const walk = (x - startX) * 2;
     sliderRef.current.scrollLeft = scrollLeft - walk;
   };
 
   const handleMouseUp = () => {
+    if (!isDragging) return;
     setIsDragging(false);
     snapToClosest();
+    
+    // Resume auto-scroll after drag ends
+    setTimeout(() => {
+      startAutoScroll();
+    }, 1000); // Wait 1 second before resuming
   };
 
   const handleTouchEnd = () => {
+    if (!isDragging) return;
     setIsDragging(false);
     snapToClosest();
+    
+    // Resume auto-scroll after drag ends
+    setTimeout(() => {
+      startAutoScroll();
+    }, 1000); // Wait 1 second before resuming
   };
 
-  const snapToClosest = () => {
+  const snapToClosest = async () => {
     if (!sliderRef.current) return;
     const cardWidth = sliderRef.current.children[0]?.offsetWidth || 0;
-    const gap = 24; // 1.5rem = 24px
+    const gap = 24;
     const slideWidth = cardWidth + gap;
     const newIndex = Math.round(sliderRef.current.scrollLeft / slideWidth);
-    setCurrentIndex(newIndex);
-    sliderRef.current.scrollTo({
-      left: newIndex * slideWidth,
-      behavior: 'smooth'
-    });
+    const clampedIndex = Math.max(0, Math.min(newIndex, occasions.length - 1));
+    setCurrentIndex(clampedIndex);
+    
+    await smoothScrollTo(sliderRef.current, clampedIndex * slideWidth, 200);
   };
 
   // Update current index on scroll (for dots indicator)
@@ -116,17 +287,62 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
     const slider = sliderRef.current;
     if (!slider) return;
 
+    let rafId = null;
     const handleScroll = () => {
+      if (rafId) return;
+      
+      rafId = requestAnimationFrame(() => {
+        const cardWidth = slider.children[0]?.offsetWidth || 0;
+        const gap = 24;
+        const slideWidth = cardWidth + gap;
+        const newIndex = Math.round(slider.scrollLeft / slideWidth);
+        const clampedIndex = Math.max(0, Math.min(newIndex, occasions.length - 1));
+        setCurrentIndex(clampedIndex);
+        rafId = null;
+      });
+    };
+
+    slider.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      slider.removeEventListener('scroll', handleScroll);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [occasions.length]);
+
+  // Handle dot navigation click for mobile
+  const handleDotClick = async (index) => {
+    const slider = isMobile ? sliderRef.current : desktopSliderRef.current;
+    if (!slider || isAutoScrolling) return;
+    
+    // Pause auto-scroll during manual navigation
+    if (autoScrollRef.current) {
+      clearInterval(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
+    
+    if (isMobile) {
       const cardWidth = slider.children[0]?.offsetWidth || 0;
       const gap = 24;
       const slideWidth = cardWidth + gap;
-      const newIndex = Math.round(slider.scrollLeft / slideWidth);
-      setCurrentIndex(newIndex);
-    };
-
-    slider.addEventListener('scroll', handleScroll);
-    return () => slider.removeEventListener('scroll', handleScroll);
-  }, []);
+      await smoothScrollTo(slider, index * slideWidth, 300);
+    } else {
+      const cards = slider.querySelectorAll('.occasion-card');
+      if (cards.length === 0) return;
+      const cardWidth = cards[0].offsetWidth;
+      const gap = 24;
+      const slideWidth = cardWidth + gap;
+      await smoothScrollTo(slider, index * slideWidth, 300);
+    }
+    
+    setCurrentIndex(index);
+    
+    // Resume auto-scroll after delay
+    setTimeout(() => {
+      startAutoScroll();
+    }, 1000);
+  };
 
   return (
     <section className="occasions-section">
@@ -137,6 +353,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
           <p className="occasions-section-subtitle">Find the right moment to spread joy</p>
         </div>
 
+        {/* Desktop Slider */}
         <div 
           className="hidden lg:block relative"
           onMouseEnter={() => setIsHovering(true)}
@@ -144,13 +361,16 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
         >
           <div
             ref={desktopSliderRef}
-            className="flex gap-6 overflow-x-auto scrollbar-hide py-4"
-            style={{ scrollBehavior: 'smooth' }}
+            className="flex gap-6 overflow-x-hidden py-4"
+            style={{ 
+              scrollBehavior: 'auto',
+              cursor: isHovering ? 'grab' : 'default'
+            }}
           >
             {occasions.map((occasion) => (
               <div 
                 key={occasion.id} 
-                className="occasion-card cursor-pointer flex-shrink-0" 
+                className="occasion-card cursor-pointer flex-shrink-0 transition-transform duration-300 hover:scale-[1.02]" 
                 style={{ width: 'calc(25% - 1.125rem)' }}
                 onClick={() => handleOccasionSelect(occasion)}
               >
@@ -158,7 +378,8 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
                   <img
                     src={occasion.image}
                     alt={occasion.name}
-                    className="occasion-card-image"
+                    className="occasion-card-image transition-transform duration-300 hover:scale-105"
+                    loading="lazy"
                   />
                 )}
                 <div className="occasion-card-content">
@@ -168,18 +389,36 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
               </div>
             ))}
           </div>
+          
+          {/* Desktop dots indicator */}
+          {/* <div className="flex justify-center gap-2 mt-8">
+            {occasions.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => handleDotClick(index)}
+                className={`w-2 h-2 rounded-full transition-all duration-300 hover:scale-125 ${
+                  Math.floor((desktopSliderRef.current?.scrollLeft || 0) / 
+                  ((desktopSliderRef.current?.querySelector('.occasion-card')?.offsetWidth || 0) + 24)) === index
+                    ? 'bg-gradient-to-r from-[#ed457d] to-[#fa8f42] w-8'
+                    : 'bg-gray-300'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div> */}
         </div>
 
-        {/* Mobile Slider (shown only on mobile) */}
+        {/* Mobile Slider */}
         <div className="lg:hidden relative">
           <div
             ref={sliderRef}
-            className="flex gap-6 overflow-x-auto scrollbar-hide cursor-grab active:cursor-grabbing"
+            className="flex gap-6 overflow-x-hidden cursor-grab active:cursor-grabbing select-none"
             style={{
               scrollSnapType: 'x mandatory',
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
-              msOverflowStyle: 'none'
+              msOverflowStyle: 'none',
+              scrollBehavior: 'auto'
             }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -192,8 +431,16 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
             {occasions.map((occasion) => (
               <div
                 key={occasion.id}
-                className="occasion-card flex-shrink-0 cursor-pointer"
-                onClick={() => handleOccasionSelect(occasion)}
+                className="occasion-card flex-shrink-0 cursor-pointer transition-transform duration-300 active:scale-[0.98]"
+                onClick={(e) => {
+                  // Prevent click when dragging
+                  if (isDragging) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
+                  handleOccasionSelect(occasion);
+                }}
                 style={{
                   width: 'calc(100vw - 3rem)',
                   maxWidth: '380px',
@@ -203,9 +450,10 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
                 {occasion.image && (
                   <img
                     src={occasion.image}
-                    alt={occasion.title}
+                    alt={occasion.name}
                     className="occasion-card-image"
                     draggable="false"
+                    loading="lazy"
                   />
                 )}
                 <div className="occasion-card-content">
@@ -216,21 +464,12 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
             ))}
           </div>
 
-          {/* Dots Indicator */}
-          <div className="flex justify-center gap-2 mt-6">
+          {/* Mobile dots indicator */}
+          {/* <div className="flex justify-center gap-2 mt-6">
             {occasions.map((_, index) => (
               <button
                 key={index}
-                onClick={() => {
-                  const cardWidth = sliderRef.current?.children[0]?.offsetWidth || 0;
-                  const gap = 24;
-                  const slideWidth = cardWidth + gap;
-                  sliderRef.current?.scrollTo({
-                    left: index * slideWidth,
-                    behavior: 'smooth'
-                  });
-                  setCurrentIndex(index);
-                }}
+                onClick={() => handleDotClick(index)}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   currentIndex === index
                     ? 'bg-gradient-to-r from-[#ed457d] to-[#fa8f42] w-8'
@@ -239,14 +478,14 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}
-          </div>
+          </div> */}
         </div>
       </div>
     </section>
   );
 };
 
-// Skeleton Component
+// Skeleton Component (keep as is)
 const OccasionsSkeleton = () => {
   return (
     <section className="occasions-section">
@@ -290,18 +529,6 @@ const OccasionsSkeleton = () => {
                   <div className="h-4 w-5/6 bg-gray-200 rounded-lg animate-pulse" />
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Dots Indicator Skeleton */}
-          <div className="flex justify-center gap-2 mt-6">
-            {[1, 2, 3, 4].map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full bg-gray-200 animate-pulse ${
-                  index === 0 ? 'w-8' : ''
-                }`}
-              />
             ))}
           </div>
         </div>
