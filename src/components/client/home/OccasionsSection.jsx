@@ -15,6 +15,8 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
   const [scrollLeft, setScrollLeft] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const sliderRef = useRef(null);
+  const desktopSliderRef = useRef(null);
+  const [isHovering, setIsHovering] = useState(false);
 
   // Show skeleton while loading
   if (isLoading) {
@@ -35,6 +37,28 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
       dispatch(setCurrentStep(4));
     }
   };
+
+  useEffect(() => {
+    const slider = desktopSliderRef.current;
+    if (!slider || isHovering) return;
+
+    const scroll = () => {
+      const cardWidth = slider.querySelector('.occasion-card')?.offsetWidth;
+      if (!cardWidth) return;
+      const gap = 24;
+      const scrollAmount = cardWidth + gap;
+
+      if (slider.scrollLeft + slider.clientWidth >= slider.scrollWidth) {
+        slider.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        slider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      }
+    };
+
+    const interval = setInterval(scroll, 2000);
+
+    return () => clearInterval(interval);
+  }, [isHovering]);
 
   // Dragging handlers
   const handleMouseDown = (e) => {
@@ -113,23 +137,37 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
           <p className="occasions-section-subtitle">Find the right moment to spread joy</p>
         </div>
 
-        {/* Desktop Grid (hidden on mobile) */}
-        <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {occasions.slice(0, 4).map((occasion) => (
-            <div key={occasion.id} className="occasion-card cursor-pointer" onClick={() => handleOccasionSelect(occasion)}>
-              {occasion.image && (
-                <img
-                  src={occasion.image}
-                  alt={occasion.title}
-                  className="occasion-card-image"
-                />
-              )}
-              <div className="occasion-card-content">
-                <h3 className="occasion-card-title fontPoppins">{occasion.name}</h3>
-                <p className="occasion-card-description">{occasion.description}</p>
+        <div 
+          className="hidden lg:block relative"
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
+          <div
+            ref={desktopSliderRef}
+            className="flex gap-6 overflow-x-auto scrollbar-hide py-4"
+            style={{ scrollBehavior: 'smooth' }}
+          >
+            {occasions.map((occasion) => (
+              <div 
+                key={occasion.id} 
+                className="occasion-card cursor-pointer flex-shrink-0" 
+                style={{ width: 'calc(25% - 1.125rem)' }}
+                onClick={() => handleOccasionSelect(occasion)}
+              >
+                {occasion.image && (
+                  <img
+                    src={occasion.image}
+                    alt={occasion.name}
+                    className="occasion-card-image"
+                  />
+                )}
+                <div className="occasion-card-content">
+                  <h3 className="occasion-card-title fontPoppins">{occasion.name}</h3>
+                  <p className="occasion-card-description">{occasion.description}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Mobile Slider (shown only on mobile) */}
@@ -151,7 +189,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            {occasions.slice(0, 4).map((occasion) => (
+            {occasions.map((occasion) => (
               <div
                 key={occasion.id}
                 className="occasion-card flex-shrink-0 cursor-pointer"
@@ -180,7 +218,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
 
           {/* Dots Indicator */}
           <div className="flex justify-center gap-2 mt-6">
-            {occasions.slice(0, 4).map((_, index) => (
+            {occasions.map((_, index) => (
               <button
                 key={index}
                 onClick={() => {

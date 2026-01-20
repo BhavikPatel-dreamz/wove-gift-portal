@@ -30,7 +30,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Occasions', icon: Calendar, href: '/occasions' },
     { name: 'Settlements', icon: FileText, href: '/settlements' },
     { name: 'Reports', icon: FileText, href: '/reports' },
-    { name: 'Controls', icon: Settings, href: '/controls' },
   ];
 
   // --------------------------------

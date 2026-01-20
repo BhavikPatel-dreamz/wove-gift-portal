@@ -2,8 +2,13 @@
 
 import { useState } from 'react'
 import { createSupportRequest } from '@/lib/action/supportAction'
+import { useRouter } from 'next/navigation'
+import { useSession } from '@/contexts/SessionContext';
+import { useEffect } from 'react';
 
 export default function SupportForm() {
+  const session = useSession();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,11 +20,24 @@ export default function SupportForm() {
   const [showSuccessFull, setShowSuccessFull] = useState(false)
   const [loading, setLoading] = useState(false)
   const [supportId, setSupportId] = useState('')
+  const router = useRouter()
 
   const handleChange = (e) => {
     const { id, value } = e.target
     setFormData((prev) => ({ ...prev, [id]: value }))
   }
+
+  // Initialize form data with session user data on mount
+  useEffect(() => {
+    if (session?.user) {
+      const fullName = `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim();
+      setFormData(prev => ({
+        ...prev,
+        name: fullName || prev.name,
+        email: session.user.email || prev.email,
+      }));
+    }
+  }, [session?.user]);
 
   const handleSubmit = async () => {
     setLoading(true)
@@ -117,36 +135,44 @@ export default function SupportForm() {
               >
                 {loading ? 'Sending...' : 'Send Request ▸'}
               </button>
+
+              <button
+                onClick={() => router.push('/track-request')}
+                className="w-full py-3.5 bg-white border-2 border-pink-500 text-pink-500 rounded-full font-semibold hover:bg-pink-50 transition cursor-pointer"
+              >
+                View All Requests
+              </button>
             </div>
           </div>
         ) : (
           <div className="max-w-xxl w-full">
-            <div class="flex items-center justify-center px-4">
-              <div class="text-center space-y-6 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center px-4">
+              <div className="text-center space-y-6 max-w-2xl mx-auto">
 
 
-                <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
                   Request Submitted Successfully
                 </h1>
 
 
-                <p class="text-gray-600 text-sm sm:text-base leading-relaxed">
+                <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
                   Your request has been received. Your request id is
-                  <span class="font-semibold text-gray-900"> {supportId}</span>.
+                  <span className="font-semibold text-gray-900"> {supportId}</span>.
                   Our support team will review it and contact you within
-                  <span class="font-semibold"> 24–48 hours</span>.
+                  <span className="font-semibold"> 24–48 hours</span>.
                 </p>
 
 
-                <div class="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
 
 
                   <button
-                    class="inline-flex items-center justify-center gap-2 
+                    className="inline-flex items-center justify-center gap-2 
                px-6 py-3 rounded-full
                border border-pink-400
                text-pink-500 font-semibold text-sm
                hover:bg-pink-50 transition cursor-pointer"
+                    onClick={() => router.push('/track-request')}
                   >
                     Track Request Status
                     <span>▶</span>
@@ -154,13 +180,15 @@ export default function SupportForm() {
 
 
                   <button
-                    class="inline-flex items-center justify-center gap-2
+                    className="inline-flex items-center justify-center gap-2
                px-6 py-3 rounded-full
               bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)]
        
                text-white font-semibold text-sm
                shadow-lg
                hover:opacity-90 transition cursor-pointer"
+                    onClick={() => router.push('/')}
+
                   >
                     Back to Home
                     <span>▶</span>

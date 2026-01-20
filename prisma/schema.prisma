@@ -508,8 +508,29 @@ model SupportRequest {
   status      SupportStatus @default(PENDING)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
+  
+  // Relationship with messages
+  messages    SupportMessage[]
 
   @@index([status])
+  @@index([email])
+}
+
+model SupportMessage {
+  id               String         @id @default(cuid())
+  supportRequestId String
+  senderType       SenderType     // CUSTOMER or ADMIN
+  senderName       String
+  senderEmail      String?
+  message          String         @db.Text
+  attachments      String[]       @default([]) // Array of file URLs
+  isRead           Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  
+  supportRequest   SupportRequest @relation(fields: [supportRequestId], references: [id], onDelete: Cascade)
+
+  @@index([supportRequestId])
+  @@index([createdAt])
 }
 
 enum UserRole {
@@ -629,4 +650,9 @@ enum SupportStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+}
+
+enum SenderType {
+  CUSTOMER
+  ADMIN
 }
