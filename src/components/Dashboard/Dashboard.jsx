@@ -180,11 +180,11 @@ const Dashboard = ({ dashboardData, shopParam }) => {
       <div className={`p-6 rounded-xl border-2 ${colorClasses[color]} transition-all hover:scale-105 hover:shadow-lg`}>
         <div className="flex items-center justify-between mb-4">
           <Icon className="w-8 h-8" />
-          {trend !== null && trend !== undefined && (
+          {/* {trend !== null && trend !== undefined && (
             <span className={`text-sm font-medium ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {trend >= 0 ? '+' : ''}{trend}%
             </span>
-          )}
+          )} */}
         </div>
         <div className="space-y-2">
           <h3 className="text-lg font-semibold text-gray-800">{title}</h3>

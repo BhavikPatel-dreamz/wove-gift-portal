@@ -39,7 +39,7 @@ export default async function DashboardPage(props) {
   })
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 px-0 md:px-4">
+    <main className="min-h-screen ">
       <Dashboard 
         dashboardData={dashboardData} 
         shopParam={shopId}

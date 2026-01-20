@@ -399,14 +399,14 @@ const BrandManager = ({
                   {statistics.active}
                 </div>
 
-                <div className="font-poppins text-base font-medium leading-[20px] text-[#00813B]">
+                <div className="font-poppins text-base font-medium leading-[20px] text-[#00813B] mt-2">
                   Active Brands
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          {/* <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <svg
                 width="45"
@@ -444,12 +444,12 @@ const BrandManager = ({
                   {statistics.featured}
                 </div>
 
-                <div className="font-poppins text-base font-medium leading-[20px] text-[#A55E00]">
+                <div className="font-poppins text-base font-medium leading-[20px] text-[#A55E00 ] mt-2">
                   Featured
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center gap-3">
@@ -482,7 +482,7 @@ const BrandManager = ({
                   {statistics.total}
                 </div>
 
-                <div className="font-poppins text-base font-medium leading-[20px] text-[#0D4FE1]">
+                <div className="font-poppins text-base font-medium leading-[20px] text-[#0D4FE1] mt-2">
                   Total Brands
                 </div>
               </div>
@@ -516,7 +516,7 @@ const BrandManager = ({
                   {statistics.activeRate}%
                 </div>
 
-                <div className="font-poppins text-base font-medium leading-[20px] text-[#801CD6]">
+                <div className="font-poppins text-base font-medium leading-[20px] text-[#801CD6] mt-2">
                   Active Rate
                 </div>
               </div>
@@ -563,7 +563,7 @@ const BrandManager = ({
               value={filters.category}
               onChange={(value) => handleFilterChange("category", value)}
               options={[
-                { value: "All Brands", label: "All Brands" },
+                { value: "All Brands", label: "All Categories" },
                 ...Categories.map((c) => ({ value: c, label: c })),
               ]}
               placeholder="Select Category"
@@ -577,7 +577,6 @@ const BrandManager = ({
                 handleFilterChange("isActive", value || null)
               }
               options={[
-                { value: "", label: "All Status" },
                 { value: "true", label: "Active Only" },
                 { value: "false", label: "Inactive Only" },
               ]}
@@ -777,7 +776,7 @@ const BrandManager = ({
                     </div>
 
                     {/* FEATURED Badge (Top Right) */}
-                    {brand.isFeature && (
+                    {/* {brand.isFeature && (
                       <div
                         className="absolute top-3 right-3 px-3 py-1 rounded-full
                     bg-[#FF8A1F] text-white text-xs font-semibold
@@ -786,7 +785,7 @@ const BrandManager = ({
                         <Star size={12} fill="currentColor" />
                         Featured
                       </div>
-                    )}
+                    )} */}
                   </div>
 
                   {/* Content */}
@@ -840,9 +839,7 @@ const BrandManager = ({
                       <button
                         onClick={() => redirectToSettlement(brand.id)}
                         disabled={actionLoading}
-                        title={
-                          brand.isFeature ? "Unfeature Brand" : "Feature Brand"
-                        }
+                        title={"Show brand settlement"}
                         className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 bg-[#E5E5E5] text-[#4A4A4A] hover:bg-orange-200`}
                       >
                         <svg
@@ -858,7 +855,7 @@ const BrandManager = ({
                           />
                         </svg>
                       </button>
-                      <button
+                      {/* <button
                         onClick={() => toggleFeatured(brand.id)}
                         disabled={actionLoading}
                         title={
@@ -873,7 +870,7 @@ const BrandManager = ({
                           size={16}
                           fill={brand.isFeature ? "currentColor" : "none"}
                         />
-                      </button>
+                      </button> */}
                       <button
                         onClick={() => toggleActive(brand.id)}
                         disabled={actionLoading}
