@@ -1,14 +1,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Store, 
-  Calendar, 
-  BarChart3, 
-  FileText, 
-  Settings, 
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Store,
+  Calendar,
+  BarChart3,
+  FileText,
+  Settings,
   X,
   ShoppingBag,
   Gift
@@ -18,7 +18,7 @@ import { useSession } from '@/contexts/SessionContext'
 const Sidebar = ({ isOpen, onClose }) => {
   const pathname = usePathname();
   const session = useSession()
-  
+
   const allMenuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
     { name: 'Gift Cards / Orders', icon: Gift, href: '/vouchers' },
@@ -26,15 +26,15 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Occasions', icon: Calendar, href: '/occasions' },
     { name: 'Settlements', icon: FileText, href: '/settlements' },
     { name: 'Reports', icon: FileText, href: '/reports' },
-    { name: 'Controls', icon: Settings, href: '/controls' },
+    { name: 'Support Requests', icon: Settings, href: '/supportRequests' },
   ];
 
   // Filter menu items based on user role
-  const menuItems = session?.user?.role === 'ADMIN' 
-    ? allMenuItems 
-    : allMenuItems.filter(item => 
-        item.href === '/dashboard' || item.href === '/vouchers'
-      );
+  const menuItems = session?.user?.role === 'ADMIN'
+    ? allMenuItems
+    : allMenuItems.filter(item =>
+      item.href === '/dashboard' || item.href === '/vouchers'
+    );
 
   // Check if the current path matches the menu item
   const isActiveItem = (href) => {
@@ -48,12 +48,12 @@ const Sidebar = ({ isOpen, onClose }) => {
     <>
       {/* Mobile backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
       <div className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
@@ -76,7 +76,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <nav className="mt-8 px-4">
           <ul className="space-y-2">
             {menuItems.map((item) => (
