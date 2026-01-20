@@ -195,7 +195,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
     return (
       <div className="flex flex-col gap-1">
         <span className={`inline-flex items-center text-center px-2 justify-center py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}>
-          {status}
+          {status === "Active" ? "Issued" : status}
         </span>
         {statusBreakdown && (
           <div className="text-xs text-center text-gray-500">
@@ -328,7 +328,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
             name: "status",
             placeholder: "All Statuses",
             options: [
-              { value: "Active", label: "Active" },
+              { value: "Active", label: "Issued" },
               { value: "Redeemed", label: "Redeemed" },
               { value: "Expired", label: "Expired" },
               { value: "Inactive", label: "Inactive" },
