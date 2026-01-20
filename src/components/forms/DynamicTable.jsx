@@ -8,7 +8,7 @@ import {
   getSortedRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { Search, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ArrowUpDown, Calendar } from "lucide-react";
 import SkeletonRow from "./SkeletonRow";
 import CustomDropdown from "../ui/CustomDropdown";
 import SearchIcon from "@/icons/SearchIcon";
@@ -28,7 +28,7 @@ const DynamicTable = ({
   actions,
   emptyMessage = "No data found",
   className = "",
-  renderExpandedRow, // New prop for rendering expanded content
+  renderExpandedRow,
 }) => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState([]);
@@ -59,6 +59,36 @@ const DynamicTable = ({
     if (onFilter) {
       onFilter(name, value);
     }
+  };
+
+  const renderFilter = (filter, idx) => {
+    // Date input filter
+    if (filter.type === "date") {
+      return (
+        <div key={idx} className="relative">
+          <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            type="date"
+            value={filter.value || ""}
+            onChange={(e) => handleFilterChange(filter.name, e.target.value)}
+            placeholder={filter.placeholder}
+            className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-black min-w-[180px]"
+          />
+        </div>
+      );
+    }
+
+    // Dropdown filter
+    return (
+      <CustomDropdown
+        key={idx}
+        options={filter.options}
+        placeholder={filter.placeholder}
+        value={filter?.value || ""}
+        onChange={(value) => handleFilterChange(filter.name, value)}
+        className="min-w-[200px]"
+      />
+    );
   };
 
   const renderPagination = () => {
@@ -99,10 +129,11 @@ const DynamicTable = ({
                   <div
                     key={idx}
                     onClick={() => onPageChange && onPageChange(pageNumber)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${currentPage === pageNumber
-                      ? "bg-blue-700 text-white shadow-sm"
-                      : "border border-gray-300 hover:bg-white text-gray-700"
-                      }`}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${
+                      currentPage === pageNumber
+                        ? "bg-blue-700 text-white shadow-sm"
+                        : "border border-gray-300 hover:bg-white text-gray-700"
+                    }`}
                   >
                     {pageNumber}
                   </div>
@@ -129,7 +160,7 @@ const DynamicTable = ({
       <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white rounded-t-xl">
         <div className="mb-6">
           <h1 className="text-[20px] font-semibold text-[#1A1A1A]">{title}</h1>
-          <p className="text-[#64748B]  text-[14px] font-normal">{subtitle}</p>
+          <p className="text-[#64748B] text-[14px] font-normal">{subtitle}</p>
         </div>
 
         {/* Search and Filters */}
@@ -148,37 +179,15 @@ const DynamicTable = ({
           </div>
 
           <div className="flex flex-wrap gap-2 text-black">
-            {/* {filters.map((filter, idx) => (
-              <select
-                key={idx}
-                onChange={(e) => handleFilterChange(filter.name, e.target.value)}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              >
-                <option value="">{filter.placeholder || `All ${filter.name}`}</option>
-                {filter.options.map((option, optIdx) => (
-                  <option key={optIdx} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ))} */}
-            {filters.map((filter, idx) => (
-              <CustomDropdown
-                key={idx}
-                options={filter.options}
-                placeholder={filter.placeholder}
-                value={filter?.value || ""}
-                onChange={(value) => handleFilterChange(filter.name, value)}
-                className="min-w-[200px]"
-              />
-            ))}
+            {filters.map((filter, idx) => renderFilter(filter, idx))}
 
             {actions &&
               actions.map((action, idx) => (
                 <button
                   key={idx}
                   onClick={action.onClick}
-                  className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-700 transition-colors font-inter text-xs font-medium text-white"
+                  disabled={action.disabled}
+                  className="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors font-inter text-xs font-medium text-white"
                 >
                   {action.icon && <action.icon className="w-4 h-4" />}
                   {action.label}
@@ -229,7 +238,6 @@ const DynamicTable = ({
                         </td>
                       ))}
                     </tr>
-                    {/* Render expanded row if provided */}
                     {renderExpandedRow && renderExpandedRow(row.original)}
                   </React.Fragment>
                 ))}

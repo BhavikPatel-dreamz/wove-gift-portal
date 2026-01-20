@@ -23,10 +23,12 @@ export default async function VouchersPage({ searchParams }) {
     search: params?.search || '',
     status: params?.status || '',
     dateFrom: params?.dateFrom || '',
+    brandId:params?.brandId,
     dateTo: params?.dateTo || '',
     userId: user.id,
     userRole: user.role,
   };
+
 
   const vouchersData = await getVouchers(queryParams);
 
