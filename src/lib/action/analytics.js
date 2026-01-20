@@ -2,15 +2,35 @@
 
 import { prisma } from '../db'
 
-export async function fetchAnalyticsData(period = "year", brandId = null) {
+export async function fetchAnalyticsData(params = {}) {
   try {
-    // Calculate date range
-    const dateRange = getDateRange(period);
+    const { 
+      period = "year", 
+      brandId = null,
+      dateFrom = null,
+      dateTo = null 
+    } = params;
+
+    // Calculate date range - custom dates take priority over period
+    let dateRange;
+    if (dateFrom || dateTo) {
+      // Custom date range
+      const start = dateFrom ? new Date(dateFrom) : new Date(new Date().getFullYear(), 0, 1);
+      const end = dateTo ? new Date(dateTo) : new Date();
+      
+      // Set end date to end of day
+      end.setHours(23, 59, 59, 999);
+      
+      dateRange = { start, end };
+    } else {
+      // Use period-based date range
+      dateRange = getDateRange(period);
+    }
 
     // Fetch analytics data in parallel
     const [brandRedemptions, settlements] = await Promise.all([
-      getBrandRedemptionMetrics(dateRange),
-      getSettlementData(brandId),
+      getBrandRedemptionMetrics(dateRange, brandId),
+      getSettlementData(dateRange, brandId),
     ]);
 
     return {
@@ -18,22 +38,40 @@ export async function fetchAnalyticsData(period = "year", brandId = null) {
       brandRedemptions,
       settlements,
       period,
+      dateRange: {
+        start: dateRange.start?.toISOString(),
+        end: dateRange.end?.toISOString(),
+      }
     };
   } catch (error) {
     console.error("Error fetching analytics:", error);
-    throw new Error("Failed to fetch analytics data");
+    return {
+      success: false,
+      brandRedemptions: [],
+      settlements: [],
+      period: "year",
+      error: error.message
+    };
   }
 }
 
 // Get brand redemption metrics - formatted for frontend
-async function getBrandRedemptionMetrics(dateRange) {
+async function getBrandRedemptionMetrics(dateRange, brandIdFilter = null) {
   const dateFilter = buildDateFilter(dateRange);
 
-  // Get all active brands
+  // Build brand where clause
+  const brandWhere = {
+    isActive: true,
+  };
+  
+  // If specific brand is filtered, only get that brand
+  if (brandIdFilter) {
+    brandWhere.id = brandIdFilter;
+  }
+
+  // Get all active brands (or specific brand if filtered)
   const brands = await prisma.brand.findMany({
-    where: {
-      isActive: true,
-    },
+    where: brandWhere,
     select: {
       id: true,
       brandName: true,
@@ -52,6 +90,7 @@ async function getBrandRedemptionMetrics(dateRange) {
         where: {
           order: {
             brandId: brand.id,
+            paymentStatus: "COMPLETED",
             ...dateFilter,
           },
         },
@@ -62,6 +101,7 @@ async function getBrandRedemptionMetrics(dateRange) {
         where: {
           order: {
             brandId: brand.id,
+            paymentStatus: "COMPLETED",
             ...dateFilter,
           },
         },
@@ -78,7 +118,7 @@ async function getBrandRedemptionMetrics(dateRange) {
         },
       });
 
-      // 💰 Calculate total issued (sum of original values)
+      // Calculate total issued value
       const totalIssuedValue = voucherCodesWithRedemptions.reduce(
         (sum, vc) => sum + vc.originalValue,
         0
@@ -86,25 +126,19 @@ async function getBrandRedemptionMetrics(dateRange) {
 
       // Count redeemed vouchers using multiple criteria
       const redeemedVouchers = voucherCodesWithRedemptions.filter((vc) => {
-        // Check if voucher has any redemption records
         const hasRedemptionRecords = vc._count.redemptions > 0;
-
-        // Check if marked as redeemed
         const isMarkedRedeemed = vc.isRedeemed === true;
-
-        // Check if value has been used (remaining < original)
         const hasBeenUsed = vc.remainingValue < vc.originalValue;
 
         return hasRedemptionRecords || isMarkedRedeemed || hasBeenUsed;
       }).length;
 
-      // 💰 Calculate total used (sum of used amounts for vouchers that have been redeemed or partially used)
+      // Calculate total used value
       const totalUsedValue = voucherCodesWithRedemptions.reduce((sum, vc) => {
         const hasRedemptionRecords = vc._count.redemptions > 0;
         const isMarkedRedeemed = vc.isRedeemed === true;
         const hasBeenUsed = vc.remainingValue < vc.originalValue;
 
-        // Only include used/partially redeemed vouchers
         if (hasRedemptionRecords || isMarkedRedeemed || hasBeenUsed) {
           const usedAmount = vc.originalValue - vc.remainingValue;
           return sum + usedAmount;
@@ -114,7 +148,7 @@ async function getBrandRedemptionMetrics(dateRange) {
 
       // Calculate redemption rate
       const redemptionRate =
-        totalVouchers > 0
+        totalIssuedValue > 0
           ? Math.round((totalUsedValue / totalIssuedValue) * 100)
           : 0;
 
@@ -137,14 +171,14 @@ async function getBrandRedemptionMetrics(dateRange) {
 
   // Assign background colors based on position
   const bgColors = [
-    "bg-gray-100", // Position 1
-    "bg-pink-50", // Position 2
-    "bg-yellow-50", // Position 3
-    "bg-red-50", // Position 4
-    "bg-blue-50", // Position 5
-    "bg-red-50", // Position 6
-    "bg-gray-100", // Position 7
-    "bg-orange-50", // Position 8
+    "bg-gray-100",
+    "bg-pink-50",
+    "bg-yellow-50",
+    "bg-red-50",
+    "bg-blue-50",
+    "bg-red-50",
+    "bg-gray-100",
+    "bg-orange-50",
   ];
 
   return filteredBrands.map((brand, index) => ({
@@ -152,116 +186,50 @@ async function getBrandRedemptionMetrics(dateRange) {
     bgColor: bgColors[index],
   }));
 }
-function getDateRanges(period = null, filterMonth = null, filterYear = null) {
-  const now = new Date();
-  let start, end;
 
-  // ✅ numeric month + year
-  if (filterMonth && filterYear) {
-    const year = Number(filterYear);
-    const month = Number(filterMonth);
-
-    start = new Date(year, month - 1, 1);
-    end = new Date(year, month, 0, 23, 59, 59, 999);
-
-    return { start, end };
+// Get settlement data - formatted for frontend
+async function getSettlementData(dateRange, brandIdFilter = null) {
+  const { start, end } = dateRange;
+  
+  // If no date range, default to last month
+  let startDate = start;
+  let endDate = end;
+  
+  if (!startDate || !endDate) {
+    const now = new Date();
+    const lastMonth = now.getMonth() - 1;
+    const yearForLastMonth = lastMonth < 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const adjustedLastMonth = lastMonth < 0 ? 11 : lastMonth;
+    
+    startDate = new Date(yearForLastMonth, adjustedLastMonth, 1, 0, 0, 0, 0);
+    endDate = new Date(yearForLastMonth, adjustedLastMonth + 1, 0, 23, 59, 59, 999);
   }
 
-  if (filterYear) {
-    start = new Date(Number(filterYear), 0, 1);
-    end = new Date(Number(filterYear), 11, 31, 23, 59, 59, 999);
-    return { start, end };
-  }
-
-  end = now;
-
-  switch (period) {
-    case "today":
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      break;
-    case "week":
-      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case "month":
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
-      break;
-    case "quarter":
-      const quarter = Math.floor(now.getMonth() / 3);
-      start = new Date(now.getFullYear(), quarter * 3, 1);
-      break;
-    case "year":
-      start = new Date(now.getFullYear(), 0, 1);
-      break;
-    default:
-      return { start: null, end: null };
-  }
-
-  return { start, end };
-}
-
-
-function buildDateFilters(dateRange, field = "createdAt") {
-  if (!dateRange.start || !dateRange.end) return {};
-  return {
-    [field]: {
-      gte: dateRange.start,
-      lte: dateRange.end,
-    },
-  };
-}
-
-// Get settlement data for LAST MONTH ONLY - formatted for frontend
-async function getSettlementData(brandId) {
-  // Calculate last month's date range
-  const now = new Date();
-  
-  // Get last month (month - 1)
-  const lastMonth = now.getMonth() - 1;
-  const yearForLastMonth = lastMonth < 0 ? now.getFullYear() - 1 : now.getFullYear();
-  const adjustedLastMonth = lastMonth < 0 ? 11 : lastMonth;
-  
-  // First day of last month at 00:00:00
-  const lastMonthStart = new Date(yearForLastMonth, adjustedLastMonth, 1, 0, 0, 0, 0);
-  
-  // Last day of last month at 23:59:59.999
-  const lastMonthEnd = new Date(yearForLastMonth, adjustedLastMonth + 1, 0, 23, 59, 59, 999);
-
-  console.log('Last Month Date Range:', {
-    start: lastMonthStart.toISOString(),
-    end: lastMonthEnd.toISOString(),
-    month: lastMonthStart.toLocaleString('default', { month: 'long', year: 'numeric' })
-  });
-
-  // Build where clause based on Settlement schema
-  // Schema fields: periodStart, periodEnd, status
+  // Build where clause
   const whereClause = {
-    // Check if settlement period overlaps with last month
     OR: [
-      // Settlement period starts within last month
       {
         periodStart: {
-          gte: lastMonthStart,
-          lte: lastMonthEnd,
+          gte: startDate,
+          lte: endDate,
         },
       },
-      // Settlement period ends within last month
       {
         periodEnd: {
-          gte: lastMonthStart,
-          lte: lastMonthEnd,
+          gte: startDate,
+          lte: endDate,
         },
       },
-      // Settlement period contains last month
       {
         AND: [
           {
             periodStart: {
-              lte: lastMonthStart,
+              lte: startDate,
             },
           },
           {
             periodEnd: {
-              gte: lastMonthEnd,
+              gte: endDate,
             },
           },
         ],
@@ -270,14 +238,12 @@ async function getSettlementData(brandId) {
   };
 
   // Add brand filter if provided
-  if (brandId) {
-    whereClause.brandId = brandId;
+  if (brandIdFilter) {
+    whereClause.brandId = brandIdFilter;
   }
 
-  console.log('Settlement WHERE clause:', JSON.stringify(whereClause, null, 2));
-
-  // Get pending settlements with brand details
-  const pendingSettlements = await prisma.settlements.findMany({
+  // Get settlements with brand details
+  const settlements = await prisma.settlements.findMany({
     where: whereClause,
     include: {
       brand: {
@@ -294,10 +260,8 @@ async function getSettlementData(brandId) {
     },
   });
 
-  console.log(`Found ${pendingSettlements.length} settlements for last month`);
-
   // Format settlements to match frontend expectations
-  const settlements = pendingSettlements.map((settlement) => ({
+  return settlements.map((settlement) => ({
     brand: settlement.brand.brandName,
     amount: Math.round(settlement.netPayable),
     status: settlement.status,
@@ -306,8 +270,36 @@ async function getSettlementData(brandId) {
     periodEnd: settlement.periodEnd,
     settlementPeriod: settlement.settlementPeriod,
   }));
+}
 
-  return settlements;
+// Helper function to get all brands for filter dropdown
+export async function getBrandsForAnalytics() {
+  try {
+    const brands = await prisma.brand.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        brandName: true,
+      },
+      orderBy: {
+        brandName: 'asc',
+      },
+    });
+
+    return {
+      success: true,
+      data: brands,
+    };
+  } catch (error) {
+    console.error("Failed to get brands:", error);
+    return {
+      success: false,
+      message: "Failed to fetch brands.",
+      data: [],
+    };
+  }
 }
 
 export async function fetchBrandAnalytics({ filterMonth = null, filterYear = null, search = null } = {}) {
@@ -390,7 +382,7 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
         const vatRate = brandTerms?.vatRate || 0;
         const currency = brand.currency || "ZAR";
 
-        // Get existing settlements for this brand in the period (FIRST - to match getSettlements logic)
+        // Get existing settlements for this brand in the period
         const settlements = await prisma.settlements.findMany({
           where: { 
             brandId: brand.id,
@@ -419,10 +411,8 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
           orderBy: { createdAt: "desc" },
         });
 
-        // Get latest settlement for reference
         const latestSettlement = settlements[0] || null;
 
-        // If settlement exists, use its calculated values (like getSettlements does)
         let totalIssued = 0;
         let totalIssuedValue = 0;
         let totalRedeemed = 0;
@@ -433,7 +423,6 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
         let totalBreakageValue = 0;
 
         if (latestSettlement) {
-          // Use settlement data directly (this is what getSettlements shows)
           totalIssued = latestSettlement.totalSold || 0;
           totalIssuedValue = latestSettlement.totalSoldAmount || 0;
           totalRedeemed = latestSettlement.totalRedeemed || 0;
@@ -442,7 +431,6 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
           outstandingAmount = latestSettlement.outstandingAmount || 0;
           totalBreakageValue = latestSettlement.breakageAmount || 0;
         } else {
-          // Fallback: Calculate from voucher codes if no settlement exists
           const voucherCodes = await prisma.voucherCode.findMany({
             where: {
               order: {
@@ -465,7 +453,6 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
 
           totalIssued = voucherCodes.length;
 
-          // Total issued value
           const totalIssuedValueAgg = await prisma.order.aggregate({
             _sum: { totalAmount: true },
             where: { 
@@ -476,7 +463,6 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
           });
           totalIssuedValue = totalIssuedValueAgg._sum.totalAmount || 0;
 
-          // Count redeemed vouchers
           const redeemedVouchers = voucherCodes.filter(
             (vc) =>
               vc._count.redemptions > 0 ||
@@ -485,13 +471,11 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
           );
           totalRedeemed = redeemedVouchers.length;
 
-          // Calculate total redeemed value
           totalRedeemedValue = voucherCodes.reduce(
             (sum, vc) => sum + (vc.originalValue - vc.remainingValue),
             0
           );
 
-          // Calculate outstanding
           const outstandingVouchers = voucherCodes.filter(
             (vc) => vc.remainingValue > 0 && vc._count.redemptions === 0
           );
@@ -501,7 +485,6 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
             0
           );
 
-          // Calculate breakage
           const now = new Date();
           const expiredVouchers = voucherCodes.filter(
             (vc) => vc.expiresAt && new Date(vc.expiresAt) < now && vc.remainingValue > 0
@@ -513,9 +496,6 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
           );
         }
 
-        // ==================== SETTLEMENT CALCULATIONS ====================
-        
-        // If settlement exists, use its pre-calculated values (MATCH getSettlements exactly)
         let baseAmount = 0;
         let commissionAmount = 0;
         let vatAmount = 0;
@@ -523,7 +503,6 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
         let netPayable = 0;
 
         if (latestSettlement) {
-          // Use values from settlement (this is what getSettlements displays)
           baseAmount = settlementTrigger === "onRedemption" 
             ? (latestSettlement.redeemedAmount || 0)
             : (latestSettlement.totalSoldAmount || 0);
@@ -533,12 +512,10 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
           breakageAmount = latestSettlement.breakageAmount || 0;
           netPayable = latestSettlement.netPayable || 0;
         } else {
-          // Calculate if no settlement exists (fallback calculation)
           baseAmount = settlementTrigger === "onRedemption" 
             ? totalRedeemedValue 
             : totalIssuedValue;
 
-          // Calculate commission based on type
           if (baseAmount > 0) {
             if (commissionType === "Percentage") {
               commissionAmount = Math.round((baseAmount * commissionValue) / 100);
@@ -550,27 +527,21 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
             }
           }
 
-          // Calculate VAT on commission
           vatAmount = Math.round((commissionAmount * vatRate) / 100);
 
-          // Calculate breakage
           breakageAmount = breakageShare && totalBreakageValue > 0
             ? Math.round((totalBreakageValue * breakageShare) / 100)
             : 0;
 
-          // Calculate net payable
           netPayable = baseAmount - commissionAmount + vatAmount - breakageAmount;
         }
 
-        // Calculate total paid amount (from all Paid settlements)
         const totalPaidAmount = settlements
           .filter((s) => s.status === "Paid")
           .reduce((sum, s) => sum + (s.totalPaid || 0), 0);
 
-        // Calculate pending settlement (what still needs to be paid)
         const pendingSettlement = Math.max(0, netPayable - totalPaidAmount);
 
-        // Redemption rate (always redeemed value / issued value)
         const redemptionRate = totalIssuedValue > 0
           ? Math.round((totalRedeemedValue / totalIssuedValue) * 100)
           : 0;
@@ -580,25 +551,15 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
           brandName: brand.brandName,
           logo: brand.logo,
           currency,
-          
-          // Settlement configuration
           settlementTrigger,
-          
-          // Voucher counts (from settlement or calculated)
           totalIssued,
           totalRedeemed,
           outstanding: outstandingCount,
           expired: expiredCount,
-          
-          // Amounts (from settlement or calculated)
           totalIssuedValue,
           totalRedeemedValue,
           outstandingAmount,
-          
-          // Performance metrics
           redemptionRate,
-          
-          // Settlement calculations (MATCHING getSettlements exactly)
           settlementCalculation: {
             baseAmount,
             commissionAmount,
@@ -614,12 +575,8 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
             netPayable,
             trigger: settlementTrigger,
           },
-          
-          // Payment tracking
           totalPaidAmount,
           pendingSettlement,
-          
-          // Settlement details (if exists)
           settlementDetails: latestSettlement ? {
             id: latestSettlement.id,
             status: latestSettlement.status,
@@ -628,18 +585,15 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
             remainingAmount: latestSettlement.remainingAmount || 0,
             createdAt: latestSettlement.createdAt,
           } : null,
-          
           hasSettlement: pendingSettlement > 0,
         };
       })
     );
 
-    // Filter brands with activity
     const filteredBrands = brandAnalytics
       .filter((b) => b.totalIssued > 0 || b.totalIssuedValue > 0)
       .sort((a, b) => b.totalIssuedValue - a.totalIssuedValue);
 
-    // Determine filter label
     let filterLabel;
     if (parsedMonth && parsedYear) {
       filterLabel = new Date(parsedYear, parsedMonth - 1).toLocaleString("en-US", {
@@ -655,7 +609,6 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
       });
     }
 
-    // Summary totals
     return {
       success: true,
       data: filteredBrands,
@@ -720,7 +673,6 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
 
 export async function processSettlement(settlementId, partialAmount, notes) {
   try {
-    // Validation
     if (!settlementId) {
       return { success: false, message: "Settlement ID is required" };
     }
@@ -730,7 +682,6 @@ export async function processSettlement(settlementId, partialAmount, notes) {
       return { success: false, message: "Valid numeric payment amount is required" };
     }
 
-    // Fetch settlement + brand
     const settlement = await prisma.settlements.findUnique({
       where: { id: settlementId },
       include: { brand: true },
@@ -744,7 +695,6 @@ export async function processSettlement(settlementId, partialAmount, notes) {
       return { success: false, message: "Settlement already fully paid" };
     }
 
-    // Fetch brand terms for commission + VAT
     const brandTerms = await prisma.brandTerms.findUnique({
       where: { brandId: settlement.brandId },
     });
@@ -753,19 +703,15 @@ export async function processSettlement(settlementId, partialAmount, notes) {
     const commissionValue = brandTerms?.commissionValue ?? 0;
     const commissionType = brandTerms?.commissionType ?? "Percentage";
 
-    // Commission calculation
     const commissionAmount =
       commissionType === "Fixed"
         ? commissionValue
         : (settlement.totalSoldAmount * commissionValue) / 100;
 
-    // VAT calculation
     const vatAmount = ((settlement.totalSoldAmount - commissionAmount) * vatRate) / 100;
 
-    // Net payable (includes VAT)
     const netPayable = settlement.totalSoldAmount - commissionAmount + vatAmount;
 
-    // Handle rounding & overpayment
     const tolerance = 0.01;
     let paymentToApply = partialAmountNum;
     if (paymentToApply > netPayable + tolerance) {
@@ -775,19 +721,17 @@ export async function processSettlement(settlementId, partialAmount, notes) {
     const remainingAmount = Math.max(0, netPayable - paymentToApply);
     const isFullPayment = remainingAmount <= tolerance;
 
-    // Generate unique payment reference
     const paymentReference = `PAY-${Date.now()}-${Math.random()
       .toString(36)
       .substr(2, 9)
       .toUpperCase()}`;
 
-    // Get existing payment history and append new payment
     const existingHistory = Array.isArray(settlement.paymentHistory) 
       ? settlement.paymentHistory 
       : [];
 
     const newPaymentRecord = {
-      id: `PAYMENT-${Date.now()}`, // Unique payment ID
+      id: `PAYMENT-${Date.now()}`,
       settlementId: settlementId,
       amount: paymentToApply,
       paidAt: new Date().toISOString(),
@@ -795,10 +739,8 @@ export async function processSettlement(settlementId, partialAmount, notes) {
       notes: notes || `Payment of ${paymentToApply} processed.`,
     };
 
-    // Append new payment to existing history
     const updatedPaymentHistory = [...existingHistory, newPaymentRecord];
 
-    // FULL PAYMENT
     if (isFullPayment) {
       const updatedSettlement = await prisma.settlements.update({
         where: { id: settlementId },
@@ -820,7 +762,6 @@ export async function processSettlement(settlementId, partialAmount, notes) {
         data: updatedSettlement,
       };
     } else {
-      // PARTIAL PAYMENT
       const updatedTotalPaid = (settlement.totalPaid || 0) + paymentToApply;
 
       const updatedSettlement = await prisma.settlements.update({
