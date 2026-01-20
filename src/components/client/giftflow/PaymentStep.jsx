@@ -62,7 +62,8 @@ const PaymentStep = () => {
     selectedOccasion,
     selectedSubCategory,
     selectedTiming,
-    selectedOccasionName
+    selectedOccasionName,
+    isPaymentConfirmed,
   } = useSelector((state) => state.giftFlowReducer);
 
   const { bulkItems } = useSelector((state) => state.cart);
@@ -424,15 +425,15 @@ const PaymentStep = () => {
             {selectedPaymentTab === 'card' && !clientSecret && (
               <button
                 onClick={handleInitiatePayment}
-                disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-pink-500 to-orange-500 
+                disabled={isProcessing || !isPaymentConfirmed}
+                className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
                        disabled:from-gray-300 disabled:to-gray-400
                        text-white py-3 sm:py-4 px-6 rounded-xl
                        font-semibold text-sm sm:text-base
                        transition-all duration-200
                        flex items-center justify-center gap-2
-                       shadow-lg disabled:cursor-not-allowed"
+                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer '}`}
               >
                 {isProcessing ? (
                   <>

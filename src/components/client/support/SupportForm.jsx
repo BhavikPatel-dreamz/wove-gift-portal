@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createSupportRequest } from '@/lib/action/supportAction'
 
 export default function SupportForm() {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ export default function SupportForm() {
   })
   const [showSuccessFull, setShowSuccessFull] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [supportId, setSupportId] = useState('')
 
   const handleChange = (e) => {
     const { id, value } = e.target
@@ -20,24 +22,31 @@ export default function SupportForm() {
   }
 
   const handleSubmit = async () => {
-    setShowSuccessFull(true)
     setLoading(true)
     try {
-      // API call here
-      console.log(formData)
+      const result = await createSupportRequest(formData)
+      if (result.success) {
+        setSupportId(result.data.supportId)
+        setShowSuccessFull(true)
+      } else {
+        // Handle error case, maybe show a toast notification
+        console.error(result.message)
+      }
+    } catch (error) {
+      console.error('Failed to submit support request', error)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-30">
+    <div className="min-h-screen flex items-center justify-center px-4 py-30 text-black">
       {
         !showSuccessFull ? (
           <div className="max-w-xxl w-full">
             <div className="text-center mb-8">
               <h2 className="text-[40px] font-bold text-gray-900 mb-[32px]">
-                Support Request – Cancel or Modify Gift
+                Support Request
               </h2>
               <p className="text-base text-[#4A4A4A] max-w-[652px] m-auto">
                 Submit a request to cancel or modify your gift voucher. Requests are reviewed based on voucher status and delivery stage.
@@ -123,9 +132,9 @@ export default function SupportForm() {
 
                 <p class="text-gray-600 text-sm sm:text-base leading-relaxed">
                   Your request has been received. Your request id is
-                  <span class="font-semibold text-gray-900">WG-SUP-10245</span>.
+                  <span class="font-semibold text-gray-900"> {supportId}</span>.
                   Our support team will review it and contact you within
-                  <span class="font-semibold">24–48 hours</span>.
+                  <span class="font-semibold"> 24–48 hours</span>.
                 </p>
 
 

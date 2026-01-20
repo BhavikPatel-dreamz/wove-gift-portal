@@ -422,6 +422,8 @@ export default function ReportsPage({ shop }) {
                                 ["Total Amount", formatCurrency(sr.summary.totalAmount)],
                                 ["Total Commission", formatCurrency(sr.summary.totalCommission)],
                                 ["Total VAT", formatCurrency(sr.summary.totalVAT)],
+                                ["Total Paid", formatCurrency(sr.summary.totalPaid)],
+                                ["Total Remaining", formatCurrency(sr.summary.totalRemaining)],
                             ],
                             theme: 'grid',
                             headStyles: { fillColor: [230, 126, 34], fontSize: 10 },
@@ -439,11 +441,13 @@ export default function ReportsPage({ shop }) {
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
-                            head: [["Status", "Count", "Amount"]],
+                            head: [["Status", "Count", "Amount", "Paid", "Remaining"]],
                             body: sr.summary.byStatus.map(s => [
                                 s.status,
                                 s.count.toLocaleString(),
-                                formatCurrency(s.amount)
+                                formatCurrency(s.amount),
+                                formatCurrency(s.paid),
+                                formatCurrency(s.remaining)
                             ]),
                             theme: 'striped',
                             styles: { fontSize: 9 },
@@ -460,15 +464,17 @@ export default function ReportsPage({ shop }) {
                         yPos += 5;
                         autoTable(pdf, {
                             startY: yPos,
-                            head: [["Brand", "Period", "Net Payable", "Status"]],
+                            head: [["Brand", "Period", "Net Payable", "Paid", "Remaining", "Status"]],
                             body: sr.settlements.map(s => [
                                 s.brandName,
                                 s.settlementPeriod,
                                 formatCurrency(s.netPayable),
+                                formatCurrency(s.totalPaid),
+                                formatCurrency(s.remainingAmount),
                                 s.status
                             ]),
                             theme: 'striped',
-                            styles: { fontSize: 8 },
+                            styles: { fontSize: 7 },
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
@@ -583,7 +589,6 @@ export default function ReportsPage({ shop }) {
                         });
                         yPos = pdf.lastAutoTable.finalY + 8;
                     }
-
                     if (ls.byBrand?.length > 0) {
                         checkAddPage(50);
                         pdf.setFontSize(12);

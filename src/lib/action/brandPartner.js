@@ -1346,6 +1346,26 @@ export async function createAuditLog(
   }
 }
 
+function calculateSettlementStatus(netPayable, totalPaid, remainingAmount) {
+  // If nothing to pay or negative net payable
+  if (netPayable <= 0) {
+    return 'Pending';
+  }
+  
+  // If fully paid (remaining is 0 or negative due to overpayment)
+  if (remainingAmount <= 0 && totalPaid >= netPayable) {
+    return 'Paid';
+  }
+  
+  // If partially paid (some payment made but not complete)
+  if (totalPaid > 0 && remainingAmount > 0) {
+    return 'Partial';
+  }
+  
+  // If no payment made yet
+  return 'Pending';
+}
+
 // ==================== OPTIMIZED SETTLEMENT SERVICE ====================
 export async function getSettlements(params = {}) {
   try {
@@ -1570,6 +1590,9 @@ export async function getSettlements(params = {}) {
         
         const remainingAmount = calculatedRemainingAmount;
 
+        // Calculate dynamic status based on actual payment state
+        const dynamicStatus = calculateSettlementStatus(netPayable, totalPaid, remainingAmount);
+
         return {
           id: settlement.id,
           settlementPeriod: settlement.settlementPeriod,
@@ -1605,10 +1628,12 @@ export async function getSettlements(params = {}) {
           vatRate,
           netPayable,
           
-          // Payment tracking
+          // Payment tracking with CORRECTED status
           totalPaid,
           remainingAmount,
-          status: settlement.status,
+          // status: settlement.status,
+          status: dynamicStatus, // USE CALCULATED STATUS instead of settlement.status
+          dbStatus: settlement.status, // Keep original for reference/auditing
           paidAt: settlement.paidAt,
           lastPaymentDate: settlement.lastPaymentDate,
           paymentCount: settlement.paymentCount || 0,
@@ -1725,6 +1750,7 @@ export async function getSettlements(params = {}) {
       statusBreakdown: {
         pending: processedSettlements.filter((s) => s.status === "Pending").length,
         paid: processedSettlements.filter((s) => s.status === "Paid").length,
+        partial: processedSettlements.filter((s) => s.status === "Partial").length,
         inReview: processedSettlements.filter((s) => s.status === "InReview").length,
         disputed: processedSettlements.filter((s) => s.status === "Disputed").length,
       },

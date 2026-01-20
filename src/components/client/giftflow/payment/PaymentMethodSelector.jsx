@@ -1,7 +1,15 @@
 import React from "react";
 import { Shield } from "lucide-react";
+import { useSelector } from "react-redux";
+import { setIsPaymentConfirmed } from "../../../../redux/giftFlowSlice";
+import { useDispatch } from "react-redux";
 
 const PaymentMethodSelector = ({ selectedTab, onTabChange, isBulkMode }) => {
+ const {
+    isPaymentConfirmed,
+  } = useSelector((state) => state.giftFlowReducer);
+  const dispatch = useDispatch();
+
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
       <div className="flex items-center gap-4 mb-4">
@@ -70,6 +78,42 @@ const PaymentMethodSelector = ({ selectedTab, onTabChange, isBulkMode }) => {
             <p className="text-xs text-gray-600">Visa, Mastercard</p>
           </div>
         </button>
+      </div>
+
+      {/* Confirmation Checkbox */}
+      <div className="flex items-start gap-3">
+        <label className="flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isPaymentConfirmed}
+            onChange={(e) => dispatch(setIsPaymentConfirmed(e.target.checked))}
+            className="sr-only"
+          />
+          <div className={`
+                          w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
+                          ${isPaymentConfirmed
+              ? 'bg-gradient-to-r from-pink-500 to-orange-400 border-transparent'
+              : 'bg-white border-gray-300'
+            }
+                        `}>
+            {isPaymentConfirmed && (
+              <svg
+                className="w-3.5 h-3.5 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            )}
+          </div>
+          <span className="text-gray-700 font-inter text-sm font-medium leading-relaxed flex-1">
+           Please confirm that all gift voucher details are correct. Once payment is completed, the voucher cannot be modified or cancelled.
+          </span>
+        </label>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { calculateNextDeliveryDate } from "../../../../lib/utils";
 
 // POST: Create a scheduled report
 export async function POST(request) {
@@ -273,63 +274,3 @@ export async function PUT(request) {
 }
 
 // ==================== HELPER FUNCTIONS ====================
-
-function calculateNextDeliveryDate(frequency, deliveryDay, deliveryMonth, deliveryYear) {
-  const today = new Date();
-  let nextDate = new Date(today);
-
-  switch (frequency) {
-    case "weekly":
-      const daysOfWeek = {
-        sunday: 0,
-        monday: 1,
-        tuesday: 2,
-        wednesday: 3,
-        thursday: 4,
-        friday: 5,
-        saturday: 6,
-      };
-
-      const targetDay = daysOfWeek[deliveryDay.toLowerCase()];
-      const currentDay = today.getDay();
-      let daysUntilTarget = targetDay - currentDay;
-
-      if (daysUntilTarget <= 0) {
-        daysUntilTarget += 7;
-      }
-
-      nextDate.setDate(today.getDate() + daysUntilTarget);
-      break;
-
-    case "monthly":
-      const dayOfMonth = parseInt(deliveryDay) || 1;
-      const monthValue = parseInt(deliveryMonth) || 1;
-      
-      // Set to the specified month and day
-      nextDate.setMonth(monthValue - 1); // Months are 0-indexed
-      nextDate.setDate(Math.min(dayOfMonth, 28));
-      
-      // If the date has passed this year, move to next year
-      if (nextDate <= today) {
-        nextDate.setFullYear(today.getFullYear() + 1);
-      }
-      break;
-
-    case "yearly":
-      const yearValue = parseInt(deliveryYear) || today.getFullYear();
-      const yearMonth = parseInt(deliveryMonth) || 1;
-      const yearDay = parseInt(deliveryDay) || 1;
-      
-      nextDate = new Date(yearValue, yearMonth - 1, Math.min(yearDay, 28));
-      
-      // If the date has already passed, it will be delivered on the specified date
-      // No need to adjust since it's a one-time yearly delivery
-      break;
-
-    default:
-      nextDate.setDate(today.getDate() + 1);
-  }
-
-  nextDate.setHours(9, 0, 0, 0);
-  return nextDate;
-}

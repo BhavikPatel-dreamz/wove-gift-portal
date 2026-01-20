@@ -191,7 +191,7 @@ model Vouchers {
   productSku           String?
   isActive             Boolean            @default(true)
   brandId              String
-  createdAt            DateTime           @default(now())
+createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
   isExpiry             Boolean            @default(false)
   expiryPolicy         String?
@@ -496,6 +496,22 @@ model GiftCard {
   @@index([denominationId])
 }
 
+model SupportRequest {
+  id          String        @id @default(cuid())
+  supportId   String        @unique
+  name        String
+  email       String
+  phone       String?
+  orderNumber String?
+  reason      String
+  message     String?
+  status      SupportStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status])
+}
+
 enum UserRole {
   CUSTOMER
   ADMIN
@@ -605,4 +621,12 @@ enum ScheduledReportStatus {
   Active
   Paused
   Cancelled
+}
+
+enum SupportStatus {
+  PENDING
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }

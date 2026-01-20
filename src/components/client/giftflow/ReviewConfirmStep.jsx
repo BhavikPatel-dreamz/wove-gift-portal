@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
-import { goBack, goNext, resetFlow } from "../../../redux/giftFlowSlice";
+import { goBack, goNext, resetFlow, setCurrentStep, setIsConfirmed } from "../../../redux/giftFlowSlice";
 import { addToCart, updateCartItem } from "../../../redux/cartSlice";
 import { useSession } from '@/contexts/SessionContext'
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import SecurityIcon from "../../../icons/SecurityIcon"
 import HeartColorIcon from "../../../icons/HeartColorIcon"
 import EditIcon from "../../../icons/EditIcon"
 import { ShoppingBasket } from "lucide-react";
+import { currencyList } from "../../brandsPartner/currency";
 
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
@@ -26,8 +27,11 @@ const ReviewConfirmStep = () => {
     selectedSubCategory,
     editingIndex,
     isEditMode,
-    selectedOccasion
+    selectedOccasion,
+    isConfirmed
   } = useSelector((state) => state.giftFlowReducer);
+
+  console.log(deliveryMethod, deliveryDetails, selectedTiming);
 
   const validateGift = () => {
 
@@ -96,49 +100,20 @@ const ReviewConfirmStep = () => {
     dispatch(goNext());
   };
 
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "";
+
   const formatAmount = (amount) => {
     if (typeof amount === "object" && amount?.value && amount?.currency) {
-      return `${amount.currency} ${amount.value}`;
+      return `${getCurrencySymbol(amount.currency)} ${amount.value}`;
     }
     return `R${amount || 0}`;
   };
 
-  const getDeliveryMethodDisplay = () => {
-    switch (deliveryMethod) {
-      case 'whatsapp':
-        return 'WhatsApp';
-      case 'email':
-        return 'Email';
-      case 'print':
-        return 'Print it Yourself';
-      default:
-        return 'Not selected';
-    }
-  };
+  const redirectToDeliveryMethod = () => {
+    dispatch(setCurrentStep(7));
+  }
 
-  const getRecipientInfo = () => {
-    if (deliveryMethod === 'whatsapp') {
-      return deliveryDetails?.recipientName || 'Not specified';
-    } else if (deliveryMethod === 'email') {
-      return deliveryDetails?.recipientFullName || 'Not specified';
-    }
-    return 'Self';
-  };
-
-  const getTimingDisplay = () => {
-    if (!selectedTiming) return 'Not specified';
-
-    switch (selectedTiming.type) {
-      case 'immediate':
-        return 'Send Immediately';
-      case 'now':
-        return 'Send Now';
-      case 'scheduled':
-        return `Scheduled for ${selectedTiming.date}`;
-      default:
-        return selectedTiming.type || 'Not specified';
-    }
-  };
 
   return (
     <div className="max-w-7xl m-auto min-h-screen bg-gray-50 px-4 py-30 md:px-4 md:py-30">
@@ -179,7 +154,7 @@ const ReviewConfirmStep = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[313px_1fr] gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[313px_1fr] gap-8 text-black">
           {/* Left Column - Gift Card */}
           <div className="">
             {/* Gift Card Visual */}
@@ -199,17 +174,19 @@ const ReviewConfirmStep = () => {
                   />
                 ) : null}
 
-                <div className="absolute top-2 right-2 bg-white rounded-full p-1 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 17.46V20.5C3 20.78 3.22 21 3.5 21H6.54C6.67 21 6.8 20.95 6.89 20.85L17.81 9.94L14.06 6.19L3.15 17.1C3.05 17.2 3 17.32 3 17.46ZM20.71 7.04C20.8027 6.94749 20.8762 6.8376 20.9264 6.71663C20.9766 6.59565 21.0024 6.46597 21.0024 6.335C21.0024 6.20403 20.9766 6.07435 20.9264 5.95338C20.8762 5.83241 20.8027 5.72252 20.71 5.63L18.37 3.29C18.2775 3.1973 18.1676 3.12375 18.0466 3.07357C17.9257 3.02339 17.796 2.99756 17.665 2.99756C17.534 2.99756 17.4043 3.02339 17.2834 3.07357C17.1624 3.12375 17.0525 3.1973 16.96 3.29L15.13 5.12L18.88 8.87L20.71 7.04Z" fill="url(#paint0_linear_736_2123)" />
-                    <defs>
-                      <linearGradient id="paint0_linear_736_2123" x1="3" y1="9.6211" x2="20.1362" y2="17.2719" gradientUnits="userSpaceOnUse">
-                        <stop stopColor="#ED457D" />
-                        <stop offset="1" stopColor="#FA8F42" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                </div>
+                <button onClick={() => dispatch(setCurrentStep(3))}>
+                  <div className="absolute top-2 right-2 bg-white rounded-full p-1 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 17.46V20.5C3 20.78 3.22 21 3.5 21H6.54C6.67 21 6.8 20.95 6.89 20.85L17.81 9.94L14.06 6.19L3.15 17.1C3.05 17.2 3 17.32 3 17.46ZM20.71 7.04C20.8027 6.94749 20.8762 6.8376 20.9264 6.71663C20.9766 6.59565 21.0024 6.46597 21.0024 6.335C21.0024 6.20403 20.9766 6.07435 20.9264 5.95338C20.8762 5.83241 20.8027 5.72252 20.71 5.63L18.37 3.29C18.2775 3.1973 18.1676 3.12375 18.0466 3.07357C17.9257 3.02339 17.796 2.99756 17.665 2.99756C17.534 2.99756 17.4043 3.02339 17.2834 3.07357C17.1624 3.12375 17.0525 3.1973 16.96 3.29L15.13 5.12L18.88 8.87L20.71 7.04Z" fill="url(#paint0_linear_736_2123)" />
+                      <defs>
+                        <linearGradient id="paint0_linear_736_2123" x1="3" y1="9.6211" x2="20.1362" y2="17.2719" gradientUnits="userSpaceOnUse">
+                          <stop stopColor="#ED457D" />
+                          <stop offset="1" stopColor="#FA8F42" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                </button>
               </div>
             </div>
 
@@ -244,7 +221,54 @@ const ReviewConfirmStep = () => {
           {/* Right Column - Details */}
           <div className="space-y-6">
             {/* Brand and Amount Card */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200">
+
+            <div className="bg-white flex flex-col gap-3 rounded-2xl py-4 p-4 border border-gray-200">
+              <div>
+                <div className="flex items-start gap-2">
+                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-[22px]">
+                    Delivery Method
+                  </div>
+
+                  <div>
+                    <button onClick={() => redirectToDeliveryMethod()}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2.5 14.55V17.0833C2.5 17.3166 2.68333 17.5 2.91667 17.5H5.45C5.55833 17.5 5.66667 17.4583 5.74167 17.375L14.8417 8.28329L11.7167 5.15829L2.625 14.25C2.54167 14.3333 2.5 14.4333 2.5 14.55ZM17.2583 5.86663C17.3356 5.78953 17.3969 5.69796 17.4387 5.59715C17.4805 5.49634 17.502 5.38827 17.502 5.27913C17.502 5.16999 17.4805 5.06192 17.4387 4.96111C17.3969 4.8603 17.3356 4.76872 17.2583 4.69163L15.3083 2.74163C15.2312 2.66438 15.1397 2.60309 15.0389 2.56127C14.938 2.51945 14.83 2.49792 14.7208 2.49792C14.6117 2.49792 14.5036 2.51945 14.4028 2.56127C14.302 2.60309 14.2104 2.66438 14.1333 2.74163L12.6083 4.26663L15.7333 7.39163L17.2583 5.86663Z" fill="url(#paint0_linear_3104_3730)" />
+                        <defs>
+                          <linearGradient id="paint0_linear_3104_3730" x1="2.5" y1="8.01754" x2="16.7802" y2="14.3932" gradientUnits="userSpaceOnUse">
+                            <stop stopColor="#ED457D" />
+                            <stop offset="1" stopColor="#FA8F42" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-[24px]">
+                  {deliveryMethod}
+                </div>
+              </div>
+              <div>
+                <div className="flex items-start gap-2">
+                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-[22px]">Recipient WhatsApp Number</div>
+                  <div>
+                    <button onClick={() => redirectToDeliveryMethod()}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2.5 14.55V17.0833C2.5 17.3166 2.68333 17.5 2.91667 17.5H5.45C5.55833 17.5 5.66667 17.4583 5.74167 17.375L14.8417 8.28329L11.7167 5.15829L2.625 14.25C2.54167 14.3333 2.5 14.4333 2.5 14.55ZM17.2583 5.86663C17.3356 5.78953 17.3969 5.69796 17.4387 5.59715C17.4805 5.49634 17.502 5.38827 17.502 5.27913C17.502 5.16999 17.4805 5.06192 17.4387 4.96111C17.3969 4.8603 17.3356 4.76872 17.2583 4.69163L15.3083 2.74163C15.2312 2.66438 15.1397 2.60309 15.0389 2.56127C14.938 2.51945 14.83 2.49792 14.7208 2.49792C14.6117 2.49792 14.5036 2.51945 14.4028 2.56127C14.302 2.60309 14.2104 2.66438 14.1333 2.74163L12.6083 4.26663L15.7333 7.39163L17.2583 5.86663Z" fill="url(#paint0_linear_3104_3730)" />
+                        <defs>
+                          <linearGradient id="paint0_linear_3104_3730" x1="2.5" y1="8.01754" x2="16.7802" y2="14.3932" gradientUnits="userSpaceOnUse">
+                            <stop stopColor="#ED457D" />
+                            <stop offset="1" stopColor="#FA8F42" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-[24px]">{deliveryMethod == "email" ? deliveryDetails?.recipientEmailAddress : deliveryDetails?.recipientWhatsAppNumber}</div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl py-4 p-4  border border-gray-200">
               <div className="flex items-start gap-2">
                 <div>
                   {selectedBrand?.logo ? (
@@ -267,7 +291,7 @@ const ReviewConfirmStep = () => {
                     className="mt-4 flex gap-1 items-center max-w-fit  text-pink-500 hover:text-pink-600 text-sm font-medium px-2 py-2 rounded-full transition-colors bg-[#F4F4F4]"
                   >
                     <HeartColorIcon />
-                    <span className="text-[#1A1A1A] text-[16px] font-semibold leading-[22px] font-poppins text-center">
+                    <span className="text-[#1A1A1A] text-[16px] font-semibold leading-5.5 font-poppins text-center">
                       {formatAmount(selectedAmount)}
                     </span>
                     <EditIcon />
@@ -275,20 +299,21 @@ const ReviewConfirmStep = () => {
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="text-[#1A1A1A] text-[18px] font-semibold leading-[22px] font-poppins">
+                  <h3 className="text-[#1A1A1A] text-[18px] font-semibold leading-5.5 font-poppins">
                     {selectedBrand?.brandName || selectedBrand?.name || 'Selected Brand'}
                   </h3>
-                  <p className="text-[#4A4A4A] text-[14px] font-normal leading-[24px] font-inter mt-1">
+                  <p className="text-[#4A4A4A] text-[14px] font-normal leading-6 font-inter mt-1">
                     {selectedBrand?.description || selectedBrand?.tagline || 'Gift card'}
                   </p>
 
 
                 </div>
               </div>
+              <div></div>
             </div>
 
             {/* Personal Message */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200">
+            <div className="bg-white rounded-2xl py-4 p-4  border border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <h3 className="text-[#1A1A1A] text-[16px] font-semibold leading-[22px] font-poppins">
@@ -323,51 +348,112 @@ const ReviewConfirmStep = () => {
                   </div>
                 </div>
               </div>
-
-
             </div>
 
 
             {/* Action Buttons */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 text-center">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm text-center animate-fadeIn">
                   {error}
                 </div>
               )}
-              <div>
+
+              {/* Confirmation Checkbox */}
+              <div className="flex items-start gap-3">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isConfirmed}
+                    onChange={(e) => dispatch(setIsConfirmed(e.target.checked))}
+                    className="sr-only"
+                  />
+                  <div className={`
+                    w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
+                    ${isConfirmed
+                      ? 'bg-gradient-to-r from-pink-500 to-orange-400 border-transparent'
+                      : 'bg-white border-gray-300'
+                    }
+                  `}>
+                    {isConfirmed && (
+                      <svg
+                        className="w-3.5 h-3.5 text-white"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-gray-700 font-inter text-sm font-medium leading-relaxed flex-1">
+                    I have reviewed and confirmed all recipient and gift details are correct.
+                  </span>
+                </label>
+              </div>
+
+              {/* Buttons */}
+              <div className="space-y-4">
                 {isEditMode ? (
                   <button
                     onClick={handleAddToCart}
-                    className="w-full bg-white hover:bg-gray-100 text-pink-500 border-2 border-pink-500 py-3 px-6 rounded-full font-semibold text-lg transition-all duration-200 hover:shadow-md flex items-center justify-center gap-2"
+                    disabled={!isConfirmed}
+                    className={`
+                      w-full h-14 bg-white text-pink-500 border-2 border-pink-500 rounded-full 
+                      font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2
+                      ${isConfirmed
+                        ? 'hover:bg-pink-50 hover:shadow-md cursor-pointer'
+                        : 'opacity-50 cursor-not-allowed'
+                      }
+                    `}
                   >
                     <Edit className="w-5 h-5" />
                     Update Gift in Cart
                   </button>
                 ) : (
-                  <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block w-full">
+                  <div className={`p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 inline-block w-full ${isConfirmed
+                    ? 'hover:bg-rose-50 hover:shadow-md cursor-pointer'
+                    : 'opacity-50 cursor-not-allowed'
+                    }
+                      `}>
                     <button
                       onClick={handleAddToCart}
-                      className="flex items-center gap-3 px-5 py-3 rounded-full bg-white hover:bg-rose-50 w-full text-[#ED457D]
-                       transition-all duration-200 hover:shadow-md text-center justify-center font-bold"
+                      disabled={!isConfirmed}
+                      className={`
+                        w-full h-14 flex items-center justify-center gap-3 px-5 rounded-full 
+                        bg-white text-pink-500 font-bold transition-all duration-200
+                       
+                      `}
                     >
                       Add to Cart
-                      <ShoppingBasket className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" color="#ED457D" />
+                      <ShoppingBasket className="w-5 h-5" />
                     </button>
                   </div>
                 )}
-                {/* <p className="text-center text-xs text-gray-500 mt-2">Use this to add more gifts to your cart.</p> */}
-              </div>
-              <div>
+
                 <button
                   onClick={handleBuyNow}
-                  className="w-full bg-[linear-gradient(114.06deg,rgba(237,69,125,1)_11.36%,rgba(250,143,66,1)_90.28%)] text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                  disabled={!isConfirmed}
+                  className={`
+                    w-full h-14 bg-gradient-to-r from-pink-500 to-orange-400 text-white 
+                    rounded-full font-semibold text-lg transition-all duration-200 shadow-lg 
+                    flex items-center justify-center gap-2
+                    ${isConfirmed
+                      ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
+                      : 'opacity-50 cursor-not-allowed'
+                    }
+                  `}
                 >
                   Proceed to Payment
-                  <span className="text-xl"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
+                    <path
+                      d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                      fill="white"
+                    />
                   </svg>
-                  </span>
                 </button>
               </div>
             </div>
