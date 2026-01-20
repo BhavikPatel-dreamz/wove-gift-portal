@@ -10,6 +10,7 @@ const ImageUpload = ({
   currentImage,
   acceptedFormats = 'SVG,PNG, JPG, GIF up to 2MB',
   helperText = 'Your image will be resized to 800x600px.',
+  placeHolder = 'Upload Brand Logo',
   ...props
 }) => {
   const [imagePreview, setImagePreview] = useState(null);
@@ -87,7 +88,7 @@ const ImageUpload = ({
           <div className="flex flex-col items-center text-gray-600">
             {/* <UploadCloud className="w-12 h-12 text-gray-400 mb-4" /> */}
             <img src="/material-symbols_image-outline-rounded.svg" alt="Upload Icon" className="w-15 h-15 text-gray-400 mb-2" />
-            <p className="font-semibold text-[#4A4A4A] mb-1">Upload Brand Logo</p>
+            <p className="font-semibold text-[#4A4A4A] mb-1">{placeHolder}</p>
             <p className="text-[12px] text-[#939393]">Drop an image here or click to upload</p>
             {helperText && <p className="text-[10px] text-[#939393] mt-2">PNG,JPG,webP - Max 2MB - Automatically Optimized</p>}
           </div>

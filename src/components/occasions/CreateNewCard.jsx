@@ -160,6 +160,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
                 label="Card Design Image"
                 onFileChange={handleFileSelect}
                 currentImage={formData.imageUrl instanceof File ? URL.createObjectURL(formData.imageUrl) : formData.imageUrl}
+                placeHolder="Upload Card Design Image"
               />
 
               <EmojiPicker
@@ -375,6 +376,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
               <ImageUpload
                 onFileChange={handleFileSelect}
                 currentImage={formData.imageUrl}
+                placeHolder="Upload Card Design Image"
               />
             </div>
 

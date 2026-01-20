@@ -145,6 +145,7 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
                       ? URL.createObjectURL(formData.image)
                       : formData.image
                   }
+                  placeHolder="Upload Occasion Image"
                 />
               </div>
             </div>
