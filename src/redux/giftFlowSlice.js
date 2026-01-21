@@ -35,6 +35,7 @@ const giftFlowSlice = createSlice({
     sortBy: "featured",
     favorites: [],
     categories: ["All Categories"],
+    hasChanges: false,
 
     // Data states
     premiumBrands: [],
@@ -67,6 +68,9 @@ const giftFlowSlice = createSlice({
 
     setCurrentStep: (state, action) => {
       state.currentStep = action.payload;
+    },
+    setHasChanges: (state, action) => {
+      state.hasChanges = action.payload;
     },
 
     goBack: (state) => {
@@ -476,6 +480,7 @@ export const {
   setSelectedSubCategory,
   setSearchTerm,
   setSelectedCategory,
+  setHasChanges,
   setSortBy,
   setCurrentPage,
   setCategories,

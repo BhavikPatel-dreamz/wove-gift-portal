@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { getBulkOrderDetails } from "@/lib/action/voucherAction";
-import { Eye, Download, RefreshCw, Package, X, Search } from "lucide-react";
+import { getBulkOrderDetails, getBrandsForFilter } from "@/lib/action/voucherAction";
+import { Eye, Download, RefreshCw, Package, X, Search, Calendar } from "lucide-react";
 import toast from "react-hot-toast";
 import DynamicTable from "@/components/forms/DynamicTable";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -11,29 +11,26 @@ import VoucherDetails from "@/components/vouchers/VoucherDetails";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { currencyList } from "../brandsPartner/currency";
 
-export default function VouchersClient({ initialVouchers, initialPagination, user }) {
+export default function VouchersClient({ initialVouchers, initialPagination, user, initialBrands = [] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  // The component now receives all its data via props.
-  // The 'vouchers' and 'pagination' states are derived directly from props.
   const vouchers = initialVouchers;
   const pagination = initialPagination;
-
-  console.log("vouchers", vouchers);
-
+  const [brands, setBrands] = useState(initialBrands);
 
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState(null);
+
+  console.log(vouchers);
 
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBulkOrder, setSelectedBulkOrder] = useState(null);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
-  // Bulk modal state
   const [bulkData, setBulkData] = useState(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkPagination, setBulkPagination] = useState({
@@ -49,10 +46,20 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
     status: "",
   });
 
+  // Load brands on component mount if not provided
+  useEffect(() => {
+    if (initialBrands.length === 0) {
+      getBrandsForFilter().then(result => {
+        if (result.success) {
+          setBrands(result.data);
+        }
+      });
+    }
+  }, []);
+
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "";
 
-  // Handlers now update the URL search parameters
   const handleUpdateParams = (updates) => {
     const params = new URLSearchParams(searchParams);
     Object.entries(updates).forEach(([key, value]) => {
@@ -107,11 +114,13 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
       setBulkLoading(false);
     }
   };
+
   useEffect(() => {
     if (selectedBulkOrder && isBulkModalOpen) {
       fetchBulkOrderDetails(selectedBulkOrder.bulkOrderNumber, selectedBulkOrder.orderNumber);
     }
   }, [selectedBulkOrder, bulkPagination.currentPage, bulkFilters]);
+
   const handleViewVoucher = (voucher, fromBulkOrder = false) => {
     setSelectedVoucher(voucher);
     setIsModalOpen(true);
@@ -137,6 +146,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
     setBulkPagination({ currentPage: 1, totalPages: 1, totalCount: 0, from: 0, to: 0, total: 0 });
     setBulkFilters({ search: "", status: "" });
   };
+
   const handleBulkSearch = (search) => {
     setBulkFilters((prev) => ({ ...prev, search }));
     setBulkPagination((prev) => ({ ...prev, currentPage: 1 }));
@@ -166,7 +176,6 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
       if (response.ok && result.success) {
         toast.success("Shopify data sync initiated. Data will be updated shortly.", { id: toastId });
         setTimeout(() => {
-          // Refetch by reloading the page with current params
           router.refresh();
         }, 5000);
       } else {
@@ -195,7 +204,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
     return (
       <div className="flex flex-col gap-1">
         <span className={`inline-flex items-center text-center px-2 justify-center py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}>
-          {status}
+          {status === "Active" ? "Issued" : status}
         </span>
         {statusBreakdown && (
           <div className="text-xs text-center text-gray-500">
@@ -284,14 +293,12 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
         return <StatusBadge status={info.getValue()} statusBreakdown={row.statusBreakdown} />;
       },
     }),
-    // Option 1: Use a consistent format string
-    columnHelper.accessor("lastRedemptionDate", {
-      header: "Last Redemption Date",
+    columnHelper.accessor("createdAt", {
+      header: "Issued Date",
       cell: (info) => {
         if (!info.getValue()) return <div className="text-gray-700">-</div>;
 
         const date = new Date(info.getValue());
-        // Format as YYYY-MM-DD or DD/MM/YYYY consistently
         const formatted = date.toLocaleDateString('en-GB', {
           day: '2-digit',
           month: '2-digit',
@@ -308,7 +315,16 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
     }),
   ];
 
-  console.log("vouchers", vouchers);
+  // Get current filter values from URL
+  const currentBrandId = searchParams.get('brandId') || '';
+  const currentDateFrom = searchParams.get('dateFrom') || '';
+  const currentDateTo = searchParams.get('dateTo') || '';
+
+  // Prepare brand options for dropdown
+  const brandOptions = brands.map(brand => ({
+    value: brand.id,
+    label: brand.brandName
+  }));
 
   return (
     <div className="max-w-[100%] mx-auto">
@@ -327,12 +343,31 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
           {
             name: "status",
             placeholder: "All Statuses",
+            value: searchParams.get('status') || '',
             options: [
-              { value: "Active", label: "Active" },
+              { value: "Active", label: "Issued" },
               { value: "Redeemed", label: "Redeemed" },
               { value: "Expired", label: "Expired" },
               { value: "Inactive", label: "Inactive" },
             ],
+          },
+          {
+            name: "brandId",
+            placeholder: "All Brands",
+            value: currentBrandId,
+            options: brandOptions,
+          },
+          {
+            name: "dateFrom",
+            type: "date",
+            placeholder: "From Date",
+            value: currentDateFrom,
+          },
+          {
+            name: "dateTo",
+            type: "date",
+            placeholder: "To Date",
+            value: currentDateTo,
           },
         ]}
         actions={[
@@ -350,6 +385,8 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
         ]}
         emptyMessage={error || "No vouchers found. Try adjusting your filters."}
       />
+
+      {/* Voucher Details Modal */}
       {isModalOpen && selectedVoucher && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
@@ -370,7 +407,6 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
       {isBulkModalOpen && selectedBulkOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -386,7 +422,6 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
               </button>
             </div>
 
-            {/* Summary Cards */}
             <div className="p-6 border-b border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
@@ -407,7 +442,6 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                 </div>
               </div>
 
-              {/* Status Breakdown */}
               {bulkData?.statusBreakdown && (
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Status Breakdown</h3>
@@ -429,9 +463,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
               )}
             </div>
 
-            {/* Scrollable Voucher List */}
             <div className="flex-1 overflow-y-auto p-6">
-              {/* Search & Filter Controls */}
               <div className="flex flex-wrap gap-3 mb-5 items-center">
                 <div className="relative w-full md:w-1/3 text-black">
                   <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
@@ -463,7 +495,6 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                 )}
               </div>
 
-              {/* Loading State */}
               {bulkLoading && (
                 <div className="text-center py-10">
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600" />
@@ -471,7 +502,6 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                 </div>
               )}
 
-              {/* Voucher List */}
               {!bulkLoading && (
                 <div className="space-y-3">
                   {bulkData?.children && bulkData.children.length > 0 ? (
@@ -523,7 +553,6 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                 </div>
               )}
 
-              {/* Pagination */}
               {!bulkLoading && bulkPagination.totalPages > 1 && (
                 <div className="flex justify-between items-center mt-6 pt-4 border-t">
                   <div className="text-sm text-gray-600">

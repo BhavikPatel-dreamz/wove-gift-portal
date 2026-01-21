@@ -7,6 +7,8 @@ import { Toaster } from "react-hot-toast";
 import { useSearchParams } from 'next/navigation';
 import ShopAdminHeader from "../../components/layout/ShopAdminHeader";
 import { useSession } from '@/contexts/SessionContext';
+import { Provider } from 'react-redux';
+import store from '@/redux/store';
 
 const AppLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,6 +17,7 @@ const AppLayout = ({ children }) => {
   const session = useSession();
 
   return (
+    <Provider store={store}>
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
       <div
@@ -66,6 +69,7 @@ const AppLayout = ({ children }) => {
         />
       </div>
     </div>
+    </Provider>
   );
 };
 

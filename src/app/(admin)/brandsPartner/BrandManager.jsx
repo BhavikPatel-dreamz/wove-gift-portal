@@ -399,7 +399,7 @@ const BrandManager = ({
                   {statistics.active}
                 </div>
 
-                <div className="font-poppins text-base font-medium leading-[20px] text-[#00813B]">
+                <div className="font-poppins text-base font-medium leading-[20px] text-[#00813B] mt-2">
                   Active Brands
                 </div>
               </div>
@@ -444,7 +444,7 @@ const BrandManager = ({
                   {statistics.featured}
                 </div>
 
-                <div className="font-poppins text-base font-medium leading-[20px] text-[#A55E00]">
+                <div className="font-poppins text-base font-medium leading-[20px] text-[#A55E00] mt-2">
                   Featured
                 </div>
               </div>
@@ -482,7 +482,7 @@ const BrandManager = ({
                   {statistics.total}
                 </div>
 
-                <div className="font-poppins text-base font-medium leading-[20px] text-[#0D4FE1]">
+                <div className="font-poppins text-base font-medium leading-[20px] text-[#0D4FE1] mt-2">
                   Total Brands
                 </div>
               </div>
@@ -516,7 +516,7 @@ const BrandManager = ({
                   {statistics.activeRate}%
                 </div>
 
-                <div className="font-poppins text-base font-medium leading-[20px] text-[#801CD6]">
+                <div className="font-poppins text-base font-medium leading-[20px] text-[#801CD6] mt-2">
                   Active Rate
                 </div>
               </div>
@@ -563,7 +563,7 @@ const BrandManager = ({
               value={filters.category}
               onChange={(value) => handleFilterChange("category", value)}
               options={[
-                { value: "All Brands", label: "All Brands" },
+                { value: "All Brands", label: "All Categories" },
                 ...Categories.map((c) => ({ value: c, label: c })),
               ]}
               placeholder="Select Category"
@@ -577,7 +577,6 @@ const BrandManager = ({
                 handleFilterChange("isActive", value || null)
               }
               options={[
-                { value: "", label: "All Status" },
                 { value: "true", label: "Active Only" },
                 { value: "false", label: "Inactive Only" },
               ]}
@@ -698,7 +697,7 @@ const BrandManager = ({
           {/* Title + count */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
             <h2 className="text-lg sm:text-xl font-semibold text-[#1A1A1A]">
-             Brands List
+              Brands List
             </h2>
             <span className="bg-[rgba(15,100,246,0.10)] text-[#0F64F6] px-2 py-0.5 sm:py-1 rounded-[3px] border border-[rgba(15,100,246,0.20)] text-xs sm:text-sm font-medium">
               {pagination.totalItems} Brands
@@ -840,9 +839,7 @@ const BrandManager = ({
                       <button
                         onClick={() => redirectToSettlement(brand.id)}
                         disabled={actionLoading}
-                        title={
-                          brand.isFeature ? "Unfeature Brand" : "Feature Brand"
-                        }
+                        title={"Show brand settlement"}
                         className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 bg-[#E5E5E5] text-[#4A4A4A] hover:bg-orange-200`}
                       >
                         <svg
@@ -865,8 +862,8 @@ const BrandManager = ({
                           brand.isFeature ? "Unfeature Brand" : "Feature Brand"
                         }
                         className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${brand.isFeature
-                            ? "text-orange-500 bg-orange-100 hover:bg-orange-200"
-                            : "text-gray-400 hover:bg-gray-100 hover:text-orange-500"
+                          ? "text-orange-500 bg-orange-100 hover:bg-orange-200"
+                          : "text-gray-400 hover:bg-gray-100 hover:text-orange-500"
                           }`}
                       >
                         <Star
@@ -881,8 +878,8 @@ const BrandManager = ({
                           brand.isActive ? "Deactivate Brand" : "Activate Brand"
                         }
                         className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${brand.isActive
-                            ? "text-green-500 bg-green-100 hover:bg-green-200"
-                            : "text-gray-400 hover:bg-gray-100 hover:text-green-500"
+                          ? "text-green-500 bg-green-100 hover:bg-green-200"
+                          : "text-gray-400 hover:bg-gray-100 hover:text-green-500"
                           }`}
                       >
                         <Power size={16} />

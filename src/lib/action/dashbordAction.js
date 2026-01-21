@@ -110,7 +110,7 @@ export async function getDashboardData(options = {}) {
       getSettlementMetrics(dateRange, brandId),
       getMonthlyTransactionTrends(dateRange, brandId),
       getTopPerformingBrands(dateRange, brandId),
-      getWeeklyPerformance(brandId),
+      getWeeklyPerformance(dateRange, brandId),
       getActiveBrandPartners(brandId),
       getRevenueMetrics(dateRange, brandId),
       getCustomerMetrics(dateRange, brandId),
@@ -153,6 +153,7 @@ export async function getDashboardData(options = {}) {
 
 // ==================== HELPER FUNCTIONS ====================
 
+// FIXED getDateRange function
 function getDateRange(period, startDate, endDate) {
   const now = new Date();
   let start, end;
@@ -160,22 +161,48 @@ function getDateRange(period, startDate, endDate) {
   if (startDate && endDate) {
     start = new Date(startDate);
     end = new Date(endDate);
+    end.setHours(23, 59, 59, 999); // Include full end date
   } else {
     switch (period) {
+      case "day":
+        // TODAY - from start of today to end of today
+        start = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case "week":
+        // THIS WEEK - from start of week (Sunday/Monday) to today
+        start = new Date(now);
+        start.setDate(now.getDate() - now.getDay()); // Sunday as start
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
       case "month":
+        // THIS MONTH - from 1st of month to today
         start = new Date(now.getFullYear(), now.getMonth(), 1);
-        end = now;
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
         break;
       case "quarter":
+        // THIS QUARTER - from start of quarter to today
         const quarter = Math.floor(now.getMonth() / 3);
         start = new Date(now.getFullYear(), quarter * 3, 1);
-        end = now;
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
         break;
       case "year":
+        // THIS YEAR - from Jan 1 to today
         start = new Date(now.getFullYear(), 0, 1);
-        end = now;
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
         break;
       default:
+        // ALL TIME - no date filter
         start = null;
         end = null;
     }
@@ -405,7 +432,7 @@ async function getRedemptionMetrics(dateRange, brandId = null) {
   const dailyParams = brandId ? [brandId] : [];
   let paramIndex = dailyParams.length;
   
-  if (dateRange.start) {
+if (dateRange.start) {
     dailyQuery += ` AND ${brandId ? 'vc.' : ''}"redeemedAt" >= $${paramIndex + 1}::timestamp`;
     dailyParams.push(dateRange.start);
     paramIndex++;
@@ -713,7 +740,21 @@ async function getTopPerformingBrands(dateRange, brandId = null, limit = 10) {
 }
 
 // Weekly Performance
-async function getWeeklyPerformance(brandId = null) {
+async function getWeeklyPerformance(dateRange, brandId = null) {
+  let { start, end } = dateRange;
+
+  if (!start || !end) {
+    // If no date range, default to the last 7 days for backward compatibility or specific design.
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    today.setHours(23, 59, 59, 999);
+    
+    start = sevenDaysAgo;
+    end = today;
+  }
+
   const weeklyData = brandId
     ? await prisma.$queryRaw`
       SELECT
@@ -725,8 +766,8 @@ async function getWeeklyPerformance(brandId = null) {
         COALESCE(AVG(o."totalAmount"), 0)::float as "avgOrderValue"
       FROM (
         SELECT generate_series(
-          (CURRENT_DATE - interval '6 days'),
-          CURRENT_DATE,
+          ${start}::date,
+          ${end}::date,
           '1 day'
         )::date AS day
       ) AS date_series
@@ -747,8 +788,8 @@ async function getWeeklyPerformance(brandId = null) {
         COALESCE(AVG(o."totalAmount"), 0)::float as "avgOrderValue"
       FROM (
         SELECT generate_series(
-          (CURRENT_DATE - interval '6 days'),
-          CURRENT_DATE,
+          ${start}::date,
+          ${end}::date,
           '1 day'
         )::date AS day
       ) AS date_series
@@ -758,44 +799,45 @@ async function getWeeklyPerformance(brandId = null) {
       GROUP BY date_series.day
       ORDER BY date_series.day ASC
     `;
-  // ✅ FIXED: Added paymentStatus = 'COMPLETED' to both queries
 
-  // Calculate week-over-week comparison
+  // Calculate summary for the week-over-week comparison
   const currentWeekTotal = weeklyData.reduce(
     (sum, day) => sum + Number(day.totalAmount),
     0
   );
 
+  // For week-over-week, we need the previous week's data
+  const previousWeekStart = new Date(start);
+  previousWeekStart.setDate(start.getDate() - 7);
+  const previousWeekEnd = new Date(end);
+  previousWeekEnd.setDate(end.getDate() - 7);
+
   const previousWeekData = brandId
     ? await prisma.$queryRaw`
-      SELECT COALESCE(SUM("totalAmount"), 0)::float as total
-      FROM "Order"
-      WHERE "createdAt" >= CURRENT_DATE - interval '13 days'
-        AND "createdAt" < CURRENT_DATE - interval '6 days'
-        AND "brandId" = ${brandId}
-        AND "paymentStatus" = 'COMPLETED'
-    `
+        SELECT COALESCE(SUM("totalAmount"), 0)::float as "total"
+        FROM "Order"
+        WHERE "createdAt" >= ${previousWeekStart} AND "createdAt" <= ${previousWeekEnd}
+          AND "brandId" = ${brandId}
+          AND "paymentStatus" = 'COMPLETED'
+      `
     : await prisma.$queryRaw`
-      SELECT COALESCE(SUM("totalAmount"), 0)::float as total
-      FROM "Order"
-      WHERE "createdAt" >= CURRENT_DATE - interval '13 days'
-        AND "createdAt" < CURRENT_DATE - interval '6 days'
-        AND "paymentStatus" = 'COMPLETED'
-    `;
-  // ✅ FIXED: Added paymentStatus = 'COMPLETED' to both queries
+        SELECT COALESCE(SUM("totalAmount"), 0)::float as "total"
+        FROM "Order"
+        WHERE "createdAt" >= ${previousWeekStart} AND "createdAt" <= ${previousWeekEnd}
+          AND "paymentStatus" = 'COMPLETED'
+      `;
 
-  const previousWeekTotal = Number(previousWeekData[0]?.total || 0);
-  const weekOverWeekGrowth = calculateGrowthRate(
-    currentWeekTotal,
-    previousWeekTotal
-  );
+  const previousWeekTotal = previousWeekData[0]?.total || 0;
 
   return {
     daily: weeklyData,
     summary: {
       currentWeekTotal,
       previousWeekTotal,
-      weekOverWeekGrowth,
+      weekOverWeekGrowth: calculateGrowthRate(
+        currentWeekTotal,
+        previousWeekTotal
+      ),
     },
   };
 }
@@ -1005,6 +1047,101 @@ async function getCustomerMetrics(dateRange, brandId = null) {
 
 // Occasion Metrics
 async function getOccasionMetrics(dateRange, brandId = null) {
+function getDateRange(period, startDate, endDate) {
+  const now = new Date();
+  let start, end;
+
+  if (startDate && endDate) {
+    start = new Date(startDate);
+    end = new Date(endDate);
+  } else {
+    switch (period) {
+      case "day":
+        start = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case "week":
+        start = new Date(now);
+        start.setDate(now.getDate() - now.getDay()); // Assuming week starts on Sunday
+        start.setHours(0, 0, 0, 0);
+        end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case "month":
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case "quarter":
+        const quarter = Math.floor(now.getMonth() / 3);
+        start = new Date(now.getFullYear(), quarter * 3, 1);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case "year":
+        start = new Date(now.getFullYear(), 0, 1);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
+      default:
+        start = null;
+        end = null;
+    }
+  }
+
+  return { start, end };
+}
+
+async function getGiftCardsMetrics(dateRange, brandId = null) {
+  const dateFilter = buildDateFilter(dateRange);
+
+  const whereClause = {
+    order: {
+      ...dateFilter,
+      paymentStatus: "COMPLETED", // Only paid orders
+      ...(brandId ? { brandId } : {}),
+    },
+  };
+
+  const voucherCodes = await prisma.voucherCode.findMany({
+    where: whereClause,
+  });
+
+  return {
+    total: totalCustomers,
+    active: activeCustomers,
+    new: newCustomers,
+    repeat: Number(repeatCustomers[0]?.count || 0),
+    repeatRate: parseFloat(repeatRate),
+  };
+}
+
+async function getRedemptionMetrics(dateRange, brandId = null) {
+  const dateFilter = buildDateFilter(dateRange);
+
+  const whereClause = {
+    order: {
+      ...dateFilter,
+      paymentStatus: "COMPLETED", // Only paid orders
+      ...(brandId ? { brandId } : {}),
+    },
+  };
+
+  const voucherCodes = await prisma.voucherCode.findMany({
+    where: whereClause,
+  });
+
+  return {
+    total: totalCustomers,
+    active: activeCustomers,
+    new: newCustomers,
+    repeat: Number(repeatCustomers[0]?.count || 0),
+    repeatRate: parseFloat(repeatRate),
+  };
+}
   const dateFilter = buildDateFilter(dateRange);
   const whereFilter = {
     ...dateFilter,

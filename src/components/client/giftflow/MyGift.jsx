@@ -5,6 +5,7 @@ import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { getGiftCards } from '../../../lib/action/customerDashbordAction';
 import GiftCardDetailModal from './GiftCardDetailModal';
+import { useSession } from '@/contexts/SessionContext';
 
 function MyGift() {
   const [activeTab, setActiveTab] = useState('all');
@@ -29,8 +30,10 @@ function MyGift() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const datePickerRef = useRef(null);
+  const session = useSession();
 
-  console.log("giftCards", giftCards);
+
+  console.log("giftCards", giftCards, session);
 
 
   const tabs = [
@@ -62,7 +65,8 @@ function MyGift() {
         page: currentPage,
         pageSize: 6,
         startDate: startDate ? startDate.toISOString() : null,
-        endDate: endDate ? endDate.toISOString() : null
+        endDate: endDate ? endDate.toISOString() : null,
+        userEmail: session?.user?.email
       };
 
       const result = await getGiftCards(filters);
@@ -228,6 +232,20 @@ function MyGift() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleRedeem = (card) => {
+    if (!card.brandDomain) {
+      alert('Brand domain not available for this card.');
+      return;
+    }
+
+    const domain = card.brandDomain.startsWith('http://') || card.brandDomain.startsWith('https://')
+      ? card.brandDomain
+      : `https://${card.brandDomain}`;
+
+    window.open(`${domain}`, '_blank');
+  };
+
 
   return (
     <div className="min-h-screen py-8 sm:py-30 px-4">
@@ -406,9 +424,12 @@ function MyGift() {
                         </div>
                       </div>
                     </div>
-                    <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(card.status)} whitespace-nowrap`}>
-                      {card.status}
-                    </span>
+
+                    {card?.receiverEmail == session?.user?.email && (
+                      <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(card.status)} whitespace-nowrap`}>
+                        {card.status}
+                      </span>
+                    )}
                   </div>
 
                   {/* Receiver/Sender Info */}
@@ -438,75 +459,78 @@ function MyGift() {
                         {card.currencySymbol}{card.totalAmount.toFixed(2)}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] sm:text-xs text-gray-500 mb-1">REMAINING</p>
-                      <p className="text-base sm:text-lg font-bold text-red-500">
-                        {card.currencySymbol}{card.remaining.toFixed(2)}
-                      </p>
-                    </div>
+                    {card?.receiverEmail == session?.user?.email && (
+                      <div className="text-right">
+                        <p className="text-[10px] sm:text-xs text-gray-500 mb-1">REMAINING</p>
+                        <p className="text-base sm:text-lg font-bold text-red-500">
+                          {card.currencySymbol}{card.remaining.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="mb-4">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-gradient-to-r from-red-400 to-red-500 h-2 rounded-full transition-all"
-                        style={{ width: `${card.spent}%` }}
-                      ></div>
-                    </div>
-                    <p className="mt-1 font-normal text-[#75738C] text-[10px] leading-[15px] font-[Arial]">
-                      {card.spent}% spent
-                    </p>
-
-                  </div>
-
-                  {/* Labels */}
-                  <div className="flex justify-between mb-1 border-b border-[#F3F4F6] pb-2 mb-3">
+                  {card?.receiverEmail == session?.user?.email && (
                     <div>
-                      <div className='flex gap-2 items-center'>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M5.33301 0.833374V3.50004" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M10.667 0.833374V3.50004" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M12.6667 2.16663H3.33333C2.59695 2.16663 2 2.76358 2 3.49996V12.8333C2 13.5697 2.59695 14.1666 3.33333 14.1666H12.6667C13.403 14.1666 14 13.5697 14 12.8333V3.49996C14 2.76358 13.403 2.16663 12.6667 2.16663Z" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M2 6.16663H14" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                      <div className="mb-4">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-gradient-to-r from-red-400 to-red-500 h-2 rounded-full transition-all"
+                            style={{ width: `${card.spent}%` }}
+                          ></div>
+                        </div>
+                        <p className="mt-1 font-normal text-[#75738C] text-[10px] leading-[15px] font-[Arial]">
+                          {card.spent}% spent
+                        </p>
+                      </div>
+
+                      {/* Labels */}
+                      <div className="flex justify-between mb-1 border-b border-[#F3F4F6] pb-2 mb-3">
                         <div>
-                          <div className="font-normal text-[#75738C] text-[12px] leading-[13.5px] tracking-[0.225px] uppercase font-[Arial]">
-                            Last Redemption
+                          <div className='flex gap-2 items-center'>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <path d="M5.33301 0.833374V3.50004" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M10.667 0.833374V3.50004" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M12.6667 2.16663H3.33333C2.59695 2.16663 2 2.76358 2 3.49996V12.8333C2 13.5697 2.59695 14.1666 3.33333 14.1666H12.6667C13.403 14.1666 14 13.5697 14 12.8333V3.49996C14 2.76358 13.403 2.16663 12.6667 2.16663Z" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M2 6.16663H14" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <div>
+                              <div className="font-normal text-[#75738C] text-[12px] leading-[13.5px] tracking-[0.225px] uppercase font-[Arial]">
+                                Last Redemption
+                              </div>
+                              <div className="text-[12px] leading-[16px] text-[#2F2E38] font-medium mt-1">
+                                {card.purchaseDate || "N/A"}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-[12px] leading-[16px] text-[#2F2E38] font-medium mt-1">
-                            {card.purchaseDate || "N/A"}
+                        </div>
+
+                        <div>
+                          <div className="text-right font-normal text-[#75738C] text-[12px] leading-[13.5px] tracking-[0.225px] uppercase font-[Arial]">
+                            Expires
+                          </div>
+                          <div className="text-[12px] leading-[16px] text-[#FF6B00] font-medium mt-1">
+                            {card.expires || "No Expiry"}
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <div className="text-right font-normal text-[#75738C] text-[12px] leading-[13.5px] tracking-[0.225px] uppercase font-[Arial]">
-                        Expires
+                      <div className="flex gap-2 sm:gap-3">
+                        <button
+                          onClick={() => handleViewDetails(card)}
+                          className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors">
+                          <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
+                          <span className="text-xs sm:text-sm font-medium text-[#4A5565]">View Details</span>
+                        </button>
+                        {card.status !== 'EXPIRED' && card.status !== 'CLAIMED' && card.isReceived && (
+                          <button onClick={() => handleRedeem(card)} className="flex-1 py-2 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:shadow-lg transition-all">
+                            <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <span className="text-xs sm:text-sm font-medium">Redeem</span>
+                          </button>
+                        )}
                       </div>
-                      <div className="text-[12px] leading-[16px] text-[#FF6B00] font-medium mt-1">
-                        {card.expires || "No Expiry"}
-                      </div>
                     </div>
-                  </div>
+                  )}
 
-
-
-
-                  <div className="flex gap-2 sm:gap-3">
-                    <button
-                      onClick={() => handleViewDetails(card)}
-                      className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors">
-                      <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
-                      <span className="text-xs sm:text-sm font-medium text-[#4A5565]">View Details</span>
-                    </button>
-                    {card.status !== 'EXPIRED' && card.status !== 'CLAIMED' && card.isReceived && (
-                      <button className="flex-1 py-2 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:shadow-lg transition-all">
-                        <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
-                        <span className="text-xs sm:text-sm font-medium">Redeem</span>
-                      </button>
-                    )}
-                  </div>
                 </div>
               ))}
             </div>

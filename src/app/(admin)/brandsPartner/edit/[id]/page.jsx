@@ -4,6 +4,8 @@ import { useRouter, useParams, useSearchParams, usePathname } from 'next/navigat
 import { ChevronLeft, Save, X, Loader, AlertTriangle, CheckCircle } from 'lucide-react';
 import { getBrandPartnerDetails, updateBrandPartner } from '../../../../../lib/action/brandPartner';
 import { toast } from 'react-hot-toast';
+import { useDispatch } from 'react-redux';
+import { setHasChanges } from '../../../../../redux/giftFlowSlice';
 
 // Import the tab components from your brand partner structure
 import CoreTab from '@/components/brandsPartner/CoreTab';
@@ -13,10 +15,12 @@ import IntegrationsTab from '@/components/brandsPartner/IntegrationsTab';
 import BankingTab from '@/components/brandsPartner/BankingTab';
 import ContactsTab from '@/components/brandsPartner/ContactsTab';
 import ReviewTab from '@/components/brandsPartner/ReviewTab';
+import { useSelector } from 'react-redux';
 
 const BrandEdit = () => {
   const router = useRouter();
   const params = useParams();
+  const dispatch = useDispatch();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const brandId = params?.id;
@@ -27,7 +31,7 @@ const BrandEdit = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
-  const [hasChanges, setHasChanges] = useState(false);
+  const { hasChanges } = useSelector(state => state.giftFlowReducer);
 
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab') || 'core';
@@ -154,7 +158,7 @@ const BrandEdit = () => {
   // Check for changes
   useEffect(() => {
     const hasChanged = JSON.stringify(formData) !== JSON.stringify(originalData);
-    setHasChanges(hasChanged);
+    dispatch(setHasChanges(hasChanged));
   }, [formData, originalData]);
 
   const loadBrandData = async () => {
@@ -477,7 +481,7 @@ minAmount: brand.vouchers?.[0]?.minAmount || 0,
       if (result.success) {
         toast.success('Brand updated successfully');
         setOriginalData(JSON.parse(JSON.stringify(formData)));
-        setHasChanges(false);
+        dispatch(setHasChanges(false));
         // Optionally redirect back to brands list
         router.push('/brandsPartner');
       } else {
@@ -499,6 +503,7 @@ minAmount: brand.vouchers?.[0]?.minAmount || 0,
   const handleCancel = () => {
     if (hasChanges) {
       if (confirm('You have unsaved changes. Are you sure you want to leave?')) {
+        dispatch(setHasChanges(false));
         router.push('/brandsPartner');
       }
     } else {

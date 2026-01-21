@@ -339,7 +339,7 @@ const CoreTab = ({ formData, updateFormData }) => {
               </p>
             </div>
           </label>
-          <label className="flex items-start cursor-pointer">
+          {/* <label className="flex items-start cursor-pointer">
             <input
               type="checkbox"
               className="rounded border-gray-300 mr-3 mt-1 focus:ring-2 focus:ring-blue-500"
@@ -352,7 +352,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                 Display prominently in featured brand sections and homepage
               </p>
             </div>
-          </label>
+          </label> */}
         </div>
       </div>
 

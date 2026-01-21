@@ -37,15 +37,19 @@ const BankingTab = ({ formData, updateFormData }) => {
             <label className="block font-inter text-[14px] font-semibold leading-none capitalize text-[#4A4A4A] mb-2">
               Settlement Frequency *
             </label>
+
             <select
-             className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled
+              className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 
+      text-[#4A4A4A] bg-gray-100 cursor-not-allowed opacity-70 
+      focus:outline-none"
               value={formData.settlementFrequency || 'monthly'}
               onChange={(e) => updateFormData('settlementFrequency', e.target.value)}
             >
               <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
             </select>
           </div>
+
 
           {formData.settlementFrequency === 'monthly' && (
             <div>
@@ -53,7 +57,7 @@ const BankingTab = ({ formData, updateFormData }) => {
                 Day of Month *
               </label>
               <select
-               className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={formData.dayOfMonth || 1}
                 onChange={(e) => updateFormData('dayOfMonth', parseInt(e.target.value))}
                 disabled={formData.settlementFrequency !== 'monthly'}
@@ -73,7 +77,7 @@ const BankingTab = ({ formData, updateFormData }) => {
               Payout Method *
             </label>
             <select
-             className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={formData.payoutMethod || 'EFT'}
               onChange={(e) => updateFormData('payoutMethod', e.target.value)}
             >
@@ -104,13 +108,13 @@ const BankingTab = ({ formData, updateFormData }) => {
           </div>
         </div>
 
-        <div className="mt-6">
+        {/* <div className="mt-6">
           <label className="block font-inter text-[14px] font-semibold leading-none capitalize text-[#4A4A4A] mb-2">
             Remittance Email
           </label>
           <input
             type="email"
-           className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="jucyquzeco@mailinator.com"
             value={formData.remittanceEmail || ''}
             onChange={(e) => updateFormData('remittanceEmail', e.target.value)}
@@ -118,7 +122,7 @@ const BankingTab = ({ formData, updateFormData }) => {
           <p className="font-inter text-[12px] font-medium leading-5 text-[#A5A5A5] mt-1">
             Settlement notifications and remittances will be sent here
           </p>
-        </div>
+        </div> */}
       </div>
 
       {/* Banking Details */}
@@ -140,7 +144,7 @@ const BankingTab = ({ formData, updateFormData }) => {
             <label className="block font-inter text-[14px] font-semibold leading-none capitalize text-[#4A4A4A] mb-2">Account Holder *</label>
             <input
               type="text"
-             className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Account holder name"
               value={formData.accountHolder || ''}
               onChange={(e) => updateFormData('accountHolder', e.target.value)}
@@ -151,7 +155,7 @@ const BankingTab = ({ formData, updateFormData }) => {
             <label className="block font-inter text-[14px] font-semibold leading-none capitalize text-[#4A4A4A] mb-2">Bank Name *</label>
             <input
               type="text"
-             className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Bank name"
               value={formData.bankName || ''}
               onChange={(e) => updateFormData('bankName', e.target.value)}
@@ -189,7 +193,7 @@ const BankingTab = ({ formData, updateFormData }) => {
             <label className="block font-inter text-[14px] font-semibold leading-none capitalize text-[#4A4A4A] mb-2">Branch Code *</label>
             <input
               type="text"
-             className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Branch code"
               value={formData.branchCode || ''}
               onChange={(e) => updateFormData('branchCode', e.target.value)}
@@ -226,7 +230,7 @@ const BankingTab = ({ formData, updateFormData }) => {
           <div>
             <label className="block font-inter text-[14px] font-semibold leading-none capitalize text-[#4A4A4A] mb-2">Country</label>
             <select
-             className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={formData.country || 'South Africa'}
               onChange={(e) => updateFormData('country', e.target.value)}
             >
@@ -313,8 +317,8 @@ const BankingTab = ({ formData, updateFormData }) => {
         </div>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h4 className="mb-2 font-inter text-[14px] font-semibold capitalize text-[#1F59EE]">Next Settlement</h4>
-         <p className="font-inter text-[10px] font-semibold leading-normal text-[#1F59EE]">
+          <h4 className="mb-2 font-inter text-[14px] font-semibold capitalize text-[#1F59EE]">Next Settlement</h4>
+          <p className="font-inter text-[10px] font-semibold leading-normal text-[#1F59EE]">
             Based on your current settings, the next settlement would be processed on{' '}
             <span className="font-medium">
               {formData.settlementFrequency === 'monthly'

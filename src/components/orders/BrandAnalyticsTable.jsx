@@ -9,7 +9,8 @@ import { processSettlement } from "@/lib/action/analytics";
 const BrandAnalyticsTable = ({
   initialBrands = [],
   initialSummary = {},
-  initialPeriod = 'year'
+  initialPeriod = 'year',
+  brandsList = []
 }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,14 +22,17 @@ const BrandAnalyticsTable = ({
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [isPartialPayment, setIsPartialPayment] = useState(false);
-  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
-  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const currentBrandId = searchParams.get('brandId') || '';
 
   useEffect(() => {
     setBrands(initialBrands);
   }, [initialBrands]);
 
-  console.log(initialBrands, "initialBrands");
+  // Prepare brand options
+  const brandOptions = brandsList.map(brand => ({
+    value: brand.id,
+    label: brand.brandName
+  }));
 
 
   const currentMonth = searchParams.get('filterMonth') || null;
@@ -70,6 +74,11 @@ const BrandAnalyticsTable = ({
     router.push(`?${params?.toString()}`);
   };
 
+
+  const handleBrandFilter = (value) => {
+    updateQueryParams('brandId', value);
+  };
+
   const handleSearchChange = (e) => {
     const value = e.target.value;
     updateQueryParams('search', value);
@@ -77,25 +86,11 @@ const BrandAnalyticsTable = ({
 
   const handleMonthChange = (monthValue) => {
     updateQueryParams('filterMonth', monthValue);
-    setShowMonthDropdown(false);
-  };
-
-  const handleYearChange = (yearValue) => {
-    updateQueryParams('filterYear', yearValue);
-    setShowYearDropdown(false);
-  };
-
-  const handleClearFilters = () => {
-    const params = new URLSearchParams(searchParams?.toString());
-    params.delete('filterMonth');
-    params.delete('filterYear');
-    params.delete('search');
-    router.push(`?${params?.toString()}`);
   };
 
 
   const handleProcessSettlement = async () => {
-      console.log(selectedBrand, "selectedBrand");
+    console.log(selectedBrand, "selectedBrand");
     if (!selectedBrand?.id) return;
 
     const amount = parseFloat(paymentAmount);
@@ -123,8 +118,8 @@ const BrandAnalyticsTable = ({
         setProcessMessage({
           type: "success",
           text: `Payment processed successfully! ${result.data.paymentReference
-              ? `Payment Reference: ${result.data.paymentReference}`
-              : ""
+            ? `Payment Reference: ${result.data.paymentReference}`
+            : ""
             }`,
         });
       } else {
@@ -212,6 +207,17 @@ const BrandAnalyticsTable = ({
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
             </div>
+
+            <div className="relative">
+              <CustomDropdown
+                options={brandOptions}
+                placeholder="All Brands"
+                value={currentBrandId}
+                onChange={handleBrandFilter}
+                className="w-full min-w-[160px]"
+              />
+            </div>
+
 
             {/* Month Dropdown */}
             <div className="relative w-full sm:w-auto">
@@ -502,7 +508,7 @@ const BrandAnalyticsTable = ({
             {!processMessage && (
               <div className="flex gap-3 px-6 py-4 bg-gray-50 rounded-b-2xl border-t border-gray-200">
                 <button
-                 onClick={closeModal}
+                  onClick={closeModal}
                   disabled={processing}
                   className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50"
                 >

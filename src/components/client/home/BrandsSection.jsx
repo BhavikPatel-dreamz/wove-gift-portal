@@ -1,122 +1,62 @@
 "use client"
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { getBrands } from '../../../lib/action/brandFetch';
 
 const FeaturedBrands = ({
-  brands = [],
   title = "Featured Brands You'll Love",
   subtitle = "Curated partners, ready for your next gift."
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
+  const [displayBrands, setDisplayBrands] = useState([]);
 
   useEffect(() => {
-    setIsVisible(true);
+    const fetchFeaturedBrands = async () => {
+      try {
+        const featuredBrands = await getBrands({ isFeature: true });
+        setDisplayBrands(featuredBrands || []);
+      } catch (error) {
+        console.error("Error fetching featured brands:", error);
+      }
+    };
+    fetchFeaturedBrands();
   }, []);
 
-  const mockBrands = [
-    {
-      id: "mock-1",
-      brandName: "Woolworths",
-      logo: "/brands/woolworths-seeklogo 1.svg",
-      slug: "woolworths",
-      isFeature: true
-    },
-    {
-      id: "mock-2",
-      brandName: "Pick n Pay",
-      logo: "/brands/picknpay.svg",
-      slug: "pick-n-pay",
-      isFeature: true
-    },
-    {
-      id: "mock-3",
-      brandName: "Checkers",
-      logo: "/brands/checkers.svg",
-      slug: "checkers",
-      isFeature: true
-    },
-    {
-      id: "mock-4",
-      brandName: "Makro",
-      logo: "/brands/marko.svg",
-      slug: "makro",
-      isFeature: true
-    },
-    {
-      id: "mock-5",
-      brandName: "Showmax",
-      logo: "/brands/showmax.svg",
-      slug: "showmax",
-      isFeature: true
-    },
-    {
-      id: "mock-6",
-      brandName: "Cotton On",
-      logo: "/brands/cottornon.svg",
-      slug: "cotton-on",
-      isFeature: true
-    },
-    {
-      id: "mock-7",
-      brandName: "Netflix",
-      logo: "/brands/Netflix.svg",
-      slug: "netflix",
-      isFeature: true
-    },
-    {
-      id: "mock-8",
-      brandName: "Woolworths",
-      logo: "/brands/woolworths-seeklogo 1.svg",
-      slug: "woolworths",
-      isFeature: true
-    },
-    {
-      id: "mock-9",
-      brandName: "Pick n Pay",
-      logo: "/brands/picknpay.svg",
-      slug: "pick-n-pay",
-      isFeature: true
-    },
-    {
-      id: "mock-10",
-      brandName: "Checkers",
-      logo: "/brands/checkers.svg",
-      slug: "checkers",
-      isFeature: true
-    },
-  ];
+  // Only show animation if we have enough brands (6+)
+  const shouldAnimate = displayBrands.length >= 6;
 
-  // const displayBrands = brands.length > 0 ? brands : [];
-  const displayBrands = mockBrands;
+  // For animation: duplicate brands multiple times for seamless loop
+  const getAnimatedBrands = (brands) => {
+    const duplications = Math.max(6, Math.ceil(12 / brands.length));
+    return Array(duplications).fill(brands).flat();
+  };
 
-
-  // Split brands into two rows and duplicate for seamless loop
+  // Split brands into two rows
   const halfLength = Math.ceil(displayBrands.length / 2);
   const firstRowBrands = displayBrands.slice(0, halfLength);
   const secondRowBrands = displayBrands.slice(halfLength);
 
-  const firstRow = [...firstRowBrands, ...firstRowBrands];
-  const secondRow = [...secondRowBrands, ...secondRowBrands];
+  const firstRow = shouldAnimate ? getAnimatedBrands(firstRowBrands) : firstRowBrands;
+  const secondRow = shouldAnimate ? getAnimatedBrands(secondRowBrands) : secondRowBrands;
 
   const BrandCard = ({ brand, index }) => (
     <div
       className="
-    bg-white
-    w-[213px]
-    h-[94px]
-    rounded-[20px]
-    p-8
-    flex
-    items-center
-    justify-center
-    cursor-pointer
-    flex-shrink-0
-    border
-    border-[rgba(0,36,2,0.15)]
-    transition-shadow
-    duration-300
-    hover:shadow-md
-  "
+        bg-white
+        w-[213px]
+        h-[94px]
+        rounded-[20px]
+        p-8
+        flex
+        items-center
+        justify-center
+        cursor-pointer
+        flex-shrink-0
+        border
+        border-[rgba(0,36,2,0.15)]
+        transition-shadow
+        duration-300
+        hover:shadow-md
+      "
     >
       <div className="flex items-center justify-center w-full h-full">
         {brand.logo ? (
@@ -134,6 +74,11 @@ const FeaturedBrands = ({
     </div>
   );
 
+  // If no brands, show nothing
+  if (displayBrands.length === 0) {
+    return null;
+  }
+
   return (
     <section className="py-[44px] bg-gradient-to-b from-[#FEF8F6] to-[#FDF7F8] overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
@@ -147,23 +92,37 @@ const FeaturedBrands = ({
           </p>
         </div>
 
-        {/* First Row - Continuous Scroll Left */}
-        {firstRow.length > 0 && (
-          <div className="mb-5 pause-on-hover">
-            <div className="flex gap-5 animate-scroll-left">
-              {firstRow.map((brand, index) => (
-                <BrandCard key={`row1-${brand.id}-${index}`} brand={brand} index={index} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Brand Display */}
+        {shouldAnimate ? (
+          <>
+            {/* First Row - Continuous Scroll Left */}
+            {firstRow.length > 0 && (
+              <div className="mb-5 pause-on-hover">
+                <div className="flex gap-5 animate-scroll-left">
+                  {firstRow.map((brand, index) => (
+                    <BrandCard key={`row1-${brand.id}-${index}`} brand={brand} index={index} />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Second Row - Continuous Scroll Right */}
-        {secondRow.length > 0 && (
-          <div className="mb-12 pause-on-hover">
-            <div className="flex gap-5 animate-scroll-right">
-              {secondRow.map((brand, index) => (
-                <BrandCard key={`row2-${brand.id}-${index}`} brand={brand} index={index} />
+            {/* Second Row - Continuous Scroll Right */}
+            {secondRow.length > 0 && (
+              <div className="mb-12 pause-on-hover">
+                <div className="flex gap-5 animate-scroll-right">
+                  {secondRow.map((brand, index) => (
+                    <BrandCard key={`row2-${brand.id}-${index}`} brand={brand} index={index} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Static centered grid for few brands */
+          <div className="mb-12">
+            <div className="flex flex-wrap justify-center gap-5 max-w-4xl mx-auto">
+              {displayBrands.map((brand, index) => (
+                <BrandCard key={`brand-${brand.id}-${index}`} brand={brand} index={index} />
               ))}
             </div>
           </div>
@@ -172,7 +131,7 @@ const FeaturedBrands = ({
         {/* CTA Button */}
         <div className="text-center">
           <Link href="/gift">
-            <button className="hero-cta">
+            <button className="px-8 py-3 bg-gradient-to-r from-[#FF6B9D] to-[#FFA06B] text-white rounded-full font-semibold hover:shadow-lg transition-all duration-300">
               See all Brands
               <span className='pl-2'>▸</span>
             </button>
@@ -200,11 +159,11 @@ const FeaturedBrands = ({
         }
 
         .animate-scroll-left {
-          animation: scroll-left 30s linear infinite;
+          animation: scroll-left 40s linear infinite;
         }
 
         .animate-scroll-right {
-          animation: scroll-right 30s linear infinite;
+          animation: scroll-right 40s linear infinite;
         }
 
         .pause-on-hover:hover .animate-scroll-left,
