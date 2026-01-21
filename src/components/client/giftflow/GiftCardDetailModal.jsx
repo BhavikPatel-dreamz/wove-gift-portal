@@ -22,14 +22,6 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
     });
   };
 
-  // Mask voucher code (show last 4 characters)
-  const maskVoucherCode = (code) => {
-    if (!code) return '•••• •••• •••• ••••';
-    const cleanCode = code.replace(/\s/g, '');
-    const visiblePart = cleanCode.slice(-4);
-    const maskedPart = '•••• '.repeat(Math.floor((cleanCode.length - 4) / 4));
-    return maskedPart + visiblePart;
-  };
 
   // Get status color
   const getStatusColor = (status) => {
@@ -69,7 +61,7 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
             <div>
               <h2 className="text-2xl font-semibold text-gray-900">Voucher Details</h2>
               <p className="text-sm text-gray-500 mt-1">
-                Complete information for voucher {maskVoucherCode(card.code)}
+                Complete information for voucher {card.code}
               </p>
             </div>
             <button
@@ -92,7 +84,7 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
                   <div className="flex-1 bg-gray-50 p-3 rounded-lg">
                     <div className="flex items-center justify-between">
                       <span className="font-mono text-lg text-gray-900">
-                        {maskVoucherCode(card.code)}
+                        {card.code}
                       </span>
                       {/* <button
                         onClick={() => copyToClipboard(card.code)}

@@ -11,10 +11,10 @@ function getCurrencySymbol(currency) {
 
 // Calculate gift card status
 function calculateStatus(voucherCode) {
-   if (voucherCode.remainingValue === 0) {
+  if (voucherCode.remainingValue === 0) {
     return "CLAIMED";
   }
-  
+
   if (voucherCode.expiresAt && new Date(voucherCode.expiresAt) < new Date()) {
     return "EXPIRED";
   }
@@ -47,6 +47,7 @@ export async function getGiftCards(filters) {
       pageSize = 6,
       startDate,
       endDate,
+      userEmail,
     } = filters;
 
     // Build where clause based on user role and tab selection
@@ -55,19 +56,16 @@ export async function getGiftCards(filters) {
     // If user is not admin, filter based on sent/received
     if (session.user.role !== "ADMIN") {
       if (status === "sent") {
-        // For sent gifts: user is the order owner (purchaser)
         whereClause.order = {
           userId: session.user.id,
         };
       } else if (status === "received") {
-        // For received gifts: user's email matches receiver email
         whereClause.order = {
           receiverDetail: {
             email: session.user.email,
           },
         };
       } else if (status === "all") {
-        // Show all: either purchased by user OR sent to user
         whereClause.OR = [
           {
             order: {
@@ -83,7 +81,6 @@ export async function getGiftCards(filters) {
           },
         ];
       } else if (status === "expired") {
-        // Show expired gifts for both sent and received
         whereClause.expiresAt = {
           lt: new Date(),
         };
@@ -136,7 +133,6 @@ export async function getGiftCards(filters) {
         },
       ];
 
-      // Combine with existing OR conditions if they exist
       if (whereClause.OR) {
         whereClause.AND = [{ OR: whereClause.OR }, { OR: searchConditions }];
         delete whereClause.OR;
@@ -176,11 +172,17 @@ export async function getGiftCards(filters) {
             brand: {
               select: {
                 brandName: true,
+                domain: true,
               },
             },
           },
         },
-        // IMPORTANT: Fetch ALL redemptions, not just the latest one
+        // Include GiftCard relation to get the code if needed
+        giftCard: {
+          select: {
+            code: true,
+          },
+        },
         redemptions: {
           orderBy: {
             redeemedAt: "desc",
@@ -205,7 +207,7 @@ export async function getGiftCards(filters) {
       const spentPercentage =
         vc.originalValue > 0
           ? Math.round(
-              ((vc.originalValue - vc.remainingValue) / vc.originalValue) * 100
+              ((vc.originalValue - vc.remainingValue) / vc.originalValue) * 100,
             )
           : 0;
 
@@ -217,11 +219,18 @@ export async function getGiftCards(filters) {
       const currency = vc.order.currency || "USD";
       const currencySymbol = getCurrencySymbol(currency);
 
+      // IMPORTANT: Show full code only if user is the receiver
+      // The code from VoucherCode table is the full unmasked code
+      const fullCode = vc?.giftCard?.code; // This is the full code from VoucherCode table
+      const displayCode = isReceived
+        ? fullCode // Show full code to receiver
+        : `**** **** **** ${fullCode.slice(-4)}`; // Mask code for sender
+
       return {
         id: vc.id,
         orderNumber: vc.order.orderNumber,
-        code: `**** **** **** ${vc.code.slice(-4)}`,
-        fullCode: vc.code, // Keep full code for copying
+        code: displayCode, // Show full or masked based on receiver status
+        fullCode: fullCode, // Always keep full code for copying (frontend should handle visibility)
         status: calculatedStatus,
         user: {
           name: `${vc.order.user.firstName} ${vc.order.user.lastName}`,
@@ -230,11 +239,11 @@ export async function getGiftCards(filters) {
         receiverName: vc.order.receiverDetail?.name || "N/A",
         receiverEmail: vc.order.receiverDetail?.email || "N/A",
         receiverPhone: vc.order.receiverDetail?.phone || "N/A",
-        totalAmount: vc.originalValue, // Already in dollars
-        remaining: vc.remainingValue, // Already in dollars
+        totalAmount: vc.originalValue,
+        remaining: vc.remainingValue,
         spent: spentPercentage,
-        currency: currency, // Include currency code
-        currencySymbol: currencySymbol, // Include currency symbol
+        currency: currency,
+        currencySymbol: currencySymbol,
         denominationType: "fixed",
         lastRedemption: vc.redemptions[0]?.redeemedAt
           ? new Date(vc.redemptions[0].redeemedAt).toLocaleDateString("en-US", {
@@ -255,15 +264,15 @@ export async function getGiftCards(filters) {
               year: "numeric",
             })
           : null,
-        expiresAtRaw: vc.expiresAt, // Add raw date for modal
+        expiresAtRaw: vc.expiresAt,
         brandName: vc.order.brand.brandName,
+        brandDomain: vc.order.brand.domain || null,
         isSent: isSent,
         isReceived: isReceived,
-        // IMPORTANT: Include all redemptions for the modal
         redemptions: vc.redemptions.map((redemption) => ({
           id: redemption.id,
-          amountRedeemed: redemption.amountRedeemed, // Already in dollars
-          balanceAfter: redemption.balanceAfter, // Already in dollars
+          amountRedeemed: redemption.amountRedeemed,
+          balanceAfter: redemption.balanceAfter,
           redeemedAt: redemption.redeemedAt,
           transactionId: redemption.transactionId,
           storeUrl: redemption.storeUrl,
@@ -271,7 +280,6 @@ export async function getGiftCards(filters) {
       };
     });
 
-    // IMPORTANT: Serialize the response to ensure no non-plain objects are passed
     return JSON.parse(
       JSON.stringify({
         success: true,
@@ -284,7 +292,7 @@ export async function getGiftCards(filters) {
         },
         userRole: session.user.role,
         userId: session.user.id,
-      })
+      }),
     );
   } catch (error) {
     console.error("Error fetching gift cards:", error);
@@ -365,7 +373,7 @@ export async function getGiftCardStats() {
             unclaimed,
             expired,
           },
-        })
+        }),
       );
     } else {
       // Regular user sees sent + received
@@ -414,7 +422,7 @@ export async function getGiftCardStats() {
             sent,
             received,
           },
-        })
+        }),
       );
     }
   } catch (error) {
