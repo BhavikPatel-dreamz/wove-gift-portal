@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { AlertTriangle, Upload, X, Image } from 'lucide-react';
+import { AlertTriangle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { currencyList } from './currency';
 
@@ -9,11 +10,13 @@ const CoreTab = ({ formData, updateFormData }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [currencies] = useState(currencyList);
 
+  console.log('formData', formData);
+
   // Handle existing logo when component mounts or formData changes
   useEffect(() => {
     if (formData.logo) {
       if (typeof formData.logo === 'string') {
-        // If logo is a string path, set it as preview
+        // If logo is a Cloudinary URL or local path, set it as preview directly
         setImagePreview(formData.logo);
       } else if (formData.logo instanceof File) {
         // If logo is a File object, create preview
@@ -45,8 +48,11 @@ const CoreTab = ({ formData, updateFormData }) => {
         return;
       }
 
-      // Update form data
+      // Update form data with the File object
       updateFormData('logo', file);
+      
+      // Show success message
+      toast.success('Logo uploaded successfully');
     }
   };
 
@@ -86,19 +92,26 @@ const CoreTab = ({ formData, updateFormData }) => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    toast.success('Logo removed');
   };
 
   // Get display name for the logo
   const getLogoDisplayName = () => {
     if (formData.logo) {
       if (typeof formData.logo === 'string') {
-        // Extract filename from path
-        return formData.logo.split('/').pop();
+        // Extract filename from Cloudinary URL or path
+        const parts = formData.logo.split('/');
+        return parts[parts.length - 1];
       } else if (formData.logo instanceof File) {
         return formData.logo.name;
       }
     }
     return 'Logo uploaded';
+  };
+
+  // Check if the image is a Cloudinary URL
+  const isCloudinaryUrl = (url) => {
+    return typeof url === 'string' && url.includes('cloudinary.com');
   };
 
   return (
@@ -212,8 +225,6 @@ const CoreTab = ({ formData, updateFormData }) => {
             required
           />
         </div>
-
-
       </div>
 
       {/* Visual Identity */}
@@ -241,22 +252,41 @@ const CoreTab = ({ formData, updateFormData }) => {
               >
                 {imagePreview ? (
                   <div className="relative">
-                    <img
-                      src={imagePreview}
-                      alt="Logo preview"
-                      className="mx-auto mb-2 max-h-24 w-auto rounded"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
-                    <div style={{ display: 'none' }} className="text-red-500 text-sm">
+                    {/* Use Next.js Image component for Cloudinary URLs, regular img for local previews */}
+                    {isCloudinaryUrl(imagePreview) ? (
+                      <div className="relative w-full h-24 mb-2">
+                        <Image
+                          src={imagePreview}
+                          alt="Logo preview"
+                          fill
+                          className="object-contain rounded"
+                          unoptimized={!imagePreview.includes('cloudinary.com')}
+                          onError={(e) => {
+                            console.error('Image load error:', e);
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <img
+                        src={imagePreview}
+                        alt="Logo preview"
+                        className="mx-auto mb-2 max-h-24 w-auto rounded"
+                        onError={(e) => {
+                          console.error('Image load error:', e);
+                          e.target.style.display = 'none';
+                          const errorDiv = e.target.nextSibling;
+                          if (errorDiv) errorDiv.style.display = 'block';
+                        }}
+                      />
+                    )}
+                    <div style={{ display: 'none' }} className="text-red-500 text-sm mb-2">
+                      <ImageIcon className="mx-auto mb-1 text-red-400" size={24} />
                       Failed to load image
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 font-medium truncate px-2">
                       {getLogoDisplayName()}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 mt-1">
                       Click to replace or drag new file
                     </p>
                   </div>
@@ -278,20 +308,25 @@ const CoreTab = ({ formData, updateFormData }) => {
                 <button
                   type="button"
                   onClick={removeFile}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors shadow-md z-10"
+                  title="Remove logo"
                 >
-                  <X size={12} />
+                  <X size={16} />
                 </button>
               )}
 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png,image/svg+xml,image/webp"
                 onChange={handleFileInputChange}
                 className="hidden"
               />
             </div>
+            
+            <p className="font-inter text-xs font-normal leading-5 text-[#7E7E7E] mt-2">
+              Upload a high-quality logo. It will be automatically optimized for web.
+            </p>
           </div>
 
           <div>
@@ -339,20 +374,6 @@ const CoreTab = ({ formData, updateFormData }) => {
               </p>
             </div>
           </label>
-          {/* <label className="flex items-start cursor-pointer">
-            <input
-              type="checkbox"
-              className="rounded border-gray-300 mr-3 mt-1 focus:ring-2 focus:ring-blue-500"
-              checked={formData.isFeature || false}
-              onChange={(e) => updateFormData('isFeature', e.target.checked)}
-            />
-            <div>
-              <span className="font-inter text-sm font-semibold capitalize text-[#4A4A4A]">Featured Brand</span>
-             <p className="font-inter text-xs font-medium leading-5 text-[#A5A5A5]">
-                Display prominently in featured brand sections and homepage
-              </p>
-            </div>
-          </label> */}
         </div>
       </div>
 

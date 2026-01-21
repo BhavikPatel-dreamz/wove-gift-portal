@@ -1,21 +1,17 @@
-import fs from "fs";
-import path from "path";
+import { v2 as cloudinary } from 'cloudinary';
 import { NextResponse } from "next/server";
+
+cloudinary.config({
+  cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.NEXT_CLOUDINARY_API_KEY,
+  api_secret: process.env.NEXT_CLOUDINARY_API_SECRET
+});
 
 export async function POST(req) {
   try {
     const body = await req.json();
-
     if (!body || !body.file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    const fileName = `card-${Date.now()}.png`;
-    const cardsDir = path.join(process.cwd(), "public", "cards");
-    const filePath = path.join(cardsDir, fileName);
-
-    if (!fs.existsSync(cardsDir)) {
-      fs.mkdirSync(cardsDir, { recursive: true });
     }
 
     const base64Data = body.file.split(",")[1];
@@ -25,13 +21,21 @@ export async function POST(req) {
         { status: 400 }
       );
     }
-    const fileData = Buffer.from(base64Data, "base64");
 
-    fs.writeFileSync(filePath, fileData);
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: "cards" },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      ).end(Buffer.from(base64Data, "base64"));
+    });
 
     return NextResponse.json(
       {
-        path: `/cards/${fileName}`,
+        path: result.secure_url,
+        public_id: result.public_id,
         success: true,
       },
       { status: 200 }
