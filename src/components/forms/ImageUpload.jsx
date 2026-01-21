@@ -91,6 +91,7 @@ const ImageUpload = ({
             <p className="font-semibold text-[#4A4A4A] mb-1">{placeHolder}</p>
             <p className="text-[12px] text-[#939393]">Drop an image here or click to upload</p>
             {helperText && <p className="text-[10px] text-[#939393] mt-2">PNG,JPG,webP - Max 2MB - Automatically Optimized</p>}
+            <p className="text-[10px] text-red-500 mt-2">Recommended size: 800 × 600 px</p>
           </div>
           <input
             type="file"

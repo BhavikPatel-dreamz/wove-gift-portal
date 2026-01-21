@@ -1,23 +1,25 @@
 import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
-  ShoppingCart,
   Store,
   Calendar,
-  BarChart3,
   FileText,
   Settings,
   X,
-  ShoppingBag,
   Gift
 } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext'
+import { useSelector } from 'react-redux';
+import { setHasChanges } from '../../redux/giftFlowSlice';
+import { useDispatch } from 'react-redux';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const pathname = usePathname();
-  const session = useSession()
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const session = useSession();
+  const { hasChanges } = useSelector(state => state.giftFlowReducer);
 
   const allMenuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
@@ -44,6 +46,28 @@ const Sidebar = ({ isOpen, onClose }) => {
     return pathname === href || pathname.startsWith(href + '/');
   };
 
+  // Handle navigation with unsaved changes check
+  const handleNavigation = (e, href) => {
+    e.preventDefault();
+    
+    // Don't navigate if already on the page
+    if (isActiveItem(href)) {
+      onClose();
+      return;
+    }
+
+    if (hasChanges) {
+      if (confirm('You have unsaved changes. Are you sure you want to leave?')) {
+        router.push(href);
+        dispatch(setHasChanges(false));
+        onClose();
+      }
+    } else {
+      router.push(href);
+      onClose();
+    }
+  };
+
   return (
     <>
       {/* Mobile backdrop */}
@@ -55,7 +79,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       )}
 
       {/* Sidebar */}
-      <div className={`
+      <aside className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -72,18 +96,18 @@ const Sidebar = ({ isOpen, onClose }) => {
           <button
             onClick={onClose}
             className="lg:hidden p-1 rounded-md hover:bg-gray-100"
+            aria-label="Close sidebar"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="mt-8 px-4">
+        <nav className="mt-8 px-4" aria-label="Main navigation">
           <ul className="space-y-2">
             {menuItems.map((item) => (
               <li key={item.name}>
-                <Link
-                  href={item.href}
-                  onClick={onClose}
+                <button
+                  onClick={(e) => handleNavigation(e, item.href)}
                   className={`
                     w-full flex items-center px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors cursor-pointer
                     ${isActiveItem(item.href)
@@ -94,12 +118,12 @@ const Sidebar = ({ isOpen, onClose }) => {
                 >
                   <item.icon className="w-5 h-5 mr-3" />
                   {item.name}
-                </Link>
+                </button>
               </li>
             ))}
           </ul>
         </nav>
-      </div>
+      </aside>
     </>
   );
 };

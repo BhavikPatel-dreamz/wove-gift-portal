@@ -265,7 +265,6 @@ h6,
 }
 
 /* ===== HERO SECTION STYLES ===== */
-
 .hero-section {
   background: 
     linear-gradient(151.97deg, rgba(251, 220, 227, 0.55) 17.3%, rgba(253, 230, 219, 0.55)
@@ -280,6 +279,13 @@ h6,
   min-height: 450px !important;
 }
 
+/* Mobile responsive adjustments for hero section */
+@media (max-width: 640px) {
+  .hero-section {
+    padding: 3rem 1.5rem 2.5rem 1.5rem !important;
+    min-height: 380px !important;
+  }
+}
 
 /* Hero Heading */
 .hero-heading {
@@ -288,6 +294,21 @@ h6,
   line-height: 1.1 !important;
   margin-bottom: 2rem !important;
   letter-spacing: -0.02em !important;
+}
+
+/* Mobile responsive heading */
+@media (max-width: 640px) {
+  .hero-heading {
+    font-size: 2.5rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-heading {
+    font-size: 2rem !important;
+    margin-bottom: 1.25rem !important;
+  }
 }
 
 .hero-heading-dark {
@@ -319,6 +340,14 @@ h6,
   line-height: 1.6 !important;
 }
 
+/* Mobile responsive subheading */
+@media (max-width: 640px) {
+  .hero-subheading {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+  }
+}
+
 /* CTA Button in Hero */
 .hero-cta {
   background: linear-gradient(
@@ -336,6 +365,15 @@ h6,
   transition: all 0.3s ease !important;
   cursor: pointer !important;
   margin-top: 2rem !important;
+}
+
+/* Mobile responsive CTA button */
+@media (max-width: 640px) {
+  .hero-cta {
+    padding: 12px 28px !important;
+    font-size: 14px !important;
+    margin-top: 1.5rem !important;
+  }
 }
 
 .hero-cta:hover {
@@ -360,6 +398,21 @@ h6,
   grid-template-columns: repeat(4, 1fr) !important;
 }
 
+/* Mobile responsive stats bar */
+@media (max-width: 768px) {
+  .stats-bar .grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.5rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-bar .grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
 /* Trust Badge */
 .trust-badge {
   display: flex !important;
@@ -374,6 +427,16 @@ h6,
   line-height: 32px; /* 200% */
 }
 
+/* Mobile responsive trust badge */
+@media (max-width: 640px) {
+  .trust-badge {
+    font-size: 13px !important;
+    line-height: 24px !important;
+    margin-top: 1.25rem !important;
+    gap: 0.4rem !important;
+  }
+}
+
 .trust-icon {
   width: 18px !important;
   height: 18px !important;
@@ -383,6 +446,14 @@ h6,
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
+}
+
+/* Mobile responsive trust icon */
+@media (max-width: 640px) {
+  .trust-icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
 }
 
 /* Stats Bar */
