@@ -113,13 +113,13 @@ export async function getBrandCategories() {
   }
 }
 
-export const getBrands = async () => {
+export const getBrands = async ({ isFeature = false } = {}) => {
   try {
     const brands = await prisma?.brand?.findMany({
       where: {
         isActive: true,
-        isFeature: true,
-      }
+        ...(isFeature && { isFeature: true }),
+      },
     });
     return brands;
   } catch (error) {

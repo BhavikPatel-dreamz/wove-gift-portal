@@ -406,7 +406,7 @@ const BrandManager = ({
             </div>
           </div>
 
-          {/* <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <svg
                 width="45"
@@ -444,12 +444,12 @@ const BrandManager = ({
                   {statistics.featured}
                 </div>
 
-                <div className="font-poppins text-base font-medium leading-[20px] text-[#A55E00 ] mt-2">
+                <div className="font-poppins text-base font-medium leading-[20px] text-[#A55E00] mt-2">
                   Featured
                 </div>
               </div>
             </div>
-          </div> */}
+          </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center gap-3">
@@ -697,7 +697,7 @@ const BrandManager = ({
           {/* Title + count */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
             <h2 className="text-lg sm:text-xl font-semibold text-[#1A1A1A]">
-             Brands List
+              Brands List
             </h2>
             <span className="bg-[rgba(15,100,246,0.10)] text-[#0F64F6] px-2 py-0.5 sm:py-1 rounded-[3px] border border-[rgba(15,100,246,0.20)] text-xs sm:text-sm font-medium">
               {pagination.totalItems} Brands
@@ -776,7 +776,7 @@ const BrandManager = ({
                     </div>
 
                     {/* FEATURED Badge (Top Right) */}
-                    {/* {brand.isFeature && (
+                    {brand.isFeature && (
                       <div
                         className="absolute top-3 right-3 px-3 py-1 rounded-full
                     bg-[#FF8A1F] text-white text-xs font-semibold
@@ -785,7 +785,7 @@ const BrandManager = ({
                         <Star size={12} fill="currentColor" />
                         Featured
                       </div>
-                    )} */}
+                    )}
                   </div>
 
                   {/* Content */}
@@ -855,22 +855,22 @@ const BrandManager = ({
                           />
                         </svg>
                       </button>
-                      {/* <button
+                      <button
                         onClick={() => toggleFeatured(brand.id)}
                         disabled={actionLoading}
                         title={
                           brand.isFeature ? "Unfeature Brand" : "Feature Brand"
                         }
                         className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${brand.isFeature
-                            ? "text-orange-500 bg-orange-100 hover:bg-orange-200"
-                            : "text-gray-400 hover:bg-gray-100 hover:text-orange-500"
+                          ? "text-orange-500 bg-orange-100 hover:bg-orange-200"
+                          : "text-gray-400 hover:bg-gray-100 hover:text-orange-500"
                           }`}
                       >
                         <Star
                           size={16}
                           fill={brand.isFeature ? "currentColor" : "none"}
                         />
-                      </button> */}
+                      </button>
                       <button
                         onClick={() => toggleActive(brand.id)}
                         disabled={actionLoading}
@@ -878,8 +878,8 @@ const BrandManager = ({
                           brand.isActive ? "Deactivate Brand" : "Activate Brand"
                         }
                         className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${brand.isActive
-                            ? "text-green-500 bg-green-100 hover:bg-green-200"
-                            : "text-gray-400 hover:bg-gray-100 hover:text-green-500"
+                          ? "text-green-500 bg-green-100 hover:bg-green-200"
+                          : "text-gray-400 hover:bg-gray-100 hover:text-green-500"
                           }`}
                       >
                         <Power size={16} />

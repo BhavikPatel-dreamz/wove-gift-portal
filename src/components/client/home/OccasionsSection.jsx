@@ -8,7 +8,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // Slider states
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -27,7 +27,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024); // lg breakpoint
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -60,26 +60,26 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
         resolve();
         return;
       }
-      
+
       const start = element.scrollLeft;
       const change = target - start;
       const startTime = performance.now();
-      
+
       if (scrollAnimationRef.current) {
         cancelAnimationFrame(scrollAnimationRef.current);
       }
-      
+
       const animateScroll = (currentTime) => {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        
+
         // Easing function for smoother transition (easeInOutQuad)
-        const easeProgress = progress < 0.5 
-          ? 2 * progress * progress 
+        const easeProgress = progress < 0.5
+          ? 2 * progress * progress
           : -1 + (4 - 2 * progress) * progress;
-        
+
         element.scrollLeft = start + change * easeProgress;
-        
+
         if (progress < 1) {
           scrollAnimationRef.current = requestAnimationFrame(animateScroll);
         } else {
@@ -87,7 +87,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
           resolve();
         }
       };
-      
+
       scrollAnimationRef.current = requestAnimationFrame(animateScroll);
     });
   }, []);
@@ -95,22 +95,22 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
   // Auto-scroll function for both desktop and mobile
   const startAutoScroll = useCallback(() => {
     if (!occasions.length || isAutoScrolling) return;
-    
+
     const scroll = async () => {
       if (isHovering || isDragging) return;
-      
+
       if (isMobile) {
         // Mobile slider
         const slider = sliderRef.current;
         if (!slider) return;
-        
+
         const cardWidth = slider.children[0]?.offsetWidth || 0;
         const gap = 24;
         const slideWidth = cardWidth + gap;
         const maxScroll = slider.scrollWidth - slider.clientWidth;
         const currentScroll = slider.scrollLeft;
         const currentIndex = Math.round(currentScroll / slideWidth);
-        
+
         if (currentIndex >= occasions.length - 1) {
           // Go back to first slide
           setIsAutoScrolling(true);
@@ -125,16 +125,16 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
         // Desktop slider
         const slider = desktopSliderRef.current;
         if (!slider || isHovering) return;
-        
+
         const cards = slider.querySelectorAll('.occasion-card');
         if (cards.length === 0) return;
-        
+
         const cardWidth = cards[0].offsetWidth;
         const gap = 24;
         const scrollAmount = cardWidth + gap;
         const maxScroll = slider.scrollWidth - slider.clientWidth;
         const currentScroll = slider.scrollLeft;
-        
+
         if (currentScroll >= maxScroll - 10) {
           // Go back to first slide
           setIsAutoScrolling(true);
@@ -208,7 +208,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
       cancelAnimationFrame(scrollAnimationRef.current);
       scrollAnimationRef.current = null;
     }
-    
+
     // Pause auto-scroll during drag
     if (autoScrollRef.current) {
       clearInterval(autoScrollRef.current);
@@ -225,7 +225,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
       cancelAnimationFrame(scrollAnimationRef.current);
       scrollAnimationRef.current = null;
     }
-    
+
     // Pause auto-scroll during drag
     if (autoScrollRef.current) {
       clearInterval(autoScrollRef.current);
@@ -252,7 +252,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
     if (!isDragging) return;
     setIsDragging(false);
     snapToClosest();
-    
+
     // Resume auto-scroll after drag ends
     setTimeout(() => {
       startAutoScroll();
@@ -263,7 +263,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
     if (!isDragging) return;
     setIsDragging(false);
     snapToClosest();
-    
+
     // Resume auto-scroll after drag ends
     setTimeout(() => {
       startAutoScroll();
@@ -278,7 +278,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
     const newIndex = Math.round(sliderRef.current.scrollLeft / slideWidth);
     const clampedIndex = Math.max(0, Math.min(newIndex, occasions.length - 1));
     setCurrentIndex(clampedIndex);
-    
+
     await smoothScrollTo(sliderRef.current, clampedIndex * slideWidth, 200);
   };
 
@@ -290,7 +290,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
     let rafId = null;
     const handleScroll = () => {
       if (rafId) return;
-      
+
       rafId = requestAnimationFrame(() => {
         const cardWidth = slider.children[0]?.offsetWidth || 0;
         const gap = 24;
@@ -315,13 +315,13 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
   const handleDotClick = async (index) => {
     const slider = isMobile ? sliderRef.current : desktopSliderRef.current;
     if (!slider || isAutoScrolling) return;
-    
+
     // Pause auto-scroll during manual navigation
     if (autoScrollRef.current) {
       clearInterval(autoScrollRef.current);
       autoScrollRef.current = null;
     }
-    
+
     if (isMobile) {
       const cardWidth = slider.children[0]?.offsetWidth || 0;
       const gap = 24;
@@ -335,9 +335,9 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
       const slideWidth = cardWidth + gap;
       await smoothScrollTo(slider, index * slideWidth, 300);
     }
-    
+
     setCurrentIndex(index);
-    
+
     // Resume auto-scroll after delay
     setTimeout(() => {
       startAutoScroll();
@@ -354,7 +354,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
         </div>
 
         {/* Desktop Slider */}
-        <div 
+        <div
           className="hidden lg:block relative"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
@@ -362,15 +362,15 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
           <div
             ref={desktopSliderRef}
             className="flex gap-6 overflow-x-hidden py-4"
-            style={{ 
+            style={{
               scrollBehavior: 'auto',
               cursor: isHovering ? 'grab' : 'default'
             }}
           >
             {occasions.map((occasion) => (
-              <div 
-                key={occasion.id} 
-                className="occasion-card cursor-pointer flex-shrink-0 transition-transform duration-300 hover:scale-[1.02]" 
+              <div
+                key={occasion.id}
+                className="occasion-card cursor-pointer flex-shrink-0 transition-transform duration-300 hover:scale-[1.02]"
                 style={{ width: 'calc(25% - 1.125rem)' }}
                 onClick={() => handleOccasionSelect(occasion)}
               >
@@ -389,7 +389,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
               </div>
             ))}
           </div>
-          
+
           {/* Desktop dots indicator */}
           {/* <div className="flex justify-center gap-2 mt-8">
             {occasions.map((_, index) => (
@@ -492,8 +492,8 @@ const OccasionsSkeleton = () => {
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header Skeleton */}
         <div className="mb-12">
-          <div className="h-10 w-72 bg-gray-200 rounded-lg mb-3 animate-pulse" />
-          <div className="h-5 w-56 bg-gray-200 rounded-lg animate-pulse" />
+          <h2 className="occasions-section-title fontPoppins">Perfect for Every Occasion</h2>
+          <p className="occasions-section-subtitle">Find the right moment to spread joy</p>
         </div>
 
         {/* Desktop Grid Skeleton (hidden on mobile) */}
