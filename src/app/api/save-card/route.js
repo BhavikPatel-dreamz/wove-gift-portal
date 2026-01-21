@@ -1,11 +1,5 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { uploadFile } from '@/lib/utils/cloudinary';
 import { NextResponse } from "next/server";
-
-cloudinary.config({
-  cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.NEXT_CLOUDINARY_API_KEY,
-  api_secret: process.env.NEXT_CLOUDINARY_API_SECRET
-});
 
 export async function POST(req) {
   try {
@@ -22,15 +16,11 @@ export async function POST(req) {
       );
     }
 
-    const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder: "cards" },
-        (error, result) => {
-          if (error) return reject(error);
-          resolve(result);
-        }
-      ).end(Buffer.from(base64Data, "base64"));
-    });
+    // Create a buffer from base64 data
+    const buffer = Buffer.from(base64Data, "base64");
+    
+    // Pass the buffer directly to uploadFile
+    const result = await uploadFile(buffer, "cards");
 
     return NextResponse.json(
       {

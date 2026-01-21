@@ -5,16 +5,7 @@ import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 import { z } from "zod";
-import { v2 as cloudinary } from "cloudinary";
-
-// Configure Cloudinary (add this before the OccasionSchema)
-cloudinary.config({
-  cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.NEXT_CLOUDINARY_API_KEY,
-  api_secret: process.env.NEXT_CLOUDINARY_API_SECRET,
-  secure: true,
-});
-
+import { uploadFile, deleteFile } from '../utils/cloudinary';
 // ============================================================================
 // ZOD SCHEMAS
 // ============================================================================
@@ -118,47 +109,27 @@ function createStandardResponse(
   return response;
 }
 
+
+
+// Update handleImageUpload function
 async function handleImageUpload(imageFile, uploadPath, namePrefix) {
   if (!imageFile || typeof imageFile === 'string' || imageFile.size === 0) {
     return typeof imageFile === 'string' && imageFile.trim() ? imageFile.trim() : '';
   }
-
   try {
-    const bytes = await imageFile.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    
-    const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: `occasion-${uploadPath}` },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      
-      uploadStream.end(buffer);
-    });
-    
-    return uploadResult.secure_url;
+    const result = await uploadFile(imageFile, `occasion-${uploadPath}`);
+    return result.secure_url;
   } catch (error) {
     console.error('Cloudinary upload error:', error);
     throw new Error('Failed to upload image to Cloudinary');
   }
 }
 
+// Update deleteImageFile function
 async function deleteImageFile(imagePath) {
-  if (!imagePath || !imagePath.includes('res.cloudinary.com')) {
-    return;
-  }
-
+  if (!imagePath || !imagePath.includes('res.cloudinary.com')) return;
   try {
-    // Extract public_id from Cloudinary URL
-    const urlParts = imagePath.split('/');
-    const publicId = urlParts[urlParts.length - 1].split('.')[0];
-    const folder = urlParts[urlParts.length - 2];
-    const fullPublicId = `${folder}/${publicId}`;
-    
-    await cloudinary.uploader.destroy(fullPublicId);
+    await deleteFile(imagePath);
   } catch (error) {
     console.error('Failed to delete Cloudinary image:', error);
   }

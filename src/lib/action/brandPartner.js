@@ -7,6 +7,7 @@ import { unlink } from "fs/promises";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { v2 as cloudinary } from "cloudinary";
+import { uploadFile, deleteFile } from "../utils/cloudinary";
 
 const SALT_ROUNDS = 12;
 const TRANSACTION_TIMEOUT = 10000; // 10 seconds
@@ -251,33 +252,12 @@ export async function createBrandPartner(formData) {
     const validatedData = validationResult.data;
     let logoPath = "";
 
-    // Configure Cloudinary (add this before the BrandPartnerSchema)
-    cloudinary.config({
-      cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.NEXT_CLOUDINARY_API_KEY,
-      api_secret: process.env.NEXT_CLOUDINARY_API_SECRET,
-      secure: true,
-    });
 
     // In createBrandPartner function, replace the logo upload section with:
     if (parsedData.logoFile && parsedData.logoFile.size > 0) {
       try {
-        const bytes = await parsedData.logoFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        const uploadResult = await new Promise((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "brand-logos" },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            },
-          );
-
-          uploadStream.end(buffer);
-        });
-
-        logoPath = uploadResult.secure_url;
+        const result = await uploadFile(parsedData.logoFile, "brand-logos");
+        logoPath = result.secure_url;
       } catch (fileError) {
         console.error("Cloudinary upload error:", fileError);
         return {
@@ -530,33 +510,11 @@ export async function updateBrandPartner(brandId, formData) {
 
     let logoPath = existingBrand.logo;
 
-    // Handle logo upload
-    cloudinary.config({
-      cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.NEXT_CLOUDINARY_API_KEY,
-      api_secret: process.env.NEXT_CLOUDINARY_API_SECRET,
-      secure: true,
-    });
-
-    // In the createBrandPartner function, replace the local file upload with:
+    // In createBrandPartner function, replace the logo upload section with:
     if (parsedData.logoFile && parsedData.logoFile.size > 0) {
       try {
-        const bytes = await parsedData.logoFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        const uploadResult = await new Promise((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "brand-logos" },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            },
-          );
-
-          uploadStream.end(buffer);
-        });
-
-        logoPath = uploadResult.secure_url;
+        const result = await uploadFile(parsedData.logoFile, "brand-logos");
+        logoPath = result.secure_url;
       } catch (fileError) {
         console.error("Cloudinary upload error:", fileError);
         return {
@@ -945,8 +903,7 @@ export async function getBrandPartner(params = {}) {
     const totalPages = Math.ceil(totalCount / limitNum);
     const hasNextPage = pageNum < totalPages;
     const hasPrevPage = pageNum > 1;
-
-    const stats = await prisma.brand.aggregate({
+const stats = await prisma.brand.aggregate({
       _count: { id: true },
       where: { isActive: true },
     });
@@ -1241,39 +1198,17 @@ export async function updateBrand(formData) {
 
     let logoPath = existingBrand.logo;
 
-    // Handle logo upload
-    cloudinary.config({
-      cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.NEXT_CLOUDINARY_API_KEY,
-      api_secret: process.env.NEXT_CLOUDINARY_API_SECRET,
-      secure: true,
-    });
-
-    // In the createBrandPartner function, replace the local file upload with:
+    // In createBrandPartner function, replace the logo upload section with:
     if (parsedData.logoFile && parsedData.logoFile.size > 0) {
       try {
-        const bytes = await parsedData.logoFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        const uploadResult = await new Promise((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "brand-logos" },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            },
-          );
-
-          uploadStream.end(buffer);
-        });
-
-        logoPath = uploadResult.secure_url;
+        const result = await uploadFile(parsedData.logoFile, 'brand-logos');
+        logoPath = result.secure_url;
       } catch (fileError) {
-        console.error("Cloudinary upload error:", fileError);
+        console.error('Cloudinary upload error:', fileError);
         return {
           success: false,
-          message: "Failed to upload logo to Cloudinary",
-          status: 500,
+          message: 'Failed to upload logo to Cloudinary',
+          status: 500
         };
       }
     }
@@ -1566,7 +1501,6 @@ export async function getSettlements(params = {}) {
             );
           }
         }
-
         // Use stored commission or calculated
         const commissionAmount =
           settlement.commissionAmount ?? calculatedCommission;
