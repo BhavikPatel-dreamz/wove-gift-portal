@@ -375,6 +375,23 @@ const CoreTab = ({ formData, updateFormData }) => {
             </div>
           </label>
         </div>
+
+          <div className="space-y-4">
+          <label className="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              className="rounded border-gray-300 mr-3 mt-1 focus:ring-2 focus:ring-blue-500"
+              checked={formData.isFeatured || false}
+              onChange={(e) => updateFormData('isFeatured', e.target.checked)}
+            />
+            <div>
+              <span className="font-inter text-sm font-semibold capitalize text-[#4A4A4A]">Featured on Frontend</span>
+             <p className="font-inter text-xs font-medium leading-5 text-[#A5A5A5]">
+                Make this brand featured on the frontend
+              </p>
+            </div>
+          </label>
+        </div>
       </div>
 
       {/* Additional Notes */}

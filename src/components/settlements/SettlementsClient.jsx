@@ -242,11 +242,6 @@ export default function SettlementsClient({
                 -{commissionValue}% Commission on Base Amount
               </div>
             )}
-            {commissionAmount >= 1 && commissionValue >= 1 && (
-              <div className="text-xs text-gray-500">
-                -0% Commission
-              </div>
-            )}
             {vatRate > 0 && vatAmount > 0 && (
               <div className="text-xs text-green-600">
                 +{vatRate}% VAT on Commission

@@ -89,8 +89,8 @@ const TermsTab = ({ formData, updateFormData }) => {
                 className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 font-inter text-xs font-medium leading-5 text-[#4A4A4A]"
                 placeholder="0.00"
                 step="0.01"
-                value={formData.commissionValue || 0}
-                onChange={(e) => updateFormData('commissionValue', parseFloat(e.target.value) || 0)}
+                value={formData.commissionValue}
+                onChange={(e) => updateFormData('commissionValue', parseFloat(e.target.value))}
               />
               <span className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2 text-gray-500">
                 {formData.commissionType === 'Fixed Amount' ? formData.currency || 'USD' : '%'}
@@ -122,8 +122,8 @@ const TermsTab = ({ formData, updateFormData }) => {
               className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 font-inter text-xs font-medium leading-5 text-[#4A4A4A] w-full"
               placeholder="0"
               step="0.01"
-              value={formData.minOrderValue || 0}
-              onChange={(e) => updateFormData('minOrderValue', parseFloat(e.target.value) || 0)}
+              value={formData.minOrderValue}
+              onChange={(e) => updateFormData('minOrderValue', parseFloat(e.target.value))}
             />
           </div>
         </div>
@@ -135,8 +135,8 @@ const TermsTab = ({ formData, updateFormData }) => {
             className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 font-inter text-xs font-medium leading-5 text-[#4A4A4A] w-full"
             placeholder="0"
             step="0.01"
-            value={formData.maxDiscount || 0}
-            onChange={(e) => updateFormData('maxDiscount', parseFloat(e.target.value) || 0)}
+            value={formData.maxDiscount}
+            onChange={(e) => updateFormData('maxDiscount', parseFloat(e.target.value))}
           />
         </div>
       </div>
@@ -277,7 +277,7 @@ const TermsTab = ({ formData, updateFormData }) => {
               min="0"
               max="100"
               value={formData.vatRate}
-              onChange={(e) => updateFormData('vatRate', parseFloat(e.target.value) || 0)}
+              onChange={(e) => updateFormData('vatRate', parseFloat(e.target.value))}
             />
           </div>
           {/* <div className="flex items-end">
