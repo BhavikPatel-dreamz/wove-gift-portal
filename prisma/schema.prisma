@@ -244,6 +244,7 @@ model VoucherRedemption {
   voucherCode    VoucherCode @relation(fields: [voucherCodeId], references: [id], onDelete: Cascade)
 
   @@index([voucherCodeId])
+  @@unique([transactionId, voucherCodeId, storeUrl]) // Add this composite unique constraint
 }
 
 model Occasion {
