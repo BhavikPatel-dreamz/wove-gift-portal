@@ -1,21 +1,11 @@
-import fs from "fs";
-import path from "path";
+import { uploadFile } from '@/lib/utils/cloudinary';
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
     const body = await req.json();
-
     if (!body || !body.file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    }
-
-    const fileName = `card-${Date.now()}.png`;
-    const cardsDir = path.join(process.cwd(), "public", "cards");
-    const filePath = path.join(cardsDir, fileName);
-
-    if (!fs.existsSync(cardsDir)) {
-      fs.mkdirSync(cardsDir, { recursive: true });
     }
 
     const base64Data = body.file.split(",")[1];
@@ -25,13 +15,17 @@ export async function POST(req) {
         { status: 400 }
       );
     }
-    const fileData = Buffer.from(base64Data, "base64");
 
-    fs.writeFileSync(filePath, fileData);
+    // Create a buffer from base64 data
+    const buffer = Buffer.from(base64Data, "base64");
+    
+    // Pass the buffer directly to uploadFile
+    const result = await uploadFile(buffer, "cards");
 
     return NextResponse.json(
       {
-        path: `/cards/${fileName}`,
+        path: result.secure_url,
+        public_id: result.public_id,
         success: true,
       },
       { status: 200 }

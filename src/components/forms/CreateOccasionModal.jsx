@@ -6,6 +6,7 @@ import Button from "./Button";
 import Modal from "../Modal";
 import EmojiPicker from "../occasions/EmojiPicker";
 import ImageUpload from "./ImageUpload";
+import { Loader } from "lucide-react";
 
 
 const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading }) => {
@@ -81,7 +82,7 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
                   onClick={handleSave}
                   disabled={actionLoading || !formData.name.trim()}
                 >
-                  <img src="/material-symbols_save.svg" alt="Save" className="h-5 w-5" />
+                  {actionLoading ? <Loader className="animate-spin" size={14} /> : <img src="/material-symbols_save.svg" alt="Save" className="h-5 w-5" />}
                   <span>{buttonText}</span>
                 </button>
               </div>

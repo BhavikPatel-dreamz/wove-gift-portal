@@ -9,8 +9,9 @@ import Card from '../forms/Card';
 import { addOccasionCategory, updateOccasionCategory } from '../../lib/action/occasionAction';
 import toast from 'react-hot-toast';
 import Modal from '../Modal';
+import { Loader } from 'lucide-react';
 
-export default function CreateNewCard({ occasion, onBack, onSave, initialCardData = null,setModalOpen }) {
+export default function CreateNewCard({ occasion, onBack, onSave, initialCardData = null, setModalOpen }) {
   const isEditing = Boolean(initialCardData);
   const [isSaving, setIsSaving] = useState(false);
   const [isOpen, setIsOpen] = useState(!isEditing ? true : false);
@@ -325,10 +326,11 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
                 <Button
                   onClick={handleSaveCard}
                   icon={Save}
-                  loading={isSaving}
                   disabled={isSaving || !formData.cardName.trim()}
+                  className="w-42.5 bg-[#1F59EE] text-white flex items-center justify-center gap-2 rounded-md text-xs font-medium"
                 >
-                  Save Card Design
+                  {isSaving ? <Loader className="animate-spin" size={14} /> : <img src="/material-symbols_save.svg" alt="Save" className="h-5 w-5" />}
+                  <div>Save Card Design</div>
                 </Button>
               </div>
             </div>

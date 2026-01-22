@@ -88,7 +88,7 @@ model BrandTerms {
   commissionValue   Float            @default(0)
   maxDiscount       Int?             @default(0)
   minOrderValue     Int?             @default(0)
-  currency          String           @default("USD")
+  currency          String           @default("ZAR")
   breakagePolicy    String?
   breakageShare     Int?             @default(0)
   contractStart     DateTime?
@@ -159,7 +159,7 @@ model Denomination {
   id          String    @id @default(cuid())
   voucherId   String
   value       Int
-  currency    String    @default("USD")
+  currency    String    @default("ZAR")
   displayName String?
   isExpiry    Boolean
   expiresAt   DateTime?
@@ -176,7 +176,7 @@ model Denomination {
 model Vouchers {
   id                   String             @id @default(cuid())
   denominationType     DenominationStatus @default(fixed)
-  denominationCurrency String             @default("USD")
+  denominationCurrency String             @default("ZAR")
   denominationValue    Int?
   maxAmount            Int?
   minAmount            Int?
@@ -244,6 +244,7 @@ model VoucherRedemption {
   voucherCode    VoucherCode @relation(fields: [voucherCodeId], references: [id], onDelete: Cascade)
 
   @@index([voucherCodeId])
+  @@unique([transactionId, voucherCodeId, storeUrl]) // Add this composite unique constraint
 }
 
 model Occasion {
@@ -315,7 +316,7 @@ model Order {
   subtotal         Int
   discount         Int                  @default(0)
   totalAmount      Int
-  currency         String               @default("USD")
+  currency         String               @default("ZAR")
   message          String?
   customImageUrl   String?
   customVideoUrl   String?

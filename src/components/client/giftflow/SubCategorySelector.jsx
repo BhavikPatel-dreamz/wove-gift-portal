@@ -113,7 +113,7 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
 };
 
 // Fixed: Advanced Card Creator with proper dragging
-const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName='Birthday' }) => {
+const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthday' }) => {
   const [layers, setLayers] = useState([
     createLayer('background', 'bg', {
       bgColor: '#FFFFFF',
@@ -161,6 +161,8 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName='Birthday'
   const [canvasSize, setCanvasSize] = useState({ width: 400, height: 500 });
   const [isGenerating, setIsGenerating] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -172,7 +174,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName='Birthday'
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize(); 
+    handleResize();
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -314,6 +316,24 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName='Birthday'
       originalHeight: 0
     };
   }, []);
+
+  const handleSaveAndContinue = async () => {
+    setShowConfirmModal(true);
+  };
+
+  const confirmSave = async () => {
+    try {
+      setIsSaving(true);
+      await handleSave();
+      setShowConfirmModal(false);
+      goNext();
+    } catch (error) {
+      alert(`Failed to save: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
 
   // Image handling
   const handleImageUpload = useCallback((e, forBackground = false) => {
@@ -580,6 +600,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName='Birthday'
 
       const data = await response.json();
       const imagePath = data.path;
+      const publicId = data.public_id; // Store public_id for future deletion
 
       const result = await saveCustomCard({
         name: titleLayer?.content || 'Custom Card',
@@ -1083,7 +1104,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName='Birthday'
 
               {/* Save Button */}
               <button
-                onClick={handleSave}
+                onClick={handleSaveAndContinue}
                 className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all"
               >
                 Save & Continue
@@ -1092,6 +1113,39 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName='Birthday'
           </div>
         </div>
       </div>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <h3 className="text-lg font-medium mb-4">Confirm Save</h3>
+            <p className="mb-6">Once saved, the design cannot be changed. Are you sure you want to continue?</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 border rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isSaving}
+                onClick={confirmSave}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md flex items-center justify-center"
+              >
+                {isSaving ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="ml-2">Saving...</span>
+                  </div>
+                ) : 'Yes, Save & Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       <style jsx>{`
         .tool-btn {

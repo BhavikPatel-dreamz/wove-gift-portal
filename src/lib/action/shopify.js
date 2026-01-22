@@ -56,7 +56,7 @@ export const saveBrandFromShopify = async (shopData) => {
       create: {
         brandName: name,
         slug: slug,
-        logo: '/placeholder.png', // Placeholder logo
+        logo:"",
         description: 'No description available.', // Placeholder description
         website: myshopify_domain || domain,
         domain: domain,

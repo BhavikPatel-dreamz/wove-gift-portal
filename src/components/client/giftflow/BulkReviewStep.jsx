@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { goBack, goNext } from '../../../redux/giftFlowSlice';
+import { goBack, goNext, setIsConfirmed } from '../../../redux/giftFlowSlice';
 import { updateBulkCompanyInfo } from '../../../redux/cartSlice';
 
 const BulkReviewStep = () => {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const { selectedBrand } = useSelector((state) => state.giftFlowReducer);
+    const { selectedBrand, isConfirmed } = useSelector((state) => state.giftFlowReducer);
     const { bulkItems } = useSelector((state) => state.cart);
 
     const searchParams = useSearchParams();
@@ -255,7 +255,7 @@ const BulkReviewStep = () => {
                             </div>
                             <div>
                                 <p className="text-[#1A1A1A] font-poppins text-base font-semibold leading-5 mb-1">Total Amount</p>
-                                <p className="font-inter text-[20px] font-bold leading-[16px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] bg-clip-text text-transparent">
+                                <p className="font-inter text-[20px] font-bold leading-[16px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] bg-clip-text text-transparent min-w-fit">
                                     {currentBulkOrder.selectedAmount.currency}{currentBulkOrder.totalSpend.toFixed(2)}
                                 </p>
                             </div>
@@ -378,10 +378,51 @@ const BulkReviewStep = () => {
                     </div>
                 </div>
 
+                <div className="flex items-start gap-3 justify-center my-3">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            checked={isConfirmed}
+                            onChange={(e) => dispatch(setIsConfirmed(e.target.checked))}
+                            className="sr-only"
+                        />
+                        <div className={`
+                                    w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
+                                    ${isConfirmed
+                                ? 'bg-gradient-to-r from-pink-500 to-orange-400 border-transparent'
+                                : 'bg-white border-gray-300'
+                            }
+                                  `}>
+                            {isConfirmed && (
+                                <svg
+                                    className="w-3.5 h-3.5 text-white"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            )}
+                        </div>
+                        <span className="text-gray-700 font-inter text-sm font-medium leading-relaxed flex-1">
+                            I have reviewed and confirmed all recipient and gift details are correct.
+                        </span>
+                    </label>
+                </div>
+
                 {/* Proceed Button */}
                 <button
+                    disabled={!isConfirmed}
                     onClick={handleProceedToCheckout}
-                    className="max-w-[688px] m-auto w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                    className={`max-w-[688px] m-auto w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600
+                         text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 
+                         ${isConfirmed
+                            ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
+                            : 'opacity-50 cursor-not-allowed'
+                        }`}
                 >
                     Proceed to Checkout
                     <span className="text-xl"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -400,10 +400,10 @@ minAmount: brand.vouchers?.[0]?.minAmount || 0,
     }
     if (!formData.payoutMethod?.trim()) errors.push('Payout Method');
 
-    // Email validation for remittance email if provided
-    if (formData.remittanceEmail && !isValidEmail(formData.remittanceEmail)) {
-      errors.push('Valid Remittance Email');
-    }
+    // // Email validation for remittance email if provided
+    // if (formData.remittanceEmail && !isValidEmail(formData.remittanceEmail)) {
+    //   errors.push('Valid Remittance Email');
+    // }
 
     // URL validations for integrations
     formData.integrations.forEach((integration, index) => {

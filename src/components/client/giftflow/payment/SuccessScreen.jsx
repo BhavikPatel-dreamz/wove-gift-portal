@@ -6,8 +6,10 @@ const SuccessScreen = ({
   quantity, 
   selectedAmount, 
   isBulkMode, 
-  onNext 
+  onNext,
+  deliveryDetails
 }) => {
+
   return (
     <div className="min-h-screen px-4 py-30 md:px-6 md:py-30">
       <div className="max-w-[1440px] flex items-center justify-center m-auto mb-6">
@@ -18,7 +20,7 @@ const SuccessScreen = ({
                 Your bulk order is complete!
               </h1>
               <p className="font-normal text-[16px] text-[#4A4A4A] mb-6">
-                We've emailed you a CSV file with all voucher codes to corporate@gmail.com
+                We've emailed you a CSV file with all voucher codes to Your Email Address
               </p>
             </div>
           ) : (
