@@ -251,6 +251,7 @@ const PaymentStep = () => {
         selectedAmount={selectedAmount}
         isBulkMode={isBulkMode}
         onNext={handleNext}
+        deliveryDetails={deliveryDetails}
       />
     );
   }

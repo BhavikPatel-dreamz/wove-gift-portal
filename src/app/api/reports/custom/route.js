@@ -442,7 +442,7 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
     const commissionAmount = redeemedAmount * (commissionRate / 100);
     const vatRate = settlement.brand.brandTerms?.vatRate ?? 0;
     const vatAmount = commissionAmount * (vatRate / 100);
-    const netPayable = redeemedAmount - commissionAmount - vatAmount;
+    const netPayable = redeemedAmount - commissionAmount + vatAmount;
 
     const totalPaid = settlement.totalPaid || 0;
     const remainingAmount = Math.max(0, netPayable - totalPaid);
