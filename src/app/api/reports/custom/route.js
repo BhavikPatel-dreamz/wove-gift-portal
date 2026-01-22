@@ -18,53 +18,53 @@ export async function POST(request) {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    // Build where clause
+    // Build base where clause
     const whereClause = {
       createdAt: { gte: start, lte: end },
     };
 
-    // Add shop filter if provided
     if (shop) {
-      whereClause.brand = {
-        domain: shop
-      };
+      whereClause.brand = { domain: shop };
     }
 
-    // Add brand filter
     if (brand && brand !== "all") {
       whereClause.brandId = brand;
     }
 
-    // Add status filter
     if (status && status !== "all") {
       whereClause.paymentStatus = status.toUpperCase();
     }
 
-    // Generate selected reports
-    const reportData = {};
-
+    // Generate selected reports in parallel for better performance
+    const reportPromises = {};
+    
     for (const reportType of reports) {
       switch (reportType) {
         case "salesSummary":
-          reportData.salesSummary = await generateSalesSummary(whereClause, start, end);
+          reportPromises.salesSummary = generateSalesSummary(whereClause);
           break;
         case "redemptionDetails":
-          reportData.redemptionDetails = await generateRedemptionDetails(whereClause, start, end);
+          reportPromises.redemptionDetails = generateRedemptionDetails(whereClause);
           break;
         case "settlementReports":
-          reportData.settlementReports = await generateSettlementReports(start, end, brand, shop, status);
+          reportPromises.settlementReports = generateSettlementReports(start, end, brand, shop, status);
           break;
         case "transactionLog":
-          reportData.transactionLog = await generateTransactionLog(whereClause);
+          reportPromises.transactionLog = generateTransactionLog(whereClause);
           break;
         case "brandPerformance":
-          reportData.brandPerformance = await generateBrandPerformance(whereClause);
+          reportPromises.brandPerformance = generateBrandPerformance(whereClause);
           break;
         case "liabilitySnapshot":
-          reportData.liabilitySnapshot = await generateLiabilitySnapshot(brand, shop);
+          reportPromises.liabilitySnapshot = generateLiabilitySnapshot(brand, shop);
           break;
       }
     }
+
+    // Execute all report queries in parallel
+    const reportData = await Promise.all(
+      Object.entries(reportPromises).map(async ([key, promise]) => [key, await promise])
+    ).then(results => Object.fromEntries(results));
 
     // Format response based on requested format
     if (format === "csv") {
@@ -108,42 +108,57 @@ export async function POST(request) {
   }
 }
 
-// ==================== REPORT GENERATORS ====================
+// ==================== OPTIMIZED REPORT GENERATORS ====================
 
 async function generateSalesSummary(whereClause) {
+  // Single optimized query with select to reduce data transfer
   const orders = await prisma.order.findMany({
     where: whereClause,
-    include: {
+    select: {
+      orderNumber: true,
+      totalAmount: true,
+      discount: true,
+      quantity: true,
+      paymentMethod: true,
+      createdAt: true,
       brand: { select: { brandName: true } },
       user: { select: { firstName: true, lastName: true, email: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-  const totalDiscount = orders.reduce((sum, o) => sum + o.discount, 0);
-  const totalQuantity = orders.reduce((sum, o) => sum + o.quantity, 0);
+  // Use reduce for efficient aggregation
+  const { totalRevenue, totalDiscount, totalQuantity, revenueByPaymentMethod, dailyRevenue } = 
+    orders.reduce((acc, order) => {
+      acc.totalRevenue += order.totalAmount;
+      acc.totalDiscount += order.discount;
+      acc.totalQuantity += order.quantity;
 
-  const revenueByPaymentMethod = {};
-  orders.forEach((order) => {
-    const method = order.paymentMethod || "Unknown";
-    if (!revenueByPaymentMethod[method]) {
-      revenueByPaymentMethod[method] = { orders: 0, revenue: 0 };
-    }
-    revenueByPaymentMethod[method].orders += 1;
-    revenueByPaymentMethod[method].revenue += order.totalAmount;
-  });
+      // Revenue by payment method
+      const method = order.paymentMethod || "Unknown";
+      if (!acc.revenueByPaymentMethod[method]) {
+        acc.revenueByPaymentMethod[method] = { orders: 0, revenue: 0 };
+      }
+      acc.revenueByPaymentMethod[method].orders++;
+      acc.revenueByPaymentMethod[method].revenue += order.totalAmount;
 
-  const dailyRevenue = {};
-  orders.forEach((order) => {
-    const date = order.createdAt.toISOString().split("T")[0];
-    if (!dailyRevenue[date]) {
-      dailyRevenue[date] = { orders: 0, revenue: 0, quantity: 0 };
-    }
-    dailyRevenue[date].orders += 1;
-    dailyRevenue[date].revenue += order.totalAmount;
-    dailyRevenue[date].quantity += order.quantity;
-  });
+      // Daily revenue
+      const date = order.createdAt.toISOString().split("T")[0];
+      if (!acc.dailyRevenue[date]) {
+        acc.dailyRevenue[date] = { orders: 0, revenue: 0, quantity: 0 };
+      }
+      acc.dailyRevenue[date].orders++;
+      acc.dailyRevenue[date].revenue += order.totalAmount;
+      acc.dailyRevenue[date].quantity += order.quantity;
+
+      return acc;
+    }, {
+      totalRevenue: 0,
+      totalDiscount: 0,
+      totalQuantity: 0,
+      revenueByPaymentMethod: {},
+      dailyRevenue: {}
+    });
 
   return {
     summary: {
@@ -177,27 +192,43 @@ async function generateSalesSummary(whereClause) {
 async function generateRedemptionDetails(whereClause) {
   const orders = await prisma.order.findMany({
     where: whereClause,
-    include: {
+    select: {
+      orderNumber: true,
       brand: { select: { brandName: true } },
       voucherCodes: {
-        include: {
-          redemptions: { orderBy: { redeemedAt: "desc" } },
+        select: {
+          code: true,
+          originalValue: true,
+          remainingValue: true,
+          isRedeemed: true,
+          createdAt: true,
+          redeemedAt: true,
+          expiresAt: true,
+          redemptions: {
+            select: {
+              amountRedeemed: true,
+              balanceAfter: true,
+              redeemedAt: true,
+              transactionId: true,
+            },
+            orderBy: { redeemedAt: "desc" },
+          },
         },
       },
     },
   });
 
-  const voucherDetails = [];
   let totalIssued = 0;
   let totalRedeemed = 0;
   let totalPartiallyRedeemed = 0;
   let totalActive = 0;
   let totalIssuedValue = 0;
   let totalRedeemedValue = 0;
+  const voucherDetails = [];
 
   orders.forEach((order) => {
     order.voucherCodes.forEach((vc) => {
-      totalIssued += 1;
+      totalIssued++;
       totalIssuedValue += vc.originalValue;
 
       const usedValue = vc.originalValue - vc.remainingValue;
@@ -206,12 +237,12 @@ async function generateRedemptionDetails(whereClause) {
       let status = "Active";
       if (vc.isRedeemed || vc.remainingValue === 0) {
         status = "Fully Redeemed";
-        totalRedeemed += 1;
+        totalRedeemed++;
       } else if (vc.remainingValue < vc.originalValue) {
         status = "Partially Redeemed";
-        totalPartiallyRedeemed += 1;
+        totalPartiallyRedeemed++;
       } else {
-        totalActive += 1;
+        totalActive++;
       }
 
       voucherDetails.push({
@@ -261,9 +292,7 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
   };
 
   if (shop) {
-    whereClause.brand = {
-      domain: shop
-    };
+    whereClause.brand = { domain: shop };
   }
 
   if (brandFilter && brandFilter !== "all") {
@@ -276,19 +305,87 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
 
   const settlements = await prisma.settlements.findMany({
     where: whereClause,
-    include: {
+    select: {
+      id: true,
+      brandId: true,
+      settlementPeriod: true,
+      periodStart: true,
+      periodEnd: true,
+      totalPaid: true,
+      paymentHistory: true,
+      status: true,
+      paidAt: true,
+      paymentReference: true,
+      notes: true,
       brand: {
-        include: {
-          brandTerms: true,
-        }
+        select: {
+          brandName: true,
+          brandTerms: {
+            select: {
+              settlementTrigger: true,
+              commissionValue: true,
+              vatRate: true,
+            },
+          },
+        },
       },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  const recalculatedSettlements = [];
-  
-  for (const settlement of settlements) {
+  // Batch fetch redemptions and vouchers for all settlements at once
+  const settlementIds = settlements.map(s => s.brandId);
+  const periodRanges = settlements.map(s => ({ 
+    brandId: s.brandId,
+    start: s.periodStart, 
+    end: s.periodEnd 
+  }));
+
+  // Optimize by fetching all needed data in parallel
+  const [allRedemptions, allVouchers] = await Promise.all([
+    prisma.voucherRedemption.findMany({
+      where: {
+        OR: periodRanges.map(({ brandId, start, end }) => ({
+          redeemedAt: { gte: start, lte: end },
+          voucherCode: { order: { brandId } },
+        })),
+      },
+      select: {
+        amountRedeemed: true,
+        redeemedAt: true,
+        voucherCode: {
+          select: {
+            order: { select: { brandId: true } },
+          },
+        },
+      },
+    }),
+    prisma.voucherCode.findMany({
+      where: {
+        OR: periodRanges.map(({ brandId, start, end }) => ({
+          createdAt: { gte: start, lte: end },
+          order: { 
+            brandId,
+            paymentStatus: 'COMPLETED',
+          },
+        })),
+      },
+      select: {
+        originalValue: true,
+        remainingValue: true,
+        isRedeemed: true,
+        createdAt: true,
+        order: {
+          select: { brandId: true, createdAt: true },
+        },
+        redemptions: {
+          select: { amountRedeemed: true },
+        },
+      },
+    }),
+  ]);
+
+  const recalculatedSettlements = settlements.map((settlement) => {
     const settlementTrigger = settlement.brand.brandTerms?.settlementTrigger || 'onRedemption';
     
     let totalSold = 0;
@@ -299,33 +396,22 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
     let outstandingAmount = 0;
 
     if (settlementTrigger === 'onRedemption') {
-      // For onRedemption: Only count redeemed amounts
-      const redemptions = await prisma.voucherRedemption.findMany({
-        where: {
-          redeemedAt: { gte: settlement.periodStart, lte: settlement.periodEnd },
-          voucherCode: {
-            order: {
-              brandId: settlement.brandId,
-            },
-          },
-        },
-        include: {
-          voucherCode: true
-        }
-      });
+      // Filter redemptions for this settlement
+      const redemptions = allRedemptions.filter(r => 
+        r.voucherCode.order.brandId === settlement.brandId &&
+        r.redeemedAt >= settlement.periodStart &&
+        r.redeemedAt <= settlement.periodEnd
+      );
 
       redeemedAmount = redemptions.reduce((sum, r) => sum + r.amountRedeemed, 0);
       totalRedeemed = redemptions.length;
 
-      // Get all vouchers issued in this period for outstanding calculation
-      const issuedVouchers = await prisma.voucherCode.findMany({
-        where: {
-          createdAt: { gte: settlement.periodStart, lte: settlement.periodEnd },
-          order: {
-            brandId: settlement.brandId,
-          },
-        },
-      });
+      // Filter vouchers for this settlement
+      const issuedVouchers = allVouchers.filter(v =>
+        v.order.brandId === settlement.brandId &&
+        v.createdAt >= settlement.periodStart &&
+        v.createdAt <= settlement.periodEnd
+      );
 
       totalSold = issuedVouchers.length;
       totalSoldAmount = issuedVouchers.reduce((sum, v) => sum + v.originalValue, 0);
@@ -334,23 +420,14 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
       outstandingAmount = totalSoldAmount - redeemedAmount;
 
     } else if (settlementTrigger === 'onPurchase') {
-      // For onPurchase: Settlement based on vouchers sold
-      const soldVouchers = await prisma.voucherCode.findMany({
-        where: {
-          createdAt: { gte: settlement.periodStart, lte: settlement.periodEnd },
-          order: {
-            brandId: settlement.brandId,
-            paymentStatus: 'COMPLETED',
-          },
-        },
-        include: {
-          redemptions: true
-        }
-      });
+      const soldVouchers = allVouchers.filter(v =>
+        v.order.brandId === settlement.brandId &&
+        v.createdAt >= settlement.periodStart &&
+        v.createdAt <= settlement.periodEnd
+      );
 
       totalSold = soldVouchers.length;
       totalSoldAmount = soldVouchers.reduce((sum, v) => sum + v.originalValue, 0);
-      
       redeemedAmount = totalSoldAmount;
       
       totalRedeemed = soldVouchers.filter(v => 
@@ -367,7 +444,6 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
     const vatAmount = commissionAmount * (vatRate / 100);
     const netPayable = redeemedAmount - commissionAmount - vatAmount;
 
-    // FIXED: Properly calculate payment details
     const totalPaid = settlement.totalPaid || 0;
     const remainingAmount = Math.max(0, netPayable - totalPaid);
     
@@ -375,21 +451,18 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
     let paymentHistory = [];
     try {
       if (settlement.paymentHistory) {
-        if (typeof settlement.paymentHistory === 'string') {
-          paymentHistory = JSON.parse(settlement.paymentHistory);
-        } else if (Array.isArray(settlement.paymentHistory)) {
-          paymentHistory = settlement.paymentHistory;
-        }
+        paymentHistory = typeof settlement.paymentHistory === 'string' 
+          ? JSON.parse(settlement.paymentHistory)
+          : Array.isArray(settlement.paymentHistory) 
+            ? settlement.paymentHistory 
+            : [];
       }
     } catch (e) {
       console.error('Error parsing payment history:', e);
-      paymentHistory = [];
     }
 
-    // Calculate payment count
-    const paymentCount = paymentHistory.length || 0;
+    const paymentCount = paymentHistory.length;
     
-    // Get last payment date
     let lastPaymentDate = null;
     if (paymentHistory.length > 0) {
       const sortedPayments = [...paymentHistory].sort((a, b) => 
@@ -398,7 +471,7 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
       lastPaymentDate = sortedPayments[0].paidAt;
     }
 
-    recalculatedSettlements.push({
+    return {
       id: settlement.id,
       brandId: settlement.brandId,
       brandName: settlement.brand.brandName,
@@ -424,24 +497,23 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
       paidAt: settlement.paidAt,
       paymentReference: settlement.paymentReference,
       notes: settlement.notes,
-    });
-  }
+    };
+  });
 
-  const statusSummary = {
+  const statusSummary = recalculatedSettlements.reduce((acc, s) => {
+    if (s.status && acc[s.status]) {
+      acc[s.status].count++;
+      acc[s.status].amount += s.netPayable;
+      acc[s.status].paid += s.totalPaid;
+      acc[s.status].remaining += s.remainingAmount;
+    }
+    return acc;
+  }, {
     Pending: { count: 0, amount: 0, paid: 0, remaining: 0 },
     Paid: { count: 0, amount: 0, paid: 0, remaining: 0 },
     Partial: { count: 0, amount: 0, paid: 0, remaining: 0 },
     InReview: { count: 0, amount: 0, paid: 0, remaining: 0 },
     Disputed: { count: 0, amount: 0, paid: 0, remaining: 0 },
-  };
-
-  recalculatedSettlements.forEach((s) => {
-    if (s.status && statusSummary[s.status]) {
-      statusSummary[s.status].count += 1;
-      statusSummary[s.status].amount += s.netPayable;
-      statusSummary[s.status].paid += s.totalPaid;
-      statusSummary[s.status].remaining += s.remainingAmount;
-    }
   });
 
   return {
@@ -454,10 +526,7 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
       totalRemaining: recalculatedSettlements.reduce((sum, s) => sum + (s.remainingAmount || 0), 0),
       byStatus: Object.entries(statusSummary).map(([status, data]) => ({ 
         status, 
-        count: data.count,
-        amount: data.amount,
-        paid: data.paid,
-        remaining: data.remaining
+        ...data
       })),
     },
     settlements: recalculatedSettlements.map((s) => ({
@@ -492,12 +561,34 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
 async function generateTransactionLog(whereClause) {
   const orders = await prisma.order.findMany({
     where: whereClause,
-    include: {
+    select: {
+      orderNumber: true,
+      createdAt: true,
+      amount: true,
+      quantity: true,
+      subtotal: true,
+      discount: true,
+      totalAmount: true,
+      paymentMethod: true,
+      paymentStatus: true,
+      deliveryMethod: true,
       brand: { select: { brandName: true } },
       user: { select: { firstName: true, lastName: true, email: true } },
       occasion: { select: { name: true } },
-      receiverDetail: true,
-      voucherCodes: { select: { code: true, originalValue: true, isRedeemed: true } },
+      receiverDetail: {
+        select: {
+          name: true,
+          email: true,
+          phone: true,
+        },
+      },
+      voucherCodes: { 
+        select: { 
+          code: true, 
+          originalValue: true, 
+          isRedeemed: true 
+        } 
+      },
     },
     orderBy: { createdAt: "desc" },
     take: 500,
@@ -539,8 +630,18 @@ async function generateTransactionLog(whereClause) {
 async function generateBrandPerformance(whereClause) {
   const orders = await prisma.order.findMany({
     where: whereClause,
-    include: {
-      brand: { select: { id: true, brandName: true, categoryName: true, isActive: true } },
+    select: {
+      totalAmount: true,
+      quantity: true,
+      discount: true,
+      brand: { 
+        select: { 
+          id: true, 
+          brandName: true, 
+          categoryName: true, 
+          isActive: true 
+        } 
+      },
       voucherCodes: {
         select: {
           originalValue: true,
@@ -552,16 +653,13 @@ async function generateBrandPerformance(whereClause) {
     },
   });
 
-  const brandMetrics = {};
-
-  orders.forEach((order) => {
+  const brandMetrics = orders.reduce((acc, order) => {
     const brandId = order.brand.id;
-    const brandName = order.brand.brandName;
 
-    if (!brandMetrics[brandId]) {
-      brandMetrics[brandId] = {
+    if (!acc[brandId]) {
+      acc[brandId] = {
         brandId,
-        brandName,
+        brandName: order.brand.brandName,
         category: order.brand.categoryName,
         isActive: order.brand.isActive,
         totalOrders: 0,
@@ -574,41 +672,40 @@ async function generateBrandPerformance(whereClause) {
       };
     }
 
-    brandMetrics[brandId].totalOrders += 1;
-    brandMetrics[brandId].totalRevenue += order.totalAmount;
-    brandMetrics[brandId].totalQuantity += order.quantity;
-    brandMetrics[brandId].totalDiscount += order.discount;
-    brandMetrics[brandId].vouchersIssued += order.voucherCodes.length;
+    acc[brandId].totalOrders++;
+    acc[brandId].totalRevenue += order.totalAmount;
+    acc[brandId].totalQuantity += order.quantity;
+    acc[brandId].totalDiscount += order.discount;
+    acc[brandId].vouchersIssued += order.voucherCodes.length;
 
     order.voucherCodes.forEach((vc) => {
       if (vc.isRedeemed || vc.remainingValue === 0 || vc._count.redemptions > 0) {
-        brandMetrics[brandId].vouchersRedeemed += 1;
+        acc[brandId].vouchersRedeemed++;
       }
-      brandMetrics[brandId].redemptionValue += vc.originalValue - vc.remainingValue;
+      acc[brandId].redemptionValue += vc.originalValue - vc.remainingValue;
     });
-  });
+
+    return acc;
+  }, {});
 
   const brandPerformance = Object.values(brandMetrics).map((brand) => ({
     ...brand,
-    avgOrderValue:
-      brand.totalOrders > 0 ? Math.round(brand.totalRevenue / brand.totalOrders) : 0,
-    redemptionRate:
-      brand.vouchersIssued > 0
-        ? ((brand.vouchersRedeemed / brand.vouchersIssued) * 100).toFixed(2)
-        : 0,
+    avgOrderValue: brand.totalOrders > 0 ? Math.round(brand.totalRevenue / brand.totalOrders) : 0,
+    redemptionRate: brand.vouchersIssued > 0
+      ? ((brand.vouchersRedeemed / brand.vouchersIssued) * 100).toFixed(2)
+      : 0,
   }));
+
+  const totalRevenue = brandPerformance.reduce((sum, b) => sum + b.totalRevenue, 0);
+  const avgRedemptionRate = brandPerformance.length > 0
+    ? (brandPerformance.reduce((sum, b) => sum + parseFloat(b.redemptionRate), 0) / brandPerformance.length).toFixed(2)
+    : 0;
 
   return {
     summary: {
       totalBrands: brandPerformance.length,
-      totalRevenue: brandPerformance.reduce((sum, b) => sum + b.totalRevenue, 0),
-      avgRedemptionRate:
-        brandPerformance.length > 0
-          ? (
-              brandPerformance.reduce((sum, b) => sum + parseFloat(b.redemptionRate), 0) /
-              brandPerformance.length
-            ).toFixed(2)
-          : 0,
+      totalRevenue,
+      avgRedemptionRate,
     },
     brands: brandPerformance.sort((a, b) => b.totalRevenue - a.totalRevenue),
   };
@@ -623,9 +720,7 @@ async function generateLiabilitySnapshot(brandFilter, shop) {
     whereClause.order = {};
     
     if (shop) {
-      whereClause.order.brand = {
-        domain: shop
-      };
+      whereClause.order.brand = { domain: shop };
     }
     
     if (brandFilter && brandFilter !== "all") {
@@ -635,24 +730,26 @@ async function generateLiabilitySnapshot(brandFilter, shop) {
 
   const voucherCodes = await prisma.voucherCode.findMany({
     where: whereClause,
-    include: {
+    select: {
+      remainingValue: true,
+      originalValue: true,
+      expiresAt: true,
       order: {
-        include: {
+        select: {
           brand: { select: { id: true, brandName: true } },
         },
       },
     },
   });
 
-  const liabilityByBrand = {};
   const today = new Date();
-
-  voucherCodes.forEach((vc) => {
+  
+  const liabilityByBrand = voucherCodes.reduce((acc, vc) => {
     const brandId = vc.order.brand.id;
     const brandName = vc.order.brand.brandName;
 
-    if (!liabilityByBrand[brandId]) {
-      liabilityByBrand[brandId] = {
+    if (!acc[brandId]) {
+      acc[brandId] = {
         brandId,
         brandName,
         totalVouchers: 0,
@@ -664,34 +761,37 @@ async function generateLiabilitySnapshot(brandFilter, shop) {
     }
 
     const isExpired = vc.expiresAt && new Date(vc.expiresAt) < today;
-    const isPartiallyRedeemed =
-      vc.remainingValue < vc.originalValue && vc.remainingValue > 0;
+    const isPartiallyRedeemed = vc.remainingValue < vc.originalValue && vc.remainingValue > 0;
 
-    liabilityByBrand[brandId].totalVouchers += 1;
-    liabilityByBrand[brandId].totalLiability += vc.remainingValue;
+    acc[brandId].totalVouchers++;
+    acc[brandId].totalLiability += vc.remainingValue;
 
     if (isExpired) {
-      liabilityByBrand[brandId].expired += 1;
+      acc[brandId].expired++;
     } else if (isPartiallyRedeemed) {
-      liabilityByBrand[brandId].partiallyRedeemed += 1;
+      acc[brandId].partiallyRedeemed++;
     } else {
-      liabilityByBrand[brandId].active += 1;
+      acc[brandId].active++;
     }
-  });
+
+    return acc;
+  }, {});
 
   const brands = Object.values(liabilityByBrand);
   const totalLiability = brands.reduce((sum, b) => sum + b.totalLiability, 0);
+  const totalVouchers = brands.reduce((sum, b) => sum + b.totalVouchers, 0);
 
   return {
     asOfDate: today.toISOString().split("T")[0],
     summary: {
-      totalVouchers: brands.reduce((sum, b) => sum + b.totalVouchers, 0),
+      totalVouchers,
       totalLiability,
       totalBrands: brands.length,
     },
     byBrand: brands.sort((a, b) => b.totalLiability - a.totalLiability),
   };
 }
+
 
 // ==================== CSV CONVERTER ====================
 function convertToCSV(reportData, startDate, endDate) {
