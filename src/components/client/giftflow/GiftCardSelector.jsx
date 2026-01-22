@@ -14,12 +14,14 @@ const GiftCardSelector = () => {
   const denominationType = voucherData?.denominationType;
   const presetAmounts = denominationType !== 'amount' ? voucherData?.denominations || [] : [];
   const minAmount = voucherData?.minAmount || 50;
-  const maxAmount = voucherData?.maxAmount || 10000;
   const currency = voucherData?.denominationCurrency || "ZAR";
 
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
+  
+  // Set max amount based on mode: 5000 for individual, 25000 for bulk
+  const maxAmount = isBulkMode ? 25000 : 5000;
 
   const [customAmount, setCustomAmount] = useState(
     selectedAmount && denominationType !== 'fixed' ? selectedAmount.value : minAmount
@@ -156,7 +158,7 @@ const GiftCardSelector = () => {
               <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
               <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
-                <div className="px-4 py-1.5 bg-white rounded-full">
+                <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
                   </span>
@@ -174,7 +176,7 @@ const GiftCardSelector = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-5 mt-2">
-            Choose Your Gift Amount
+            {isBulkMode ? 'Choose Gift Amount (Max 25,000)' : 'Choose Gift Amount (Max 5,000)'}
           </h1>
           <p className="text-gray-600 text-base">
             Select the perfect amount for your {selectedBrand?.brandName || 'Kecks'} gift card

@@ -15,14 +15,6 @@ export default async function AdminSupportPage({ searchParams }) {
         limit: 10,
     })
 
-    if (!response.success) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <p className="text-red-600">Failed to load support requests</p>
-            </div>
-        )
-    }
-
     return (
         <AdminSupportManagement
             initialData={response.data}

@@ -1394,7 +1394,7 @@ export default function SubCategorySelector() {
               <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
               <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
-                <div className="px-4 py-1.5 bg-white rounded-full">
+                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
                   </span>
