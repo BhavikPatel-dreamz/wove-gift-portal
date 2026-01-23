@@ -42,6 +42,7 @@ export async function POST(request) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
         console.log('💰 Payment succeeded:', paymentIntent.id);
+        console.log('📋 Payment intent metadata:', paymentIntent.metadata);
         
         // Complete the order
         await handlePaymentSuccess(paymentIntent);
@@ -51,6 +52,7 @@ export async function POST(request) {
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object;
         console.log('❌ Payment failed:', paymentIntent.id);
+        console.log('📋 Payment intent metadata:', paymentIntent.metadata);
         
         await handlePaymentFailure(paymentIntent);
         break;
@@ -91,9 +93,11 @@ async function handlePaymentSuccess(paymentIntent) {
     const orderId = paymentIntent.metadata.orderId;
 
     if (!orderId) {
-      console.error('No orderId in payment intent metadata');
+      console.error('❌ No orderId in payment intent metadata');
       return;
     }
+
+    console.log(`🔄 Processing payment for order: ${orderId}`);
 
     // Complete the order (generate vouchers, send emails, etc.)
     const result = await completeOrderAfterPayment(orderId, {
@@ -104,12 +108,44 @@ async function handlePaymentSuccess(paymentIntent) {
     });
 
     if (result.success) {
-      console.log('✅ Order completed successfully:', orderId);
+      console.log(`✅ Order completed successfully: ${orderId}`);
+      console.log(`📧 Emails sent, vouchers generated`);
     } else {
-      console.error('❌ Failed to complete order:', result.error);
+      console.error(`❌ Failed to complete order ${orderId}:`, result.error);
+      
+      // ✅ Still mark as completed if payment succeeded, even if voucher generation failed
+      // This prevents customer from being charged without getting an order
+      const { prisma } = await import('@/lib/db');
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          paymentStatus: 'COMPLETED',
+          paymentIntentId: paymentIntent.id,
+          paidAt: new Date(),
+        },
+      });
     }
   } catch (error) {
-    console.error('Error handling payment success:', error);
+    console.error('❌ Error handling payment success:', error);
+    
+    // ✅ CRITICAL: Mark payment as completed even if there's an error
+    // to prevent charging customer without order
+    try {
+      const orderId = paymentIntent.metadata.orderId;
+      if (orderId) {
+        const { prisma } = await import('@/lib/db');
+        await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            paymentStatus: 'COMPLETED',
+            paymentIntentId: paymentIntent.id,
+            paidAt: new Date(),
+          },
+        });
+      }
+    } catch (fallbackError) {
+      console.error('❌ Critical: Could not mark order as completed:', fallbackError);
+    }
   }
 }
 

@@ -100,8 +100,8 @@ export async function GET(request) {
         // If brand exists, redirect to the edit page with brand ID
         redirectUrl = `/brandsPartner/edit/${brand.id}`;
       } else {
-        // Otherwise, redirect to the main app page
-        redirectUrl = `/?shop=${session.shop}${host ? `&host=${host}` : ''}`;
+        // Otherwise, redirect to the Shopify dashboard
+        redirectUrl = `/shopify/dashboard?shop=${session.shop}${host ? `&host=${host}` : ''}`;
       }
 
       const finalRedirectUrl = new URL(redirectUrl, request.url);
