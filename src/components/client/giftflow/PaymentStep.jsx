@@ -99,9 +99,9 @@ const PaymentStep = () => {
     return Object.keys(errors).length === 0;
   };
 
-    const getCurrencySymbol = (code) =>
-        currencyList.find((c) => c.code === code)?.symbol || "";
-  
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "";
+
 
   // Helper functions (existing)
   const formatAmount = (amount) => {
@@ -194,40 +194,68 @@ const PaymentStep = () => {
 
   // Payment success handler (existing code)
   const handlePaymentSuccess = (paymentIntent) => {
+    console.log('💳 Payment intent succeeded:', paymentIntent.id);
+
+    // Show immediate feedback
+    toast.dismiss(); // Clear any existing toasts
+    toast.loading('Confirming your order...', { id: 'payment-confirm' });
+
     setPaymentSubmitted(true);
-    pollOrderStatus(pendingOrderId);
+    setIsProcessing(true);
+
+    // Start polling with a slight delay to allow webhook to process
+    setTimeout(() => {
+      pollOrderStatus(pendingOrderId);
+    }, 4000); // 1.5 second delay
   };
 
-  // Poll order status (existing code)
   const pollOrderStatus = async (orderId, attempts = 0) => {
-    const maxAttempts = 20;
+    const maxAttempts = 30;
+    const pollInterval = 2000;
 
     try {
-      console.log('Polling order status for:', orderId, 'attempt:', attempts);
+      console.log(`🔍 Polling order status - Attempt ${attempts + 1}/${maxAttempts}`);
       const response = await getOrderStatus(orderId);
-      console.log('Order status response:', response);
 
-      if (response.paymentStatus === 'COMPLETED') {
-        setOrder(response.order);
+      const paymentStatus = response?.paymentStatus || response?.order?.paymentStatus;
+      const orderData = response?.order || response;
+
+      if (paymentStatus === 'COMPLETED') {
+        setOrder(orderData);
         toast.success('Order placed successfully!');
         setIsProcessing(false);
-      } else if (response.paymentStatus === 'FAILED') {
+
+        // ✅ Clear cart
+        localStorage.removeItem('cart');
+        window.dispatchEvent(new Event('storage'));
+
+        return;
+      }
+
+      if (paymentStatus === 'FAILED' || paymentStatus === 'CANCELLED') {
         setError('Payment failed. Please try again.');
         toast.error('Payment failed');
         setIsProcessing(false);
-      } else if (attempts < maxAttempts) {
-        setTimeout(() => pollOrderStatus(orderId, attempts + 1), 1000);
+        setPaymentSubmitted(false);
+        return;
+      }
+
+      if (attempts < maxAttempts) {
+        setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
       } else {
-        toast.error('Payment is being processed. Check your email for confirmation.');
+        toast.success(
+          'Payment is being processed. Check your email for confirmation.',
+          { duration: 6000 }
+        );
         setIsProcessing(false);
       }
     } catch (error) {
-      console.error('Error polling order status:', error);
+      console.error('Error polling:', error);
       if (attempts < maxAttempts) {
-        setTimeout(() => pollOrderStatus(orderId, attempts + 1), 1000);
+        setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
       } else {
-        setError('Could not verify payment status due to a network error. Please check your email for confirmation.');
-        toast.error('Failed to confirm payment status.');
+        setError('Could not verify payment. Check your email.');
+        toast.error('Failed to confirm payment');
         setIsProcessing(false);
       }
     }
@@ -360,7 +388,7 @@ const PaymentStep = () => {
               <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
               <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
-                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
+                <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
                   </span>

@@ -204,47 +204,75 @@ const CheckoutPage = () => {
 
   // Payment success handler
   const handlePaymentSuccess = (paymentIntent) => {
+    console.log('💳 Payment intent succeeded:', paymentIntent.id);
+
+    // Show immediate feedback
+    toast.dismiss(); // Clear any existing toasts
+    toast.loading('Confirming your order...', { id: 'payment-confirm' });
+
     setPaymentSubmitted(true);
-    pollOrderStatus(pendingOrderId);
+    setIsProcessing(true);
+
+    // Start polling with a slight delay to allow webhook to process
+    setTimeout(() => {
+      pollOrderStatus(pendingOrderId);
+    }, 4000); // 1.5 second delay
   };
 
   // Poll order status
-  const pollOrderStatus = async (orderId, attempts = 0) => {
-    const maxAttempts = 20;
+const pollOrderStatus = async (orderId, attempts = 0) => {
+  const maxAttempts = 30;
+  const pollInterval = 2000;
 
-    try {
-      console.log('Polling order status for:', orderId, 'attempt:', attempts);
-      const response = await getOrderStatus(orderId);
-      console.log('Order status response:', response);
+  try {
+    console.log(`🔍 Polling order status - Attempt ${attempts + 1}/${maxAttempts}`);
+    const response = await getOrderStatus(orderId);
+    
+    console.log('🔍 Raw response:', response);
 
-      if (response.paymentStatus === 'COMPLETED') {
-        setOrder(response.order);
-        toast.success('Order placed successfully!');
-        setIsProcessing(false);
-        // Clear cart
-        localStorage.removeItem('cart');
-        window.dispatchEvent(new Event('storage'));
-      } else if (response.paymentStatus === 'FAILED') {
-        setError('Payment failed. Please try again.');
-        toast.error('Payment failed');
-        setIsProcessing(false);
-      } else if (attempts < maxAttempts) {
-        setTimeout(() => pollOrderStatus(orderId, attempts + 1), 1000);
-      } else {
-        toast.error('Payment is being processed. Check your email for confirmation.');
-        setIsProcessing(false);
-      }
-    } catch (error) {
-      console.error('Error polling order status:', error);
-      if (attempts < maxAttempts) {
-        setTimeout(() => pollOrderStatus(orderId, attempts + 1), 1000);
-      } else {
-        setError('Could not verify payment status due to a network error. Please check your email for confirmation.');
-        toast.error('Failed to confirm payment status.');
-        setIsProcessing(false);
-      }
+    const paymentStatus = response?.paymentStatus || response?.order?.paymentStatus;
+    const orderData = response?.order || response;
+
+    if (paymentStatus === 'COMPLETED') {
+      setOrder(orderData);
+      toast.success('Order placed successfully!');
+      setIsProcessing(false);
+      
+      // ✅ Clear cart
+      localStorage.removeItem('cart');
+      window.dispatchEvent(new Event('storage'));
+      
+      return;
+    } 
+    
+    if (paymentStatus === 'FAILED' || paymentStatus === 'CANCELLED') {
+      setError('Payment failed. Please try again.');
+      toast.error('Payment failed');
+      setIsProcessing(false);
+      setPaymentSubmitted(false);
+      return;
     }
-  };
+    
+    if (attempts < maxAttempts) {
+      setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
+    } else {
+      toast.success(
+        'Payment is being processed. Check your email for confirmation.',
+        { duration: 6000 }
+      );
+      setIsProcessing(false);
+    }
+  } catch (error) {
+    console.error('Error polling:', error);
+    if (attempts < maxAttempts) {
+      setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
+    } else {
+      setError('Could not verify payment. Check your email.');
+      toast.error('Failed to confirm payment');
+      setIsProcessing(false);
+    }
+  }
+};
 
   const handleNext = () => {
     setShowThankYou(true);
