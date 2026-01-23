@@ -342,7 +342,7 @@ const BulkReviewStep = () => {
                                         className="mt-1 w-4 h-4 focus:ring-pink-500 text-black"
                                     />
                                     <div className="flex-1">
-                                        <span className="text-gray-900 font-medium">CSV file with voucher codes will be sent to my email</span>
+                                        <span className="text-gray-900 font-medium">Send vouchers to multiple individuals as gifts.</span>
                                     </div>
                                 </label>
 
@@ -356,7 +356,7 @@ const BulkReviewStep = () => {
                                         className="mt-1 w-4 h-4 focus:ring-pink-500 text-black"
                                     />
                                     <div className="flex-1">
-                                        <span className="text-gray-900 font-medium">Send bulk codes to my email</span>
+                                        <span className="text-gray-900 font-medium">Send bulk codes to my email.</span>
                                     </div>
                                 </label>
 
