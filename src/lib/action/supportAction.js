@@ -59,7 +59,10 @@ export async function getSupportRequests(params = {}) {
       status = "",
       sortBy = "createdAt",
       sortOrder = "desc",
+      user,
     } = params;
+
+    console.log("user", user);
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
@@ -67,13 +70,39 @@ export async function getSupportRequests(params = {}) {
 
     const whereClause = {};
 
+    if (user?.role !== 'ADMIN') {
+      whereClause.userId = user?.id;
+    }
+
     if (search) {
+      const ordersWithMatchingVoucher = await prisma.order.findMany({
+        where: {
+          voucherCodes: {
+            some: {
+              code: { contains: search, mode: "insensitive" },
+            },
+          },
+        },
+        select: {
+          orderNumber: true,
+        },
+      });
+      const matchingOrderNumbers = ordersWithMatchingVoucher.map(
+        (o) => o.orderNumber
+      );
+
       whereClause.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
         { supportId: { contains: search, mode: "insensitive" } },
         { orderNumber: { contains: search, mode: "insensitive" } },
       ];
+
+      if (matchingOrderNumbers.length > 0) {
+        whereClause.OR.push({
+          orderNumber: { in: matchingOrderNumbers },
+        });
+      }
     }
 
     if (status) {
@@ -102,11 +131,42 @@ export async function getSupportRequests(params = {}) {
       prisma.supportRequest.count({ where: whereClause }),
     ]);
 
+    const orderNumbers = requests.map((req) => req.orderNumber).filter(Boolean);
+
+    let orders = [];
+    if (orderNumbers.length > 0) {
+      orders = await prisma.order.findMany({
+        where: {
+          orderNumber: { in: orderNumbers },
+        },
+        include: {
+          voucherCodes: {
+            select: {
+              code: true,
+            },
+          },
+        },
+      });
+    }
+
+    const orderMap = orders.reduce((acc, order) => {
+      acc[order.orderNumber] = order;
+      return acc;
+    }, {});
+
+    const augmentedRequests = requests.map((req) => {
+      const order = orderMap[req.orderNumber];
+      return {
+        ...req,
+        order: order || null,
+      };
+    });
+
     const totalPages = Math.ceil(totalCount / limitNum);
 
     return {
       success: true,
-      data: requests,
+      data: augmentedRequests,
       pagination: {
         currentPage: pageNum,
         totalPages,
@@ -368,4 +428,264 @@ export async function getUnreadCount(supportRequestId, senderType) {
       count: 0,
     };
   }
+}
+
+export async function cancelOrder(orderNumber) {
+  try {
+    const order = await prisma.order.findFirst({
+      where: { orderNumber },
+      include: {
+        voucherCodes: {
+          include: {
+            redemptions: true,
+            giftCard: true,
+          },
+        },
+        deliveryLogs: true,
+        brand: true,
+      },
+    });
+
+    if (!order) {
+      return { success: false, message: "Order not found" };
+    }
+
+    // Check if any voucher has been redeemed
+    const isRedeemed = order.voucherCodes.some(
+      (vc) => vc.redemptions.length > 0
+    );
+
+    if (isRedeemed) {
+      return {
+        success: false,
+        message: "Cannot cancel an order that has been redeemed.",
+      };
+    }
+
+    // Check if order is already cancelled
+    if (order.redemptionStatus === "Cancelled") {
+      return {
+        success: false,
+        message: "Order is already cancelled.",
+      };
+    }
+
+    // Get shop authentication
+    const shop = order.brand.domain;
+    const session = await prisma.appInstallation.findUnique({
+      where: { shop }
+    });
+
+    if (!session) {
+      return {
+        success: false,
+        message: "Shop authentication not found",
+      };
+    }
+
+    // Start a transaction to ensure all updates succeed or fail together
+    const result = await prisma.$transaction(async (tx) => {
+      const errors = [];
+      const cancelledAt = new Date();
+
+      // Process each voucher code
+      for (const voucherCode of order.voucherCodes) {
+        try {
+          // Disable in Shopify if gift card exists
+          if (voucherCode.giftCard?.shopifyId) {
+            await disableShopifyGiftCard(
+              shop,
+              session.accessToken,
+              voucherCode.giftCard.shopifyId
+            );
+
+            // Update the GiftCard in database
+            await tx.giftCard.update({
+              where: { id: voucherCode.giftCard.id },
+              data: {
+                isActive: false,
+                balance: 0,
+                note: `[CANCELLED] Order ${orderNumber} cancelled on ${cancelledAt.toISOString()}`,
+                updatedAt: cancelledAt,
+              }
+            });
+          }
+
+          // Update voucher code status
+          await tx.voucherCode.update({
+            where: { id: voucherCode.id },
+            data: {
+              remainingValue: 0,
+              originalValue: 0,
+              updatedAt: cancelledAt,
+            }
+          });
+
+        } catch (error) {
+          console.error(`Error cancelling voucher ${voucherCode.code}:`, error);
+          errors.push({ code: voucherCode.code, error: error.message });
+        }
+      }
+
+      // Update all pending delivery logs to cancelled
+      if (order.deliveryLogs.length > 0) {
+        await tx.deliveryLog.updateMany({
+          where: {
+            orderId: order.id,
+            status: { in: ['PENDING', 'SENT'] }
+          },
+          data: {
+            status: 'FAILED',
+            errorMessage: `Order cancelled: ${orderNumber}`,
+            updatedAt: cancelledAt,
+          }
+        });
+      }
+
+      // Update order with cancellation details
+      await tx.order.update({
+        where: { id: order.id },
+        data: { 
+          redemptionStatus: "Cancelled",
+          paymentStatus: "CANCELLED",
+          isActive: false,
+          updatedAt: cancelledAt,
+        },
+      });
+
+      // Handle settlement adjustments if settlement trigger is onPurchase
+      const brandTerms = await tx.brandTerms.findUnique({
+        where: { brandId: order.brandId }
+      });
+
+      if (brandTerms?.settlementTrigger === 'onPurchase') {
+        // Find active settlements that might include this order
+        const activeSettlements = await tx.settlements.findMany({
+          where: {
+            brandId: order.brandId,
+            status: { in: ['Pending', 'Partial', 'InReview'] },
+            periodStart: { lte: order.createdAt },
+            periodEnd: { gte: order.createdAt },
+          }
+        });
+
+        // Update each affected settlement
+        for (const settlement of activeSettlements) {
+          const commissionAmount = calculateCommission(
+            order.totalAmount,
+            brandTerms.commissionType,
+            brandTerms.commissionValue
+          );
+
+          const vatAmount = brandTerms.vatRate 
+            ? Math.round(commissionAmount * (brandTerms.vatRate / 100))
+            : 0;
+
+          await tx.settlements.update({
+            where: { id: settlement.id },
+            data: {
+              totalSold: { decrement: order.quantity },
+              totalSoldAmount: { decrement: order.totalAmount },
+              outstanding: { decrement: order.quantity },
+              outstandingAmount: { decrement: order.totalAmount },
+              commissionAmount: { decrement: commissionAmount },
+              vatAmount: vatAmount > 0 ? { decrement: vatAmount } : undefined,
+              remainingAmount: { decrement: (order.totalAmount - commissionAmount - vatAmount) },
+              notes: settlement.notes 
+                ? `${settlement.notes}\n[${cancelledAt.toISOString()}] Order ${orderNumber} cancelled - Adjusted amounts`
+                : `[${cancelledAt.toISOString()}] Order ${orderNumber} cancelled - Adjusted amounts`,
+              updatedAt: cancelledAt,
+            }
+          });
+        }
+      }
+
+      // Create audit log for the cancellation
+      await tx.auditLog.create({
+        data: {
+          action: 'CANCEL_ORDER',
+          entity: 'Order',
+          entityId: order.id,
+          changes: {
+            orderNumber,
+            previousStatus: order.redemptionStatus,
+            newStatus: 'Cancelled',
+            cancelledAt: cancelledAt.toISOString(),
+            voucherCodesCancelled: order.voucherCodes.length,
+            settlementAdjusted: brandTerms?.settlementTrigger === 'onPurchase',
+            errors: errors.length > 0 ? errors : undefined,
+          },
+        }
+      });
+
+      return { errors, cancelledAt };
+    });
+
+    return { 
+      success: result.errors.length === 0, 
+      message: result.errors.length === 0 
+        ? "Order has been cancelled successfully."
+        : `Order cancelled with ${result.errors.length} errors`,
+      data: {
+        orderNumber,
+        cancelledAt: result.cancelledAt,
+        voucherCodesCancelled: order.voucherCodes.length,
+      },
+      errors: result.errors.length > 0 ? result.errors : undefined
+    };
+
+  } catch (error) {
+    console.error("Error cancelling order:", error);
+    return {
+      success: false,
+      message: "Failed to cancel order",
+      error: error.message,
+    };
+  }
+}
+
+// Disable gift card in Shopify using REST API
+async function disableShopifyGiftCard(shop, accessToken, shopifyGiftCardId) {
+  // Extract numeric ID from GID format
+  const numericId = shopifyGiftCardId.includes('gid://shopify/GiftCard/')
+    ? shopifyGiftCardId.split('/').pop()
+    : shopifyGiftCardId;
+
+  const response = await fetch(
+    `https://${shop}/admin/api/2024-10/gift_cards/${numericId}/disable.json`,
+    {
+      method: 'POST',
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorMessage;
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = errorData.errors || errorData.error || errorText;
+    } catch {
+      errorMessage = errorText;
+    }
+    
+    throw new Error(`Shopify API error (${response.status}): ${JSON.stringify(errorMessage)}`);
+  }
+
+  const result = await response.json();
+  return result.gift_card;
+}
+
+// Calculate commission amount based on brand terms
+function calculateCommission(amount, commissionType, commissionValue) {
+  if (commissionType === 'Percentage') {
+    return Math.round(amount * (commissionValue / 100));
+  } else if (commissionType === 'Fixed') {
+    return commissionValue;
+  }
+  return 0;
 }

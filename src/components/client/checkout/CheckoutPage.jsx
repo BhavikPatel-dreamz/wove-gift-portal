@@ -216,7 +216,7 @@ const CheckoutPage = () => {
     // Start polling with a slight delay to allow webhook to process
     setTimeout(() => {
       pollOrderStatus(pendingOrderId);
-    }, 4000); // 1.5 second delay
+    }, 5000); // 1.5 second delay
   };
 
   // Poll order status

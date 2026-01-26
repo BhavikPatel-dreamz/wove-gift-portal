@@ -3439,10 +3439,10 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       Math.max(...settlements.map((s) => new Date(s.periodEnd))),
     );
 
-    // ✅ FIXED: Added paymentStatus filter to base where clause
+    // ✅ FIXED: Include both COMPLETED and CANCELLED payment statuses
     const whereClause = {
       brandId,
-      paymentStatus: "COMPLETED", // Only include completed/paid orders
+      paymentStatus: { in: ["COMPLETED", "CANCELLED"] },
       createdAt: {
         gte: periodStart,
         lte: periodEnd,
@@ -3467,7 +3467,6 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       ];
     }
 
-    // ✅ Both queries now use whereClause with paymentStatus filter
     const [orders, totalCount] = await Promise.all([
       prisma.order.findMany({
         where: whereClause,
@@ -3486,7 +3485,6 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       prisma.order.count({ where: whereClause }),
     ]);
 
-    // ✅ This query also uses whereClause with paymentStatus filter
     const allOrders = await prisma.order.findMany({
       where: whereClause,
       include: {
@@ -3498,19 +3496,31 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       },
     });
 
-    // Calculate voucher statistics with improved logic
+    // Calculate voucher statistics
     let totalIssued = 0;
     let totalRedeemed = 0;
-    let totalUnredeemed = 0;
+    let totalPartiallyRedeemed = 0;
+    let totalExpired = 0;
+    let totalCancelled = 0;
+    let totalActive = 0;
     let totalIssuedValue = 0;
     let totalRedeemedValue = 0;
     const denominationMap = new Map();
 
     allOrders.forEach((order) => {
       order.voucherCodes.forEach((voucher) => {
+        // ✅ Determine voucher status based on order redemptionStatus and voucher data
+        const orderRedemptionStatus = order.redemptionStatus;
+        
+        // Check if cancelled
+        if (orderRedemptionStatus === "Cancelled") {
+          totalCancelled++;
+          return; // Skip cancelled vouchers from other stats
+        }
+
         totalIssued++;
 
-        // Accumulate issued and redeemed values
+        // Accumulate issued value
         totalIssuedValue += voucher.originalValue || 0;
 
         // Calculate total redeemed amount from redemptions
@@ -3522,28 +3532,23 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         // Accumulate redeemed value
         totalRedeemedValue += totalRedeemedAmount;
 
-        // IMPROVED LOGIC: A voucher is redeemed if:
-        // 1. It has ANY amount redeemed (check redemptions array)
-        // 2. OR the isRedeemed flag is true
-        // 3. OR remaining value is less than original value (partial redemption)
-        const hasRedemptions =
-          voucher.redemptions && voucher.redemptions.length > 0;
-        const hasRedeemedAmount = totalRedeemedAmount > 0;
-        const isPartiallyRedeemed =
-          voucher.originalValue &&
+        // Determine voucher status
+        const isExpired = voucher.expiresAt && new Date(voucher.expiresAt) < new Date();
+        const isFullyRedeemed = voucher.remainingValue === 0 || orderRedemptionStatus === "Redeemed";
+        const isPartiallyRedeemed = 
+          totalRedeemedAmount > 0 && 
+          voucher.remainingValue > 0 && 
           voucher.remainingValue < voucher.originalValue;
-        const isMarkedRedeemed = voucher.isRedeemed === true;
 
-        const isRedeemed =
-          hasRedemptions ||
-          hasRedeemedAmount ||
-          isPartiallyRedeemed ||
-          isMarkedRedeemed;
-
-        if (isRedeemed) {
+        // Count by status
+        if (orderRedemptionStatus === "Expired" || (isExpired && !isFullyRedeemed && !isPartiallyRedeemed)) {
+          totalExpired++;
+        } else if (isFullyRedeemed || orderRedemptionStatus === "Redeemed") {
           totalRedeemed++;
-        } else {
-          totalUnredeemed++;
+        } else if (isPartiallyRedeemed || orderRedemptionStatus === "PartiallyRedeemed") {
+          totalPartiallyRedeemed++;
+        } else if (orderRedemptionStatus === "Issued") {
+          totalActive++;
         }
 
         const denomination = voucher.originalValue || 0;
@@ -3552,7 +3557,9 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
             value: denomination,
             issued: 0,
             redeemed: 0,
-            unredeemed: 0,
+            partiallyRedeemed: 0,
+            expired: 0,
+            active: 0,
             expiresAt: voucher.expiresAt,
             voucherCodes: [],
           });
@@ -3561,10 +3568,14 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         const denom = denominationMap.get(denomination);
         denom.issued++;
 
-        if (isRedeemed) {
+        if (orderRedemptionStatus === "Expired" || (isExpired && !isFullyRedeemed && !isPartiallyRedeemed)) {
+          denom.expired++;
+        } else if (isFullyRedeemed || orderRedemptionStatus === "Redeemed") {
           denom.redeemed++;
-        } else {
-          denom.unredeemed++;
+        } else if (isPartiallyRedeemed || orderRedemptionStatus === "PartiallyRedeemed") {
+          denom.partiallyRedeemed++;
+        } else if (orderRedemptionStatus === "Issued") {
+          denom.active++;
         }
 
         denom.voucherCodes.push({
@@ -3579,11 +3590,12 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
           redemptions: voucher.redemptions,
           redemptionCount: voucher.redemptions?.length || 0,
           totalRedeemedAmount: totalRedeemedAmount,
+          status: orderRedemptionStatus,
         });
       });
     });
 
-    // Calculate redemption rate based on AMOUNT (not voucher count)
+    // Calculate redemption rate based on AMOUNT
     const redemptionRate =
       totalIssuedValue > 0
         ? ((totalRedeemedValue / totalIssuedValue) * 100).toFixed(2)
@@ -3594,15 +3606,18 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         value: denom.value,
         issued: denom.issued,
         redeemed: denom.redeemed,
-        unredeemed: denom.unredeemed,
-        rate:
+        partiallyRedeemed: denom.partiallyRedeemed,
+        expired: denom.expired,
+        active: denom.active,
+        redemptionRate:
           denom.issued > 0
-            ? ((denom.redeemed / denom.issued) * 100).toFixed(2)
+            ? (((denom.redeemed + denom.partiallyRedeemed) / denom.issued) * 100).toFixed(2)
             : "0.00",
         expires: denom.expiresAt,
         totalIssuedValue: denom.value * denom.issued,
-        totalRedeemedValue: denom.value * denom.redeemed,
-        totalUnredeemedValue: denom.value * denom.unredeemed,
+        totalRedeemedValue: denom.value * (denom.redeemed + denom.partiallyRedeemed),
+        totalActiveValue: denom.value * denom.active,
+        totalExpiredValue: denom.value * denom.expired,
         percentageOfTotal:
           totalIssued > 0
             ? ((denom.issued / totalIssued) * 100).toFixed(1)
@@ -3612,24 +3627,24 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       .sort((a, b) => b.value - a.value);
 
     const voucherData = orders.map((order) => {
+      const orderRedemptionStatus = order.redemptionStatus; // Issued, PartiallyRedeemed, Redeemed, Expired, Cancelled
+
       const totalVouchers = order.voucherCodes.length;
 
-      // Apply same improved logic for per-order stats
+      // Count vouchers by their actual redemption state
       const redeemedVouchers = order.voucherCodes.filter((v) => {
         const totalRedeemedAmount =
-          v.redemptions?.reduce((sum, r) => sum + (r.amountRedeemed || 0), 0) ||
-          0;
+          v.redemptions?.reduce((sum, r) => sum + (r.amountRedeemed || 0), 0) || 0;
+        return v.remainingValue === 0 || totalRedeemedAmount >= v.originalValue;
+      }).length;
 
-        const hasRedemptions = v.redemptions && v.redemptions.length > 0;
-        const hasRedeemedAmount = totalRedeemedAmount > 0;
-        const isPartiallyRedeemed = v.remainingValue < v.originalValue;
-        const isMarkedRedeemed = v.isRedeemed === true;
-
+      const partiallyRedeemedVouchers = order.voucherCodes.filter((v) => {
+        const totalRedeemedAmount =
+          v.redemptions?.reduce((sum, r) => sum + (r.amountRedeemed || 0), 0) || 0;
         return (
-          hasRedemptions ||
-          hasRedeemedAmount ||
-          isPartiallyRedeemed ||
-          isMarkedRedeemed
+          totalRedeemedAmount > 0 &&
+          v.remainingValue > 0 &&
+          v.remainingValue < v.originalValue
         );
       }).length;
 
@@ -3645,16 +3660,20 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
 
       const redemptionRate =
         totalVouchers > 0
-          ? ((redeemedVouchers / totalVouchers) * 100).toFixed(1)
+          ? (((redeemedVouchers + partiallyRedeemedVouchers) / totalVouchers) * 100).toFixed(1)
           : "0.0";
 
+      // Calculate amounts based on settlement trigger
       const baseAmount =
         brandTerms?.settlementTrigger === "onRedemption"
           ? redeemedAmount
           : totalAmount;
 
+      // Don't calculate commission for cancelled orders
+      const isCancelled = orderRedemptionStatus === "Cancelled";
       let commissionAmount = 0;
-      if (brandTerms) {
+      
+      if (brandTerms && !isCancelled) {
         if (brandTerms.commissionType === "Percentage") {
           commissionAmount = Math.round(
             (baseAmount * (brandTerms.commissionValue || 0)) / 100,
@@ -3662,7 +3681,7 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         } else if (brandTerms.commissionType === "Fixed") {
           const transactionCount =
             brandTerms.settlementTrigger === "onRedemption"
-              ? redeemedVouchers
+              ? redeemedVouchers + partiallyRedeemedVouchers
               : totalVouchers;
           commissionAmount = Math.round(
             (brandTerms.commissionValue || 0) * transactionCount,
@@ -3671,8 +3690,8 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       }
 
       const vatRate = brandTerms?.vatRate || 0;
-      const vatAmount = Math.round((commissionAmount * vatRate) / 100);
-      const netPayable = Math.round(baseAmount - commissionAmount + vatAmount);
+      const vatAmount = !isCancelled ? Math.round((commissionAmount * vatRate) / 100) : 0;
+      const netPayable = !isCancelled ? Math.round(baseAmount - commissionAmount + vatAmount) : 0;
 
       let lastRedemptionDate = null;
       order.voucherCodes.forEach((v) => {
@@ -3686,29 +3705,20 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         }
       });
 
-      let status = "Pending";
+      // ✅ Use order.redemptionStatus directly as the status
+      // Enum values: Issued, PartiallyRedeemed, Redeemed, Expired, Cancelled
+      let displayStatus = orderRedemptionStatus;
 
-      // Check if expired first
-      const isExpired = order.voucherCodes.some(
-        (v) =>
-          v.expiresAt &&
-          new Date(v.expiresAt) < new Date() &&
-          !v.isRedeemed &&
-          v.remainingValue > 0,
-      );
+      // Map enum values to display-friendly names if needed
+      const statusMap = {
+        Issued: "Active",
+        PartiallyRedeemed: "Partially Redeemed",
+        Redeemed: "Redeemed",
+        Expired: "Expired",
+        Cancelled: "Cancelled",
+      };
 
-      if (isExpired && redeemedVouchers === 0) {
-        status = "Disputed";
-      } else if (redeemedVouchers === totalVouchers && totalVouchers > 0) {
-        // All vouchers are redeemed (fully or partially)
-        status = "Redeemed";
-      } else if (redeemedVouchers > 0) {
-        // Some vouchers are redeemed - still count as Redeemed
-        status = "Redeemed";
-      } else {
-        // No vouchers redeemed
-        status = "Pending";
-      }
+      displayStatus = statusMap[orderRedemptionStatus] || orderRedemptionStatus;
 
       return {
         id: order.id,
@@ -3727,55 +3737,63 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         periodRange: `${new Date(order.createdAt).toLocaleDateString()} - ${new Date(
           order.createdAt,
         ).toLocaleDateString()}`,
-        totalSold: totalAmount,
+        totalSold: isCancelled ? 0 : totalAmount,
         totalVouchers: totalVouchers,
-        redeemedAmount,
-        redeemedVouchers,
-        redemptionRate,
-        baseAmount,
+        redeemedAmount: isCancelled ? 0 : redeemedAmount,
+        redeemedVouchers: isCancelled ? 0 : redeemedVouchers,
+        partiallyRedeemedVouchers: isCancelled ? 0 : partiallyRedeemedVouchers,
+        redemptionRate: isCancelled ? "0.0" : redemptionRate,
+        baseAmount: isCancelled ? 0 : baseAmount,
         commissionAmount,
         commissionType: brandTerms?.commissionType || "N/A",
         commissionValue: brandTerms?.commissionValue || 0,
         vatAmount,
         vatRate,
         netPayable,
-        outstanding: totalAmount - redeemedAmount,
+        outstanding: isCancelled ? 0 : totalAmount - redeemedAmount,
         settlementTrigger: brandTerms?.settlementTrigger || "onPurchase",
         lastPaymentDate: lastRedemptionDate,
-        status,
+        status: displayStatus,
+        redemptionStatus: orderRedemptionStatus, // Original enum value
         createdAt: order.createdAt,
       };
     });
 
     let filteredData = voucherData;
     if (status) {
-      filteredData = voucherData.filter((v) => v.status === status);
+      // Filter by display status or redemption status
+      filteredData = voucherData.filter(
+        (v) => v.status === status || v.redemptionStatus === status
+      );
     }
 
     const totalPages = Math.ceil(totalCount / limitNum);
 
+    // Calculate summary excluding cancelled orders
+    const activeOrders = filteredData.filter(v => v.redemptionStatus !== "Cancelled");
+
     const summary = {
-      totalPayable: filteredData.reduce((sum, v) => sum + v.baseAmount, 0),
-      totalPaid: filteredData.reduce((sum, v) => sum + v.redeemedAmount, 0),
-      totalRemaining: filteredData.reduce((sum, v) => sum + v.outstanding, 0),
-      totalCommission: filteredData.reduce(
-        (sum, v) => sum + v.commissionAmount,
-        0,
-      ),
-      totalVat: filteredData.reduce((sum, v) => sum + v.vatAmount, 0),
-      totalNetPayable: filteredData.reduce((sum, v) => sum + v.netPayable, 0),
+      totalPayable: activeOrders.reduce((sum, v) => sum + v.baseAmount, 0),
+      totalPaid: activeOrders.reduce((sum, v) => sum + v.redeemedAmount, 0),
+      totalRemaining: activeOrders.reduce((sum, v) => sum + v.outstanding, 0),
+      totalCommission: activeOrders.reduce((sum, v) => sum + v.commissionAmount, 0),
+      totalVat: activeOrders.reduce((sum, v) => sum + v.vatAmount, 0),
+      totalNetPayable: activeOrders.reduce((sum, v) => sum + v.netPayable, 0),
       successRate:
-        filteredData.length > 0
+        activeOrders.length > 0
           ? (
-              (filteredData.filter((v) => v.status === "Redeemed").length /
-                filteredData.length) *
-              100
+              (activeOrders.filter((v) => 
+                v.redemptionStatus === "Redeemed" || 
+                v.redemptionStatus === "PartiallyRedeemed"
+              ).length / activeOrders.length) * 100
             ).toFixed(1)
           : "0.0",
       totalOrders: filteredData.length,
-      redeemedCount: filteredData.filter((v) => v.status === "Redeemed").length,
-      pendingCount: filteredData.filter((v) => v.status === "Pending").length,
-      disputedCount: filteredData.filter((v) => v.status === "Disputed").length,
+      activeCount: filteredData.filter((v) => v.redemptionStatus === "Issued").length,
+      partiallyRedeemedCount: filteredData.filter((v) => v.redemptionStatus === "PartiallyRedeemed").length,
+      redeemedCount: filteredData.filter((v) => v.redemptionStatus === "Redeemed").length,
+      expiredCount: filteredData.filter((v) => v.redemptionStatus === "Expired").length,
+      cancelledCount: filteredData.filter((v) => v.redemptionStatus === "Cancelled").length,
     };
 
     return {
@@ -3792,8 +3810,11 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
       summary,
       voucherStats: {
         totalIssued,
+        totalActive,
+        totalPartiallyRedeemed,
         totalRedeemed,
-        totalUnredeemed,
+        totalExpired,
+        totalCancelled,
         redemptionRate,
         denominationBreakdown,
       },

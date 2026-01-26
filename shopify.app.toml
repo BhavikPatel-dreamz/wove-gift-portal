@@ -2,7 +2,7 @@
 
 client_id = "c9f2dae08ce0d37db022b21b202c7e9d"
 name = "test-new-app"
-application_url = "https://wove-gift-portal.vercel.app/shopify/main"
+application_url = "https://dd-19.dynamicdreamz.com/shopify/dashboard"
 embedded = true
 
 [build]
@@ -13,7 +13,7 @@ api_version = "2025-07"
 
   [[webhooks.subscriptions]]
   topics = [ "orders/create" ]
-  uri = "https://wove-gift-portal.vercel.app/api/webhooks/giftcard-redeem"
+  uri = "https://dd-19.dynamicdreamz.com/api/webhooks/giftcard-redeem"
 
 [access.admin]
 direct_api_mode = "offline"
@@ -26,12 +26,12 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://wove-gift-portal.vercel.app/auth/callback",
-  "https://wove-gift-portal.vercel.app/auth/shopify/callback",
-  "https://wove-gift-portal.vercel.app/api/auth/callback",
-  "https://wove-gift-portal.vercel.app/api/shopify/auth/callback",
-  "https://wove-gift-portal.vercel.app/shopify/main",
-  "https://wove-gift-portal.vercel.app/shopify"
+  "https://dd-19.dynamicdreamz.com/auth/callback",
+  "https://dd-19.dynamicdreamz.com/auth/shopify/callback",
+  "https://dd-19.dynamicdreamz.com/api/auth/callback",
+  "https://dd-19.dynamicdreamz.com/api/shopify/auth/callback",
+  "https://dd-19.dynamicdreamz.com/shopify/dashboard",
+  "https://dd-19.dynamicdreamz.com/shopify"
 ]
 
 [pos]

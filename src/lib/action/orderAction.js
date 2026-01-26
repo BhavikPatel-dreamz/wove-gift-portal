@@ -87,7 +87,7 @@ function validateOrderData(orderData) {
     // Bulk order validation
     if (!orderData.companyInfo) {
       throw new ValidationError(
-        "Company information is required for bulk orders"
+        "Company information is required for bulk orders",
       );
     }
 
@@ -117,7 +117,7 @@ function validateOrderData(orderData) {
       !["whatsapp", "email", "print"].includes(orderData.deliveryMethod)
     ) {
       throw new ValidationError(
-        "Valid delivery method is required (whatsapp, email, or print)"
+        "Valid delivery method is required (whatsapp, email, or print)",
       );
     }
 
@@ -134,7 +134,7 @@ function validateOrderData(orderData) {
       !deliveryDetails?.recipientEmailAddress
     ) {
       throw new ValidationError(
-        "Recipient email is required for email delivery"
+        "Recipient email is required for email delivery",
       );
     }
 
@@ -143,7 +143,7 @@ function validateOrderData(orderData) {
       !deliveryDetails?.recipientWhatsAppNumber
     ) {
       throw new ValidationError(
-        "Recipient WhatsApp number is required for WhatsApp delivery"
+        "Recipient WhatsApp number is required for WhatsApp delivery",
       );
     }
   }
@@ -230,13 +230,21 @@ export const createPendingOrder = async (orderData) => {
       orderNumber: generateOrderNumber(),
       brandId: orderData.selectedBrand.id,
       occasionId: orderData.selectedOccasion,
-      isCustom: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" ? true : false,
-      subCategoryId: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" 
-        ? null
-        : orderData.selectedSubCategory?.id,
-      customCardId: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" 
-        ? orderData.selectedSubCategory?.id
-        : null,
+      isCustom:
+        orderData.selectedSubCategory.category === "custom" ||
+        orderData.selectedSubCategory.category === "CUSTOM"
+          ? true
+          : false,
+      subCategoryId:
+        orderData.selectedSubCategory.category === "custom" ||
+        orderData.selectedSubCategory.category === "CUSTOM"
+          ? null
+          : orderData.selectedSubCategory?.id,
+      customCardId:
+        orderData.selectedSubCategory.category === "custom" ||
+        orderData.selectedSubCategory.category === "CUSTOM"
+          ? orderData.selectedSubCategory?.id
+          : null,
       userId: String(userId),
       receiverDetailId: receiver.id,
       amount,
@@ -244,7 +252,7 @@ export const createPendingOrder = async (orderData) => {
       subtotal,
       discount,
       totalAmount,
-currency: orderData.selectedAmount.currency || "USD",
+      currency: orderData.selectedAmount.currency || "USD",
       paymentMethod: "stripe",
       customImageUrl: orderData.customImageUrl || null,
       customVideoUrl: orderData.customVideoUrl || null,
@@ -259,7 +267,7 @@ currency: orderData.selectedAmount.currency || "USD",
         data: {
           ...orderBase,
           bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(
-            Math.random() * 10000
+            Math.random() * 10000,
           )}`,
           deliveryMethod: "email",
           message: orderData.personalMessage || "",
@@ -310,7 +318,7 @@ currency: orderData.selectedAmount.currency || "USD",
     // ✅ CRITICAL: Billing address is REQUIRED for Indian exports
     if (!orderData.billingAddress) {
       throw new ValidationError(
-        "Billing address is required for payment processing"
+        "Billing address is required for payment processing",
       );
     }
 
@@ -338,7 +346,7 @@ currency: orderData.selectedAmount.currency || "USD",
     // Generate export description for RBI compliance
     const exportDescription = generateExportDescription(
       orderData,
-      order.orderNumber
+      order.orderNumber,
     );
 
     // Create PaymentIntent with all required fields
@@ -425,10 +433,11 @@ currency: orderData.selectedAmount.currency || "USD",
 // ==================== STEP 2: COMPLETE ORDER (Called by Webhook) ====================
 export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
   let voucherCodeIds = [];
+  let order;
 
   try {
     // Get the pending order
-    const order = await prisma.order.findUnique({
+    order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
         brand: {
@@ -451,9 +460,8 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
       },
     });
 
-
     if (!order) {
-      throw new Error("Order not found");
+      throw new Error(`Order with ID ${orderId} not found`);
     }
 
     if (order.paymentStatus === "COMPLETED") {
@@ -480,19 +488,17 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
       },
     });
 
-    console.log("order details ==============>", order);
     let occasionCategoryDetails = null;
-    if(!order?.isCustom){
+    if (!order?.isCustom) {
       occasionCategoryDetails = await prisma.occasionCategory.findUnique({
         where: { id: order.subCategoryId },
       });
     } else {
-       occasionCategoryDetails = await prisma.customCard.findUnique({
+      occasionCategoryDetails = await prisma.customCard.findUnique({
         where: { id: order.customCardId },
       });
     }
 
-     console.log("occasionCategoryDetails ==============>", occasionCategoryDetails);
     // Reconstruct orderData for processing
     const orderData = {
       selectedBrand,
@@ -517,6 +523,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
             recipientFullName: order.receiverDetail.name,
             recipientEmailAddress: order.receiverDetail.email,
             recipientWhatsAppNumber: order.receiverDetail.phone,
+            recipientCountryCode: order.receiverDetail.countryCode,
           }
         : null,
       personalMessage: order.message,
@@ -528,7 +535,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
         selectedBrand,
         orderData,
         order,
-        voucherConfig
+        voucherConfig,
       );
 
       voucherCodeIds = voucherCodes.map((vc) => vc.id);
@@ -538,11 +545,16 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
       const deliveryResult = await sendBulkDelivery(
         orderData,
         voucherCodes,
-        giftCards
+        giftCards,
       );
 
       for (const voucherCode of voucherCodes) {
-        await createDeliveryLog(order, voucherCode.id, orderData, deliveryResult);
+        await createDeliveryLog(
+          order,
+          voucherCode.id,
+          orderData,
+          deliveryResult,
+        );
       }
 
       console.log("✅ Bulk order completed:", order.orderNumber);
@@ -563,7 +575,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
           selectedBrand,
           orderData,
           order,
-          voucherConfig
+          voucherConfig,
         );
 
       voucherCodeIds = [voucherCode.id];
@@ -573,13 +585,13 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
       const deliveryResult = await sendDeliveryMessage(
         orderData,
         shopifyGiftCard,
-        orderData.deliveryMethod
+        orderData.deliveryMethod,
       );
 
       if (!deliveryResult.success && orderData.deliveryMethod !== "print") {
         throw new ExternalServiceError(
           `Message delivery failed: ${deliveryResult.message}`,
-          deliveryResult
+          deliveryResult,
         );
       }
 
@@ -597,7 +609,11 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
       };
     }
   } catch (error) {
-    console.error("❌ Order completion failed:", error);
+    console.error(
+      `❌ Failed to complete order ${orderId}:`,
+      error.message,
+      error.originalError || "",
+    );
 
     // Mark order as failed
     if (orderId) {
@@ -606,9 +622,14 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
           where: { id: orderId },
           data: {
             paymentStatus: "FAILED",
+            redemptionStatus: "Failed",
           },
         })
-        .catch(() => null);
+        .catch((e) =>
+          console.error(
+            `Failed to mark order ${orderId} as FAILED: ${e.message}`,
+          ),
+        );
     }
 
     // Delete any created voucher codes
@@ -617,15 +638,24 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
         .deleteMany({
           where: { id: { in: voucherCodeIds } },
         })
-        .catch(() => null);
+        .catch((e) =>
+          console.error(
+            `Failed to delete voucher codes for order ${orderId}: ${e.message}`,
+          ),
+        );
     }
 
-    return {
+    const errorResponse = {
       success: false,
-      error: error.message || "Failed to complete order",
-      statusCode: 500,
-      errorType: "InternalServerError",
+      error: `Failed to complete order ${orderId}: ${error.message}`,
+      statusCode: error.statusCode || 500,
+      errorType: error.name || "InternalServerError",
     };
+
+    // Optionally, send a notification about the failure
+    // await sendErrorNotification(order, error);
+
+    return errorResponse;
   }
 };
 
@@ -633,7 +663,7 @@ async function createOrderRecord(
   selectedBrand,
   orderData,
   receiver,
-  scheduledFor
+  scheduledFor,
 ) {
   try {
     const amount = Number(orderData.selectedAmount.value);
@@ -647,13 +677,21 @@ async function createOrderRecord(
       orderNumber: generateOrderNumber(),
       brandId: selectedBrand.id,
       occasionId: orderData.selectedOccasion,
-      isCustom: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" ? true : false,
-      subCategoryId: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM"
-        ? null
-        : orderData.selectedSubCategory?.id,
-      customCardId: orderData.selectedSubCategory.category === "custom" || orderData.selectedSubCategory.category === "CUSTOM" 
-        ? orderData.selectedSubCategory?.id
-        : null,
+      isCustom:
+        orderData.selectedSubCategory.category === "custom" ||
+        orderData.selectedSubCategory.category === "CUSTOM"
+          ? true
+          : false,
+      subCategoryId:
+        orderData.selectedSubCategory.category === "custom" ||
+        orderData.selectedSubCategory.category === "CUSTOM"
+          ? null
+          : orderData.selectedSubCategory?.id,
+      customCardId:
+        orderData.selectedSubCategory.category === "custom" ||
+        orderData.selectedSubCategory.category === "CUSTOM"
+          ? orderData.selectedSubCategory?.id
+          : null,
       userId: String(orderData.userId),
       receiverDetailId: receiver.id,
       amount,
@@ -719,7 +757,7 @@ async function createOrderRecord(
 async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig) {
   if (!selectedBrand.domain) {
     throw new ValidationError(
-      "Brand domain is required for gift card creation"
+      "Brand domain is required for gift card creation",
     );
   }
 
@@ -777,7 +815,7 @@ async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig) {
       const errorData = await response.json().catch(() => ({}));
       throw new ExternalServiceError(
         `Shopify API error: ${errorData.error || response.statusText}`,
-        errorData
+        errorData,
       );
     }
 
@@ -786,7 +824,7 @@ async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig) {
     if (!result.gift_card?.id || !result.gift_card?.maskedCode) {
       throw new ExternalServiceError(
         "Invalid Shopify gift card response - missing id or maskedCode",
-        result
+        result,
       );
     }
 
@@ -795,7 +833,7 @@ async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig) {
     if (error instanceof ExternalServiceError) throw error;
     throw new ExternalServiceError(
       `Failed to create Shopify gift card: ${error.message}`,
-      error
+      error,
     );
   }
 }
@@ -805,7 +843,7 @@ async function processBulkOrder(
   selectedBrand,
   orderData,
   order,
-  voucherConfig
+  voucherConfig,
 ) {
   try {
     const quantity = orderData.quantity || 1;
@@ -818,7 +856,7 @@ async function processBulkOrder(
       const shopifyGiftCard = await createShopifyGiftCard(
         selectedBrand,
         orderData,
-        voucherConfig
+        voucherConfig,
       );
 
       // Save to database
@@ -848,7 +886,7 @@ async function processBulkOrder(
       let expireDate = null;
       if (voucherConfig?.denominationType === "fixed") {
         const matchedDenomination = voucherConfig?.denominations?.find(
-          (d) => d?.value == order?.amount
+          (d) => d?.value == order?.amount,
         );
         expireDate =
           matchedDenomination?.isExpiry === true
@@ -927,7 +965,7 @@ async function sendBulkDelivery(orderData, voucherCodes) {
 
       if (!senderEmail) {
         throw new ConfigurationError(
-          "Missing Brevo sender email: NEXT_BREVO_SENDER_EMAIL"
+          "Missing Brevo sender email: NEXT_BREVO_SENDER_EMAIL",
         );
       }
 
@@ -999,8 +1037,8 @@ async function sendBulkDelivery(orderData, voucherCodes) {
                     </td>
                     <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
                       ${orderData.selectedAmount?.currency || "₹"}${
-          orderData.selectedAmount?.value || "0"
-        }
+                        orderData.selectedAmount?.value || "0"
+                      }
                     </td>
                   </tr>
                   <tr>
@@ -1009,8 +1047,9 @@ async function sendBulkDelivery(orderData, voucherCodes) {
                     </td>
                     <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #1a1a1a; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 12px;">
                       ${orderData.selectedAmount?.currency || "₹"}${
-          (orderData.selectedAmount?.value || 0) * voucherCodes.length
-        }
+                        (orderData.selectedAmount?.value || 0) *
+                        voucherCodes.length
+                      }
                     </td>
                   </tr>
                 </table>
@@ -1113,7 +1152,7 @@ Thank you for choosing our gift card platform.`,
 
       if (!senderEmail) {
         throw new ConfigurationError(
-          "Missing Brevo sender email: NEXT_BREVO_SENDER_EMAIL"
+          "Missing Brevo sender email: NEXT_BREVO_SENDER_EMAIL",
         );
       }
 
@@ -1211,8 +1250,8 @@ Thank you for choosing our gift card platform.`,
                     </td>
                     <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">
                       ${orderData.selectedAmount?.currency || "₹"}${
-          orderData.selectedAmount?.value || "0"
-        }
+                        orderData.selectedAmount?.value || "0"
+                      }
                     </td>
                   </tr>
                   <tr>
@@ -1221,8 +1260,9 @@ Thank you for choosing our gift card platform.`,
                     </td>
                     <td style="padding: 8px 0; font-size: 16px; font-weight: 600; color: #1a1a1a; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 12px;">
                       ${orderData.selectedAmount?.currency || "₹"}${
-          (orderData.selectedAmount?.value || 0) * voucherCodes.length
-        }
+                        (orderData.selectedAmount?.value || 0) *
+                        voucherCodes.length
+                      }
                     </td>
                   </tr>
                 </table>
@@ -1323,7 +1363,7 @@ Thank you for choosing our gift card platform.`,
 
       console.log(
         "📧 Sending bulk email with all codes to:",
-        companyInfo.contactEmail
+        companyInfo.contactEmail,
       );
       const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
@@ -1345,7 +1385,7 @@ Thank you for choosing our gift card platform.`,
 
     throw new ExternalServiceError(
       `Failed to send bulk delivery: ${error.message}`,
-      error
+      error,
     );
   }
 }
@@ -1355,14 +1395,14 @@ async function processSingleOrder(
   selectedBrand,
   orderData,
   order,
-  voucherConfig
+  voucherConfig,
 ) {
   try {
     // Create Shopify gift card
     const shopifyGiftCard = await createShopifyGiftCard(
       selectedBrand,
       orderData,
-      voucherConfig
+      voucherConfig,
     );
 
     console.log("shopifyGiftCard", shopifyGiftCard);
@@ -1392,7 +1432,7 @@ async function processSingleOrder(
     let expireDate = null;
     if (voucherConfig?.denominationType === "fixed") {
       const matchedDenomination = voucherConfig?.denominations?.find(
-        (d) => d?.value == order?.amount
+        (d) => d?.value == order?.amount,
       );
       expireDate =
         matchedDenomination?.isExpiry === true
@@ -1405,14 +1445,14 @@ async function processSingleOrder(
           : null;
     } else if (voucherConfig?.denominationType === "both") {
       const matchedDenomination = voucherConfig?.denominations?.find(
-        (d) => d?.value == order?.amount
+        (d) => d?.value == order?.amount,
       );
       expireDate =
         matchedDenomination?.isExpiry === true
           ? matchedDenomination?.expiresAt
           : voucherConfig?.isExpiry === true
-          ? voucherConfig?.expiresAt || null
-          : null;
+            ? voucherConfig?.expiresAt || null
+            : null;
     }
 
     const voucherCode = await prisma.voucherCode.create({
@@ -1449,20 +1489,30 @@ async function processSingleOrder(
 // ==================== DELIVERY OPERATIONS ====================
 async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
   try {
-    if (deliveryMethod === "print") {
-      return { success: true, message: "Print delivery - no message sent" };
-    }
-
     if (deliveryMethod === "whatsapp") {
       return await SendWhatsappMessages(orderData, giftCard);
     } else if (deliveryMethod === "email") {
       return await SendGiftCardEmail(orderData, giftCard);
+    } else if (deliveryMethod === "print") {
+      return { success: true, message: "No delivery required" };
+    } else {
+      throw new ValidationError("Invalid delivery method specified");
+    }
+  } catch (error) {
+    // Re-throw the original error if it's already one of our custom types
+    if (
+      error instanceof ValidationError ||
+      error instanceof ExternalServiceError ||
+      error instanceof AuthenticationError
+    ) {
+      throw error;
     }
 
-    return { success: true, message: "No delivery required" };
-  } catch (error) {
+    // Wrap other errors in ExternalServiceError for consistent handling
     throw new ExternalServiceError(
-      `Failed to send ${deliveryMethod} message: ${error.message}`,
+      `Failed to send ${deliveryMethod} message: ${
+        error.error || error.message
+      }`,
       error
     );
   }
@@ -1472,7 +1522,7 @@ async function createDeliveryLog(
   order,
   voucherCodeId,
   orderData,
-  deliveryResult
+  deliveryResult,
 ) {
   try {
     const isBulkOrder = orderData.isBulkOrder === true;
@@ -1534,7 +1584,7 @@ async function updateOrCreateSettlement(selectedBrand, order) {
     periodEnd.setHours(23, 59, 59, 999);
 
     const settlementPeriod = `${order.createdAt.getFullYear()}-${String(
-      order.createdAt.getMonth() + 1
+      order.createdAt.getMonth() + 1,
     ).padStart(2, "0")}`;
 
     const existingSettlement = await prisma.settlements.findFirst({
@@ -1642,7 +1692,7 @@ export const createOrder = async (orderData) => {
       orderData.selectedBrand,
       orderData,
       receiver,
-      scheduledFor
+      scheduledFor,
     );
 
     // Get voucher configuration
@@ -1660,7 +1710,7 @@ export const createOrder = async (orderData) => {
         orderData.selectedBrand,
         orderData,
         order,
-        voucherConfig
+        voucherConfig,
       );
 
       voucherCodeIds = voucherCodes.map((vc) => vc.id);
@@ -1672,7 +1722,7 @@ export const createOrder = async (orderData) => {
       const deliveryResult = await sendBulkDelivery(
         orderData,
         voucherCodes,
-        giftCards
+        giftCards,
       );
 
       // Step 8: Create delivery logs for all vouchers
@@ -1698,7 +1748,7 @@ export const createOrder = async (orderData) => {
           orderData.selectedBrand,
           orderData,
           order,
-          voucherConfig
+          voucherConfig,
         );
 
       voucherCodeIds = [voucherCode.id];
@@ -1710,20 +1760,19 @@ export const createOrder = async (orderData) => {
       const deliveryResult = await sendDeliveryMessage(
         orderData,
         shopifyGiftCard,
-        orderData.deliveryMethod
+        orderData.deliveryMethod,
       );
 
       if (!deliveryResult.success && orderData.deliveryMethod !== "print") {
         throw new ExternalServiceError(
           `Message delivery failed: ${deliveryResult.message}`,
-          deliveryResult
+          deliveryResult,
         );
       }
 
       // Step 8: Create delivery log
       console.log("Step 8: Creating delivery log...");
       await createDeliveryLog(order, voucherCode.id, orderData);
-
       console.log("✅ Order created successfully:", order.orderNumber);
 
       return {
@@ -1899,7 +1948,7 @@ export async function getOrders(params = {}) {
         },
       }),
       prisma.order.count({
-        where: whereClause,
+where: whereClause,
       }),
       prisma.order.groupBy({
         by: ["redemptionStatus"],
@@ -1960,23 +2009,46 @@ export async function getOrders(params = {}) {
 export async function getOrderById(orderId) {
   try {
     const order = await prisma.order.findUnique({
-      where: { id: orderId },
+      where: { orderNumber: orderId },
       include: {
         brand: {
-          select: { id: true, brandName: true, logo: true, website: true },
+          select: {
+            id: true,
+            brandName: true,
+            logo: true,
+            website: true,
+            currency: true,
+          },
         },
         receiverDetail: true,
         occasion: true,
         user: {
-          select: { id: true, email: true, firstName: true, lastName: true },
-        },
-        customCard: true,
-        voucherCodes: {
-          include: {
-            redemptions: { orderBy: { redeemedAt: "desc" } },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
           },
         },
-        deliveryLogs: { orderBy: { createdAt: "desc" } },
+        voucherCodes: {
+          include: {
+            voucher: {
+              select: {
+                id: true,
+                denominationType: true,
+                partialRedemption: true,
+                expiresAt: true,
+                graceDays: true,
+              },
+            },
+            redemptions: {
+              orderBy: { redeemedAt: "desc" },
+            },
+          },
+        },
+        deliveryLogs: {
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -1986,18 +2058,95 @@ export async function getOrderById(orderId) {
 
     // Compute redeemedAt for the order based on its voucher codes
     const redeemedDates = order.voucherCodes
-      .map((vc) => vc.redeemedAt) // voucher-level redeemedAt
-      .filter(Boolean); // remove nulls
+      .map((vc) => vc.redeemedAt)
+      .filter(Boolean);
 
     const orderRedeemedAt =
       redeemedDates.length > 0
-        ? new Date(Math.max(...redeemedDates.map((d) => d.getTime()))) // latest redeemedAt
+        ? new Date(Math.max(...redeemedDates.map((d) => d.getTime())))
         : null;
 
-    // Attach redeemedAt directly to the order object
-    const orderWithRedeemedAt = { ...order, redeemedAt: orderRedeemedAt };
+    // Transform voucher codes to match VoucherDetails component structure
+    const transformedVoucherCodes = order.voucherCodes.map((vc) => {
+      // Calculate totals from redemptions
+      const totalRedeemed = vc.redemptions.reduce(
+        (sum, r) => sum + (r.amountRedeemed || 0),
+        0,
+      );
 
-    return { success: true, data: orderWithRedeemedAt };
+      const redemptionCount = vc.redemptions.length;
+
+      const lastRedemptionDate =
+        vc.redemptions.length > 0 ? vc.redemptions[0].redeemedAt : null;
+
+      // Determine voucher status - CHECK ORDER REDEMPTION STATUS FIRST
+      let status = "Active";
+
+      // Priority 1: Check if order is cancelled
+      if (order.redemptionStatus === "Cancelled") {
+        status = "Cancelled";
+      }
+      // Priority 2: Check if voucher is fully redeemed
+      else if (vc.isRedeemed || vc.remainingValue === 0) {
+        status = "Redeemed";
+      }
+      // Priority 3: Check if voucher is expired
+      else if (vc.expiresAt && new Date(vc.expiresAt) < new Date()) {
+        status = "Expired";
+      }
+      // Priority 4: Check if order is inactive
+      else if (!order.isActive) {
+        status = "Inactive";
+      }
+
+      // Transform redemption history to match VoucherDetails format
+      const redemptionHistory = vc.redemptions.map((r) => ({
+        redeemedAt: r.redeemedAt,
+        amountRedeemed: r.amountRedeemed,
+        balanceAfter: r.balanceAfter,
+        transactionId: r.transactionId,
+        storeUrl: r.storeUrl,
+      }));
+
+      return {
+        id: vc.id,
+        code: vc.code,
+        orderNumber: order.orderNumber,
+        user: {
+          firstName: order.user.firstName,
+          lastName: order.user.lastName,
+          email: order.user.email,
+        },
+        voucherType: vc.voucher?.denominationType || "fixed",
+        totalAmount: vc.originalValue,
+        remainingAmount: vc.remainingValue,
+        partialRedemption: vc.voucher?.partialRedemption || false,
+        totalRedeemed: totalRedeemed,
+        pendingAmount: vc.remainingValue,
+        redemptionCount: redemptionCount,
+        lastRedemptionDate: lastRedemptionDate,
+        expiresAt: vc.expiresAt,
+        status: status,
+        currency: order.currency,
+        redemptionHistory: redemptionHistory,
+        // Additional fields that might be useful
+        pin: vc.pin,
+        qrCode: vc.qrCode,
+        tokenizedLink: vc.tokenizedLink,
+        linkExpiresAt: vc.linkExpiresAt,
+        createdAt: vc.createdAt,
+        redeemedAt: vc.redeemedAt,
+      };
+    });
+
+    // Attach computed fields to the order object
+    const enrichedOrder = {
+      ...order,
+      redeemedAt: orderRedeemedAt,
+      voucherCodes: transformedVoucherCodes,
+    };
+
+    return { success: true, data: enrichedOrder };
   } catch (error) {
     console.error(`Error fetching order with ID ${orderId}:`, error);
     return {
@@ -2049,3 +2198,378 @@ export async function getOrderStatus(orderId) {
     },
   };
 }
+
+export async function getOrdersByUserId(userId) {
+  try {
+    const orders = await prisma.order.findMany({
+      where: {
+        userId: userId,
+      },
+      select: {
+        orderNumber: true,
+        id: true,
+      },
+    });
+    return {
+      success: true,
+      data: orders,
+    };
+  } catch (error) {
+    console.error(`Error fetching orders for user ID ${userId}:`, error);
+    return {
+      success: false,
+      message: "Failed to fetch orders for the user",
+      error: error.message,
+      status: 500,
+    };
+  }
+}
+
+export async function modifyRecipientAndResend(data) {
+  try {
+    const { orderNumber, receiverDetailId, recipientData, deliveryMethod } =
+      data;
+
+    if (!orderNumber || !receiverDetailId || !recipientData) {
+      return {
+        success: false,
+        message: "Missing required parameters",
+        status: 400,
+      };
+    }
+
+    // Validate recipient data
+    if (!recipientData.name) {
+        return {
+            success: false,
+            message: "Name is required",
+            status: 400,
+        };
+    }
+
+    if (deliveryMethod === 'email' && !recipientData.email) {
+        return {
+            success: false,
+            message: "Email is required for email delivery",
+            status: 400,
+        };
+    }
+
+    if (deliveryMethod === "whatsapp" && !recipientData.phone) {
+      return {
+        success: false,
+        message: "Phone number is required for WhatsApp delivery",
+        status: 400,
+      };
+    }
+
+    // Get order with all details FIRST to reduce transaction time
+    const order = await prisma.order.findUnique({
+      where: { orderNumber },
+      include: {
+        voucherCodes: {
+          include: {
+            giftCard: true,
+          },
+        },
+        brand: true,
+        occasion: true,
+        receiverDetail: true,
+        user: true,
+      },
+    });
+
+    if (!order) {
+      return {
+        success: false,
+        message: "Order not found",
+        status: 404,
+      };
+    }
+
+    if (order.receiverDetailId !== receiverDetailId) {
+      return {
+        success: false,
+        message: "Receiver detail ID does not match the order.",
+        status: 400,
+      };
+    }
+
+    const oldReceiverDetails = {
+      name: order.receiverDetail.name,
+      email: order.receiverDetail.email,
+      phone: order.receiverDetail.phone,
+    };
+
+    // Start transaction for write operations only
+    const txResult = await prisma.$transaction(async (tx) => {
+      // 1. Update ReceiverDetail
+      const updatedReceiver = await tx.receiverDetail.update({
+        where: { id: receiverDetailId },
+        data: {
+          name: recipientData.name,
+          email: deliveryMethod === 'email' ? recipientData.email : null,
+          phone: deliveryMethod === 'whatsapp' ? recipientData.phone : null,
+          updatedAt: new Date(),
+        },
+      });
+
+      // 2. Create delivery log for resend
+      const deliveryLog = await tx.deliveryLog.create({
+        data: {
+          orderId: order.id,
+          voucherCodeId: order.voucherCodes[0]?.id,
+          method: deliveryMethod,
+          recipient:
+            deliveryMethod === "whatsapp"
+              ? recipientData.phone
+              : recipientData.email,
+          status: "PENDING",
+          attemptCount: 0,
+        },
+      });
+
+      // 3. Create audit log
+      await tx.auditLog.create({
+        data: {
+          action: "MODIFY_RECIPIENT",
+          entity: "ReceiverDetail",
+          entityId: receiverDetailId,
+          changes: {
+            orderNumber,
+            oldDetails: oldReceiverDetails,
+            newDetails: recipientData,
+            deliveryMethod,
+          },
+        },
+      });
+
+      return { deliveryLog, updatedReceiver };
+    });
+
+    // Reconstruct orderData for delivery
+    const deliveryOrderData = {
+      selectedBrand: order.brand,
+      selectedSubCategory: order.isCustom
+        ? order.customCard
+        : order.subCategory,
+      selectedAmount: {
+        value: order.amount,
+        currency: order.currency,
+      },
+      deliveryDetails: {
+        recipientFullName: recipientData.name,
+        recipientEmailAddress: recipientData.email,
+        recipientWhatsAppNumber: recipientData.phone,
+        yourFullName: order.senderName,
+      },
+      personalMessage: order.message,
+      customImageUrl: order.customImageUrl,
+      customVideoUrl: order.customVideoUrl,
+    };
+
+    const giftCard = order.voucherCodes[0]?.giftCard;
+
+    if (!giftCard) {
+      throw new Error("Gift card details not found for this order.");
+    }
+
+    // Resend the gift
+    const deliveryResult = await sendDeliveryMessage(
+      deliveryOrderData,
+      giftCard,
+      deliveryMethod,
+    );
+
+    // Update delivery log with the result
+    await prisma.deliveryLog.update({
+      where: { id: txResult.deliveryLog.id },
+      data: {
+        status: deliveryResult.success ? "SENT" : "FAILED",
+        response: deliveryResult.message,
+        attemptCount: 1,
+      },
+    });
+
+    if (!deliveryResult.success) {
+      throw new ExternalServiceError(
+        `Message delivery failed: ${deliveryResult.message}`,
+        deliveryResult,
+      );
+    }
+
+    return {
+      success: true,
+      message: "Recipient updated and gift resent successfully.",
+      data: {
+        orderId: order.id,
+        deliveryLogId: txResult.deliveryLog.id,
+      },
+    };
+  } catch (error) {
+    console.error("Error modifying recipient:", error);
+    if (error.code === "P2028") {
+      return {
+        success: false,
+        message: "Database is busy, please try again later.",
+        status: 503, // Service Unavailable
+      };
+    }
+    return {
+      success: false,
+      message: error.message || "An internal error occurred",
+      status: 500,
+    };
+  }
+}
+
+export const getOrderDetails = async (orderId) => {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { orderNumber: orderId },
+      include: {
+        brand: {
+          select: {
+            id: true,
+            brandName: true,
+            logo: true,
+            website: true,
+            currency: true,
+          },
+        },
+        receiverDetail: true,
+        occasion: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        voucherCodes: {
+          include: {
+            voucher: {
+              select: {
+                id: true,
+                denominationType: true,
+                partialRedemption: true,
+                expiresAt: true,
+                graceDays: true,
+              },
+            },
+            redemptions: {
+              orderBy: { redeemedAt: "desc" },
+            },
+          },
+        },
+        deliveryLogs: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!order) {
+      return { success: false, message: "Order not found", status: 404 };
+    }
+
+    // Compute redeemedAt for the order based on its voucher codes
+    const redeemedDates = order.voucherCodes
+      .map((vc) => vc.redeemedAt)
+      .filter(Boolean);
+
+    const orderRedeemedAt =
+      redeemedDates.length > 0
+        ? new Date(Math.max(...redeemedDates.map((d) => d.getTime())))
+        : null;
+
+    // Transform voucher codes to match VoucherDetails component structure
+    const transformedVoucherCodes = order.voucherCodes.map((vc) => {
+      // Calculate totals from redemptions
+      const totalRedeemed = vc.redemptions.reduce(
+        (sum, r) => sum + (r.amountRedeemed || 0),
+        0,
+      );
+
+      const redemptionCount = vc.redemptions.length;
+
+      const lastRedemptionDate =
+        vc.redemptions.length > 0 ? vc.redemptions[0].redeemedAt : null;
+
+      // Determine voucher status - CHECK ORDER REDEMPTION STATUS FIRST
+      let status = "Active";
+
+      // Priority 1: Check if order is cancelled
+      if (order.redemptionStatus === "Cancelled") {
+        status = "Cancelled";
+      }
+      // Priority 2: Check if voucher is fully redeemed
+      else if (vc.isRedeemed || vc.remainingValue === 0) {
+        status = "Redeemed";
+      }
+      // Priority 3: Check if voucher is expired
+      else if (vc.expiresAt && new Date(vc.expiresAt) < new Date()) {
+        status = "Expired";
+      }
+      // Priority 4: Check if order is inactive
+      else if (!order.isActive) {
+        status = "Inactive";
+      }
+
+      // Transform redemption history to match VoucherDetails format
+      const redemptionHistory = vc.redemptions.map((r) => ({
+        redeemedAt: r.redeemedAt,
+        amountRedeemed: r.amountRedeemed,
+        balanceAfter: r.balanceAfter,
+        transactionId: r.transactionId,
+        storeUrl: r.storeUrl,
+      }));
+
+      return {
+        id: vc.id,
+        code: vc.code,
+        orderNumber: order.orderNumber,
+        user: {
+          firstName: order.user.firstName,
+          lastName: order.user.lastName,
+          email: order.user.email,
+        },
+        voucherType: vc.voucher?.denominationType || "fixed",
+        totalAmount: vc.originalValue,
+        remainingAmount: vc.remainingValue,
+        partialRedemption: vc.voucher?.partialRedemption || false,
+        totalRedeemed: totalRedeemed,
+        pendingAmount: vc.remainingValue,
+        redemptionCount: redemptionCount,
+        lastRedemptionDate: lastRedemptionDate,
+        expiresAt: vc.expiresAt,
+        status: status,
+        currency: order.currency,
+        redemptionHistory: redemptionHistory,
+        // Additional fields that might be useful
+        pin: vc.pin,
+        qrCode: vc.qrCode,
+        tokenizedLink: vc.tokenizedLink,
+        linkExpiresAt: vc.linkExpiresAt,
+        createdAt: vc.createdAt,
+        redeemedAt: vc.redeemedAt,
+      };
+    });
+    // Attach computed fields to the order object
+    const enrichedOrder = {
+      ...order,
+      redeemedAt: orderRedeemedAt,
+      voucherCodes: transformedVoucherCodes,
+    };
+
+    return { success: true, data: enrichedOrder };
+  } catch (error) {
+    console.error(`Error fetching order with ID ${orderId}:`, error);
+    return {
+      success: false,
+      message: "Failed to fetch order",
+      error: error.message,
+      status: 500,
+    };
+  }
+};

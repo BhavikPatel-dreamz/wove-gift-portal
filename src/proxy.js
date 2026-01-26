@@ -124,8 +124,7 @@ export function proxy(request) {
     pathname.startsWith('/api/analytics')  ||
     pathname.startsWith(`/api/reports/custom`) ||
     pathname.startsWith(`/api/reports/schedule`) ||
-    pathname.startsWith('/api/save-card')
-    
+    pathname.startsWith('/api/save-card')     
   ) {
     return NextResponse.next()
   }
