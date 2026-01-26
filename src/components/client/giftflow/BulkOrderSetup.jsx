@@ -58,10 +58,10 @@ const BulkOrderSetup = () => {
     if (value === '' || /^\d+$/.test(value)) {
       const numValue = parseInt(value || 0);
 
-      // Check maximum limit
-      if (numValue > 10000) {
-        setError('Maximum 10,000 vouchers per order');
-        setQuantity('10000');
+      // Check maximum limit - Updated to 25000
+      if (numValue > 25000) {
+        setError('Maximum 25,000 vouchers per order');
+        setQuantity(value); // Keep the entered value to show error
       } else {
         setQuantity(value);
         setError('');
@@ -374,7 +374,7 @@ const BulkOrderSetup = () => {
               />
 
               <p className="text-xs text-gray-500 mt-2">
-                Maximum 10,000 vouchers per order
+                Maximum 25,000 vouchers per order
               </p>
             </div>
 
@@ -407,10 +407,10 @@ const BulkOrderSetup = () => {
             {/* Add to Bulk Order Button */}
             <button
               onClick={handleAddToBulkOrder}
-              disabled={!selectedDenomination || !quantity || parseInt(quantity) === 0}
+              disabled={(!selectedDenomination || !quantity || parseInt(quantity) === 0) || parseInt(totalSpend) > 25000}
               className="w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
-              Add to Bulk Order
+              Add to Bulk Order {totalSpend}
               <span className="text-xl">
                 <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
