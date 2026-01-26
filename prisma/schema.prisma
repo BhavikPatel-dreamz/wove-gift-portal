@@ -34,7 +34,7 @@ model User {
   orders     Order[]
   wishlists  Wishlist[]
   sessions   Session[]
-
+  supportRequest SupportRequest[]
   @@map("users")
 }
 
@@ -500,6 +500,7 @@ model GiftCard {
 model SupportRequest {
   id          String        @id @default(cuid())
   supportId   String        @unique
+  userId    String
   name        String
   email       String
   phone       String?
@@ -512,6 +513,7 @@ model SupportRequest {
   
   // Relationship with messages
   messages    SupportMessage[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([email])

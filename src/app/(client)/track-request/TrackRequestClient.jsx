@@ -13,6 +13,7 @@ import { MessageCircle } from 'lucide-react'
 import SupportChatModal from './SupportChatModal'
 import { Plus } from 'lucide-react'
 import { Eye } from 'lucide-react'
+import { useSession } from '@/contexts/SessionContext';
 
 const columnHelper = createColumnHelper()
 
@@ -62,9 +63,11 @@ export default function TrackRequestClient({ initialData, pagination }) {
     const pathname = usePathname()
     const searchParams = useSearchParams()
     const [data, setData] = useState(initialData)
-    const [currentPage, setCurrentPage] = useState(pagination.currentPage)
+    const [currentPage, setCurrentPage] = useState(pagination ? pagination.currentPage : 1)
     const [loading, setLoading] = useState(false)
     const [chatRequest, setChatRequest] = useState(null)
+    const session = useSession();
+    const user = session?.user;
 
     const handlePageChange = (page) => {
         setCurrentPage(page)
@@ -166,6 +169,7 @@ export default function TrackRequestClient({ initialData, pagination }) {
                 page: parseInt(page),
                 search,
                 status,
+                user: user,
             })
             if (response.success) {
                 setData(response.data)
