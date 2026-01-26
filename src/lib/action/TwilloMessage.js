@@ -58,6 +58,24 @@ function initializeBrevoClient() {
 }
 
 // ==================== VALIDATION FUNCTIONS ====================
+function formatPhoneNumber(number, countryCode = "+91") {
+  if (!number) {
+    return null;
+  }
+  // Remove common formatting characters.
+  let cleanedNumber = number.toString().replace(/[\s()\-]/g, "");
+
+  // If the number doesn't start with a '+', it's a local number.
+  if (!cleanedNumber.startsWith("+")) {
+    // remove any leading zeros for local numbers before adding country code.
+    cleanedNumber = cleanedNumber.replace(/^0+/, "");
+    const code = countryCode.startsWith("+") ? countryCode : `+${countryCode}`;
+    cleanedNumber = `${code}${cleanedNumber}`;
+  }
+
+  return cleanedNumber;
+}
+
 function validateWhatsAppInput(data) {
   if (!data?.deliveryDetails?.recipientWhatsAppNumber) {
     throw new ValidationError("Recipient WhatsApp number is required");
@@ -67,9 +85,16 @@ function validateWhatsAppInput(data) {
     throw new ValidationError("Gift amount is required");
   }
 
-  const whatsappNumber = `whatsapp:${
-    data.deliveryDetails.recipientCountryCode || "+91"
-  }${data.deliveryDetails.recipientWhatsAppNumber}`;
+  const recipientNumber = formatPhoneNumber(
+    data.deliveryDetails.recipientWhatsAppNumber,
+    data.deliveryDetails.recipientCountryCode
+  );
+
+  if (!recipientNumber) {
+    throw new ValidationError("Invalid recipient WhatsApp number");
+  }
+
+  const whatsappNumber = `whatsapp:${recipientNumber}`;
 
   const senderNumber = process.env.NEXT_TWILIO_WHATSAPP_NUMBER;
   if (!senderNumber) {

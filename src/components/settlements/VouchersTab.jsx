@@ -89,6 +89,14 @@ const VouchersTab = ({
             Pending: "bg-blue-100 text-blue-800",
             Disputed: "bg-red-100 text-red-800",
             Redeemed: "bg-[#DEFFF4] text-[#10B981]",
+            // Voucher/Redemption Statuses
+            Active: "bg-blue-100 text-blue-800",
+            Issued: "bg-blue-100 text-blue-800", // Same as Active
+            Redeemed: "bg-[#DEFFF4] text-[#10B981]",
+            "Partially Redeemed": "bg-yellow-100 text-yellow-800",
+            PartiallyRedeemed: "bg-yellow-100 text-yellow-800",
+            Expired: "bg-orange-100 text-orange-800",
+            Cancelled: "bg-red-100 text-red-800",
         };
 
         return (
@@ -120,13 +128,13 @@ const VouchersTab = ({
     }
 
     console.log("Vouchers Tab Data:", {
-    settlementId,
-    initialData,
-    initialSummary,
-    initialVoucherStats,
-    initialPagination,
-    initialFilters
-});
+        settlementId,
+        initialData,
+        initialSummary,
+        initialVoucherStats,
+        initialPagination,
+        initialFilters
+    });
 
     return (
         <div className="flex flex-col gap-6 p-3">
@@ -195,7 +203,7 @@ const VouchersTab = ({
                                                     {row.senderEmail || row.receiverEmail || 'N/A'}
                                                 </div>
                                             </td>
-                                          
+
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
                                                 {currSymbol}{totalValue.toLocaleString()}
                                             </td>

@@ -19,7 +19,7 @@ export async function getVouchers(params = {}) {
   const skip = (page - 1) * pageSize;
 
   try {
-    // ==================== OPTIMIZE: Build where clause once ====================
+    // Build where clause
     const baseWhere = {};
 
     // Shop filtering
@@ -58,9 +58,8 @@ export async function getVouchers(params = {}) {
       }
     }
 
-    // ==================== OPTIMIZE: Add search to where clause (DB-level) ====================
+    // Search filtering
     if (search) {
-      const searchLower = search.toLowerCase();
       baseWhere.OR = [
         { orderNumber: { contains: search, mode: 'insensitive' } },
         { bulkOrderNumber: { contains: search, mode: 'insensitive' } },
@@ -72,7 +71,7 @@ export async function getVouchers(params = {}) {
       ];
     }
 
-    // ==================== OPTIMIZE: Fetch orders with optimized select ====================
+    // Fetch orders with optimized select
     const orders = await prisma.order.findMany({
       where: baseWhere,
       select: {
@@ -81,6 +80,8 @@ export async function getVouchers(params = {}) {
         bulkOrderNumber: true,
         currency: true,
         createdAt: true,
+        redemptionStatus: true, // Added to check for cancelled orders
+        isActive: true,
         user: {
           select: {
             id: true,
@@ -129,7 +130,7 @@ export async function getVouchers(params = {}) {
       return createEmptyResponse(page, pageSize);
     }
 
-    // ==================== OPTIMIZE: Process records with single-pass logic ====================
+    // Process records
     const allRecords = [];
     const now = new Date();
 
@@ -137,13 +138,14 @@ export async function getVouchers(params = {}) {
       if (order.voucherCodes.length === 0) return;
 
       if (order.bulkOrderNumber) {
-        // ==================== Process bulk order ====================
+        // Process bulk order
         const children = [];
         let totalAmount = 0;
         let remainingAmount = 0;
         let activeCount = 0;
         let redeemedCount = 0;
         let expiredCount = 0;
+        let cancelledCount = 0;
         let latestRedemptionDate = null;
 
         // Single pass through voucher codes
@@ -159,6 +161,7 @@ export async function getVouchers(params = {}) {
             case 'Active': activeCount++; break;
             case 'Redeemed': redeemedCount++; break;
             case 'Expired': expiredCount++; break;
+            case 'Cancelled': cancelledCount++; break;
           }
 
           // Track latest redemption
@@ -173,10 +176,23 @@ export async function getVouchers(params = {}) {
           if (status === 'Active' && activeCount === 0) return;
           if (status === 'Redeemed' && redeemedCount === 0) return;
           if (status === 'Expired' && expiredCount === 0) return;
+          if (status === 'Cancelled' && cancelledCount === 0) return;
         }
 
         // Sort children once
         children.sort((a, b) => b.createdAt - a.createdAt);
+
+        // Determine bulk order status
+        let bulkStatus = 'Active';
+        if (cancelledCount > 0 && cancelledCount === children.length) {
+          bulkStatus = 'Cancelled';
+        } else if (activeCount > 0) {
+          bulkStatus = 'Active';
+        } else if (redeemedCount > 0) {
+          bulkStatus = 'Redeemed';
+        } else if (expiredCount > 0) {
+          bulkStatus = 'Expired';
+        }
 
         allRecords.push({
           id: `bulk-${order.id}`,
@@ -190,8 +206,13 @@ export async function getVouchers(params = {}) {
           totalAmount,
           remainingAmount,
           currency: order.currency,
-          status: activeCount > 0 ? 'Active' : (redeemedCount > 0 ? 'Redeemed' : 'Expired'),
-          statusBreakdown: { active: activeCount, redeemed: redeemedCount, expired: expiredCount },
+          status: bulkStatus,
+          statusBreakdown: { 
+            active: activeCount, 
+            redeemed: redeemedCount, 
+            expired: expiredCount,
+            cancelled: cancelledCount 
+          },
           lastRedemptionDate: latestRedemptionDate,
           voucherCount: order.voucherCodes.length,
           orderCount: 1,
@@ -199,7 +220,7 @@ export async function getVouchers(params = {}) {
           createdAt: order.createdAt,
         });
       } else {
-        // ==================== Process individual vouchers ====================
+        // Process individual vouchers
         order.voucherCodes.forEach(vc => {
           const mapped = mapVoucherCodeOptimized(vc, order, now);
 
@@ -215,7 +236,7 @@ export async function getVouchers(params = {}) {
       }
     });
 
-    // ==================== OPTIMIZE: Sort and paginate ====================
+    // Sort and paginate
     allRecords.sort((a, b) => b.createdAt - a.createdAt);
 
     const totalCount = allRecords.length;
@@ -239,7 +260,7 @@ export async function getVouchers(params = {}) {
   }
 }
 
-// ==================== OPTIMIZE: Streamlined mapping function ====================
+// Streamlined mapping function
 function mapVoucherCodeOptimized(vc, order, now) {
   // Calculate redemption metrics in single pass
   let totalRedeemed = 0;
@@ -259,12 +280,24 @@ function mapVoucherCodeOptimized(vc, order, now) {
     lastRedemptionDate = vc.redemptions[0].redeemedAt;
   }
 
-  // Determine status
+  // Determine status - CHECK ORDER STATUS FIRST
   let voucherStatus = 'Active';
-  if (vc.isRedeemed) {
+  
+  // Priority 1: Check if order is cancelled
+  if (order.redemptionStatus === 'Cancelled') {
+    voucherStatus = 'Cancelled';
+  }
+  // Priority 2: Check if voucher is fully redeemed
+  else if (vc.isRedeemed) {
     voucherStatus = 'Redeemed';
-  } else if (vc.expiresAt && vc.expiresAt < now) {
+  }
+  // Priority 3: Check if voucher is expired
+  else if (vc.expiresAt && vc.expiresAt < now) {
     voucherStatus = 'Expired';
+  }
+  // Priority 4: Check if order is inactive
+  else if (!order.isActive) {
+    voucherStatus = 'Inactive';
   }
 
   const totalAmount = vc.originalValue || 0;
@@ -293,7 +326,7 @@ function mapVoucherCodeOptimized(vc, order, now) {
   };
 }
 
-// ==================== OPTIMIZE: Cached brands with simple query ====================
+// Cached brands with simple query
 export async function getBrandsForFilter() {
   try {
     const brands = await prisma.brand.findMany({
@@ -312,7 +345,7 @@ export async function getBrandsForFilter() {
   }
 }
 
-// ==================== OPTIMIZE: Bulk order details with single query ====================
+// Bulk order details with single query
 export async function getBulkOrderDetails(params = {}) {
   const { bulkOrderNumber, orderNumber, page = 1, pageSize = 10, search = '', status = '' } = params;
 
@@ -349,6 +382,8 @@ export async function getBulkOrderDetails(params = {}) {
         bulkOrderNumber: true,
         currency: true,
         createdAt: true,
+        redemptionStatus: true, // Added
+        isActive: true,
         user: {
           select: {
             id: true,
@@ -400,7 +435,7 @@ export async function getBulkOrderDetails(params = {}) {
       };
     }
 
-    // ==================== OPTIMIZE: Single-pass processing ====================
+    // Single-pass processing
     const now = new Date();
     const children = [];
     let totalAmount = 0;
@@ -408,6 +443,7 @@ export async function getBulkOrderDetails(params = {}) {
     let activeCount = 0;
     let redeemedCount = 0;
     let expiredCount = 0;
+    let cancelledCount = 0;
 
     order.voucherCodes.forEach(vc => {
       const mapped = mapVoucherCodeOptimized(vc, order, now);
@@ -423,6 +459,7 @@ export async function getBulkOrderDetails(params = {}) {
         case 'Active': activeCount++; break;
         case 'Redeemed': redeemedCount++; break;
         case 'Expired': expiredCount++; break;
+        case 'Cancelled': cancelledCount++; break;
       }
     });
 
@@ -432,6 +469,18 @@ export async function getBulkOrderDetails(params = {}) {
     const totalCount = children.length;
     const skip = (page - 1) * pageSize;
     const paginatedChildren = children.slice(skip, skip + pageSize);
+
+    // Determine bulk order status
+    let bulkStatus = 'Active';
+    if (cancelledCount > 0 && cancelledCount === order.voucherCodes.length) {
+      bulkStatus = 'Cancelled';
+    } else if (activeCount > 0) {
+      bulkStatus = 'Active';
+    } else if (redeemedCount > 0) {
+      bulkStatus = 'Redeemed';
+    } else if (expiredCount > 0) {
+      bulkStatus = 'Expired';
+    }
 
     return {
       success: true,
@@ -444,11 +493,12 @@ export async function getBulkOrderDetails(params = {}) {
         totalAmount,
         remainingAmount,
         currency: order.currency,
-        status: activeCount > 0 ? 'Active' : (redeemedCount > 0 ? 'Redeemed' : 'Expired'),
+        status: bulkStatus,
         statusBreakdown: { 
           active: activeCount, 
           redeemed: redeemedCount, 
-          expired: expiredCount 
+          expired: expiredCount,
+          cancelled: cancelledCount 
         },
         voucherCount: order.voucherCodes.length,
         orderCount: 1,
@@ -471,7 +521,7 @@ export async function getBulkOrderDetails(params = {}) {
   }
 }
 
-// ==================== Helper function ====================
+// Helper function
 function createEmptyResponse(page, pageSize, message = null) {
   return {
     success: message ? false : true,

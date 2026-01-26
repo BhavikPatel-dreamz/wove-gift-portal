@@ -197,6 +197,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
       Active: { color: "text-blue-600 bg-blue-50 border-blue-200" },
       Expired: { color: "text-red-600 bg-red-50 border-red-200" },
       Inactive: { color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
+      Cancelled: { color: "text-gray-600 bg-gray-100 border-gray-300" }, // Added
     };
 
     const config = statusConfig[status] || statusConfig.Active;
@@ -211,6 +212,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
             {statusBreakdown.active > 0 && <div>Active: {statusBreakdown.active}</div>}
             {statusBreakdown.redeemed > 0 && <div>Redeemed: {statusBreakdown.redeemed}</div>}
             {statusBreakdown.expired > 0 && <div>Expired: {statusBreakdown.expired}</div>}
+            {statusBreakdown.cancelled > 0 && <div>Cancelled: {statusBreakdown.cancelled}</div>}
           </div>
         )}
       </div>
@@ -349,6 +351,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
               { value: "Redeemed", label: "Redeemed" },
               { value: "Expired", label: "Expired" },
               { value: "Inactive", label: "Inactive" },
+              { value: "Cancelled", label: "Cancelled" }, // Added
             ],
           },
           {
@@ -445,19 +448,31 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
               {bulkData?.statusBreakdown && (
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Status Breakdown</h3>
-                  <div className="flex gap-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                      <span className="text-sm text-gray-600">Active: <span className="font-semibold">{bulkData.statusBreakdown.active || 0}</span></span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="text-sm text-gray-600">Redeemed: <span className="font-semibold">{bulkData.statusBreakdown.redeemed || 0}</span></span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span className="text-sm text-gray-600">Expired: <span className="font-semibold">{bulkData.statusBreakdown.expired || 0}</span></span>
-                    </div>
+                  <div className="flex gap-6 flex-wrap">
+                    {bulkData.statusBreakdown.active > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <span className="text-sm text-gray-600">Active: <span className="font-semibold">{bulkData.statusBreakdown.active}</span></span>
+                      </div>
+                    )}
+                    {bulkData.statusBreakdown.redeemed > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span className="text-sm text-gray-600">Redeemed: <span className="font-semibold">{bulkData.statusBreakdown.redeemed}</span></span>
+                      </div>
+                    )}
+                    {bulkData.statusBreakdown.expired > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span className="text-sm text-gray-600">Expired: <span className="font-semibold">{bulkData.statusBreakdown.expired}</span></span>
+                      </div>
+                    )}
+                    {bulkData.statusBreakdown.cancelled > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-gray-500"></div>
+                        <span className="text-sm text-gray-600">Cancelled: <span className="font-semibold">{bulkData.statusBreakdown.cancelled}</span></span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
