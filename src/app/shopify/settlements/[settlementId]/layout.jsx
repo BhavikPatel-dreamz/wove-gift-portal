@@ -1,9 +1,9 @@
 import React from "react";
 import { notFound } from 'next/navigation';
-import SettlementActions from "../../../../../../components/settlements/SettlementActions";
-import SettlementDashboard from "../../../../../../components/settlements/SettlementDashboard";
-import SettlementTabs from "../../../../../../components/settlements/SettlementTabs";
-import { getSettlementDetails } from "../../../../../../lib/action/brandPartner";
+import SettlementDashboard from "../../../../components/settlements/SettlementDashboard";
+import SettlementTabs from "../../../../components/settlements/SettlementTabs";
+import SettlementActions from "../../../../components/settlements/SettlementActions"
+import { getSettlementDetails } from "../../../../lib/action/brandPartner";
 
 const getMonthYear = (date) => {
     if (!date) return "N/A";

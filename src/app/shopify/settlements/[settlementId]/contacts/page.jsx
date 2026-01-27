@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import SettlementContacts from "@/components/settlements/SettlementContacts";
-import { getSettlementContacts } from "../../../../../../../lib/action/brandPartner";
+import SettlementContacts from "../../../../../components/settlements/SettlementContacts";
+import { getSettlementContacts } from "../../../../../lib/action/brandPartner";
 
 const ContactPage = async ({ params }) => {
   const { settlementId } = await params;

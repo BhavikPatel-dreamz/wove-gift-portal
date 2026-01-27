@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import SettlementTerms from "@/components/settlements/SettlementTermsPage";
-import { getSettlementTerms } from "../../../../../../../lib/action/brandPartner";
+import SettlementTerms from "../../../../../components/settlements/SettlementTermsPage";
+import { getSettlementTerms } from "../../../../../lib/action/brandPartner";
 
 const TermsPage = async ({ params }) => {
   const { settlementId } = await params;

@@ -1,6 +1,6 @@
-import VouchersTab from "../../../../../../../components/settlements/VouchersTab";
+import VouchersTab from "../../../../../components/settlements/VouchersTab";
 import { notFound } from "next/navigation";
-import { getSettlementVouchersList } from "../../../../../../../lib/action/brandPartner";
+import { getSettlementVouchersList } from "../../../../../lib/action/brandPartner";
 
 const VouchersPage = async ({ params, searchParams }) => {
   const { settlementId } = await params;

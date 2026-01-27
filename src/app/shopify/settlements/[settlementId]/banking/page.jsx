@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import SettlementBanking from "@/components/settlements/SettlementBanking";
-import { getSettlementBankingDetails } from "../../../../../../../lib/action/brandPartner";
+import SettlementBanking from "../../../../../components/settlements/SettlementBanking";
+import { getSettlementBankingDetails } from "../../../../../lib/action/brandPartner";
 
 const BankingPage = async ({ params }) => {
   const { settlementId } = await params;

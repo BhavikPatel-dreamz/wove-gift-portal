@@ -280,7 +280,7 @@ const BrandSettlementHistoryClient = () => {
             if (hostParam) params.set('host', hostParam);
             if (embeddedParam) params.set('embedded', embeddedParam);
             
-            const basePath = `/settlements/${settlementId}/overview`;
+            const basePath = `/shopify/settlements/${settlementId}/overview`;
             const fullUrl = params.toString() ? `${basePath}?${params.toString()}` : basePath;
             console.log(fullUrl,"fullUrl")
     

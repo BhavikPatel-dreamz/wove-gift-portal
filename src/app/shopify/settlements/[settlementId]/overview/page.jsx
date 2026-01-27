@@ -1,7 +1,7 @@
 import React from "react";
 import { notFound, redirect } from "next/navigation";
 import OverviewTab from "@/components/settlements/OverviewTab";
-import { getSettlementDetails } from "../../../../../../../lib/action/brandPartner";
+import { getSettlementDetails } from "../../../../../lib/action/brandPartner";
 
 // Server Component - Fetches data on the server
 const SettlementDetailsPage = async ({ params, searchParams }) => {
