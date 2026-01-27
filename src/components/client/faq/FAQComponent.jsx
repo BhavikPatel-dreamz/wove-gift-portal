@@ -141,27 +141,45 @@ const FAQComponent = () => {
       </div>
 
       {/* Search Bar */}
-      <div className="w-[513px] h-[55px] px-4 sm:px-6 -mt-6 absolute left-1/2 transform -translate-x-1/2">
-        <div className="relative ">
-        <div className="w-[40px] h-[40px] absolute bg-[rgba(217,217,217,0.2)] rounded-full left-2 top-1/2 -translate-y-1/2 z-10">
-            <Search className="w-5 h-5 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[#000000]" strokeWidth={2} />
-          </div>
-          <input
-            type="text"
-            placeholder="Search FAQs (e.g., refund, WhatsApp, bulk CSV)"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 sm:pl-15  pr-4 py-3 sm:py-3.5 rounded-lg focus:outline-none shadow-sm text-sm sm:text-[15px]"
-            style={{
-              backgroundColor: 'white',
-              color: 'black',
-              borderRadius: '50px',
-              border: '2px solid #FFB4B4',
-            }}
-          />
-          {/* </div> */}
-        </div>
-      </div>
+      <div className="absolute left-1/2 -translate-x-1/2 -mt-4
+                w-[90%] sm:w-[80%] md:w-[520px]
+                h-auto px-2 sm:px-4">
+  <div className="relative">
+    {/* Search icon */}
+    <div
+      className="absolute left-3 top-1/2 -translate-y-1/2
+                 w-9 h-9 sm:w-10 sm:h-10
+                 bg-[rgba(217,217,217,0.2)]
+                 rounded-full flex items-center justify-center z-10"
+    >
+      <Search
+        className="w-4 h-4 sm:w-5 sm:h-5 text-black"
+        strokeWidth={2}
+      />
+    </div>
+
+    {/* Input */}
+    <input
+      type="text"
+      placeholder="Search FAQs (e.g., refund, WhatsApp, bulk CSV)"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="
+        w-full
+        pl-12 sm:pl-14
+        pr-4
+        py-2.5 sm:py-3.5
+        rounded-full
+        text-sm sm:text-[15px]
+        shadow-sm
+        focus:outline-none
+        border-2 border-[#FFB4B4]
+        bg-white text-black
+      "
+    />
+  </div>
+</div>
+
  <div className="min-h-screen bg-white">
       {/* Category Pills */}
       <div className="px-4 mt-5">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, Receipt, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import DynamicTable from "@/components/forms/DynamicTable";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -16,7 +16,12 @@ const BrandSettlementHistoryClient = ({
     error,
 }) => {
     const router = useRouter();
-
+        const searchParams = useSearchParams();
+    const currentPage = searchParams.get('page') || '1';
+    const currentStatus = searchParams.get('status') || '';
+    const currentYear = searchParams.get('year') || '';
+    const currentSortBy = searchParams.get('sortby') || '';
+    const currentSearch = searchParams.get('search') || '';
     // Generate year options
     const yearOptions = useMemo(() => {
         const currentYear = new Date().getFullYear();
@@ -431,16 +436,19 @@ const BrandSettlementHistoryClient = ({
                             name: "status",
                             placeholder: "Status: All",
                             options: statusFilterOptions,
+                            value:currentStatus
                         },
                         {
                             name: "year",
                             placeholder: "Year: All",
                             options: yearOptions,
+                            value:currentYear,
                         },
                         {
                             name: "sortby",
                             placeholder: "Sort By: Latest First",
                             options: sortOptions,
+                            value:currentSortBy
                         },
                     ]}
                     emptyMessage="No settlement history found. Try adjusting your filters."

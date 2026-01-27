@@ -38,12 +38,23 @@ body {
   background: url('../../public/uploads/dashboard/blue-border.svg') no-repeat top;
   background-size: cover;
 }
+
 .gradient-border-green { 
   background: url('../../public/uploads/dashboard/green-border.svg') no-repeat top;
   background-size: cover;
 }
+
 .gradient-border {
   border: 2px solid transparent;
   border-image-source: linear-gradient(114.06deg, #000 11.36%, #FA8F42 90.28%);
   border-image-slice: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .gradient-border-orange,
+  .gradient-border-blue,
+  .gradient-border-green {
+    background-size: contain;
+  }
 }

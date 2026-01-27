@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useMemo, useCallback, useState, useEffect, useTransition } from "react";
+import React, { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { useSearchParams, useParams, usePathname } from "next/navigation";
 import { Eye, Receipt, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import DynamicTable from "@/components/forms/DynamicTable";
 import { createColumnHelper } from "@tanstack/react-table";
-import Link from "next/link";
 import { currencyList } from "../../../components/brandsPartner/currency";
 import { getBrandSettlementHistory } from "../../../lib/action/brandPartner";
 import { useShopifyNavigation } from '@/hooks/useShopifyNavigation';
+import { strict } from "assert";
 
 const BrandSettlementHistoryClient = () => {
     const [initialData, setInitialData] = useState([]);
@@ -17,59 +17,83 @@ const BrandSettlementHistoryClient = () => {
     const [brandId, setBrandId] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [isPending, startTransition] = useTransition();
+    const [isFiltering, setIsFiltering] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
+
 
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const params = useParams();
-    const { navigate } = useShopifyNavigation();
+    const { navigate, updateQueryParams } = useShopifyNavigation();
+    const settlementId = useParams({strict:false})
+  
+    
+    const searchDebounceRef = useRef(null);
+    const isMountedRef = useRef(true);
 
     const urlBrandId = params.id;
     const shop = searchParams.get('shop');
 
-    // Get filter values from URL params (not local state)
+    // Get filter values from URL params
     const currentPage = searchParams.get('page') || '1';
     const currentStatus = searchParams.get('status') || '';
     const currentYear = searchParams.get('year') || '';
     const currentSortBy = searchParams.get('sortby') || '';
     const currentSearch = searchParams.get('search') || '';
 
-    const fetchBrandSettlementHistory = useCallback(async () => {
-        try {
-            setLoading(true);
+    // Sync URL search param to local state on mount
+    useEffect(() => {
+        setSearchInput(currentSearch);
+    }, [currentSearch]);
 
-            // Build query params from URL search params
+    // Track mounted state
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
+
+    // Check for shop parameter
+    useEffect(() => {
+        if (!shop) {
+            console.warn('Shop parameter is missing. Some features may not work correctly.');
+        }
+    }, [shop]);
+
+    const fetchBrandSettlementHistory = useCallback(async (isInitialLoad = false) => {
+        try {
+            if (isInitialLoad) {
+                setLoading(true);
+            } else {
+                setIsFiltering(true);
+            }
+
             const queryParams = {
                 page: currentPage,
                 limit: "20",
             };
 
-            // Add brandId if available from URL params
             if (urlBrandId) {
                 queryParams.brandId = urlBrandId;
             }
 
-            // Add shop if available from query params
             if (shop) {
                 queryParams.shop = shop;
             }
 
-            // Handle year filter
             if (currentYear && currentYear !== "all") {
                 queryParams.filterYear = currentYear;
             }
 
-            // Handle status filter
             if (currentStatus && currentStatus !== "all") {
                 queryParams.status = currentStatus;
             }
 
-            // Handle search
             if (currentSearch) {
                 queryParams.search = currentSearch;
             }
 
-            // Handle sorting
             if (currentSortBy) {
                 const [sortBy, sortOrder] = currentSortBy.split("_");
                 queryParams.sortBy = sortBy || "periodStart";
@@ -81,31 +105,44 @@ const BrandSettlementHistoryClient = () => {
 
             console.log('Fetching with params:', queryParams);
 
-            // Fetch data
             const result = await getBrandSettlementHistory(urlBrandId, queryParams, shop);
 
-            if (result.success) {
-                setInitialData(result.data || []);
-                setInitialPagination(result.pagination || {});
-                setBrandInfo(result.brandInfo || null);
-                setBrandId(result.brandId || urlBrandId);
-                setError(null);
-            } else {
-                setError(result.message || 'Failed to load settlement history');
+            if (isMountedRef.current) {
+                if (result.success) {
+                    setInitialData(result.data || []);
+                    setInitialPagination(result.pagination || {});
+                    setBrandInfo(result.brandInfo || null);
+                    setBrandId(result.brandId || urlBrandId);
+                    console.log(result, "result");
+                    setError(null);
+                } else {
+                    setError(result.message || 'Failed to load settlement history');
+                }
             }
         } catch (err) {
             console.error('Error fetching settlement history:', err);
-            setError('An unexpected error occurred');
+            if (isMountedRef.current) {
+                setError('An unexpected error occurred');
+            }
         } finally {
-            setLoading(false);
+            if (isMountedRef.current) {
+                setLoading(false);
+                setIsFiltering(false);
+            }
         }
     }, [urlBrandId, shop, currentPage, currentStatus, currentYear, currentSortBy, currentSearch]);
 
+    // Initial load
     useEffect(() => {
-        if (urlBrandId || shop) {
-            fetchBrandSettlementHistory();
-        }
-    }, [fetchBrandSettlementHistory]);
+        fetchBrandSettlementHistory(true);
+    }, []);
+
+    // Subsequent loads (filters/search changes)
+    useEffect(() => {
+        if (loading) return;
+        
+        fetchBrandSettlementHistory(false);
+    }, [currentPage, currentStatus, currentYear, currentSortBy, currentSearch]);
 
     const yearOptions = useMemo(() => {
         const currentYear = new Date().getFullYear();
@@ -156,88 +193,100 @@ const BrandSettlementHistoryClient = () => {
         });
     }, []);
 
-    // Unified URL change handler using Shopify App Bridge
-    const handleUrlChange = useCallback(
-        (newParams) => {
-            const newUrl = `${pathname}?${newParams.toString()}`;
-            console.log('Navigation - New URL:', newUrl);
+    const updateUrlParams = useCallback(
+        (updates) => {
+            const params = new URLSearchParams(searchParams.toString());
 
-            startTransition(() => {
-                navigate(newUrl);
+            Object.entries(updates).forEach(([key, value]) => {
+                if (value === null || value === '' || value === 'all') {
+                    params.delete(key);
+                } else {
+                    params.set(key, String(value));
+                }
             });
+
+            // Always preserve shop parameter
+            if (shop) {
+                params.set('shop', shop);
+            }
+
+            const newUrl = `${pathname}?${params.toString()}`;
+            
+            console.log('Updating URL params to:', newUrl);
+            
+            updateQueryParams(newUrl);
         },
-        [navigate, pathname]
+        [searchParams, pathname, shop, updateQueryParams]
     );
 
     const handlePageChange = useCallback(
         (page) => {
-            const params = new URLSearchParams(searchParams.toString());
-            params.set("page", page.toString());
-
-            if (shop) {
-                params.set("shop", shop);
-            }
-
-            handleUrlChange(params);
+            updateUrlParams({
+                page: page.toString(),
+            });
         },
-        [searchParams, shop, handleUrlChange]
+        [updateUrlParams]
     );
 
     const handleFilter = useCallback(
         (name, value) => {
-            const params = new URLSearchParams(searchParams.toString());
-
-            if (value && value !== "all") {
-                params.set(name, value);
-            } else {
-                params.delete(name);
-            }
-
-            params.set("page", "1");
-
-            if (shop) {
-                params.set("shop", shop);
-            }
-
-            handleUrlChange(params);
+            updateUrlParams({
+                [name]: value || null,
+                page: '1',
+            });
         },
-        [searchParams, shop, handleUrlChange]
+        [updateUrlParams]
     );
 
     const handleSearch = useCallback(
-        (search) => {
-            const params = new URLSearchParams(searchParams.toString());
+        (value) => {
+            setSearchInput(value);
 
-            if (search) {
-                params.set("search", search);
-            } else {
-                params.delete("search");
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
             }
 
-            params.set("page", "1");
-
-            if (shop) {
-                params.set("shop", shop);
-            }
-
-            handleUrlChange(params);
+            searchDebounceRef.current = setTimeout(() => {
+                updateUrlParams({
+                    search: value || null,
+                    page: '1',
+                });
+            }, 500);
         },
-        [searchParams, shop, handleUrlChange]
+        [updateUrlParams]
     );
 
-    const handleViewDetails = useCallback(
-        (settlement) => {
-            if (brandId) {
-                const params = new URLSearchParams();
-                if (shop) {
-                    params.set('shop', shop);
-                }
-                const queryString = params.toString();
-                const url = `/brandsPartner/${brandId}/settlements/${settlement.id}/overview${queryString ? `?${queryString}` : ''}`;
-                navigate(url);
+    useEffect(() => {
+        return () => {
+            if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
             }
+        };
+    }, []);
+    
+    console.log(settlementId,"settlementId")
+
+    const handleViewDetails = useCallback(
+        (settlementId) => {
+            console.log("hello")
+            const params = new URLSearchParams();
+            const currentParams = new URLSearchParams(window.location.search);
+            
+            const shopParam = currentParams.get('shop') || shop;
+            const hostParam = currentParams.get('host');
+            const embeddedParam = currentParams.get('embedded');
+            
+            if (shopParam) params.set('shop', shopParam);
+            if (hostParam) params.set('host', hostParam);
+            if (embeddedParam) params.set('embedded', embeddedParam);
+            
+            const basePath = `/settlements/${settlementId}/overview`;
+            const fullUrl = params.toString() ? `${basePath}?${params.toString()}` : basePath;
+            console.log(fullUrl,"fullUrl")
+    
+            navigate(fullUrl);
         },
-        [navigate, brandId, shop]
+        [brandId, shop, navigate]
     );
 
     const getCurrencySymbol = useCallback((code) =>
@@ -306,27 +355,17 @@ const BrandSettlementHistoryClient = () => {
                 const config = statusConfig[status] || statusConfig.Pending;
                 const IconComponent = config.icon;
 
-                const getLinkHref = () => {
-                    const params = new URLSearchParams();
-                    if (shop) {
-                        params.set('shop', shop);
-                    }
-                    const queryString = params.toString();
-                    return `/brandsPartner/${brandId}/settlements/${row.id}/overview${queryString ? `?${queryString}` : ''}`;
-                };
-
                 return (
                     <div className="inline-flex items-center gap-1.5">
-                        {brandId && (
-                            <Link
-                                href={getLinkHref()}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="View Overview"
-                                aria-label="View Overview"
-                            >
-                                <Eye className="w-5 h-5" />
-                            </Link>
-                        )}
+                        <button
+                            onClick={() => handleViewDetails(row.id)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View Overview"
+                            aria-label="View Overview"
+                            type="button"
+                        >
+                            <Eye className="w-5 h-5" />
+                        </button>
                         <span
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}
                         >
@@ -336,7 +375,7 @@ const BrandSettlementHistoryClient = () => {
                     </div>
                 );
             },
-        [brandId, shop]
+        [handleViewDetails]
     );
 
     const columnHelper = createColumnHelper();
@@ -528,15 +567,13 @@ const BrandSettlementHistoryClient = () => {
         );
     }
 
-    console.log(currentSearch, "currentSearch")
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
             <div className="max-w-8xl mx-auto">
                 <DynamicTable
                     data={initialData}
                     columns={customColumns}
-                    loading={false}
+                    loading={isFiltering}
                     pagination={initialPagination}
                     onPageChange={handlePageChange}
                     onSearch={handleSearch}

@@ -13,20 +13,20 @@ const WhyWoveExists = () => {
   };
 
   return (
-    <section className="max-w-[1440px] mx-auto py-12">
-      <div className="flex flex-col md:flex-row items-center justify-center gap-10 md:gap-20">
+    <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+      <div className="flex flex-col lg:flex-row items-center justify-center gap-8 sm:gap-10 lg:gap-16 xl:gap-20">
         {/* Left content */}
-        <div className="flex-1 max-w-xl">
-          <h2 className="text-[#1A1A1A] font-poppins text-[40px] font-semibold leading-[44px] mb-4">
+        <div className="flex-1 w-full max-w-xl">
+          <h2 className="text-[#1A1A1A] font-poppins text-2xl sm:text-3xl lg:text-[40px] font-semibold leading-tight sm:leading-[44px] mb-3 sm:mb-4">
             Why Wove exists
           </h2>
-          <p className="text-[#4A4A4A] font-medium text-base md:text-lg mb-8 leading-relaxed">
+          <p className="text-[#4A4A4A] font-medium text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 leading-relaxed">
             Gifting should feel joyful, not stressful. We built Wove to turn "What do I buy?" into "That was easy." With access to trusted brands and instant delivery, you choose the vibe fashion, food, wellness, travel and we deliver a beautiful gift card that always fits.
           </p>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
             <Link
-              className="bg-gradient-to-r from-pink-500 to-orange-400 text-white font-medium rounded-full px-6 py-3 hover:brightness-110 transition "
+              className="bg-gradient-to-r from-pink-500 to-orange-400 text-white font-medium rounded-full px-6 py-3 hover:brightness-110 transition text-center sm:text-left"
               href="/gift"
               onClick={handleClick}
             >
@@ -34,7 +34,7 @@ const WhyWoveExists = () => {
             </Link>
 
             <Link
-              className="border border-pink-500 text-pink-500 font-medium rounded-full px-6 py-3 hover:bg-pink-50 transition"
+              className="border border-pink-500 text-pink-500 font-medium rounded-full px-6 py-3 hover:bg-pink-50 transition text-center sm:text-left"
               href="/gift?mode=bulk"
               onClick={handleClick}
             >
@@ -43,13 +43,15 @@ const WhyWoveExists = () => {
           </div>
         </div>
 
-        {/* Right image and quote */}
-        <div className="flex-1 w-full max-w-md md:max-w-lg rounded-xl overflow-hidden shadow-lg relative">
-          <img
-            src="/why.png"
-            alt="Person showing Wove Gifts mobile app"
-            className="w-full h-auto block object-cover rounded-xl"
-          />
+        {/* Right image */}
+        <div className="flex-1 w-full max-w-md lg:max-w-lg">
+          <div className="rounded-xl overflow-hidden shadow-lg">
+            <img
+              src="/why.png"
+              alt="Person showing Wove Gifts mobile app"
+              className="w-full h-auto block object-cover"
+            />
+          </div>
         </div>
       </div>
     </section>

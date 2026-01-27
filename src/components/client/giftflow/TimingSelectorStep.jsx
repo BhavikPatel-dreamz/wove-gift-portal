@@ -126,11 +126,12 @@ const TimingSelectorStep = () => {
         </div>
 
         {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-[40px] font-bold mb-4 text-black fontPoppins">
+        <div className="text-center mb-8 sm:mb-12 pt-10">
+          <h1 className="text-2xl sm:text-3xl lg:text-[40px] font-bold text-gray-900 mb-2 sm:mb-3">
             Send Now or Later?
           </h1>
-          <p className="text-[#4A4A4A] font-medium text-base">
+
+          <p className="text-sm sm:text-base text-gray-600">
             Choose the perfect timing for your gift delivery
           </p>
         </div>
@@ -186,39 +187,44 @@ const TimingSelectorStep = () => {
 
         {/* Schedule Modal */}
         {showScheduleModal && (
-          <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full relative">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl relative max-h-[95vh] overflow-y-auto">
+
               {/* Close Button */}
               <button
                 onClick={() => setShowScheduleModal(false)}
-                className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 z-10"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
               >
                 <X className="w-5 h-5" />
               </button>
 
               {/* Modal Header */}
-              <div className="px-6 pt-6 pb-4 border-b border-gray-100">
-                <h2 className="text-lg font-bold text-center text-gray-900">Select Date & Time</h2>
-                <p className="text-xs text-gray-500 text-center mt-1">
+              <div className="px-4 sm:px-6 pt-6 pb-4 border-b border-gray-100">
+                <h2 className="text-base sm:text-lg font-bold text-center text-gray-900">
+                  Select Date & Time
+                </h2>
+                <p className="text-[11px] sm:text-xs text-gray-500 text-center mt-1">
                   Choose when you want your gift to arrive
                 </p>
               </div>
 
-              <div className="p-6">
-                {/* Two Column Layout */}
-                <div className="grid grid-cols-2 gap-10">
-                  {/* Left Column - Calendar */}
-                  <div className="rounded-[20px] border border-[rgba(26,26,26,0.1)] bg-white p-5">
+              <div className="p-4 sm:p-6">
+
+                {/* Responsive Layout */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+
+                  {/* Calendar */}
+                  <div className="rounded-[20px] border border-[rgba(26,26,26,0.1)] bg-white p-4 sm:p-5">
                     <label className="block text-sm font-semibold text-gray-900 mb-3">
                       Select Date
                     </label>
 
-                    {/* Month/Year Selector */}
-                    <div className="flex justify-between gap-2 mb-4">
+                    {/* Month / Year */}
+                    <div className="flex flex-wrap gap-2 mb-4">
                       <select
                         value={currentMonth}
                         onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
-                        className="flex-1 px-2 py-1.5 max-w-fit border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-2 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white"
                       >
                         {months.map((month, index) => (
                           <option key={month} value={index}>{month}</option>
@@ -228,7 +234,7 @@ const TimingSelectorStep = () => {
                       <select
                         value={currentYear}
                         onChange={(e) => setCurrentYear(parseInt(e.target.value))}
-                        className="px-2 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-2 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white"
                       >
                         {[2025, 2026, 2027].map(year => (
                           <option key={year} value={year}>{year}</option>
@@ -236,11 +242,11 @@ const TimingSelectorStep = () => {
                       </select>
                     </div>
 
-                    {/* Calendar */}
-                    <div className="border border-gray-200 rounded-lg p-3">
+                    {/* Calendar Grid */}
+                    <div className="border border-gray-200 rounded-lg p-2 sm:p-3">
                       <div className="grid grid-cols-7 gap-1 mb-2">
                         {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(day => (
-                          <div key={day} className="text-center text-[10px] font-bold text-gray-500 py-1">
+                          <div key={day} className="text-center text-[9px] sm:text-[10px] font-bold text-gray-500">
                             {day}
                           </div>
                         ))}
@@ -251,10 +257,9 @@ const TimingSelectorStep = () => {
                     </div>
                   </div>
 
-                  {/* Right Column - Time Selection */}
+                  {/* Time Slots */}
                   <div
-                    className="grid grid-cols-2 gap-2 max-h-[280px] overflow-y-auto pr-1"
-                    style={{ scrollbarWidth: "thin" }}
+                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-2 max-h-[220px] sm:max-h-[280px] overflow-y-auto pr-1"
                   >
                     {timeSlots.map((time) => {
                       const isSelected = selectedTime === time;
@@ -262,21 +267,21 @@ const TimingSelectorStep = () => {
                         <button
                           key={time}
                           onClick={() => setSelectedTime(time)}
-                          className="py-3 px-2 text-sm font-medium transition-colors rounded-[15px]"
+                          className="py-2.5 sm:py-3 px-2 text-xs sm:text-sm font-medium rounded-[15px] transition"
                           style={
                             isSelected
                               ? {
                                 border: "2px solid transparent",
                                 backgroundImage:
-                                  "linear-gradient(#FFF, #FFF), linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)",
+                                  "linear-gradient(#FFF,#FFF),linear-gradient(114deg,#ED457D,#FA8F42)",
                                 backgroundOrigin: "border-box",
-                                backgroundClip: "padding-box, border-box",
-                                color: "#ED457D", // optional: highlight text
+                                backgroundClip: "padding-box,border-box",
+                                color: "#ED457D",
                               }
                               : {
-                                border: "1px solid rgba(26, 26, 26, 0.10)",
+                                border: "1px solid rgba(26,26,26,0.1)",
                                 background: "#FFF",
-                                color: "#1A1A1A", // dark text
+                                color: "#1A1A1A",
                               }
                           }
                         >
@@ -287,27 +292,29 @@ const TimingSelectorStep = () => {
                   </div>
                 </div>
 
-                {/* Confirmation Text */}
+                {/* Confirmation */}
                 {selectedDate && selectedTime && (
-                  <div className="mt-6 text-center text-xs text-gray-600">
-                    Scheduled for: <span className="font-semibold text-gray-900">{formatSelectedDateTime()}</span>
+                  <div className="mt-5 text-center text-[11px] sm:text-xs text-gray-600">
+                    Scheduled for{" "}
+                    <span className="font-semibold text-gray-900">
+                      {formatSelectedDateTime()}
+                    </span>
                   </div>
                 )}
 
-                {/* Continue Button */}
+                {/* CTA */}
                 <button
                   onClick={() => {
                     setShowScheduleModal(false);
                     handleContinue();
                   }}
                   disabled={!selectedDate || !selectedTime}
-                  className="text-white  mt-6  mx-auto py-4 px-10 flex items-center justify-center rounded-[50px] font-medium text-base shadow-lg  transition-transform duration-200 transform hover:scale-105"
+                  className="mt-6 mx-auto flex items-center justify-center gap-2 py-3 sm:py-4 px-8 sm:px-10 rounded-full text-white text-sm sm:text-base font-medium shadow-lg transition-transform hover:scale-105 disabled:opacity-50"
                   style={{
                     background: "linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)",
                   }}
                 >
-                  Continue to Delivery Method
-                  <span className="ml-2">▶</span>
+                  Continue to Delivery Method ▶
                 </button>
               </div>
             </div>

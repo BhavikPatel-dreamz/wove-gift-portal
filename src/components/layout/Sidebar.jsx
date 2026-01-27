@@ -70,20 +70,22 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Mobile backdrop */}
+      {/* Mobile backdrop - only show on screens smaller than md */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 
+        transform transition-transform duration-300 ease-in-out 
+        md:translate-x-0 md:static md:inset-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center justify-between h-19 px-6 border-b border-gray-200">
+        <div className="flex items-center justify-between h-19 px-6 border-b border-gray-200 h-fit py-2">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
               <div className="w-4 h-4 bg-white rounded-sm"></div>
@@ -93,9 +95,10 @@ const Sidebar = ({ isOpen, onClose }) => {
               <p className="text-xs text-gray-500">Gift Card Management & Analytics</p>
             </div>
           </div>
+          {/* Close button - only show on screens smaller than md */}
           <button
             onClick={onClose}
-            className="lg:hidden p-1 rounded-md hover:bg-gray-100"
+            className="md:hidden p-1 rounded-md hover:bg-gray-100"
             aria-label="Close sidebar"
           >
             <X className="w-5 h-5" />
