@@ -3862,7 +3862,7 @@ export async function getSettlementBankingDetails(settlementId) {
   }
 }
 
-export async function getBrandSettlementHistory(brandId, params = {}) {
+export async function getBrandSettlementHistory(brandId, params = {}, shop = null) {
   try {
     const {
       page = 1,
@@ -3878,9 +3878,59 @@ export async function getBrandSettlementHistory(brandId, params = {}) {
     const limitNum = parseInt(limit, 10);
     const skip = (pageNum - 1) * limitNum;
 
-    // ==================== OPTIMIZE: Fetch brand and settlements in parallel ====================
-    // Build date filter first
     let dateFilter = {};
+    let finalBrandId = brandId;
+
+    // Handle shop parameter - find brand by domain
+    if (shop) {
+      const brand = await prisma.brand.findUnique({
+        where: { domain: shop },
+        select: { id: true },
+      });
+      
+      if (brand) {
+        finalBrandId = brand.id;
+      } else {
+        return {
+          success: true,
+          data: [],
+          brandInfo: null,
+          brandId: null,
+          pagination: {
+            currentPage: pageNum,
+            totalPages: 0,
+            totalItems: 0,
+            itemsPerPage: limitNum,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+          summary: {
+            totalSettlements: 0,
+            totalSoldAmount: 0,
+            totalRedeemedAmount: 0,
+            totalOutstandingAmount: 0,
+            totalCommissionAmount: 0,
+            totalVatAmount: 0,
+            totalBreakageAmount: 0,
+            totalNetPayable: 0,
+            totalPaid: 0,
+            totalRemainingAmount: 0,
+            statusBreakdown: {
+              pending: 0,
+              paid: 0,
+              partial: 0,
+              inReview: 0,
+              disputed: 0,
+            },
+          },
+          filters: {
+            appliedYear: filterYear,
+            appliedMonth: filterMonth,
+            appliedStatus: status,
+          },
+        };
+      }
+    }
 
     if (filterMonth) {
       const [year, month] = filterMonth.split("-").map(Number);
@@ -3903,7 +3953,7 @@ export async function getBrandSettlementHistory(brandId, params = {}) {
     }
 
     const whereClause = {
-      brandId: brandId,
+      brandId: finalBrandId,
       ...dateFilter,
     };
 
@@ -3951,7 +4001,7 @@ export async function getBrandSettlementHistory(brandId, params = {}) {
     // ==================== OPTIMIZE: Single parallel query for brand and settlements ====================
     const [brand, allSettlements, totalCount] = await Promise.all([
       prisma.brand.findUnique({
-        where: { id: brandId },
+        where: { id: finalBrandId },
         select: {
           id: true,
           brandName: true,
@@ -4014,6 +4064,7 @@ export async function getBrandSettlementHistory(brandId, params = {}) {
         success: true,
         data: [],
         brandInfo: formatBrandInfo(brand),
+        brandId: brand.id,
         pagination: createEmptyPagination(pageNum, limitNum),
         summary: createEmptySummary(),
         filters: {
@@ -4287,6 +4338,7 @@ export async function getBrandSettlementHistory(brandId, params = {}) {
       success: true,
       data: paginatedSettlements,
       brandInfo: formatBrandInfo(brand),
+      brandId: brand.id, // Added brandId to response
       pagination: {
         currentPage: pageNum,
         totalPages,

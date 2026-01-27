@@ -1,26 +1,29 @@
-'use client';
-
-import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { getDashboardData } from "../../../lib/action/dashbordAction";
 import Dashboard from "../../../components/Dashboard/Dashboard";
 
-const ShopifyMainContent = () => {
-    const searchParams = useSearchParams();
-    const shop = searchParams.get('shop');
+// Server Component that fetches data
+async function DashboardContent({ searchParams }) {
+  const shop = searchParams?.shop;
+  const period = searchParams?.period || 'month';
+  const startDate = searchParams?.startDate;
+  const endDate = searchParams?.endDate;
 
+  // Fetch data on the server
+  const dashboardData = await getDashboardData({
+    period,
+    ...(startDate && endDate ? { startDate, endDate } : {}),
+    shop,
+  });
 
-  return (
-    <div>
-      <Dashboard shopParam={shop}/>
-    </div>
-  );
+  return <Dashboard  shopParam={shop} dashboardData={dashboardData}/>;
 }
 
-
-export default function ShopifyMainPage() {
+// Main page component (Server Component by default)
+export default function ShopifyMainPage({ searchParams }) {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <ShopifyMainContent />
+      <DashboardContent searchParams={searchParams} />
     </Suspense>
   );
 }
