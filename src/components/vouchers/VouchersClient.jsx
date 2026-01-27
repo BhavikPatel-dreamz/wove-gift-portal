@@ -469,7 +469,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
             </div>
 
             <div className="px-6 pt-6 border-b border-gray-200">
-              <div className={`grid grid-cols-1 md:grid-cols-${bulkData?.hasBulkRecipients ? '5' : '4'} gap-4 mb-6`}>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <div className="text-xs text-blue-600 font-semibold mb-1">Total Amount</div>
                   <div className="text-2xl font-bold text-blue-900">{getCurrencySymbol(bulkData?.currency)}{bulkData?.totalAmount?.toFixed(2) || '0.00'}</div>
@@ -488,20 +488,9 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                   <div className="text-xs text-orange-600 font-semibold mb-1">Vouchers</div>
                   <div className="text-2xl font-bold text-orange-900">{bulkData?.voucherCount || 0}</div>
                 </div>
-                {bulkData?.hasBulkRecipients && (
-                  <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-                    <div className="text-xs text-indigo-600 font-semibold mb-1">Delivered</div>
-                    <div className="text-2xl font-bold text-indigo-900">
-                      {bulkData?.emailDeliveryStats?.delivered || 0}/{bulkData?.emailDeliveryStats?.totalRecipients || 0}
-                    </div>
-                    <div className="text-xs text-indigo-600 mt-1">
-                      {bulkData?.emailDeliveryStats?.failed > 0 && (
-                        <span className="text-red-600">{bulkData.emailDeliveryStats.failed} failed</span>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
+
+             
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
