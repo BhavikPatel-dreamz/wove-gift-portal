@@ -115,13 +115,15 @@ const cartSlice = createSlice({
     
     // Update company info for the most recent bulk order
     updateBulkCompanyInfo: (state, action) => {
-      const { companyInfo, deliveryOption } = action.payload;
+      const { companyInfo, deliveryOption, quantity, csvRecipients } = action.payload;
       if (state.bulkItems.length > 0) {
         const lastIndex = state.bulkItems.length - 1;
         state.bulkItems[lastIndex] = {
           ...state.bulkItems[lastIndex],
           companyInfo: companyInfo || state.bulkItems[lastIndex].companyInfo,
           deliveryOption: deliveryOption || state.bulkItems[lastIndex].deliveryOption,
+          quantity: quantity || state.bulkItems[lastIndex].quantity,
+          csvRecipients: csvRecipients || state.bulkItems[lastIndex].csvRecipients,
           updatedAt: new Date().toISOString()
         };
         if (typeof window !== 'undefined') {

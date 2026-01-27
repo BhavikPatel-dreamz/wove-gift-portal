@@ -97,7 +97,7 @@ export async function POST(req) {
         vouchers: {
           where: {
             isActive: true,
-            OR: [
+OR: [
               { denominationType: denominationType },
               { denominationType: "both" },
             ],
@@ -123,7 +123,7 @@ export async function POST(req) {
       })),
     });
 
-    if (!brand || !brand.vouchers.length) {
+    if (!brand || !brand.vouchers.length) {A
       console.error("❌ [FAIL] No active voucher found", {
         ...logContext,
         brandExists: !!brand,
@@ -133,7 +133,7 @@ export async function POST(req) {
       return NextResponse.json(
         {
           success: false,
-          error: "No active voucher found for this denominationType",
+          error: "No active v\oucher found for this denominationType",
         },
         { status: 400 }
       );
@@ -380,31 +380,65 @@ export async function POST(req) {
         const createCustomerData = await createCustomerResponse.json();
         const createdCustomer =
           createCustomerData?.data?.customerCreate?.customer;
-        customerId = createdCustomer?.id;
-        customerIdNumeric = createdCustomer?.legacyResourceId;
+        const userErrors = createCustomerData?.data?.customerCreate?.userErrors;
 
-        console.log("📊 [STEP 4] Customer creation result", {
-          success: !!customerId,
-          customerId,
-          customerIdNumeric,
-          userErrors: createCustomerData?.data?.customerCreate?.userErrors,
-        });
+        if (createdCustomer) {
+          customerId = createdCustomer.id;
+          customerIdNumeric = createdCustomer.legacyResourceId;
+          console.log("📊 [STEP 4] Customer creation successful", {
+            success: true,
+            customerId,
+            customerIdNumeric,
+          });
+        } else if (
+          userErrors &&
+          userErrors.some((e) => e.message === "Email has already been taken")
+        ) {
+          console.log("👨‍👩‍👧 [STEP 4] Customer already exists, re-fetching...");
+
+          const customerRefetchResponse = await fetch(
+            `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Shopify-Access-Token": session.accessToken,
+              },
+              body: JSON.stringify({
+                query: `
+                query getCustomerByEmail($query: String!) {
+                  customers(first: 1, query: $query) { edges { node { id legacyResourceId } } }
+                }
+              `,
+                variables: { query: `email:${customerEmail}` },
+              }),
+            }
+          );
+
+          const customerRefetchData = await customerRefetchResponse.json();
+          const customerNode =
+            customerRefetchData?.data?.customers?.edges?.[0]?.node;
+          customerId = customerNode?.id || null;
+          customerIdNumeric = customerNode?.legacyResourceId || null;
+
+          console.log("📊 [STEP 4] Customer re-fetch result", {
+            found: !!customerId,
+            customerId,
+            customerIdNumeric,
+          });
+        }
 
         if (!customerId) {
-          console.error("❌ [FAIL] Failed to create customer", {
+          console.error("❌ [FAIL] Failed to create or find customer", {
             ...logContext,
             customerEmail,
-            errors:
-              createCustomerData?.data?.customerCreate?.userErrors ||
-              createCustomerData.errors,
+            errors: userErrors || createCustomerData.errors,
           });
           return NextResponse.json(
             {
               success: false,
-              error: "Failed to create customer in Shopify",
-              details:
-                createCustomerData?.data?.customerCreate?.userErrors ||
-                createCustomerData.errors,
+              error: "Failed to create or find customer in Shopify",
+              details: userErrors || createCustomerData.errors,
             },
             { status: 400 }
           );

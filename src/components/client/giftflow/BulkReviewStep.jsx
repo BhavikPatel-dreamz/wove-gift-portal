@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext, setIsConfirmed } from '../../../redux/giftFlowSlice';
 import { updateBulkCompanyInfo } from '../../../redux/cartSlice';
+import * as XLSX from 'xlsx';
 
 const BulkReviewStep = () => {
     const dispatch = useDispatch();
@@ -16,12 +17,15 @@ const BulkReviewStep = () => {
     const mode = searchParams.get('mode');
     const isBulkMode = mode === 'bulk';
 
-
     // Get the most recent bulk item (last added)
     const currentBulkOrder = bulkItems[bulkItems.length - 1];
 
     // Local state only for form validation errors
     const [errors, setErrors] = useState({});
+    const [csvFile, setCsvFile] = useState(null);
+    const [csvData, setCsvData] = useState([]);
+    const [csvError, setCsvError] = useState('');
+    const [isProcessingFile, setIsProcessingFile] = useState(false); // ✅ Loading state
 
     // Get company info and delivery option from Redux state
     const companyInfo = currentBulkOrder?.companyInfo || {
@@ -32,6 +36,177 @@ const BulkReviewStep = () => {
     };
 
     const deliveryOption = currentBulkOrder?.deliveryOption || 'csv';
+
+    // ✅ Memoize preview data to avoid re-rendering issues
+    const previewData = useMemo(() => csvData.slice(0, 5), [csvData]);
+    const remainingCount = useMemo(() => Math.max(0, csvData.length - 5), [csvData.length]);
+
+    // ✅ Email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // ✅ Improved file upload handler with better error handling and validation
+    const handleFileUpload = useCallback(async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        if (!['csv', 'xlsx', 'xls'].includes(fileExtension)) {
+            setCsvError('Please upload a CSV or Excel file');
+            return;
+        }
+
+        setIsProcessingFile(true);
+        setCsvFile(file);
+        setCsvError('');
+        setCsvData([]); // Clear previous data
+
+        try {
+            const data = await readFileAsync(file, fileExtension);
+            let parsedData;
+
+            if (fileExtension === 'csv') {
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                parsedData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            } else {
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                parsedData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+            }
+
+            // Validate file is not empty
+            if (!parsedData || parsedData.length === 0) {
+                throw new Error('File is empty or has no data');
+            }
+
+            // ✅ Validate maximum rows (prevent performance issues)
+            if (parsedData.length > 1000) {
+                throw new Error('Maximum 1000 recipients allowed per upload');
+            }
+
+            // Validate required columns
+            const requiredColumns = ['name', 'email'];
+            const firstRow = parsedData[0];
+            const hasRequiredColumns = requiredColumns.every(col =>
+                Object.keys(firstRow).some(key => key.toLowerCase() === col)
+            );
+
+            if (!hasRequiredColumns) {
+                throw new Error('CSV must contain "name" and "email" columns (case-insensitive)');
+            }
+
+            // ✅ Normalize and validate data with better error messages
+            const normalizedData = [];
+            const errors = [];
+            const seenEmails = new Set(); // ✅ Track duplicate emails
+
+            for (let index = 0; index < parsedData.length; index++) {
+                const row = parsedData[index];
+                const rowNumber = index + 2; // Account for header row
+
+                // Normalize column names
+                const normalizedRow = {};
+                Object.keys(row).forEach(key => {
+                    normalizedRow[key.toLowerCase().trim()] = row[key];
+                });
+
+                // Extract and validate fields
+                const name = normalizedRow.name?.toString().trim();
+                const email = normalizedRow.email?.toString().trim().toLowerCase();
+                const phone = normalizedRow.phone?.toString().trim() || '';
+                const message = normalizedRow.message?.toString().trim() || '';
+
+                // Validation checks
+                if (!name) {
+                    errors.push(`Row ${rowNumber}: Missing name`);
+                    continue;
+                }
+
+                if (!email) {
+                    errors.push(`Row ${rowNumber}: Missing email`);
+                    continue;
+                }
+
+                if (!emailRegex.test(email)) {
+                    errors.push(`Row ${rowNumber}: Invalid email format (${email})`);
+                    continue;
+                }
+
+                // ✅ Check for duplicate emails
+                if (seenEmails.has(email)) {
+                    errors.push(`Row ${rowNumber}: Duplicate email (${email})`);
+                    continue;
+                }
+
+                seenEmails.add(email);
+
+                normalizedData.push({
+                    name,
+                    email,
+                    phone,
+                    message,
+                    rowNumber
+                });
+            }
+
+            // ✅ Show errors if any, but allow partial success
+            if (errors.length > 0) {
+                const errorSummary = errors.length > 10
+                    ? `${errors.slice(0, 10).join('\n')}\n...and ${errors.length - 10} more errors`
+                    : errors.join('\n');
+
+                if (normalizedData.length === 0) {
+                    throw new Error(`All rows have errors:\n${errorSummary}`);
+                } else {
+                    setCsvError(`Warning: ${errors.length} row(s) skipped due to errors. ${normalizedData.length} valid recipients loaded.`);
+                }
+            }
+
+            if (normalizedData.length === 0) {
+                throw new Error('No valid recipients found in file');
+            }
+
+            setCsvData(normalizedData);
+
+            // ✅ Update Redux with debouncing to prevent multiple rapid updates
+            setTimeout(() => {
+                dispatch(updateBulkCompanyInfo({
+                    companyInfo,
+                    deliveryOption,
+                    quantity: normalizedData.length,
+                    csvRecipients: normalizedData
+                }));
+            }, 100);
+
+        } catch (error) {
+            console.error('File processing error:', error);
+            setCsvError(error.message || 'Error parsing file. Please check the format and try again.');
+            setCsvData([]);
+        } finally {
+            setIsProcessingFile(false);
+        }
+    }, [companyInfo, deliveryOption, dispatch]);
+
+    // ✅ Helper function to read file asynchronously
+    const readFileAsync = (file, fileExtension) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = (evt) => {
+                resolve(evt.target.result);
+            };
+
+            reader.onerror = () => {
+                reject(new Error('Failed to read file'));
+            };
+
+            if (fileExtension === 'csv') {
+                reader.readAsBinaryString(file);
+            } else {
+                reader.readAsArrayBuffer(file);
+            }
+        });
+    };
 
     const validateForm = () => {
         const newErrors = {};
@@ -46,15 +221,19 @@ const BulkReviewStep = () => {
 
         if (!companyInfo.contactEmail.trim()) {
             newErrors.contactEmail = 'Contact email is required';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyInfo.contactEmail)) {
+        } else if (!emailRegex.test(companyInfo.contactEmail)) {
             newErrors.contactEmail = 'Invalid email format';
+        }
+
+        if (deliveryOption === 'multiple' && csvData.length === 0) {
+            newErrors.csvFile = 'Please upload a CSV file with recipients';
         }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleInputChange = (field, value) => {
+    const handleInputChange = useCallback((field, value) => {
         // Update Redux state
         dispatch(updateBulkCompanyInfo({
             companyInfo: {
@@ -71,21 +250,27 @@ const BulkReviewStep = () => {
                 [field]: ''
             }));
         }
-    };
+    }, [companyInfo, deliveryOption, errors, dispatch]);
 
-    const handleDeliveryOptionChange = (value) => {
+    const handleDeliveryOptionChange = useCallback((value) => {
         // Update Redux state
         dispatch(updateBulkCompanyInfo({
             companyInfo,
             deliveryOption: value
         }));
-    };
+
+        // Clear CSV data if switching away from multiple
+        if (value !== 'multiple') {
+            setCsvData([]);
+            setCsvFile(null);
+            setCsvError('');
+        }
+    }, [companyInfo, dispatch]);
 
     const handleProceedToCheckout = () => {
         if (!validateForm()) {
             return;
         }
-
         dispatch(goNext(2));
     };
 
@@ -93,9 +278,28 @@ const BulkReviewStep = () => {
         dispatch(goBack());
     };
 
+    // ✅ Download sample CSV template
+    const downloadSampleCSV = useCallback(() => {
+        const sampleData = [
+            ['name', 'email', 'phone', 'message'],
+            ['John Doe', 'john@example.com', '+1234567890', 'Happy Birthday!'],
+            ['Jane Smith', 'jane@example.com', '+0987654321', 'Congratulations!'],
+            ['Bob Johnson', 'bob@example.com', '', 'Thank you!']
+        ];
+
+        const csv = sampleData.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sample_recipients.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }, []);
+
     if (!currentBulkOrder) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4  py-30">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-30">
                 <div className="text-center">
                     <p className="text-gray-600 mb-4">No bulk order found</p>
                     <button
@@ -110,7 +314,7 @@ const BulkReviewStep = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
+        <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
                 {/* Back Button and Bulk Mode Indicator */}
                 <div className="relative flex flex-col items-start gap-4 mb-6
@@ -184,7 +388,7 @@ const BulkReviewStep = () => {
                             <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
                             <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
-                               <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
+                                <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                                     <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                                         Bulk Gifting
                                     </span>
@@ -336,20 +540,6 @@ const BulkReviewStep = () => {
                                     <input
                                         type="radio"
                                         name="deliveryOption"
-                                        value="csv"
-                                        checked={deliveryOption === 'csv'}
-                                        onChange={(e) => handleDeliveryOptionChange(e.target.value)}
-                                        className="mt-1 w-4 h-4 focus:ring-pink-500 text-black"
-                                    />
-                                    <div className="flex-1">
-                                        <span className="text-gray-900 font-medium">Send vouchers to multiple individuals as gifts.</span>
-                                    </div>
-                                </label>
-
-                                <label className="flex items-start gap-3 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="deliveryOption"
                                         value="email"
                                         checked={deliveryOption === 'email'}
                                         onChange={(e) => handleDeliveryOptionChange(e.target.value)}
@@ -360,19 +550,104 @@ const BulkReviewStep = () => {
                                     </div>
                                 </label>
 
-                                {/* <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="deliveryOption"
-                                    value="multiple"
-                                    checked={deliveryOption === 'multiple'}
-                                    onChange={(e) => handleDeliveryOptionChange(e.target.value)}
-                                    className="mt-1 w-4 h-4 text-black focus:ring-pink-500"
-                                />
-                                <div className="flex-1">
-                                    <span className="text-gray-900 font-medium">Send vouchers to multiple individuals as gifts.</span>
-                                </div>
-                            </label> */}
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="deliveryOption"
+                                        value="multiple"
+                                        checked={deliveryOption === 'multiple'}
+                                        onChange={(e) => handleDeliveryOptionChange(e.target.value)}
+                                        className="mt-1 w-4 h-4"
+                                    />
+                                    <span className="text-gray-900 font-medium">
+                                        Upload CSV/Excel and send individual emails
+                                    </span>
+                                </label>
+
+                                {/* CSV Upload Section */}
+                                {deliveryOption === 'multiple' && (
+                                    <div className="mt-4 p-4 text-black bg-blue-50 rounded-lg border border-blue-200">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-semibold text-gray-900">
+                                                Upload Recipient List
+                                            </h4>
+                                            {/* ✅ Download sample CSV button */}
+                                            <button
+                                                type="button"
+                                                onClick={downloadSampleCSV}
+                                                className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                            >
+                                                Download Sample CSV
+                                            </button>
+                                        </div>
+                                        
+                                        <p className="text-sm text-gray-600 mb-3">
+                                            Upload a CSV or Excel file with columns: <strong>name</strong>, <strong>email</strong>, phone (optional), message (optional)
+                                        </p>
+
+                                        <div className="relative">
+                                            <input
+                                                type="file"
+                                                accept=".csv,.xlsx,.xls"
+                                                onChange={handleFileUpload}
+                                                disabled={isProcessingFile}
+                                                className={`w-full text-sm ${isProcessingFile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            />
+                                            {/* ✅ Loading indicator */}
+                                            {isProcessingFile && (
+                                                <div className="absolute right-2 top-2">
+                                                    <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* ✅ Better error display */}
+                                        {csvError && (
+                                            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                                <p className="text-red-700 text-sm whitespace-pre-wrap">{csvError}</p>
+                                            </div>
+                                        )}
+
+                                        {/* ✅ Success message with stats */}
+                                        {csvData.length > 0 && !isProcessingFile && (
+                                            <div className="mt-3">
+                                                <div className="flex items-center gap-2 text-green-600 text-sm font-medium mb-2">
+                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <span>{csvData.length} recipients loaded successfully</span>
+                                                </div>
+                                                
+                                                {/* ✅ Optimized preview table */}
+                                                <div className="mt-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+                                                    <table className="w-full text-xs">
+                                                        <thead className="bg-gray-100 sticky top-0">
+                                                            <tr>
+                                                                <th className="p-2 text-left font-semibold">#</th>
+                                                                <th className="p-2 text-left font-semibold">Name</th>
+                                                                <th className="p-2 text-left font-semibold">Email</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {previewData.map((row, idx) => (
+                                                                <tr key={idx} className="border-t hover:bg-gray-50">
+                                                                    <td className="p-2 text-gray-500">{idx + 1}</td>
+                                                                    <td className="p-2">{row.name}</td>
+                                                                    <td className="p-2 text-gray-600">{row.email}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                {remainingCount > 0 && (
+                                                    <p className="text-xs text-gray-500 mt-2 text-center">
+                                                        ...and {remainingCount} more recipient{remainingCount !== 1 ? 's' : ''}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -415,16 +690,16 @@ const BulkReviewStep = () => {
 
                 {/* Proceed Button */}
                 <button
-                    disabled={!isConfirmed}
+                    disabled={!isConfirmed || isProcessingFile}
                     onClick={handleProceedToCheckout}
                     className={`max-w-[688px] m-auto w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600
                          text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 
-                         ${isConfirmed
+                         ${isConfirmed && !isProcessingFile
                             ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
                             : 'opacity-50 cursor-not-allowed'
                         }`}
                 >
-                    Proceed to Checkout
+                    {isProcessingFile ? 'Processing file...' : 'Proceed to Checkout'}
                     <span className="text-xl"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
                     </svg>
