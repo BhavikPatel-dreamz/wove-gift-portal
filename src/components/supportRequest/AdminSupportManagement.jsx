@@ -64,7 +64,7 @@ const StatusBadge = ({ status, onStatusChange, requestId }) => {
             setShowDropdown(false)
             return
         }
-        
+
         setIsChanging(true)
         setShowDropdown(false)
         await onStatusChange(requestId, newStatus)
@@ -79,10 +79,8 @@ const StatusBadge = ({ status, onStatusChange, requestId }) => {
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${config.color} hover:opacity-80 transition-opacity cursor-pointer disabled:cursor-not-allowed disabled:opacity-50`}
                 aria-label={`Change status from ${config.label}`}
             >
-                {isChanging ? (
+                {isChanging && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                    <span className={`h-1.5 w-1.5 rounded-full ${config.dotColor}`}></span>
                 )}
                 {config.label}
             </button>
@@ -93,12 +91,11 @@ const StatusBadge = ({ status, onStatusChange, requestId }) => {
                         <button
                             key={statusKey}
                             onClick={() => handleStatusChange(statusKey)}
-                            className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                                statusKey === status ? 'bg-blue-50 font-semibold' : ''
-                            }`}
+                            className={`w-full text-left px-4 py-2 text-xs hover:bg-gray-50 transition-colors ${statusKey === status ? 'bg-blue-50 font-semibold' : ''
+                                }`}
                         >
                             <div className="flex items-center gap-2">
-                                <span className={`h-2 w-2 rounded-full ${statusData.dotColor}`}></span>
+                                {/* <span className={`h-2 w-2 rounded-full ${statusData.dotColor}`}></span> */}
                                 {statusData.label}
                             </div>
                         </button>
@@ -222,16 +219,20 @@ export default function AdminSupportManagement({ initialData, pagination }) {
     const columns = useMemo(() => [
         columnHelper.accessor('supportId', {
             header: () => <span className="font-bold text-gray-700">Request ID</span>,
-            cell: (info) => <div className="font-semibold text-gray-900">{info.getValue()}</div>,
+            cell: (info) => (
+                <div className="text-[11px] leading-[20px] font-semibold text-[#1A1A1A]">
+                    {info.getValue()}
+                </div>
+            ),
         }),
         columnHelper.accessor('createdAt', {
             header: () => <span className="font-bold text-gray-700">Date</span>,
             cell: (info) => (
-                <div className="text-gray-900 text-sm">
+                <div className="text-[11px] leading-[20px] font-semibold text-[#1A1A1A]">
                     {new Date(info.getValue()).toLocaleDateString('en-US', {
                         month: '2-digit',
                         day: '2-digit',
-                        year: 'numeric'
+                        year: 'numeric',
                     })}
                 </div>
             ),
@@ -242,8 +243,14 @@ export default function AdminSupportManagement({ initialData, pagination }) {
                 const row = info.row.original;
                 return (
                     <div>
-                        <div className="font-medium text-gray-900">{info.getValue()}</div>
-                        <div className="text-sm text-gray-500">{row.email}</div>
+                        <div className="text-[11px] leading-[20px] font-semibold text-[#1A1A1A]">
+                            {info.getValue()}
+                        </div>
+
+                        <div className="text-[11px] leading-[20px] font-normal text-[#1A1A1A]">
+                            {row.email}
+                        </div>
+
                     </div>
                 );
             },
@@ -253,9 +260,13 @@ export default function AdminSupportManagement({ initialData, pagination }) {
             cell: (info) => {
                 const value = info.getValue();
                 return value ? (
-                    <div className="text-gray-900 font-medium">{value}</div>
+                    <div className="text-[11px] leading-[16px] font-medium text-[#1A1A1A]">
+                        {value}
+                    </div>
                 ) : (
-                    <span className="text-gray-400 text-sm">N/A</span>
+                    <span className="text-[11px] leading-[16px] font-medium text-gray-400">
+                        N/A
+                    </span>
                 );
             },
         }),
@@ -263,18 +274,43 @@ export default function AdminSupportManagement({ initialData, pagination }) {
             header: () => <span className="font-bold text-gray-700">Voucher #</span>,
             cell: (info) => {
                 const row = info.row.original;
-                const voucherCode = row.order?.voucherCodes?.[0]?.code;
-                return voucherCode ? (
-                    <div className="text-gray-900 font-medium">{voucherCode}</div>
-                ) : (
-                    <span className="text-gray-400 text-sm">N/A</span>
+                const voucherCodes = row.order?.voucherCodes;
+
+                if (!voucherCodes || voucherCodes.length === 0) {
+                    return (
+                        <span className="text-[11px] leading-[20px] font-normal text-gray-400">
+                            N/A
+                        </span>
+                    );
+                }
+
+                if (voucherCodes.length === 1) {
+                    return (
+                        <div className="text-[11px] leading-[20px] font-medium text-[#1A1A1A]">
+                            {voucherCodes[0].code}
+                        </div>
+                    );
+                }
+
+                return (
+                    <div>
+                        <div className="text-[11px] leading-[20px] font-medium text-[#1A1A1A]">
+                            {voucherCodes[0].code}
+                        </div>
+                        <div className="text-[11px] leading-[20px] font-normal text-gray-500">
+                            +{voucherCodes.length - 1} more
+                        </div>
+                    </div>
                 );
             },
         }),
         columnHelper.accessor('reason', {
             header: () => <span className="font-bold text-gray-700">Reason</span>,
             cell: (info) => (
-                <div className="text-gray-900 max-w-xs truncate" title={info.getValue()}>
+                <div
+                    className="text-[10px] leading-[16px] font-medium text-[#1A1A1A] max-w-xs truncate"
+                    title={info.getValue()}
+                >
                     {info.getValue()}
                 </div>
             ),
@@ -294,23 +330,25 @@ export default function AdminSupportManagement({ initialData, pagination }) {
             header: () => <span className="font-bold text-gray-700">Actions</span>,
             cell: ({ row }) => {
                 const request = row.original;
-                
+
                 return (
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => handleOpenChat(request)}
-                            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
+                            className="px-4 py-2 rounded-lg text-[14px] leading-[20px] font-medium text-[#1A1A1A] transition-colors bg-white border border-[#E2E8F0] flex items-center gap-2"
                             title="Open Chat"
                             aria-label="Open support chat"
                         >
-                            <MessageCircle className="w-4 h-4" />
-                            Chat
+                            <svg width="19" height="15" viewBox="0 0 19 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9.015 0C13.5083 0 17.2467 3.23333 18.0308 7.5C17.2475 11.7667 13.5083 15 9.015 15C4.52167 15 0.783333 11.7667 0 7.5C0.783333 3.23333 4.52167 0 9.015 0ZM9.015 13.3333C10.7147 13.3332 12.364 12.756 13.6929 11.6962C15.0218 10.6365 15.9516 9.15703 16.33 7.5C15.9505 5.84401 15.0204 4.3658 13.6917 3.30712C12.363 2.24844 10.7143 1.67196 9.01542 1.67196C7.31651 1.67196 5.66788 2.24844 4.33917 3.30712C3.01045 4.3658 2.0803 5.84401 1.70083 7.5C2.07925 9.15689 3.00889 10.6363 4.33762 11.696C5.66635 12.7557 7.31544 13.333 9.015 13.3333ZM9.015 11.25C8.02044 11.25 7.06661 10.8549 6.36335 10.1516C5.66009 9.44839 5.265 8.49456 5.265 7.5C5.265 6.50544 5.66009 5.55161 6.36335 4.84835C7.06661 4.14509 8.02044 3.75 9.015 3.75C10.0096 3.75 10.9634 4.14509 11.6666 4.84835C12.3699 5.55161 12.765 6.50544 12.765 7.5C12.765 8.49456 12.3699 9.44839 11.6666 10.1516C10.9634 10.8549 10.0096 11.25 9.015 11.25ZM9.015 9.58333C9.56753 9.58333 10.0974 9.36384 10.4881 8.97314C10.8788 8.58244 11.0983 8.05253 11.0983 7.5C11.0983 6.94747 10.8788 6.41756 10.4881 6.02686C10.0974 5.63616 9.56753 5.41667 9.015 5.41667C8.46247 5.41667 7.93256 5.63616 7.54186 6.02686C7.15116 6.41756 6.93167 6.94747 6.93167 7.5C6.93167 8.05253 7.15116 8.58244 7.54186 8.97314C7.93256 9.36384 8.46247 9.58333 9.015 9.58333Z" fill="#1F59EE" />
+                            </svg>
+                            Check Status
                         </button>
-                        <CloseRequestButton
+                        {/* <CloseRequestButton
                             requestId={request.id}
                             currentStatus={request.status}
                             onClose={handleCloseRequest}
-                        />
+                        /> */}
                     </div>
                 );
             },

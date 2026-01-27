@@ -409,7 +409,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
       {/* Bulk Order Modal */}
       {isBulkModalOpen && selectedBulkOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -425,7 +425,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
               </button>
             </div>
 
-            <div className="p-6 border-b border-gray-200">
+            <div className="px-6 pt-6 border-b border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <div className="text-xs text-blue-600 font-semibold mb-1">Total Amount</div>
@@ -445,37 +445,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                 </div>
               </div>
 
-              {bulkData?.statusBreakdown && (
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Status Breakdown</h3>
-                  <div className="flex gap-6 flex-wrap">
-                    {bulkData.statusBreakdown.active > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                        <span className="text-sm text-gray-600">Active: <span className="font-semibold">{bulkData.statusBreakdown.active}</span></span>
-                      </div>
-                    )}
-                    {bulkData.statusBreakdown.redeemed > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                        <span className="text-sm text-gray-600">Redeemed: <span className="font-semibold">{bulkData.statusBreakdown.redeemed}</span></span>
-                      </div>
-                    )}
-                    {bulkData.statusBreakdown.expired > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                        <span className="text-sm text-gray-600">Expired: <span className="font-semibold">{bulkData.statusBreakdown.expired}</span></span>
-                      </div>
-                    )}
-                    {bulkData.statusBreakdown.cancelled > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-gray-500"></div>
-                        <span className="text-sm text-gray-600">Cancelled: <span className="font-semibold">{bulkData.statusBreakdown.cancelled}</span></span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+             
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">

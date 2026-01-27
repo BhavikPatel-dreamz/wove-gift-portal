@@ -2663,6 +2663,27 @@ export async function getOrderById(orderId) {
         deliveryLogs: {
           orderBy: { createdAt: "desc" },
         },
+        bulkRecipients: {
+          include: {
+            voucherCode: {
+              include: {
+                voucher: {
+                  select: {
+                    id: true,
+                    denominationType: true,
+                    partialRedemption: true,
+                    expiresAt: true,
+                    graceDays: true,
+                  },
+                },
+                redemptions: {
+                  orderBy: { redeemedAt: "desc" },
+                },
+              },
+            },
+          },
+          orderBy: { rowNumber: "asc" },
+        },
       },
     });
 
@@ -2753,11 +2774,65 @@ export async function getOrderById(orderId) {
       };
     });
 
+    // Transform bulk recipients if they exist
+    const transformedBulkRecipients = order.bulkRecipients.map((br) => {
+      const voucherCode = br.voucherCode;
+      
+      // Calculate voucher status if voucher code exists
+      let voucherStatus = "Pending";
+      if (voucherCode) {
+        const totalRedeemed = voucherCode.redemptions?.reduce(
+          (sum, r) => sum + (r.amountRedeemed || 0),
+          0,
+        ) || 0;
+
+        if (order.redemptionStatus === "Cancelled") {
+          voucherStatus = "Cancelled";
+        } else if (voucherCode.isRedeemed || voucherCode.remainingValue === 0) {
+          voucherStatus = "Redeemed";
+        } else if (voucherCode.expiresAt && new Date(voucherCode.expiresAt) < new Date()) {
+          voucherStatus = "Expired";
+        } else if (!order.isActive) {
+          voucherStatus = "Inactive";
+        } else {
+          voucherStatus = "Active";
+        }
+      }
+
+      return {
+        id: br.id,
+        recipientName: br.recipientName,
+        recipientEmail: br.recipientEmail,
+        recipientPhone: br.recipientPhone,
+        personalMessage: br.personalMessage,
+        emailSent: br.emailSent,
+        emailSentAt: br.emailSentAt,
+        emailDelivered: br.emailDelivered,
+        emailDeliveredAt: br.emailDeliveredAt,
+        emailError: br.emailError,
+        rowNumber: br.rowNumber,
+        voucherCodeId: br.voucherCodeId,
+        voucherCode: voucherCode ? {
+          id: voucherCode.id,
+          code: voucherCode.code,
+          originalValue: voucherCode.originalValue,
+          remainingValue: voucherCode.remainingValue,
+          isRedeemed: voucherCode.isRedeemed,
+          redeemedAt: voucherCode.redeemedAt,
+          expiresAt: voucherCode.expiresAt,
+          status: voucherStatus,
+          redemptionCount: voucherCode.redemptions?.length || 0,
+        } : null,
+      };
+    });
+
     // Attach computed fields to the order object
     const enrichedOrder = {
       ...order,
       redeemedAt: orderRedeemedAt,
       voucherCodes: transformedVoucherCodes,
+      bulkRecipients: transformedBulkRecipients,
+      isBulkOrder: order.bulkRecipients.length > 0,
     };
 
     return { success: true, data: enrichedOrder };
@@ -2841,10 +2916,9 @@ export async function getOrdersByUserId(userId) {
 
 export async function modifyRecipientAndResend(data) {
   try {
-    const { orderNumber, receiverDetailId, recipientData, deliveryMethod } =
-      data;
+    const { orderNumber, receiverDetailId, recipientData, deliveryMethod, isBulk } = data;
 
-    if (!orderNumber || !receiverDetailId || !recipientData) {
+    if (!orderNumber || !recipientData) {
       return {
         success: false,
         message: "Missing required parameters",
@@ -2852,29 +2926,34 @@ export async function modifyRecipientAndResend(data) {
       };
     }
 
-    // Validate recipient data
-    if (!recipientData.name) {
-        return {
-            success: false,
-            message: "Name is required",
-            status: 400,
-        };
-    }
+    // Normalize recipientData to always be an array
+    const recipients = Array.isArray(recipientData) ? recipientData : [recipientData];
 
-    if (deliveryMethod === 'email' && !recipientData.email) {
+    // Validate all recipients
+    for (const recipient of recipients) {
+      if (!recipient.name) {
         return {
-            success: false,
-            message: "Email is required for email delivery",
-            status: 400,
+          success: false,
+          message: "Name is required for all recipients",
+          status: 400,
         };
-    }
+      }
 
-    if (deliveryMethod === "whatsapp" && !recipientData.phone) {
-      return {
-        success: false,
-        message: "Phone number is required for WhatsApp delivery",
-        status: 400,
-      };
+      if ((deliveryMethod === 'email' || deliveryMethod === 'multiple') && !recipient.email) {
+        return {
+          success: false,
+          message: "Email is required for email delivery",
+          status: 400,
+        };
+      }
+
+      if ((deliveryMethod === "whatsapp" || deliveryMethod === 'multiple') && !recipient.phone) {
+        return {
+          success: false,
+          message: "Phone number is required for WhatsApp delivery",
+          status: 400,
+        };
+      }
     }
 
     // Get order with all details FIRST to reduce transaction time
@@ -2890,6 +2969,16 @@ export async function modifyRecipientAndResend(data) {
         occasion: true,
         receiverDetail: true,
         user: true,
+        bulkRecipients: {
+          include: {
+            voucherCode: {
+              include: {
+                giftCard: true,
+              },
+            },
+          },
+          orderBy: { rowNumber: "asc" },
+        },
       },
     });
 
@@ -2901,132 +2990,369 @@ export async function modifyRecipientAndResend(data) {
       };
     }
 
-    if (order.receiverDetailId !== receiverDetailId) {
+    // Determine if this is a bulk order
+    const isBulkOrder = isBulk || (order.bulkRecipients && order.bulkRecipients.length > 0);
+
+    let deliveryResults = [];
+    let auditChanges = [];
+
+    if (isBulkOrder) {
+      // ============= BULK ORDER PROCESSING =============
+      
+      // Start transaction for bulk updates
+      const txResult = await prisma.$transaction(async (tx) => {
+        const deliveryLogs = [];
+        const updatedRecipients = [];
+
+        for (const recipientUpdate of recipients) {
+          // Find the bulk recipient by ID
+          const bulkRecipient = order.bulkRecipients.find(br => br.id === recipientUpdate.id);
+          
+          if (!bulkRecipient) {
+            console.error(`Bulk recipient not found: ${recipientUpdate.id}`);
+            continue;
+          }
+
+          // Store old details for audit
+          const oldDetails = {
+            name: bulkRecipient.recipientName,
+            email: bulkRecipient.recipientEmail,
+            phone: bulkRecipient.recipientPhone,
+          };
+
+          // Update bulk recipient
+          const updatedBulkRecipient = await tx.bulkRecipient.update({
+            where: { id: recipientUpdate.id },
+            data: {
+              recipientName: recipientUpdate.name,
+              recipientEmail: recipientUpdate.email || null,
+              recipientPhone: recipientUpdate.phone || null,
+              emailSent: false,
+              emailDelivered: false,
+              emailError: null,
+              updatedAt: new Date(),
+            },
+          });
+
+          updatedRecipients.push(updatedBulkRecipient);
+
+          // Create delivery log for resend
+          const deliveryLog = await tx.deliveryLog.create({
+            data: {
+              orderId: order.id,
+              voucherCodeId: bulkRecipient.voucherCodeId,
+              method: deliveryMethod,
+              recipient: deliveryMethod === "whatsapp" ? recipientUpdate.phone : recipientUpdate.email,
+              status: "PENDING",
+              attemptCount: 0,
+            },
+          });
+
+          deliveryLogs.push(deliveryLog);
+
+          // Track changes for audit
+          auditChanges.push({
+            recipientId: recipientUpdate.id,
+            oldDetails,
+            newDetails: recipientUpdate,
+          });
+        }
+
+        // Create audit log for bulk update
+        await tx.auditLog.create({
+          data: {
+            action: "MODIFY_BULK_RECIPIENTS",
+            entity: "BulkRecipient",
+            entityId: orderNumber,
+            changes: {
+              orderNumber,
+              recipientCount: recipients.length,
+              recipients: auditChanges,
+              deliveryMethod,
+            },
+          },
+        });
+
+        return { deliveryLogs, updatedRecipients };
+      });
+
+      // Send deliveries outside transaction
+      for (let i = 0; i < txResult.updatedRecipients.length; i++) {
+        const recipient = txResult.updatedRecipients[i];
+        const deliveryLog = txResult.deliveryLogs[i];
+        const bulkRecipient = order.bulkRecipients.find(br => br.id === recipient.id);
+
+        if (!bulkRecipient?.voucherCode?.giftCard) {
+          console.error(`Gift card not found for bulk recipient ${recipient.id}`);
+          
+          // Update delivery log as failed
+          await prisma.deliveryLog.update({
+            where: { id: deliveryLog.id },
+            data: {
+              status: "FAILED",
+              errorMessage: "Gift card details not found",
+              attemptCount: 1,
+            },
+          });
+
+          deliveryResults.push({
+            success: false,
+            recipientId: recipient.id,
+            recipientName: recipient.recipientName,
+            error: "Gift card not found",
+          });
+          continue;
+        }
+
+
+        console.log("deliveryMethod",deliveryMethod)
+
+        // Reconstruct orderData for delivery
+        const deliveryOrderData = {
+          selectedBrand: order.brand,
+          selectedSubCategory: order.isCustom ? order.customCard : order.subCategory,
+          selectedAmount: {
+            value: bulkRecipient.voucherCode.originalValue || order.amount,
+            currency: order.currency,
+          },
+          deliveryDetails: {
+            recipientFullName: recipient.recipientName,
+            recipientEmailAddress: recipient.recipientEmail,
+            recipientWhatsAppNumber: recipient.recipientPhone,
+            yourFullName: order.senderName,
+          },
+          personalMessage: recipient.personalMessage || order.message,
+          customImageUrl: order.customImageUrl,
+          customVideoUrl: order.customVideoUrl,
+        };
+
+        const giftCard = bulkRecipient.voucherCode.giftCard;
+
+        try {
+          // Resend the gift
+          const deliveryResult = await sendDeliveryMessage(
+            deliveryOrderData,
+            giftCard,
+            "email",
+          );
+
+          // Update delivery log and bulk recipient status
+          await prisma.$transaction(async (tx) => {
+            await tx.deliveryLog.update({
+              where: { id: deliveryLog.id },
+              data: {
+                status: deliveryResult.success ? "SENT" : "FAILED",
+                sentAt: deliveryResult.success ? new Date() : null,
+                deliveredAt: deliveryResult.success ? new Date() : null,
+                errorMessage: deliveryResult.success ? null : deliveryResult.message,
+                attemptCount: 1,
+              },
+            });
+
+            // Update bulk recipient email status
+            if (deliveryMethod === 'email' || deliveryMethod === 'multiple') {
+              await tx.bulkRecipient.update({
+                where: { id: recipient.id },
+                data: {
+                  emailSent: deliveryResult.success,
+                  emailSentAt: deliveryResult.success ? new Date() : null,
+                  emailDelivered: deliveryResult.success,
+                  emailDeliveredAt: deliveryResult.success ? new Date() : null,
+                  emailError: deliveryResult.success ? null : deliveryResult.message,
+                },
+              });
+            }
+          });
+
+          deliveryResults.push({
+            success: deliveryResult.success,
+            recipientId: recipient.id,
+            recipientName: recipient.recipientName,
+            message: deliveryResult.message,
+          });
+
+        } catch (error) {
+          console.error(`Delivery error for recipient ${recipient.id}:`, error);
+
+          // Update as failed
+          await prisma.$transaction(async (tx) => {
+            await tx.deliveryLog.update({
+              where: { id: deliveryLog.id },
+              data: {
+                status: "FAILED",
+                errorMessage: error.message,
+                attemptCount: 1,
+              },
+            });
+
+            await tx.bulkRecipient.update({
+              where: { id: recipient.id },
+              data: {
+                emailError: error.message,
+              },
+            });
+          });
+
+          deliveryResults.push({
+            success: false,
+            recipientId: recipient.id,
+            recipientName: recipient.recipientName,
+            error: error.message,
+          });
+        }
+      }
+
+      // Calculate statistics
+      const successCount = deliveryResults.filter(r => r.success).length;
+      const failCount = deliveryResults.filter(r => !r.success).length;
+
       return {
-        success: false,
-        message: "Receiver detail ID does not match the order.",
-        status: 400,
+        success: successCount > 0,
+        message: `Updated ${recipients.length} recipient(s). ${successCount} voucher(s) sent successfully${failCount > 0 ? `, ${failCount} failed` : ''}.`,
+        data: {
+          orderId: order.id,
+          total: recipients.length,
+          sent: successCount,
+          failed: failCount,
+          results: deliveryResults,
+        },
+      };
+
+    } else {
+      // ============= SINGLE ORDER PROCESSING =============
+      
+      const recipientUpdate = recipients[0];
+
+      if (!receiverDetailId || order.receiverDetailId !== receiverDetailId) {
+        return {
+          success: false,
+          message: "Receiver detail ID does not match the order.",
+          status: 400,
+        };
+      }
+
+      const oldReceiverDetails = {
+        name: order.receiverDetail.name,
+        email: order.receiverDetail.email,
+        phone: order.receiverDetail.phone,
+      };
+
+      // Start transaction for write operations only
+      const txResult = await prisma.$transaction(async (tx) => {
+        // 1. Update ReceiverDetail
+        const updatedReceiver = await tx.receiverDetail.update({
+          where: { id: receiverDetailId },
+          data: {
+            name: recipientUpdate.name,
+            email: (deliveryMethod === 'email' || deliveryMethod === 'multiple') ? recipientUpdate.email : null,
+            phone: (deliveryMethod === 'whatsapp' || deliveryMethod === 'multiple') ? recipientUpdate.phone : null,
+            updatedAt: new Date(),
+          },
+        });
+
+        // 2. Create delivery log for resend
+        const deliveryLog = await tx.deliveryLog.create({
+          data: {
+            orderId: order.id,
+            voucherCodeId: order.voucherCodes[0]?.id,
+            method: deliveryMethod,
+            recipient:
+              deliveryMethod === "whatsapp"
+                ? recipientUpdate.phone
+                : recipientUpdate.email,
+            status: "PENDING",
+            attemptCount: 0,
+          },
+        });
+
+        // 3. Create audit log
+        await tx.auditLog.create({
+          data: {
+            action: "MODIFY_RECIPIENT",
+            entity: "ReceiverDetail",
+            entityId: receiverDetailId,
+            changes: {
+              orderNumber,
+              oldDetails: oldReceiverDetails,
+              newDetails: recipientUpdate,
+              deliveryMethod,
+            },
+          },
+        });
+
+        return { deliveryLog, updatedReceiver };
+      });
+
+      // Reconstruct orderData for delivery
+      const deliveryOrderData = {
+        selectedBrand: order.brand,
+        selectedSubCategory: order.isCustom
+          ? order.customCard
+          : order.subCategory,
+        selectedAmount: {
+          value: order.amount,
+          currency: order.currency,
+        },
+        deliveryDetails: {
+          recipientFullName: recipientUpdate.name,
+          recipientEmailAddress: recipientUpdate.email,
+          recipientWhatsAppNumber: recipientUpdate.phone,
+          yourFullName: order.senderName,
+        },
+        personalMessage: order.message,
+        customImageUrl: order.customImageUrl,
+        customVideoUrl: order.customVideoUrl,
+      };
+
+      const giftCard = order.voucherCodes[0]?.giftCard;
+
+      if (!giftCard) {
+        throw new Error("Gift card details not found for this order.");
+      }
+
+      // Resend the gift
+      const deliveryResult = await sendDeliveryMessage(
+        deliveryOrderData,
+        giftCard,
+        deliveryMethod,
+      );
+
+      // Update delivery log with the result
+      await prisma.deliveryLog.update({
+        where: { id: txResult.deliveryLog.id },
+        data: {
+          status: deliveryResult.success ? "SENT" : "FAILED",
+          sentAt: deliveryResult.success ? new Date() : null,
+          deliveredAt: deliveryResult.success ? new Date() : null,
+          errorMessage: deliveryResult.success ? null : deliveryResult.message,
+          attemptCount: 1,
+        },
+      });
+
+      if (!deliveryResult.success) {
+        throw new ExternalServiceError(
+          `Message delivery failed: ${deliveryResult.message}`,
+          deliveryResult,
+        );
+      }
+
+      return {
+        success: true,
+        message: "Recipient updated and gift resent successfully.",
+        data: {
+          orderId: order.id,
+          deliveryLogId: txResult.deliveryLog.id,
+        },
       };
     }
 
-    const oldReceiverDetails = {
-      name: order.receiverDetail.name,
-      email: order.receiverDetail.email,
-      phone: order.receiverDetail.phone,
-    };
-
-    // Start transaction for write operations only
-    const txResult = await prisma.$transaction(async (tx) => {
-      // 1. Update ReceiverDetail
-      const updatedReceiver = await tx.receiverDetail.update({
-        where: { id: receiverDetailId },
-        data: {
-          name: recipientData.name,
-          email: deliveryMethod === 'email' ? recipientData.email : null,
-          phone: deliveryMethod === 'whatsapp' ? recipientData.phone : null,
-          updatedAt: new Date(),
-        },
-      });
-
-      // 2. Create delivery log for resend
-      const deliveryLog = await tx.deliveryLog.create({
-        data: {
-          orderId: order.id,
-          voucherCodeId: order.voucherCodes[0]?.id,
-          method: deliveryMethod,
-          recipient:
-            deliveryMethod === "whatsapp"
-              ? recipientData.phone
-              : recipientData.email,
-          status: "PENDING",
-          attemptCount: 0,
-        },
-      });
-
-      // 3. Create audit log
-      await tx.auditLog.create({
-        data: {
-          action: "MODIFY_RECIPIENT",
-          entity: "ReceiverDetail",
-          entityId: receiverDetailId,
-          changes: {
-            orderNumber,
-            oldDetails: oldReceiverDetails,
-            newDetails: recipientData,
-            deliveryMethod,
-          },
-        },
-      });
-
-      return { deliveryLog, updatedReceiver };
-    });
-
-    // Reconstruct orderData for delivery
-    const deliveryOrderData = {
-      selectedBrand: order.brand,
-      selectedSubCategory: order.isCustom
-        ? order.customCard
-        : order.subCategory,
-      selectedAmount: {
-        value: order.amount,
-        currency: order.currency,
-      },
-      deliveryDetails: {
-        recipientFullName: recipientData.name,
-        recipientEmailAddress: recipientData.email,
-        recipientWhatsAppNumber: recipientData.phone,
-        yourFullName: order.senderName,
-      },
-      personalMessage: order.message,
-      customImageUrl: order.customImageUrl,
-      customVideoUrl: order.customVideoUrl,
-    };
-
-    const giftCard = order.voucherCodes[0]?.giftCard;
-
-    if (!giftCard) {
-      throw new Error("Gift card details not found for this order.");
-    }
-
-    // Resend the gift
-    const deliveryResult = await sendDeliveryMessage(
-      deliveryOrderData,
-      giftCard,
-      deliveryMethod,
-    );
-
-    // Update delivery log with the result
-    await prisma.deliveryLog.update({
-      where: { id: txResult.deliveryLog.id },
-      data: {
-        status: deliveryResult.success ? "SENT" : "FAILED",
-        response: deliveryResult.message,
-        attemptCount: 1,
-      },
-    });
-
-    if (!deliveryResult.success) {
-      throw new ExternalServiceError(
-        `Message delivery failed: ${deliveryResult.message}`,
-        deliveryResult,
-      );
-    }
-
-    return {
-      success: true,
-      message: "Recipient updated and gift resent successfully.",
-      data: {
-        orderId: order.id,
-        deliveryLogId: txResult.deliveryLog.id,
-      },
-    };
   } catch (error) {
     console.error("Error modifying recipient:", error);
     if (error.code === "P2028") {
       return {
         success: false,
         message: "Database is busy, please try again later.",
-        status: 503, // Service Unavailable
+        status: 503,
       };
     }
     return {
