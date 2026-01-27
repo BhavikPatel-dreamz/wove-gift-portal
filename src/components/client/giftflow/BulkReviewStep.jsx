@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext, setIsConfirmed } from '../../../redux/giftFlowSlice';
 import { updateBulkCompanyInfo } from '../../../redux/cartSlice';
+import * as XLSX from 'xlsx';
 
 const BulkReviewStep = () => {
     const dispatch = useDispatch();
@@ -22,6 +23,10 @@ const BulkReviewStep = () => {
 
     // Local state only for form validation errors
     const [errors, setErrors] = useState({});
+    const [csvFile, setCsvFile] = useState(null);
+    const [csvData, setCsvData] = useState([]);
+    const [csvError, setCsvError] = useState('');
+
 
     // Get company info and delivery option from Redux state
     const companyInfo = currentBulkOrder?.companyInfo || {
@@ -32,6 +37,98 @@ const BulkReviewStep = () => {
     };
 
     const deliveryOption = currentBulkOrder?.deliveryOption || 'csv';
+
+    // Handle CSV/Excel file upload
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        if (!['csv', 'xlsx', 'xls'].includes(fileExtension)) {
+            setCsvError('Please upload a CSV or Excel file');
+            return;
+        }
+
+        setCsvFile(file);
+        setCsvError('');
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = evt.target.result;
+                let parsedData;
+
+                if (fileExtension === 'csv') {
+                    // Parse CSV
+                    const workbook = XLSX.read(data, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    parsedData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                } else {
+                    // Parse Excel
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    parsedData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                }
+
+                // Validate required columns
+                if (parsedData.length === 0) {
+                    setCsvError('File is empty');
+                    return;
+                }
+
+                const requiredColumns = ['name', 'email'];
+                const firstRow = parsedData[0];
+                const hasRequiredColumns = requiredColumns.every(col => 
+                    Object.keys(firstRow).some(key => key.toLowerCase() === col)
+                );
+
+                if (!hasRequiredColumns) {
+                    setCsvError('CSV must contain "name" and "email" columns');
+                    return;
+                }
+
+                // Normalize column names and validate data
+                const normalizedData = parsedData.map((row, index) => {
+                    const normalizedRow = {};
+                    Object.keys(row).forEach(key => {
+                        normalizedRow[key.toLowerCase()] = row[key];
+                    });
+
+                    if (!normalizedRow.email || !normalizedRow.name) {
+                        throw new Error(`Row ${index + 2} is missing required fields`);
+                    }
+
+                    return {
+                        name: normalizedRow.name,
+                        email: normalizedRow.email,
+                        phone: normalizedRow.phone || '',
+                        message: normalizedRow.message || '',
+                        rowNumber: index + 2
+                    };
+                });
+
+                setCsvData(normalizedData);
+                
+                // Update quantity in Redux based on CSV rows
+                dispatch(updateBulkCompanyInfo({
+                    companyInfo,
+                    deliveryOption,
+                    quantity: normalizedData.length,
+                    csvRecipients: normalizedData
+                }));
+
+            } catch (error) {
+                setCsvError(error.message || 'Error parsing file');
+                setCsvData([]);
+            }
+        };
+
+        if (fileExtension === 'csv') {
+            reader.readAsBinaryString(file);
+        } else {
+            reader.readAsArrayBuffer(file);
+        }
+    };
 
     const validateForm = () => {
         const newErrors = {};
@@ -48,6 +145,10 @@ const BulkReviewStep = () => {
             newErrors.contactEmail = 'Contact email is required';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyInfo.contactEmail)) {
             newErrors.contactEmail = 'Invalid email format';
+        }
+
+        if (deliveryOption === 'multiple' && csvData.length === 0) {
+            newErrors.csvFile = 'Please upload a CSV file with recipients';
         }
 
         setErrors(newErrors);
@@ -85,7 +186,6 @@ const BulkReviewStep = () => {
         if (!validateForm()) {
             return;
         }
-
         dispatch(goNext(2));
     };
 
@@ -184,7 +284,7 @@ const BulkReviewStep = () => {
                             <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
                             <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
-                               <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
+                                <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                                     <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                                         Bulk Gifting
                                     </span>
@@ -360,19 +460,73 @@ const BulkReviewStep = () => {
                                     </div>
                                 </label>
 
-                                {/* <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="deliveryOption"
-                                    value="multiple"
-                                    checked={deliveryOption === 'multiple'}
-                                    onChange={(e) => handleDeliveryOptionChange(e.target.value)}
-                                    className="mt-1 w-4 h-4 text-black focus:ring-pink-500"
-                                />
-                                <div className="flex-1">
-                                    <span className="text-gray-900 font-medium">Send vouchers to multiple individuals as gifts.</span>
-                                </div>
-                            </label> */}
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="deliveryOption"
+                                        value="multiple"
+                                        checked={deliveryOption === 'multiple'}
+                                        onChange={(e) => handleDeliveryOptionChange(e.target.value)}
+                                        className="mt-1 w-4 h-4"
+                                    />
+                                    <span className="text-gray-900 font-medium">
+                                        Upload CSV/Excel and send individual emails
+                                    </span>
+                                </label>
+
+                                {/* CSV Upload Section */}
+                                {deliveryOption === 'multiple' && (
+                                    <div className="mt-4 p-4 text-black bg-blue-50 rounded-lg border border-blue-200">
+                                        <h4 className="font-semibold text-gray-900 mb-2">
+                                            Upload Recipient List
+                                        </h4>
+                                        <p className="text-sm text-gray-600 mb-3">
+                                            Upload a CSV or Excel file with columns: name, email, phone (optional), message (optional)
+                                        </p>
+
+                                        <input
+                                            type="file"
+                                            accept=".csv,.xlsx,.xls"
+                                            onChange={handleFileUpload}
+                                            className="w-full text-sm"
+                                        />
+
+                                        {csvError && (
+                                            <p className="text-red-500 text-sm mt-2">{csvError}</p>
+                                        )}
+
+                                        {csvData.length > 0 && (
+                                            <div className="mt-3">
+                                                <p className="text-green-600 text-sm font-medium">
+                                                    ✓ {csvData.length} recipients loaded
+                                                </p>
+                                                <div className="mt-2 max-h-48 overflow-y-auto">
+                                                    <table className="w-full text-xs">
+                                                        <thead>
+                                                            <tr className="bg-gray-100">
+                                                                <th className="p-2 text-left">Name</th>
+                                                                <th className="p-2 text-left">Email</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {csvData.slice(0, 5).map((row, idx) => (
+                                                                <tr key={idx} className="border-t">
+                                                                    <td className="p-2">{row.name}</td>
+                                                                    <td className="p-2">{row.email}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                    {csvData.length > 5 && (
+                                                        <p className="text-xs text-gray-500 mt-2">
+                                                            ...and {csvData.length - 5} more
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

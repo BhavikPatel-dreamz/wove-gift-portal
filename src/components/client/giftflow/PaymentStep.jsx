@@ -74,6 +74,7 @@ const PaymentStep = () => {
   const quantity = isBulkMode && currentBulkOrder ? currentBulkOrder.quantity : 1;
   const companyInfo = isBulkMode && currentBulkOrder ? currentBulkOrder.companyInfo : null;
   const bulkDeliveryOption = isBulkMode && currentBulkOrder ? currentBulkOrder.deliveryOption : null;
+  const csvRecipients = isBulkMode && currentBulkOrder ? currentBulkOrder.csvRecipients : [];
 
   // ✅ Validate billing address
   const validateBillingAddress = () => {
@@ -154,6 +155,8 @@ const PaymentStep = () => {
         isBulkOrder: true,
         totalSpend: currentBulkOrder.totalSpend,
         billingAddress, // ✅ Include billing address
+        deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
+        csvRecipients,
       } : {
         selectedBrand,
         selectedAmount,
@@ -167,6 +170,9 @@ const PaymentStep = () => {
         isBulkOrder: false,
         billingAddress, // ✅ Include billing address
       };
+
+
+      console.log("orderData",orderData)
 
       const result = await createPendingOrder(orderData);
 

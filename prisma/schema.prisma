@@ -228,7 +228,7 @@ model VoucherCode {
   giftCard                GiftCard?           @relation(fields: [shopifyGiftCardId], references: [id])
   voucher                 Vouchers            @relation(fields: [voucherId], references: [id], onDelete: Cascade)
   redemptions             VoucherRedemption[]
-
+  bulkRecipient           BulkRecipient?      // ✅ Added one-to-one relation
   @@index([orderId])
   @@index([voucherId])
 }
@@ -340,6 +340,7 @@ model Order {
   receiverDetail   ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
   user             User                 @relation(fields: [userId], references: [id])
   voucherCodes     VoucherCode[]
+  bulkRecipients    BulkRecipient[]
 
   @@index([userId])
   @@index([brandId])
@@ -536,6 +537,41 @@ model SupportMessage {
   @@index([createdAt])
 }
 
+model BulkRecipient {
+  id                String   @id @default(cuid())
+  orderId           String
+  voucherCodeId     String?  @unique  // ✅ Made nullable with ?
+  
+  // Recipient Information
+  recipientName     String
+  recipientEmail    String
+  recipientPhone    String?
+  
+  // Gift Information
+  personalMessage   String?
+  
+  // Status Tracking
+  emailSent         Boolean  @default(false)
+  emailSentAt       DateTime?
+  emailDelivered    Boolean  @default(false)
+  emailDeliveredAt  DateTime?
+  emailError        String?
+  
+  // Metadata
+  rowNumber         Int      // Track which row in CSV
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  order             Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  voucherCode       VoucherCode? @relation(fields: [voucherCodeId], references: [id])  // ✅ Made nullable
+  
+  @@index([orderId])
+  @@index([recipientEmail])
+  @@index([emailSent])
+  @@index([voucherCodeId])  // Added index for faster lookups
+}
+
 enum UserRole {
   CUSTOMER
   ADMIN
@@ -601,6 +637,7 @@ enum DeliveryMethodStatus {
   email
   sms
   print
+  multiple
 }
 
 enum DeliveryStatus {
