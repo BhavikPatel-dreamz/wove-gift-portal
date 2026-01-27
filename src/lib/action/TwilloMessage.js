@@ -220,25 +220,43 @@ function buildWhatsAppTextMessage(data, giftCard) {
 
 // ==================== WHATSAPP SERVICE ====================
 export const SendWhatsappMessages = async (data, giftCard) => {
+  const LOG_PREFIX = "[WHATSAPP_SERVICE]";
+
   try {
+    console.info(`${LOG_PREFIX} Incoming request`, {
+      hasData: !!data,
+      hasGiftCard: !!giftCard,
+      shop: data?.shop,
+      category: data?.selectedSubCategory?.name,
+    });
 
-    // Step 1: Validate input
- 
-    validateWhatsAppInput(data);
-
-    // Step 2: Initialize Twilio
-    const client = initializeTwilioClient();
-
+    /* ----------------------------- Step 1: Validate input ----------------------------- */
     const { whatsappNumber, senderNumber } = validateWhatsAppInput(data);
 
-    // Step 3: Get content SID
+    console.info(`${LOG_PREFIX} Validation successful`, {
+      to: maskPhone(whatsappNumber),
+      from: maskPhone(senderNumber),
+    });
+
+    /* --------------------------- Step 2: Initialize Twilio ---------------------------- */
+    const client = initializeTwilioClient();
+
+    if (!client) {
+      throw new ConfigurationError("Twilio client initialization failed");
+    }
+
+    /* --------------------------- Step 3: Resolve Content SID --------------------------- */
     const contentSid = process.env.NEXT_TWILIO_CONTENT_SID;
     let message;
 
     if (contentSid && contentSid !== "HX...") {
-      // Method 1: Using Twilio Content Template
+      console.info(`${LOG_PREFIX} Sending WhatsApp via template`, {
+        contentSid,
+      });
 
       const templateVariables = buildWhatsAppTemplateVariables(data, giftCard);
+
+      console.debug(`${LOG_PREFIX} Template variables`, templateVariables);
 
       message = await client.messages.create({
         contentSid,
@@ -246,9 +264,8 @@ export const SendWhatsappMessages = async (data, giftCard) => {
         to: whatsappNumber,
         contentVariables: JSON.stringify(templateVariables),
       });
-
     } else {
-      // Method 2: Using text message with media
+      console.info(`${LOG_PREFIX} Sending WhatsApp via text/media`);
 
       const messageBody = buildWhatsAppTextMessage(data, giftCard);
       const mediaUrl = getAbsoluteUrl(data?.selectedSubCategory?.image);
@@ -259,17 +276,26 @@ export const SendWhatsappMessages = async (data, giftCard) => {
         body: messageBody,
       };
 
-      // Only add media if URL is valid
       if (mediaUrl && isValidMediaUrl(mediaUrl)) {
         messagePayload.mediaUrl = [mediaUrl];
       } else if (mediaUrl) {
-        console.warn("⚠️ Media URL invalid or insecure:", mediaUrl);
+        console.warn(`${LOG_PREFIX} Invalid media URL skipped`, mediaUrl);
       }
 
-      message = await client.messages.create(messagePayload);
+      console.debug(`${LOG_PREFIX} Message payload`, {
+        ...messagePayload,
+        to: maskPhone(messagePayload.to),
+        from: maskPhone(messagePayload.from),
+      });
 
+      message = await client.messages.create(messagePayload);
     }
 
+    console.info(`${LOG_PREFIX} Message sent successfully`, {
+      sid: message.sid,
+      status: message.status,
+      to: maskPhone(whatsappNumber),
+    });
 
     return {
       success: true,
@@ -282,36 +308,55 @@ export const SendWhatsappMessages = async (data, giftCard) => {
       },
     };
   } catch (error) {
-    console.error("❌ WhatsApp message failed:", error);
+    console.error(`${LOG_PREFIX} Message failed`, {
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+      status: error?.status,
+      moreInfo: error?.moreInfo,
+    });
 
-    if (error instanceof ValidationError) {
-      throw {
-        success: false,
-        error: error.message,
-        errorType: error.name,
-        statusCode: error.statusCode,
-        service: "whatsapp",
-      };
-    } else if (error instanceof ConfigurationError) {
-      throw {
-        success: false,
-        error: error.message,
-        errorType: error.name,
-        statusCode: error.statusCode,
-        service: "whatsapp",
-      };
-    } else {
-      throw {
-        success: false,
-        error: `WhatsApp delivery failed: ${error.message}`,
-        errorType: "MessageServiceError",
-        statusCode: 500,
-        service: "whatsapp",
-        originalError: error.message,
-      };
-    }
+    return normalizeWhatsAppError(error);
   }
 };
+
+const maskPhone = (phone = "") =>
+  phone.replace(/(\+\d{2})\d{6}(\d{2})/, "$1******$2");
+
+const normalizeWhatsAppError = (error) => {
+  if (error instanceof ValidationError || error instanceof ConfigurationError) {
+    return {
+      success: false,
+      service: "whatsapp",
+      error: error.message,
+      errorType: error.name,
+      statusCode: error.statusCode || 400,
+    };
+  }
+
+  // Twilio-specific error
+  if (error?.code && error?.moreInfo) {
+    return {
+      success: false,
+      service: "whatsapp",
+      error: error.message,
+      errorType: "TwilioError",
+      statusCode: error.status || 502,
+      twilioCode: error.code,
+      moreInfo: error.moreInfo,
+    };
+  }
+
+  return {
+    success: false,
+    service: "whatsapp",
+    error: "WhatsApp delivery failed",
+    errorType: "MessageServiceError",
+    statusCode: 500,
+    originalError: error?.message,
+  };
+};
+
 
 // ==================== EMAIL TEMPLATE BUILDER ====================
 function buildEmailHtmlContent(data, giftCard) {
