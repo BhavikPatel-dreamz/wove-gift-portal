@@ -260,8 +260,8 @@ export async function getVouchers(params = {}) {
   }
 }
 
-// Streamlined mapping function
-function mapVoucherCodeOptimized(vc, order, now) {
+// Helper function to map voucher code with optional recipient info
+function mapVoucherCodeOptimized(vc, order, now, recipient = null) {
   // Calculate redemption metrics in single pass
   let totalRedeemed = 0;
   let lastRedemptionDate = null;
@@ -302,7 +302,7 @@ function mapVoucherCodeOptimized(vc, order, now) {
 
   const totalAmount = vc.originalValue || 0;
 
-  return {
+  const mapped = {
     id: vc.id,
     code: vc.code,
     user: order.user,
@@ -324,7 +324,27 @@ function mapVoucherCodeOptimized(vc, order, now) {
     bulkOrderNumber: order.bulkOrderNumber,
     createdAt: vc.createdAt,
   };
+
+  // Only add recipient info if it exists
+  if (recipient) {
+    mapped.recipient = {
+      id: recipient.id,
+      name: recipient.recipientName,
+      email: recipient.recipientEmail,
+      phone: recipient.recipientPhone,
+      personalMessage: recipient.personalMessage,
+      emailSent: recipient.emailSent,
+      emailSentAt: recipient.emailSentAt,
+      emailDelivered: recipient.emailDelivered,
+      emailDeliveredAt: recipient.emailDeliveredAt,
+      emailError: recipient.emailError,
+      rowNumber: recipient.rowNumber,
+    };
+  }
+
+  return mapped;
 }
+
 
 // Cached brands with simple query
 export async function getBrandsForFilter() {
@@ -382,7 +402,7 @@ export async function getBulkOrderDetails(params = {}) {
         bulkOrderNumber: true,
         currency: true,
         createdAt: true,
-        redemptionStatus: true, // Added
+        redemptionStatus: true,
         isActive: true,
         user: {
           select: {
@@ -424,6 +444,24 @@ export async function getBulkOrderDetails(params = {}) {
             },
           },
         },
+        // Fetch bulk recipients only if they exist
+        bulkRecipients: {
+          select: {
+            id: true,
+            voucherCodeId: true,
+            recipientName: true,
+            recipientEmail: true,
+            recipientPhone: true,
+            personalMessage: true,
+            emailSent: true,
+            emailSentAt: true,
+            emailDelivered: true,
+            emailDeliveredAt: true,
+            emailError: true,
+            rowNumber: true,
+          },
+          orderBy: { rowNumber: 'asc' }
+        }
       },
     });
 
@@ -433,6 +471,19 @@ export async function getBulkOrderDetails(params = {}) {
         message: "Order not found",
         data: null
       };
+    }
+
+    // Check if this order has bulk recipients
+    const hasBulkRecipients = order.bulkRecipients && order.bulkRecipients.length > 0;
+
+    // Create a map of voucherCodeId -> recipient for quick lookup
+    const recipientMap = new Map();
+    if (hasBulkRecipients) {
+      order.bulkRecipients.forEach(recipient => {
+        if (recipient.voucherCodeId) {
+          recipientMap.set(recipient.voucherCodeId, recipient);
+        }
+      });
     }
 
     // Single-pass processing
@@ -445,8 +496,16 @@ export async function getBulkOrderDetails(params = {}) {
     let expiredCount = 0;
     let cancelledCount = 0;
 
+    // Email delivery stats (only relevant if hasBulkRecipients)
+    let emailSentCount = 0;
+    let emailDeliveredCount = 0;
+    let emailFailedCount = 0;
+
     order.voucherCodes.forEach(vc => {
-      const mapped = mapVoucherCodeOptimized(vc, order, now);
+      // Get recipient info if exists
+      const recipient = recipientMap.get(vc.id) || null;
+      
+      const mapped = mapVoucherCodeOptimized(vc, order, now, recipient);
       
       // Apply status filter inline
       if (status && mapped.status !== status) return;
@@ -460,6 +519,13 @@ export async function getBulkOrderDetails(params = {}) {
         case 'Redeemed': redeemedCount++; break;
         case 'Expired': expiredCount++; break;
         case 'Cancelled': cancelledCount++; break;
+      }
+
+      // Track email delivery stats only if bulk recipients exist
+      if (hasBulkRecipients && recipient) {
+        if (recipient.emailSent) emailSentCount++;
+        if (recipient.emailDelivered) emailDeliveredCount++;
+        if (recipient.emailError) emailFailedCount++;
       }
     });
 
@@ -482,30 +548,45 @@ export async function getBulkOrderDetails(params = {}) {
       bulkStatus = 'Expired';
     }
 
+    const responseData = {
+      bulkOrderNumber: order.bulkOrderNumber,
+      orderNumber: order.orderNumber,
+      user: order.user,
+      brand: order.brand,
+      brandName: order.brand?.brandName,
+      totalAmount,
+      remainingAmount,
+      currency: order.currency,
+      status: bulkStatus,
+      statusBreakdown: { 
+        active: activeCount, 
+        redeemed: redeemedCount, 
+        expired: expiredCount,
+        cancelled: cancelledCount 
+      },
+      voucherCount: order.voucherCodes.length,
+      orderCount: 1,
+      lastRedemptionDate: children[0]?.lastRedemptionDate,
+      createdAt: order.createdAt,
+      children: paginatedChildren,
+      hasBulkRecipients, // Flag to indicate if bulk recipients exist
+    };
+
+    // Only add email delivery stats if bulk recipients exist
+    if (hasBulkRecipients) {
+      responseData.recipientCount = order.bulkRecipients.length;
+      responseData.emailDeliveryStats = {
+        totalRecipients: order.bulkRecipients.length,
+        sent: emailSentCount,
+        delivered: emailDeliveredCount,
+        failed: emailFailedCount,
+        pending: order.bulkRecipients.length - emailSentCount
+      };
+    }
+
     return {
       success: true,
-      data: {
-        bulkOrderNumber: order.bulkOrderNumber,
-        orderNumber: order.orderNumber,
-        user: order.user,
-        brand: order.brand,
-        brandName: order.brand?.brandName,
-        totalAmount,
-        remainingAmount,
-        currency: order.currency,
-        status: bulkStatus,
-        statusBreakdown: { 
-          active: activeCount, 
-          redeemed: redeemedCount, 
-          expired: expiredCount,
-          cancelled: cancelledCount 
-        },
-        voucherCount: order.voucherCodes.length,
-        orderCount: 1,
-        lastRedemptionDate: children[0]?.lastRedemptionDate,
-        createdAt: order.createdAt,
-        children: paginatedChildren,
-      },
+      data: responseData,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(totalCount / pageSize),
@@ -520,7 +601,6 @@ export async function getBulkOrderDetails(params = {}) {
     return createEmptyResponse(page, pageSize, error.message);
   }
 }
-
 // Helper function
 function createEmptyResponse(page, pageSize, message = null) {
   return {
