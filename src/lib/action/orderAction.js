@@ -1,8 +1,7 @@
 "use server";
 
-import { prisma } from "../db";
-import { getSession } from "./userAction/session";
-import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage";
+import { prisma } from "../db.js";
+import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
 
 const apiKey = process.env.NEXT_BREVO_API_KEY;
@@ -76,7 +75,9 @@ function validateOrderData(orderData) {
 
   if (isBulkOrder) {
     if (!orderData.companyInfo) {
-      throw new ValidationError("Company information is required for bulk orders");
+      throw new ValidationError(
+        "Company information is required for bulk orders",
+      );
     }
 
     if (!orderData.companyInfo.companyName) {
@@ -100,17 +101,21 @@ function validateOrderData(orderData) {
     }
 
     // Validate CSV recipients for 'multiple' option
-    if (orderData.deliveryOption === 'multiple') {
+    if (orderData.deliveryOption === "multiple") {
       if (!orderData.csvRecipients || orderData.csvRecipients.length === 0) {
-        throw new ValidationError("CSV recipients are required for individual delivery");
+        throw new ValidationError(
+          "CSV recipients are required for individual delivery",
+        );
       }
 
       // Validate each recipient
       orderData.csvRecipients.forEach((recipient, index) => {
         if (!recipient.name || !recipient.email) {
-          throw new ValidationError(`Row ${index + 1}: Name and email are required`);
+          throw new ValidationError(
+            `Row ${index + 1}: Name and email are required`,
+          );
         }
-        
+
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(recipient.email)) {
@@ -140,7 +145,9 @@ function validateOrderData(orderData) {
       orderData.deliveryMethod === "email" &&
       !deliveryDetails?.recipientEmailAddress
     ) {
-      throw new ValidationError("Recipient email is required for email delivery");
+      throw new ValidationError(
+        "Recipient email is required for email delivery",
+      );
     }
 
     if (
@@ -209,8 +216,7 @@ function generateExportDescription(orderData, orderNumber) {
 // ==================== STEP 1: CREATE PENDING ORDER + PAYMENT INTENT ====================
 export const createPendingOrder = async (orderData) => {
   try {
-    const session = await getSession();
-    const userId = session?.userId;
+    const userId = orderData?.userId;
 
     console.log("=======pending order data========", orderData);
 
@@ -225,9 +231,10 @@ export const createPendingOrder = async (orderData) => {
     const receiver = await createReceiverDetail(orderData);
 
     // For CSV recipients, quantity should match the number of recipients
-    const quantity = isBulkOrder && orderData.csvRecipients?.length > 0
-      ? orderData.csvRecipients.length
-      : orderData.quantity || 1;
+    const quantity =
+      isBulkOrder && orderData.csvRecipients?.length > 0
+        ? orderData.csvRecipients.length
+        : orderData.quantity || 1;
 
     const amount = Number(orderData.selectedAmount.value);
     const subtotal = amount * quantity;
@@ -269,6 +276,17 @@ export const createPendingOrder = async (orderData) => {
 
     let order;
     if (isBulkOrder) {
+      const scheduledFor =
+        orderData.selectedTiming?.type === "schedule"
+          ? new Date(
+              orderData.selectedTiming.year,
+              orderData.selectedTiming.month,
+              orderData.selectedTiming.date,
+              Number(orderData.selectedTiming.time.split(":")[0]),
+              Number(orderData.selectedTiming.time.split(":")[1]),
+            )
+          : null;
+
       order = await prisma.order.create({
         data: {
           ...orderBase,
@@ -276,26 +294,31 @@ export const createPendingOrder = async (orderData) => {
           deliveryMethod: orderData.deliveryMethod || "email",
           message: orderData.personalMessage || "",
           senderName: orderData.companyInfo.companyName,
-          sendType: "sendImmediately",
-          scheduledFor: null,
+          sendType:"sendImmediately",
+          scheduledFor: scheduledFor,
           senderEmail: orderData.companyInfo.contactEmail,
         },
       });
 
       // ✅ NEW: Store CSV recipients in BulkRecipient table (without voucherCodeId for now)
       if (orderData.csvRecipients && orderData.csvRecipients.length > 0) {
-        console.log(`📝 Storing ${orderData.csvRecipients.length} CSV recipients in database`);
-        
-        const bulkRecipientsData = orderData.csvRecipients.map((recipient, index) => ({
-          orderId: order.id,
-          recipientName: recipient.name,
-          recipientEmail: recipient.email,
-          recipientPhone: recipient.phone || null,
-          personalMessage: recipient.message || orderData.personalMessage || null,
-          rowNumber: recipient.rowNumber || index + 1,
-          // voucherCodeId will be updated after payment when vouchers are created
-          voucherCodeId: null, // Temporary placeholder
-        }));
+        console.log(
+          `📝 Storing ${orderData.csvRecipients.length} CSV recipients in database`,
+        );
+
+        const bulkRecipientsData = orderData.csvRecipients.map(
+          (recipient, index) => ({
+            orderId: order.id,
+            recipientName: recipient.name,
+            recipientEmail: recipient.email,
+            recipientPhone: recipient.phone || null,
+            personalMessage:
+              recipient.message || orderData.personalMessage || null,
+            rowNumber: recipient.rowNumber || index + 1,
+            // voucherCodeId will be updated after payment when vouchers are created
+            voucherCodeId: null, // Temporary placeholder
+          }),
+        );
 
         // Create all bulk recipients in one transaction
         await prisma.bulkRecipient.createMany({
@@ -303,13 +326,20 @@ export const createPendingOrder = async (orderData) => {
           skipDuplicates: true,
         });
 
-        console.log(`✅ Successfully stored ${bulkRecipientsData.length} recipients for order ${order.orderNumber}`);
+        console.log(
+          `✅ Successfully stored ${bulkRecipientsData.length} recipients for order ${order.orderNumber}`,
+        );
       }
     } else {
       const scheduledFor =
-        orderData.selectedTiming?.type === "scheduled" &&
-        orderData.selectedTiming?.dateTime
-          ? new Date(orderData.selectedTiming.dateTime)
+        orderData.selectedTiming?.type === "schedule"
+          ? new Date(
+              orderData.selectedTiming.year,
+              orderData.selectedTiming.month,
+              orderData.selectedTiming.date,
+              Number(orderData.selectedTiming.time.split(":")[0]),
+              Number(orderData.selectedTiming.time.split(":")[1]),
+            )
           : null;
 
       order = await prisma.order.create({
@@ -343,7 +373,9 @@ export const createPendingOrder = async (orderData) => {
       : orderData.deliveryDetails?.yourEmailAddress || null;
 
     if (!orderData.billingAddress) {
-      throw new ValidationError("Billing address is required for payment processing");
+      throw new ValidationError(
+        "Billing address is required for payment processing",
+      );
     }
 
     const customerAddress = {
@@ -363,12 +395,16 @@ export const createPendingOrder = async (orderData) => {
         userId: String(userId),
         orderId: order.id,
         orderNumber: order.orderNumber,
-        deliveryOption: orderData.deliveryOption || 'single',
-        hasCSVRecipients: orderData.csvRecipients?.length > 0 ? 'true' : 'false',
+        deliveryOption: orderData.deliveryOption || "single",
+        hasCSVRecipients:
+          orderData.csvRecipients?.length > 0 ? "true" : "false",
       },
     });
 
-    const exportDescription = generateExportDescription(orderData, order.orderNumber);
+    const exportDescription = generateExportDescription(
+      orderData,
+      order.orderNumber,
+    );
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(totalAmount * 100),
@@ -382,8 +418,9 @@ export const createPendingOrder = async (orderData) => {
         quantity: String(quantity),
         exportDescription: exportDescription,
         userId: String(userId),
-        deliveryOption: orderData.deliveryOption || 'single',
-        hasCSVRecipients: orderData.csvRecipients?.length > 0 ? 'true' : 'false',
+        deliveryOption: orderData.deliveryOption || "single",
+        hasCSVRecipients:
+          orderData.csvRecipients?.length > 0 ? "true" : "false",
       },
       statement_descriptor: "GIFT CARD",
       statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
@@ -442,32 +479,46 @@ export const createPendingOrder = async (orderData) => {
 };
 
 // ==================== SHOPIFY GIFT CARD OPERATIONS ====================
-async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig, recipientData = null) {
+async function createShopifyGiftCard(
+  selectedBrand,
+  orderData,
+  voucherConfig,
+  recipientData = null,
+) {
   if (!selectedBrand.domain) {
-    throw new ValidationError("Brand domain is required for gift card creation");
+    throw new ValidationError(
+      "Brand domain is required for gift card creation",
+    );
   }
 
   const isBulkOrder = orderData.isBulkOrder === true;
 
   // Use recipient data if provided (for CSV recipients), otherwise use company/order data
   const giftCardData = {
-    customerEmail: recipientData?.email || 
+    customerEmail:
+      recipientData?.email ||
       (isBulkOrder
         ? orderData.companyInfo.contactEmail
         : orderData.deliveryDetails?.recipientEmailAddress || ""),
-    firstName: recipientData?.name?.split(" ")[0] ||
+    firstName:
+      recipientData?.name?.split(" ")[0] ||
       (isBulkOrder
         ? orderData.companyInfo.companyName.split(" ")[0]
-        : orderData.deliveryDetails?.recipientFullName?.split(" ")[0] || "Recipient"),
-    lastName: recipientData?.name?.split(" ").slice(1).join(" ") ||
+        : orderData.deliveryDetails?.recipientFullName?.split(" ")[0] ||
+          "Recipient"),
+    lastName:
+      recipientData?.name?.split(" ").slice(1).join(" ") ||
       (isBulkOrder
         ? orderData.companyInfo.companyName.split(" ").slice(1).join(" ")
-        : orderData.deliveryDetails?.recipientFullName?.split(" ").slice(1).join(" ") || ""),
+        : orderData.deliveryDetails?.recipientFullName
+            ?.split(" ")
+            .slice(1)
+            .join(" ") || ""),
     note: recipientData
-      ? `Gift for ${recipientData.name} - ${recipientData.message || ''}`
-      : (isBulkOrder
-          ? `Bulk Order - ${orderData.quantity} vouchers - Delivery: ${orderData.deliveryOption}`
-          : `Order to be generated - Delivery Method: ${orderData.deliveryMethod}`),
+      ? `Gift for ${recipientData.name} - ${recipientData.message || ""}`
+      : isBulkOrder
+        ? `Bulk Order - ${orderData.quantity} vouchers - Delivery: ${orderData.deliveryOption}`
+        : `Order to be generated - Delivery Method: ${orderData.deliveryMethod}`,
     denominationValue:
       voucherConfig.denominationType === "fixed"
         ? orderData.selectedAmount.value
@@ -515,7 +566,12 @@ async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig, re
 }
 
 // ==================== REGULAR BULK ORDER (NO CSV) ====================
-async function processBulkOrder(selectedBrand, orderData, order, voucherConfig) {
+async function processBulkOrder(
+  selectedBrand,
+  orderData,
+  order,
+  voucherConfig,
+) {
   try {
     const quantity = orderData.quantity || 1;
     const voucherCodes = [];
@@ -603,17 +659,23 @@ async function processBulkOrder(selectedBrand, orderData, order, voucherConfig) 
 }
 
 // ==================== ENHANCED BULK DELIVERY WITH DUAL EMAIL SYSTEM ====================
-async function sendBulkDelivery(orderData, voucherCodes, giftCards, bulkRecipients = []) {
+export async function sendBulkDelivery(
+  orderData,
+  voucherCodes,
+  giftCards,
+  bulkRecipients = [],
+) {
   try {
     const { deliveryMethod, companyInfo } = orderData;
 
-    console.log("***********main****",orderData)
+    console.log("***********main****", orderData);
 
     // ==================== OPTION 1: CSV ATTACHMENT TO MAIN PERSON ONLY ====================
     if (deliveryMethod === "csv") {
-      console.log('📎 Generating CSV file for bulk delivery');
-      
-      const csvHeader = "Voucher Code,Amount,Currency,Expires At,Redemption Link\n";
+      console.log("📎 Generating CSV file for bulk delivery");
+
+      const csvHeader =
+        "Voucher Code,Amount,Currency,Expires At,Redemption Link\n";
       const csvRows = voucherCodes
         .map((vc) => {
           const expiryDate = vc.expiresAt
@@ -637,7 +699,9 @@ async function sendBulkDelivery(orderData, voucherCodes, giftCards, bulkRecipien
 
       const sendSmtpEmail = {
         sender: { email: senderEmail, name: senderName },
-        to: [{ email: companyInfo.contactEmail, name: companyInfo.companyName }],
+        to: [
+          { email: companyInfo.contactEmail, name: companyInfo.companyName },
+        ],
         subject: `Bulk Gift Card Order - ${voucherCodes.length} Vouchers (CSV Attached)`,
         htmlContent: generateCSVEmailTemplate(orderData, voucherCodes),
         textContent: generateCSVEmailTextTemplate(orderData, voucherCodes),
@@ -656,12 +720,12 @@ async function sendBulkDelivery(orderData, voucherCodes, giftCards, bulkRecipien
         vouchersCount: voucherCodes.length,
         deliveryMethod: "csv",
       };
-    } 
-    
+    }
+
     // ==================== OPTION 2: ALL CODES IN ONE EMAIL TO MAIN PERSON ONLY ====================
     else if (deliveryMethod === "email") {
-      console.log('📧 Sending all voucher codes in one email');
-      
+      console.log("📧 Sending all voucher codes in one email");
+
       const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
       const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
 
@@ -671,7 +735,9 @@ async function sendBulkDelivery(orderData, voucherCodes, giftCards, bulkRecipien
 
       const sendSmtpEmail = {
         sender: { email: senderEmail, name: senderName },
-        to: [{ email: companyInfo.contactEmail, name: companyInfo.companyName }],
+        to: [
+          { email: companyInfo.contactEmail, name: companyInfo.companyName },
+        ],
         subject: `Bulk Gift Card Order - ${voucherCodes.length} Vouchers`,
         htmlContent: generateBulkEmailTemplate(orderData, voucherCodes),
         textContent: generateBulkEmailTextTemplate(orderData, voucherCodes),
@@ -690,16 +756,18 @@ async function sendBulkDelivery(orderData, voucherCodes, giftCards, bulkRecipien
         deliveryMethod: "email",
       };
     }
-    
+
     // ==================== OPTION 3: INDIVIDUAL EMAILS + SUMMARY TO MAIN PERSON ====================
-    else if (deliveryMethod === 'multiple' && bulkRecipients.length > 0) {
-      console.log(`📧 Dual delivery: Individual emails + Summary to main person`);
-      
+    else if (deliveryMethod === "multiple" && bulkRecipients.length > 0) {
+      console.log(
+        `📧 Dual delivery: Individual emails + Summary to main person`,
+      );
+
       // ✅ STEP 1: Send individual emails to each recipient
       const individualResults = await sendIndividualEmailsToRecipients(
         orderData,
         bulkRecipients,
-        orderData.selectedBrand
+        orderData.selectedBrand,
       );
 
       // ✅ STEP 2: Send summary email to main person (company contact)
@@ -707,7 +775,7 @@ async function sendBulkDelivery(orderData, voucherCodes, giftCards, bulkRecipien
         orderData,
         voucherCodes,
         bulkRecipients,
-        individualResults
+        individualResults,
       );
 
       // Combine results
@@ -735,7 +803,7 @@ async function sendBulkDelivery(orderData, voucherCodes, giftCards, bulkRecipien
 // ==================== EMAIL TEMPLATE 1: CSV ATTACHMENT ====================
 function generateCSVEmailTemplate(orderData, voucherCodes) {
   const { companyInfo, selectedBrand, selectedAmount } = orderData;
-  
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -833,7 +901,7 @@ function generateCSVEmailTemplate(orderData, voucherCodes) {
               <div style="margin-top: 24px; padding: 16px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
                 <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: 600;">Sample Voucher Code:</p>
                 <div style="font-family: 'Courier New', monospace; background-color: #ffffff; padding: 12px; border-radius: 6px; border: 1px dashed #ED457D;">
-                  <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">${voucherCodes[0]?.code || 'XXXX-XXXX-XXXX'}</p>
+                  <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1a1a1a;">${voucherCodes[0]?.code || "XXXX-XXXX-XXXX"}</p>
                 </div>
               </div>
               
@@ -841,7 +909,7 @@ function generateCSVEmailTemplate(orderData, voucherCodes) {
               <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
                 <p style="margin: 0; font-size: 13px; color: #6c757d; line-height: 1.6;">
                   <strong>Need help?</strong> Contact our support team at any time.<br>
-                  For questions about redemption, visit ${selectedBrand?.website || selectedBrand?.domain || 'the brand website'}.
+                  For questions about redemption, visit ${selectedBrand?.website || selectedBrand?.domain || "the brand website"}.
                 </p>
               </div>
             </td>
@@ -867,7 +935,7 @@ function generateCSVEmailTemplate(orderData, voucherCodes) {
 
 function generateCSVEmailTextTemplate(orderData, voucherCodes) {
   const { companyInfo, selectedBrand, selectedAmount } = orderData;
-  
+
   return `
 Bulk Gift Card Order Confirmation
 
@@ -890,7 +958,7 @@ How to Use:
 3. Distribute the codes to your recipients
 4. Recipients can redeem at ${selectedBrand?.brandName || "the brand"}
 
-Sample Code: ${voucherCodes[0]?.code || 'XXXX-XXXX-XXXX'}
+Sample Code: ${voucherCodes[0]?.code || "XXXX-XXXX-XXXX"}
 
 Thank you for choosing our gift card platform.
   `;
@@ -899,7 +967,7 @@ Thank you for choosing our gift card platform.
 // ==================== EMAIL TEMPLATE 2: ALL CODES IN ONE EMAIL ====================
 function generateBulkEmailTemplate(orderData, voucherCodes) {
   const { companyInfo, selectedBrand, selectedAmount } = orderData;
-  
+
   // Generate voucher rows for HTML table
   const voucherRows = voucherCodes
     .map((vc, index) => {
@@ -1046,7 +1114,7 @@ function generateBulkEmailTemplate(orderData, voucherCodes) {
               <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
                 <p style="margin: 0; font-size: 13px; color: #6c757d; line-height: 1.6;">
                   <strong>Need help?</strong> Contact our support team at any time.<br>
-                  For questions about redemption, visit ${selectedBrand?.website || selectedBrand?.domain || 'the brand website'}.
+                  For questions about redemption, visit ${selectedBrand?.website || selectedBrand?.domain || "the brand website"}.
                 </p>
               </div>
             </td>
@@ -1072,7 +1140,7 @@ function generateBulkEmailTemplate(orderData, voucherCodes) {
 
 function generateBulkEmailTextTemplate(orderData, voucherCodes) {
   const { companyInfo, selectedBrand, selectedAmount } = orderData;
-  
+
   return `
 Bulk Gift Card Order - All Codes
 
@@ -1111,7 +1179,11 @@ Thank you for choosing our gift card platform.
 }
 
 // ==================== SEND INDIVIDUAL EMAILS TO EACH RECIPIENT ====================
-async function sendIndividualEmailsToRecipients(orderData, bulkRecipients, selectedBrand) {
+async function sendIndividualEmailsToRecipients(
+  orderData,
+  bulkRecipients,
+  selectedBrand,
+) {
   try {
     const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
     const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
@@ -1121,58 +1193,68 @@ async function sendIndividualEmailsToRecipients(orderData, bulkRecipients, selec
     }
 
     const results = [];
-    const companyName = orderData.companyInfo?.companyName || 'A special sender';
+    const companyName =
+      orderData.companyInfo?.companyName || "A special sender";
 
-    console.log(`📧 Sending individual emails to ${bulkRecipients.length} recipients`);
+    console.log(
+      `📧 Sending individual emails to ${bulkRecipients.length} recipients`,
+    );
 
     for (const recipient of bulkRecipients) {
       try {
         const voucherCode = await prisma.voucherCode.findUnique({
           where: { id: recipient.voucherCodeId },
-          include: { 
+          include: {
             voucher: true,
-            giftCard: true  // ✅ Include the GiftCard relation
-          }
+            giftCard: true, // ✅ Include the GiftCard relation
+          },
         });
 
         if (!voucherCode) {
-          throw new Error(`Voucher code not found for recipient ${recipient.recipientEmail}`);
+          throw new Error(
+            `Voucher code not found for recipient ${recipient.recipientEmail}`,
+          );
         }
 
         // ✅ Get the full code from GiftCard table
         const fullCode = voucherCode.giftCard?.code || voucherCode.code;
 
         if (!fullCode) {
-          throw new Error(`Gift card code not found for recipient ${recipient.recipientEmail}`);
+          throw new Error(
+            `Gift card code not found for recipient ${recipient.recipientEmail}`,
+          );
         }
 
         const expiryDate = voucherCode.expiresAt
           ? new Date(voucherCode.expiresAt).toLocaleDateString()
           : "No Expiry";
 
-        const personalMessage = recipient.personalMessage || orderData.personalMessage || '';
+        const personalMessage =
+          recipient.personalMessage || orderData.personalMessage || "";
 
         const sendSmtpEmail = {
           sender: { email: senderEmail, name: senderName },
-          to: [{ email: recipient.recipientEmail, name: recipient.recipientName }],
-          subject: `🎁 ${companyName} sent you a ${selectedBrand?.brandName || 'Gift Card'}!`,
+          to: [
+            { email: recipient.recipientEmail, name: recipient.recipientName },
+          ],
+          subject: `🎁 ${companyName} sent you a ${selectedBrand?.brandName || "Gift Card"}!`,
           htmlContent: generateIndividualGiftEmailHTML(
             recipient,
-            { ...voucherCode, code: fullCode },  // ✅ Pass the full code
+            { ...voucherCode, code: fullCode }, // ✅ Pass the full code
             orderData,
             selectedBrand,
             expiryDate,
             companyName,
-            personalMessage
+            personalMessage,
           ),
           textContent: generateIndividualGiftEmailText(
             recipient,
-            { ...voucherCode, code: fullCode },  // ✅ Pass the full code
+            { ...voucherCode, code: fullCode }, // ✅ Pass the full code
             orderData,
             selectedBrand,
             expiryDate,
             companyName,
-            personalMessage
+            personalMessage,
           ),
         };
 
@@ -1191,16 +1273,15 @@ async function sendIndividualEmailsToRecipients(orderData, bulkRecipients, selec
         results.push({
           recipientEmail: recipient.recipientEmail,
           recipientName: recipient.recipientName,
-          voucherCode: fullCode,  // ✅ Use the full code in results
+          voucherCode: fullCode, // ✅ Use the full code in results
           success: true,
           messageId: response.messageId,
         });
 
         console.log(`✅ Individual email sent to ${recipient.recipientEmail}`);
-        
+
         // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (error) {
         await prisma.bulkRecipient.update({
           where: { id: recipient.id },
@@ -1218,14 +1299,19 @@ async function sendIndividualEmailsToRecipients(orderData, bulkRecipients, selec
           error: error.message,
         });
 
-        console.error(`❌ Failed to send email to ${recipient.recipientEmail}:`, error.message);
+        console.error(
+          `❌ Failed to send email to ${recipient.recipientEmail}:`,
+          error.message,
+        );
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.filter(r => !r.success).length;
+    const successCount = results.filter((r) => r.success).length;
+    const failCount = results.filter((r) => !r.success).length;
 
-    console.log(`✅ Individual email sending complete: ${successCount} succeeded, ${failCount} failed`);
+    console.log(
+      `✅ Individual email sending complete: ${successCount} succeeded, ${failCount} failed`,
+    );
 
     return {
       success: true,
@@ -1240,7 +1326,12 @@ async function sendIndividualEmailsToRecipients(orderData, bulkRecipients, selec
 }
 
 // ==================== NEW: SEND SUMMARY EMAIL TO MAIN PERSON ====================
-async function sendSummaryEmailToMainPerson(orderData, voucherCodes, bulkRecipients, individualResults) {
+async function sendSummaryEmailToMainPerson(
+  orderData,
+  voucherCodes,
+  bulkRecipients,
+  individualResults,
+) {
   try {
     const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
     const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
@@ -1251,18 +1342,22 @@ async function sendSummaryEmailToMainPerson(orderData, voucherCodes, bulkRecipie
 
     const { companyInfo, selectedBrand, selectedAmount } = orderData;
 
-    console.log(`📧 Sending summary email to main person: ${companyInfo.contactEmail}`);
+    console.log(
+      `📧 Sending summary email to main person: ${companyInfo.contactEmail}`,
+    );
 
     // Generate summary table with recipient info
     const summaryRows = bulkRecipients
       .map((recipient, index) => {
-        const result = individualResults.results.find(r => r.recipientEmail === recipient.recipientEmail);
+        const result = individualResults.results.find(
+          (r) => r.recipientEmail === recipient.recipientEmail,
+        );
         const voucherCode = voucherCodes[index];
         const expiryDate = voucherCode?.expiresAt
           ? new Date(voucherCode.expiresAt).toLocaleDateString()
           : "No Expiry";
 
-        const statusBadge = result?.success 
+        const statusBadge = result?.success
           ? '<span style="background-color: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">✓ SENT</span>'
           : '<span style="background-color: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">✗ FAILED</span>';
 
@@ -1278,7 +1373,7 @@ async function sendSummaryEmailToMainPerson(orderData, voucherCodes, bulkRecipie
             ${recipient.recipientEmail}
           </td>
           <td style="padding: 12px 8px; font-size: 12px; color: #1a1a1a; font-family: 'Courier New', monospace;">
-            ${voucherCode?.code || 'N/A'}
+            ${voucherCode?.code || "N/A"}
           </td>
           <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a; text-align: center;">
             ${selectedAmount?.currency || "₹"}${voucherCode?.originalValue || 0}
@@ -1452,14 +1547,18 @@ Order Summary:
 
 Distribution Details:
 
-${bulkRecipients.map((recipient, index) => {
-  const result = individualResults.results.find(r => r.recipientEmail === recipient.recipientEmail);
-  const voucherCode = voucherCodes[index];
-  const status = result?.success ? '✓ SENT' : '✗ FAILED';
-  return `${index + 1}. ${recipient.recipientName} (${recipient.recipientEmail})
-   Code: ${voucherCode?.code || 'N/A'}
+${bulkRecipients
+  .map((recipient, index) => {
+    const result = individualResults.results.find(
+      (r) => r.recipientEmail === recipient.recipientEmail,
+    );
+    const voucherCode = voucherCodes[index];
+    const status = result?.success ? "✓ SENT" : "✗ FAILED";
+    return `${index + 1}. ${recipient.recipientName} (${recipient.recipientEmail})
+   Code: ${voucherCode?.code || "N/A"}
    Status: ${status}`;
-}).join("\n\n")}
+  })
+  .join("\n\n")}
 
 What Happened:
 Each recipient has received an individual email with their personal gift card code. This summary email contains all voucher codes for your records.
@@ -1487,7 +1586,15 @@ Thank you for using our gift card platform.
   }
 }
 
-function generateIndividualGiftEmailHTML(recipient, voucherCode, orderData, selectedBrand, expiryDate, companyName, personalMessage) {
+function generateIndividualGiftEmailHTML(
+  recipient,
+  voucherCode,
+  orderData,
+  selectedBrand,
+  expiryDate,
+  companyName,
+  personalMessage,
+) {
   return `
 <!DOCTYPE html>
 <html>
@@ -1520,12 +1627,14 @@ function generateIndividualGiftEmailHTML(recipient, voucherCode, orderData, sele
                   Hi ${recipient.recipientName}! 👋
                 </p>
                 <p style="margin: 0; font-size: 16px; color: #4a4a4a; line-height: 1.6;">
-                  ${companyName} has sent you a gift card for <strong style="color: #ED457D;">${selectedBrand?.brandName || 'our store'}</strong>
+                  ${companyName} has sent you a gift card for <strong style="color: #ED457D;">${selectedBrand?.brandName || "our store"}</strong>
                 </p>
               </div>
               
               <!-- Personal Message (if exists) -->
-              ${personalMessage ? `
+              ${
+                personalMessage
+                  ? `
               <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffe4b5 100%); border-left: 4px solid #ffc107; padding: 20px; margin-bottom: 32px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                 <div style="display: flex; align-items: flex-start;">
                   <span style="font-size: 24px; margin-right: 12px;">💌</span>
@@ -1537,7 +1646,9 @@ function generateIndividualGiftEmailHTML(recipient, voucherCode, orderData, sele
                   </div>
                 </div>
               </div>
-              ` : ''}
+              `
+                  : ""
+              }
               
               <!-- Gift Card Details -->
               <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; padding: 32px; margin-bottom: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
@@ -1562,8 +1673,8 @@ function generateIndividualGiftEmailHTML(recipient, voucherCode, orderData, sele
                   <div style="display: table-row;">
                     <div style="display: table-cell; width: 50%; padding: 16px; text-align: center; background-color: #ffffff; border-radius: 8px 0 0 8px; border-right: 1px solid #e9ecef;">
                       <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: 600;">Amount</p>
-                      <p style="margin: 0; font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                        ${orderData.selectedAmount?.currency || '₹'}${voucherCode.originalValue}
+<p style="margin: 0; font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                        ${orderData.selectedAmount?.currency || "₹"}${voucherCode.originalValue}
                       </p>
                     </div>
                     <div style="display: table-cell; width: 50%; padding: 16px; text-align: center; background-color: #ffffff; border-radius: 0 8px 8px 0;">
@@ -1594,7 +1705,7 @@ function generateIndividualGiftEmailHTML(recipient, voucherCode, orderData, sele
                     </p>
                     <ol style="margin: 0; padding-left: 20px; color: #084298; font-size: 14px; line-height: 1.8;">
                       <li>Click the <strong>"Redeem Your Gift"</strong> button above</li>
-                      <li>Or visit <strong>${selectedBrand?.website || selectedBrand?.domain || 'the brand website'}</strong></li>
+                      <li>Or visit <strong>${selectedBrand?.website || selectedBrand?.domain || "the brand website"}</strong></li>
                       <li>Enter code <strong>${voucherCode.code}</strong> at checkout</li>
                       <li>Enjoy your purchase! 🎉</li>
                     </ol>
@@ -1613,7 +1724,7 @@ function generateIndividualGiftEmailHTML(recipient, voucherCode, orderData, sele
               <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center;">
                 <p style="margin: 0; font-size: 13px; color: #6c757d; line-height: 1.6;">
                   Questions? We're here to help!<br>
-                  Visit ${selectedBrand?.website || selectedBrand?.domain || 'our website'} for support
+                  Visit ${selectedBrand?.website || selectedBrand?.domain || "our website"} for support
                 </p>
               </div>
             </td>
@@ -1640,25 +1751,33 @@ function generateIndividualGiftEmailHTML(recipient, voucherCode, orderData, sele
   `;
 }
 
-function generateIndividualGiftEmailText(recipient, voucherCode, orderData, selectedBrand, expiryDate, companyName, personalMessage) {
+function generateIndividualGiftEmailText(
+  recipient,
+  voucherCode,
+  orderData,
+  selectedBrand,
+  expiryDate,
+  companyName,
+  personalMessage,
+) {
   return `
 You've Received a Gift!
 
 Hi ${recipient.recipientName}!
 
-${companyName} has sent you a gift card for ${selectedBrand?.brandName || 'our store'}!
+${companyName} has sent you a gift card for ${selectedBrand?.brandName || "our store"}!
 
-${personalMessage ? `Personal Message:\n"${personalMessage}"\n\n` : ''}
+${personalMessage ? `Personal Message:\n"${personalMessage}"\n\n` : ""}
 
 Your Gift Card Details:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Code: ${voucherCode.code}
-Amount: ${orderData.selectedAmount?.currency || '₹'}${voucherCode.originalValue}
+Amount: ${orderData.selectedAmount?.currency || "₹"}${voucherCode.originalValue}
 Expires: ${expiryDate}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 How to Use:
-1. Visit ${selectedBrand?.website || selectedBrand?.domain || 'the brand website'}
+1. Visit ${selectedBrand?.website || selectedBrand?.domain || "the brand website"}
 2. Enter code ${voucherCode.code} at checkout
 3. Enjoy your purchase!
 
@@ -1668,7 +1787,6 @@ Redeem Link: ${voucherCode.tokenizedLink}
 This gift was sent by ${companyName}
   `;
 }
-
 
 // ==================== COMPLETE ORDER AFTER PAYMENT ====================
 export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
@@ -1697,7 +1815,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
         // ✅ NEW: Include bulk recipients stored during pending order creation
         bulkRecipients: {
           orderBy: {
-            rowNumber: 'asc',
+            rowNumber: "asc",
           },
         },
       },
@@ -1744,7 +1862,9 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
     const bulkRecipientsFromDB = order.bulkRecipients || [];
     const hasCsvRecipients = bulkRecipientsFromDB.length > 0;
 
-    console.log(`📋 Found ${bulkRecipientsFromDB.length} recipients in database for order ${order.orderNumber}`);
+    console.log(
+      `📋 Found ${bulkRecipientsFromDB.length} recipients in database for order ${order.orderNumber}`,
+    );
 
     const orderData = {
       selectedBrand,
@@ -1762,7 +1882,8 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
             contactNumber: order.receiverDetail.phone,
           }
         : null,
-      deliveryOption: paymentDetails.deliveryOption || (isBulkOrder ? "email" : null),
+      deliveryOption:
+        paymentDetails.deliveryOption || (isBulkOrder ? "email" : null),
       deliveryMethod: order.deliveryMethod,
       deliveryDetails: !isBulkOrder
         ? {
@@ -1777,10 +1898,12 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
 
     if (isBulkOrder) {
       let result;
-      
+
       if (hasCsvRecipients) {
-        console.log(`📝 Processing bulk order with ${bulkRecipientsFromDB.length} CSV recipients from database`);
-        
+        console.log(
+          `📝 Processing bulk order with ${bulkRecipientsFromDB.length} CSV recipients from database`,
+        );
+
         // ✅ Pass the BulkRecipient records to processing function
         result = await processBulkOrderWithRecipientsFromDB(
           selectedBrand,
@@ -1790,7 +1913,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
           bulkRecipientsFromDB, // Pass existing BulkRecipient records
         );
       } else {
-        console.log('📝 Processing regular bulk order');
+        console.log("📝 Processing regular bulk order");
         result = await processBulkOrder(
           selectedBrand,
           orderData,
@@ -1804,15 +1927,23 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
 
       await updateOrCreateSettlement(selectedBrand, order);
 
-      const deliveryResult = await sendBulkDelivery(
-        orderData,
-        voucherCodes,
-        giftCards,
-        bulkRecipients
-      );
+      let deliveryResult = null;
+      if (order.sendType === "sendImmediately") {
+        deliveryResult = await sendBulkDelivery(
+          orderData,
+          voucherCodes,
+          giftCards,
+          bulkRecipients,
+        );
 
-      for (const voucherCode of voucherCodes) {
-        await createDeliveryLog(order, voucherCode.id, orderData, deliveryResult);
+        for (const voucherCode of voucherCodes) {
+          await createDeliveryLog(
+            order,
+            voucherCode.id,
+            orderData,
+            deliveryResult,
+          );
+        }
       }
 
       console.log("✅ Bulk order completed:", order.orderNumber);
@@ -1830,26 +1961,39 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
     } else {
       // Process single order
       const { voucherCode, giftCard, shopifyGiftCard } =
-        await processSingleOrder(selectedBrand, orderData, order, voucherConfig);
+        await processSingleOrder(
+          selectedBrand,
+          orderData,
+          order,
+          voucherConfig,
+        );
 
       voucherCodeIds = [voucherCode.id];
 
       await updateOrCreateSettlement(selectedBrand, order);
 
-      const deliveryResult = await sendDeliveryMessage(
-        orderData,
-        shopifyGiftCard,
-        orderData.deliveryMethod,
-      );
+      let deliveryResult = null;
+      if (order.sendType === "sendImmediately") {
+        deliveryResult = await sendDeliveryMessage(
+          orderData,
+          shopifyGiftCard,
+          orderData.deliveryMethod,
+        );
 
-      if (!deliveryResult.success && orderData.deliveryMethod !== "print") {
-        throw new ExternalServiceError(
-          `Message delivery failed: ${deliveryResult.message}`,
+        if (!deliveryResult.success && orderData.deliveryMethod !== "print") {
+          throw new ExternalServiceError(
+            `Message delivery failed: ${deliveryResult.message}`,
+            deliveryResult,
+          );
+        }
+
+        await createDeliveryLog(
+          order,
+          voucherCode.id,
+          orderData,
           deliveryResult,
         );
       }
-
-      await createDeliveryLog(order, voucherCode.id, orderData, deliveryResult);
 
       console.log("✅ Order completed:", order.orderNumber);
 
@@ -1874,7 +2018,11 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
             redemptionStatus: "Cancelled",
           },
         })
-        .catch((e) => console.error(`Failed to mark order ${orderId} as FAILED: ${e.message}`));
+        .catch((e) =>
+          console.error(
+            `Failed to mark order ${orderId} as FAILED: ${e.message}`,
+          ),
+        );
     }
 
     if (voucherCodeIds.length > 0) {
@@ -1883,7 +2031,9 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
           where: { id: { in: voucherCodeIds } },
         })
         .catch((e) =>
-          console.error(`Failed to delete voucher codes for order ${orderId}: ${e.message}`),
+          console.error(
+            `Failed to delete voucher codes for order ${orderId}: ${e.message}`,
+          ),
         );
     }
 
@@ -1914,7 +2064,7 @@ async function processBulkOrderWithRecipientsFromDB(
 
     for (let i = 0; i < quantity; i++) {
       const recipientRecord = bulkRecipientsFromDB[i];
-      
+
       // Create recipient data object for Shopify
       const recipientData = {
         name: recipientRecord.recipientName,
@@ -1923,14 +2073,16 @@ async function processBulkOrderWithRecipientsFromDB(
         message: recipientRecord.personalMessage,
       };
 
-      console.log(`Processing recipient ${i + 1}/${quantity}: ${recipientData.email}`);
+      console.log(
+        `Processing recipient ${i + 1}/${quantity}: ${recipientData.email}`,
+      );
 
       // Create Shopify gift card for this specific recipient
       const shopifyGiftCard = await createShopifyGiftCard(
         selectedBrand,
         orderData,
         voucherConfig,
-        recipientData
+        recipientData,
       );
 
       // Save gift card to database
@@ -2014,19 +2166,30 @@ async function processBulkOrderWithRecipientsFromDB(
 
       updatedBulkRecipients.push(updatedBulkRecipient);
 
-      console.log(`✅ Created and linked voucher ${voucherCode.code} to recipient ${recipientData.name}`);
+      console.log(
+        `✅ Created and linked voucher ${voucherCode.code} to recipient ${recipientData.name}`,
+      );
     }
 
-    console.log(`✅ Successfully processed all ${quantity} recipients from database`);
+    console.log(
+      `✅ Successfully processed all ${quantity} recipients from database`,
+    );
 
     return { voucherCodes, giftCards, bulkRecipients: updatedBulkRecipients };
   } catch (error) {
-    throw new Error(`Failed to process bulk order with recipients from DB: ${error.message}`);
+    throw new Error(
+      `Failed to process bulk order with recipients from DB: ${error.message}`,
+    );
   }
 }
 
 // ==================== HELPER FUNCTIONS FOR SINGLE ORDER ====================
-async function processSingleOrder(selectedBrand, orderData, order, voucherConfig) {
+async function processSingleOrder(
+  selectedBrand,
+  orderData,
+  order,
+  voucherConfig,
+) {
   try {
     const shopifyGiftCard = await createShopifyGiftCard(
       selectedBrand,
@@ -2110,8 +2273,9 @@ async function processSingleOrder(selectedBrand, orderData, order, voucherConfig
   }
 }
 
-async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
+export async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
   try {
+    console.log("---------------------------------------",orderData)
     if (deliveryMethod === "whatsapp") {
       return await SendWhatsappMessages(orderData, giftCard);
     } else if (deliveryMethod === "email") {
@@ -2131,12 +2295,17 @@ async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
     }
     throw new ExternalServiceError(
       `Failed to send ${deliveryMethod} message: ${error.error || error.message}`,
-      error
+      error,
     );
   }
 }
 
-async function createDeliveryLog(order, voucherCodeId, orderData, deliveryResult) {
+export async function createDeliveryLog(
+  order,
+  voucherCodeId,
+  orderData,
+  deliveryResult,
+) {
   try {
     const isBulkOrder = orderData.isBulkOrder === true;
     let recipient = "Print delivery";
@@ -2183,7 +2352,6 @@ async function createDeliveryLog(order, voucherCodeId, orderData, deliveryResult
     throw new Error(`Failed to create delivery log: ${error.message}`);
   }
 }
-
 
 // ==================== SETTLEMENT OPERATIONS ====================
 async function updateOrCreateSettlement(selectedBrand, order) {
@@ -2270,175 +2438,6 @@ async function cleanupOnError(orderId, voucherCodeIds = []) {
   }
 }
 
-// ==================== MAIN ORDER CREATION ====================
-export const createOrder = async (orderData) => {
-  let order = null;
-  let voucherCodeIds = [];
-
-  try {
-    // Step 1: Authentication
-    const session = await getSession();
-    const userId = session?.userId;
-
-    if (!userId) {
-      throw new AuthenticationError("User not authenticated");
-    }
-
-    orderData.userId = userId;
-
-    // Step 2: Validation
-    validateOrderData(orderData);
-
-    const isBulkOrder = orderData.isBulkOrder === true;
-
-    // Step 3: Create receiver detail
-    const receiver = await createReceiverDetail(orderData);
-
-    // Step 4: Create order record
-    const scheduledFor =
-      !isBulkOrder &&
-      orderData.selectedTiming?.type === "scheduled" &&
-      orderData.selectedTiming?.dateTime
-        ? new Date(orderData.selectedTiming.dateTime)
-        : null;
-
-    order = await createOrderRecord(
-      orderData.selectedBrand,
-      orderData,
-      receiver,
-      scheduledFor,
-    );
-
-    // Get voucher configuration
-    if (
-      !orderData.selectedBrand.vouchers ||
-      orderData.selectedBrand.vouchers.length === 0
-    ) {
-      throw new ValidationError("Brand does not have voucher configuration");
-    }
-    const voucherConfig = orderData.selectedBrand.vouchers[0];
-
-    if (isBulkOrder) {
-      // ========== BULK ORDER PROCESSING ==========
-      const { voucherCodes, giftCards } = await processBulkOrder(
-        orderData.selectedBrand,
-        orderData,
-        order,
-        voucherConfig,
-      );
-
-      voucherCodeIds = voucherCodes.map((vc) => vc.id);
-
-      // Step 6: Update settlement
-      await updateOrCreateSettlement(orderData.selectedBrand, order);
-
-      // Step 7: Send bulk delivery
-      const deliveryResult = await sendBulkDelivery(
-        orderData,
-        voucherCodes,
-        giftCards,
-      );
-
-      // Step 8: Create delivery logs for all vouchers
-      for (const voucherCode of voucherCodes) {
-        await createDeliveryLog(order, voucherCode.id, orderData);
-      }
-
-      console.log("✅ Bulk order created successfully:", order.orderNumber);
-
-      return {
-        success: true,
-        data: {
-          order,
-          voucherCodes,
-          giftCards,
-          deliveryResult,
-        },
-      };
-    } else {
-      // ========== SINGLE ORDER PROCESSING ==========
-      const { voucherCode, giftCard, shopifyGiftCard } =
-        await processSingleOrder(
-          orderData.selectedBrand,
-          orderData,
-          order,
-          voucherConfig,
-        );
-
-      voucherCodeIds = [voucherCode.id];
-
-      // Step 6: Update settlement
-      await updateOrCreateSettlement(orderData.selectedBrand, order);
-
-      // Step 7: Send delivery message
-      const deliveryResult = await sendDeliveryMessage(
-        orderData,
-        shopifyGiftCard,
-        orderData.deliveryMethod,
-      );
-
-      if (!deliveryResult.success && orderData.deliveryMethod !== "print") {
-        throw new ExternalServiceError(
-          `Message delivery failed: ${deliveryResult.message}`,
-          deliveryResult,
-        );
-      }
-
-      // Step 8: Create delivery log
-      console.log("Step 8: Creating delivery log...");
-      await createDeliveryLog(order, voucherCode.id, orderData);
-      console.log("✅ Order created successfully:", order.orderNumber);
-
-      return {
-        success: true,
-        data: {
-          order,
-          voucherCode,
-          giftCard,
-        },
-      };
-    }
-  } catch (error) {
-    console.error("❌ Order creation failed:", error);
-
-    // Cleanup on error
-    if (order?.id || voucherCodeIds.length > 0) {
-      await cleanupOnError(order?.id, voucherCodeIds);
-    }
-
-    // Return structured error
-    if (error instanceof ValidationError) {
-      return {
-        success: false,
-        error: error.message,
-        statusCode: error.statusCode,
-        errorType: error.name,
-      };
-    } else if (error instanceof AuthenticationError) {
-      return {
-        success: false,
-        error: error.message,
-        statusCode: error.statusCode,
-        errorType: error.name,
-      };
-    } else if (error instanceof ExternalServiceError) {
-      return {
-        success: false,
-        error: error.message,
-        statusCode: error.statusCode,
-        errorType: error.name,
-        originalError: error.originalError?.message,
-      };
-    } else {
-      return {
-        success: false,
-        error: error.message || "An unexpected error occurred",
-        statusCode: 500,
-        errorType: "InternalServerError",
-      };
-    }
-  }
-};
 
 export async function getOrders(params = {}) {
   try {
@@ -2562,7 +2561,7 @@ export async function getOrders(params = {}) {
         },
       }),
       prisma.order.count({
-where: whereClause,
+        where: whereClause,
       }),
       prisma.order.groupBy({
         by: ["redemptionStatus"],
@@ -2777,20 +2776,24 @@ export async function getOrderById(orderId) {
     // Transform bulk recipients if they exist
     const transformedBulkRecipients = order.bulkRecipients.map((br) => {
       const voucherCode = br.voucherCode;
-      
+
       // Calculate voucher status if voucher code exists
       let voucherStatus = "Pending";
       if (voucherCode) {
-        const totalRedeemed = voucherCode.redemptions?.reduce(
-          (sum, r) => sum + (r.amountRedeemed || 0),
-          0,
-        ) || 0;
+        const totalRedeemed =
+          voucherCode.redemptions?.reduce(
+            (sum, r) => sum + (r.amountRedeemed || 0),
+            0,
+          ) || 0;
 
         if (order.redemptionStatus === "Cancelled") {
           voucherStatus = "Cancelled";
         } else if (voucherCode.isRedeemed || voucherCode.remainingValue === 0) {
           voucherStatus = "Redeemed";
-        } else if (voucherCode.expiresAt && new Date(voucherCode.expiresAt) < new Date()) {
+        } else if (
+          voucherCode.expiresAt &&
+          new Date(voucherCode.expiresAt) < new Date()
+        ) {
           voucherStatus = "Expired";
         } else if (!order.isActive) {
           voucherStatus = "Inactive";
@@ -2812,17 +2815,19 @@ export async function getOrderById(orderId) {
         emailError: br.emailError,
         rowNumber: br.rowNumber,
         voucherCodeId: br.voucherCodeId,
-        voucherCode: voucherCode ? {
-          id: voucherCode.id,
-          code: voucherCode.code,
-          originalValue: voucherCode.originalValue,
-          remainingValue: voucherCode.remainingValue,
-          isRedeemed: voucherCode.isRedeemed,
-          redeemedAt: voucherCode.redeemedAt,
-          expiresAt: voucherCode.expiresAt,
-          status: voucherStatus,
-          redemptionCount: voucherCode.redemptions?.length || 0,
-        } : null,
+        voucherCode: voucherCode
+          ? {
+              id: voucherCode.id,
+              code: voucherCode.code,
+              originalValue: voucherCode.originalValue,
+              remainingValue: voucherCode.remainingValue,
+              isRedeemed: voucherCode.isRedeemed,
+              redeemedAt: voucherCode.redeemedAt,
+              expiresAt: voucherCode.expiresAt,
+              status: voucherStatus,
+              redemptionCount: voucherCode.redemptions?.length || 0,
+            }
+          : null,
       };
     });
 
@@ -2916,7 +2921,13 @@ export async function getOrdersByUserId(userId) {
 
 export async function modifyRecipientAndResend(data) {
   try {
-    const { orderNumber, receiverDetailId, recipientData, deliveryMethod, isBulk } = data;
+    const {
+      orderNumber,
+      receiverDetailId,
+      recipientData,
+      deliveryMethod,
+      isBulk,
+    } = data;
 
     if (!orderNumber || !recipientData) {
       return {
@@ -2927,7 +2938,9 @@ export async function modifyRecipientAndResend(data) {
     }
 
     // Normalize recipientData to always be an array
-    const recipients = Array.isArray(recipientData) ? recipientData : [recipientData];
+    const recipients = Array.isArray(recipientData)
+      ? recipientData
+      : [recipientData];
 
     // Validate all recipients
     for (const recipient of recipients) {
@@ -2939,7 +2952,10 @@ export async function modifyRecipientAndResend(data) {
         };
       }
 
-      if ((deliveryMethod === 'email' || deliveryMethod === 'multiple') && !recipient.email) {
+      if (
+        (deliveryMethod === "email" || deliveryMethod === "multiple") &&
+        !recipient.email
+      ) {
         return {
           success: false,
           message: "Email is required for email delivery",
@@ -2947,7 +2963,10 @@ export async function modifyRecipientAndResend(data) {
         };
       }
 
-      if ((deliveryMethod === "whatsapp" || deliveryMethod === 'multiple') && !recipient.phone) {
+      if (
+        (deliveryMethod === "whatsapp" || deliveryMethod === "multiple") &&
+        !recipient.phone
+      ) {
         return {
           success: false,
           message: "Phone number is required for WhatsApp delivery",
@@ -2991,14 +3010,15 @@ export async function modifyRecipientAndResend(data) {
     }
 
     // Determine if this is a bulk order
-    const isBulkOrder = isBulk || (order.bulkRecipients && order.bulkRecipients.length > 0);
+    const isBulkOrder =
+      isBulk || (order.bulkRecipients && order.bulkRecipients.length > 0);
 
     let deliveryResults = [];
     let auditChanges = [];
 
     if (isBulkOrder) {
       // ============= BULK ORDER PROCESSING =============
-      
+
       // Start transaction for bulk updates
       const txResult = await prisma.$transaction(async (tx) => {
         const deliveryLogs = [];
@@ -3006,8 +3026,10 @@ export async function modifyRecipientAndResend(data) {
 
         for (const recipientUpdate of recipients) {
           // Find the bulk recipient by ID
-          const bulkRecipient = order.bulkRecipients.find(br => br.id === recipientUpdate.id);
-          
+          const bulkRecipient = order.bulkRecipients.find(
+            (br) => br.id === recipientUpdate.id,
+          );
+
           if (!bulkRecipient) {
             console.error(`Bulk recipient not found: ${recipientUpdate.id}`);
             continue;
@@ -3042,7 +3064,10 @@ export async function modifyRecipientAndResend(data) {
               orderId: order.id,
               voucherCodeId: bulkRecipient.voucherCodeId,
               method: deliveryMethod,
-              recipient: deliveryMethod === "whatsapp" ? recipientUpdate.phone : recipientUpdate.email,
+              recipient:
+                deliveryMethod === "whatsapp"
+                  ? recipientUpdate.phone
+                  : recipientUpdate.email,
               status: "PENDING",
               attemptCount: 0,
             },
@@ -3080,11 +3105,15 @@ export async function modifyRecipientAndResend(data) {
       for (let i = 0; i < txResult.updatedRecipients.length; i++) {
         const recipient = txResult.updatedRecipients[i];
         const deliveryLog = txResult.deliveryLogs[i];
-        const bulkRecipient = order.bulkRecipients.find(br => br.id === recipient.id);
+        const bulkRecipient = order.bulkRecipients.find(
+          (br) => br.id === recipient.id,
+        );
 
         if (!bulkRecipient?.voucherCode?.giftCard) {
-          console.error(`Gift card not found for bulk recipient ${recipient.id}`);
-          
+          console.error(
+            `Gift card not found for bulk recipient ${recipient.id}`,
+          );
+
           // Update delivery log as failed
           await prisma.deliveryLog.update({
             where: { id: deliveryLog.id },
@@ -3104,13 +3133,14 @@ export async function modifyRecipientAndResend(data) {
           continue;
         }
 
-
-        console.log("deliveryMethod",deliveryMethod)
+        console.log("deliveryMethod", deliveryMethod);
 
         // Reconstruct orderData for delivery
         const deliveryOrderData = {
           selectedBrand: order.brand,
-          selectedSubCategory: order.isCustom ? order.customCard : order.subCategory,
+          selectedSubCategory: order.isCustom
+            ? order.customCard
+            : order.subCategory,
           selectedAmount: {
             value: bulkRecipient.voucherCode.originalValue || order.amount,
             currency: order.currency,
@@ -3144,13 +3174,15 @@ export async function modifyRecipientAndResend(data) {
                 status: deliveryResult.success ? "SENT" : "FAILED",
                 sentAt: deliveryResult.success ? new Date() : null,
                 deliveredAt: deliveryResult.success ? new Date() : null,
-                errorMessage: deliveryResult.success ? null : deliveryResult.message,
+                errorMessage: deliveryResult.success
+                  ? null
+                  : deliveryResult.message,
                 attemptCount: 1,
               },
             });
 
             // Update bulk recipient email status
-            if (deliveryMethod === 'email' || deliveryMethod === 'multiple') {
+            if (deliveryMethod === "email" || deliveryMethod === "multiple") {
               await tx.bulkRecipient.update({
                 where: { id: recipient.id },
                 data: {
@@ -3158,7 +3190,9 @@ export async function modifyRecipientAndResend(data) {
                   emailSentAt: deliveryResult.success ? new Date() : null,
                   emailDelivered: deliveryResult.success,
                   emailDeliveredAt: deliveryResult.success ? new Date() : null,
-                  emailError: deliveryResult.success ? null : deliveryResult.message,
+                  emailError: deliveryResult.success
+                    ? null
+                    : deliveryResult.message,
                 },
               });
             }
@@ -3170,7 +3204,6 @@ export async function modifyRecipientAndResend(data) {
             recipientName: recipient.recipientName,
             message: deliveryResult.message,
           });
-
         } catch (error) {
           console.error(`Delivery error for recipient ${recipient.id}:`, error);
 
@@ -3203,12 +3236,12 @@ export async function modifyRecipientAndResend(data) {
       }
 
       // Calculate statistics
-      const successCount = deliveryResults.filter(r => r.success).length;
-      const failCount = deliveryResults.filter(r => !r.success).length;
+      const successCount = deliveryResults.filter((r) => r.success).length;
+      const failCount = deliveryResults.filter((r) => !r.success).length;
 
       return {
         success: successCount > 0,
-        message: `Updated ${recipients.length} recipient(s). ${successCount} voucher(s) sent successfully${failCount > 0 ? `, ${failCount} failed` : ''}.`,
+        message: `Updated ${recipients.length} recipient(s). ${successCount} voucher(s) sent successfully${failCount > 0 ? `, ${failCount} failed` : ""}.`,
         data: {
           orderId: order.id,
           total: recipients.length,
@@ -3217,10 +3250,9 @@ export async function modifyRecipientAndResend(data) {
           results: deliveryResults,
         },
       };
-
     } else {
       // ============= SINGLE ORDER PROCESSING =============
-      
+
       const recipientUpdate = recipients[0];
 
       if (!receiverDetailId || order.receiverDetailId !== receiverDetailId) {
@@ -3244,8 +3276,14 @@ export async function modifyRecipientAndResend(data) {
           where: { id: receiverDetailId },
           data: {
             name: recipientUpdate.name,
-            email: (deliveryMethod === 'email' || deliveryMethod === 'multiple') ? recipientUpdate.email : null,
-            phone: (deliveryMethod === 'whatsapp' || deliveryMethod === 'multiple') ? recipientUpdate.phone : null,
+            email:
+              deliveryMethod === "email" || deliveryMethod === "multiple"
+                ? recipientUpdate.email
+                : null,
+            phone:
+              deliveryMethod === "whatsapp" || deliveryMethod === "multiple"
+                ? recipientUpdate.phone
+                : null,
             updatedAt: new Date(),
           },
         });
@@ -3345,7 +3383,6 @@ export async function modifyRecipientAndResend(data) {
         },
       };
     }
-
   } catch (error) {
     console.error("Error modifying recipient:", error);
     if (error.code === "P2028") {

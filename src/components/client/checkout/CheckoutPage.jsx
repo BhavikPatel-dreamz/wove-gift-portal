@@ -7,6 +7,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { createPendingOrder, getOrderStatus } from '../../../lib/action/orderAction';
 import { AlertCircle } from 'lucide-react';
 import Header from '../../../components/client/home/Header';
+import { useSession } from '@/contexts/SessionContext';
 
 // Import components from payment folder
 import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
@@ -36,6 +37,8 @@ const CheckoutPage = () => {
   const [showThankYou, setShowThankYou] = useState(false);
   const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderId, setPendingOrderId] = useState(null);
+  const session = useSession();
+
 
   // Billing address state
   const [billingAddress, setBillingAddress] = useState({
@@ -171,6 +174,7 @@ const CheckoutPage = () => {
           totalAmount: calculateTotal(),
           isBulkOrder: false,
           billingAddress,
+          userId: session?.user?.id,
         };
         return createPendingOrder(orderData);
       });

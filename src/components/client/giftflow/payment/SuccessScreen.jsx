@@ -10,6 +10,8 @@ const SuccessScreen = ({
   deliveryDetails
 }) => {
 
+  console.log("order",order)
+
   return (
     <div className="min-h-screen px-4 py-30 md:px-6 md:py-30">
       <div className="max-w-[1440px] flex items-center justify-center m-auto mb-6">
@@ -42,7 +44,7 @@ const SuccessScreen = ({
               <div className="space-y-4">
                 <div className="flex justify-between text-gray-700">
                   <span>Order ID:</span>
-                  <span className="font-semibold text-gray-900">{order.bulkOrderNumber}</span>
+                  <span className="font-semibold text-gray-900">{order.bulkOrderNumber || order.orderNumber}</span>
                 </div>
                 <div className="flex justify-between text-gray-700">
                   <span>Brand:</span>
@@ -52,10 +54,7 @@ const SuccessScreen = ({
                   <span>Vouchers Generated:</span>
                   <span className="font-semibold text-gray-900">{quantity}</span>
                 </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{order?.totalAmount}</span>
-                </div>
+               
               </div>
             </div>
           )}

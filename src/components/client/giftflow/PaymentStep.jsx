@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
 import { createPendingOrder, getOrderStatus } from "../../../lib/action/orderAction";
-import convertToSubcurrency from "../../../lib/convertToSubcurrency";
+import { useSession } from "@/contexts/SessionContext";
 
 // Import components
 import StripeCardPayment from "./payment/StripeCardPayment";
@@ -28,6 +28,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 const PaymentStep = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
+  const session = useSession();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
 
@@ -157,6 +158,7 @@ const PaymentStep = () => {
         billingAddress, // ✅ Include billing address
         deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
         csvRecipients,
+        userId: session?.user?.id,
       } : {
         selectedBrand,
         selectedAmount,
@@ -169,10 +171,11 @@ const PaymentStep = () => {
         totalAmount: calculateTotal(),
         isBulkOrder: false,
         billingAddress, // ✅ Include billing address
+        userId: session?.user?.id,
       };
 
 
-      console.log("orderData",orderData)
+      console.log("orderData", orderData)
 
       const result = await createPendingOrder(orderData);
 
