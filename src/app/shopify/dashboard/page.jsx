@@ -5,6 +5,116 @@ import { useSearchParams } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Gift, DollarSign, CreditCard, Clock, TrendingUp, Users, Award, Package, Calendar, X } from 'lucide-react';
 
+// Skeleton Components
+const SkeletonMetricCard = ({ color = "blue" }) => {
+  const colorClasses = {
+    blue: "bg-blue-50 border-blue-200",
+    green: "bg-green-50 border-green-200",
+    purple: "bg-purple-50 border-purple-200",
+    orange: "bg-orange-50 border-orange-200"
+  };
+
+  return (
+    <div className={`p-6 rounded-xl border-2 ${colorClasses[color]} animate-pulse`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="w-8 h-8 bg-gray-300 rounded-lg"></div>
+      </div>
+      <div className="space-y-2">
+        <div className="h-5 bg-gray-300 rounded w-3/4"></div>
+        <div className="h-8 bg-gray-400 rounded w-1/2"></div>
+        <div className="h-4 bg-gray-300 rounded w-2/3"></div>
+      </div>
+    </div>
+  );
+};
+
+const SkeletonChart = ({ title, subtitle }) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+    <div className="mb-6">
+      <div className="h-6 bg-gray-300 rounded w-1/3 mb-2 animate-pulse"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+    </div>
+    <div className="h-80 bg-gray-100 rounded-lg animate-pulse flex items-center justify-center">
+      <div className="text-gray-400">
+        <div className="w-16 h-16 bg-gray-300 rounded-full mx-auto mb-4"></div>
+        <div className="h-4 bg-gray-300 rounded w-32 mx-auto mb-2"></div>
+        <div className="h-3 bg-gray-200 rounded w-48 mx-auto"></div>
+      </div>
+    </div>
+  </div>
+);
+
+const SkeletonActiveBrands = () => (
+  <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-xl text-white animate-pulse">
+    <div className="flex items-center gap-4 mb-4">
+      <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+        <div className="w-8 h-8 bg-white/30 rounded"></div>
+      </div>
+      <div className="flex-1">
+        <div className="h-5 bg-white/30 rounded w-3/4 mb-2"></div>
+        <div className="h-4 bg-white/20 rounded w-1/2"></div>
+      </div>
+    </div>
+    <div className="h-10 bg-white/30 rounded w-20 mb-2"></div>
+    <div className="h-4 bg-white/20 rounded w-40"></div>
+  </div>
+);
+
+const SkeletonWeeklyPerformance = () => (
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+    <div className="mb-6">
+      <div className="h-6 bg-gray-300 rounded w-1/3 mb-2 animate-pulse"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+    </div>
+    <div className="h-40 bg-gray-100 rounded-lg animate-pulse"></div>
+  </div>
+);
+
+const LoadingSkeleton = () => (
+  <div className="min-h-screen bg-gray-50 px-1 py-6 md:py-6 md:px-6">
+    <div className="max-w-7xl mx-auto space-y-6">
+      
+      {/* Header Skeleton */}
+      <div className="flex flex-col items-center md:flex-row justify-between gap-4">
+        <div>
+          <div className="h-9 bg-gray-300 rounded w-64 mb-2 animate-pulse"></div>
+          <div className="h-5 bg-gray-200 rounded w-80 animate-pulse"></div>
+        </div>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center space-x-1 p-1 rounded-lg">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-9 w-24 bg-gray-200 rounded-md animate-pulse"></div>
+              ))}
+            </div>
+            <div className="h-9 w-36 bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Metric Cards Skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <SkeletonMetricCard color="blue" />
+        <SkeletonMetricCard color="green" />
+        <SkeletonMetricCard color="purple" />
+        <SkeletonMetricCard color="orange" />
+      </div>
+
+      {/* Charts Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SkeletonChart />
+        <SkeletonChart />
+      </div>
+
+      {/* Bottom Section Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <SkeletonActiveBrands />
+        <SkeletonWeeklyPerformance />
+      </div>
+    </div>
+  </div>
+);
+
 const Dashboard = () => {
   const searchParams = useSearchParams();
   const shop = searchParams?.get('shop');
@@ -226,15 +336,9 @@ const Dashboard = () => {
     </div>
   );
 
+  // Show skeleton while loading
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   const monthlyData = dashboardData?.trends?.monthly?.map(item => ({

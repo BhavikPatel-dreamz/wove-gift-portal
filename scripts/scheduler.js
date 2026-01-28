@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Runs every day at 2:23 PM IST
-cron.schedule('23 18 * * *', () => {
+cron.schedule('00 09 * * *', () => {
   console.log('Running the send-scheduled-reports script...');
 
   const scriptPath = path.resolve(__dirname, './send-scheduled-reports.js');
