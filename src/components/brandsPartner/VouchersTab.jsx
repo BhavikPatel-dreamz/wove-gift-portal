@@ -516,9 +516,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
             </label>
             <div className="bg-gray-50 border border-gray-300 rounded-lg h-48">
               <div className="flex items-center justify-center">
-                {formData.logo ? (
+                {formData.logo || formData.imagePreview ? (
                   <img
-                    src={formData.logo}
+                    src={formData.logo || formData.imagePreview}
                     alt="Brand logo"
                     className="max-w-full max-h-full object-contain p-4"
                   />

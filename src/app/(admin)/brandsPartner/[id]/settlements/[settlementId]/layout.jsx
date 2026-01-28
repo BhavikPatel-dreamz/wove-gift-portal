@@ -87,7 +87,7 @@ const SettlementLayout = async ({ children, params }) => {
                     </div>
 
                     {/* Action Buttons - Persistent across tabs */}
-                    <SettlementActions settlementId={settlementId} />
+                    {/* <SettlementActions settlementId={settlementId} /> */}
                 </div>
             </main>
         </div>

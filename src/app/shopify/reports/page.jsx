@@ -10,7 +10,7 @@ const page = () => {
 
   return (
     <div>
-      <ReportsPage shop={shop} />
+      <ReportsPage shop={shop} notAllowSchedule={true} />
     </div>
   )
 }
