@@ -2,17 +2,27 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { goBack, goNext } from '../../../redux/giftFlowSlice';
+import { goBack, goNext , setQuantity, setSelectedAmount } from '../../../redux/giftFlowSlice';
 import { addToBulk } from '../../../redux/cartSlice';
 
 const BulkOrderSetup = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const { selectedBrand, selectedAmount } = useSelector((state) => state.giftFlowReducer);
+  const { selectedBrand,
+    selectedAmount,
+    personalMessage,
+    deliveryMethod,
+    deliveryDetails,
+    selectedTiming,
+    selectedSubCategory,
+    editingIndex,
+    isEditMode,
+    selectedOccasion,
+    isConfirmed,
+    quantity,
+  } = useSelector((state) => state.giftFlowReducer);
 
-  const [selectedDenomination, setSelectedDenomination] = useState(null);
-  const [quantity, setQuantity] = useState('');
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -37,8 +47,8 @@ const BulkOrderSetup = () => {
   const denominations = selectedBrand?.vouchers?.[0]?.denominations || [];
 
   // Calculate total spend
-  const totalSpend = selectedDenomination && quantity
-    ? (selectedDenomination.value * parseInt(quantity || 0)).toFixed(2)
+  const totalSpend = selectedAmount && quantity
+    ? (selectedAmount.value * parseInt(quantity || 0)).toFixed(2)
     : '0.00';
 
   const handleBackToBrands = () => {
@@ -47,7 +57,7 @@ const BulkOrderSetup = () => {
 
 
   const handleDenominationSelect = (denom) => {
-    setSelectedDenomination(denom);
+    dispatch(setSelectedAmount(denom));
     setError('');
   };
 
@@ -61,9 +71,9 @@ const BulkOrderSetup = () => {
       // Check maximum limit - Updated to 25000
       if (numValue > 25000) {
         setError('Maximum 25,000 vouchers per order');
-        setQuantity(value); // Keep the entered value to show error
+        dispatch(setQuantity(value)); // Keep the entered value to show error
       } else {
-        setQuantity(value);
+        dispatch(setQuantity(value));
         setError('');
       }
     }
@@ -73,10 +83,10 @@ const BulkOrderSetup = () => {
     if (selectedAmount && selectedAmount.value) {
       const matchingDenomination = denominations.find(d => d.value === selectedAmount.value);
       if (matchingDenomination) {
-        setSelectedDenomination(matchingDenomination);
+        dispatch(setSelectedAmount(matchingDenomination));
       } else {
         // It's a custom amount, so use the selectedAmount object from Redux.
-        setSelectedDenomination(selectedAmount);
+        dispatch(setSelectedAmount(selectedAmount));
       }
     }
   }, [selectedAmount, denominations]);
@@ -84,7 +94,7 @@ const BulkOrderSetup = () => {
 
   const handleAddToBulkOrder = () => {
     // Validation
-    if (!selectedDenomination) {
+    if (!selectedAmount) {
       setError('Please select a denomination');
       return;
     }
@@ -103,11 +113,19 @@ const BulkOrderSetup = () => {
     const bulkOrderItem = {
       selectedBrand,
       selectedAmount: {
-        value: selectedDenomination.value,
-        currency: selectedDenomination.currency || 'R'
+        value: selectedAmount.value,
+        currency: selectedAmount.currency || 'R'
       },
       quantity: parseInt(quantity),
       totalSpend: parseFloat(totalSpend),
+      deliveryMethod: 'bulk', // Special flag for bulk orders
+      isBulkOrder: true,
+      personalMessage,
+      deliveryMethod,
+      deliveryDetails,
+      selectedTiming,
+      selectedSubCategory,
+      selectedOccasion,
       deliveryMethod: 'bulk', // Special flag for bulk orders
       isBulkOrder: true
     };
@@ -313,8 +331,8 @@ const BulkOrderSetup = () => {
                   className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] bg-white cursor-pointer flex justify-between items-center"
                 >
                   <span className=" text-[14x] font-semibold leading-[16px] text-[#000]">
-                    {selectedDenomination?.value
-                      ? `${selectedDenomination.currency} ${selectedDenomination.value.toLocaleString()}`
+                    {selectedAmount?.value
+                      ? `${selectedAmount.currency} ${selectedAmount.value.toLocaleString()}`
                       : "Select Denomination"}
                   </span>
 
@@ -327,7 +345,7 @@ const BulkOrderSetup = () => {
                 {open && (
                   <div className="absolute left-0 right-0 mt-2 bg-white rounded-[15px] shadow-md border border-[#1A1A1A33] z-50 overflow-hidden">
                     {denominations.map((denom, i) => {
-                      const isSelected = selectedDenomination?.value === denom.value;
+                      const isSelected = selectedAmount?.value === denom.value;
                       return (
                         <div
                           key={i}
@@ -385,16 +403,16 @@ const BulkOrderSetup = () => {
                   Total Spend
                 </span>
 
-                {quantity && selectedDenomination && (
+                {quantity && selectedAmount && (
                   <span className="font-['Inter'] text-sm sm:text-base font-medium leading-tight text-[#8C8C8C] mt-1 sm:mt-2">
-                    {quantity} × {selectedDenomination.currency || 'R'}
-                    {selectedDenomination.value}
+                    {quantity} × {selectedAmount.currency || 'R'}
+                    {selectedAmount.value}
                   </span>
                 )}
               </div>
 
               <p className="font-['Inter'] text-lg sm:text-xl font-bold bg-gradient-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent text-right sm:text-left">
-                {selectedDenomination?.currency || 'R'}
+                {selectedAmount?.currency || 'R'}
                 {totalSpend}
               </p>
             </div>
@@ -410,7 +428,7 @@ const BulkOrderSetup = () => {
             {/* Add to Bulk Order Button */}
             <button
               onClick={handleAddToBulkOrder}
-              disabled={(!selectedDenomination || !quantity || parseInt(quantity) === 0) || parseInt(totalSpend) > 25000}
+              disabled={(!selectedAmount || !quantity || parseInt(quantity) === 0) || parseInt(totalSpend) > 25000}
               className="w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               Add to Bulk Order {totalSpend}

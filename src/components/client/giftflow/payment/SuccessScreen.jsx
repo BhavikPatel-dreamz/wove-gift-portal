@@ -32,7 +32,7 @@ const SuccessScreen = ({
                 Gift Sent Successfully
               </h1>
               <p className="font-normal text-[16px] text-[#4A4A4A] mb-6">
-                {`Your beautiful ${selectedBrand.brandName} gift card is on its way to Friend!`}
+                {`Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way to Friend!`}
               </p>
             </div>
           )}
@@ -48,12 +48,12 @@ const SuccessScreen = ({
                 </div>
                 <div className="flex justify-between text-gray-700">
                   <span>Brand:</span>
-                  <span className="font-semibold text-gray-900">{selectedBrand.brandName}</span>
+                  <span className="font-semibold text-gray-900">{selectedBrand?.brandName || order?.brand?.brandName}</span>
                 </div>
-                <div className="flex justify-between text-gray-700">
+                {/* <div className="flex justify-between text-gray-700">
                   <span>Vouchers Generated:</span>
                   <span className="font-semibold text-gray-900">{quantity}</span>
-                </div>
+                </div> */}
                
               </div>
             </div>

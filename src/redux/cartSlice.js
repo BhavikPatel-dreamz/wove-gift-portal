@@ -19,8 +19,9 @@ const getInitialBulkCart = () => {
 const cartSlice = createSlice({
   name: 'cart',
   initialState: {
-    items: getInitialCart(),
+    items: [],
     bulkItems: getInitialBulkCart(),
+    cartItems: getInitialCart(),
   },
   reducers: {
     // Regular single gift cart actions
@@ -79,6 +80,12 @@ const cartSlice = createSlice({
       
       state.bulkItems.push(newBulkItem);
       
+      // if (typeof window !== 'undefined') {
+      //   localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
+      // }
+    },
+     addToBulkInCart: (state, action) => {
+      state.cartItems = state.bulkItems;
       if (typeof window !== 'undefined') {
         localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
       }
@@ -126,9 +133,9 @@ const cartSlice = createSlice({
           csvRecipients: csvRecipients || state.bulkItems[lastIndex].csvRecipients,
           updatedAt: new Date().toISOString()
         };
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
-        }
+        // if (typeof window !== 'undefined') {
+        //   localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
+        // }
       }
     },
     
@@ -203,7 +210,8 @@ export const {
   removeBulkItemById,
   initializeBulkCart,
   clearBulkCart,
-  clearAllCarts
+  clearAllCarts,
+  addToBulkInCart
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

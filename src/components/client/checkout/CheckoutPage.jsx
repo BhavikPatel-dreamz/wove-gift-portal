@@ -14,11 +14,14 @@ import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
 import PaymentMethodSelector from "../giftflow/payment/PaymentMethodSelector";
 import GiftDetailsCard from "../giftflow/payment/GiftDetailsCard";
 import PaymentSummary from "../giftflow/payment/PaymentSummary";
+import BulkPaymentSummary from "../giftflow/payment/BulkPaymentSummary";
 import SuccessScreen from "../giftflow/payment/SuccessScreen";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
 import BillingAddressForm from "../giftflow/payment/BillingAddressForm";
 import { ShoppingCart } from 'lucide-react';
 import { currencyList } from '../../brandsPartner/currency';
+import { useDispatch, useSelector } from 'react-redux';
+import { clearCart, clearBulkCart } from '@/redux/cartSlice';
 
 if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
@@ -27,8 +30,14 @@ if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 const CheckoutPage = () => {
+  const dispatch = useDispatch();
+  const session = useSession();
+
+  // ✅ Get cart items from Redux
+  const cartItems = useSelector((state) => state.cart.items);
+  const bulkItems = useSelector((state) => state.cart.bulkItems);
+
   // State
-  const [cartItems, setCartItems] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
@@ -37,8 +46,27 @@ const CheckoutPage = () => {
   const [showThankYou, setShowThankYou] = useState(false);
   const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderId, setPendingOrderId] = useState(null);
-  const session = useSession();
 
+  // ✅ Determine if checkout is for bulk or regular items
+  // Priority: if both exist, check which cart page the user came from via localStorage
+  const [checkoutType, setCheckoutType] = useState(null);
+  
+  useEffect(() => {
+    // Determine checkout type based on what's in the cart
+    // If user has both, we need to know which one they want to checkout
+    if (bulkItems.length > 0 && cartItems.length === 0) {
+      setCheckoutType('bulk');
+    } else if (cartItems.length > 0 && bulkItems.length === 0) {
+      setCheckoutType('regular');
+    } else if (bulkItems.length > 0 && cartItems.length > 0) {
+      // If both exist, check localStorage for last active tab
+      const lastActiveTab = localStorage.getItem('activeCartTab');
+      setCheckoutType(lastActiveTab === 'bulk' ? 'bulk' : 'regular');
+    }
+  }, [bulkItems.length, cartItems.length]);
+
+  const isBulkCheckout = checkoutType === 'bulk';
+  const checkoutItems = isBulkCheckout ? bulkItems : cartItems;
 
   // Billing address state
   const [billingAddress, setBillingAddress] = useState({
@@ -51,18 +79,17 @@ const CheckoutPage = () => {
   });
   const [addressErrors, setAddressErrors] = useState({});
 
-  // Load cart from localStorage
+  // Check if cart is empty and redirect
   useEffect(() => {
-    const items = JSON.parse(localStorage.getItem('cart')) || [];
-    if (items.length === 0) {
-      window.location.href = '/';
+    if (cartItems.length === 0 && bulkItems.length === 0) {
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
     }
-    setCartItems(items);
-  }, []);
+  }, [cartItems, bulkItems]);
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "";
-
 
   // Helper functions
   const formatAmount = (amount) => {
@@ -83,8 +110,8 @@ const CheckoutPage = () => {
   };
 
   const getCurrency = () => {
-    if (cartItems.length > 0) {
-      const firstAmount = cartItems[0].selectedAmount;
+    if (checkoutItems.length > 0) {
+      const firstAmount = checkoutItems[0].selectedAmount;
       if (typeof firstAmount === 'object' && firstAmount?.currency) {
         return firstAmount.currency;
       }
@@ -93,14 +120,23 @@ const CheckoutPage = () => {
   };
 
   const calculateSubtotal = () => {
-    return cartItems.reduce((total, item) => {
-      return total + getAmountValue(item.selectedAmount);
-    }, 0);
+    if (isBulkCheckout) {
+      // For bulk items, calculate based on quantity * amount
+      return bulkItems.reduce((total, item) => {
+        const value = getAmountValue(item.selectedAmount);
+        return total + (value * item.quantity);
+      }, 0);
+    } else {
+      // For regular items
+      return cartItems.reduce((total, item) => {
+        return total + getAmountValue(item.selectedAmount);
+      }, 0);
+    }
   };
 
   const calculateServiceFee = () => {
     const subtotal = calculateSubtotal();
-    return Math.round(subtotal * 0.03);
+    return Math.round(subtotal * 0.05);
   };
 
   const calculateTotal = () => {
@@ -110,14 +146,7 @@ const CheckoutPage = () => {
   };
 
   const removeFromCart = (index) => {
-    const updatedCart = cartItems.filter((_, i) => i !== index);
-    setCartItems(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
-    window.dispatchEvent(new Event('storage'));
-
-    if (updatedCart.length === 0) {
-      window.location.href = '/cart';
-    }
+    // This function is handled by CartPage, not needed here
   };
 
   // Validate billing address
@@ -144,7 +173,7 @@ const CheckoutPage = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // Initiate payment with billing address
+  // ✅ UPDATED: Initiate payment with billing address for both regular and bulk items
   const handleInitiatePayment = async () => {
     if (!validateBillingAddress()) {
       toast.error('Please fill in all required billing address fields');
@@ -160,42 +189,78 @@ const CheckoutPage = () => {
     const toastId = toast.loading('Preparing your order...');
 
     try {
-      // Create orders for all cart items
-      const orderPromises = cartItems.map(item => {
+      if (isBulkCheckout) {
+        // ✅ Handle bulk order
+        const bulkItem = bulkItems[0]; // Assuming single bulk order at a time
         const orderData = {
-          selectedBrand: item.selectedBrand,
-          selectedAmount: item.selectedAmount,
-          personalMessage: item.personalMessage,
-          deliveryMethod: item.deliveryMethod,
-          deliveryDetails: item.deliveryDetails,
-          selectedOccasion: item.selectedOccasion,
-          selectedSubCategory: item.selectedSubCategory,
-          selectedTiming: item.selectedTiming,
+          selectedBrand: bulkItem.selectedBrand,
+          selectedAmount: bulkItem.selectedAmount,
+          personalMessage: bulkItem.personalMessage,
+          quantity: bulkItem.quantity,
+          companyInfo: bulkItem.companyInfo,
+          deliveryOption: bulkItem.deliveryOption,
+          selectedOccasion: bulkItem.selectedOccasion,
+          selectedSubCategory: bulkItem.selectedSubCategory,
           totalAmount: calculateTotal(),
-          isBulkOrder: false,
+          isBulkOrder: true,
+          totalSpend: bulkItem.totalSpend,
           billingAddress,
+          deliveryMethod: bulkItem.deliveryOption === "multiple" ? "multiple" : "email",
+          csvRecipients: bulkItem.csvRecipients || [],
           userId: session?.user?.id,
         };
-        return createPendingOrder(orderData);
-      });
 
-      const results = await Promise.all(orderPromises);
+        const result = await createPendingOrder(orderData);
 
-      // Use the first successful order's client secret
-      const successfulResult = results.find(r => r?.success);
-
-      if (successfulResult) {
-        setPendingOrderId(successfulResult.data.orderId);
-        setClientSecret(successfulResult.data.clientSecret);
-        toast.success('Ready to process payment', { id: toastId });
-        return {
-          clientSecret: successfulResult.data.clientSecret,
-          orderId: successfulResult.data.orderId
-        };
+        if (result?.success) {
+          setPendingOrderId(result.data.orderId);
+          setClientSecret(result.data.clientSecret);
+          toast.success('Ready to process payment', { id: toastId });
+          return {
+            clientSecret: result.data.clientSecret,
+            orderId: result.data.orderId
+          };
+        } else {
+          setError(result.error);
+          toast.error(result.error, { id: toastId });
+          return null;
+        }
       } else {
-        setError('Failed to prepare orders');
-        toast.error('Failed to prepare orders', { id: toastId });
-        return null;
+        // ✅ Handle regular cart items
+        const orderPromises = cartItems.map(item => {
+          const orderData = {
+            selectedBrand: item.selectedBrand,
+            selectedAmount: item.selectedAmount,
+            personalMessage: item.personalMessage,
+            deliveryMethod: item.deliveryMethod,
+            deliveryDetails: item.deliveryDetails,
+            selectedOccasion: item.selectedOccasion,
+            selectedSubCategory: item.selectedSubCategory,
+            selectedTiming: item.selectedTiming,
+            totalAmount: calculateTotal(),
+            isBulkOrder: false,
+            billingAddress,
+            userId: session?.user?.id,
+          };
+          return createPendingOrder(orderData);
+        });
+
+        const results = await Promise.all(orderPromises);
+        const successfulResult = results.find(r => r?.success);
+
+        if (successfulResult) {
+          setPendingOrderId(successfulResult.data.orderId);
+          setClientSecret(successfulResult.data.clientSecret);
+          toast.success('Ready to process payment', { id: toastId });
+          return {
+            clientSecret: successfulResult.data.clientSecret,
+            orderId: successfulResult.data.orderId
+          };
+        } else {
+          setError('Failed to prepare orders');
+          toast.error('Failed to prepare orders', { id: toastId });
+          return null;
+        }
       }
     } catch (error) {
       setError("Failed to prepare order.");
@@ -210,73 +275,74 @@ const CheckoutPage = () => {
   const handlePaymentSuccess = (paymentIntent) => {
     console.log('💳 Payment intent succeeded:', paymentIntent.id);
 
-    // Show immediate feedback
-    toast.dismiss(); // Clear any existing toasts
+    toast.dismiss();
     toast.loading('Confirming your order...', { id: 'payment-confirm' });
 
     setPaymentSubmitted(true);
     setIsProcessing(true);
 
-    // Start polling with a slight delay to allow webhook to process
     setTimeout(() => {
       pollOrderStatus(pendingOrderId);
-    }, 5000); // 1.5 second delay
+    }, 5000);
   };
 
   // Poll order status
-const pollOrderStatus = async (orderId, attempts = 0) => {
-  const maxAttempts = 30;
-  const pollInterval = 2000;
+  const pollOrderStatus = async (orderId, attempts = 0) => {
+    const maxAttempts = 30;
+    const pollInterval = 2000;
 
-  try {
-    console.log(`🔍 Polling order status - Attempt ${attempts + 1}/${maxAttempts}`);
-    const response = await getOrderStatus(orderId);
-    
-    console.log('🔍 Raw response:', response);
+    try {
+      console.log(`🔍 Polling order status - Attempt ${attempts + 1}/${maxAttempts}`);
+      const response = await getOrderStatus(orderId);
 
-    const paymentStatus = response?.paymentStatus || response?.order?.paymentStatus;
-    const orderData = response?.order || response;
+      console.log('🔍 Raw response:', response);
 
-    if (paymentStatus === 'COMPLETED') {
-      setOrder(orderData);
-      toast.success('Order placed successfully!');
-      setIsProcessing(false);
-      
-      // ✅ Clear cart
-      localStorage.removeItem('cart');
-      window.dispatchEvent(new Event('storage'));
-      
-      return;
-    } 
-    
-    if (paymentStatus === 'FAILED' || paymentStatus === 'CANCELLED') {
-      setError('Payment failed. Please try again.');
-      toast.error('Payment failed');
-      setIsProcessing(false);
-      setPaymentSubmitted(false);
-      return;
+      const paymentStatus = response?.paymentStatus || response?.order?.paymentStatus;
+      const orderData = response?.order || response;
+
+      if (paymentStatus === 'COMPLETED') {
+        setOrder(orderData);
+        toast.success('Order placed successfully!');
+        setIsProcessing(false);
+
+        // ✅ Clear appropriate cart
+        if (isBulkCheckout) {
+          dispatch(clearBulkCart());
+        } else {
+          dispatch(clearCart());
+        }
+
+        return;
+      }
+
+      if (paymentStatus === 'FAILED' || paymentStatus === 'CANCELLED') {
+        setError('Payment failed. Please try again.');
+        toast.error('Payment failed');
+        setIsProcessing(false);
+        setPaymentSubmitted(false);
+        return;
+      }
+
+      if (attempts < maxAttempts) {
+        setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
+      } else {
+        toast.success(
+          'Payment is being processed. Check your email for confirmation.',
+          { duration: 6000 }
+        );
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error('Error polling:', error);
+      if (attempts < maxAttempts) {
+        setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
+      } else {
+        setError('Could not verify payment. Check your email.');
+        toast.error('Failed to confirm payment');
+        setIsProcessing(false);
+      }
     }
-    
-    if (attempts < maxAttempts) {
-      setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
-    } else {
-      toast.success(
-        'Payment is being processed. Check your email for confirmation.',
-        { duration: 6000 }
-      );
-      setIsProcessing(false);
-    }
-  } catch (error) {
-    console.error('Error polling:', error);
-    if (attempts < maxAttempts) {
-      setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
-    } else {
-      setError('Could not verify payment. Check your email.');
-      toast.error('Failed to confirm payment');
-      setIsProcessing(false);
-    }
-  }
-};
+  };
 
   const handleNext = () => {
     setShowThankYou(true);
@@ -298,10 +364,10 @@ const pollOrderStatus = async (orderId, attempts = 0) => {
         <Header />
         <SuccessScreen
           order={order}
-          selectedBrand={cartItems[0]?.selectedBrand}
-          quantity={cartItems.length}
-          selectedAmount={cartItems[0]?.selectedAmount}
-          isBulkMode={false}
+          selectedBrand={checkoutItems[0]?.selectedBrand}
+          quantity={isBulkCheckout ? bulkItems[0]?.quantity : cartItems.length}
+          selectedAmount={checkoutItems[0]?.selectedAmount}
+          isBulkMode={isBulkCheckout}
           onNext={handleNext}
         />
       </div>
@@ -310,7 +376,7 @@ const pollOrderStatus = async (orderId, attempts = 0) => {
 
   if (paymentSubmitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center text-black">
         <Header />
         <div className="max-w-md">
           <div className="mb-4">
@@ -363,15 +429,36 @@ const pollOrderStatus = async (orderId, attempts = 0) => {
               Previous
             </div>
           </button>
+
+          {/* ✅ Bulk Gifting Indicator */}
+          {isBulkCheckout && (
+            <div className="flex items-center gap-3 justify-center w-full md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2">
+              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+                <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                    Bulk Gifting
+                  </span>
+                </div>
+              </div>
+              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+            </div>
+          )}
+
+          <div className="md:block w-[140px]" />
         </div>
 
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center mt-6">
-            You're almost there!
+            {isBulkCheckout
+              ? 'Complete your bulk order payment'
+              : "You're almost there!"}
           </h1>
           <p className="text-sm sm:text-base text-gray-600 text-center mt-2 max-w-2xl mx-auto">
-            Let's deliver your beautiful gift and make someone's day absolutely wonderful
+            {isBulkCheckout
+              ? 'Your vouchers will be generated instantly after payment'
+              : "Let's deliver your beautiful gift and make someone's day absolutely wonderful"}
           </p>
         </div>
 
@@ -388,7 +475,7 @@ const pollOrderStatus = async (orderId, attempts = 0) => {
             <PaymentMethodSelector
               selectedTab={selectedPaymentTab}
               onTabChange={setSelectedPaymentTab}
-              isBulkMode={false}
+              isBulkMode={isBulkCheckout}
             />
 
             {selectedPaymentTab === 'card' && clientSecret && (
@@ -430,21 +517,80 @@ const pollOrderStatus = async (orderId, attempts = 0) => {
 
           {/* Right Column */}
           <div className="space-y-5 sm:space-y-6">
-            <GiftDetailsCard
-              cartItems={cartItems}
-              formatAmount={formatAmount}
-              onRemoveItem={removeFromCart}
-              isProcessing={isProcessing}
-            />
+            {/* ✅ Show appropriate gift details based on checkout type */}
+            {isBulkCheckout ? (
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Bulk Order Details</h3>
+                {bulkItems.map((item, index) => (
+                  <div key={index} className="flex gap-4 p-4 bg-gray-50 rounded-xl">
+                    <div className="w-16 h-16 shrink-0">
+                      {item.selectedBrand?.logo ? (
+                        <img
+                          src={item.selectedBrand.logo}
+                          alt={item.selectedBrand?.brandName || item.selectedBrand?.name}
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
+                          <span className="text-white font-bold text-xl">
+                            {(item.selectedBrand?.brandName || item.selectedBrand?.name || 'B')
+                              .substring(0, 1)
+                              .toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 mb-2">
+                        {item.selectedBrand?.brandName || item.selectedBrand?.name}
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">Quantity:</span>
+                          <span className="ml-1 font-medium">{item.quantity}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Amount:</span>
+                          <span className="ml-1 font-medium">{formatAmount(item.selectedAmount)}</span>
+                        </div>
+                      </div>
+                      {item.companyInfo?.companyName && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Company: {item.companyInfo.companyName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <GiftDetailsCard
+                cartItems={cartItems}
+                formatAmount={formatAmount}
+                onRemoveItem={removeFromCart}
+                isProcessing={isProcessing}
+              />
+            )}
 
-            <PaymentSummary
-              selectedAmount={{ value: calculateSubtotal(), currency: getCurrency() }}
-              formatAmount={formatAmount}
-              calculateServiceFee={calculateServiceFee}
-              calculateTotal={calculateTotal}
-              isBulkMode={false}
-              quantity={cartItems.length}
-            />
+            {/* ✅ Show appropriate payment summary */}
+            {isBulkCheckout ? (
+              <BulkPaymentSummary
+                currentBulkOrder={bulkItems[0]}
+                quantity={bulkItems[0]?.quantity}
+                selectedAmount={bulkItems[0]?.selectedAmount}
+                calculateServiceFee={calculateServiceFee}
+                calculateTotal={calculateTotal}
+              />
+            ) : (
+              <PaymentSummary
+                selectedAmount={{ value: calculateSubtotal(), currency: getCurrency() }}
+                formatAmount={formatAmount}
+                calculateServiceFee={calculateServiceFee}
+                calculateTotal={calculateTotal}
+                isBulkMode={false}
+                quantity={cartItems.length}
+              />
+            )}
           </div>
         </div>
 

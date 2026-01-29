@@ -116,7 +116,7 @@ const PaymentStep = () => {
   const calculateServiceFee = () => {
     const baseAmount = selectedAmount?.value || 0;
     const totalAmount = isBulkMode ? baseAmount * quantity : baseAmount;
-    return Math.round(totalAmount * 0.03);
+    return Math.round(totalAmount * 0.05);
   };
 
   const calculateTotal = () => {

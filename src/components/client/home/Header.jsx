@@ -49,7 +49,9 @@ const countries = [
 
 const Header = () => {
   const session = useSession();
+  // ✅ Get both regular and bulk cart items
   const cartItems = useSelector((state) => state.cart.items);
+  const bulkItems = useSelector((state) => state.cart.cartItems);
   const dispatch = useDispatch();
   const router = useRouter();
 
@@ -66,7 +68,8 @@ const Header = () => {
     setOpen(false);
   };
 
-  const cartCount = cartItems.length;
+  // ✅ Calculate combined cart count
+  const cartCount = cartItems.length + bulkItems.length;
 
   useEffect(() => {
     setMounted(true);
@@ -351,7 +354,7 @@ const Header = () => {
                 )}
               </div>
 
-              {/* Cart - Always visible */}
+              {/* Cart - Always visible with combined count */}
               <Link
                 href="/cart"
                 className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 
@@ -364,6 +367,7 @@ const Header = () => {
                   color="#ED457D"
                 />
 
+                {/* ✅ Show combined count badge */}
                 {mounted && cartCount > 0 && (
                   <span
                     className="absolute -top-1 -right-1 bg-[#ED457D] text-white 
