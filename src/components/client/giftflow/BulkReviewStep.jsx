@@ -7,6 +7,7 @@ import { updateBulkCompanyInfo, addToBulk, addToBulkInCart } from '../../../redu
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
+import { ShoppingBasket } from 'lucide-react';
 
 const BulkReviewStep = () => {
     const dispatch = useDispatch();
@@ -35,9 +36,14 @@ const BulkReviewStep = () => {
         }
     }, [companyInfoFromRedux, currentBulkOrder, dispatch]);
 
-    const companyInfo = companyInfoFromRedux || currentBulkOrder?.companyInfo || {};
+    const companyInfo = companyInfoFromRedux || currentBulkOrder?.companyInfo || {
+        companyName: '',
+        vatNumber: '',
+        contactNumber: '',
+        contactEmail: ''
+    };
 
-    const deliveryOption = currentBulkOrder?.deliveryOption || 'csv';
+    const deliveryOption = currentBulkOrder?.deliveryOption || 'email';
 
     // Memoize preview data to avoid re-rendering issues
     const previewData = useMemo(() => csvData.slice(0, 5), [csvData]);
@@ -46,7 +52,27 @@ const BulkReviewStep = () => {
     // Email validation regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // Improved file upload handler with better error handling and validation
+    const readFileAsync = (file, fileExtension) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = (evt) => {
+                resolve(evt.target.result);
+            };
+
+            reader.onerror = () => {
+                reject(new Error('Failed to read file'));
+            };
+
+            if (fileExtension === 'csv') {
+                reader.readAsBinaryString(file);
+            } else {
+                reader.readAsArrayBuffer(file);
+            }
+        });
+    };
+
+    // Improved file upload handler with quantity validation
     const handleFileUpload = useCallback(async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -77,11 +103,11 @@ const BulkReviewStep = () => {
             }
 
             if (!parsedData || parsedData.length === 0) {
-                throw new Error('File is empty or has no data');
+                setCsvError('File is empty or has no data');
             }
 
             if (parsedData.length > 1000) {
-                throw new Error('Maximum 1000 recipients allowed per upload');
+                setCsvError('Maximum 1000 recipients allowed per upload');
             }
 
             const requiredColumns = ['name', 'email'];
@@ -91,7 +117,7 @@ const BulkReviewStep = () => {
             );
 
             if (!hasRequiredColumns) {
-                throw new Error('CSV must contain "name" and "email" columns (case-insensitive)');
+                setCsvError('CSV must contain "name" and "email" columns (case-insensitive)');
             }
 
             const normalizedData = [];
@@ -149,14 +175,22 @@ const BulkReviewStep = () => {
                     : errors.join('\n');
 
                 if (normalizedData.length === 0) {
-                    throw new Error(`All rows have errors:\n${errorSummary}`);
+                    setCsvError(`All rows have errors:\n${errorSummary}`);
                 } else {
                     setCsvError(`Warning: ${errors.length} row(s) skipped due to errors. ${normalizedData.length} valid recipients loaded.`);
                 }
             }
 
             if (normalizedData.length === 0) {
-                throw new Error('No valid recipients found in file');
+                setCsvError('No valid recipients found in file');
+            }
+
+            // ✅ Validate quantity matches the bulk order quantity
+            const orderQuantity = currentBulkOrder?.quantity || 0;
+            if (normalizedData.length !== orderQuantity) {
+                setCsvError(
+                    `Recipient count mismatch: Your bulk order is for ${orderQuantity} vouchers, but the uploaded file contains ${normalizedData.length} recipients. Please upload a file with exactly ${orderQuantity} recipients.`
+                );
             }
 
             setCsvData(normalizedData);
@@ -177,47 +211,33 @@ const BulkReviewStep = () => {
         } finally {
             setIsProcessingFile(false);
         }
-    }, [companyInfo, deliveryOption, dispatch]);
-
-    const readFileAsync = (file, fileExtension) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-
-            reader.onload = (evt) => {
-                resolve(evt.target.result);
-            };
-
-            reader.onerror = () => {
-                reject(new Error('Failed to read file'));
-            };
-
-            if (fileExtension === 'csv') {
-                reader.readAsBinaryString(file);
-            } else {
-                reader.readAsArrayBuffer(file);
-            }
-        });
-    };
+    }, [companyInfo, deliveryOption, dispatch, currentBulkOrder]);
 
     const validateForm = () => {
         const newErrors = {};
 
-        if (!companyInfo.companyName.trim()) {
+        if (!companyInfo.companyName?.trim()) {
             newErrors.companyName = 'Company name is required';
         }
 
-        if (!companyInfo.contactNumber.trim()) {
+        if (!companyInfo.contactNumber?.trim()) {
             newErrors.contactNumber = 'Contact number is required';
         }
 
-        if (!companyInfo.contactEmail.trim()) {
+        if (!companyInfo.contactEmail?.trim()) {
             newErrors.contactEmail = 'Contact email is required';
         } else if (!emailRegex.test(companyInfo.contactEmail)) {
             newErrors.contactEmail = 'Invalid email format';
         }
 
-        if (deliveryOption === 'multiple' && csvData.length === 0) {
-            newErrors.csvFile = 'Please upload a CSV file with recipients';
+        if (deliveryOption === 'multiple') {
+            if (csvData.length === 0) {
+                newErrors.csvFile = 'Please upload a CSV file with recipients';
+            }
+            // ✅ Check quantity match
+            else if (csvData.length !== currentBulkOrder?.quantity) {
+                newErrors.csvFile = `Uploaded file must contain exactly ${currentBulkOrder?.quantity} recipients`;
+            }
         }
 
         setErrors(newErrors);
@@ -254,7 +274,7 @@ const BulkReviewStep = () => {
         }
     }, [companyInfo, dispatch]);
 
-    // ✅ NEW: Add to Cart Handler
+    // Add to Cart Handler
     const handleAddToCart = () => {
         if (!validateForm()) {
             toast.error('Please fill in all required fields');
@@ -267,14 +287,13 @@ const BulkReviewStep = () => {
         }
 
         dispatch(addToBulkInCart(currentBulkOrder));
-
-        // Add the current bulk order to cart
         toast.success('Bulk order added to cart!');
         router.push('/cart');
     };
 
     const handleProceedToCheckout = () => {
         if (!validateForm()) {
+            toast.error('Please fill in all required fields');
             return;
         }
         dispatch(goNext(2));
@@ -285,22 +304,29 @@ const BulkReviewStep = () => {
     };
 
     const downloadSampleCSV = useCallback(() => {
-        const sampleData = [
-            ['name', 'email', 'phone', 'message'],
-            ['John Doe', 'john@example.com', '+1234567890', 'Happy Birthday!'],
-            ['Jane Smith', 'jane@example.com', '+0987654321', 'Congratulations!'],
-            ['Bob Johnson', 'bob@example.com', '', 'Thank you!']
-        ];
+        const orderQuantity = currentBulkOrder?.quantity || 3;
+        const sampleData = [['name', 'email', 'phone', 'message']];
+
+        // Generate sample rows based on order quantity (max 10 for sample)
+        const sampleRowCount = Math.min(orderQuantity, 10);
+        for (let i = 1; i <= sampleRowCount; i++) {
+            sampleData.push([
+                `Recipient ${i}`,
+                `recipient${i}@example.com`,
+                `+123456789${i}`,
+                `Gift message ${i}`
+            ]);
+        }
 
         const csv = sampleData.map(row => row.join(',')).join('\n');
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'sample_recipients.csv';
+        a.download = `sample_recipients_${orderQuantity}_vouchers.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
-    }, []);
+    }, [currentBulkOrder]);
 
     if (!currentBulkOrder) {
         return (
@@ -342,9 +368,9 @@ const BulkReviewStep = () => {
                                 absolute inset-0 rounded-full p-[1.5px]
                                 bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
                               "
-                        ></span>
-                        <span
-                            className="
+                            ></span>
+                            <span
+                                className="
                                 absolute inset-[2px] rounded-full bg-white
                                 transition-all duration-300
                                 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
@@ -496,7 +522,7 @@ const BulkReviewStep = () => {
                                     <input
                                         type="text"
                                         placeholder="Your Company Name*"
-                                        value={companyInfo.companyName}
+                                        value={companyInfo.companyName || ''}
                                         onChange={(e) => handleInputChange('companyName', e.target.value)}
                                         className={`w-full px-4 py-3 border bg-white ${errors.companyName ? 'border-red-500' : 'border-[#1A1A1A33]'} text-black rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                     />
@@ -509,7 +535,7 @@ const BulkReviewStep = () => {
                                     <input
                                         type="text"
                                         placeholder="Vat Number (e.g., 4001234567)"
-                                        value={companyInfo.vatNumber}
+                                        value={companyInfo.vatNumber || ''}
                                         onChange={(e) => handleInputChange('vatNumber', e.target.value)}
                                         className="w-full px-4 py-3 border bg-white border-[#1A1A1A33] rounded-[15px]  focus:outline-none text-black focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                                     />
@@ -520,7 +546,7 @@ const BulkReviewStep = () => {
                                         <input
                                             type="tel"
                                             placeholder="Your Contact No.*"
-                                            value={companyInfo.contactNumber}
+                                            value={companyInfo.contactNumber || ''}
                                             onChange={(e) => handleInputChange('contactNumber', e.target.value)}
                                             className={`w-full px-4 py-3 bg-white border ${errors.contactNumber ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                         />
@@ -532,7 +558,7 @@ const BulkReviewStep = () => {
                                         <input
                                             type="email"
                                             placeholder="Your Contact Email*"
-                                            value={companyInfo.contactEmail}
+                                            value={companyInfo.contactEmail || ''}
                                             onChange={(e) => handleInputChange('contactEmail', e.target.value)}
                                             className={`w-full px-4 py-3 bg-white border ${errors.contactEmail ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                         />
@@ -547,7 +573,8 @@ const BulkReviewStep = () => {
                                         <path d="M13.385 4.10536L10.2305 0.660492C9.8465 0.250084 9.308 0.00447932 8.693 0.00447932H4.15325C2.99975 -0.0779223 2 0.988499 2 2.21892V13.7031C1.99951 14.005 2.05489 14.304 2.16297 14.5829C2.27106 14.8619 2.42971 15.1153 2.62984 15.3287C2.82996 15.5421 3.06762 15.7113 3.32917 15.8265C3.59073 15.9417 3.87103 16.0006 4.154 16H11.846C12.129 16.0006 12.4093 15.9417 12.6708 15.8265C12.9324 15.7113 13.17 15.5421 13.3702 15.3287C13.5703 15.1153 13.7289 14.8619 13.837 14.5829C13.9451 14.304 14.0005 14.005 14 13.7031V5.66459C14 5.09018 13.769 4.51577 13.385 4.10536ZM5.69225 6.48461H8C8.3075 6.48461 8.615 6.73101 8.615 7.14062C8.615 7.55103 8.38475 7.79663 8 7.79663H5.69225C5.61118 7.79782 5.53071 7.78166 5.45559 7.74911C5.38048 7.71656 5.31224 7.66828 5.25491 7.60713C5.19758 7.54598 5.15232 7.47319 5.1218 7.39306C5.09129 7.31293 5.07614 7.2271 5.07725 7.14062C5.07725 6.73021 5.38475 6.48461 5.69225 6.48461ZM10.3077 11.0783H5.69225C5.38475 11.0783 5.07725 10.8319 5.07725 10.4223C5.07725 10.0127 5.3075 9.76627 5.69225 9.76627H10.3077C10.6152 9.76627 10.9227 10.0119 10.9227 10.4223C10.9227 10.8327 10.6152 11.0783 10.3077 11.0783Z" fill="#39AE41" />
                                     </svg>
                                     <span className="text-[#1A1A1A] font-inter text-xs font-medium leading-4">
-                                        CSV file with voucher codes will be sent to your Contact email</span></div>
+                                        CSV file with voucher codes will be sent to your Contact email</span>
+                                </div>
 
                                 {/* Delivery Options */}
                                 <div className="pt-4 space-y-3">
@@ -595,6 +622,17 @@ const BulkReviewStep = () => {
                                                 </button>
                                             </div>
 
+                                            {/* ✅ Show required quantity */}
+                                            <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                                                <p className="text-sm font-semibold text-yellow-800">
+                                                    ⚠️ Required: Exactly {currentBulkOrder?.quantity || 0} recipients
+                                                </p>
+                                                <p className="text-xs text-yellow-700 mt-1">
+                                                    Your bulk order is for {currentBulkOrder?.quantity || 0} vouchers.
+                                                    Please upload a file with exactly {currentBulkOrder?.quantity || 0} recipients.
+                                                </p>
+                                            </div>
+
                                             <p className="text-sm text-gray-600 mb-3">
                                                 Upload a CSV or Excel file with columns: <strong>name</strong>, <strong>email</strong>, phone (optional), message (optional)
                                             </p>
@@ -617,6 +655,12 @@ const BulkReviewStep = () => {
                                             {csvError && (
                                                 <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                                                     <p className="text-red-700 text-sm whitespace-pre-wrap">{csvError}</p>
+                                                </div>
+                                            )}
+
+                                            {errors.csvFile && (
+                                                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                                    <p className="text-red-700 text-sm">{errors.csvFile}</p>
                                                 </div>
                                             )}
 
@@ -663,15 +707,15 @@ const BulkReviewStep = () => {
                         </div>
                     </div>
 
-                <div className="flex items-start gap-3 justify-center my-3">
-                    <label className="flex items-start gap-3 cursor-pointer select-none">
-                        <input
-                            type="checkbox"
-                            checked={isConfirmed || false}
-                            onChange={(e) => dispatch(setIsConfirmed(e.target.checked))}
-                            className="sr-only"
-                        />
-                        <div className={`
+                    <div className="flex items-start gap-3 justify-center my-3">
+                        <label className="flex items-start gap-3 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={isConfirmed || false}
+                                onChange={(e) => dispatch(setIsConfirmed(e.target.checked))}
+                                className="sr-only"
+                            />
+                            <div className={`
                                     w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
                                     ${isConfirmed
                                     ? 'bg-gradient-to-r from-pink-500 to-orange-400 border-transparent'
@@ -698,43 +742,40 @@ const BulkReviewStep = () => {
                         </label>
                     </div>
 
-                    {/* ✅ NEW: Action Buttons */}
+                    {/* Action Buttons */}
                     <div className="max-w-[688px] m-auto space-y-4">
-                        {/* Add to Cart Button */}
-                        <button
-                            disabled={!isConfirmed || isProcessingFile}
-                            onClick={handleAddToCart}
-                            className={`w-full bg-white border-2 border-gradient-to-r from-pink-500 to-orange-500
-                         text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-orange-500
-                         py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 
-                         flex items-center justify-center gap-2 
-                         ${isConfirmed && !isProcessingFile
-                                    ? 'hover:shadow-xl cursor-pointer hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50'
-                                    : 'opacity-50 cursor-not-allowed'
-                                }`}
-                            style={{
-                                borderImage: 'linear-gradient(to right, #EC4899, #F97316) 1'
-                            }}
-                        >
-                            {isProcessingFile ? 'Processing file...' : 'Add to Cart'}
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-10 0a2 2 0 100 4 2 2 0 000-4z" stroke="url(#gradient)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <defs>
-                                    <linearGradient id="gradient" x1="3" y1="10" x2="21" y2="10" gradientUnits="userSpaceOnUse">
-                                        <stop stopColor="#EC4899" />
-                                        <stop offset="1" stopColor="#F97316" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
-                        </button>
+
+                        <div className={`p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 inline-block w-full ${csvError === "" && isConfirmed
+                            ? 'hover:bg-rose-50 hover:shadow-md cursor-pointer'
+                            : 'opacity-50 cursor-not-allowed'
+                            }
+                                              `}>
+                            <button
+                                disabled={csvError !== "" || !isConfirmed || isProcessingFile}
+                                onClick={handleAddToCart}
+                                className={`
+    w-full h-14 flex items-center justify-center gap-3 px-5 rounded-full 
+    bg-white text-pink-500 font-bold transition-all duration-200
+    ${csvError === "" && isConfirmed && !isProcessingFile
+                                        ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
+                                        : 'opacity-50 cursor-not-allowed'
+                                    }
+  `}
+                            >
+                                {isProcessingFile ? 'Processing file...' : 'Add to Cart'}
+                                <ShoppingBasket className="w-5 h-5" />
+                            </button>
+
+                        </div>
+
 
                         {/* Proceed to Checkout Button */}
                         <button
-                            disabled={!isConfirmed || isProcessingFile}
+                            disabled={csvError !== "" || !isConfirmed || isProcessingFile}
                             onClick={handleProceedToCheckout}
                             className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600
                          text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 
-                         ${isConfirmed && !isProcessingFile
+                         ${csvError === "" && isConfirmed && !isProcessingFile
                                     ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
                                     : 'opacity-50 cursor-not-allowed'
                                 }`}

@@ -16,6 +16,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { destroySession } from '../../../lib/action/userAction/session';
 import { usePathname, useRouter } from 'next/navigation';
 import { resetFlow } from '../../../redux/giftFlowSlice';
+import { initializeCart, initializeBulkCart } from '../../../redux/cartSlice';
 
 
 // Desktop navigation links (without the three items)
@@ -49,11 +50,12 @@ const countries = [
 
 const Header = () => {
   const session = useSession();
+  const dispatch = useDispatch();
+  const router = useRouter();
+  
   // ✅ Get both regular and bulk cart items
   const cartItems = useSelector((state) => state.cart.items);
   const bulkItems = useSelector((state) => state.cart.cartItems);
-  const dispatch = useDispatch();
-  const router = useRouter();
 
   const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -71,14 +73,19 @@ const Header = () => {
   // ✅ Calculate combined cart count
   const cartCount = cartItems.length + bulkItems.length;
 
+  // ✅ Initialize cart from localStorage on mount
   useEffect(() => {
     setMounted(true);
+    
+    // Initialize both carts from localStorage
+    dispatch(initializeCart());
+    dispatch(initializeBulkCart());
 
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [dispatch]);
 
   const handleLogout = async () => {
     try {

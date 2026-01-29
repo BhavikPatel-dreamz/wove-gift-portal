@@ -385,7 +385,7 @@ const BulkOrderSetup = () => {
 
               <input
                 type="text"
-                value={quantity}
+                  value={quantity || ''} // Change this line - use empty string as fallback
                 onChange={handleQuantityChange}
                 placeholder="e.g., 50 Vouchers"
                 className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"

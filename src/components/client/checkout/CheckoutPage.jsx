@@ -82,9 +82,9 @@ const CheckoutPage = () => {
   // Check if cart is empty and redirect
   useEffect(() => {
     if (cartItems.length === 0 && bulkItems.length === 0) {
-      setTimeout(() => {
+      // setTimeout(() => {
         window.location.href = '/';
-      }, 3000);
+      // }, 3000);
     }
   }, [cartItems, bulkItems]);
 

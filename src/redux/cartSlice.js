@@ -19,9 +19,9 @@ const getInitialBulkCart = () => {
 const cartSlice = createSlice({
   name: 'cart',
   initialState: {
-    items: [],
-    bulkItems: getInitialBulkCart(),
-    cartItems: getInitialCart(),
+    items: getInitialCart(),
+    bulkItems: [],
+    cartItems: getInitialBulkCart(),
   },
   reducers: {
     // Regular single gift cart actions
@@ -79,15 +79,13 @@ const cartSlice = createSlice({
       };
       
       state.bulkItems.push(newBulkItem);
-      
-      // if (typeof window !== 'undefined') {
-      //   localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
-      // }
     },
-     addToBulkInCart: (state, action) => {
-      state.cartItems = state.bulkItems;
+    
+    addToBulkInCart: (state, action) => {
+      // Sync bulkItems to cartItems and save to localStorage
+      state.cartItems = [...state.bulkItems];
       if (typeof window !== 'undefined') {
-        localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
+        localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
       }
     },
     
@@ -99,8 +97,10 @@ const cartSlice = createSlice({
           id: state.bulkItems[index].id, // Keep original ID
           updatedAt: new Date().toISOString()
         };
+        // Also update cartItems
+        state.cartItems = [...state.bulkItems];
         if (typeof window !== 'undefined') {
-          localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
+          localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
         }
       }
     },
@@ -114,8 +114,10 @@ const cartSlice = createSlice({
           ...updates,
           updatedAt: new Date().toISOString()
         };
+        // Also update cartItems
+        state.cartItems = [...state.bulkItems];
         if (typeof window !== 'undefined') {
-          localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
+          localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
         }
       }
     },
@@ -133,9 +135,8 @@ const cartSlice = createSlice({
           csvRecipients: csvRecipients || state.bulkItems[lastIndex].csvRecipients,
           updatedAt: new Date().toISOString()
         };
-        // if (typeof window !== 'undefined') {
-        //   localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
-        // }
+        // Also update cartItems
+        // state.cartItems = [...state.bulkItems];
       }
     },
     
@@ -150,8 +151,10 @@ const cartSlice = createSlice({
           deliveryOption: deliveryOption || state.bulkItems[itemIndex].deliveryOption,
           updatedAt: new Date().toISOString()
         };
+        // Also update cartItems
+        state.cartItems = [...state.bulkItems];
         if (typeof window !== 'undefined') {
-          localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
+          localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
         }
       }
     },
@@ -159,25 +162,32 @@ const cartSlice = createSlice({
     removeFromBulk: (state, action) => {
       const indexToRemove = action.payload;
       state.bulkItems.splice(indexToRemove, 1);
+      // Also update cartItems
+      state.cartItems = [...state.bulkItems];
       if (typeof window !== 'undefined') {
-        localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
+        localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
       }
     },
     
     removeBulkItemById: (state, action) => {
       const idToRemove = action.payload;
       state.bulkItems = state.bulkItems.filter(item => item.id !== idToRemove);
+      // Also update cartItems
+      state.cartItems = [...state.bulkItems];
       if (typeof window !== 'undefined') {
-        localStorage.setItem('bulkCart', JSON.stringify(state.bulkItems));
+        localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
       }
     },
     
     initializeBulkCart: (state) => {
-      state.bulkItems = getInitialBulkCart();
+      const bulkCart = getInitialBulkCart();
+      state.cartItems = bulkCart;
+      state.bulkItems = bulkCart;
     },
     
     clearBulkCart: (state) => {
       state.bulkItems = [];
+      state.cartItems = [];
       if (typeof window !== 'undefined') {
         localStorage.removeItem('bulkCart');
       }
@@ -187,6 +197,7 @@ const cartSlice = createSlice({
     clearAllCarts: (state) => {
       state.items = [];
       state.bulkItems = [];
+      state.cartItems = [];
       if (typeof window !== 'undefined') {
         localStorage.removeItem('cart');
         localStorage.removeItem('bulkCart');
