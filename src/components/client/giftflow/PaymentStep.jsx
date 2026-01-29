@@ -322,9 +322,9 @@ const PaymentStep = () => {
 
   // Main payment form
   return (
-    <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
+    <div className="min-h-screen bg-gray-50  py-30 md:px-8 md:py-30">
       <Toaster />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto  sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
                                         md:flex-row md:items-center md:justify-between md:gap-0">
@@ -391,7 +391,7 @@ const PaymentStep = () => {
             <div
               className="
                                 flex items-center gap-3 justify-center w-full
-                                md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+                                md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
                               "
             >
               <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
@@ -526,15 +526,25 @@ const PaymentStep = () => {
 
         {/* Error */}
         {error && (
-          <div className="mt-6">
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-              <span className="text-red-600 font-bold">!</span>
-              <div>
-                <p className="font-semibold text-red-800">Payment Error</p>
-                <p className="text-sm text-red-700">{error}</p>
+          <div className="mt-4 sm:mt-6">
+            <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 sm:gap-4">
+              {/* Icon */}
+              <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-100 text-red-600 font-bold flex items-center justify-center text-sm sm:text-base">
+                !
+              </span>
+
+              {/* Text */}
+              <div className="flex-1 max-w-full">
+                <p className="font-semibold text-red-800 text-sm sm:text-base">
+                  Payment Error
+                </p>
+                <p className="text-xs sm:text-sm text-red-700 mt-0.5 wrap-break-word">
+                  {error}
+                </p>
               </div>
             </div>
           </div>
+
         )}
       </div>
     </div>

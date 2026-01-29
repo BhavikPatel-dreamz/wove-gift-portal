@@ -11,7 +11,7 @@ const SearchBar = ({
   onCategoryChange,
 }) => {
   const [open, setOpen] = useState(false);
-   const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
 
@@ -26,36 +26,36 @@ const SearchBar = ({
         }}
       >
 
-          {
-            isBulkMode &&
-            <div className="w-full flex items-center justify-center mb-4">
-              {/* Left line */}
-              <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
+        {
+          isBulkMode &&
+          <div className="w-full flex items-center justify-center mb-4">
+            {/* Left line */}
+            <div className="max-w-[214px] w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
 
-              {/* Center pill */}
-              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
-                <div className="px-4 py-1.5 bg-white rounded-full">
-                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
-                    Bulk Gifting
-                  </span>
-                </div>
+            {/* Center pill */}
+            <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
+              <div className="px-4 py-1.5 bg-white rounded-full">
+                <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                  Bulk Gifting
+                </span>
               </div>
-
-              {/* Right line */}
-              <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
             </div>
-          }
+
+            {/* Right line */}
+            <div className="max-w-[214px] w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
+          </div>
+        }
 
         <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
           {isBulkMode ? "Choose the Perfect Brand to Gift" : "Pick Your Perfect Brand"}
         </h1>
         <p className="text-gray-600 text-sm sm:text-base max-w-md mx-auto px-2">
-         {isBulkMode ? "Pick from our trusted partners for bulk orders" : "Choose from our curated brands to make their day unforgettable"}
+          {isBulkMode ? "Pick from our trusted partners for bulk orders" : "Choose from our curated brands to make their day unforgettable"}
         </p>
       </div>
 
       {/* 🔍 Search Input + Dropdown */}
-      <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] sm:w-full max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-2 sm:px-4">
+      <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] sm:w-full max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-2 sm:px-4 z-30">
         {/* Search Input */}
         <div
           className="flex items-center w-full rounded-full p-[1px]"
@@ -86,15 +86,17 @@ const SearchBar = ({
             </span>
             <ChevronDown
               size={16}
-              className={`text-gray-600 transition-transform ${
-                open ? "rotate-180" : ""
-              }`}
+              className={`text-gray-600 transition-transform ${open ? "rotate-180" : ""
+                }`}
             />
           </div>
 
           {/* Dropdown List */}
           {open && (
-            <div className="absolute top-full mt-2 right-0 left-0 sm:left-auto sm:right-0 bg-white rounded-xl shadow-lg border border-gray-100 z-50 w-full sm:w-48 max-h-60 overflow-y-auto">
+            <div className="absolute top-full mt-2 right-0 left-0 sm:left-auto sm:right-0 
+                  bg-white rounded-xl shadow-lg border border-gray-100 
+                  w-full sm:w-48 max-h-60 overflow-y-auto
+                  z-50">
               {categories.map((cat, i) => (
                 <div
                   key={i}
@@ -102,15 +104,18 @@ const SearchBar = ({
                     onCategoryChange(cat);
                     setOpen(false);
                   }}
-                  className={`px-4 py-2 text-sm sm:text-md text-gray-700 cursor-pointer hover:bg-pink-50 ${
-                    cat === selectedCategory ? "font-semibold text-pink-600" : ""
-                  }`}
+                  className={`px-4 py-2 text-sm sm:text-md text-gray-700 cursor-pointer 
+                    hover:bg-pink-50 ${cat === selectedCategory
+                      ? "font-semibold text-pink-600"
+                      : ""
+                    }`}
                 >
                   {cat}
                 </div>
               ))}
             </div>
           )}
+
         </div>
       </div>
     </div>

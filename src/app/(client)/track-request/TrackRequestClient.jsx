@@ -181,10 +181,10 @@ export default function TrackRequestClient({ initialData, pagination }) {
 
     return (
         <Provider store={store}>
-            <div className="min-h-screen py-8 sm:py-30 px-4 bg-white">
+            <div className="min-h-screen py-[100px] sm:py-30  bg-white">
                 <Header />
 
-                <div className="max-w-7xl mx-auto">
+                <div className="max-w-7xl mx-auto px-4">
                     <div className="flex justify-end mb-3">
                         <button onClick={() => router.push('/support')} className="group relative px-6 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-orange-400 text-white font-semibold shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-2">
                             <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />

@@ -1388,13 +1388,13 @@ export default function SubCategorySelector() {
             <div
               className="
         flex items-center gap-3 justify-center w-full
-        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
               <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
               <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
-                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
+                <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
                   </span>
@@ -1411,14 +1411,16 @@ export default function SubCategorySelector() {
 
 
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            Pick a {selectedOccasionName} Design They'll Love
+        <div className="text-center mb-8 sm:mb-10 md:mb-12 px-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
+            Pick a {selectedOccasionName} Design They&apos;ll Love
           </h1>
-          <p className="text-gray-600 text-base max-w-2xl mx-auto">
+
+          <p className="text-sm sm:text-base text-gray-600 max-w-md sm:max-w-xl md:max-w-2xl mx-auto">
             Select from our curated collection of beautiful, emotionally engaging {selectedOccasionName} cards
           </p>
         </div>
+
 
         {/* Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

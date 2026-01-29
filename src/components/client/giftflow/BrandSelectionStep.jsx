@@ -185,7 +185,7 @@ const BrandSelectionStep = () => {
       />
 
       {/* Active Filters & Results Count */}
-      <div className="flex justify-between items-center px-6 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center px-6 max-w-7xl mx-auto mt-[100px]">
         {(searchTerm || selectedCategory !== "All Categories") && (
           <button
             onClick={handleResetFilters}
@@ -197,7 +197,7 @@ const BrandSelectionStep = () => {
         )}
       </div>
 
-      <div className="max-w-[75%] mx-auto">
+      <div className="max-w-[90%] sm:max-w-[85%] lg:max-w-[75%] mx-auto">
         <CardGrid
           brands={premiumBrands}
           favorites={favorites}

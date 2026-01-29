@@ -315,7 +315,7 @@ const BulkReviewStep = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="max-w-7xl mx-auto sm:px-6">
                 {/* Back Button and Bulk Mode Indicator */}
                 <div className="relative flex flex-col items-start gap-4 mb-6
                                 md:flex-row md:items-center md:justify-between md:gap-0">
@@ -382,7 +382,7 @@ const BulkReviewStep = () => {
                         <div
                             className="
                         flex items-center gap-3 justify-center w-full
-                        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+                        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
                       "
                         >
                             <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
@@ -414,12 +414,14 @@ const BulkReviewStep = () => {
                 </div>
 
                 {/* Order Summary Card */}
-                <div className="max-w-[688px] m-auto bg-[#F9F9F9] rounded-[20px] p-5 border border-gray-200 shadow-sm mb-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h3>
+                <div className="max-w-[688px] mx-auto bg-[#F9F9F9] rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm mb-6">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
+                        Order Summary
+                    </h3>
 
-                    <div className="flex items-center gap-4 px-4 bg-gray-50 rounded-xl ">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-gray-50 rounded-xl">
                         {/* Brand Logo */}
-                        <div className="w-12 h-12 sm:w-16 sm:h-16">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0">
                             {selectedBrand?.logo ? (
                                 <img
                                     src={selectedBrand.logo}
@@ -428,44 +430,62 @@ const BulkReviewStep = () => {
                                 />
                             ) : (
                                 <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
-                                    <span className="text-white font-bold text-2xl">
-                                        {(selectedBrand?.brandName || selectedBrand?.name || 'B').substring(0, 1).toUpperCase()}
+                                    <span className="text-white font-bold text-xl sm:text-2xl">
+                                        {(selectedBrand?.brandName || selectedBrand?.name || 'B')
+                                            .substring(0, 1)
+                                            .toUpperCase()}
                                     </span>
                                 </div>
                             )}
                         </div>
 
                         {/* Order Details */}
-                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className='border-r-2 border-[#1a1a1a28]'>
-                                <p className="text-[#1A1A1A] font-poppins text-base font-semibold leading-5 mb-1">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
+                            {/* Brand */}
+                            <div className="md:border-r border-[#1a1a1a28] pr-0 md:pr-4">
+                                <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
                                     Brand
                                 </p>
-
-                                <p className="text-[#4A4A4A] font-inter text-base font-normal leading-[18px]">
+                                <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
                                     {selectedBrand?.brandName || selectedBrand?.name}
                                 </p>
-
                             </div>
-                            <div className='border-r-2 border-[#1a1a1a28]'>
-                                <p className="text-[#1A1A1A] font-poppins text-base font-semibold leading-5 mb-1">Denomination</p>
-                                <p className="text-[#4A4A4A] font-inter text-base font-normal leading-[18px]">
-                                    {currentBulkOrder.selectedAmount.currency}{currentBulkOrder.selectedAmount.value}
+
+                            {/* Denomination */}
+                            <div className="md:border-r border-[#1a1a1a28] pr-0 md:pr-4">
+                                <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
+                                    Denomination
+                                </p>
+                                <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
+                                    {currentBulkOrder.selectedAmount.currency}
+                                    {currentBulkOrder.selectedAmount.value}
                                 </p>
                             </div>
-                            <div className='border-r-2 border-[#1a1a1a28]'>
-                                <p className="text-[#1A1A1A] font-poppins text-base font-semibold leading-5 mb-1">Quantity</p>
-                                <p className="text-[#4A4A4A] font-inter text-base font-normal leading-[18px]">{currentBulkOrder.quantity}</p>
+
+                            {/* Quantity */}
+                            <div className="md:border-r border-[#1a1a1a28] pr-0 md:pr-4">
+                                <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
+                                    Quantity
+                                </p>
+                                <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
+                                    {currentBulkOrder.quantity}
+                                </p>
                             </div>
+
+                            {/* Total */}
                             <div>
-                                <p className="text-[#1A1A1A] font-poppins text-base font-semibold leading-5 mb-1">Total Amount</p>
-                                <p className="font-inter text-[20px] font-bold leading-[16px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] bg-clip-text text-transparent min-w-fit">
-                                    {currentBulkOrder.selectedAmount.currency}{currentBulkOrder.totalSpend.toFixed(2)}
+                                <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
+                                    Total Amount
+                                </p>
+                                <p className="font-inter text-lg sm:text-xl font-bold bg-gradient-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
+                                    {currentBulkOrder.selectedAmount.currency}
+                                    {currentBulkOrder.totalSpend.toFixed(2)}
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
+
 
                 {/* Company Information Card */}
                 <div className="max-w-[688px] m-auto p-[1px] rounded-[20px] shadow-sm mb-6" style={{ background: 'linear-gradient(114.06deg, #ED457D 11.36%, #FA8F42 90.28%)' }}>
@@ -580,7 +600,7 @@ const BulkReviewStep = () => {
                                                 Download Sample CSV
                                             </button>
                                         </div>
-                                        
+
                                         <p className="text-sm text-gray-600 mb-3">
                                             Upload a CSV or Excel file with columns: <strong>name</strong>, <strong>email</strong>, phone (optional), message (optional)
                                         </p>
@@ -617,7 +637,7 @@ const BulkReviewStep = () => {
                                                     </svg>
                                                     <span>{csvData.length} recipients loaded successfully</span>
                                                 </div>
-                                                
+
                                                 {/* ✅ Optimized preview table */}
                                                 <div className="mt-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
                                                     <table className="w-full text-xs">

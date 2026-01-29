@@ -44,7 +44,7 @@ const HeroSection = () => {
       </div>
 
 
-      <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-4 relative z-10 py-10 sm:pt-15 pt-8">
+      <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 relative z-10 py-6 sm:py-10 lg:py-12">
 
         {/* Main Heading */}
         <h1 className="hero-heading">
@@ -53,26 +53,26 @@ const HeroSection = () => {
         </h1>
 
         {/* Subheading */}
-        <p className="hero-subheading font-inter px-4 sm:px-0" style={{ marginTop: '1.5rem' }}>
+        <p className="hero-subheading font-inter px-2 sm:px-4 md:px-0 mt-4 sm:mt-6">
           Choose from 1000+ brands, personalize your card,
-        </p>
-        <p className="hero-subheading font-inter px-4 sm:px-0" style={{ marginBottom: '0' }}>
+          <br className="hidden sm:block" />
+          <span className="sm:hidden"> </span>
           and deliver joy instantly.
         </p>
 
         {/* CTA Button */}
         <Link href="/gift">
-          <button className="hero-cta font-inter w-full sm:w-auto max-w-xs sm:max-w-none mx-auto" onClick={handleClick}>
+          <button className="hero-cta font-inter w-full sm:w-auto max-w-xs sm:max-w-none mx-auto mt-6 sm:mt-8" onClick={handleClick}>
             Send Gift
           </button>
         </Link>
 
         {/* Trust Badge */}
-        <div className="trust-badge flex-wrap">
-          <div className="trust-icon">
+        <div className="trust-badge flex flex-wrap items-center justify-center gap-2 mt-6 sm:mt-8">
+          <div className="trust-icon flex-shrink-0">
             <Shield size={12} color="white" />
           </div>
-          <span className='font-inter text-sm sm:text-base'>Trusted by 1M+ customers worldwide</span>
+          <span className="font-inter text-xs sm:text-sm md:text-base">Trusted by 1M+ customers worldwide</span>
         </div>
       </div>
     </section>

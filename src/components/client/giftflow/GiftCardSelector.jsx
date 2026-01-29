@@ -19,7 +19,7 @@ const GiftCardSelector = () => {
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
-  
+
   // Set max amount based on mode: 5000 for individual, 25000 for bulk
   const maxAmount = isBulkMode ? 25000 : 5000;
 
@@ -85,8 +85,8 @@ const GiftCardSelector = () => {
         py-30 px-4
       "
     >
-     <div className="max-w-7xl mx-auto px-4 sm:px-6">
-         {/* Back Button and Bulk Mode Indicator */}
+      <div className="max-w-7xl mx-auto sm:px-6">
+        {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
                 md:flex-row md:items-center md:justify-between md:gap-0">
 
@@ -152,7 +152,7 @@ const GiftCardSelector = () => {
             <div
               className="
         flex items-center gap-3 justify-center w-full
-        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
               <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
@@ -174,14 +174,18 @@ const GiftCardSelector = () => {
         </div>
 
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-5 mt-2">
-            {isBulkMode ? 'Choose Gift Amount (Max 25,000)' : 'Choose Gift Amount (Max 5,000)'}
+        <div className="text-center mb-8 sm:mb-10 md:mb-12 px-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-5 mt-1 sm:mt-2">
+            {isBulkMode
+              ? 'Choose Gift Amount (Max 25,000)'
+              : 'Choose Gift Amount (Max 5,000)'}
           </h1>
-          <p className="text-gray-600 text-base">
+
+          <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto">
             Select the perfect amount for your {selectedBrand?.brandName || 'Kecks'} gift card
           </p>
         </div>
+
 
         {/* Amount Cards */}
         {denominationType !== 'amount' && presetAmounts.length > 0 && (
@@ -189,11 +193,10 @@ const GiftCardSelector = () => {
             {presetAmounts.map((amount) => (
               <button
                 key={amount.id}
-                className={`relative bg-white rounded-xl border-2 p-8 w-45 transition-all duration-200 hover:shadow-md ${
-                  localSelectedAmount?.id === amount.id
-                    ? 'border-purple-400 shadow-lg scale-105'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`relative bg-white rounded-xl border-2 p-8 w-45 transition-all duration-200 hover:shadow-md ${localSelectedAmount?.id === amount.id
+                  ? 'border-purple-400 shadow-lg scale-105'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
                 onClick={() => handleAmountClick(amount)}
               >
                 {/* Gift Box Emoji */}
@@ -281,7 +284,10 @@ const GiftCardSelector = () => {
                     className="w-full sm:w-auto bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white px-6 py-3 rounded-3xl font-bold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
                   >
                     Select
-                    <span className="text-xs font-medium">▶</span>
+                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                    </svg>
+
                   </button>
                 </div>
 

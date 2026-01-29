@@ -2,101 +2,109 @@ import React from 'react'
 
 const TermsMain = () => {
   return (
-    <div className="max-w-[1440px] m-auto bg-gray-50  pt-[75px]">
-      <div className=" bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Terms & Conditions</h1>
+    <div className="max-w-[1440px] m-auto  pt-[75px]">
+      <div className="  rounded-lg p-8">
+        <div className="text-[35px] font-semibold text-[#1A1A1A] mb-[14px]">Terms & Conditions</div>
         <p className="text-sm text-gray-500 mb-8">Last updated: November 18, 2025</p>
 
         <div className="space-y-8 text-gray-700">
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">1. Acceptance of Terms</h2>
-            <p className="leading-relaxed">
-              By accessing and using this website, you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
+            <div className='text-base text-[#4A4A4A] font-medium'>Welcome to Wove Gifts. Your privacy is important to us, and this Privacy Policy explains how we collect, use, protect, and share your personal information when you visit or make a purchase from our website.</div>
+          </section>
+
+          <section>
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">1. Introduction</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Welcome to Wove Gifts. These Terms and Conditions govern your use of our website and services. By accessing or purchasing from our website, you agree to comply with and be bound by these terms. If you do not agree with any part of these Terms and Conditions, please refrain from using our website.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">2. Use License</h2>
-            <p className="leading-relaxed mb-3">
-              Permission is granted to temporarily download one copy of the materials on our website for personal, non-commercial transitory viewing only. This is the grant of a license, not a transfer of title, and under this license you may not:
-            </p>
-            <ul className="list-disc list-inside space-y-2 ml-4">
-              <li>Modify or copy the materials</li>
-              <li>Use the materials for any commercial purpose or for any public display</li>
-              <li>Attempt to reverse engineer any software contained on our website</li>
-              <li>Remove any copyright or other proprietary notations from the materials</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">3. Disclaimer</h2>
-            <p className="leading-relaxed">
-              The materials on our website are provided on an 'as is' basis. We make no warranties, expressed or implied, and hereby disclaim and negate all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">2. Eligibility to Use</h2>
+            <p className="text-base text-[#4A4A4A] font-medium mb-3">
+            By using this website, you confirm that you are at least 18 years of age or accessing the website under the supervision of a parent or legal guardian. You agree to provide accurate and complete information when creating an account or placing an order.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">4. Limitations</h2>
-            <p className="leading-relaxed">
-              In no event shall our company or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on our website, even if we or our authorized representative has been notified orally or in writing of the possibility of such damage.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">3. Products and Services</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Wove Gifts offers handcrafted and curated gifting products. All product descriptions, images, prices, and availability are provided for informational purposes and may be subject to change without prior notice. We make every effort to display product details accurately; however, slight variations in color, size, or appearance may occur.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">5. Accuracy of Materials</h2>
-            <p className="leading-relaxed">
-              The materials appearing on our website could include technical, typographical, or photographic errors. We do not warrant that any of the materials on our website are accurate, complete, or current. We may make changes to the materials contained on our website at any time without notice.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">4. Orders and Payments</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            All orders placed on the Wove Gifts website are subject to acceptance and availability. Prices are listed in Indian Rupees unless stated otherwise and are inclusive or exclusive of applicable taxes as mentioned at checkout. Payments are processed securely through third-party payment gateways, and Wove Gifts does not store sensitive payment information.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">6. Links</h2>
-            <p className="leading-relaxed">
-              We have not reviewed all of the sites linked to our website and are not responsible for the contents of any such linked site. The inclusion of any link does not imply endorsement by us of the site. Use of any such linked website is at the user's own risk.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">5. Shipping and Delivery</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Wove Gifts aims to deliver products within the estimated timelines mentioned at the time of order. Delivery timelines may vary based on location, availability, and external factors. Any delays caused by courier partners, natural events, or unforeseen circumstances are beyond our control.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">7. User Accounts</h2>
-            <p className="leading-relaxed">
-              When you create an account with us, you must provide information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our service. You are responsible for safeguarding the password that you use to access the service and for any activities or actions under your password.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">6. Returns, Refunds, and Cancellations</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Return, refund, and cancellation requests are subject to our Return & Refund Policy. Products must be unused, undamaged, and returned in original packaging where applicable. Customized or personalized products may not be eligible for returns or cancellations unless damaged or defective.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">8. Privacy Policy</h2>
-            <p className="leading-relaxed">
-              Your use of our website is also governed by our Privacy Policy. Please review our Privacy Policy, which also governs the site and informs users of our data collection practices.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">7. Intellectual Property</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            All content on the Wove Gifts website, including logos, images, text, graphics, designs, and layouts, is the intellectual property of Wove Gifts and is protected under applicable copyright and trademark laws. Unauthorized use, reproduction, or distribution of this content is strictly prohibited.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">9. Modifications</h2>
-            <p className="leading-relaxed">
-              We may revise these terms of service for our website at any time without notice. By using this website you are agreeing to be bound by the then current version of these terms of service.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">8. User Conduct</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            You agree not to misuse the website or engage in any activity that disrupts or interferes with its functionality. Any attempt to access unauthorized systems, transmit harmful content, or violate applicable laws may result in termination of access and legal action.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">10. Governing Law</h2>
-            <p className="leading-relaxed">
-              These terms and conditions are governed by and construed in accordance with the laws and you irrevocably submit to the exclusive jurisdiction of the courts in that location.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">9. Limitation of Liability</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Wove Gifts shall not be liable for any direct, indirect, incidental, or consequential damages arising from the use of our website or products. Our liability, if any, shall be limited to the value of the product purchased.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-3">11. Contact Information</h2>
-            <p className="leading-relaxed">
-              If you have any questions about these Terms & Conditions, please contact us at support@example.com
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">10. Third-Party Links</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Our website may contain links to third-party websites for your convenience. Wove Gifts is not responsible for the content, policies, or practices of these external websites and encourages users to review their terms independently.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">11. Modification of Terms</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Wove Gifts reserves the right to modify or update these Terms and Conditions at any time without prior notice. Any changes will be effective immediately upon being posted on the website.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">12. Governing Law</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            These Terms and Conditions shall be governed by and interpreted in accordance with the laws of India. Any disputes arising from the use of this website shall be subject to the jurisdiction of Indian courts.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">13. Contact Information</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            For any questions, concerns, or clarifications regarding these Terms and Conditions, please contact Wove Gifts at [your-email@example.com] or [your-contact-number].
             </p>
           </section>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-600 text-center">
-            By continuing to use our services, you acknowledge that you have read and understood these Terms & Conditions.
-          </p>
-        </div>
+       
       </div>
     </div>
   )
