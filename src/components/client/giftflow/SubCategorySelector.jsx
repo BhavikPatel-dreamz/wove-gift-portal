@@ -31,10 +31,29 @@ const textColors = ['#FFFFFF', '#000000', '#1F2937', '#374151', '#FF6B35', '#416
 
 // Draggable Layer Component
 const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
+  // Calculate responsive font size for text
+  const getResponsiveFontSize = (baseFontSize) => {
+    if (typeof window === 'undefined') return baseFontSize;
+    const width = window.innerWidth;
+    if (width < 640) return baseFontSize * 0.8; // Mobile
+    if (width < 768) return baseFontSize * 0.9; // Tablet
+    return baseFontSize; // Desktop
+  };
+
+  // Calculate responsive scale for emojis
+  const getResponsiveScale = (baseScale) => {
+    if (typeof window === 'undefined') return baseScale;
+    const width = window.innerWidth;
+    if (width < 640) return baseScale * 0.7; // Mobile
+    if (width < 768) return baseScale * 0.85; // Tablet
+    return baseScale; // Desktop
+  };
+
   return (
     <div
-      className={`absolute ${layer.locked ? 'cursor-not-allowed' : 'cursor-move'} ${isSelected ? 'ring-2 ring-blue-500' : ''
-        }`}
+      className={`absolute touch-none ${
+        layer.locked ? 'cursor-not-allowed' : 'cursor-move'
+      } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
       style={{
         left: `${layer.x}%`,
         top: `${layer.y}%`,
@@ -43,25 +62,25 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
         pointerEvents: layer.locked ? 'none' : 'auto',
         transformOrigin: 'center',
         zIndex: isSelected ? 10 : 1,
-        // Fixed: For images, use a wrapper that doesn't shrink
         ...(layer.type === 'image' && {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          minWidth: '50px', // Minimum width for selection ring
-          minHeight: '50px', // Minimum height for selection ring
+          minWidth: '40px',
+          minHeight: '40px',
         }),
       }}
       onMouseDown={(e) => onMouseDown(e, layer.id)}
+      onTouchStart={(e) => onMouseDown(e, layer.id)}
     >
       {(() => {
         switch (layer.type) {
           case 'text':
             return (
               <div
-                className="select-none whitespace-nowrap"
+                className="select-none whitespace-nowrap max-w-[90vw] overflow-hidden text-ellipsis"
                 style={{
-                  fontSize: `${layer.fontSize}px`,
+                  fontSize: `${getResponsiveFontSize(layer.fontSize)}px`,
                   fontWeight: layer.fontWeight,
                   color: layer.color,
                   textAlign: layer.textAlign,
@@ -69,6 +88,7 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
                   textDecoration: layer.textDecoration,
                   fontFamily: layer.fontFamily,
                   pointerEvents: 'none',
+                  wordBreak: 'break-word',
                 }}
               >
                 {layer.content}
@@ -79,7 +99,7 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
               <div
                 className="select-none"
                 style={{
-                  fontSize: `${layer.scale * 60}px`,
+                  fontSize: `${getResponsiveScale(layer.scale) * 60}px`,
                   lineHeight: 1,
                   pointerEvents: 'none',
                 }}
@@ -92,14 +112,15 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
               <img
                 src={layer.src}
                 alt="layer"
-                className="select-none"
+                className="select-none max-w-[90vw] h-auto"
                 style={{
-                  width: `${layer.width}px`,
-                  height: `${layer.height}px`,
+                  width: `${Math.min(layer.width, window.innerWidth * 0.9)}px`,
+                  height: 'auto',
+                  maxHeight: `${layer.height}px`,
                   objectFit: 'contain',
                   display: 'block',
                   pointerEvents: 'none',
-                  flexShrink: 0, // Prevent image from shrinking
+                  flexShrink: 0,
                 }}
                 draggable={false}
               />
@@ -111,7 +132,6 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
     </div>
   );
 };
-
 // Fixed: Advanced Card Creator with proper dragging
 const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthday' }) => {
   const [layers, setLayers] = useState([
@@ -677,7 +697,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
           {/* Left Tools - Horizontal on mobile, vertical on desktop */}
-          <div className="lg:w-14 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex lg:flex-col py-2 px-2 lg:py-3 lg:px-0 gap-1.5 lg:gap-2 overflow-x-auto lg:overflow-x-visible">
+          <div className="lg:w-14 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex lg:flex-col py-2 px-2 lg:py-3 lg:px-0 gap-1.5 lg:gap-2 overflow-x-auto lg:overflow-x-visible overflow-y-hidden justify-center">
             <button
               onClick={() => addLayer('text', { content: 'New Text', textAlign: 'center' })}
               className="tool-btn shrink-0"
@@ -714,7 +734,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
           </div>
 
           {/* Canvas Area */}
-          <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 lg:p-6 overflow-auto bg-gray-50">
+          <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 lg:p-6 overflow-y-auto bg-gray-50 overflow-x-hidden">
             <div className="relative" style={{ transform: `scale(${zoom})`, transition: 'transform 0.2s' }}>
               <div
                 ref={cardRef}
@@ -1345,7 +1365,7 @@ export default function SubCategorySelector() {
             ></span>
             <span
               className="
-                absolute inset-[1.5px] rounded-full bg-white
+                absolute inset-[2px] rounded-full bg-white
                 transition-all duration-300
                 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
               "

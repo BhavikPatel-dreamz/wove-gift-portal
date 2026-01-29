@@ -58,21 +58,21 @@ const SearchBar = ({
       <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] sm:w-full max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-2 sm:px-4 z-30">
         {/* Search Input */}
         <div
-          className="flex items-center w-full rounded-full p-[1px]"
-          style={{
-            background: "linear-gradient(90deg, #F16B86, #FDBB74)",
-          }}
-        >
-          <div className="flex items-center w-full bg-white rounded-full px-4 sm:px-5 py-2 sm:py-3 shadow-md">
-            <Search className="text-gray-400 mr-2 sm:mr-3" size={18} />
-            <input
-              type="text"
-              placeholder={placeholder || "Search for your perfect brand"}
-              onChange={(e) => onSearch(e.target.value)}
-              className="flex-1 text-gray-700 placeholder-gray-400 bg-transparent focus:outline-none text-sm sm:text-base"
-            />
-          </div>
-        </div>
+  className="flex items-center w-full rounded-full p-[2px] "
+  style={{
+    background: "linear-gradient(90deg, #F16B86, #FDBB74)",
+  }}
+>
+  <div className="flex items-center w-full bg-white rounded-full px-4 sm:px-5 py-2 sm:py-3 shadow-md">
+    <Search className="text-gray-400 mr-2 sm:mr-3" size={18} />
+    <input
+      type="text"
+      placeholder={placeholder || "Search for your perfect brand"}
+      onChange={(e) => onSearch(e.target.value)}
+      className="flex-1 text-gray-700 placeholder-gray-400 bg-transparent focus:outline-none text-sm sm:text-base"
+    />
+  </div>
+</div>
 
         {/* Filter Dropdown */}
         <div className="relative w-full sm:w-auto">

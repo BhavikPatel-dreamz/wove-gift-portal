@@ -160,11 +160,10 @@ const TimingSelectorStep = () => {
           {/* Send Immediately */}
           <div
             onClick={() => handleTimingSelect('immediate')}
-            className={`relative p-8 border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${
-              selectedOption === 'immediate'
-                ? 'border-blue-400 bg-blue-50 shadow-lg'
-                : 'border-[#1A1A1A33] rounded-[20px] bg-[#E9F3FF] hover:border-blue-300'
-            }`}
+            className={`relative p-8 border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${selectedOption === 'immediate'
+              ? 'border-blue-400 bg-blue-50 shadow-lg'
+              : 'border-[#1A1A1A33] rounded-[20px] bg-[#E9F3FF] hover:border-blue-300'
+              }`}
           >
             <div className="p-[12.5px] w-16 h-16 bg-[#206CC2] rounded-2xl flex items-center justify-center mx-auto mb-6">
               <svg width="49" height="49" viewBox="0 0 49 49" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -181,11 +180,10 @@ const TimingSelectorStep = () => {
           {/* Schedule for Later */}
           <div
             onClick={() => handleTimingSelect('schedule')}
-            className={`relative p-8 rounded-3xl border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${
-              selectedOption === 'schedule'
-                ? 'border-purple-400 bg-purple-50 shadow-lg'
-                : 'border-[#1A1A1A33] rounded-[20px] bg-[#FAF6FF] hover:border-purple-300'
-            }`}
+            className={`relative p-8 rounded-3xl border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${selectedOption === 'schedule'
+              ? 'border-purple-400 bg-purple-50 shadow-lg'
+              : 'border-[#1A1A1A33] rounded-[20px] bg-[#FAF6FF] hover:border-purple-300'
+              }`}
           >
             <div className="w-16 h-16 p-[12px] bg-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -293,7 +291,7 @@ const TimingSelectorStep = () => {
                       }
                     `}</style>
 
-                    <div 
+                    <div
                       className="time-slots-container grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[280px] sm:max-h-[320px] overflow-y-auto pr-2"
                     >
                       {timeSlots.map((time) => {
@@ -306,19 +304,19 @@ const TimingSelectorStep = () => {
                             style={
                               isSelected
                                 ? {
-                                    border: "2px solid transparent",
-                                    backgroundImage:
-                                      "linear-gradient(#FFF,#FFF),linear-gradient(114deg,#ED457D,#FA8F42)",
-                                    backgroundOrigin: "border-box",
-                                    backgroundClip: "padding-box,border-box",
-                                    color: "#ED457D",
-                                    fontWeight: "600"
-                                  }
+                                  border: "2px solid transparent",
+                                  backgroundImage:
+                                    "linear-gradient(#FFF,#FFF),linear-gradient(114deg,#ED457D,#FA8F42)",
+                                  backgroundOrigin: "border-box",
+                                  backgroundClip: "padding-box,border-box",
+                                  color: "#ED457D",
+                                  fontWeight: "600"
+                                }
                                 : {
-                                    border: "1px solid rgba(26,26,26,0.1)",
-                                    background: "#FFF",
-                                    color: "#1A1A1A",
-                                  }
+                                  border: "1px solid rgba(26,26,26,0.1)",
+                                  background: "#FFF",
+                                  color: "#1A1A1A",
+                                }
                             }
                           >
                             {formatTo12Hour(time)}
@@ -356,7 +354,10 @@ const TimingSelectorStep = () => {
                   }}
                 >
                   Continue to Delivery Method
-                  <span className="text-lg">▶</span>
+                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                  </svg>
+
                 </button>
               </div>
             </div>
@@ -367,7 +368,7 @@ const TimingSelectorStep = () => {
         {selectedOption === 'immediate' && (
           <div className="text-center mt-12">
             <button
-              className="text-white py-4 px-10 rounded-[50px] font-medium text-base shadow-lg inline-flex items-center transition-transform duration-200 transform hover:scale-105"
+              className="text-white py-4 px-10 rounded-[50px] font-medium text-base shadow-lg inline-flex items-center transition-transform duration-200 transform hover:scale-105 gap-2 "
               style={{
                 background: "linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)",
               }}
@@ -377,7 +378,10 @@ const TimingSelectorStep = () => {
               }}
             >
               Continue to Delivery Method
-              <span className="ml-3 text-lg">▶</span>
+              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+              </svg>
+
             </button>
           </div>
         )}

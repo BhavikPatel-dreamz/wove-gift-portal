@@ -267,9 +267,7 @@ h6,
 /* ===== HERO SECTION STYLES ===== */
 .hero-section {
   background: 
-    linear-gradient(151.97deg, rgba(251, 220, 227, 0.55) 17.3%, rgba(253, 230, 219, 0.55)
-    95.19%),
-    url('../../../public/uploads/dashboard/dashboarbgVector.svg');
+    linear-gradient(151.97deg, rgba(251, 220, 227, 0.55) 17.3%, rgba(253, 230, 219, 0.55) 95.19%);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -277,6 +275,16 @@ h6,
   position: relative !important;
   overflow: hidden !important;
   min-height: 450px !important;
+}
+
+.hero-effect {
+  width: 100%;
+  max-width: 1044px;
+  background: url('../../../public/uploads/dashboard/dashboarbgVector.svg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  margin: auto;
 }
 
 /* Mobile responsive adjustments for hero section */
