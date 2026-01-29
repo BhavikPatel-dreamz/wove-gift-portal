@@ -11,7 +11,7 @@ const Footer = () => {
   const links2 = [
     { name: "Terms & Conditions", path: "/termsandcondition" },
     { name: "Privacy Policy", path: "/privacy" },
-    { name: "FAQs / Help Center", path: "/gift" },
+    { name: "FAQs / Help Center", path: "/faq" },
     { name: "Contact Us", path: "/contact" }
   ];
 

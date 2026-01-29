@@ -2,117 +2,107 @@ import React from 'react'
 
 const PrivacyMain = () => {
   return (
-    <div className="max-w-[1440px] m-auto pt-[70px] min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-        <p className="text-gray-600 mb-8">Last updated: November 18, 2025</p>
+    <div className="max-w-[1440px] m-auto  pt-[75px]">
+      <div className="  rounded-lg p-8">
+        <div className="text-[35px] font-semibold text-[#1A1A1A] mb-[14px]">Privacy Policy</div>
+        <p className="text-sm text-gray-500 mb-8">Last updated 2nd January 2026</p>
 
-        <div className="space-y-8">
+        <div className="space-y-8 text-gray-700">
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Introduction</h2>
-            <p className="text-gray-700 leading-relaxed">
-              Welcome to our Privacy Policy. Your privacy is critically important to us. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our services.
-            </p>
+            <div className='text-base text-[#4A4A4A] font-medium'>Welcome to Wove Gifts. Your privacy is important to us, and this Privacy Policy explains how we collect, use, protect, and share your personal information when you visit or make a purchase from our website.</div>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Information We Collect</h2>
-            <p className="text-gray-700 leading-relaxed mb-3">
-              We collect information that you provide directly to us, including:
-            </p>
-            <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
-              <li>Personal identification information (name, email address, phone number)</li>
-              <li>Account credentials and preferences</li>
-              <li>Payment and billing information</li>
-              <li>Communications and correspondence with us</li>
-              <li>Usage data and analytics information</li>
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">1. Information We Collect</h2>
+            <ul className='space-y-2 text-base text-[#4A4A4A] font-medium'>
+              <li>Name</li>
+              <li>Email address</li>
+              <li>Phone number</li>
+              <li>Shipping and billing address</li>
+              <li>Payment details (processed securely via third-party gateways)</li>
             </ul>
+           
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">How We Use Your Information</h2>
-            <p className="text-gray-700 leading-relaxed mb-3">
-              We use the information we collect for various purposes, including:
-            </p>
-            <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
-              <li>Providing and maintaining our services</li>
-              <li>Processing transactions and sending related information</li>
-              <li>Sending administrative information and updates</li>
-              <li>Responding to your comments and questions</li>
-              <li>Improving our website and services</li>
-              <li>Monitoring and analyzing usage and trends</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Information Sharing and Disclosure</h2>
-            <p className="text-gray-700 leading-relaxed">
-              We do not sell, trade, or rent your personal information to third parties. We may share your information with trusted service providers who assist us in operating our website and conducting our business, provided they agree to keep this information confidential.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">2. Information We Collect</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            We may collect personal information such as your name, email address, phone number, billing and shipping address, and payment-related details when you interact with Wove Gifts. We may also automatically collect information such as IP address, browser type, device details, and website usage data through cookies and similar technologies.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Data Security</h2>
-            <p className="text-gray-700 leading-relaxed">
-              We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the Internet is completely secure.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">3. Use of Information</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            The information we collect is used to process orders, deliver products, communicate order updates, provide customer support, improve our services, and enhance your overall shopping experience. With your consent, we may also send promotional messages or offers related to Wove Gifts.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Cookies and Tracking Technologies</h2>
-            <p className="text-gray-700 leading-relaxed">
-              We use cookies and similar tracking technologies to track activity on our website and store certain information. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">4. Cookies and Tracking Technologies</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Wove Gifts uses cookies to improve website functionality, remember user preferences, and analyze traffic patterns. You can control or disable cookies through your browser settings; however, some features of the website may not function as intended.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Your Rights</h2>
-            <p className="text-gray-700 leading-relaxed mb-3">
-              You have the right to:
-            </p>
-            <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
-              <li>Access and receive a copy of your personal data</li>
-              <li>Rectify inaccurate or incomplete information</li>
-              <li>Request deletion of your personal data</li>
-              <li>Object to processing of your personal data</li>
-              <li>Request restriction of processing your personal data</li>
-              <li>Withdraw consent at any time</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Third-Party Links</h2>
-            <p className="text-gray-700 leading-relaxed">
-              Our website may contain links to third-party websites. We are not responsible for the privacy practices or content of these external sites. We encourage you to review the privacy policies of any third-party sites you visit.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">5. Sharing of Information</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Wove Gifts does not sell, rent, or trade your personal information. We may share your data only with trusted third-party service providers such as payment gateways, shipping partners, and analytics providers, or when required by law.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Children's Privacy</h2>
-            <p className="text-gray-700 leading-relaxed">
-              Our services are not directed to individuals under the age of 13. We do not knowingly collect personal information from children under 13. If you become aware that a child has provided us with personal information, please contact us.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">6. Data Security</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            We take reasonable technical and organizational measures to protect your personal information from unauthorized access, misuse, loss, or disclosure. While we strive to maintain high security standards, no online data transmission is completely secure.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Changes to This Privacy Policy</h2>
-            <p className="text-gray-700 leading-relaxed">
-              We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date at the top of this policy.
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">7. Your Rights</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            You have the right to access, update, correct, or request deletion of your personal information. You may also opt out of receiving promotional communications from Wove Gifts at any time by contacting us.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Contact Us</h2>
-            <p className="text-gray-700 leading-relaxed">
-              If you have any questions about this Privacy Policy, please contact us at:
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">8. Third-Party Links</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Our website may contain links to third-party websites. Wove Gifts is not responsible for the privacy practices, content, or security of these external websites.
             </p>
-            <div className="mt-4 text-gray-700">
-              <p>Email: privacy@example.com</p>
-              <p>Phone: (555) 123-4567</p>
-              <p>Address: 123 Privacy Street, Suite 100, City, State 12345</p>
-            </div>
           </section>
+
+          <section>
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">9. Children’s Privacy</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            Wove Gifts does not knowingly collect personal information from children under the age of 13. If such information is identified, we will take immediate steps to delete it from our records.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">10. Changes to This Policy</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            We may update this Privacy Policy from time to time to reflect changes in our practices or legal requirements. Any updates will be posted on this page with the revised date.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-[18px] font-bold text-[#1A1A1A] mb-3">11. Contact Us</h2>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            If you have any questions or concerns regarding this Privacy Policy, please contact Wove Gifts at [your-email@example.com] or [your-contact-number].
+            </p>
+          </section>
+
+          <section>
+            <p className="text-base text-[#4A4A4A] font-medium">
+            This is a summary of our Privacy Policy. A full version is available on request by emailing support@wove.com
+            </p>
+          </section>
+
         </div>
+
+
       </div>
     </div>
   )

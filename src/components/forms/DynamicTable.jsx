@@ -165,6 +165,8 @@ const DynamicTable = ({
 
         {/* Search and Filters */}
         <div className="flex flex-col lg:flex-row gap-4">
+
+          <div className="flex flex-wrap gap-2 text-black">
           <div className="relative flex-1">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <SearchIcon />
@@ -177,8 +179,6 @@ const DynamicTable = ({
               className="w-full placeholder-[#A6A6A6] text-black text-[12px] pl-11 pr-4 py-[11px] border border-gray-300 rounded-lg transition-all"
             />
           </div>
-
-          <div className="flex flex-wrap gap-2 text-black">
             {filters.map((filter, idx) => renderFilter(filter, idx))}
 
             {actions &&

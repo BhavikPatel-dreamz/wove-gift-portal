@@ -159,7 +159,7 @@ export default function OccasionSelector() {
             <div
               className="
         flex items-center gap-3 justify-center w-full
-        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
               <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />

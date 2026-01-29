@@ -231,7 +231,7 @@ const Dashboard = ({ dashboardData, shopParam }) => {
     <div className="min-h-screen bg-gray-50 px-1 py-6 md:py-6 md:px-6">
       <div className="max-w-7xl mx-auto space-y-6">
 
-        <div className="flex flex-col items-center md:flex-row justify-between gap-4">
+        <div className="flex flex-col items-center lg:flex-row justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Gift Card Analytics</h1>
             <p className="text-gray-600">Monitor your gift card performance and transactions</p>

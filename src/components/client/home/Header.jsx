@@ -18,12 +18,26 @@ import { usePathname, useRouter } from 'next/navigation';
 import { resetFlow } from '../../../redux/giftFlowSlice';
 
 
-const navLinks = {
+// Desktop navigation links (without the three items)
+const desktopNavLinks = {
   Home: '/',
   About: '/about',
   FAQs: '/faq',
   'Send Gift Card': '/gift',
 };
+
+// All navigation links for mobile (includes all items)
+const mobileNavLinks = {
+  Home: '/',
+  About: '/about',
+  FAQs: '/faq',
+  'Send Gift Card': '/gift',
+  'Vouchers & Gift Cards': '/my-gift',
+  'Support & Requests' : '/support',
+  'Track Request Status': '/track-request'
+};
+
+
 
 const countries = [
   { name: "South Africa", code: "za" },
@@ -78,10 +92,10 @@ const Header = () => {
     setMobileMenuOpen(false);
   };
   const pathname = usePathname();
-  
 
-  const activeTab = Object.keys(navLinks).find(
-    (key) => navLinks[key] === pathname
+
+  const activeTab = Object.keys(desktopNavLinks).find(
+    (key) => desktopNavLinks[key] === pathname
   );
   const dropdownRef = useRef(null);
 
@@ -99,11 +113,10 @@ const Header = () => {
   }, []);
   const linkClass = (path) =>
     `block px-6 py-2 text-sm rounded-md transition
-     ${
-       pathname === path
-         ? "text-black font-semibold bg-gray-100"
-         : "text-gray-700 hover:bg-gray-100"
-     }`;
+     ${pathname === path
+      ? "text-black font-semibold bg-gray-100"
+      : "text-gray-700 hover:bg-gray-100"
+    }`;
 
 
   return (
@@ -112,7 +125,8 @@ const Header = () => {
         className={`fixed top-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-transparent'
           }`}
       >
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        {/* Main Header - Hide when mobile menu is open */}
+        <div className={`max-w-[1440px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 ${mobileMenuOpen ? 'lg:block hidden' : ''}`}>
           <div className="flex items-center justify-between h-14 sm:h-16 lg:h-[72px]">
             {/* Mobile/Tablet Menu Toggle (hidden on desktop) */}
             <button
@@ -123,12 +137,12 @@ const Header = () => {
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
-            {/* Desktop Navigation (hidden on mobile/tablet) */}
+            {/* Desktop Navigation (hidden on mobile/tablet) - Using desktopNavLinks */}
             <nav className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-              {Object.keys(navLinks).map((item) => (
+              {Object.keys(desktopNavLinks).map((item) => (
                 <Link
                   key={item}
-                  href={navLinks[item]}
+                  href={desktopNavLinks[item]}
                   onClick={() => handleNavClick(item)}
                   className={`nav-link font-poppins text-sm xl:text-base whitespace-nowrap ${activeTab === item
                     ? "text-[#ed457d] underline underline-offset-4"
@@ -212,61 +226,7 @@ const Header = () => {
 
             {/* Right Section - Responsive */}
             <div className="flex items-center space-x-2 sm:space-x-3 ml-auto">
-              {/* Country Selector - Hidden on mobile, visible on tablet+ */}
-              <div className="relative">
-                {/* Trigger */}
-                <div
-                  className="hidden md:flex items-center gap-2 cursor-pointer"
-                  onClick={() => setOpen(!open)}
-                >
-                  <img
-                    src={`https://flagcdn.com/w40/${selected.code}.png`}
-                    alt={selected.name}
-                    className="w-5 h-5 lg:w-6 lg:h-6 rounded-full object-cover"
-                  />
-
-                  <div className='flex gap-1 items-center'>
-                    <span className="text-xs lg:text-sm font-medium text-gray-700 hidden xl:inline">
-                      {selected.name}
-                    </span>
-
-                    {/* Rotating Icon */}
-                    <ChevronDown
-                      className={`w-3 h-3 lg:w-4 lg:h-4 text-gray-600 transition-transform duration-200 ${open ? "rotate-180" : ""
-                        }`}
-                    />
-                  </div>
-                </div>
-
-                {/* Dropdown */}
-                {open && (
-                  <div className="absolute left-0 mt-2 w-38 bg-white border rounded-lg shadow-lg z-50">
-                    {countries.map((country) => (
-                      <div
-                        key={country.code}
-                        onClick={() => handleSelect(country)}
-                        className="flex items-center space-x-2 px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                      >
-                        <img
-                          src={`https://flagcdn.com/w40/${country.code}.png`}
-                          alt={country.name}
-                          className="w-5 h-5 rounded-full object-cover"
-                        />
-                        <span className="text-xs text-gray-700">{country.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Auth Section - Hidden on mobile/small tablets */}
-              <div className="hidden md:flex items-center space-x-2">
-
-                {/* <button className="btn-secondary text-xs lg:text-sm px-3 lg:px-4 py-2">
-                  <User size={16} className="lg:w-[18px] lg:h-[18px]" />
-                  <span className="hidden lg:inline">Login / Register</span>
-                  <span className="lg:hidden">Login</span>
-                </button> */}
+              <div className="hidden lg:flex items-center space-x-2">
                 {session ? (
                   <>
                     {(session.user.role === 'ADMIN') ? (
@@ -281,157 +241,122 @@ const Header = () => {
                           </span>
                         </button>
                       </Link>
-                    ) : (<div className="relative inline-block text-left" ref={dropdownRef}>
-                    <button
-                      onClick={() => setOpenDropdown(!openDropdown)}
-                      className="
-                        inline-flex items-center gap-2 
-                        cursor-pointer
-                        bg-[#ED457D] text-white
-                        text-xs lg:text-sm font-bold
-                        px-3 lg:px-4 py-2
-                        rounded-full
-                        border-none
-                        transition-all duration-300 ease-in-out
-                        hover:bg-[#D93B6E]
-                        hover:-translate-y-0.5
-                        hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
-                        active:translate-y-0
-                        active:scale-[0.96]
-                        active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
-                      "
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="17"
-                        height="18"
-                        viewBox="0 0 17 18"
-                        fill="none"
-                      >
-                        <path
-                          d="M8.36364 0C9.47272 0 10.5364 0.459739 11.3206 1.27808C12.1049 2.09642 12.5455 3.20633 12.5455 4.36364C12.5455 5.52095 12.1049 6.63085 11.3206 7.44919C10.5364 8.26753 9.47272 8.72727 8.36364 8.72727C7.25455 8.72727 6.19089 8.26753 5.40664 7.44919C4.6224 6.63085 4.18182 5.52095 4.18182 4.36364C4.18182 3.20633 4.6224 2.09642 5.40664 1.27808C6.19089 0.459739 7.25455 0 8.36364 0ZM8.36364 17.4545C8.36364 17.4545 16.7273 17.4545 16.7273 15.2727C16.7273 12.6545 12.65 9.81818 8.36364 9.81818C4.07727 9.81818 0 12.6545 0 15.2727C0 17.4545 8.36364 17.4545 8.36364 17.4545Z"
-                          fill="white"
-                        />
-                      </svg>
-                      <span className="hidden xl:inline">
-                        {session.user.firstName + " " + session.user.lastName}
-                      </span>
-                      <span className="xl:hidden">
-                        {session.user.role === "ADMIN" ? "Admin" : "Dash"}
-                      </span>
-                    </button>
-              
-                    {openDropdown && (
-                      <div className="origin-top-right absolute mt-2 w-56 rounded-[20px] shadow-lg bg-white ring-opacity-5  z-50">
-                        <div className="pt-2.5">
-                          <button className="w-full text-left px-6 py-2 text-base  font-semibold text-black hover:text-gray-900 focus:outline-none">
-                            My Profile
-                          </button>
-                        </div>                                                                                                                          
-                        <div className="">
-                          <Link
-                            href="/my-gift"
-                            className={linkClass("/my-gift")}
+                    ) : (
+                      <div className="relative inline-block text-left" ref={dropdownRef}>
+                        <button
+                          onClick={() => setOpenDropdown(!openDropdown)}
+                          className="
+                inline-flex items-center gap-1.5 sm:gap-2 
+                cursor-pointer
+                bg-[#ED457D] text-white
+                text-xs lg:text-sm font-bold
+                px-3 sm:px-3.5 lg:px-4 py-2
+                rounded-full
+                border-none
+                transition-all duration-300 ease-in-out
+                hover:bg-[#D93B6E]
+                hover:-translate-y-0.5
+                hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
+                active:translate-y-0
+                active:scale-[0.96]
+                active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
+              "
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="17"
+                            viewBox="0 0 17 18"
+                            fill="none"
+                            className="w-4 h-4 sm:w-[17px] sm:h-[18px]"
                           >
-                            Vouchers & Gift Cards
-                          
-                          </Link>
-                          <Link
-                            href="/support"
-                            className={linkClass("/support")}
-                          >
-                            Support & Requests
-                          </Link>
-                          <Link
-                            href="/track-request"
-                            className={linkClass("/track-request")}
-                          >
-                            Track Request Status
-                          </Link>
-                        </div>
-                        <div className="pb-2 border-t border-gray-200">
-                          <Link
-                            href="#"
-                            className="block px-6 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
-                            onClick={handleLogout}
-                          >
-                              Sign Out
-                          </Link>
-                        </div>
+                            <path
+                              d="M8.36364 0C9.47272 0 10.5364 0.459739 11.3206 1.27808C12.1049 2.09642 12.5455 3.20633 12.5455 4.36364C12.5455 5.52095 12.1049 6.63085 11.3206 7.44919C10.5364 8.26753 9.47272 8.72727 8.36364 8.72727C7.25455 8.72727 6.19089 8.26753 5.40664 7.44919C4.6224 6.63085 4.18182 5.52095 4.18182 4.36364C4.18182 3.20633 4.6224 2.09642 5.40664 1.27808C6.19089 0.459739 7.25455 0 8.36364 0ZM8.36364 17.4545C8.36364 17.4545 16.7273 17.4545 16.7273 15.2727C16.7273 12.6545 12.65 9.81818 8.36364 9.81818C4.07727 9.81818 0 12.6545 0 15.2727C0 17.4545 8.36364 17.4545 8.36364 17.4545Z"
+                              fill="white"
+                            />
+                          </svg>
+                          <span className="hidden xl:inline whitespace-nowrap">
+                            {session.user.firstName + " " + session.user.lastName}
+                          </span>
+                          <span className="xl:hidden">
+                            {session.user.role === "ADMIN" ? "Admin" : "Dash"}
+                          </span>
+                        </button>
+
+                        {openDropdown && (
+                          <div className="origin-top-right absolute right-0 mt-2 w-48 sm:w-56 rounded-[20px] shadow-lg bg-white ring-opacity-5 z-50">
+                            <div className="pt-2.5">
+                              <button className="w-full text-left px-4 sm:px-6 py-2 text-sm sm:text-base font-semibold text-black hover:text-gray-900 focus:outline-none">
+                                My Profile
+                              </button>
+                            </div>
+                            <div className="">
+                              <Link
+                                href="/my-gift"
+                                className={linkClass("/my-gift")}
+                              >
+                                Vouchers & Gift Cards
+                              </Link>
+                              <Link
+                                href="/support"
+                                className={linkClass("/support")}
+                              >
+                                Support & Requests
+                              </Link>
+                              <Link
+                                href="/track-request"
+                                className={linkClass("/track-request")}
+                              >
+                                Track Request Status
+                              </Link>
+                            </div>
+                            <div className="pb-2 border-t border-gray-200">
+                              <Link
+                                href="#"
+                                className="block px-4 sm:px-6 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                                onClick={handleLogout}
+                              >
+                                Sign Out
+                              </Link>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
-                    
-
-                    {/* <button
-                      className="
-    inline-flex items-center gap-2
-    cursor-pointer
-    bg-[#ED457D] text-white
-    text-xs lg:text-sm font-bold
-    px-3 lg:px-4 py-2
-    rounded-full
-    border-none
-    transition-all duration-300 ease-in-out
-    hover:bg-[#D93B6E]
-    hover:-translate-y-0.5
-    hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
-    active:translate-y-0
-    active:scale-[0.96]
-    active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
-  "
-                      onClick={handleLogout}
-                    >
-                      Logout
-                    </button> */}
                   </>
                 ) : (
                   <Link href="/login">
                     <button
                       className="
-    inline-flex items-center gap-2
-    cursor-pointer
-    bg-[#ED457D] text-white
-    text-xs lg:text-sm font-bold
-    px-3 lg:px-4 py-2
-    rounded-full
-    border-none
-    transition-all duration-300 ease-in-out
-    hover:bg-[#D93B6E]
-    hover:-translate-y-0.5
-    hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
-    active:translate-y-0
-    active:scale-[0.96]
-    active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
-  ">
-                      <User size={18} className="sm:w-5 sm:h-5" />
+            inline-flex items-center gap-1.5 sm:gap-2
+            cursor-pointer
+            bg-[#ED457D] text-white
+            text-xs lg:text-sm font-bold
+            px-3 sm:px-3.5 lg:px-4 py-2
+            rounded-full
+            border-none
+            transition-all duration-300 ease-in-out
+            hover:bg-[#D93B6E]
+            hover:-translate-y-0.5
+            hover:shadow-[0_4px_10px_rgba(237,69,125,0.35)]
+            active:translate-y-0
+            active:scale-[0.96]
+            active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
+          "
+                    >
+                      <User size={16} className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
                       <span className="hidden lg:inline">Login</span>
                     </button>
                   </Link>
                 )}
               </div>
 
-              {/* Wishlist - Always visible */}
-              {/* {
-                session &&
-                <Link
-                  href="/wishlist"
-                  className="relative p-1.5 sm:p-2 hover:bg-gray-100 border border-[#ED457D] rounded-full transition-colors text-black"
-                  aria-label="Wishlist"
-                >
-                  <Heart className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" color="#ED457D" />
-                  {mounted && cartCount > 0 && (
-                    <span className="badge text-[10px] sm:text-xs text-black">{cartCount}</span>
-                  )}
-                </Link>
-              } */}
-
+              {/* Cart - Always visible */}
               <Link
                 href="/cart"
-                className="relative flex items-center justify-center p-2 sm:p-2.5 
-             rounded-full border border-[#ED457D]/50 bg-white 
-             hover:bg-[#ED457D]/10 transition-all duration-200"
+                className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 
+      rounded-full border border-[#ED457D]/50 bg-white 
+      hover:bg-[#ED457D]/10 transition-all duration-200"
                 aria-label="Shopping cart"
               >
                 <ShoppingBasket
@@ -442,14 +367,13 @@ const Header = () => {
                 {mounted && cartCount > 0 && (
                   <span
                     className="absolute -top-1 -right-1 bg-[#ED457D] text-white 
-                 w-5 h-5 text-[10px] sm:text-[11px] flex items-center justify-center 
-                 rounded-full shadow-md font-medium"
+          w-4 h-4 sm:w-5 sm:h-5 text-[9px] sm:text-[11px] flex items-center justify-center 
+          rounded-full shadow-md font-medium"
                   >
                     {cartCount}
                   </span>
                 )}
               </Link>
-
             </div>
           </div>
         </div>
@@ -475,12 +399,12 @@ const Header = () => {
               </button>
             </div>
 
-            {/* Nav Links */}
+            {/* Nav Links - Using mobileNavLinks */}
             <div className="flex flex-col px-4 sm:px-6 mt-4 sm:mt-6 space-y-1">
-              {Object.keys(navLinks).map((item) => (
+              {Object.keys(mobileNavLinks).map((item) => (
                 <Link
                   key={item}
-                  href={navLinks[item]}
+                  href={mobileNavLinks[item]}
                   onClick={() => handleNavClick(item)}
                   className="py-3 sm:py-4 text-[#1A1A1A] text-[15px] sm:text-[16px] md:text-[18px] border-b border-b-[rgba(0,0,0,0.10)] hover:text-[#ED457D] transition-colors"
                 >
@@ -501,57 +425,36 @@ const Header = () => {
                   Login / Register
                 </button>
               )
-               : session ? (
-                <>
-                  {(session.user.role === 'ADMIN' || session.user.role === 'CUSTOMER') && (
-                    <Link href="/dashboard">
-                      <button className="w-full flex items-center justify-center gap-2 sm:gap-3 bg-gray-100 text-gray-900 py-3 sm:py-3.5 md:py-4 rounded-full text-sm sm:text-base font-medium hover:bg-gray-200 transition-colors">
-                        <User size={18} className="sm:w-5 sm:h-5" />
-                        {session.user.role === 'ADMIN' ? 'Admin Dashboard' : 'My Dashboard'}
+                : session ? (
+                  <div className='flex flex-col gap-3'>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center justify-center gap-2 sm:gap-3 bg-[#ED457D] text-white py-3 sm:py-3.5 md:py-4 rounded-full text-sm sm:text-base font-medium hover:bg-[#d63d6e] transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )
+                  : (
+                    <Link href="/login">
+                      <button className="w-full flex items-center justify-center gap-2 sm:gap-3 bg-[#ED457D] text-white py-3 sm:py-3.5 md:py-4 rounded-full text-sm sm:text-base font-medium hover:bg-[#d63d6e] transition-colors">
+                        <svg
+                          width="20"
+                          height="20"
+                          className="sm:w-[22px] sm:h-[22px]"
+                          viewBox="0 0 22 22"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M10.5 3C11.5609 3 12.5783 3.42143 13.3284 4.17157C14.0786 4.92172 14.5 5.93913 14.5 7C14.5 8.06087 14.0786 9.07828 13.3284 9.82843C12.5783 10.5786 11.5609 11 10.5 11C9.43913 11 8.42172 10.5786 7.67157 9.82843C6.92143 9.07828 6.5 8.06087 6.5 7C6.5 5.93913 6.92143 4.92172 7.67157 4.17157C8.42172 3.42143 9.43913 3 10.5 3ZM10.5 19C10.5 19 18.5 19 18.5 17C18.5 14.6 14.6 12 10.5 12C6.4 12 2.5 14.6 2.5 17C2.5 19 10.5 19 10.5 19Z"
+                            fill="white"
+                          />
+                        </svg>
+                        Login / Register
                       </button>
                     </Link>
                   )}
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 sm:gap-3 bg-[#ED457D] text-white py-3 sm:py-3.5 md:py-4 rounded-full text-sm sm:text-base font-medium hover:bg-[#d63d6e] transition-colors"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) 
-              : (
-                <Link href="/login">
-                  <button className="w-full flex items-center justify-center gap-2 sm:gap-3 bg-[#ED457D] text-white py-3 sm:py-3.5 md:py-4 rounded-full text-sm sm:text-base font-medium hover:bg-[#d63d6e] transition-colors">
-                    <svg
-                      width="20"
-                      height="20"
-                      className="sm:w-[22px] sm:h-[22px]"
-                      viewBox="0 0 22 22"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M10.5 3C11.5609 3 12.5783 3.42143 13.3284 4.17157C14.0786 4.92172 14.5 5.93913 14.5 7C14.5 8.06087 14.0786 9.07828 13.3284 9.82843C12.5783 10.5786 11.5609 11 10.5 11C9.43913 11 8.42172 10.5786 7.67157 9.82843C6.92143 9.07828 6.5 8.06087 6.5 7C6.5 5.93913 6.92143 4.92172 7.67157 4.17157C8.42172 3.42143 9.43913 3 10.5 3ZM10.5 19C10.5 19 18.5 19 18.5 17C18.5 14.6 14.6 12 10.5 12C6.4 12 2.5 14.6 2.5 17C2.5 19 10.5 19 10.5 19Z"
-                        fill="white"
-                      />
-                    </svg>
-                    Login / Register
-                  </button>
-                </Link>
-              )}
-            </div>
-
-            {/* Country Selector */}
-            <div className="px-4 sm:px-6 mt-8 sm:mt-10 mb-6 sm:mb-8">
-              <div className="flex items-center justify-center gap-1 sm:gap-3 py-3 sm:py-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
-                <img
-                  src="https://flagcdn.com/w40/za.png"
-                  alt="South Africa"
-                  className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover"
-                />
-                <span className="text-sm sm:text-base font-medium text-gray-700">South Africa</span>
-                <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-              </div>
             </div>
           </div>
         )}

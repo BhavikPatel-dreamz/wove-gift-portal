@@ -84,12 +84,12 @@ const CartPage = () => {
   if (!isMounted) {
     return (
       <div className="bg-gray-50 min-h-screen font-sans">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-25">
-          <div className="flex items-center mb-10">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 md:py-16 lg:py-25">
+          <div className="flex items-center mb-6 sm:mb-8 md:mb-10">
             <Link href="/" className="group inline-flex items-center">
               <div className="p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400">
-                <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-gradient-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
-                  <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200">
+                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-gradient-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+                  <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
                     <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
                     <defs>
                       <linearGradient id="grad" x1="7.5" y1="3" x2="-9" y2="13">
@@ -98,21 +98,21 @@ const CartPage = () => {
                       </linearGradient>
                     </defs>
                   </svg>
-                  <span className="text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
+                  <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
                 </div>
               </div>
             </Link>
           </div>
           <div>
-            <h1 className="mb-2 font-['Poppins'] text-[40px] leading-[45px] font-bold text-[#1A1A1A]">
+            <h1 className="mb-2 font-['Poppins'] text-2xl sm:text-3xl md:text-[40px] leading-tight sm:leading-[35px] md:leading-[45px] font-bold text-[#1A1A1A]">
               Your Shopping Cart
             </h1>
-            <p className="mb-10 font-['Inter'] text-[16px] font-medium leading-[24px] text-[#4A4A4A]">
+            <p className="mb-6 sm:mb-8 md:mb-10 font-['Inter'] text-sm sm:text-[15px] md:text-[16px] font-medium leading-[20px] sm:leading-[22px] md:leading-[24px] text-[#4A4A4A]">
               Review your items and proceed to a seamless checkout.
             </p>
           </div>
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-pulse text-gray-400">Loading cart...</div>
+          <div className="flex justify-center items-center py-12 sm:py-16 md:py-20">
+            <div className="animate-pulse text-gray-400 text-sm sm:text-base">Loading cart...</div>
           </div>
         </main>
       </div>
@@ -121,12 +121,12 @@ const CartPage = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-25">
-        <div className="flex items-center mb-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-[100px] sm:py-12 md:py-16 lg:py-25">
+        <div className="flex items-center mb-6 sm:mb-8 md:mb-10">
           <Link href="/" className="group inline-flex items-center">
             <div className="p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400">
-              <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-gradient-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
-                <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200">
+              <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-gradient-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+                <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
                   <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
                   <defs>
                     <linearGradient id="grad" x1="7.5" y1="3" x2="-9" y2="13">
@@ -135,56 +135,56 @@ const CartPage = () => {
                     </linearGradient>
                   </defs>
                 </svg>
-                <span className="text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
+                <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
               </div>
             </div>
           </Link>
         </div>
 
         <div>
-          <h1 className="mb-2 font-['Poppins'] text-[40px] leading-[45px] font-bold text-[#1A1A1A]">
+          <h1 className="mb-2 font-['Poppins'] text-2xl sm:text-3xl md:text-[40px] leading-tight sm:leading-[35px] md:leading-[45px] font-bold text-[#1A1A1A]">
             Your Shopping Cart
           </h1>
-          <p className="mb-10 font-['Inter'] text-[16px] font-medium leading-[24px] text-[#4A4A4A]">
+          <p className="mb-6 sm:mb-8 md:mb-10 font-['Inter'] text-sm sm:text-[15px] md:text-[16px] font-medium leading-[20px] sm:leading-[22px] md:leading-[24px] text-[#4A4A4A]">
             Review your items and proceed to a seamless checkout.
           </p>
         </div>
 
         {cartItems.length === 0 ? (
-          <div className="rounded-[20px] border-2 border-dashed border-[#ED457D] bg-[rgba(244,236,217,0.30)] p-12 flex flex-col justify-center items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80" fill="none">
+          <div className="rounded-[20px] border-2 border-dashed border-[#ED457D] bg-[rgba(244,236,217,0.30)] p-6 sm:p-8 md:p-12 flex flex-col justify-center items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 80 80" fill="none" className="sm:w-[70px] sm:h-[70px] md:w-[80px] md:h-[80px]">
               <path d="M15.0028 28.75L30.0028 11.25M65.0028 28.75L50.0028 11.25M25.0028 38.75V58.75M40.0028 38.75V58.75M55.0028 38.75V58.75M63.1229 68.75H16.8828C15.7999 68.7315 14.7551 68.3473 13.9181 67.6598C13.0812 66.9724 12.5013 66.022 12.2728 64.9633L5.14618 34.9633C4.95538 34.2448 4.92897 33.4926 5.06891 32.7625C5.20886 32.0324 5.51156 31.3432 5.95451 30.7462C6.39746 30.1492 6.96928 29.6597 7.62745 29.3141C8.28563 28.9685 9.01323 28.7757 9.75618 28.75H70.2495C70.9925 28.7757 71.7201 28.9685 72.3782 29.3141C73.0364 29.6597 73.6082 30.1492 74.0512 30.7462C74.4941 31.3432 74.7968 32.0324 74.9368 32.7625C75.0767 33.4926 75.0503 34.2448 74.8595 34.9633L67.7329 64.9633C67.5044 66.022 66.9245 66.9724 66.0876 67.6598C65.2506 68.3473 64.2058 68.7315 63.1229 68.75Z" stroke="#ED457D" strokeOpacity="0.5" strokeWidth="4.94545" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <h2 className="mt-6 text-center font-['Poppins'] font-semibold text-[#1A1A1A] text-[24px] leading-[32px] sm:text-[28px] sm:leading-[36px] md:text-[32px] md:leading-[40px] lg:text-[36px] lg:leading-[45px]">
+            <h2 className="mt-4 sm:mt-5 md:mt-6 text-center font-['Poppins'] font-semibold text-[#1A1A1A] text-xl sm:text-2xl md:text-3xl lg:text-[36px] leading-[28px] sm:leading-[32px] md:leading-[38px] lg:leading-[45px]">
               Your cart is empty
             </h2>
-            <p className="mt-2 text-center font-['Inter'] font-medium text-[#4A4A4A] text-[14px] leading-[22px] sm:text-[15px] sm:leading-[23px] md:text-[16px] md:leading-[24px]">
+            <p className="mt-2 text-center font-['Inter'] font-medium text-[#4A4A4A] text-sm sm:text-[15px] md:text-[16px] leading-[20px] sm:leading-[22px] md:leading-[24px] max-w-md">
               Looks like you haven't added any gifts to your cart yet.
             </p>
-            <Link href="/gift" className="mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-8 py-3 text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
+            <Link href="/gift" className="mt-6 sm:mt-7 md:mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-6 sm:px-7 md:px-8 py-2.5 sm:py-2.75 md:py-3 text-sm sm:text-[15px] md:text-base text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
               Start Gifting Now
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10 lg:gap-12">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
               {cartItems.map((item, index) => (
-                <div key={index} onClick={() => handleEditItem(item, index)} className="flex justify-between cursor-pointer items-start gap-6 p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
-                  <div className="flex cursor-pointer items-center gap-6">
-                    <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 border">
-                      <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-3 rounded-lg" />
+                <div key={index} onClick={() => handleEditItem(item, index)} className="flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+                  <div className="flex cursor-pointer items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
+                    <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 border">
+                      <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <h3 className="flex items-center gap-2 font-['Poppins'] text-[16px] font-semibold leading-[22px] text-[#1A1A1A]">
+                    <div className="flex flex-col gap-1 sm:gap-1.5 flex-1 min-w-0">
+                      <h3 className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 font-['Poppins'] text-sm sm:text-[15px] md:text-[16px] font-semibold leading-[18px] sm:leading-[20px] md:leading-[22px] text-[#1A1A1A]">
                         <span className="shrink-0">
                           {item.selectedBrand?.brandName || item.selectedBrand?.name}
                         </span>
-                        <span className="truncate text-[14px] font-normal text-gray-500">
+                        <span className="truncate text-xs sm:text-[13px] md:text-[14px] font-normal text-gray-500">
                           {item.personalMessage || 'No personal message.'}
                         </span>
                       </h3>
-                      <div className="flex w-fit p-2 items-center justify-center gap-1 rounded-[50px] bg-[#F4F4F4]">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" fill="none">
+                      <div className="flex w-fit p-1.5 sm:p-2 items-center justify-center gap-0.5 sm:gap-1 rounded-[50px] bg-[#F4F4F4]">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 22 22" fill="none" className="sm:w-5 sm:h-5 md:w-[22px] md:h-[22px]">
                           <path d="M10.9994 11.9834V20.4874L7.42409 18.8483L6.94887 18.6308L5.09936 17.7832L4.99592 17.7356L1.95801 16.3425V7.82666L5.09936 9.27065L7.42409 10.3398L10.9994 11.9834Z" fill="#ED457D" />
                           <path d="M20.0414 7.82666V16.3425L17.3652 17.5729L16.691 17.883L15.4122 18.4708L14.3663 18.9521L11 20.4999V11.9834L14.3663 10.4356L16.691 9.36718L20.0414 7.82666Z" fill="#FF81AB" />
                           <path d="M7.42434 10.3399V18.8484L6.94912 18.6309L5.09961 17.7833V9.27075L7.42434 10.3399Z" fill="#FFF380" />
@@ -203,14 +203,14 @@ const CartPage = () => {
                           <path d="M11.3623 5.43393V5.43591C13.5322 6.09708 15.0512 5.83261 15.6299 5.10533C15.781 4.91623 15.9163 4.66829 16.006 4.40317C15.828 4.14399 15.5047 3.95688 14.9789 3.91522C13.8086 3.822 12.2079 4.82896 11.3623 5.43393Z" fill="#7B4001" />
                           <path d="M10.5659 5.43589C10.5659 5.43589 10.2766 4.51025 10.9999 4.51025C11.7232 4.51025 11.4339 5.43589 11.4339 5.43589C11.4339 5.43589 11.0723 5.76647 10.5659 5.43589Z" fill="#FF8A0E" />
                         </svg>
-                        <p className="my-1 font-['Poppins'] text-[14px] font-semibold leading-[18px] text-[#1A1A1A]">
+                        <p className="my-0.5 sm:my-1 font-['Poppins'] text-xs sm:text-[13px] md:text-[14px] font-semibold leading-[16px] sm:leading-[17px] md:leading-[18px] text-[#1A1A1A]">
                           {formatAmount(item.selectedAmount)}
                         </p>
                       </div>
                     </div>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }} className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <button onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }} className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-colors flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" className="sm:w-5 sm:h-5">
                       <path d="M6.347 16.6667C5.97644 16.6667 5.6595 16.5347 5.39616 16.2709C5.13283 16.007 5.00089 15.6906 5.00033 15.3217V5.00002H4.58366C4.46533 5.00002 4.36644 4.96002 4.287 4.88002C4.20755 4.80002 4.16755 4.70086 4.167 4.58252C4.16644 4.46419 4.20644 4.3653 4.287 4.28586C4.36755 4.20641 4.46644 4.16669 4.58366 4.16669H7.50033C7.50033 3.99447 7.56422 3.84447 7.692 3.71669C7.81978 3.58891 7.96978 3.52502 8.142 3.52502H11.8587C12.0309 3.52502 12.1809 3.58891 12.3087 3.71669C12.4364 3.84447 12.5003 3.99447 12.5003 4.16669H15.417C15.5353 4.16669 15.6342 4.20669 15.7137 4.28669C15.7931 4.36669 15.8331 4.46586 15.8337 4.58419C15.8342 4.70252 15.7942 4.80141 15.7137 4.88086C15.6331 4.9603 15.5342 5.00002 15.417 5.00002H15.0003V15.3209C15.0003 15.6909 14.8684 16.0075 14.6045 16.2709C14.3406 16.5342 14.0239 16.6661 13.6545 16.6667H6.347ZM8.59033 14.1667C8.70866 14.1667 8.80783 14.1267 8.88783 14.0467C8.96783 13.9667 9.00755 13.8678 9.007 13.75V7.08336C9.007 6.96502 8.967 6.86614 8.887 6.78669C8.807 6.70725 8.70783 6.66725 8.5895 6.66669C8.47116 6.66614 8.37228 6.70614 8.29283 6.78669C8.21339 6.86725 8.17366 6.96614 8.17366 7.08336V13.75C8.17366 13.8684 8.21366 13.9672 8.29366 14.0467C8.37366 14.1267 8.47255 14.1667 8.59033 14.1667ZM11.4112 14.1667C11.5295 14.1667 11.6284 14.1267 11.7078 14.0467C11.7873 13.9667 11.827 13.8678 11.827 13.75V7.08336C11.827 6.96502 11.787 6.86614 11.707 6.78669C11.627 6.70669 11.5281 6.66669 11.4103 6.66669C11.292 6.66669 11.1928 6.70669 11.1128 6.78669C11.0328 6.86669 10.9931 6.96558 10.9937 7.08336V13.75C10.9937 13.8684 11.0337 13.9672 11.1137 14.0467C11.1937 14.1261 11.2928 14.1661 11.4112 14.1667Z" fill="black" />
                     </svg>
                   </button>
@@ -218,12 +218,12 @@ const CartPage = () => {
               ))}
             </div>
             <div className="lg:col-span-1">
-              <div className="sticky top-28 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white p-7">
-                <h2 className="mb-5 pb-4 font-['Poppins'] text-[18px] font-semibold leading-[20px] tracking-[0.25px] text-[#1A1A1A]">
+              <div className="sticky top-20 sm:top-24 md:top-28 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white p-5 sm:p-6 md:p-7">
+                <h2 className="mb-4 sm:mb-5 pb-3 sm:pb-4 font-['Poppins'] text-base sm:text-[17px] md:text-[18px] font-semibold leading-[18px] sm:leading-[19px] md:leading-[20px] tracking-[0.25px] text-[#1A1A1A]">
                   Payment Summary
                 </h2>
-                <div className="space-y-3 text-lg">
-                  <div className="flex justify-between font-['Poppins'] font-medium text-[16px] leading-[20px] tracking-[0.25px] text-[#4A4A4A]">
+                <div className="space-y-2.5 sm:space-y-3">
+                  <div className="flex justify-between font-['Poppins'] font-medium text-sm sm:text-[15px] md:text-[16px] leading-[18px] sm:leading-[19px] md:leading-[20px] tracking-[0.25px] text-[#4A4A4A]">
                     <span>Subtotal</span>
                     <span>
                       {cartItems?.length > 0
@@ -232,7 +232,7 @@ const CartPage = () => {
                     </span>
 
                   </div>
-                  <div className="flex justify-between font-['Poppins'] font-medium text-[16px] leading-[20px] tracking-[0.25px] text-[#4A4A4A]">
+                  <div className="flex justify-between font-['Poppins'] font-medium text-sm sm:text-[15px] md:text-[16px] leading-[18px] sm:leading-[19px] md:leading-[20px] tracking-[0.25px] text-[#4A4A4A]">
                     <span>Service Fee (3%)</span>
                     <span className="font-semibold">
                       {cartItems?.length > 0
@@ -240,8 +240,8 @@ const CartPage = () => {
                         : '—'}</span>
                   </div>
                 </div>
-                <div className="h-px my-5 w-full bg-[rgba(26,26,26,0.10)]"></div>
-                <div className="flex justify-between font-['Poppins'] font-semibold text-[18px] leading-[20px] tracking-[0.25px] text-[#1A1A1A]">
+                <div className="h-px my-4 sm:my-5 w-full bg-[rgba(26,26,26,0.10)]"></div>
+                <div className="flex justify-between font-['Poppins'] font-semibold text-base sm:text-[17px] md:text-[18px] leading-[18px] sm:leading-[19px] md:leading-[20px] tracking-[0.25px] text-[#1A1A1A]">
                   <span>Subtotal</span>
                   <span>
                     {cartItems?.length > 0
@@ -249,7 +249,7 @@ const CartPage = () => {
                       : '—'}
                       </span>
                 </div>
-                <Button onClick={handleProceedToPayment} className="w-full mt-8 text-lg py-3">
+                <Button onClick={handleProceedToPayment} className="w-full mt-6 sm:mt-7 md:mt-8 text-base sm:text-[17px] md:text-lg py-2.5 sm:py-2.75 md:py-3">
                   {session ? 'Proceed to Payment' : 'Login to Continue'}
                 </Button>
               </div>

@@ -80,7 +80,7 @@ const FeaturedBrands = ({
 
   return (
     <section className="py-[44px] bg-gradient-to-b from-[#FEF8F6] to-[#FDF7F8] overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto  sm:px-6">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-[1.75rem] sm:text-[2.75rem] font-bold text-black mb-2 leading-tight tracking-tight brand-title">

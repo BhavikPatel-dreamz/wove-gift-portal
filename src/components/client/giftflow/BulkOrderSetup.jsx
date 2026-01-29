@@ -138,7 +138,7 @@ const BulkOrderSetup = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto  sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
                 md:flex-row md:items-center md:justify-between md:gap-0">
@@ -205,7 +205,7 @@ const BulkOrderSetup = () => {
             <div
               className="
         flex items-center gap-3 justify-center w-full
-        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
               <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
@@ -379,23 +379,26 @@ const BulkOrderSetup = () => {
             </div>
 
             {/* Total Spend */}
-            <div className="flex justify-between bg-white items-center rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white rounded-2xl p-4 sm:p-5 md:p-6 border border-[#1A1A1A33]">
               <div className="flex flex-col">
-                <span className="font-['Inter'] text-[16px] font-bold leading-[16px] text-[#1A1A1A]">
+                <span className="font-['Inter'] text-sm sm:text-base font-bold leading-tight text-[#1A1A1A]">
                   Total Spend
                 </span>
+
                 {quantity && selectedDenomination && (
-                  <span className="font-['Inter'] text-[16px] font-medium leading-[16px] text-[#8C8C8C] mt-2">
-                    {quantity} × {selectedDenomination.currency || 'R'}{selectedDenomination.value}
+                  <span className="font-['Inter'] text-sm sm:text-base font-medium leading-tight text-[#8C8C8C] mt-1 sm:mt-2">
+                    {quantity} × {selectedDenomination.currency || 'R'}
+                    {selectedDenomination.value}
                   </span>
                 )}
-
               </div>
-              <p className="font-['Inter'] text-[20px] font-bold leading-[16px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
-                {selectedDenomination?.currency || 'R'}{totalSpend}
-              </p>
 
+              <p className="font-['Inter'] text-lg sm:text-xl font-bold bg-gradient-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent text-right sm:text-left">
+                {selectedDenomination?.currency || 'R'}
+                {totalSpend}
+              </p>
             </div>
+
 
             {/* Error Message */}
             {error && (
