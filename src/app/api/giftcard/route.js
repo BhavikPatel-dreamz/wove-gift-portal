@@ -97,7 +97,7 @@ export async function POST(req) {
         vouchers: {
           where: {
             isActive: true,
-OR: [
+            OR: [
               { denominationType: denominationType },
               { denominationType: "both" },
             ],
@@ -123,7 +123,7 @@ OR: [
       })),
     });
 
-    if (!brand || !brand.vouchers.length) {A
+    if (!brand || !brand.vouchers.length) {
       console.error("❌ [FAIL] No active voucher found", {
         ...logContext,
         brandExists: !!brand,
@@ -133,7 +133,7 @@ OR: [
       return NextResponse.json(
         {
           success: false,
-          error: "No active v\oucher found for this denominationType",
+          error: "No active voucher found for this denominationType",
         },
         { status: 400 }
       );
@@ -303,15 +303,16 @@ OR: [
       });
     }
 
-    // ============ STEP 4: Fetch or Create Customer ============
+    // ============ STEP 4: Fetch or Create Customer (OPTIONAL - for future use) ============
     let customerId = null;
     let customerIdNumeric = null;
 
     if (customerEmail) {
-      console.log("📋 [STEP 4] Processing customer", {
+      console.log("📋 [STEP 4] Processing customer for record keeping", {
         ...logContext,
         step: "customer_lookup",
         customerEmail,
+        note: "Customer will NOT be associated with gift card to prevent emails",
       });
 
       // Fetch existing customer
@@ -345,9 +346,9 @@ OR: [
         customerIdNumeric,
       });
 
-      // Create customer if not found
+      // Create customer if not found (for future reference only)
       if (!customerId) {
-        console.log("🔄 [STEP 4] Creating new customer");
+        console.log("🔄 [STEP 4] Creating new customer for record keeping");
 
         const createCustomerResponse = await fetch(
           `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
@@ -429,33 +430,27 @@ OR: [
         }
 
         if (!customerId) {
-          console.error("❌ [FAIL] Failed to create or find customer", {
+          console.warn("⚠️ [STEP 4] Could not create or find customer", {
             ...logContext,
             customerEmail,
             errors: userErrors || createCustomerData.errors,
+            note: "Proceeding without customer association",
           });
-          return NextResponse.json(
-            {
-              success: false,
-              error: "Failed to create or find customer in Shopify",
-              details: userErrors || createCustomerData.errors,
-            },
-            { status: 400 }
-          );
         }
       }
 
-      console.log("✅ [STEP 4] Customer processed successfully");
+      console.log("✅ [STEP 4] Customer processed (will NOT be linked to gift card)");
     } else {
       console.log(
         "⏭️  [STEP 4] No customer email provided, skipping customer creation"
       );
     }
 
-    // ============ STEP 5: Create Gift Card via REST API ============
-    console.log("📋 [STEP 5] Creating gift card in Shopify", {
+    // ============ STEP 5: Create Gift Card via REST API (WITHOUT customer) ============
+    console.log("📋 [STEP 5] Creating gift card in Shopify WITHOUT customer association", {
       ...logContext,
       step: "create_gift_card",
+      note: "No customer_id will be included to prevent email notifications",
     });
 
     const value = Number(denominationValue);
@@ -464,6 +459,8 @@ OR: [
       gift_card: {
         initial_value: Number.isNaN(value) ? 0 : Number(value.toFixed(2)),
         note: input.note || null,
+        // DO NOT include customer_id - this prevents Shopify from sending emails
+        // DO NOT include send_email_to_customer - unreliable parameter
       },
     };
 
@@ -474,12 +471,7 @@ OR: [
         .split("T")[0];
     }
 
-    // Add customer ID if exists
-    if (customerIdNumeric) {
-      restApiPayload.gift_card.customer_id = parseInt(customerIdNumeric);
-    }
-
-    console.log("📤 [STEP 5] REST API payload", {
+    console.log("📤 [STEP 5] REST API payload (no customer association)", {
       payload: restApiPayload,
       endpoint: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/gift_cards.json`,
     });
@@ -526,11 +518,55 @@ OR: [
     const fullGiftCardCode = giftCard.code;
     const shopifyGid = `gid://shopify/GiftCard/${giftCard.id}`;
 
-    console.log("✅ [STEP 5] Gift card created in Shopify", {
+    console.log("✅ [STEP 5] Gift card created in Shopify (without customer)", {
       shopifyGid,
       code: fullGiftCardCode,
       initialValue: giftCard.initial_value,
+      customerAssociated: false,
     });
+
+    // ============ STEP 5b: OPTIONAL - Associate customer later (no email sent) ============
+    // Uncomment this section if you want to associate the customer AFTER creation
+    // This won't trigger any emails because the gift card already exists
+    /*
+    if (customerIdNumeric && giftCard.id) {
+      console.log("📋 [STEP 5b] Updating gift card with customer association (no email)");
+      
+      try {
+        const updateResponse = await fetch(
+          `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/gift_cards/${giftCard.id}.json`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Shopify-Access-Token": session.accessToken,
+            },
+            body: JSON.stringify({
+              gift_card: {
+                customer_id: parseInt(customerIdNumeric),
+              },
+            }),
+          }
+        );
+        
+        const updateData = await updateResponse.json();
+        
+        if (updateData.gift_card) {
+          console.log("✅ [STEP 5b] Customer associated via update (no email sent)", {
+            customerId: customerIdNumeric,
+          });
+        } else {
+          console.warn("⚠️ [STEP 5b] Failed to associate customer", {
+            errors: updateData.errors,
+          });
+        }
+      } catch (updateError) {
+        console.error("❌ [STEP 5b] Error associating customer", {
+          error: updateError.message,
+        });
+      }
+    }
+    */
 
     // ============ STEP 6: Save to Local Database ============
     console.log("📋 [STEP 6] Saving gift card to local database", {
@@ -552,7 +588,7 @@ OR: [
             : null,
         isVirtual: true,
         isActive: true,
-        customerEmail: customerEmail,
+        customerEmail: customerEmail, // Store email for your own reference
         denominationId: selectedDenomId || undefined,
       },
     });
@@ -560,13 +596,14 @@ OR: [
     console.log("✅ [STEP 6] Gift card saved to database", {
       localId: newLocalGiftCard.id,
       shopifyId: shopifyGid,
+      customerEmailStored: !!customerEmail,
     });
 
     // ============ SUCCESS RESPONSE ============
     const duration = Date.now() - startTime;
     const successResponse = {
       success: true,
-      message: "Gift card created successfully",
+      message: "Gift card created successfully (no email sent)",
       gift_card: {
         id: shopifyGid,
         code: fullGiftCardCode,
@@ -584,18 +621,20 @@ OR: [
         createdAt: giftCard.created_at,
         expiresOn: giftCard.expires_on,
         note: giftCard.note,
-        customer: customerId ? { id: customerId } : null,
+        customer: null, // No customer associated to prevent emails
+        customerEmail: customerEmail, // Stored in your database for reference
         localId: newLocalGiftCard.id,
         denominationId: selectedDenomId || null,
         hasExpiry: shouldSetExpiry,
       },
     };
 
-    console.log("🎉 [SUCCESS] Gift card creation completed", {
+    console.log("🎉 [SUCCESS] Gift card creation completed (no email sent)", {
       ...logContext,
       duration: `${duration}ms`,
       giftCardId: shopifyGid,
       localId: newLocalGiftCard.id,
+      emailPrevented: true,
     });
 
     return NextResponse.json(successResponse);
