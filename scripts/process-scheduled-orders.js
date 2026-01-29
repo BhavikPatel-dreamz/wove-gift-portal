@@ -150,8 +150,9 @@ const processScheduledOrders = async () => {
           );
         }
 
+        // Use the actual gift card code from the GiftCard table, not the masked code
         const shopifyGiftCard = {
-          maskedCode: voucherCode.code,
+          code: voucherCode.giftCard?.code || voucherCode.code,
         };
 
         const deliveryResult = await sendDeliveryMessage(
