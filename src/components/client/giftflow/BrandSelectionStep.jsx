@@ -184,18 +184,6 @@ const BrandSelectionStep = () => {
         onSortChange={(sort) => dispatch(setSortBy(sort))}
       />
 
-      {/* Active Filters & Results Count */}
-      <div className="flex justify-between items-center px-6 max-w-7xl mx-auto mt-[100px]">
-        {(searchTerm || selectedCategory !== "All Categories") && (
-          <button
-            onClick={handleResetFilters}
-            className="text-sm text-wave-orange hover:text-wave-green flex items-center gap-1"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Reset Filters
-          </button>
-        )}
-      </div>
 
       <div className="max-w-[90%] sm:max-w-[85%] lg:max-w-[75%] mx-auto">
         <CardGrid
