@@ -318,7 +318,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={isActive}
+                      checked={isActive || false}
                       onChange={(e) => setIsActive(e.target.checked)}
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500"
                     />

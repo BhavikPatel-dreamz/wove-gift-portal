@@ -109,7 +109,7 @@ const GiftCardSelector = () => {
             ></span>
             <span
               className="
-                absolute inset-[1.5px] rounded-full bg-white
+                absolute inset-[2px] rounded-full bg-white
                 transition-all duration-300
                 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
               "

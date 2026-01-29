@@ -919,7 +919,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                         <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
-                                                checked={customReport.reports.salesSummary}
+                                                checked={customReport.reports.salesSummary || false}
                                                 onChange={(e) => setCustomReport({
                                                     ...customReport,
                                                     reports: { ...customReport.reports, salesSummary: e.target.checked }
@@ -931,7 +931,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                         <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
-                                                checked={customReport.reports.redemptionDetails}
+                                                checked={customReport.reports.redemptionDetails || false}
                                                 onChange={(e) => setCustomReport({
                                                     ...customReport,
                                                     reports: { ...customReport.reports, redemptionDetails: e.target.checked }
@@ -943,7 +943,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                         <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
-                                                checked={customReport.reports.settlementReports}
+                                                checked={customReport.reports.settlementReports || false}
                                                 onChange={(e) => setCustomReport({
                                                     ...customReport,
                                                     reports: { ...customReport.reports, settlementReports: e.target.checked }
@@ -957,7 +957,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                         <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
-                                                checked={customReport.reports.transactionLog}
+                                                checked={customReport.reports.transactionLog || false}
                                                 onChange={(e) => setCustomReport({
                                                     ...customReport,
                                                     reports: { ...customReport.reports, transactionLog: e.target.checked }
@@ -969,7 +969,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                         <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
-                                                checked={customReport.reports.brandPerformance}
+                                                checked={customReport.reports.brandPerformance || false}
                                                 onChange={(e) => setCustomReport({
                                                     ...customReport,
                                                     reports: { ...customReport.reports, brandPerformance: e.target.checked }
@@ -981,7 +981,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                         <label className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                             <input
                                                 type="checkbox"
-                                                checked={customReport.reports.liabilitySnapshot}
+                                                checked={customReport.reports.liabilitySnapshot || false}
                                                 onChange={(e) => setCustomReport({
                                                     ...customReport,
                                                     reports: { ...customReport.reports, liabilitySnapshot: e.target.checked }
@@ -1227,7 +1227,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                             <label key={type} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
                                                 <input
                                                     type="checkbox"
-                                                    checked={scheduledReport.reportTypes[type]}
+                                                    checked={scheduledReport.reportTypes[type] || false}
                                                     onChange={(e) => setScheduledReport({
                                                         ...scheduledReport,
                                                         reportTypes: { ...scheduledReport.reportTypes, [type]: e.target.checked }

@@ -364,7 +364,7 @@ const ReviewConfirmStep = () => {
                 <label className="flex items-start gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    checked={isConfirmed}
+                    checked={isConfirmed ?? false}
                     onChange={(e) => dispatch(setIsConfirmed(e.target.checked))}
                     className="sr-only"
                   />

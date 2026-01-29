@@ -85,7 +85,7 @@ const PaymentMethodSelector = ({ selectedTab, onTabChange, isBulkMode }) => {
         <label className="flex items-start gap-3 cursor-pointer select-none">
           <input
             type="checkbox"
-            checked={isPaymentConfirmed}
+            checked={isPaymentConfirmed || false}
             onChange={(e) => dispatch(setIsPaymentConfirmed(e.target.checked))}
             className="sr-only"
           />

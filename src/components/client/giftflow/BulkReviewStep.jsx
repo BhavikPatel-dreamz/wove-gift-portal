@@ -342,10 +342,10 @@ const BulkReviewStep = () => {
                                 absolute inset-0 rounded-full p-[1.5px]
                                 bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
                               "
-                            ></span>
-                            <span
-                                className="
-                                absolute inset-[1.5px] rounded-full bg-white
+                        ></span>
+                        <span
+                            className="
+                                absolute inset-[2px] rounded-full bg-white
                                 transition-all duration-300
                                 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
                               "
@@ -663,15 +663,15 @@ const BulkReviewStep = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-start gap-3 justify-center my-3">
-                        <label className="flex items-start gap-3 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                checked={isConfirmed}
-                                onChange={(e) => dispatch(setIsConfirmed(e.target.checked))}
-                                className="sr-only"
-                            />
-                            <div className={`
+                <div className="flex items-start gap-3 justify-center my-3">
+                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                        <input
+                            type="checkbox"
+                            checked={isConfirmed || false}
+                            onChange={(e) => dispatch(setIsConfirmed(e.target.checked))}
+                            className="sr-only"
+                        />
+                        <div className={`
                                     w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
                                     ${isConfirmed
                                     ? 'bg-gradient-to-r from-pink-500 to-orange-400 border-transparent'
