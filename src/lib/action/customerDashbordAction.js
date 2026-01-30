@@ -36,7 +36,7 @@ function calculateStatus(voucherCode) {
   return "ACTIVE";
 }
 
-// Main function to fetch gift cards
+// Main function to fetch gift cards with smart pagination
 export async function getGiftCards(filters) {
   try {
     const session = await getSession();
@@ -131,6 +131,11 @@ export async function getGiftCards(filters) {
             orderNumber: { contains: searchQuery, mode: "insensitive" },
           },
         },
+        {
+          order: {
+            bulkOrderNumber: { contains: searchQuery, mode: "insensitive" },
+          },
+        },
       ];
 
       if (whereClause.OR) {
@@ -148,8 +153,12 @@ export async function getGiftCards(filters) {
       if (endDate) whereClause.createdAt.lte = new Date(endDate);
     }
 
-    // Fetch voucher codes with related data INCLUDING ALL REDEMPTIONS
-    const voucherCodes = await prisma.voucherCode.findMany({
+    // ============================================
+    // SMART PAGINATION LOGIC
+    // ============================================
+    
+    // First, get all voucher codes to group them
+    const allVoucherCodes = await prisma.voucherCode.findMany({
       where: whereClause,
       include: {
         order: {
@@ -177,7 +186,6 @@ export async function getGiftCards(filters) {
             },
           },
         },
-        // Include GiftCard relation to get the code if needed
         giftCard: {
           select: {
             code: true,
@@ -188,21 +196,71 @@ export async function getGiftCards(filters) {
             redeemedAt: "desc",
           },
         },
+        bulkRecipient: {
+          select: {
+            recipientName: true,
+            recipientEmail: true,
+            recipientPhone: true,
+            personalMessage: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
       },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
     });
 
-    // Get total count for pagination
-    const totalCount = await prisma.voucherCode.count({
-      where: whereClause,
+    // Group by bulk order number and single orders
+    const groupedOrders = {};
+    const singleOrders = [];
+
+    allVoucherCodes.forEach((vc) => {
+      if (vc.order.bulkOrderNumber) {
+        if (!groupedOrders[vc.order.bulkOrderNumber]) {
+          groupedOrders[vc.order.bulkOrderNumber] = [];
+        }
+        groupedOrders[vc.order.bulkOrderNumber].push(vc);
+      } else {
+        singleOrders.push(vc);
+      }
     });
 
-    // Transform data to match component structure
-    const giftCards = voucherCodes.map((vc) => {
+    // Create an array of "display items" where each bulk order counts as 1 item
+    const displayItems = [];
+    
+    // Add bulk orders (each group counts as 1 item)
+    Object.entries(groupedOrders).forEach(([bulkOrderNumber, vouchers]) => {
+      displayItems.push({
+        type: 'bulk',
+        bulkOrderNumber,
+        vouchers,
+        createdAt: vouchers[0].createdAt, // Use first voucher's date for sorting
+      });
+    });
+
+    // Add single orders (each counts as 1 item)
+    singleOrders.forEach((vc) => {
+      displayItems.push({
+        type: 'single',
+        voucher: vc,
+        createdAt: vc.createdAt,
+      });
+    });
+
+    // Sort all display items by creation date (newest first)
+    displayItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Calculate total "display items" count
+    const totalDisplayItems = displayItems.length;
+    const totalPages = Math.ceil(totalDisplayItems / pageSize);
+
+    // Apply pagination to display items
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedItems = displayItems.slice(startIndex, endIndex);
+
+    // Transform paginated items into the format expected by frontend
+    const transformVoucherCode = (vc) => {
       const calculatedStatus = calculateStatus(vc);
       const spentPercentage =
         vc.originalValue > 0
@@ -211,34 +269,35 @@ export async function getGiftCards(filters) {
             )
           : 0;
 
-      // Determine if gift was sent or received by current user
       const isSent = vc.order.userId === session.user.id;
       const isReceived = vc.order.receiverDetail?.email === session.user.email;
 
-      // Get currency and symbol from order
       const currency = vc.order.currency || "USD";
       const currencySymbol = getCurrencySymbol(currency);
 
-      // IMPORTANT: Show full code only if user is the receiver
-      // The code from VoucherCode table is the full unmasked code
-      const fullCode = vc?.giftCard?.code; // This is the full code from VoucherCode table
+      const fullCode = vc?.giftCard?.code;
       const displayCode = isReceived
-        ? fullCode // Show full code to receiver
-        : `**** **** **** ${fullCode.slice(-4)}`; // Mask code for sender
+        ? fullCode
+        : `**** **** **** ${fullCode.slice(-4)}`;
+
+      const receiverName = vc.bulkRecipient?.recipientName || vc.order.receiverDetail?.name || "N/A";
+      const receiverEmail = vc.bulkRecipient?.recipientEmail || vc.order.receiverDetail?.email || "N/A";
+      const receiverPhone = vc.bulkRecipient?.recipientPhone || vc.order.receiverDetail?.phone || "N/A";
 
       return {
         id: vc.id,
         orderNumber: vc.order.orderNumber,
-        code: displayCode, // Show full or masked based on receiver status
-        fullCode: fullCode, // Always keep full code for copying (frontend should handle visibility)
+        bulkOrderNumber: vc.order.bulkOrderNumber,
+        code: displayCode,
+        fullCode: fullCode,
         status: calculatedStatus,
         user: {
           name: `${vc.order.user.firstName} ${vc.order.user.lastName}`,
           email: vc.order.user.email,
         },
-        receiverName: vc.order.receiverDetail?.name || "N/A",
-        receiverEmail: vc.order.receiverDetail?.email || "N/A",
-        receiverPhone: vc.order.receiverDetail?.phone || "N/A",
+        receiverName: receiverName,
+        receiverEmail: receiverEmail,
+        receiverPhone: receiverPhone,
         totalAmount: vc.originalValue,
         remaining: vc.remainingValue,
         spent: spentPercentage,
@@ -269,6 +328,7 @@ export async function getGiftCards(filters) {
         brandDomain: vc.order.brand.domain || null,
         isSent: isSent,
         isReceived: isReceived,
+        isBulk: !!vc.order.bulkOrderNumber,
         redemptions: vc.redemptions.map((redemption) => ({
           id: redemption.id,
           amountRedeemed: redemption.amountRedeemed,
@@ -278,6 +338,20 @@ export async function getGiftCards(filters) {
           storeUrl: redemption.storeUrl,
         })),
       };
+    };
+
+    // Transform paginated items
+    const giftCards = [];
+    paginatedItems.forEach((item) => {
+      if (item.type === 'bulk') {
+        // For bulk orders, transform all vouchers in the group
+        item.vouchers.forEach((vc) => {
+          giftCards.push(transformVoucherCode(vc));
+        });
+      } else {
+        // For single orders, transform the single voucher
+        giftCards.push(transformVoucherCode(item.voucher));
+      }
     });
 
     return JSON.parse(
@@ -287,8 +361,9 @@ export async function getGiftCards(filters) {
         pagination: {
           page,
           pageSize,
-          totalCount,
-          totalPages: Math.ceil(totalCount / pageSize),
+          totalCount: totalDisplayItems, // Total "display items" not total vouchers
+          totalPages: totalPages,
+          totalVouchers: allVoucherCodes.length, // Actual voucher count for reference
         },
         userRole: session.user.role,
         userId: session.user.id,
