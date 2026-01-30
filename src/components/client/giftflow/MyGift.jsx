@@ -52,24 +52,41 @@ function MyGift() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Group gift cards by bulk order
+  // Group gift cards by bulk order WHILE PRESERVING ORDER
   const groupGiftCards = useCallback((cards) => {
-    const grouped = {};
-    const singles = [];
+    const displayItems = [];
+    const bulkOrdersProcessed = new Set();
 
+    // Iterate through cards in their original order (already sorted by backend)
     cards.forEach(card => {
       if (card.bulkOrderNumber) {
-        if (!grouped[card.bulkOrderNumber]) {
-          grouped[card.bulkOrderNumber] = [];
+        // Only process each bulk order once (when we encounter it first time)
+        if (!bulkOrdersProcessed.has(card.bulkOrderNumber)) {
+          bulkOrdersProcessed.add(card.bulkOrderNumber);
+          // Collect all cards with this bulk order number
+          const bulkCards = cards.filter(c => c.bulkOrderNumber === card.bulkOrderNumber);
+          displayItems.push({
+            type: 'bulk',
+            bulkOrderNumber: card.bulkOrderNumber,
+            cards: bulkCards,
+            createdAt: card.purchaseDate // Use for any sorting if needed
+          });
         }
-        grouped[card.bulkOrderNumber].push(card);
+        // If we've already processed this bulk order, skip it
       } else {
-        singles.push(card);
+        // Single order - add directly
+        displayItems.push({
+          type: 'single',
+          card: card,
+          createdAt: card.purchaseDate
+        });
       }
     });
 
-    return { bulkOrders: grouped, singleOrders: singles };
+    return displayItems;
   }, []);
+
+  console.log("giftCards", giftCards)
 
   // Fetch gift cards data
   const fetchGiftCards = useCallback(async () => {
@@ -551,7 +568,8 @@ function MyGift() {
     );
   };
 
-  const { bulkOrders, singleOrders } = groupGiftCards(giftCards);
+  // Get display items preserving order
+  const displayItems = groupGiftCards(giftCards);
 
   return (
     <div className="min-h-screen py-8 sm:py-30 px-4">
@@ -718,15 +736,13 @@ function MyGift() {
           </div>
         ) : (
           <>
-            {/* Gift Cards Grid */}
+            {/* Gift Cards Grid - Render in order */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
-              {/* Render Bulk Orders First */}
-              {Object.entries(bulkOrders).map(([bulkOrderNumber, cards]) =>
-                renderBulkOrderCard(bulkOrderNumber, cards)
+              {displayItems.map((item, index) => 
+                item.type === 'bulk' 
+                  ? renderBulkOrderCard(item.bulkOrderNumber, item.cards)
+                  : renderSingleOrderCard(item.card)
               )}
-
-              {/* Render Single Orders */}
-              {singleOrders.map((card) => renderSingleOrderCard(card))}
             </div>
 
             {/* Pagination */}

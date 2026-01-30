@@ -230,11 +230,14 @@ export async function getGiftCards(filters) {
     
     // Add bulk orders (each group counts as 1 item)
     Object.entries(groupedOrders).forEach(([bulkOrderNumber, vouchers]) => {
+      // Sort vouchers within each bulk group by creation date (latest first)
+      vouchers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
       displayItems.push({
         type: 'bulk',
         bulkOrderNumber,
         vouchers,
-        createdAt: vouchers[0].createdAt, // Use first voucher's date for sorting
+        createdAt: vouchers[0].createdAt, // Use first (newest) voucher's date for sorting
       });
     });
 
