@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { getOccasions } from '@/lib/action/occasionAction';
 import { ArrowLeft } from 'lucide-react';
-import { goBack, goNext, setLoading, setOccasions, setSelectedOccasion, setError, setSelectedOccasionName } from '../../../redux/giftFlowSlice';
+import { goBack, goNext, setLoading, setOccasions, setSelectedOccasion, setError, setSelectedOccasionName, setCurrentStep } from '../../../redux/giftFlowSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSearchParams } from 'next/navigation';
 
@@ -105,7 +105,7 @@ export default function OccasionSelector() {
               text-[#4A4A4A] bg-white border border-transparent
               transition-all duration-300 overflow-hidden group cursor-pointer
             "
-            onClick={() => dispatch(goBack())}
+            onClick={() => isBulkMode ? dispatch(setCurrentStep(1)) : dispatch(goBack())}
           >
             {/* Outer gradient border */}
             <span

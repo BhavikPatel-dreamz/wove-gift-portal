@@ -25,6 +25,7 @@ const BulkOrderSetup = () => {
 
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const dropdownRef = useRef(null);
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
@@ -45,6 +46,9 @@ const BulkOrderSetup = () => {
 
   // Get available denominations from selected brand
   const denominations = selectedBrand?.vouchers?.[0]?.denominations || [];
+  const voucherData = selectedBrand?.vouchers?.[0];
+  const minAmount = voucherData?.minAmount || 50;
+  const maxAmount = 25000; // Bulk order max amount per voucher
 
   // Calculate total spend
   const totalSpend = selectedAmount && quantity
@@ -79,23 +83,55 @@ const BulkOrderSetup = () => {
     }
   };
 
+  const handleCustomAmountChange = (e) => {
+    const value = e.target.value;
+    if (value === '' || /^\d+$/.test(value)) {
+        const numValue = value === '' ? null : parseInt(value, 10);
+        const currency = selectedBrand?.vouchers?.[0]?.denominationCurrency || 'R';
+
+        if (numValue !== null && numValue > maxAmount) {
+            setError(`Maximum amount is ${maxAmount}`);
+        } else if (numValue !== null && numValue < minAmount && numValue !== 0) {
+            setError(`Minimum amount is ${minAmount}`);
+        }
+        else {
+            setError('');
+        }
+        dispatch(setSelectedAmount({ value: numValue, currency: currency }));
+    }
+  };
+
   useEffect(() => {
     if (selectedAmount && selectedAmount.value) {
       const matchingDenomination = denominations.find(d => d.value === selectedAmount.value);
       if (matchingDenomination) {
         dispatch(setSelectedAmount(matchingDenomination));
+        setShowCustomInput(false);
       } else {
         // It's a custom amount, so use the selectedAmount object from Redux.
         dispatch(setSelectedAmount(selectedAmount));
+        setShowCustomInput(true);
       }
+    } else if (selectedAmount && selectedAmount.value === null) {
+        setShowCustomInput(true);
     }
-  }, [selectedAmount, denominations]);
+  }, [selectedAmount, denominations, dispatch]);
 
 
   const handleAddToBulkOrder = () => {
     // Validation
-    if (!selectedAmount) {
-      setError('Please select a denomination');
+    if (!selectedAmount || !selectedAmount.value) {
+      setError('Please select a denomination or enter a custom amount');
+      return;
+    }
+
+    if (showCustomInput && selectedAmount.value < minAmount) {
+      setError(`Minimum custom amount is ${minAmount}`);
+      return;
+    }
+    
+    if (showCustomInput && selectedAmount.value > maxAmount) {
+      setError(`Maximum custom amount is ${maxAmount}`);
       return;
     }
 
@@ -351,6 +387,7 @@ const BulkOrderSetup = () => {
                           key={i}
                           onClick={() => {
                             handleDenominationSelect(denom);
+                            setShowCustomInput(false);
                             setOpen(false);
                           }}
                           className={`px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000]
@@ -366,7 +403,8 @@ const BulkOrderSetup = () => {
                     <div
                       className="px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000] hover:bg-gray-100"
                       onClick={() => {
-                        handleDenominationSelect({ value: null });
+                        handleDenominationSelect({ value: null, currency: selectedBrand?.vouchers?.[0]?.denominationCurrency || 'R' });
+                        setShowCustomInput(true);
                         setOpen(false);
                       }}
                     >
@@ -376,6 +414,24 @@ const BulkOrderSetup = () => {
                 )}
               </div>
             </div>
+
+            {showCustomInput && (
+              <div className="mt-4">
+                  <label className="block text-base font-semibold text-[#1A1A1A] mb-3">
+                      Custom Amount
+                  </label>
+                  <input
+                      type="text"
+                      value={selectedAmount?.value || ''}
+                      onChange={handleCustomAmountChange}
+                      placeholder={`e.g., ${minAmount}`}
+                      className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                      Enter an amount between {minAmount} and {maxAmount}.
+                  </p>
+              </div>
+            )}
 
             {/* Quantity Input */}
             <div className="">

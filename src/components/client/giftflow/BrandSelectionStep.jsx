@@ -6,10 +6,12 @@ import CardGrid from './CardGrid'
 import { useDispatch, useSelector } from "react-redux"
 import {
   goNext,
+  setCurrentStep,
   setSelectedBrand,
   toggleFavorite
 } from "../../../redux/giftFlowSlice"
 import Pagination from "./Pagination"
+import { useSearchParams } from "next/navigation"
 
 const BrandSelectionStep = ({
   brands,
@@ -24,7 +26,9 @@ const BrandSelectionStep = ({
   clearFilters
 }) => {
   const dispatch = useDispatch()
-  console.log("loading", loading)
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode');
+  const isBulkMode = mode === 'bulk';
 
   const { favorites, selectedBrand } = useSelector((state) => state.giftFlowReducer)
 
@@ -34,7 +38,11 @@ const BrandSelectionStep = ({
 
   const handleBrandClick = useCallback((brand) => {
     dispatch(setSelectedBrand(brand))
-    dispatch(goNext())
+    if (isBulkMode) {
+      dispatch(setCurrentStep(3))
+    } else {
+      dispatch(goNext())
+    }
   }, [dispatch])
 
   const handlePageChange = useCallback((page) => {
