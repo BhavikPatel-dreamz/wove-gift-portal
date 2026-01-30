@@ -385,7 +385,7 @@ const CartPage = () => {
                     </span>
                   </div>
                   <div className="flex justify-between font-['Poppins'] font-medium text-sm sm:text-[15px] md:text-[16px] leading-[18px] sm:leading-[19px] md:leading-[20px] tracking-[0.25px] text-[#4A4A4A]">
-                    <span>Service Fee (3%)</span>
+                    <span>Service Fee (5%)</span>
                     <span className="font-semibold">
                       {currentItems?.length > 0
                         ? `${getCurrencySymbol(currentItems[0]?.selectedAmount?.currency)} ${calculateServiceFee(currentItems, isBulkTab)}`

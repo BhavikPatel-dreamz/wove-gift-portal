@@ -51,7 +51,7 @@ const PaymentSummary = ({
           </div>
         )}
         <div className="flex justify-between items-center text-gray-700">
-          <span>Service Fee (3%)</span>
+          <span>Service Fee (4%)</span>
           <span className="font-semibold">{getCurrency()}{calculateServiceFee()}</span>
         </div>
       </div>

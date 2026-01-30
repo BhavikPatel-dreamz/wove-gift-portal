@@ -265,7 +265,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                           alt="Logo preview"
                           fill
                           className="object-contain rounded"
-                          unoptimized={!imagePreview.includes('cloudinary.com')}
+                          unoptimized={!formData?.imagePreview.includes('cloudinary.com')}
                           onError={(e) => {
                             console.error('Image load error:', e);
                           }}
