@@ -637,7 +637,6 @@ function MyGift() {
             <div className="relative" ref={datePickerRef}>
               <div className="relative">
                 <button
-                  type="button"
                   onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                   className="w-full h-[40px] px-4 bg-white border border-[#4A4A4A] rounded-lg flex items-center justify-between text-[#4A4A4A] text-sm font-medium hover:bg-gray-50 transition-colors"
                 >
