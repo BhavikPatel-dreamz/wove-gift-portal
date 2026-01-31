@@ -70,13 +70,9 @@ const CartPage = () => {
   // ✅ Fixed: Only proceed with items from active tab
   const handleProceedToPayment = () => {
     if (session) {
-      // Check if active tab has items
-      if (activeTab === 'regular' && cartItems.length === 0) {
-        toast.error('Your regular cart is empty');
-        return;
-      }
-      if (activeTab === 'bulk' && bulkItems.length === 0) {
-        toast.error('Your bulk cart is empty');
+      // Check if there are any items in either cart
+      if (cartItems.length === 0 && bulkItems.length === 0) {
+        toast.error('Your cart is empty');
         return;
       }
       router.push('/checkout');
@@ -116,6 +112,33 @@ const CartPage = () => {
 
   const calculateTotal = (items, isBulk = false) => {
     return calculateSubtotal(items, isBulk) + calculateServiceFee(items, isBulk);
+  };
+
+  // ✅ NEW: Calculate combined totals from both carts
+  const calculateCombinedSubtotal = () => {
+    const regularSubtotal = calculateSubtotal(cartItems, false);
+    const bulkSubtotal = calculateSubtotal(bulkItems, true);
+    return regularSubtotal + bulkSubtotal;
+  };
+
+  const calculateCombinedServiceFee = () => {
+    const combinedSubtotal = calculateCombinedSubtotal();
+    return Math.round(combinedSubtotal * 0.05);
+  };
+
+  const calculateCombinedTotal = () => {
+    return calculateCombinedSubtotal() + calculateCombinedServiceFee();
+  };
+
+  // Get currency symbol from either cart (prioritize regular cart)
+  const getCombinedCurrency = () => {
+    if (cartItems.length > 0) {
+      return cartItems[0]?.selectedAmount?.currency || 'ZAR';
+    }
+    if (bulkItems.length > 0) {
+      return bulkItems[0]?.selectedAmount?.currency || 'ZAR';
+    }
+    return 'ZAR';
   };
 
   // Show loading state during hydration
@@ -369,27 +392,42 @@ const CartPage = () => {
               ))}
             </div>
 
-            {/* Payment Summary */}
+            {/* Payment Summary - ✅ NOW SHOWS COMBINED TOTALS */}
             <div className="lg:col-span-1">
               <div className="sticky top-20 sm:top-24 md:top-28 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white p-5 sm:p-6 md:p-7">
                 <h2 className="mb-4 sm:mb-5 pb-3 sm:pb-4 font-['Poppins'] text-base sm:text-[17px] md:text-[18px] font-semibold leading-4.5 sm:leading-4.75 md:leading-5 tracking-[0.25px] text-[#1A1A1A]">
-                  Payment Summary {isBulkTab && <span className="text-pink-500">(Bulk)</span>}
+                  Payment Summary
                 </h2>
+                
+                {/* Show breakdown if both carts have items */}
+                {hasRegularItems && hasBulkItems && (
+                  <div className="space-y-2 mb-3 pb-3 border-b border-gray-100">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Regular Items ({cartItems.length})</span>
+                      <span>
+                        {getCurrencySymbol(getCombinedCurrency())} {calculateSubtotal(cartItems, false).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Bulk Orders ({bulkItems.length})</span>
+                      <span>
+                        {getCurrencySymbol(getCombinedCurrency())} {calculateSubtotal(bulkItems, true).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2.5 sm:space-y-3">
                   <div className="flex justify-between font-['Poppins'] font-medium text-sm sm:text-[15px] md:text-[16px] leading-4.5 sm:leading-4.75 md:leading-5 tracking-[0.25px] text-[#4A4A4A]">
                     <span>Subtotal</span>
                     <span>
-                      {currentItems?.length > 0
-                        ? `${getCurrencySymbol(currentItems[0]?.selectedAmount?.currency)} ${calculateSubtotal(currentItems, isBulkTab).toFixed(2)}`
-                        : '—'}
+                      {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedSubtotal().toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between font-['Poppins'] font-medium text-sm sm:text-[15px] md:text-[16px] leading-4.5 sm:leading-4.75 md:leading-5 tracking-[0.25px] text-[#4A4A4A]">
                     <span>Service Fee (5%)</span>
                     <span className="font-semibold">
-                      {currentItems?.length > 0
-                        ? `${getCurrencySymbol(currentItems[0]?.selectedAmount?.currency)} ${calculateServiceFee(currentItems, isBulkTab)}`
-                        : '—'}
+                      {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedServiceFee()}
                     </span>
                   </div>
                 </div>
@@ -397,9 +435,7 @@ const CartPage = () => {
                 <div className="flex justify-between font-['Poppins'] font-semibold text-base sm:text-[17px] md:text-[18px] leading-4.5 sm:leading-4.75 md:leading-5 tracking-[0.25px] text-[#1A1A1A]">
                   <span>Total</span>
                   <span>
-                    {currentItems?.length > 0
-                      ? `${getCurrencySymbol(currentItems[0]?.selectedAmount?.currency)} ${calculateTotal(currentItems, isBulkTab).toFixed(2)}`
-                      : '—'}
+                    {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedTotal().toFixed(2)}
                   </span>
                 </div>
                 <Button onClick={handleProceedToPayment} className="w-full mt-6 sm:mt-7 md:mt-8 text-base sm:text-[17px] md:text-lg py-2.5 sm:py-2.75 md:py-3">

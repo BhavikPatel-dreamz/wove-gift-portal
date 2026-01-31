@@ -2852,6 +2852,8 @@ export async function getOrderById(orderId) {
   }
 }
 
+// Updated getOrderStatus function with voucher codes from GiftCard table
+
 export async function getOrderStatus(orderId) {
   if (!orderId) {
     throw new Error("Order ID is required");
@@ -2862,9 +2864,19 @@ export async function getOrderStatus(orderId) {
     include: {
       brand: true,
       receiverDetail: true,
+      occasion: true,
       voucherCodes: {
         include: {
           voucher: true,
+          // Include gift card to get the actual code
+          giftCard: {
+            select: {
+              code: true,
+              balance: true,
+              initialValue: true,
+              expiresAt: true,
+            }
+          },
         },
       },
     },
@@ -2886,9 +2898,24 @@ export async function getOrderStatus(orderId) {
       amount: order.amount,
       currency: order.currency,
       paymentStatus: order.paymentStatus,
+      deliveryMethod: order.deliveryMethod,
       createdAt: order.createdAt,
       brand: order.brand,
-      voucherCodes: order.voucherCodes,
+      occasion: order.occasion,
+      receiverDetail: order.receiverDetail,
+      message: order.message,
+      senderName: order.senderName,
+      voucherCodes: order.voucherCodes.map(vc => ({
+        id: vc.id,
+        // Use the actual code from GiftCard table
+        code: vc.giftCard?.code || vc.code,
+        originalValue: vc.originalValue,
+        remainingValue: vc.remainingValue,
+        expiresAt: vc.expiresAt,
+        pin: vc.pin,
+        qrCode: vc.qrCode,
+        voucher: vc.voucher,
+      })),
     },
   };
 }
