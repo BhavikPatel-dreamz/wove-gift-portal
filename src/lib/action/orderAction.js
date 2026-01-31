@@ -287,7 +287,7 @@ export const createPendingOrder = async (orderData) => {
         data: {
           ...orderBase,
           bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-          deliveryMethod: orderData.deliveryOption || "email", // ✅ Store deliveryOption in deliveryMethod
+          deliveryMethod: orderData.deliveryOption || "email",
           message: orderData.personalMessage || "",
           senderName: orderData.companyInfo.companyName,
           sendType: "sendImmediately",
@@ -353,100 +353,150 @@ export const createPendingOrder = async (orderData) => {
 
     console.log("✅ Pending order created:", order.orderNumber);
 
-    // Stripe payment setup
+    // ==================== CRITICAL FIX STARTS HERE ====================
+    
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    const customerName = isBulkOrder
-      ? orderData.companyInfo.companyName
-      : orderData.deliveryDetails?.yourFullName || "Customer";
+    // ✅ CHECK: Is this part of a multi-cart checkout?
+    const isMultiCart = orderData.sharedPaymentIntentId;
+    
+    let paymentIntent;
+    let customerId = orderData.customerId; // May be passed from first order
 
-    const customerEmail = isBulkOrder
-      ? orderData.companyInfo.contactEmail
-      : orderData.deliveryDetails?.yourEmailAddress || null;
-
-    if (!orderData.billingAddress) {
-      throw new ValidationError(
-        "Billing address is required for payment processing",
+    if (isMultiCart) {
+      // ✅ REUSE existing payment intent from first order
+      console.log(`🔗 Linking order ${order.orderNumber} to shared payment intent: ${orderData.sharedPaymentIntentId}`);
+      
+      paymentIntent = await stripe.paymentIntents.retrieve(
+        orderData.sharedPaymentIntentId
       );
+      
+      // Update the payment intent amount to include this order
+      const currentAmount = paymentIntent.amount;
+      const newAmount = currentAmount + Math.round(totalAmount * 100);
+      
+      paymentIntent = await stripe.paymentIntents.update(
+        orderData.sharedPaymentIntentId,
+        {
+          amount: newAmount,
+          description: `${paymentIntent.description} + ${order.orderNumber}`,
+        }
+      );
+      
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          paymentIntentId: paymentIntent.id,
+        },
+      });
+      
+      console.log(`✅ Order ${order.orderNumber} linked to shared payment intent (Total: $${newAmount / 100})`);
+      
+      return {
+        success: true,
+        data: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          clientSecret: paymentIntent.client_secret,
+          customerId: paymentIntent.customer,
+          paymentIntentId: paymentIntent.id,
+          isShared: true,
+        },
+      };
+      
+    } else {
+      // ✅ CREATE NEW payment intent (first order in cart)
+      console.log(`🆕 Creating new payment intent for order ${order.orderNumber}`);
+      
+      const customerName = isBulkOrder
+        ? orderData.companyInfo.companyName
+        : orderData.deliveryDetails?.yourFullName || "Customer";
+
+      const customerEmail = isBulkOrder
+        ? orderData.companyInfo.contactEmail
+        : orderData.deliveryDetails?.yourEmailAddress || null;
+
+      if (!orderData.billingAddress) {
+        throw new ValidationError(
+          "Billing address is required for payment processing",
+        );
+      }
+
+      const customerAddress = {
+        line1: orderData.billingAddress.line1,
+        line2: orderData.billingAddress.line2 || null,
+        city: orderData.billingAddress.city,
+        state: orderData.billingAddress.state,
+        postal_code: orderData.billingAddress.postalCode,
+        country: orderData.billingAddress.country,
+      };
+
+      const customer = await stripe.customers.create({
+        name: customerName,
+        email: customerEmail,
+        address: customerAddress,
+        metadata: {
+          userId: String(userId),
+          firstOrderId: order.id,
+          orderNumber: order.orderNumber,
+        },
+      });
+
+      const exportDescription = generateExportDescription(
+        orderData,
+        order.orderNumber,
+      );
+
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(totalAmount * 100),
+        currency: (orderData.selectedAmount.currency || "USD").toLowerCase(),
+        customer: customer.id,
+        description: exportDescription,
+        metadata: {
+          firstOrderId: order.id,
+          orderNumber: order.orderNumber,
+          brandName: orderData.selectedBrand?.brandName || "Gift Card",
+          userId: String(userId),
+        },
+        statement_descriptor: "GIFT CARD",
+        statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
+        automatic_payment_methods: {
+          enabled: true,
+        },
+        shipping:
+          customerAddress.line1 !== "N/A"
+            ? {
+                name: customerName,
+                address: customerAddress,
+              }
+            : null,
+      });
+
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          paymentIntentId: paymentIntent.id,
+        },
+      });
+
+      console.log("✅ PaymentIntent created for first order:", paymentIntent.id);
+
+      return {
+        success: true,
+        data: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          clientSecret: paymentIntent.client_secret,
+          customerId: customer.id,
+          paymentIntentId: paymentIntent.id, // ✅ Return this for subsequent orders
+          isShared: false,
+        },
+      };
     }
-
-    const customerAddress = {
-      line1: orderData.billingAddress.line1,
-      line2: orderData.billingAddress.line2 || null,
-      city: orderData.billingAddress.city,
-      state: orderData.billingAddress.state,
-      postal_code: orderData.billingAddress.postalCode,
-      country: orderData.billingAddress.country,
-    };
-
-    const customer = await stripe.customers.create({
-      name: customerName,
-      email: customerEmail,
-      address: customerAddress,
-      metadata: {
-        userId: String(userId),
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        deliveryOption: orderData.deliveryOption || "single",
-        hasCSVRecipients:
-          orderData.csvRecipients?.length > 0 ? "true" : "false",
-      },
-    });
-
-    const exportDescription = generateExportDescription(
-      orderData,
-      order.orderNumber,
-    );
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalAmount * 100),
-      currency: (orderData.selectedAmount.currency || "USD").toLowerCase(),
-      customer: customer.id,
-      description: exportDescription,
-      metadata: {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        brandName: orderData.selectedBrand?.brandName || "Gift Card",
-        quantity: String(quantity),
-        exportDescription: exportDescription,
-        userId: String(userId),
-        deliveryOption: orderData.deliveryOption || "single",
-        hasCSVRecipients:
-          orderData.csvRecipients?.length > 0 ? "true" : "false",
-      },
-      statement_descriptor: "GIFT CARD",
-      statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-      shipping:
-        customerAddress.line1 !== "N/A"
-          ? {
-              name: customerName,
-              address: customerAddress,
-            }
-          : null,
-    });
-
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentIntentId: paymentIntent.id,
-      },
-    });
-
-    console.log("✅ PaymentIntent created with compliance data");
-
-    return {
-      success: true,
-      data: {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        clientSecret: paymentIntent.client_secret,
-        customerId: customer.id,
-      },
-    };
+    
+    // ==================== CRITICAL FIX ENDS HERE ====================
+    
   } catch (error) {
     console.error("❌ Pending order creation failed:", error);
 
@@ -709,7 +759,7 @@ async function processOrderInBackground(orderId) {
             contactNumber: order.receiverDetail.phone,
           }
         : null,
-      deliveryOption: order.deliveryMethod, // ✅ This contains "email", "csv", or "multiple" for bulk orders
+      deliveryOption: order.deliveryMethod,
       deliveryMethod: order.deliveryMethod,
       deliveryDetails: !isBulkOrder
         ? {
@@ -724,7 +774,6 @@ async function processOrderInBackground(orderId) {
     if (isBulkOrder && order.bulkRecipients.length > 0) {
       await processBulkOrderQueue(order, orderData, voucherConfig);
     } else if (isBulkOrder && order.bulkRecipients.length === 0) {
-      // ✅ Regular bulk order (no CSV - just quantity)
       await processRegularBulkOrder(order, orderData, voucherConfig);
     } else {
       await processSingleOrderQueue(order, orderData, voucherConfig);
@@ -2034,6 +2083,7 @@ export async function getOrderStatus(orderId) {
       orderNumber: order.orderNumber,
       amount: order.amount,
       currency: order.currency,
+      quantity: order.quantity,
       paymentStatus: order.paymentStatus,
       deliveryMethod: order.deliveryMethod,
       createdAt: order.createdAt,

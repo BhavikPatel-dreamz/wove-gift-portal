@@ -8,11 +8,8 @@ import { createPendingOrder, getOrderStatus } from '../../../lib/action/orderAct
 import { AlertCircle, Package, ShoppingBag, CheckCircle2, Clock } from 'lucide-react';
 import Header from '../../../components/client/home/Header';
 import { useSession } from '@/contexts/SessionContext';
-
-// Import components from payment folder
 import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
 import PaymentMethodSelector from "../giftflow/payment/PaymentMethodSelector";
-import SuccessScreen from "../giftflow/payment/SuccessScreen";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
 import BillingAddressForm from "../giftflow/payment/BillingAddressForm";
 import { currencyList } from '../../brandsPartner/currency';
@@ -43,8 +40,9 @@ const CheckoutPage = () => {
   const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderIds, setPendingOrderIds] = useState([]);
   const [processingStatus, setProcessingStatus] = useState(null);
-  
-  // ✅ Track individual order processing
+  const [sharedPaymentIntentId, setSharedPaymentIntentId] = useState(null);
+
+  // Track individual order processing
   const [orderStatuses, setOrderStatuses] = useState({});
 
   // Billing address state
@@ -102,17 +100,17 @@ const CheckoutPage = () => {
     return 'ZAR';
   };
 
-  // ✅ Calculate totals for ALL items (regular + bulk combined)
+  // Calculate totals for ALL items (regular + bulk combined)
   const calculateCombinedSubtotal = () => {
     const regularSubtotal = cartItems.reduce((total, item) => {
       return total + getAmountValue(item.selectedAmount);
     }, 0);
-    
+
     const bulkSubtotal = bulkItems.reduce((total, item) => {
       const value = getAmountValue(item.selectedAmount);
       return total + (value * item.quantity);
     }, 0);
-    
+
     return regularSubtotal + bulkSubtotal;
   };
 
@@ -149,7 +147,7 @@ const CheckoutPage = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // ✅ UPDATED: Create pending orders for ALL items
+  // ✅ UPDATED: Create separate pending orders for ALL cart items
   const handleInitiatePayment = async () => {
     if (!validateBillingAddress()) {
       toast.error('Please fill in all required billing address fields');
@@ -165,124 +163,151 @@ const CheckoutPage = () => {
     const toastId = toast.loading('Preparing your orders...');
 
     try {
-      const allOrderPromises = [];
-      const orderIdMap = {};
+      const allOrderIds = [];
+      const orderMetadata = [];
 
-      // ✅ Process bulk items
-      for (let i = 0; i < bulkItems.length; i++) {
-        const bulkItem = bulkItems[i];
-        const orderData = {
-          selectedBrand: bulkItem.selectedBrand,
-          selectedAmount: bulkItem.selectedAmount,
-          personalMessage: bulkItem.personalMessage,
-          quantity: bulkItem.quantity,
-          companyInfo: bulkItem.companyInfo,
-          deliveryOption: bulkItem.deliveryOption,
-          selectedOccasion: bulkItem.selectedOccasion,
-          selectedSubCategory: bulkItem.selectedSubCategory,
-          totalAmount: getAmountValue(bulkItem.selectedAmount) * bulkItem.quantity,
-          isBulkOrder: true,
-          totalSpend: bulkItem.totalSpend,
-          billingAddress,
-          deliveryMethod: bulkItem.deliveryOption,
-          csvRecipients: bulkItem.csvRecipients || [],
-          userId: session?.user?.id,
-        };
+      // ✅ Collect all items (bulk + regular)
+      const allItems = [
+        ...bulkItems.map((item, i) => ({ ...item, type: 'bulk', index: i })),
+        ...cartItems.map((item, i) => ({ ...item, type: 'regular', index: i }))
+      ];
 
-        allOrderPromises.push(
-          createPendingOrder(orderData).then(result => ({
-            ...result,
-            type: 'bulk',
-            index: i,
-            itemData: bulkItem
-          }))
-        );
+      console.log(`📦 Creating ${allItems.length} orders...`);
+
+      // ✅ CRITICAL: Store shared payment intent details
+      let sharedPaymentIntentId = null;
+      let sharedClientSecret = null;
+      let sharedCustomerId = null;
+
+      // ✅ Process each item sequentially to build up the payment intent
+      for (let idx = 0; idx < allItems.length; idx++) {
+        const item = allItems[idx];
+        const isBulkItem = item.type === 'bulk';
+
+        // Build order data
+        let orderData;
+        if (isBulkItem) {
+          orderData = {
+            selectedBrand: item.selectedBrand,
+            selectedAmount: item.selectedAmount,
+            personalMessage: item.personalMessage,
+            quantity: item.quantity,
+            companyInfo: item.companyInfo,
+            deliveryOption: item.deliveryOption,
+            selectedOccasion: item.selectedOccasion,
+            selectedSubCategory: item.selectedSubCategory,
+            totalAmount: getAmountValue(item.selectedAmount) * item.quantity,
+            isBulkOrder: true,
+            totalSpend: item.totalSpend,
+            billingAddress,
+            deliveryMethod: item.deliveryOption,
+            csvRecipients: item.csvRecipients || [],
+            userId: session?.user?.id,
+            // ✅ Pass shared payment intent details (if not first order)
+            sharedPaymentIntentId: sharedPaymentIntentId,
+            customerId: sharedCustomerId,
+          };
+        } else {
+          orderData = {
+            selectedBrand: item.selectedBrand,
+            selectedAmount: item.selectedAmount,
+            personalMessage: item.personalMessage,
+            deliveryMethod: item.deliveryMethod,
+            deliveryDetails: item.deliveryDetails,
+            selectedOccasion: item.selectedOccasion,
+            selectedSubCategory: item.selectedSubCategory,
+            selectedTiming: item.selectedTiming,
+            totalAmount: getAmountValue(item.selectedAmount),
+            isBulkOrder: false,
+            billingAddress,
+            userId: session?.user?.id,
+            // ✅ Pass shared payment intent details (if not first order)
+            sharedPaymentIntentId: sharedPaymentIntentId,
+            customerId: sharedCustomerId,
+          };
+        }
+
+        console.log(`Creating order ${idx + 1}/${allItems.length}...`);
+
+        // ✅ Create the order
+        const result = await createPendingOrder(orderData);
+
+        if (!result.success) {
+          throw new Error(`Failed to create order ${idx + 1}: ${result.error}`);
+        }
+
+        // ✅ Store order ID
+        allOrderIds.push(result.data.orderId);
+
+        // ✅ If this is the FIRST order, save the payment intent details
+        if (idx === 0) {
+          sharedPaymentIntentId = result.data.paymentIntentId;
+          sharedClientSecret = result.data.clientSecret;
+          sharedCustomerId = result.data.customerId;
+          console.log(`✅ First order created - Payment Intent: ${sharedPaymentIntentId}`);
+        } else {
+          console.log(`✅ Order ${idx + 1} linked to shared payment intent`);
+        }
+
+        // ✅ Track metadata
+        orderMetadata.push({
+          type: item.type,
+          brand: item.selectedBrand?.brandName,
+          amount: isBulkItem
+            ? getAmountValue(item.selectedAmount) * item.quantity
+            : getAmountValue(item.selectedAmount),
+          orderNumber: result.data.orderNumber,
+        });
       }
 
-      // ✅ Process regular cart items
-      for (let i = 0; i < cartItems.length; i++) {
-        const item = cartItems[i];
-        const orderData = {
-          selectedBrand: item.selectedBrand,
-          selectedAmount: item.selectedAmount,
-          personalMessage: item.personalMessage,
-          deliveryMethod: item.deliveryMethod,
-          deliveryDetails: item.deliveryDetails,
-          selectedOccasion: item.selectedOccasion,
-          selectedSubCategory: item.selectedSubCategory,
-          selectedTiming: item.selectedTiming,
-          totalAmount: getAmountValue(item.selectedAmount),
-          isBulkOrder: false,
-          billingAddress,
-          userId: session?.user?.id,
-        };
+      console.log(`✅ Created ${allOrderIds.length} orders successfully`);
+      console.log(`📋 All orders share payment intent: ${sharedPaymentIntentId}`);
 
-        allOrderPromises.push(
-          createPendingOrder(orderData).then(result => ({
-            ...result,
-            type: 'regular',
-            index: i,
-            itemData: item
-          }))
-        );
-      }
-
-      // ✅ Wait for all orders to be created
-      const results = await Promise.all(allOrderPromises);
-      
-      // ✅ Check if all succeeded
-      const failedOrders = results.filter(r => !r?.success);
-      if (failedOrders.length > 0) {
-        const errorMsg = `Failed to create ${failedOrders.length} order(s)`;
-        setError(errorMsg);
-        toast.error(errorMsg, { id: toastId });
-        return null;
-      }
-
-      // ✅ Get all order IDs and use the first clientSecret (they all share same payment)
-      const orderIds = results.map(r => r.data.orderId);
-      const sharedClientSecret = results[0].data.clientSecret;
-
-      setPendingOrderIds(orderIds);
+      setPendingOrderIds(allOrderIds);
       setClientSecret(sharedClientSecret);
 
       // ✅ Initialize order status tracking
       const initialStatuses = {};
-      results.forEach((result, idx) => {
-        initialStatuses[result.data.orderId] = {
+      allOrderIds.forEach((orderId, idx) => {
+        initialStatuses[orderId] = {
           status: 'PENDING',
-          orderNumber: result.data.orderNumber,
-          type: result.type,
-          index: result.index
+          orderNumber: orderMetadata[idx].orderNumber,
+          type: orderMetadata[idx].type,
+          index: idx,
+          metadata: orderMetadata[idx],
         };
       });
       setOrderStatuses(initialStatuses);
 
-      toast.success(`${results.length} order(s) ready for payment`, { id: toastId });
-      
+      toast.success(`${allOrderIds.length} order(s) ready for payment`, { id: toastId });
+
       return {
         clientSecret: sharedClientSecret,
-        orderIds: orderIds
+        orderIds: allOrderIds
       };
+
     } catch (error) {
       console.error('Error creating orders:', error);
-      setError("Failed to prepare orders.");
-      toast.error('Failed to prepare orders.', { id: toastId });
+      setError(error.message || "Failed to prepare orders.");
+      toast.error(error.message || 'Failed to prepare orders.', { id: toastId });
       return null;
     } finally {
       setIsProcessing(false);
     }
   };
 
+
   // ✅ Payment success handler
   const handlePaymentSuccess = (paymentIntent) => {
     console.log('💳 Payment intent succeeded:', paymentIntent.id);
     console.log(`📦 Processing ${pendingOrderIds.length} orders`);
 
+    setSharedPaymentIntentId(paymentIntent.id);
+
     toast.dismiss();
-    toast.success('Payment received! Processing your orders...', { 
+    toast.success('Payment received! Processing your orders...', {
       id: 'payment-success',
-      duration: 3000 
+      duration: 3000
     });
 
     setPaymentSubmitted(true);
@@ -304,7 +329,7 @@ const CheckoutPage = () => {
       console.log(`🔍 Polling ${orderIds.length} orders - Attempt ${attempts + 1}/${maxAttempts}`);
 
       // ✅ Poll all orders in parallel
-      const statusPromises = orderIds.map(orderId => 
+      const statusPromises = orderIds.map(orderId =>
         getOrderStatus(orderId).catch(err => ({
           success: false,
           error: err.message,
@@ -353,12 +378,11 @@ const CheckoutPage = () => {
         const completedOrdersData = readyOrders.map(r => r?.order || r);
         setCompletedOrders(completedOrdersData);
         setIsProcessing(false);
-        
+
         toast.success(
-          `${readyOrders.length} order(s) confirmed! ${
-            readyOrders.length < responses.length 
-              ? `${responses.length - readyOrders.length} still processing...` 
-              : ''
+          `${readyOrders.length} order(s) confirmed! ${readyOrders.length < responses.length
+            ? `${responses.length - readyOrders.length} still processing...`
+            : ''
           }`,
           { duration: 5000 }
         );
@@ -379,7 +403,7 @@ const CheckoutPage = () => {
         const completedOrdersData = responses.map(r => r?.order || r);
         setCompletedOrders(completedOrdersData);
         setIsProcessing(false);
-        
+
         toast.success('All orders completed successfully!', { duration: 3000 });
 
         // ✅ Clear carts
@@ -410,7 +434,7 @@ const CheckoutPage = () => {
           'Payment confirmed! Your orders are being processed. Check your email for updates.',
           { duration: 6000 }
         );
-        
+
         const partialOrders = responses.filter(r => r?.order).map(r => r.order);
         if (partialOrders.length > 0) {
           setCompletedOrders(partialOrders);
@@ -484,11 +508,11 @@ const CheckoutPage = () => {
                         Completed
                       </div>
                     </div>
-                    
+
                     {order.brand && (
                       <div className="flex items-center gap-3">
-                        <img 
-                          src={order.brand.logo} 
+                        <img
+                          src={order.brand.logo}
                           alt={order.brand.brandName}
                           className="w-12 h-12 object-contain rounded-lg border"
                         />
@@ -554,7 +578,9 @@ const CheckoutPage = () => {
                         <ShoppingBag className="w-5 h-5 text-pink-500" />
                       )}
                       <div className="text-left">
-                        <p className="font-medium text-sm">Order #{idx + 1}</p>
+                        <p className="font-medium text-sm">
+                          {status?.metadata?.brand || 'Order'} #{idx + 1}
+                        </p>
                         <p className="text-xs text-gray-500">{status?.orderNumber || orderId.slice(0, 8)}</p>
                       </div>
                     </div>
@@ -580,10 +606,10 @@ const CheckoutPage = () => {
 
             {/* ✅ Progress bar */}
             <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-              <div 
+              <div
                 className="bg-gradient-to-r from-pink-500 to-orange-500 h-3 rounded-full transition-all duration-500"
-                style={{ 
-                  width: `${(Object.values(orderStatuses).filter(s => s?.paymentStatus === 'COMPLETED').length / pendingOrderIds.length) * 100}%` 
+                style={{
+                  width: `${(Object.values(orderStatuses).filter(s => s?.paymentStatus === 'COMPLETED').length / pendingOrderIds.length) * 100}%`
                 }}
               />
             </div>
@@ -691,12 +717,12 @@ const CheckoutPage = () => {
 
           {/* Right Column - Order Summary */}
           <div className="space-y-5 sm:space-y-6">
-            {/* ✅ Order Items Preview */}
+            {/* Order Items Preview */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <h3 className="text-lg font-bold text-gray-900 mb-4">
                 Order Summary ({cartItems.length + bulkItems.length} items)
               </h3>
-              
+
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {/* Regular Items */}
                 {cartItems.map((item, idx) => (
@@ -744,10 +770,10 @@ const CheckoutPage = () => {
               </div>
             </div>
 
-            {/* ✅ Payment Summary */}
+            {/* Payment Summary */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Payment Details</h3>
-              
+
               <div className="space-y-3">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
