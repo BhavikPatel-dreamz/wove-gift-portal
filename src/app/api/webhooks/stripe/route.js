@@ -1,13 +1,11 @@
 // app/api/webhooks/stripe/route.js
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { headers } from 'next/headers';
 import { completeOrderAfterPayment } from '@/lib/action/orderAction';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// IMPORTANT: Disable body parsing for webhook
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
@@ -42,26 +40,23 @@ export async function POST(request) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
         console.log('💰 Payment succeeded:', paymentIntent.id);
-        console.log('📋 Payment intent metadata:', paymentIntent.metadata);
         
-        // Complete the order
-        await handlePaymentSuccess(paymentIntent);
+        // ✅ Handle payment success without waiting for completion
+        handlePaymentSuccess(paymentIntent);
         break;
       }
 
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object;
         console.log('❌ Payment failed:', paymentIntent.id);
-        console.log('📋 Payment intent metadata:', paymentIntent.metadata);
         
-        await handlePaymentFailure(paymentIntent);
+        handlePaymentFailure(paymentIntent);
         break;
       }
 
       case 'payment_intent.processing': {
         const paymentIntent = event.data.object;
         console.log('⏳ Payment processing:', paymentIntent.id);
-        // Order already in PROCESSING status
         break;
       }
 
@@ -69,7 +64,7 @@ export async function POST(request) {
         const paymentIntent = event.data.object;
         console.log('🚫 Payment canceled:', paymentIntent.id);
         
-        await handlePaymentCanceled(paymentIntent);
+        handlePaymentCanceled(paymentIntent);
         break;
       }
 
@@ -77,6 +72,7 @@ export async function POST(request) {
         console.log('Unhandled event type:', event.type);
     }
 
+    // ✅ Return immediately - don't wait for order processing
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('Webhook error:', error);
@@ -87,7 +83,7 @@ export async function POST(request) {
   }
 }
 
-// Handle successful payment
+// ✅ Handle successful payment (non-blocking)
 async function handlePaymentSuccess(paymentIntent) {
   try {
     const orderId = paymentIntent.metadata.orderId;
@@ -99,7 +95,11 @@ async function handlePaymentSuccess(paymentIntent) {
 
     console.log(`🔄 Processing payment for order: ${orderId}`);
 
-    // Complete the order (generate vouchers, send emails, etc.)
+    // ✅ Call completeOrderAfterPayment - it will:
+    // 1. Mark payment as completed immediately
+    // 2. Create delivery queue entries
+    // 3. Start background processing
+    // 4. Return immediately
     const result = await completeOrderAfterPayment(orderId, {
       paymentIntentId: paymentIntent.id,
       paymentMethod: paymentIntent.payment_method_types?.[0] || 'card',
@@ -108,28 +108,15 @@ async function handlePaymentSuccess(paymentIntent) {
     });
 
     if (result.success) {
-      console.log(`✅ Order completed successfully: ${orderId}`);
-      console.log(`📧 Emails sent, vouchers generated`);
+      console.log(`✅ Order queued for processing: ${orderId}`);
+      console.log(`📊 Processing status: ${result.data.processingStatus}`);
     } else {
-      console.error(`❌ Failed to complete order ${orderId}:`, result.error);
-      
-      // ✅ Still mark as completed if payment succeeded, even if voucher generation failed
-      // This prevents customer from being charged without getting an order
-      const { prisma } = await import('@/lib/db');
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          paymentStatus: 'COMPLETED',
-          paymentIntentId: paymentIntent.id,
-          paidAt: new Date(),
-        },
-      });
+      console.error(`❌ Failed to queue order ${orderId}:`, result.error);
     }
   } catch (error) {
     console.error('❌ Error handling payment success:', error);
     
-    // ✅ CRITICAL: Mark payment as completed even if there's an error
-    // to prevent charging customer without order
+    // ✅ Still mark payment as completed even if there's an error
     try {
       const orderId = paymentIntent.metadata.orderId;
       if (orderId) {
@@ -142,6 +129,7 @@ async function handlePaymentSuccess(paymentIntent) {
             paidAt: new Date(),
           },
         });
+        console.log(`✅ Order ${orderId} marked as paid (fallback)`);
       }
     } catch (fallbackError) {
       console.error('❌ Critical: Could not mark order as completed:', fallbackError);
