@@ -35,7 +35,7 @@ const WorkMain = () => {
   ]
 
   return (
-    <div className='max-w-[1440px] m-auto pt-[72px] px-4'>
+    <div className='max-w-360 m-auto pt-18 px-4'>
       {/* Hero Section */}
       <div className='text-center py-16'>
         <h1 className="text-3xl font-bold text-gray-900 my-4 px-4">
@@ -52,7 +52,7 @@ const WorkMain = () => {
           <div key={index} className='relative'>
             {/* Connecting Line */}
             {index < steps.length - 1 && (
-              <div className='hidden lg:block absolute top-12 left-[60%] w-full h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 opacity-30' />
+              <div className='hidden lg:block absolute top-12 left-[60%] w-full h-0.5 bg-linear-to-r from-blue-400 to-purple-400 opacity-30' />
             )}
 
             <div className='bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 relative z-10'>
@@ -74,14 +74,14 @@ const WorkMain = () => {
       </div>
 
       {/* Features Grid */}
-      <div className='bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-12 mb-20'>
+      <div className='bg-linear-to-br from-blue-50 to-purple-50 rounded-3xl p-12 mb-20'>
         <h2 className='text-3xl font-bold text-center mb-12 text-gray-800'>
           Everything You Need to Succeed
         </h2>
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl m-auto'>
           {features.map((feature, index) => (
             <div key={index} className='flex items-center space-x-3 bg-white rounded-xl p-4 shadow-sm'>
-              <CheckCircle className='w-6 h-6 text-green-500 flex-shrink-0' />
+              <CheckCircle className='w-6 h-6 text-green-500 shrink-0' />
               <span className='text-gray-700 font-medium'>{feature}</span>
             </div>
           ))}

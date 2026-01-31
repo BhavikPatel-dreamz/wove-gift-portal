@@ -70,7 +70,7 @@ const HeroSection = () => {
 
           {/* Trust Badge */}
           <div className="trust-badge flex flex-wrap items-center justify-center gap-2 mt-6 sm:mt-8">
-            <div className="trust-icon flex-shrink-0">
+            <div className="trust-icon shrink-0">
               <Shield size={12} color="white" />
             </div>
             <span className="font-inter text-xs sm:text-sm md:text-base">Trusted by 1M+ customers worldwide</span>

@@ -85,7 +85,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         md:translate-x-0 md:static md:inset-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center justify-between h-19 px-6 border-b border-gray-200 h-fit py-2">
+        <div className="flex items-center justify-between h-fit px-6 border-b border-gray-200 py-2">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
               <div className="w-4 h-4 bg-white rounded-sm"></div>

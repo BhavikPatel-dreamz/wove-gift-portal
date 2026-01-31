@@ -105,7 +105,7 @@ const SettlementContacts = ({ contacts, error }) => {
           >
             <div className="flex items-start gap-3">
               {/* Avatar */}
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
                   <span className="text-base font-medium text-white">
                     {initial}
@@ -128,13 +128,13 @@ const SettlementContacts = ({ contacts, error }) => {
                 <div className="space-y-1.5">
                   {contact.email && (
                     <div className="flex items-center gap-2 text-gray-600">
-                      <ContactIcon type="email" className="flex-shrink-0" />
+                      <ContactIcon type="email" className="shrink-0" />
                       <span className="text-sm truncate">{contact.email}</span>
                     </div>
                   )}
                   {contact.phone && (
                     <div className="flex items-center gap-2 text-gray-600">
-                      <ContactIcon type="phone" className="flex-shrink-0" />
+                      <ContactIcon type="phone" className="shrink-0" />
                       <span className="text-sm">{contact.phone}</span>
                     </div>
                   )}

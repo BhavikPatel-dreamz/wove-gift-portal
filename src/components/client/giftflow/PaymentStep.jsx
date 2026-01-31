@@ -343,14 +343,14 @@ const PaymentStep = () => {
             <span
               className="
                                         absolute inset-0 rounded-full p-[1.5px]
-                                        bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                                        bg-linear-to-r from-[#ED457D] to-[#FA8F42]
                                       "
             ></span>
             <span
               className="
-                                        absolute inset-[2px] rounded-full bg-white
+                                        absolute inset-0.5 rounded-full bg-white
                                         transition-all duration-300
-                                        group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+                                        group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
                                       "
             ></span>
 
@@ -394,9 +394,9 @@ const PaymentStep = () => {
                                 md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
                               "
             >
-              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
-              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
@@ -404,12 +404,12 @@ const PaymentStep = () => {
                 </div>
               </div>
 
-              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
           {/* Desktop spacer only */}
-          <div className="md:block w-[140px]" />
+          <div className="md:block w-35" />
         </div>
 
         {/* Header */}
@@ -464,7 +464,7 @@ const PaymentStep = () => {
               <button
                 onClick={handleInitiatePayment}
                 disabled={isProcessing || !isPaymentConfirmed}
-                className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
+                className={`w-full bg-linear-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
                        disabled:from-gray-300 disabled:to-gray-400
                        text-white py-3 sm:py-4 px-6 rounded-xl

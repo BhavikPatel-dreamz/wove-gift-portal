@@ -142,7 +142,7 @@ const FAQComponent = () => {
 
       {/* Search Bar */}
       <div className="absolute left-1/2 -translate-x-1/2 -mt-4
-                w-[90%] sm:w-[80%] md:w-[520px]
+                w-[90%] sm:w-[80%] md:w-130
                 h-auto px-2 sm:px-4">
         <div className="relative">
           {/* Search icon */}
@@ -190,7 +190,7 @@ const FAQComponent = () => {
                   key={category.name}
                   onClick={() => setActiveCategory(category.name)}
                   className={`px-6 py-2.5 rounded-full font-medium transition-all duration-200 text-base ${activeCategory === category.name
-                    ? 'bg-gradient-to-r from-pink-500 to-orange-400 text-white shadow-md'
+                    ? 'bg-linear-to-r from-pink-500 to-orange-400 text-white shadow-md'
                     : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
                     }`}
                 >
@@ -228,7 +228,7 @@ const FAQComponent = () => {
                         {faq.question}
                       </span>
 
-                      <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center relative transition-transform duration-200">
+                      <div className="shrink-0 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center relative transition-transform duration-200">
                         {isExpanded ? (
                           <div className="w-4 sm:w-5 h-0.5 bg-[#FFB4B4]" />
                         ) : (
@@ -255,8 +255,8 @@ const FAQComponent = () => {
 
         {/* Support Contact Section */}
         <div className="max-w-5xl mx-auto px-4 pb-14 sm:pb-20">
-          <div className="max-w-4xl mx-auto rounded-2xl sm:rounded-3xl p-[1px] bg-gradient-to-r from-pink-500 to-orange-400">
-            <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-br from-pink-50 to-orange-50 p-6 sm:p-10 lg:p-12 text-center">
+          <div className="max-w-4xl mx-auto rounded-2xl sm:rounded-3xl p-px bg-linear-to-r from-pink-500 to-orange-400">
+            <div className="rounded-2xl sm:rounded-3xl bg-linear-to-br from-pink-50 to-orange-50 p-6 sm:p-10 lg:p-12 text-center">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
                 Didn't find what you need?
               </h2>
@@ -266,7 +266,7 @@ const FAQComponent = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
-                <button className="bg-gradient-to-r from-pink-500 to-orange-400 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-full font-semibold hover:shadow-lg transition-shadow duration-200 flex items-center justify-center gap-2">
+                <button className="bg-linear-to-r from-pink-500 to-orange-400 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-full font-semibold hover:shadow-lg transition-shadow duration-200 flex items-center justify-center gap-2">
                   <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21.666 4.33337H4.33268C3.14102 4.33337 2.16602 5.30837 2.16602 6.50004V19.5C2.16602 20.6917 3.14102 21.6667 4.33268 21.6667H21.666C22.8577 21.6667 23.8327 20.6917 23.8327 19.5V6.50004C23.8327 5.30837 22.8577 4.33337 21.666 4.33337ZM21.2327 8.93754L14.1477 13.3684C13.4435 13.8125 12.5552 13.8125 11.851 13.3684L4.76602 8.93754C4.65739 8.87656 4.56226 8.79417 4.4864 8.69537C4.41053 8.59656 4.3555 8.48338 4.32464 8.36269C4.29378 8.242 4.28773 8.1163 4.30685 7.99321C4.32598 7.87011 4.36988 7.75217 4.4359 7.64653C4.50193 7.54089 4.5887 7.44975 4.69097 7.37862C4.79324 7.30749 4.90888 7.25784 5.03089 7.2327C5.1529 7.20755 5.27874 7.20742 5.4008 7.23232C5.52286 7.25721 5.6386 7.30662 5.74102 7.37754L12.9993 11.9167L20.2577 7.37754C20.3601 7.30662 20.4758 7.25721 20.5979 7.23232C20.72 7.20742 20.8458 7.20755 20.9678 7.2327C21.0898 7.25784 21.2055 7.30749 21.3077 7.37862C21.41 7.44975 21.4968 7.54089 21.5628 7.64653C21.6288 7.75217 21.6727 7.87011 21.6918 7.99321C21.711 8.1163 21.7049 8.242 21.6741 8.36269C21.6432 8.48338 21.5882 8.59656 21.5123 8.69537C21.4364 8.79417 21.3413 8.87656 21.2327 8.93754Z" fill="white" />
                   </svg>

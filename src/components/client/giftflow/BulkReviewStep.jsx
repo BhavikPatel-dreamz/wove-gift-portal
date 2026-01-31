@@ -366,14 +366,14 @@ const BulkReviewStep = () => {
                             <span
                                 className="
                                 absolute inset-0 rounded-full p-[1.5px]
-                                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                                bg-linear-to-r from-[#ED457D] to-[#FA8F42]
                               "
                             ></span>
                             <span
                                 className="
-                                absolute inset-[2px] rounded-full bg-white
+                                absolute inset-0.5 rounded-full bg-white
                                 transition-all duration-300
-                                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+                                group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
                               "
                             ></span>
 
@@ -416,9 +416,9 @@ const BulkReviewStep = () => {
                         md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
                       "
                             >
-                                <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+                                <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
-                                <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+                                <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                                     <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                                         <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                                             Bulk Gifting
@@ -426,11 +426,11 @@ const BulkReviewStep = () => {
                                     </div>
                                 </div>
 
-                                <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+                                <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
                             </div>
                         )}
 
-                        <div className="md:block w-[140px]" />
+                        <div className="md:block w-35" />
                     </div>
 
                     {/* Header */}
@@ -444,7 +444,7 @@ const BulkReviewStep = () => {
                     </div>
 
                     {/* Order Summary Card */}
-                    <div className="max-w-[688px] mx-auto bg-[#F9F9F9] rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm mb-6">
+                    <div className="max-w-172 mx-auto bg-[#F9F9F9] rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm mb-6">
                         <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
                             Order Summary
                         </h3>
@@ -458,7 +458,7 @@ const BulkReviewStep = () => {
                                         className="w-full h-full object-contain"
                                     />
                                 ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
+                                    <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
                                         <span className="text-white font-bold text-xl sm:text-2xl">
                                             {(selectedBrand?.brandName || selectedBrand?.name || 'B')
                                                 .substring(0, 1)
@@ -501,7 +501,7 @@ const BulkReviewStep = () => {
                                     <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
                                         Total Amount
                                     </p>
-                                    <p className="font-inter text-lg sm:text-xl font-bold bg-gradient-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
+                                    <p className="font-inter text-lg sm:text-xl font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
                                         {currentBulkOrder.selectedAmount.currency}
                                         {currentBulkOrder.totalSpend?.toFixed(2)}
                                     </p>
@@ -512,7 +512,7 @@ const BulkReviewStep = () => {
 
 
                     {/* Company Information Card */}
-                    <div className="max-w-[688px] m-auto p-[1px] rounded-[20px] shadow-sm mb-6" style={{ background: 'linear-gradient(114.06deg, #ED457D 11.36%, #FA8F42 90.28%)' }}>
+                    <div className="max-w-172 m-auto p-px rounded-[20px] shadow-sm mb-6" style={{ background: 'linear-gradient(114.06deg, #ED457D 11.36%, #FA8F42 90.28%)' }}>
 
                         <div className="p-6 bg-[linear-gradient(180deg,#FEF8F6_0%,#FDF7F8_100%)] rounded-[20px]">
                             <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 fontPoppins">Company Information</h3>
@@ -718,7 +718,7 @@ const BulkReviewStep = () => {
                             <div className={`
                                     w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
                                     ${isConfirmed
-                                    ? 'bg-gradient-to-r from-pink-500 to-orange-400 border-transparent'
+                                    ? 'bg-linear-to-r from-pink-500 to-orange-400 border-transparent'
                                     : 'bg-white border-gray-300'
                                 }
                                   `}>
@@ -743,9 +743,9 @@ const BulkReviewStep = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="max-w-[688px] m-auto space-y-4">
+                    <div className="max-w-172 m-auto space-y-4">
 
-                        <div className={`p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 inline-block w-full ${csvError === "" && isConfirmed
+                        <div className={`p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block w-full ${csvError === "" && isConfirmed
                             ? 'hover:bg-rose-50 hover:shadow-md cursor-pointer'
                             : 'opacity-50 cursor-not-allowed'
                             }
@@ -773,7 +773,7 @@ const BulkReviewStep = () => {
                         <button
                             disabled={csvError !== "" || !isConfirmed || isProcessingFile}
                             onClick={handleProceedToCheckout}
-                            className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600
+                            className={`w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600
                          text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 
                          ${csvError === "" && isConfirmed && !isProcessingFile
                                     ? 'hover:shadow-xl cursor-pointer hover:opacity-95'

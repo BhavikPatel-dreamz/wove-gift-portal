@@ -100,7 +100,7 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
         {/* Modal Header - Fixed */}
         
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0 bg-white rounded-t-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0 bg-white rounded-t-2xl">
           <h3 className="text-lg font-semibold text-gray-900">Process Settlement</h3>
           <button
             onClick={onClose}
@@ -119,9 +119,9 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
               : 'bg-red-50 border border-red-200'
               }`}>
               {processMessage.type === 'success' ? (
-                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               )}
               <p className={`text-sm ${processMessage.type === 'success' ? 'text-green-800' : 'text-red-800'
                 }`}>
@@ -299,7 +299,7 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
 
         {/* Modal Footer - Fixed */}
         {!processMessage && (
-          <div className="flex gap-3 px-6 py-4 bg-gray-50 rounded-b-2xl border-t border-gray-200 flex-shrink-0">
+          <div className="flex gap-3 px-6 py-4 bg-gray-50 rounded-b-2xl border-t border-gray-200 shrink-0">
             <button
               onClick={onClose}
               disabled={processing}

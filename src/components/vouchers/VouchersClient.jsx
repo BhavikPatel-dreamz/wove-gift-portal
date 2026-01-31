@@ -371,7 +371,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
   }));
 
   return (
-    <div className="max-w-[100%] mx-auto">
+    <div className="max-w-full mx-auto">
       <DynamicTable
         data={vouchers}
         columns={customColumns}
@@ -433,7 +433,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
 
       {/* Voucher Details Modal */}
       {isModalOpen && selectedVoucher && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-60 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">Voucher Details</h2>
@@ -452,7 +452,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
       {isBulkModalOpen && selectedBulkOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-linear-to-r from-blue-50 to-white">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                   <Package className="w-6 h-6 text-blue-600" />
@@ -549,7 +549,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                             </div>
                             {bulkData.hasBulkRecipients && child.recipient && (
                               <div className="col-span-2">
-                                <span className="block text-xs text-gray-500 mb-1 flex items-center gap-1">
+                                <span className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                                   <User className="w-3 h-3" />
                                   Recipient
                                 </span>

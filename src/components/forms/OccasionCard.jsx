@@ -12,12 +12,12 @@ const OccasionCard = ({ occasion, onEdit, onDelete, disabled = false }) => {
 
   return (
     <div
-      className={`group relative bg-gradient-to-b from-white to-gray-50 border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 flex flex-col
+      className={`group relative bg-linear-to-b from-white to-gray-50 border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300 flex flex-col
         hover:shadow-lg hover:-translate-y-1 hover:border-blue-200 ${disabled ? "opacity-60 cursor-not-allowed" : ""
         }`}
     >
       {/* Image / Preview */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-4/3 overflow-hidden">
         {occasion.image ? (
           <img
             src={occasion.image}
@@ -30,7 +30,7 @@ const OccasionCard = ({ occasion, onEdit, onDelete, disabled = false }) => {
           />
         ) : null}
         <div
-          className={`w-full h-full flex items-center justify-center text-5xl font-semibold bg-gradient-to-br from-blue-50 to-indigo-50 text-indigo-600 ${occasion.image ? "hidden" : "flex"
+          className={`w-full h-full flex items-center justify-center text-5xl font-semibold bg-linear-to-br from-blue-50 to-indigo-50 text-indigo-600 ${occasion.image ? "hidden" : "flex"
             }`}
         >
           {occasion.preview || "✨"}
@@ -48,7 +48,7 @@ const OccasionCard = ({ occasion, onEdit, onDelete, disabled = false }) => {
       </div>
 
       {/* Content */}
-      <div className="p-5 flex flex-col flex-grow">
+      <div className="p-5 flex flex-col grow">
         <h3
           className="font-semibold text-[18px] text-[#1A1A1A] leading-6 mb-1 truncate group-hover:text-blue-600 transition-colors"
           style={{ fontFamily: 'Poppins' }}

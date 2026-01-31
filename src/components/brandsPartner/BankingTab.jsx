@@ -66,7 +66,7 @@ const BankingTab = ({ formData, updateFormData }) => {
                   <option key={day} value={day}>Day {day}</option>
                 ))}
               </select>
-              <p className="mt-1 font-inter text-[12px] font-medium leading-[20px] text-[#A5A5A5]">
+              <p className="mt-1 font-inter text-[12px] font-medium leading-5 text-[#A5A5A5]">
                 Settlement will occur on this day each month (1-28 only)
               </p>
             </div>
@@ -103,7 +103,7 @@ const BankingTab = ({ formData, updateFormData }) => {
                 checked={formData.invoiceRequired || false}
                 onChange={(e) => updateFormData('invoiceRequired', e.target.checked)}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
         </div>
@@ -132,7 +132,7 @@ const BankingTab = ({ formData, updateFormData }) => {
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <div className="flex items-start space-x-2">
             <AlertTriangle className="text-yellow-500 mt-0.5" size={16} />
-            <p className="font-inter text-[12px] font-bold leading-[18px] text-[#7F3305]">
+            <p className="font-inter text-[12px] font-bold leading-4.5 text-[#7F3305]">
               <strong>Security Notice:</strong> Account numbers are encrypted and tokenised. Only masked values are displayed after saving.
             </p>
 
@@ -184,7 +184,7 @@ const BankingTab = ({ formData, updateFormData }) => {
                 )}
               </button>
             </div>
-            <p className="mt-1 font-inter text-[12px] font-medium leading-[20px] text-[#A5A5A5]">
+            <p className="mt-1 font-inter text-[12px] font-medium leading-5 text-[#A5A5A5]">
               {showAccountNumber ? 'Click to hide' : 'Click to show'} account number
             </p>
           </div>
@@ -224,7 +224,7 @@ const BankingTab = ({ formData, updateFormData }) => {
                 </button>
               )}
             </div>
-            <p className="mt-1 font-inter text-[12px] font-medium leading-[20px] text-[#A5A5A5]">Required for international transfers</p>
+            <p className="mt-1 font-inter text-[12px] font-medium leading-5 text-[#A5A5A5]">Required for international transfers</p>
           </div>
 
           <div>

@@ -21,7 +21,7 @@ const BrandCard = ({
 
   return (
     <div
-      className={`bg-white rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all duration-300 relative border border-[#1A1A1A1A] ${selectedBrand?.id === brand.id ? 'border-1 border-blue-500' : 'border-1 border-[rgba(26,26,26,0.10)]'}`}
+      className={`bg-white rounded-2xl p-6 cursor-pointer hover:shadow-lg transition-all duration-300 relative border border-[#1A1A1A1A] ${selectedBrand?.id === brand.id ? 'border border-blue-500' : 'border border-[rgba(26,26,26,0.10)]'}`}
       onClick={handleCardClick}
     >
       {/* Favorite Button */}
@@ -93,16 +93,16 @@ const BrandCard = ({
           <span
             className="
       absolute inset-0 rounded-full p-[1.5px]
-      bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+      bg-linear-to-r from-[#ED457D] to-[#FA8F42]
     "
           ></span>
 
           {/* Inner white background layer */}
           <span
             className="
-      absolute inset-[2px] rounded-full bg-white
+      absolute inset-0.5 rounded-full bg-white
       transition-all duration-300
-      group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+      group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
     "
           ></span>
 

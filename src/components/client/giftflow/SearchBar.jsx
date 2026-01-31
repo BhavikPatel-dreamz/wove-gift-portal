@@ -107,10 +107,10 @@ const SearchBar = ({
         {isBulkMode && (
           <div className="w-full flex items-center justify-center mb-4">
             {/* Left line */}
-            <div className="max-w-[214px] w-full h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
+            <div className="max-w-53.5 w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]"></div>
 
             {/* Center pill */}
-            <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+            <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
               <div className="px-4 py-1.5 bg-white rounded-full">
                 <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                   Bulk Gifting
@@ -119,7 +119,7 @@ const SearchBar = ({
             </div>
 
             {/* Right line */}
-            <div className="max-w-[214px] w-full h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
+            <div className="max-w-53.5 w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]"></div>
           </div>
         )}
 
@@ -135,7 +135,7 @@ const SearchBar = ({
       <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] sm:w-full max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-2 sm:px-4 z-30">
         {/* Search Input */}
         <div
-          className="flex items-center w-full rounded-full p-[2px]"
+          className="flex items-center w-full rounded-full p-0.5"
           style={{
             background: "linear-gradient(90deg, #F16B86, #FDBB74)",
           }}
@@ -164,7 +164,7 @@ const SearchBar = ({
 
         {/* Filter Dropdown */}
         <div 
-          className="relative w-full sm:w-auto sm:min-w-[200px]" 
+          className="relative w-full sm:w-auto sm:min-w-50" 
           ref={dropdownRef}
           onKeyDown={handleKeyDown}
         >
@@ -175,13 +175,13 @@ const SearchBar = ({
             aria-expanded={open}
             aria-haspopup="listbox"
           >
-            <Filter className="w-4 h-4 text-gray-700 flex-shrink-0" />
-            <span className="text-gray-800 font-medium text-sm sm:text-base whitespace-nowrap truncate max-w-[140px] sm:max-w-none">
+            <Filter className="w-4 h-4 text-gray-700 shrink-0" />
+            <span className="text-gray-800 font-medium text-sm sm:text-base whitespace-nowrap truncate max-w-35 sm:max-w-none">
               {selectedCategory || "All Categories"}
             </span>
             <ChevronDown
               size={16}
-              className={`text-gray-600 transition-transform flex-shrink-0 ${
+              className={`text-gray-600 transition-transform shrink-0 ${
                 open ? "rotate-180" : ""
               }`}
             />
@@ -192,7 +192,7 @@ const SearchBar = ({
             <ul
               className="absolute top-full mt-2 right-0 left-0 sm:left-auto sm:right-0 
                     bg-white rounded-xl shadow-lg border border-gray-100 
-                    w-full sm:w-auto sm:min-w-[200px] max-h-60 overflow-y-auto
+                    w-full sm:w-auto sm:min-w-50 max-h-60 overflow-y-auto
                     z-50"
               role="listbox"
               aria-label="Category filter options"

@@ -346,7 +346,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
 
   return (
     <section className="occasions-section">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-360 mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mb-12">
           <h2 className="occasions-section-title fontPoppins">Perfect for Every Occasion</h2>
@@ -370,7 +370,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
             {occasions.map((occasion) => (
               <div
                 key={occasion.id}
-                className="occasion-card cursor-pointer flex-shrink-0 transition-transform duration-300 hover:scale-[1.02]"
+                className="occasion-card cursor-pointer shrink-0 transition-transform duration-300 hover:scale-[1.02]"
                 style={{ width: 'calc(25% - 1.125rem)' }}
                 onClick={() => handleOccasionSelect(occasion)}
               >
@@ -431,7 +431,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
             {occasions.map((occasion) => (
               <div
                 key={occasion.id}
-                className="occasion-card flex-shrink-0 cursor-pointer transition-transform duration-300 active:scale-[0.98]"
+                className="occasion-card shrink-0 cursor-pointer transition-transform duration-300 active:scale-[0.98]"
                 onClick={(e) => {
                   // Prevent click when dragging
                   if (isDragging) {
@@ -489,7 +489,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
 const OccasionsSkeleton = () => {
   return (
     <section className="occasions-section">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-360 mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header Skeleton */}
         <div className="mb-12">
           <h2 className="occasions-section-title fontPoppins">Perfect for Every Occasion</h2>
@@ -516,7 +516,7 @@ const OccasionsSkeleton = () => {
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="occasion-card flex-shrink-0"
+                className="occasion-card shrink-0"
                 style={{
                   width: 'calc(100vw - 3rem)',
                   maxWidth: '380px'

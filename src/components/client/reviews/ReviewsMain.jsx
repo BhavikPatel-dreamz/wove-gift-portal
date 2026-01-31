@@ -91,7 +91,7 @@ const ReviewsMain = () => {
   )
 
   return (
-    <div className='max-w-[1440px] m-auto pt-[72px] px-6 pb-12'>
+    <div className='max-w-360 m-auto pt-18 px-6 pb-12'>
       <div className='max-w-5xl mx-auto'>
         {/* Header */}
         <div className='mb-8'>

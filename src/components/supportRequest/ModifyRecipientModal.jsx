@@ -152,7 +152,7 @@ const ModifyRecipientModal = ({ orderDetails, onClose, onSuccess }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 text-black">
             <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between">
+                <div className="bg-linear-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="bg-white/20 p-2 rounded-lg">
                             <Edit className="w-6 h-6" />
@@ -258,7 +258,7 @@ const ModifyRecipientModal = ({ orderDetails, onClose, onSuccess }) => {
                                                             )}
                                                         </div>
                                                         {isSelected && (
-                                                            <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0" />
+                                                            <CheckCircle2 className="w-5 h-5 text-white shrink-0" />
                                                         )}
                                                     </div>
                                                 </button>
@@ -271,7 +271,7 @@ const ModifyRecipientModal = ({ orderDetails, onClose, onSuccess }) => {
                             {/* Info Footer */}
                             <div className="p-3 border-t bg-blue-50">
                                 <div className="flex items-start gap-2">
-                                    <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                                    <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                                     <p className="text-xs text-blue-800">
                                         Select a recipient to modify their details and resend their voucher
                                     </p>
@@ -307,7 +307,7 @@ const ModifyRecipientModal = ({ orderDetails, onClose, onSuccess }) => {
                                 {/* Warning Message */}
                                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                                     <div className="flex gap-3">
-                                        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                        <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                                         <div className="text-sm text-amber-900">
                                             <p className="font-semibold mb-1">Important Notice</p>
                                             <p>

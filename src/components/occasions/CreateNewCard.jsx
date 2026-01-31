@@ -199,9 +199,9 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
                 )}
               </div>
 
-              <div className="overflow-hidden border border-[#E5E7EB] p-4 bg-white rounded-lg max-w-md max-h-[600px]">
+              <div className="overflow-hidden border border-[#E5E7EB] p-4 bg-white rounded-lg max-w-md max-h-150">
                 {/* Image Preview Section */}
-                <div className="relative flex items-center justify-center overflow-hidden max-h-[300px]">
+                <div className="relative flex items-center justify-center overflow-hidden max-h-75">
                   {formData.imageUrl ? (
                     <>
                       <div className="absolute inset-0 bg-linear-to-t from-black/5 to-transparent z-10" />
@@ -278,7 +278,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
                 </div>
 
                 {/* Optional: Animated Border Effect */}
-                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-10"></div>
+                <div className="absolute inset-0 rounded-lg bg-linear-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none -z-10"></div>
               </div>
             </div>
           )}

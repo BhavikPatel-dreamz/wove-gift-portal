@@ -133,10 +133,10 @@ const ReviewConfirmStep = () => {
 
         {/* Header */}
         <div className="text-center mb-8 mt-2">
-          <h1 className="text-[40px] leading-[45px] font-bold text-[#1A1A1A] text-center font-['Poppins'] mb-3">
+          <h1 className="text-[40px] leading-11.25 font-bold text-[#1A1A1A] text-center font-['Poppins'] mb-3">
             Review Your Beautiful Gift
           </h1>
-          <p className="text-[#4A4A4A] text-center font-['Inter'] text-base md:text-lg font-medium leading-[24px]">
+          <p className="text-[#4A4A4A] text-center font-['Inter'] text-base md:text-lg font-medium leading-6">
             Confirm all details before proceeding to payment
           </p>
         </div>
@@ -147,8 +147,8 @@ const ReviewConfirmStep = () => {
             <SecurityIcon />
           </div>
           <div>
-            <h3 className="text-[15px] leading-[20px] font-semibold text-[#1A1A1A] font-['Poppins']">Secure Preview Mode</h3>
-            <p className="text-sm font-normal leading-[18px] text-[#4A4A4A] font-['Inter']">
+            <h3 className="text-[15px] leading-5 font-semibold text-[#1A1A1A] font-['Poppins']">Secure Preview Mode</h3>
+            <p className="text-sm font-normal leading-4.5 text-[#4A4A4A] font-['Inter']">
               Gift code protected until payment completion
             </p>
           </div>
@@ -159,7 +159,7 @@ const ReviewConfirmStep = () => {
           <div className="">
             {/* Gift Card Visual */}
             <div className="relative max-w-fit mx-auto"> {/* Fixed typo here */}
-              <div className="w-[313px] h-[353px] aspect-square rounded-2xl bg-white shadow-md overflow-hidden border border-gray-200">
+              <div className="w-78.25 h-88.25 aspect-square rounded-2xl bg-white shadow-md overflow-hidden border border-gray-200">
                 {selectedSubCategory?.image ? (
                   <img
                     src={selectedSubCategory.image}
@@ -196,7 +196,7 @@ const ReviewConfirmStep = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17" fill="none">
                   <path d="M13.7891 3.94818V7.61517C13.7891 10.0991 12.7734 11.9047 11.5537 13.1415C10.3919 14.3197 9.06786 14.9571 8.30762 15.1533C7.54728 14.9569 6.22305 14.3194 5.06152 13.1415C3.84194 11.9047 2.82715 10.0989 2.82715 7.61517V3.94818L8.30762 1.51263L13.7891 3.94818Z" stroke="#1A1A1A" strokeWidth="1.5" />
                 </svg>
-                <h4 className="text-[#1A1A1A] text-[14px] font-semibold leading-[18px] font-poppins">Secure Gift Code</h4>
+                <h4 className="text-[#1A1A1A] text-[14px] font-semibold leading-4.5 font-poppins">Secure Gift Code</h4>
               </div>
 
               <div className="bg-white rounded-[10px] border border-[rgba(26,26,26,0.15)] shadow-[0_10px_10px_0_rgba(0,0,0,0.08)] p-2 mb-4">
@@ -205,13 +205,13 @@ const ReviewConfirmStep = () => {
 
             </div>
             <div className="flex gap-2 items-center mt-3 mx-auto w-fit">
-              <div className="p-2 rounded-[8px] bg-[rgba(57,174,65,0.1)]">
+              <div className="p-2 rounded-lg bg-[rgba(57,174,65,0.1)]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="16" viewBox="0 0 13 16" fill="none">
                   <path d="M11.1431 5.647V4.706C11.1431 2.11 9.06034 0 6.5 0C3.93966 0 1.85686 2.111 1.85686 4.706V5.647C0.830753 5.647 0 6.49 0 7.529V14.118C0 15.158 0.830753 16 1.85686 16H11.1431C12.1692 16 13 15.157 13 14.118V7.529C13 6.489 12.1683 5.647 11.1431 5.647ZM3.71372 4.706C3.71372 3.149 4.9638 1.882 6.5 1.882C8.0362 1.882 9.28628 3.149 9.28628 4.706V5.647H3.71274L3.71372 4.706ZM7.42843 11.294C7.42843 11.5436 7.33061 11.7829 7.1565 11.9594C6.98239 12.1359 6.74624 12.235 6.5 12.235C6.25377 12.235 6.01762 12.1359 5.8435 11.9594C5.66939 11.7829 5.57157 11.5436 5.57157 11.294V9.412C5.57157 9.16243 5.66939 8.92308 5.8435 8.74661C6.01762 8.57014 6.25377 8.471 6.5 8.471C6.74624 8.471 6.98239 8.57014 7.1565 8.74661C7.33061 8.92308 7.42843 9.16243 7.42843 9.412V11.294Z" fill="#39AE41" />
                 </svg>
               </div>
 
-              <span className="text-[#1A1A1A] text-[12px] font-medium leading-[16px] font-poppins">
+              <span className="text-[#1A1A1A] text-[12px] font-medium leading-4 font-poppins">
                 Code Revealed after payment completion
               </span>
 
@@ -225,7 +225,7 @@ const ReviewConfirmStep = () => {
             <div className="bg-white flex flex-col gap-3 rounded-2xl py-4 p-4 border border-gray-200">
               <div>
                 <div className="flex items-start gap-2">
-                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-[22px]">
+                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">
                     Delivery Method
                   </div>
 
@@ -243,13 +243,13 @@ const ReviewConfirmStep = () => {
                     </button>
                   </div>
                 </div>
-                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-[24px]">
+                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">
                   {deliveryMethod}
                 </div>
               </div>
               <div>
                 <div className="flex items-start gap-2">
-                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-[22px]">Recipient WhatsApp Number</div>
+                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">Recipient WhatsApp Number</div>
                   <div>
                     <button onClick={() => redirectToDeliveryMethod()}>
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -264,7 +264,7 @@ const ReviewConfirmStep = () => {
                     </button>
                   </div>
                 </div>
-                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-[24px]">{deliveryMethod == "email" ? deliveryDetails?.recipientEmailAddress : deliveryDetails?.recipientWhatsAppNumber}</div>
+                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{deliveryMethod == "email" ? deliveryDetails?.recipientEmailAddress : deliveryDetails?.recipientWhatsAppNumber}</div>
               </div>
             </div>
 
@@ -316,7 +316,7 @@ const ReviewConfirmStep = () => {
             <div className="bg-white rounded-2xl py-4 p-4  border border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <h3 className="text-[#1A1A1A] text-[16px] font-semibold leading-[22px] font-poppins">
+                  <h3 className="text-[#1A1A1A] text-[16px] font-semibold leading-5.5 font-poppins">
                     Personal Message</h3>
                   <Heart className="w-5 h-5 text-red-500 ml-2 fill-red-500" />
                 </div>
@@ -324,7 +324,7 @@ const ReviewConfirmStep = () => {
               </div>
 
               <div className="bg-[#F6F6F6] rounded-[10px] p-4 max-h-40 overflow-y-auto">
-                <p className="text-[#4A4A4A] text-[14px] font-medium leading-[24px] italic font-inter">
+                <p className="text-[#4A4A4A] text-[14px] font-medium leading-6 italic font-inter">
                   "{personalMessage || 'No message added'}"
                 </p>
                 <div className="flex justify-end">
@@ -371,7 +371,7 @@ const ReviewConfirmStep = () => {
                   <div className={`
                     w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
                     ${isConfirmed
-                      ? 'bg-gradient-to-r from-pink-500 to-orange-400 border-transparent'
+                      ? 'bg-linear-to-r from-pink-500 to-orange-400 border-transparent'
                       : 'bg-white border-gray-300'
                     }
                   `}>
@@ -414,7 +414,7 @@ const ReviewConfirmStep = () => {
                     Update Gift in Cart
                   </button>
                 ) : (
-                  <div className={`p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 inline-block w-full ${isConfirmed
+                  <div className={`p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block w-full ${isConfirmed
                     ? 'hover:bg-rose-50 hover:shadow-md cursor-pointer'
                     : 'opacity-50 cursor-not-allowed'
                     }
@@ -438,7 +438,7 @@ const ReviewConfirmStep = () => {
                   onClick={handleBuyNow}
                   disabled={!isConfirmed}
                   className={`
-                    w-full h-14 bg-gradient-to-r from-pink-500 to-orange-400 text-white 
+                    w-full h-14 bg-linear-to-r from-pink-500 to-orange-400 text-white 
                     rounded-full font-semibold text-lg transition-all duration-200 shadow-lg 
                     flex items-center justify-center gap-2
                     ${isConfirmed

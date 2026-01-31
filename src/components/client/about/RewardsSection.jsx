@@ -50,7 +50,7 @@ const BulkGifting = () => {
               inline-flex items-center gap-2
               rounded-3xl px-5 py-3.5
               text-sm font-semibold text-white
-              bg-gradient-to-r from-pink-500 to-orange-400
+              bg-linear-to-r from-pink-500 to-orange-400
               hover:from-pink-600 hover:to-orange-500
               transition
             "

@@ -2,9 +2,9 @@ import React from 'react'
 
 const TermsMain = () => {
   return (
-    <div className="max-w-[1440px] m-auto  pt-[75px]">
+    <div className="max-w-360 m-auto  pt-18.75">
       <div className="  rounded-lg p-8">
-        <div className="text-[35px] font-semibold text-[#1A1A1A] mb-[14px]">Terms & Conditions</div>
+        <div className="text-[35px] font-semibold text-[#1A1A1A] mb-3.5">Terms & Conditions</div>
         <p className="text-sm text-gray-500 mb-8">Last updated: November 18, 2025</p>
 
         <div className="space-y-8 text-gray-700">

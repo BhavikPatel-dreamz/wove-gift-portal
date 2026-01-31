@@ -314,7 +314,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
                   />
                 </div>
 
-                <div className="flex items-center h-[38px]">
+                <div className="flex items-center h-9.5">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -331,14 +331,14 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 <div className="flex justify-end md:justify-end">
                   <button
                     onClick={addDenomination}
-                    className="w-full max-w-fit px-2 bg-[#175EFD] hover:bg-blue-700 text-white px-2 py-3 rounded-md text-sm font-medium transition-colors"
+                    className="w-full max-w-fit bg-[#175EFD] hover:bg-blue-700 text-white px-2 py-3 rounded-md text-sm font-medium transition-colors"
                   >
                     + Add New Voucher
                   </button>
                 </div>
               </div>
 
-              <p className="font-inter text-xs font-medium leading-5 text-[#1F59EE] mt-3 break-words">
+              <p className="font-inter text-xs font-medium leading-5 text-[#1F59EE] mt-3 wrap-break-word">
                 * Required fields. Display name defaults to '{formData?.currency || "USD"}' if left empty.
               </p>
             </div>

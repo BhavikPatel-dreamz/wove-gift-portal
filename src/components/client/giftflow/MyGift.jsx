@@ -326,14 +326,14 @@ function MyGift() {
     return (
       <div key={bulkOrderNumber} className="relative bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
         {/* Bulk Order Badge */}
-        <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full flex items-center gap-1">
+        <div className="absolute top-2 right-2 px-2 py-1 bg-linear-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full flex items-center gap-1">
           <Users className="w-3 h-3" />
           BULK ({stats.totalVouchers})
         </div>
 
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r ${getGiftIconColor(overallStatus)} flex items-center justify-center`}>
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-linear-to-r ${getGiftIconColor(overallStatus)} flex items-center justify-center`}>
               <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div className="min-w-0">
@@ -362,14 +362,14 @@ function MyGift() {
 
         {/* Multiple Recipients Info */}
         <div className="flex items-center gap-2 mb-4 text-sm bg-[#FEF8F6] p-2 rounded-lg">
-          <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+          <div className="w-5 h-5 flex items-center justify-center shrink-0">
             <Users className="w-4 h-4 text-[#ED457D]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] text-gray-500 mb-0.5">
               Recipients
             </p>
-            <p className="font-semibold text-[#2F2E38] text-[12px] leading-[18px] font-poppins truncate">
+            <p className="font-semibold text-[#2F2E38] text-[12px] leading-4.5 font-poppins truncate">
               Multiple Recipients
             </p>
             <p className="font-normal text-[#75738C] text-[10px] leading-[16.5px] font-poppins truncate">
@@ -422,7 +422,7 @@ function MyGift() {
       <div key={card.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r ${getGiftIconColor(card.status)} flex items-center justify-center`}>
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-linear-to-r ${getGiftIconColor(card.status)} flex items-center justify-center`}>
               <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div className="min-w-0">
@@ -451,7 +451,7 @@ function MyGift() {
 
         {/* Receiver/Sender Info */}
         <div className="flex items-center gap-2 mb-4 text-sm bg-[#FEF8F6] p-2 rounded-lg">
-          <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+          <div className="w-5 h-5 flex items-center justify-center shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
               <path d="M8.59135 2.45459C9.45933 2.45459 10.2918 2.79939 10.9055 3.41315C11.5193 4.0269 11.8641 4.85934 11.8641 5.72732C11.8641 6.5953 11.5193 7.42773 10.9055 8.04149C10.2918 8.65524 9.45933 9.00004 8.59135 9.00004C7.72337 9.00004 6.89094 8.65524 6.27718 8.04149C5.66343 7.42773 5.31863 6.5953 5.31863 5.72732C5.31863 4.85934 5.66343 4.0269 6.27718 3.41315C6.89094 2.79939 7.72337 2.45459 8.59135 2.45459ZM8.59135 15.5455C8.59135 15.5455 15.1368 15.5455 15.1368 13.9091C15.1368 11.9455 11.9459 9.81823 8.59135 9.81823C5.23681 9.81823 2.0459 11.9455 2.0459 13.9091C2.0459 15.5455 8.59135 15.5455 8.59135 15.5455Z" fill="#ED457D" />
             </svg>
@@ -460,7 +460,7 @@ function MyGift() {
             <p className="text-[10px] text-gray-500 mb-0.5">
               {card.isSent ? 'Receiver' : 'Sender'}
             </p>
-            <p className="font-semibold text-[#2F2E38] text-[12px] leading-[18px] font-poppins truncate">
+            <p className="font-semibold text-[#2F2E38] text-[12px] leading-4.5 font-poppins truncate">
               {card.receiverName || 'N/A'}
             </p>
             <p className="font-normal text-[#75738C] text-[10px] leading-[16.5px] font-poppins truncate">
@@ -489,17 +489,17 @@ function MyGift() {
             <div className="mb-4">
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-red-400 to-red-500 h-2 rounded-full transition-all"
+                  className="bg-linear-to-r from-red-400 to-red-500 h-2 rounded-full transition-all"
                   style={{ width: `${card.spent}%` }}
                 ></div>
               </div>
-              <p className="mt-1 font-normal text-[#75738C] text-[10px] leading-[15px] font-[Arial]">
+              <p className="mt-1 font-normal text-[#75738C] text-[10px] leading-3.75 font-[Arial]">
                 {card.spent}% spent
               </p>
             </div>
 
             {/* Labels */}
-            <div className="flex justify-between mb-1 border-b border-[#F3F4F6] pb-2 mb-3">
+            <div className="flex justify-between border-b border-[#F3F4F6] pb-2 mb-1">
               <div>
                 <div className='flex gap-2 items-center'>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -512,7 +512,7 @@ function MyGift() {
                     <div className="font-normal text-[#75738C] text-[12px] leading-[13.5px] tracking-[0.225px] uppercase font-[Arial]">
                       Last Redemption
                     </div>
-                    <div className="text-[12px] leading-[16px] text-[#2F2E38] font-medium mt-1">
+                    <div className="text-[12px] leading-4 text-[#2F2E38] font-medium mt-1">
                       {card.purchaseDate || "N/A"}
                     </div>
                   </div>
@@ -523,7 +523,7 @@ function MyGift() {
                 <div className="text-right font-normal text-[#75738C] text-[12px] leading-[13.5px] tracking-[0.225px] uppercase font-[Arial]">
                   Expires
                 </div>
-                <div className="text-[12px] leading-[16px] text-[#FF6B00] font-medium mt-1">
+                <div className="text-[12px] leading-4 text-[#FF6B00] font-medium mt-1">
                   {card.expires || "No Expiry"}
                 </div>
               </div>
@@ -539,7 +539,7 @@ function MyGift() {
               {card.status !== 'EXPIRED' && card.status !== 'CLAIMED' && card.isReceived && (
                 <button 
                   onClick={handleRedeemClick} 
-                  className="flex-1 py-2 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:shadow-lg transition-all">
+                  className="flex-1 py-2 bg-linear-to-r from-orange-400 to-red-500 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:shadow-lg transition-all">
                   <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="text-xs sm:text-sm font-medium">Redeem</span>
                 </button>
@@ -562,9 +562,9 @@ function MyGift() {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`flex-1 min-w-[calc(50%-4px)] sm:min-w-0 sm:w-[150px] lg:w-[300px] h-[40px] sm:h-[50px] px-3 sm:px-8 py-2 sm:py-3 rounded-lg text-xs sm:text-base font-medium transition-all ${activeTab === tab.id
-                ? 'bg-gradient-to-r from-pink-400 to-orange-400 text-[#FFFFFF] shadow-lg'
-                : 'bg-white border border-[1px] border-[#1A1A1A1A] rounded-[10px] text-[#000000] hover:bg-gray-100'
+              className={`flex-1 min-w-[calc(50%-4px)] sm:min-w-0 sm:w-37.5 lg:w-75 h-10 sm:h-12.5 px-3 sm:px-8 py-2 sm:py-3 rounded-lg text-xs sm:text-base font-medium transition-all ${activeTab === tab.id
+                ? 'bg-linear-to-r from-pink-400 to-orange-400 text-[#FFFFFF] shadow-lg'
+                : 'bg-white border  border-[#1A1A1A1A] rounded-[10px] text-[#000000] hover:bg-gray-100'
                 }`}
             >
               {tab.label}
@@ -593,8 +593,8 @@ function MyGift() {
 
         {/* Search and Actions */}
         <div className="w-full flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 mb-8">
-          <div className="relative w-full sm:w-[619px] h-[40px] border border-[#E5E7EB] rounded-lg flex items-center px-4">
-            <Search className="w-5 h-5 text-[#9CA3AF] flex-shrink-0" />
+          <div className="relative w-full sm:w-154.75 h-10 border border-[#E5E7EB] rounded-lg flex items-center px-4">
+            <Search className="w-5 h-5 text-[#9CA3AF] shrink-0" />
             <input
               type="text"
               placeholder="Search by code, receiver email, or brand"
@@ -621,7 +621,7 @@ function MyGift() {
                 <button
                   type="button"
                   onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                  className="w-full h-[40px] px-4 bg-white border border-[#4A4A4A] rounded-lg flex items-center justify-between text-[#4A4A4A] text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="w-full h-10 px-4 bg-white border border-[#4A4A4A] rounded-lg flex items-center justify-between text-[#4A4A4A] text-sm font-medium hover:bg-gray-50 transition-colors"
                 >
                   <span className="truncate">
                     {startDate && endDate
@@ -641,7 +641,7 @@ function MyGift() {
                         ✕
                       </button>
                     )}
-                    <Calendar className="w-4 h-4 flex-shrink-0" />
+                    <Calendar className="w-4 h-4 shrink-0" />
                   </div>
                 </button>
 
@@ -665,7 +665,7 @@ function MyGift() {
             {/* Export Button */}
             {/* <button
               onClick={handleExport}
-              className="h-[40px] px-4 bg-white border border-[1px] border-[#FF6B00] rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+              className="h-10 px-4 bg-white border border-[1px] border-[#FF6B00] rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
             >
               <Download className="w-4 h-4 text-[#000000]" />
               <span className="text-[#000000] text-sm font-medium whitespace-nowrap">Export</span>
@@ -676,7 +676,7 @@ function MyGift() {
         {/* Error State */}
         {error && !loading && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <div>
               <h3 className="text-sm font-medium text-red-800 mb-1">Error loading gift cards</h3>
               <p className="text-sm text-red-600">{error}</p>
@@ -739,7 +739,7 @@ function MyGift() {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </button>
@@ -751,8 +751,8 @@ function MyGift() {
                       <button
                         key={page}
                         onClick={() => handlePageChange(page)}
-                        className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-xs sm:text-base font-medium flex-shrink-0 transition-all ${currentPage === page
-                          ? 'bg-gradient-to-r from-orange-400 to-red-500 text-white'
+                        className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg text-xs sm:text-base font-medium shrink-0 transition-all ${currentPage === page
+                          ? 'bg-linear-to-r from-orange-400 to-red-500 text-white'
                           : 'border border-gray-300 hover:bg-gray-50 text-gray-600'
                           }`}
                       >
@@ -764,7 +764,7 @@ function MyGift() {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === pagination.totalPages}
-                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                   </button>
@@ -789,7 +789,7 @@ function MyGift() {
         <div className="fixed inset-0 bg-black/50 bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 flex items-center justify-between">
+            <div className="bg-linear-to-r from-purple-500 to-pink-500 p-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
                   <Users className="w-6 h-6 text-white" />
@@ -848,7 +848,7 @@ function MyGift() {
                         {/* Left Section - Voucher Info */}
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           {/* Voucher Number */}
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                          <div className="shrink-0 w-10 h-10 rounded-full bg-linear-to-r from-purple-500 to-pink-500 flex items-center justify-center">
                             <span className="text-white font-bold text-sm">#{index + 1}</span>
                           </div>
 
@@ -885,7 +885,7 @@ function MyGift() {
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
-                                  className="bg-gradient-to-r from-red-400 to-red-500 h-2 rounded-full transition-all"
+                                  className="bg-linear-to-r from-red-400 to-red-500 h-2 rounded-full transition-all"
                                   style={{ width: `${card.spent}%` }}
                                 ></div>
                               </div>

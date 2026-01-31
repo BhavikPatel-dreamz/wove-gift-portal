@@ -161,7 +161,7 @@ const TimingSelectorStep = () => {
           <div
             onClick={() => handleTimingSelect('immediate')}
             className={`relative p-8 border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${selectedOption === 'immediate'
-              ? 'border-blue-400 bg-blue-50 shadow-lg'
+              ? 'border-blue-400 bg-blue-50 shadow-lg rounded-[20px] '
               : 'border-[#1A1A1A33] rounded-[20px] bg-[#E9F3FF] hover:border-blue-300'
               }`}
           >
@@ -185,7 +185,7 @@ const TimingSelectorStep = () => {
               : 'border-[#1A1A1A33] rounded-[20px] bg-[#FAF6FF] hover:border-purple-300'
               }`}
           >
-            <div className="w-16 h-16 p-[12px] bg-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <div className="w-16 h-16 p-3 bg-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M4.64754 36.3999H37.7497C38.0466 36.3999 38.3335 36.2961 38.5611 36.1067C38.879 35.8405 46.1317 29.6013 46.5739 16.1333H11.0229C10.5824 28.3586 3.90299 34.1049 3.83358 34.1622C3.42664 34.5061 3.27692 35.0677 3.46 35.5675C3.64181 36.066 4.11562 36.3999 4.64754 36.3999ZM45.3496 8.53333H39.0163V7.26666C39.0163 6.55733 38.4589 6 37.7496 6C37.0403 6 36.4829 6.55733 36.4829 7.26666V8.53333H30.0652V7.26666C30.0652 6.55733 29.5078 6 28.7985 6C28.0892 6 27.5318 6.55733 27.5318 7.26666V8.53333H21.1985V7.26666C21.1985 6.55733 20.6412 6 19.9319 6C19.2225 6 18.6652 6.55733 18.6652 7.26666V8.53333H12.3319C11.6225 8.53333 11.0652 9.09066 11.0652 9.79999V13.6H46.6162V9.79999C46.6162 9.09066 46.0589 8.53333 45.3496 8.53333Z" fill="white" />
                 <path d="M40.1879 38.0489C39.5001 38.6216 38.6367 38.9333 37.7498 38.9333H11.0654V42.7333C11.0654 43.4335 11.632 44 12.3321 44H45.3498C46.0499 44 46.6165 43.4335 46.6165 42.7333V28.5344C44.1743 34.5258 40.7665 37.5646 40.1879 38.0489Z" fill="white" fillOpacity="0.5" />
@@ -292,7 +292,7 @@ const TimingSelectorStep = () => {
                     `}</style>
 
                     <div
-                      className="time-slots-container grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[280px] sm:max-h-[320px] overflow-y-auto pr-2"
+                      className="time-slots-container grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-70 sm:max-h-80 overflow-y-auto pr-2"
                     >
                       {timeSlots.map((time) => {
                         const isSelected = selectedTime === time;
@@ -329,7 +329,7 @@ const TimingSelectorStep = () => {
 
                 {/* Confirmation Message */}
                 {selectedDate && selectedTime && (
-                  <div className="mt-6 p-4 bg-gradient-to-r from-pink-50 to-orange-50 rounded-xl border border-pink-200">
+                  <div className="mt-6 p-4 bg-linear-to-r from-pink-50 to-orange-50 rounded-xl border border-pink-200">
                     <div className="text-center">
                       <p className="text-xs sm:text-sm text-gray-600 mb-1">
                         Your gift will be delivered on

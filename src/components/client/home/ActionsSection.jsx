@@ -79,7 +79,7 @@ const ActionSelectionCards = (props) => {
             onClick={() => handleCardClick(card)}
           >
             {/* Icon */}
-            <div className={`w-[70px] h-[70px] sm:w-[78px] sm:h-[78px] lg:w-[83px] lg:h-[83px] ${card.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-5 sm:mb-6`}>
+            <div className={`w-17.5 h-17.5 sm:w-19.5 sm:h-19.5 lg:w-20.75 lg:h-20.75 ${card.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-5 sm:mb-6`}>
               {card.icon}
             </div>
 

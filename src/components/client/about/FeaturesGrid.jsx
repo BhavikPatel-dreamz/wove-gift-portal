@@ -3,10 +3,10 @@ import { Settings, Zap, Heart } from "lucide-react";
 
 const Features = () => {
   return (
-    <section className="w-full my-[60px] px-4 py-10" style={{background: "linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%), #D9D9D9"}}
+    <section className="w-full my-15 px-4 py-10" style={{background: "linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%), #D9D9D9"}}
     
     >
-      <div className="max-w-[1440px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 rounded-xl overflow-hidden  ">
+      <div className="max-w-360 mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 rounded-xl overflow-hidden  ">
         {/* Feature 1 */}
         <div className="flex flex-col items-center text-center py-8 px-6">
           <div className="bg-[#DD99FF] rounded-lg p-3 mb-4 inline-flex">

@@ -37,14 +37,14 @@ function StatCard({ title, amount, currency, color, icon }) {
   const colors = colorClasses[color];
 
   return (
-    <div className={`relative flex h-[90px] w-full border ${colors.border} items-center justify-between rounded-xl ${colors.bg} p-4 transition-transform hover:scale-105`}>
+    <div className={`relative flex h-22.5 w-full border ${colors.border} items-center justify-between rounded-xl ${colors.bg} p-4 transition-transform hover:scale-105`}>
       <div className="flex flex-col gap-1">
         <p className={`text-sm sm:text-base font-medium ${colors.text}`}>{title}</p>
         <p className={`text-base sm:text-lg font-semibold ${colors.text}`}>
           {getCurrencySymbol(currency)}{amount?.toLocaleString() || "0"}
         </p>
       </div>
-      <div className={`flex h-10 w-10 flex-shrink-0 mb-5 items-center justify-center rounded-lg ${colors.iconBg}`}>
+      <div className={`flex h-10 w-10 shrink-0 mb-5 items-center justify-center rounded-lg ${colors.iconBg}`}>
         <img src={icon} alt={title} className="h-5 w-5" />
       </div>
     </div>
@@ -64,10 +64,10 @@ function SettlementDashboard({ settlement }) {
     return (
       <div className="w-full">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:gap-5">
-          <div className="h-[90px] rounded-xl bg-gray-100 animate-pulse"></div>
-          <div className="h-[90px] rounded-xl bg-gray-100 animate-pulse"></div>
-          <div className="h-[90px] rounded-xl bg-gray-100 animate-pulse"></div>
-          <div className="h-[90px] rounded-xl bg-gray-100 animate-pulse"></div>
+          <div className="h-22.5 rounded-xl bg-gray-100 animate-pulse"></div>
+          <div className="h-22.5 rounded-xl bg-gray-100 animate-pulse"></div>
+          <div className="h-22.5 rounded-xl bg-gray-100 animate-pulse"></div>
+          <div className="h-22.5 rounded-xl bg-gray-100 animate-pulse"></div>
         </div>
       </div>
     );

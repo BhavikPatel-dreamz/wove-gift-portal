@@ -97,10 +97,10 @@ export default function SupportForm() {
       {!showSuccessFull ? (
         <div className="max-w-xxl w-full">
           <div className="text-center mb-8">
-            <h2 className="text-[40px] font-bold text-gray-900 mb-[32px]">
+            <h2 className="text-[40px] font-bold text-gray-900 mb-8">
               Support Request
             </h2>
-            <p className="text-base text-[#4A4A4A] max-w-[652px] m-auto">
+            <p className="text-base text-[#4A4A4A] max-w-163 m-auto">
               Submit a request to cancel or modify your gift voucher. Requests are reviewed based on voucher status and delivery stage.
             </p>
           </div>
@@ -173,7 +173,7 @@ export default function SupportForm() {
             <button
               onClick={handleSubmit}
               disabled={loading || !isFormValid}
-              className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-full font-semibold shadow-lg hover:from-pink-600 hover:to-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full py-3.5 bg-linear-to-r from-pink-500 to-orange-500 text-white rounded-full font-semibold shadow-lg hover:from-pink-600 hover:to-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               aria-label="Send support request"
             >
               {loading ? 'Sending...' : 'Send Request ▸'}

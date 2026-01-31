@@ -86,7 +86,7 @@ const StatusBadge = ({ status, onStatusChange, requestId }) => {
             </button>
 
             {showDropdown && !isChanging && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px] py-1">
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-40 py-1">
                     {Object.entries(statusConfig).map(([statusKey, statusData]) => (
                         <button
                             key={statusKey}
@@ -220,7 +220,7 @@ export default function AdminSupportManagement({ initialData, pagination }) {
         columnHelper.accessor('supportId', {
             header: () => <span className="font-bold text-gray-700">Request ID</span>,
             cell: (info) => (
-                <div className="text-[11px] leading-[20px] font-semibold text-[#1A1A1A]">
+                <div className="text-[11px] leading-5 font-semibold text-[#1A1A1A]">
                     {info.getValue()}
                 </div>
             ),
@@ -228,7 +228,7 @@ export default function AdminSupportManagement({ initialData, pagination }) {
         columnHelper.accessor('createdAt', {
             header: () => <span className="font-bold text-gray-700">Date</span>,
             cell: (info) => (
-                <div className="text-[11px] leading-[20px] font-semibold text-[#1A1A1A]">
+                <div className="text-[11px] leading-5 font-semibold text-[#1A1A1A]">
                     {new Date(info.getValue()).toLocaleDateString('en-US', {
                         month: '2-digit',
                         day: '2-digit',
@@ -243,11 +243,11 @@ export default function AdminSupportManagement({ initialData, pagination }) {
                 const row = info.row.original;
                 return (
                     <div>
-                        <div className="text-[11px] leading-[20px] font-semibold text-[#1A1A1A]">
+                        <div className="text-[11px] leading-5 font-semibold text-[#1A1A1A]">
                             {info.getValue()}
                         </div>
 
-                        <div className="text-[11px] leading-[20px] font-normal text-[#1A1A1A]">
+                        <div className="text-[11px] leading-5 font-normal text-[#1A1A1A]">
                             {row.email}
                         </div>
 
@@ -260,11 +260,11 @@ export default function AdminSupportManagement({ initialData, pagination }) {
             cell: (info) => {
                 const value = info.getValue();
                 return value ? (
-                    <div className="text-[11px] leading-[16px] font-medium text-[#1A1A1A]">
+                    <div className="text-[11px] leading-4 font-medium text-[#1A1A1A]">
                         {value}
                     </div>
                 ) : (
-                    <span className="text-[11px] leading-[16px] font-medium text-gray-400">
+                    <span className="text-[11px] leading-4 font-medium text-gray-400">
                         N/A
                     </span>
                 );
@@ -278,7 +278,7 @@ export default function AdminSupportManagement({ initialData, pagination }) {
 
                 if (!voucherCodes || voucherCodes.length === 0) {
                     return (
-                        <span className="text-[11px] leading-[20px] font-normal text-gray-400">
+                        <span className="text-[11px] leading-5 font-normal text-gray-400">
                             N/A
                         </span>
                     );
@@ -286,7 +286,7 @@ export default function AdminSupportManagement({ initialData, pagination }) {
 
                 if (voucherCodes.length === 1) {
                     return (
-                        <div className="text-[11px] leading-[20px] font-medium text-[#1A1A1A]">
+                        <div className="text-[11px] leading-5 font-medium text-[#1A1A1A]">
                             {voucherCodes[0].code}
                         </div>
                     );
@@ -294,10 +294,10 @@ export default function AdminSupportManagement({ initialData, pagination }) {
 
                 return (
                     <div>
-                        <div className="text-[11px] leading-[20px] font-medium text-[#1A1A1A]">
+                        <div className="text-[11px] leading-5 font-medium text-[#1A1A1A]">
                             {voucherCodes[0].code}
                         </div>
-                        <div className="text-[11px] leading-[20px] font-normal text-gray-500">
+                        <div className="text-[11px] leading-5 font-normal text-gray-500">
                             +{voucherCodes.length - 1} more
                         </div>
                     </div>
@@ -308,7 +308,7 @@ export default function AdminSupportManagement({ initialData, pagination }) {
             header: () => <span className="font-bold text-gray-700">Reason</span>,
             cell: (info) => (
                 <div
-                    className="text-[10px] leading-[16px] font-medium text-[#1A1A1A] max-w-xs truncate"
+                    className="text-[10px] leading-4 font-medium text-[#1A1A1A] max-w-xs truncate"
                     title={info.getValue()}
                 >
                     {info.getValue()}
@@ -335,7 +335,7 @@ export default function AdminSupportManagement({ initialData, pagination }) {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => handleOpenChat(request)}
-                            className="px-4 py-2 rounded-lg text-[14px] leading-[20px] font-medium text-[#1A1A1A] transition-colors bg-white border border-[#E2E8F0] flex items-center gap-2"
+                            className="px-4 py-2 rounded-lg text-[14px] leading-5 font-medium text-[#1A1A1A] transition-colors bg-white border border-[#E2E8F0] flex items-center gap-2"
                             title="Open Chat"
                             aria-label="Open support chat"
                         >
@@ -397,7 +397,7 @@ export default function AdminSupportManagement({ initialData, pagination }) {
     ], []);
 
     return (
-        <div className="min-h-screen py-8 px-4 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="min-h-screen py-8 px-4 bg-linear-to-br from-gray-50 to-gray-100">
             <div className="max-w-8xl mx-auto">
                 <DynamicTable
                     title="Support Requests Management"

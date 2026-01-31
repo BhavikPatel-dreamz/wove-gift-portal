@@ -136,8 +136,8 @@ const Header = () => {
           }`}
       >
         {/* Main Header - Hide when mobile menu is open */}
-        <div className={`max-w-[1440px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 ${mobileMenuOpen ? 'lg:block hidden' : ''}`}>
-          <div className="flex items-center justify-between h-14 sm:h-16 lg:h-[72px]">
+        <div className={`max-w-360 mx-auto px-3 sm:px-4 md:px-6 lg:px-8 ${mobileMenuOpen ? 'lg:block hidden' : ''}`}>
+          <div className="flex items-center justify-between h-14 sm:h-16 lg:h-18">
             {/* Mobile/Tablet Menu Toggle (hidden on desktop) */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -278,7 +278,7 @@ const Header = () => {
                             height="17"
                             viewBox="0 0 17 18"
                             fill="none"
-                            className="w-4 h-4 sm:w-[17px] sm:h-[18px]"
+                            className="w-4 h-4 sm:w-4.25 sm:h-4.5"
                           >
                             <path
                               d="M8.36364 0C9.47272 0 10.5364 0.459739 11.3206 1.27808C12.1049 2.09642 12.5455 3.20633 12.5455 4.36364C12.5455 5.52095 12.1049 6.63085 11.3206 7.44919C10.5364 8.26753 9.47272 8.72727 8.36364 8.72727C7.25455 8.72727 6.19089 8.26753 5.40664 7.44919C4.6224 6.63085 4.18182 5.52095 4.18182 4.36364C4.18182 3.20633 4.6224 2.09642 5.40664 1.27808C6.19089 0.459739 7.25455 0 8.36364 0ZM8.36364 17.4545C8.36364 17.4545 16.7273 17.4545 16.7273 15.2727C16.7273 12.6545 12.65 9.81818 8.36364 9.81818C4.07727 9.81818 0 12.6545 0 15.2727C0 17.4545 8.36364 17.4545 8.36364 17.4545Z"
@@ -354,7 +354,7 @@ const Header = () => {
             active:shadow-[0_2px_6px_rgba(237,69,125,0.25)]
           "
                     >
-                      <User size={16} className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                      <User size={16} className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                       <span className="hidden lg:inline">Login</span>
                     </button>
                   </Link>
@@ -391,7 +391,7 @@ const Header = () => {
 
         {/* Mobile/Tablet Fullscreen Menu */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 bg-white z-[9999] lg:hidden overflow-y-auto">
+          <div className="fixed inset-0 bg-white z-9999 lg:hidden overflow-y-auto">
             {/* Header Row */}
             <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
               <div className="flex items-center space-x-2 sm:space-x-3">
@@ -452,7 +452,7 @@ const Header = () => {
                         <svg
                           width="20"
                           height="20"
-                          className="sm:w-[22px] sm:h-[22px]"
+                          className="sm:w-5.5 sm:h-5.5"
                           viewBox="0 0 22 22"
                           fill="none"
                           xmlns="http://www.w3.org/2000/svg"

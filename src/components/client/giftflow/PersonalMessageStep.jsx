@@ -67,14 +67,14 @@ const PersonalMessageStep = () => {
             <span
               className="
                 absolute inset-0 rounded-full p-[1.5px]
-                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                bg-linear-to-r from-[#ED457D] to-[#FA8F42]
               "
             ></span>
             <span
               className="
-                absolute inset-[2px] rounded-full bg-white
+                absolute inset-0.5 rounded-full bg-white
                 transition-all duration-300
-                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+                group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
               "
             ></span>
 
@@ -118,9 +118,9 @@ const PersonalMessageStep = () => {
         md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
-              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
-              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                  <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
@@ -128,12 +128,12 @@ const PersonalMessageStep = () => {
                 </div>
               </div>
 
-              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
           {/* Desktop spacer only */}
-          <div className="md:block w-[140px]" />
+          <div className="md:block w-35" />
         </div>
 
           {/* Header */}
@@ -170,7 +170,7 @@ const PersonalMessageStep = () => {
                 </div>
               </div>
 
-              <div className="px-3 py-2 rounded-[50px] bg-[rgba(250,143,66,0.1)] border border-pink-200 text-sm font-semibold leading-[18px] 
+              <div className="px-3 py-2 rounded-[50px] bg-[rgba(250,143,66,0.1)] border border-pink-200 text-sm font-semibold leading-4.5 
                 text-[#4A4A4A] font-['Inter']">
                 ❤️ Tip: Be genuine and speak from the heart
               </div>
@@ -213,7 +213,7 @@ const PersonalMessageStep = () => {
               className={`w-full  items-center mx-auto justify-center flex  gap-2 sm:w-auto px-10 py-4 rounded-full font-semibold text-base transition-all shadow-lg
           ${isMessageEmpty
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-pink-500 to-orange-400 hover:scale-105'
+                  : 'bg-linear-to-r from-pink-500 to-orange-400 hover:scale-105'
                 } text-white`}
             >
               Schedule Delivery Date <svg xmlns="http://www.w3.org/2000/svg" width="8" height="9" viewBox="0 0 8 9" fill="none">

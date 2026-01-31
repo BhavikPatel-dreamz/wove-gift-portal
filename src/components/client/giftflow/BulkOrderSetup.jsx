@@ -211,14 +211,14 @@ const BulkOrderSetup = () => {
             <span
               className="
                 absolute inset-0 rounded-full p-[1.5px]
-                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                bg-linear-to-r from-[#ED457D] to-[#FA8F42]
               "
             ></span>
             <span
               className="
-                absolute inset-[2px] rounded-full bg-white
+                absolute inset-0.5 rounded-full bg-white
                 transition-all duration-300
-                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+                group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
               "
             ></span>
 
@@ -262,9 +262,9 @@ const BulkOrderSetup = () => {
         md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
-              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
-              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
@@ -272,12 +272,12 @@ const BulkOrderSetup = () => {
                 </div>
               </div>
 
-              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
           {/* Desktop spacer only */}
-          <div className="md:block w-[140px]" />
+          <div className="md:block w-35" />
         </div>
 
         {/* Header */}
@@ -295,7 +295,7 @@ const BulkOrderSetup = () => {
           {/* Left Column - Selected Brand */}
           <div className="w-full flex justify-center">
             <div className="flex flex-col items-center text-center justify-center
-                  max-w-[275px] w-full
+                  max-w-68.75 w-full
                   rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]
                   shadow-sm bg-[#F9F9F9]">
 
@@ -313,7 +313,7 @@ const BulkOrderSetup = () => {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                  <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
                     <span className="text-white font-bold text-5xl">
                       {(selectedBrand.brandName || selectedBrand.name || 'B')
                         .substring(0, 1)
@@ -327,7 +327,7 @@ const BulkOrderSetup = () => {
               <div className="border-b border-[#D0CECE] h-px w-full my-4"></div>
 
               {/* Tagline */}
-              <div className="py-[5px] px-[11px] bg-[#AA42FA1A] rounded-[50px] mb-[18px]">
+              <div className="py-1.25 px-2.75 bg-[#AA42FA1A] rounded-[50px] mb-4.5">
                 <div className="text-[#AA42FA] text-[14px] font-bold">{selectedBrand.tagline}</div>
               </div>
 
@@ -355,7 +355,7 @@ const BulkOrderSetup = () => {
           <div className="space-y-6 w-full border-[1.2px] border-[#1A1A1A33] rounded-[20px] p-6 bg-[#DBDBDB2B]">
             {/* Denomination Selection */}
             <div className="">
-              <label className="block font-['Inter'] text-[16px] font-semibold leading-[16px] text-[#1A1A1A] mb-3">
+              <label className="block font-['Inter'] text-[16px] font-semibold leading-4 text-[#1A1A1A] mb-3">
                 Denomination
               </label>
 
@@ -366,7 +366,7 @@ const BulkOrderSetup = () => {
                   onClick={() => setOpen(!open)}
                   className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] bg-white cursor-pointer flex justify-between items-center"
                 >
-                  <span className=" text-[14x] font-semibold leading-[16px] text-[#000]">
+                  <span className="font-semibold leading-4 text-black">
                     {selectedAmount?.value
                       ? `${selectedAmount.currency} ${selectedAmount.value.toLocaleString()}`
                       : "Select Denomination"}
@@ -390,7 +390,7 @@ const BulkOrderSetup = () => {
                             setShowCustomInput(false);
                             setOpen(false);
                           }}
-                          className={`px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000]
+                          className={`px-4 py-3 cursor-pointer text-sm font-semibold leading-4 text-black
                   ${isSelected ? "bg-[#FFECEC] text-red-500 font-semibold" : ""} 
                   hover:bg-gray-100`}
                         >
@@ -401,7 +401,7 @@ const BulkOrderSetup = () => {
 
                     {/* Custom Amount */}
                     <div
-                      className="px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000] hover:bg-gray-100"
+                      className="px-4 py-3 cursor-pointer text-sm font-semibold leading-4 text-black hover:bg-gray-100"
                       onClick={() => {
                         handleDenominationSelect({ value: null, currency: selectedBrand?.vouchers?.[0]?.denominationCurrency || 'R' });
                         setShowCustomInput(true);
@@ -467,7 +467,7 @@ const BulkOrderSetup = () => {
                 )}
               </div>
 
-              <p className="font-['Inter'] text-lg sm:text-xl font-bold bg-gradient-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent text-right sm:text-left">
+              <p className="font-['Inter'] text-lg sm:text-xl font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent text-right sm:text-left">
                 {selectedAmount?.currency || 'R'}
                 {totalSpend}
               </p>

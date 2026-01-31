@@ -13,11 +13,11 @@ const WhyWoveExists = () => {
   };
 
   return (
-    <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+    <section className="max-w-360 mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
       <div className="flex flex-col lg:flex-row items-center justify-center gap-8 sm:gap-10 lg:gap-16 xl:gap-20">
         {/* Left content */}
         <div className="flex-1 w-full max-w-xl">
-          <h2 className="text-[#1A1A1A] font-poppins text-2xl sm:text-3xl lg:text-[40px] font-semibold leading-tight sm:leading-[44px] mb-3 sm:mb-4">
+          <h2 className="text-[#1A1A1A] font-poppins text-2xl sm:text-3xl lg:text-[40px] font-semibold leading-tight sm:leading-11 mb-3 sm:mb-4">
             Why Wove exists
           </h2>
           <p className="text-[#4A4A4A] font-medium text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 leading-relaxed">
@@ -26,7 +26,7 @@ const WhyWoveExists = () => {
 
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
             <Link
-              className="bg-gradient-to-r from-pink-500 to-orange-400 text-white font-medium rounded-full px-6 py-3 hover:brightness-110 transition text-center sm:text-left"
+              className="bg-linear-to-r from-pink-500 to-orange-400 text-white font-medium rounded-full px-6 py-3 hover:brightness-110 transition text-center sm:text-left"
               href="/gift"
               onClick={handleClick}
             >

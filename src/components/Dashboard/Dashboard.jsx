@@ -75,7 +75,7 @@ const Dashboard = ({ dashboardData, shopParam }) => {
                 onClick={() => handlePeriodChange(p.value)}
                 className={`
         px-3 py-1.5 rounded-md transition-colors
-        font-inter text-[14px] font-semibold leading-[18px]
+        font-inter text-[14px] font-semibold leading-4.5
         ${period === p.value && !isCustom
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-[#4A577F]/70 hover:bg-gray-200'
@@ -93,7 +93,7 @@ const Dashboard = ({ dashboardData, shopParam }) => {
             className={`
     flex items-center gap-2
     px-3 py-1.5 rounded-lg transition-colors
-    font-inter text-[14px] font-semibold leading-[18px]
+    font-inter text-[14px] font-semibold leading-4.5
     ${isCustom
                 ? 'bg-blue-600 text-white shadow-sm'
                 : 'text-[#4A577F]/70 hover:bg-gray-200'
@@ -392,7 +392,7 @@ const Dashboard = ({ dashboardData, shopParam }) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-xl text-white">
+          <div className="bg-linear-to-br from-indigo-500 to-purple-600 p-6 rounded-xl text-white">
             <div className="flex items-center gap-4 mb-4">
               <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
                 <Users className="w-8 h-8" />

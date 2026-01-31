@@ -22,7 +22,7 @@ const ContactMain = () => {
   };
 
   return (
-    <div className="max-w-[1440px] m-auto pt-[75px] min-h-screen px-4 sm:px-6 lg:px-8">
+    <div className="max-w-360 m-auto pt-18.75 min-h-screen px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16">
@@ -45,7 +45,7 @@ const ContactMain = () => {
               
               <div className="space-y-6">
                 <div className="flex items-start">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
                   </div>
                   <div className="ml-3 sm:ml-4">
@@ -55,7 +55,7 @@ const ContactMain = () => {
                 </div>
 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
                   </div>
                   <div className="ml-3 sm:ml-4">
@@ -65,7 +65,7 @@ const ContactMain = () => {
                 </div>
 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
                   </div>
                   <div className="ml-3 sm:ml-4">
@@ -78,7 +78,7 @@ const ContactMain = () => {
                 </div>
 
                 <div className="flex items-start">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
                   </div>
                   <div className="ml-3 sm:ml-4">

@@ -97,7 +97,7 @@ export default function AuthForm({ type = 'login' }) {
     error?.find((e) => e.path?.[0] === 'form')?.message
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8">
         {currentType === 'login' ? (
           <>
@@ -179,7 +179,7 @@ export default function AuthForm({ type = 'login' }) {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3.5 bg-linear-to-r from-pink-500 to-orange-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Loading...' : 'Login to your account ▸'}
               </button>
@@ -404,7 +404,7 @@ export default function AuthForm({ type = 'login' }) {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3.5 bg-linear-to-r from-pink-500 to-orange-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Loading...' : 'Create an account ▸'}
               </button>

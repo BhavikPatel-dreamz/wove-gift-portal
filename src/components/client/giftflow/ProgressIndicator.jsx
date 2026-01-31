@@ -25,16 +25,16 @@ const ProgressIndicator = () => {
     <div className="mb-8 px-4">
       {/* Progress Bar */}
       <div className="mb-8">
-        <div className="relative w-full bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full h-3 shadow-inner overflow-hidden">
+        <div className="relative w-full bg-linear-to-r from-gray-100 via-gray-200 to-gray-100 rounded-full h-3 shadow-inner overflow-hidden">
           <div 
-            className="absolute top-0 left-0 bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 h-full rounded-full transition-all duration-700 ease-out shadow-lg"
+            className="absolute top-0 left-0 bg-linear-to-r from-orange-400 via-pink-500 to-purple-600 h-full rounded-full transition-all duration-700 ease-out shadow-lg"
             style={{ 
               width: `${progressPercentage}%`,
               backgroundSize: '200% 100%',
               animation: progressPercentage > 0 ? 'shimmer 2s infinite' : 'none'
             }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 -skew-x-12 animate-pulse"></div>
+            <div className="absolute inset-0 bg-linear-to-r from-transparent via-white to-transparent opacity-30 -skew-x-12 animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -46,10 +46,10 @@ const ProgressIndicator = () => {
             <div key={step.id} className="flex items-center">
               <div className={`relative flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold transition-all duration-500 ease-out transform hover:scale-105 ${
                 step.id < currentStep 
-                  ? 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-600 text-white shadow-lg shadow-green-200 ring-2 ring-green-300 ring-opacity-50' 
+                  ? 'bg-linear-to-br from-emerald-400 via-green-500 to-teal-600 text-white shadow-lg shadow-green-200 ring-2 ring-green-300 ring-opacity-50' 
                   : step.id === currentStep
-                  ? 'bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 text-white shadow-xl shadow-pink-300 ring-4 ring-orange-200'
-                  : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-500 shadow-inner border border-gray-300'
+                  ? 'bg-linear-to-br from-orange-400 via-pink-500 to-purple-600 text-white shadow-xl shadow-pink-300 ring-4 ring-orange-200'
+                  : 'bg-linear-to-br from-gray-100 to-gray-200 text-gray-500 shadow-inner border border-gray-300'
               }`}>
                 {step.id < currentStep ? (
                   <svg className="w-5 h-5 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
@@ -59,7 +59,7 @@ const ProgressIndicator = () => {
                   <span className="drop-shadow-sm">{step.id}</span>
                 )}
                 {step.id === currentStep && (
-                  <div className="absolute -inset-1 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full opacity-20 animate-ping"></div>
+                  <div className="absolute -inset-1 bg-linear-to-r from-orange-400 to-pink-500 rounded-full opacity-20 animate-ping"></div>
                 )}
               </div>
               {index < STEPS.length - 1 && (
@@ -75,7 +75,7 @@ const ProgressIndicator = () => {
 
       {/* Current Step Info */}
       <div className="text-center space-y-3">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 bg-clip-text text-transparent mb-2 drop-shadow-sm">
+        <h2 className="text-2xl font-bold bg-linear-to-r from-gray-800 via-gray-700 to-gray-800 bg-clip-text text-transparent mb-2 drop-shadow-sm">
           {STEPS.find(s => s.id === currentStep)?.name || 'Unknown Step'}
         </h2>
         <p className="text-base text-gray-600 font-medium leading-relaxed max-w-md mx-auto">
@@ -84,8 +84,8 @@ const ProgressIndicator = () => {
         
         {/* Additional progress info */}
         <div className="mt-4">
-          <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-orange-50 via-pink-50 to-purple-50 text-orange-800 border border-orange-200 shadow-sm hover:shadow-md transition-shadow duration-300">
-            <div className="w-2 h-2 bg-gradient-to-r from-orange-400 to-pink-500 rounded-full mr-2 animate-pulse"></div>
+          <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-linear-to-r from-orange-50 via-pink-50 to-purple-50 text-orange-800 border border-orange-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="w-2 h-2 bg-linear-to-r from-orange-400 to-pink-500 rounded-full mr-2 animate-pulse"></div>
             {Math.round(progressPercentage)}% Complete
           </span>
         </div>

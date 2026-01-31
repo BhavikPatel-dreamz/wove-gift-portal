@@ -92,7 +92,7 @@ const PaymentMethodSelector = ({ selectedTab, onTabChange, isBulkMode }) => {
           <div className={`
                           w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
                           ${isPaymentConfirmed
-              ? 'bg-gradient-to-r from-pink-500 to-orange-400 border-transparent'
+              ? 'bg-linear-to-r from-pink-500 to-orange-400 border-transparent'
               : 'bg-white border-gray-300'
             }
                         `}>

@@ -50,7 +50,7 @@ const SettlementTabs = () => {
             <Link
               key={tab.id}
               href={href}
-              className={`whitespace-nowrap border-b-2 px-1 py-3 text-xs sm:text-sm font-medium transition-colors flex-shrink-0 ${
+              className={`whitespace-nowrap border-b-2 px-1 py-3 text-xs sm:text-sm font-medium transition-colors shrink-0 ${
                 isActive
                   ? "border-[#1F59EE] text-[#1F59EE] font-semibold"
                   : "border-transparent text-[#9FA8C3] hover:border-[#9FA8C3] hover:text-[#9FA8C3]"

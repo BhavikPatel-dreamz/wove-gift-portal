@@ -387,7 +387,7 @@ const BrandSettlementHistoryClient = ({
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+            <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
                 <div className="max-w-8xl mx-auto">
                     <div className="flex items-center justify-center py-12">
                         <div className="text-center">
@@ -418,7 +418,7 @@ const BrandSettlementHistoryClient = ({
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+        <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 p-6">
             <div className="max-w-8xl mx-auto">
                 <DynamicTable
                     data={initialData}

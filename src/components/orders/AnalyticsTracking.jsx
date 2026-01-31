@@ -73,7 +73,7 @@ const AnalyticsTracking = ({
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
+      <div className="max-w-350 mx-auto px-6 py-8">
 
         {/* Header */}
         <div className="mb-8">
@@ -84,7 +84,7 @@ const AnalyticsTracking = ({
         </div>
 
         {/* Filters Section */}
-        <div className="mb-6 bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-6">
+        <div className="mb-6 bg-linear-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
             Filter Analytics
@@ -201,7 +201,7 @@ const AnalyticsTracking = ({
                       {/* Brand Info Row */}
                       <div className="flex items-center gap-3 mb-3">
                         {/* Logo */}
-                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
+                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
                           {brand.logo ? (
                             <img src={brand.logo} alt={brand.name} className="w-12 h-12 rounded-lg" />
                           ) : (
@@ -240,7 +240,7 @@ const AnalyticsTracking = ({
                         {/* Brand Info Row */}
                         <div className="flex items-center gap-3 mb-3">
                           {/* Logo */}
-                          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm flex-shrink-0 overflow-hidden">
+                          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
                             {brand.logo ? (
                               brand.logo.startsWith('http') ? (
                                 <img src={brand.logo} alt={brand.name} className="w-8 h-8 object-contain" />

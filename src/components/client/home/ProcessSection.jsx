@@ -40,7 +40,7 @@ const ProcessSection = () => {
   
   return (
     <section className="process-section">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-360 mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="mb-12">

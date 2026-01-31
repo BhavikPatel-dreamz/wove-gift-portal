@@ -14,8 +14,8 @@ const SuccessScreen = ({
 
   return (
     <div className="min-h-screen px-4 py-30 md:px-6 md:py-30">
-      <div className="max-w-[1440px] flex items-center justify-center m-auto mb-6">
-        <div className="max-w-[800px] m-auto rounded-2xl p-8 text-center">
+      <div className="max-w-360 flex items-center justify-center m-auto mb-6">
+        <div className="max-w-200 m-auto rounded-2xl p-8 text-center">
           {isBulkMode ? (
             <div>
               <h1 className="text-[40px] font-bold text-[#1A1A1A] mb-4 fontPoppins">

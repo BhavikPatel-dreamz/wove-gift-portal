@@ -105,7 +105,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                         {/* Recipient Details Section */}
                         <div className="rounded-2xl border border-gray-200">
                             <div className="flex items-center border-b border-gray-200 mb-4 p-4">
-                                <div className="relative w-12 h-12 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                                <div className="relative w-12 h-12 rounded-xl flex items-center justify-center mr-3 shrink-0">
                                     <div className="absolute inset-0 bg-[#398FAE] opacity-20 rounded-xl"></div>
                                     <Mail className="relative w-6 h-6 text-[#398FAE]" />
                                 </div>
@@ -146,7 +146,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                 {/* Right Side - Email Preview */}
                 <div className="">
                     {/* Decorative Circle Background */}
-                    <div className="absolute w-[420px] h-[420px] bg-gradient-to-br from-blue-100 to-blue-200 rounded-full opacity-60 -z-10"></div>
+                    <div className="absolute w-105 h-105 bg-linear-to-br from-blue-100 to-blue-200 rounded-full opacity-60 -z-10"></div>
 
                     <div className="relative z-10 w-full">
                         {/* Email Preview Card */}
@@ -305,7 +305,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
 
                                         {/* Redeem Button */}
                                         <button
-                                            className="w-full bg-gradient-to-r from-pink-500 to-orange-400 text-white py-3 rounded-full font-semibold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2"
+                                            className="w-full bg-linear-to-r from-pink-500 to-orange-400 text-white py-3 rounded-full font-semibold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2"
                                             onClick={() => {
                                                 const url =
                                                     selectedBrand?.website ||
