@@ -157,7 +157,7 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
                 type="text"
                 value={formData.name}
                 placeholder="Wedding Anniversary"
-                className="w-full h-[40px] px-4 py-3 text-[#4A4A4A] text-[12px] border border-gray-200 rounded-lg bg-white outline-none"
+                className="w-full h-10 px-4 py-3 text-[#4A4A4A] text-[12px] border border-gray-200 rounded-lg bg-white outline-none"
                 readOnly
               />
               <div className="flex items-center gap-3">

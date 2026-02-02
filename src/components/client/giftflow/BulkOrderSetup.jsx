@@ -2,19 +2,30 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { goBack, goNext } from '../../../redux/giftFlowSlice';
+import { goBack, goNext , setQuantity, setSelectedAmount } from '../../../redux/giftFlowSlice';
 import { addToBulk } from '../../../redux/cartSlice';
 
 const BulkOrderSetup = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const { selectedBrand, selectedAmount } = useSelector((state) => state.giftFlowReducer);
+  const { selectedBrand,
+    selectedAmount,
+    personalMessage,
+    deliveryMethod,
+    deliveryDetails,
+    selectedTiming,
+    selectedSubCategory,
+    editingIndex,
+    isEditMode,
+    selectedOccasion,
+    isConfirmed,
+    quantity,
+  } = useSelector((state) => state.giftFlowReducer);
 
-  const [selectedDenomination, setSelectedDenomination] = useState(null);
-  const [quantity, setQuantity] = useState('');
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const dropdownRef = useRef(null);
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
@@ -35,10 +46,13 @@ const BulkOrderSetup = () => {
 
   // Get available denominations from selected brand
   const denominations = selectedBrand?.vouchers?.[0]?.denominations || [];
+  const voucherData = selectedBrand?.vouchers?.[0];
+  const minAmount = voucherData?.minAmount || 50;
+  const maxAmount = 25000; // Bulk order max amount per voucher
 
   // Calculate total spend
-  const totalSpend = selectedDenomination && quantity
-    ? (selectedDenomination.value * parseInt(quantity || 0)).toFixed(2)
+  const totalSpend = selectedAmount && quantity
+    ? (selectedAmount.value * parseInt(quantity || 0)).toFixed(2)
     : '0.00';
 
   const handleBackToBrands = () => {
@@ -47,7 +61,7 @@ const BulkOrderSetup = () => {
 
 
   const handleDenominationSelect = (denom) => {
-    setSelectedDenomination(denom);
+    dispatch(setSelectedAmount(denom));
     setError('');
   };
 
@@ -61,11 +75,29 @@ const BulkOrderSetup = () => {
       // Check maximum limit - Updated to 25000
       if (numValue > 25000) {
         setError('Maximum 25,000 vouchers per order');
-        setQuantity(value); // Keep the entered value to show error
+        dispatch(setQuantity(value)); // Keep the entered value to show error
       } else {
-        setQuantity(value);
+        dispatch(setQuantity(value));
         setError('');
       }
+    }
+  };
+
+  const handleCustomAmountChange = (e) => {
+    const value = e.target.value;
+    if (value === '' || /^\d+$/.test(value)) {
+        const numValue = value === '' ? null : parseInt(value, 10);
+        const currency = selectedBrand?.vouchers?.[0]?.denominationCurrency || 'R';
+
+        if (numValue !== null && numValue > maxAmount) {
+            setError(`Maximum amount is ${maxAmount}`);
+        } else if (numValue !== null && numValue < minAmount && numValue !== 0) {
+            setError(`Minimum amount is ${minAmount}`);
+        }
+        else {
+            setError('');
+        }
+        dispatch(setSelectedAmount({ value: numValue, currency: currency }));
     }
   };
 
@@ -73,19 +105,33 @@ const BulkOrderSetup = () => {
     if (selectedAmount && selectedAmount.value) {
       const matchingDenomination = denominations.find(d => d.value === selectedAmount.value);
       if (matchingDenomination) {
-        setSelectedDenomination(matchingDenomination);
+        dispatch(setSelectedAmount(matchingDenomination));
+        setShowCustomInput(false);
       } else {
         // It's a custom amount, so use the selectedAmount object from Redux.
-        setSelectedDenomination(selectedAmount);
+        dispatch(setSelectedAmount(selectedAmount));
+        setShowCustomInput(true);
       }
+    } else if (selectedAmount && selectedAmount.value === null) {
+        setShowCustomInput(true);
     }
-  }, [selectedAmount, denominations]);
+  }, [selectedAmount, denominations, dispatch]);
 
 
   const handleAddToBulkOrder = () => {
     // Validation
-    if (!selectedDenomination) {
-      setError('Please select a denomination');
+    if (!selectedAmount || !selectedAmount.value) {
+      setError('Please select a denomination or enter a custom amount');
+      return;
+    }
+
+    if (showCustomInput && selectedAmount.value < minAmount) {
+      setError(`Minimum custom amount is ${minAmount}`);
+      return;
+    }
+    
+    if (showCustomInput && selectedAmount.value > maxAmount) {
+      setError(`Maximum custom amount is ${maxAmount}`);
       return;
     }
 
@@ -103,11 +149,19 @@ const BulkOrderSetup = () => {
     const bulkOrderItem = {
       selectedBrand,
       selectedAmount: {
-        value: selectedDenomination.value,
-        currency: selectedDenomination.currency || 'R'
+        value: selectedAmount.value,
+        currency: selectedAmount.currency || 'R'
       },
       quantity: parseInt(quantity),
       totalSpend: parseFloat(totalSpend),
+      deliveryMethod: 'bulk', // Special flag for bulk orders
+      isBulkOrder: true,
+      personalMessage,
+      deliveryMethod,
+      deliveryDetails,
+      selectedTiming,
+      selectedSubCategory,
+      selectedOccasion,
       deliveryMethod: 'bulk', // Special flag for bulk orders
       isBulkOrder: true
     };
@@ -138,7 +192,7 @@ const BulkOrderSetup = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto  sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
                 md:flex-row md:items-center md:justify-between md:gap-0">
@@ -157,14 +211,14 @@ const BulkOrderSetup = () => {
             <span
               className="
                 absolute inset-0 rounded-full p-[1.5px]
-                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                bg-linear-to-r from-[#ED457D] to-[#FA8F42]
               "
             ></span>
             <span
               className="
-                absolute inset-[1.5px] rounded-full bg-white
+                absolute inset-0.5 rounded-full bg-white
                 transition-all duration-300
-                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+                group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
               "
             ></span>
 
@@ -205,12 +259,12 @@ const BulkOrderSetup = () => {
             <div
               className="
         flex items-center gap-3 justify-center w-full
-        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
-              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
-              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
+              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
@@ -218,12 +272,12 @@ const BulkOrderSetup = () => {
                 </div>
               </div>
 
-              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
           {/* Desktop spacer only */}
-          <div className="md:block w-[140px]" />
+          <div className="md:block w-35" />
         </div>
 
         {/* Header */}
@@ -241,7 +295,7 @@ const BulkOrderSetup = () => {
           {/* Left Column - Selected Brand */}
           <div className="w-full flex justify-center">
             <div className="flex flex-col items-center text-center justify-center
-                  max-w-[275px] w-full
+                  max-w-68.75 w-full
                   rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]
                   shadow-sm bg-[#F9F9F9]">
 
@@ -259,7 +313,7 @@ const BulkOrderSetup = () => {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                  <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center">
                     <span className="text-white font-bold text-5xl">
                       {(selectedBrand.brandName || selectedBrand.name || 'B')
                         .substring(0, 1)
@@ -273,7 +327,7 @@ const BulkOrderSetup = () => {
               <div className="border-b border-[#D0CECE] h-px w-full my-4"></div>
 
               {/* Tagline */}
-              <div className="py-[5px] px-[11px] bg-[#AA42FA1A] rounded-[50px] mb-[18px]">
+              <div className="py-1.25 px-2.75 bg-[#AA42FA1A] rounded-[50px] mb-4.5">
                 <div className="text-[#AA42FA] text-[14px] font-bold">{selectedBrand.tagline}</div>
               </div>
 
@@ -301,7 +355,7 @@ const BulkOrderSetup = () => {
           <div className="space-y-6 w-full border-[1.2px] border-[#1A1A1A33] rounded-[20px] p-6 bg-[#DBDBDB2B]">
             {/* Denomination Selection */}
             <div className="">
-              <label className="block font-['Inter'] text-[16px] font-semibold leading-[16px] text-[#1A1A1A] mb-3">
+              <label className="block font-['Inter'] text-[16px] font-semibold leading-4 text-[#1A1A1A] mb-3">
                 Denomination
               </label>
 
@@ -312,9 +366,9 @@ const BulkOrderSetup = () => {
                   onClick={() => setOpen(!open)}
                   className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] bg-white cursor-pointer flex justify-between items-center"
                 >
-                  <span className=" text-[14x] font-semibold leading-[16px] text-[#000]">
-                    {selectedDenomination?.value
-                      ? `${selectedDenomination.currency} ${selectedDenomination.value.toLocaleString()}`
+                  <span className="font-semibold leading-4 text-black">
+                    {selectedAmount?.value
+                      ? `${selectedAmount.currency} ${selectedAmount.value.toLocaleString()}`
                       : "Select Denomination"}
                   </span>
 
@@ -327,15 +381,16 @@ const BulkOrderSetup = () => {
                 {open && (
                   <div className="absolute left-0 right-0 mt-2 bg-white rounded-[15px] shadow-md border border-[#1A1A1A33] z-50 overflow-hidden">
                     {denominations.map((denom, i) => {
-                      const isSelected = selectedDenomination?.value === denom.value;
+                      const isSelected = selectedAmount?.value === denom.value;
                       return (
                         <div
                           key={i}
                           onClick={() => {
                             handleDenominationSelect(denom);
+                            setShowCustomInput(false);
                             setOpen(false);
                           }}
-                          className={`px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000]
+                          className={`px-4 py-3 cursor-pointer text-sm font-semibold leading-4 text-black
                   ${isSelected ? "bg-[#FFECEC] text-red-500 font-semibold" : ""} 
                   hover:bg-gray-100`}
                         >
@@ -346,9 +401,10 @@ const BulkOrderSetup = () => {
 
                     {/* Custom Amount */}
                     <div
-                      className="px-4 py-3 cursor-pointer text-[14x] font-semibold leading-[16px] text-[#000] hover:bg-gray-100"
+                      className="px-4 py-3 cursor-pointer text-sm font-semibold leading-4 text-black hover:bg-gray-100"
                       onClick={() => {
-                        handleDenominationSelect({ value: null });
+                        handleDenominationSelect({ value: null, currency: selectedBrand?.vouchers?.[0]?.denominationCurrency || 'R' });
+                        setShowCustomInput(true);
                         setOpen(false);
                       }}
                     >
@@ -359,6 +415,24 @@ const BulkOrderSetup = () => {
               </div>
             </div>
 
+            {showCustomInput && (
+              <div className="mt-4">
+                  <label className="block text-base font-semibold text-[#1A1A1A] mb-3">
+                      Custom Amount
+                  </label>
+                  <input
+                      type="text"
+                      value={selectedAmount?.value || ''}
+                      onChange={handleCustomAmountChange}
+                      placeholder={`e.g., ${minAmount}`}
+                      className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                      Enter an amount between {minAmount} and {maxAmount}.
+                  </p>
+              </div>
+            )}
+
             {/* Quantity Input */}
             <div className="">
               <label className="block text-base font-semibold text-[#1A1A1A] mb-3">
@@ -367,7 +441,7 @@ const BulkOrderSetup = () => {
 
               <input
                 type="text"
-                value={quantity}
+                  value={quantity || ''} // Change this line - use empty string as fallback
                 onChange={handleQuantityChange}
                 placeholder="e.g., 50 Vouchers"
                 className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
@@ -379,23 +453,26 @@ const BulkOrderSetup = () => {
             </div>
 
             {/* Total Spend */}
-            <div className="flex justify-between bg-white items-center rounded-[20px] p-6 border-[1.2px] border-[#1A1A1A33]">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white rounded-2xl p-4 sm:p-5 md:p-6 border border-[#1A1A1A33]">
               <div className="flex flex-col">
-                <span className="font-['Inter'] text-[16px] font-bold leading-[16px] text-[#1A1A1A]">
+                <span className="font-['Inter'] text-sm sm:text-base font-bold leading-tight text-[#1A1A1A]">
                   Total Spend
                 </span>
-                {quantity && selectedDenomination && (
-                  <span className="font-['Inter'] text-[16px] font-medium leading-[16px] text-[#8C8C8C] mt-2">
-                    {quantity} × {selectedDenomination.currency || 'R'}{selectedDenomination.value}
+
+                {quantity && selectedAmount && (
+                  <span className="font-['Inter'] text-sm sm:text-base font-medium leading-tight text-[#8C8C8C] mt-1 sm:mt-2">
+                    {quantity} × {selectedAmount.currency || 'R'}
+                    {selectedAmount.value}
                   </span>
                 )}
-
               </div>
-              <p className="font-['Inter'] text-[20px] font-bold leading-[16px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
-                {selectedDenomination?.currency || 'R'}{totalSpend}
-              </p>
 
+              <p className="font-['Inter'] text-lg sm:text-xl font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent text-right sm:text-left">
+                {selectedAmount?.currency || 'R'}
+                {totalSpend}
+              </p>
             </div>
+
 
             {/* Error Message */}
             {error && (
@@ -407,7 +484,7 @@ const BulkOrderSetup = () => {
             {/* Add to Bulk Order Button */}
             <button
               onClick={handleAddToBulkOrder}
-              disabled={(!selectedDenomination || !quantity || parseInt(quantity) === 0) || parseInt(totalSpend) > 25000}
+              disabled={(!selectedAmount || !quantity || parseInt(quantity) === 0) || parseInt(totalSpend) > 25000}
               className="w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               Add to Bulk Order {totalSpend}

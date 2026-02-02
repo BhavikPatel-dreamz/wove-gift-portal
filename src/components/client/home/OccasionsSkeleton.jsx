@@ -3,7 +3,7 @@ import React from 'react';
 const OccasionsSkeleton = () => {
   return (
     <section className="occasions-section">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-360 mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header Skeleton */}
         <div className="mb-12">
           <div className="h-10 w-72 bg-gray-200 rounded-lg mb-3 animate-pulse" />
@@ -30,7 +30,7 @@ const OccasionsSkeleton = () => {
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="occasion-card flex-shrink-0"
+                className="occasion-card shrink-0"
                 style={{
                   width: 'calc(100vw - 3rem)',
                   maxWidth: '380px'

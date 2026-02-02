@@ -7,7 +7,7 @@ import { currencyList } from './currency';
 const CoreTab = ({ formData, updateFormData }) => {
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
+  // const [imagePreview, setImagePreview] = useState(null);
   const [currencies] = useState(currencyList);
 
   console.log('formData', formData);
@@ -17,17 +17,21 @@ const CoreTab = ({ formData, updateFormData }) => {
     if (formData.logo) {
       if (typeof formData.logo === 'string') {
         // If logo is a Cloudinary URL or local path, set it as preview directly
-        setImagePreview(formData.logo);
+        // setImagePreview(formData.logo);
+        updateFormData('imagePreview', formData.logo);
       } else if (formData.logo instanceof File) {
         // If logo is a File object, create preview
         const reader = new FileReader();
         reader.onload = (e) => {
-          setImagePreview(e.target.result);
+          // setImagePreview(e.target.result);
+          updateFormData('imagePreview', e.target.result);
         };
         reader.readAsDataURL(formData.logo);
       }
     } else {
-      setImagePreview(null);
+      // setImagePreview(null);
+      updateFormData('imagePreview', null);
+
     }
   }, [formData.logo]);
 
@@ -50,7 +54,7 @@ const CoreTab = ({ formData, updateFormData }) => {
 
       // Update form data with the File object
       updateFormData('logo', file);
-      
+
       // Show success message
       toast.success('Logo uploaded successfully');
     }
@@ -88,7 +92,8 @@ const CoreTab = ({ formData, updateFormData }) => {
   const removeFile = (e) => {
     e.stopPropagation(); // Prevent triggering the file input
     updateFormData('logo', null);
-    setImagePreview(null);
+    updateFormData('imagePreview', null);
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -218,7 +223,7 @@ const CoreTab = ({ formData, updateFormData }) => {
             Description *
           </label>
           <textarea
-           className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
             placeholder="Enter brand description"
             value={formData.description || ''}
             onChange={(e) => updateFormData('description', e.target.value)}
@@ -250,17 +255,17 @@ const CoreTab = ({ formData, updateFormData }) => {
                 onClick={() => fileInputRef.current?.click()}
                 style={{ cursor: 'pointer' }}
               >
-                {imagePreview ? (
+                {formData.imagePreview ? (
                   <div className="relative">
                     {/* Use Next.js Image component for Cloudinary URLs, regular img for local previews */}
-                    {isCloudinaryUrl(imagePreview) ? (
+                    {isCloudinaryUrl(formData.imagePreview) ? (
                       <div className="relative w-full h-24 mb-2">
                         <Image
-                          src={imagePreview}
+                          src={formData.imagePreview}
                           alt="Logo preview"
                           fill
                           className="object-contain rounded"
-                          unoptimized={!imagePreview.includes('cloudinary.com')}
+                          unoptimized={!formData?.imagePreview.includes('cloudinary.com')}
                           onError={(e) => {
                             console.error('Image load error:', e);
                           }}
@@ -268,7 +273,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                       </div>
                     ) : (
                       <img
-                        src={imagePreview}
+                        src={formData.imagePreview}
                         alt="Logo preview"
                         className="mx-auto mb-2 max-h-24 w-auto rounded"
                         onError={(e) => {
@@ -304,7 +309,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                 )}
               </div>
 
-              {imagePreview && (
+              {formData.imagePreview && (
                 <button
                   type="button"
                   onClick={removeFile}
@@ -323,7 +328,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                 className="hidden"
               />
             </div>
-            
+
             <p className="font-inter text-xs font-normal leading-5 text-[#7E7E7E] mt-2">
               Upload a high-quality logo. It will be automatically optimized for web.
             </p>
@@ -349,7 +354,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                 pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
               />
             </div>
-           <p className="font-inter text-xs font-normal leading-5 text-[#7E7E7E] mt-1">
+            <p className="font-inter text-xs font-normal leading-5 text-[#7E7E7E] mt-1">
               Used for brand theming and UI elements
             </p>
           </div>
@@ -358,7 +363,7 @@ const CoreTab = ({ formData, updateFormData }) => {
 
       {/* Status & Display */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-       <h3 className="font-inter text-base font-semibold capitalize text-[#4A4A4A] mb-4">Status & Display</h3>
+        <h3 className="font-inter text-base font-semibold capitalize text-[#4A4A4A] mb-4">Status & Display</h3>
         <div className="space-y-4">
           <label className="flex items-start cursor-pointer">
             <input
@@ -369,14 +374,14 @@ const CoreTab = ({ formData, updateFormData }) => {
             />
             <div>
               <span className="font-inter text-sm font-semibold capitalize text-[#4A4A4A]">Active on Frontend</span>
-             <p className="font-inter text-xs font-medium leading-5 text-[#A5A5A5]">
+              <p className="font-inter text-xs font-medium leading-5 text-[#A5A5A5]">
                 Make this brand visible to customers on the website
               </p>
             </div>
           </label>
         </div>
 
-          <div className="space-y-4">
+        <div className="space-y-4">
           <label className="flex items-start cursor-pointer">
             <input
               type="checkbox"
@@ -386,7 +391,7 @@ const CoreTab = ({ formData, updateFormData }) => {
             />
             <div>
               <span className="font-inter text-sm font-semibold capitalize text-[#4A4A4A]">Featured on Frontend</span>
-             <p className="font-inter text-xs font-medium leading-5 text-[#A5A5A5]">
+              <p className="font-inter text-xs font-medium leading-5 text-[#A5A5A5]">
                 Make this brand featured on the frontend
               </p>
             </div>
@@ -407,7 +412,7 @@ const CoreTab = ({ formData, updateFormData }) => {
             value={formData.notes || ''}
             onChange={(e) => updateFormData('notes', e.target.value)}
           />
-         <p className="font-inter text-[10px] font-medium leading-5 text-[#4A4A4A]">
+          <p className="font-inter text-[10px] font-medium leading-5 text-[#4A4A4A]">
             These notes are only visible to admin users
           </p>
         </div>

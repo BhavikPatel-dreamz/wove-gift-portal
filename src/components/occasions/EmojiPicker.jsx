@@ -143,7 +143,7 @@ const CustomEmojiPicker = ({
           disabled={disabled}
           onClick={() => !disabled && setIsOpen((v) => !v)}
           className={`
-            w-full h-[45px] flex items-center justify-between px-4
+            w-full h-11.25 flex items-center justify-between px-4
             rounded-lg border transition-all
             ${
               disabled

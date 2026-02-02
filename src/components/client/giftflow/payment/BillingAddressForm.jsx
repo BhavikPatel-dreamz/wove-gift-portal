@@ -7,7 +7,7 @@ const BillingAddressForm = ({ address, onChange, errors = {} }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border text-black border-gray-200">
       <h3 className="text-lg font-bold text-gray-900 mb-4">
         Billing Address <span className="text-red-500">*</span>
       </h3>

@@ -3,7 +3,7 @@ import { Check, X } from 'lucide-react';
 
 const DetailItem = ({ label, value, isHtml = false }) => (
   <div className="w-full">
-    <h4 className="font-inter text-[14px] font-medium leading-[18px] text-[#64748B]">
+    <h4 className="font-inter text-[14px] font-medium leading-4.5 text-[#64748B]">
       {label}
     </h4>
 
@@ -12,7 +12,7 @@ const DetailItem = ({ label, value, isHtml = false }) => (
         className="
           font-inter text-sm font-semibold capitalize text-[#4A4A4A]
           leading-relaxed
-          break-words
+          wrap-break-word
           whitespace-normal
           w-full
         "
@@ -23,7 +23,7 @@ const DetailItem = ({ label, value, isHtml = false }) => (
         className="
           font-inter text-sm font-semibold capitalize text-[#4A4A4A]
           leading-relaxed
-          break-words
+          wrap-break-word
           whitespace-normal
           w-full
         "

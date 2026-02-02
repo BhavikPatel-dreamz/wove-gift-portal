@@ -43,15 +43,15 @@ const FeaturedBrands = ({
     <div
       className="
         bg-white
-        w-[160px] sm:w-[180px] md:w-[213px]
-        h-[80px] sm:h-[90px] md:h-[94px]
+        w-40 sm:w-45 md:w-53.25
+        h-20 sm:h-22.5 md:h-23.5
         rounded-[20px]
         p-4 sm:p-6 md:p-8
         flex
         items-center
         justify-center
         cursor-pointer
-        flex-shrink-0
+        shrink-0
         border
         border-[rgba(0,36,2,0.15)]
         transition-shadow
@@ -79,8 +79,8 @@ const FeaturedBrands = ({
   if (displayBrands.length === 0) return null;
 
   return (
-    <section className="py-[44px] bg-gradient-to-b from-[#FEF8F6] to-[#FDF7F8] overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section className="py-11 bg-linear-to-b from-[#FEF8F6] to-[#FDF7F8] overflow-hidden">
+      <div className="max-w-7xl mx-auto  sm:px-6">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-[1.75rem] sm:text-[2.75rem] font-bold text-black mb-2 leading-tight tracking-tight brand-title">
@@ -130,7 +130,7 @@ const FeaturedBrands = ({
         {/* CTA */}
         <div className="text-center">
           <Link href="/gift">
-            <button className="px-6 sm:px-8 py-3 bg-gradient-to-r from-[#FF6B9D] to-[#FFA06B] text-white rounded-full font-semibold hover:shadow-lg transition-all duration-300">
+            <button className="px-6 sm:px-8 py-3 bg-linear-to-r from-[#FF6B9D] to-[#FFA06B] text-white rounded-full font-semibold hover:shadow-lg transition-all duration-300">
               See all Brands <span className="pl-2">▸</span>
             </button>
           </Link>

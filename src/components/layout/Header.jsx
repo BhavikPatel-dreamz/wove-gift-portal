@@ -1,11 +1,5 @@
 'use client'
-
-import {
-  LogOut,
-  Menu,
-  Search,
-  User
-} from 'lucide-react';
+import { LogOut, Menu, Search, User } from 'lucide-react';
 import Button from '../forms/Button';
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -43,59 +37,53 @@ const Header = ({ onMenuClick }) => {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-4 lg:px-6">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 md:gap-0">
-        
+    <header className="bg-white border-b border-gray-200 px-4 py-5.25 sm:px-6">
+      <div className="flex items-center justify-between">
         {/* Left side: menu & search */}
-        <div className="flex items-center w-full md:w-auto gap-2 md:gap-4">
+        <div className="flex items-center space-x-4">
+          {/* Menu button - hidden on md and above */}
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+            className="p-2 rounded-md hover:bg-gray-100 md:hidden"
+            aria-label="Open menu"
           >
-            <Menu className="w-5 h-5 text-[#1A1A1A]" />
+            <Menu className="w-6 h-6" />
           </button>
 
-          {/* <div className="relative flex-1 md:flex-none w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 border text-black border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
-            />
-          </div> */}
+          {/* Search can be added here if needed */}
         </div>
 
         {/* Right side: user info & actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4 w-full md:w-auto">
-          
+        <div className="flex items-center space-x-4">
           {user?.role === 'CUSTOMER' && (
             <Link href="/">
-              <button className="btn-outline flex items-center justify-center gap-2 border text-black border-gray-300 p-2 sm:p-3 rounded-lg hover:bg-blue-500 hover:text-white font-bold text-sm sm:text-base w-full sm:w-auto">
+              <Button variant="outline" size="sm">
                 Home Page
-              </button>
+              </Button>
             </Link>
           )}
 
-          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-            <div className="text-left sm:text-right flex-1 sm:flex-none">
-              <span className="text-sm font-medium text-gray-700 block">
-                Welcome, {getDisplayName()}
-              </span>
-            </div>
+          <div className="flex items-center space-x-3">
+            <span className="text-sm text-gray-700 hidden sm:block">
+              Welcome, {getDisplayName()}
+            </span>
 
             {/* User Avatar */}
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
               {user ? getUserInitials() : <User className="w-4 h-4" />}
             </div>
 
             <Button
-              variant="ghost"
-              size="sm"
               onClick={handleLogout}
+              variant="outline"
+              size="sm"
               disabled={loading}
+              className="flex items-center space-x-2"
             >
-              <LogOut className="w-4 h-4 mr-1" />
-              {loading ? 'Signing out...' : 'Sign Out'}
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {loading ? 'Signing out...' : 'Sign Out'}
+              </span>
             </Button>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
 import { createPendingOrder, getOrderStatus } from "../../../lib/action/orderAction";
-import convertToSubcurrency from "../../../lib/convertToSubcurrency";
+import { useSession } from "@/contexts/SessionContext";
 
 // Import components
 import StripeCardPayment from "./payment/StripeCardPayment";
@@ -28,6 +28,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 const PaymentStep = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
+  const session = useSession();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
 
@@ -40,8 +41,11 @@ const PaymentStep = () => {
   const [showThankYou, setShowThankYou] = useState(false);
   const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderId, setPendingOrderId] = useState(null);
+  
+  // ✅ NEW: Processing status
+  const [processingStatus, setProcessingStatus] = useState(null);
 
-  // ✅ NEW: Billing address state
+  // Billing address state
   const [billingAddress, setBillingAddress] = useState({
     line1: '',
     line2: '',
@@ -52,7 +56,7 @@ const PaymentStep = () => {
   });
   const [addressErrors, setAddressErrors] = useState({});
 
-  // Redux selectors (existing code)
+  // Redux selectors
   const {
     selectedBrand,
     selectedAmount: giftFlowAmount,
@@ -76,7 +80,7 @@ const PaymentStep = () => {
   const bulkDeliveryOption = isBulkMode && currentBulkOrder ? currentBulkOrder.deliveryOption : null;
   const csvRecipients = isBulkMode && currentBulkOrder ? currentBulkOrder.csvRecipients : [];
 
-  // ✅ Validate billing address
+  // Validate billing address
   const validateBillingAddress = () => {
     const errors = {};
 
@@ -103,8 +107,7 @@ const PaymentStep = () => {
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "";
 
-
-  // Helper functions (existing)
+  // Helper functions
   const formatAmount = (amount) => {
     if (typeof amount === 'object' && amount?.value && amount?.currency) {
       return `${getCurrencySymbol(amount.currency)}${amount.value}`;
@@ -115,7 +118,7 @@ const PaymentStep = () => {
   const calculateServiceFee = () => {
     const baseAmount = selectedAmount?.value || 0;
     const totalAmount = isBulkMode ? baseAmount * quantity : baseAmount;
-    return Math.round(totalAmount * 0.03);
+    return Math.round(totalAmount * 0.05);
   };
 
   const calculateTotal = () => {
@@ -125,9 +128,8 @@ const PaymentStep = () => {
     return totalAmount + serviceFee;
   };
 
-  // ✅ UPDATED: Initiate payment with billing address
+  // Initiate payment with billing address
   const handleInitiatePayment = async () => {
-    // Validate billing address first
     if (!validateBillingAddress()) {
       toast.error('Please fill in all required billing address fields');
       return null;
@@ -154,9 +156,10 @@ const PaymentStep = () => {
         totalAmount: calculateTotal(),
         isBulkOrder: true,
         totalSpend: currentBulkOrder.totalSpend,
-        billingAddress, // ✅ Include billing address
+        billingAddress,
         deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
         csvRecipients,
+        userId: session?.user?.id,
       } : {
         selectedBrand,
         selectedAmount,
@@ -168,11 +171,9 @@ const PaymentStep = () => {
         selectedTiming,
         totalAmount: calculateTotal(),
         isBulkOrder: false,
-        billingAddress, // ✅ Include billing address
+        billingAddress,
+        userId: session?.user?.id,
       };
-
-
-      console.log("orderData",orderData)
 
       const result = await createPendingOrder(orderData);
 
@@ -198,46 +199,91 @@ const PaymentStep = () => {
     }
   };
 
-  // Payment success handler (existing code)
+  // ✅ ENHANCED: Payment success handler with better feedback
   const handlePaymentSuccess = (paymentIntent) => {
     console.log('💳 Payment intent succeeded:', paymentIntent.id);
 
-    // Show immediate feedback
-    toast.dismiss(); // Clear any existing toasts
-    toast.loading('Confirming your order...', { id: 'payment-confirm' });
+    toast.dismiss();
+    toast.success('Payment received! Processing your order...', { 
+      id: 'payment-success',
+      duration: 3000 
+    });
 
     setPaymentSubmitted(true);
     setIsProcessing(true);
+    setProcessingStatus('PAYMENT_CONFIRMED');
 
-    // Start polling with a slight delay to allow webhook to process
+    // Start polling with shorter delay
     setTimeout(() => {
       pollOrderStatus(pendingOrderId);
-    }, 5000); // 1.5 second delay
+    }, 2000);
   };
 
+  // ✅ ENHANCED: Smarter polling with better status detection
   const pollOrderStatus = async (orderId, attempts = 0) => {
-    const maxAttempts = 30;
-    const pollInterval = 2000;
+    const maxAttempts = 20; // Reduced from 30
+    const pollInterval = 2000; // 2 seconds
 
     try {
       console.log(`🔍 Polling order status - Attempt ${attempts + 1}/${maxAttempts}`);
       const response = await getOrderStatus(orderId);
 
       const paymentStatus = response?.paymentStatus || response?.order?.paymentStatus;
+      const processingStatus = response?.processingStatus;
       const orderData = response?.order || response;
 
-      if (paymentStatus === 'COMPLETED') {
-        setOrder(orderData);
-        toast.success('Order placed successfully!');
-        setIsProcessing(false);
+      // Update processing status
+      if (processingStatus) {
+        setProcessingStatus(processingStatus);
+      }
 
-        // ✅ Clear cart
+      // ✅ Payment confirmed and processing started - show order immediately
+      if (paymentStatus === 'COMPLETED' && processingStatus === 'IN_PROGRESS') {
+        console.log('✅ Payment confirmed, processing in background');
+        
+        // Show order with "processing" status
+        setOrder({
+          ...orderData,
+          processingInBackground: true,
+          processingStatus: 'IN_PROGRESS'
+        });
+        setIsProcessing(false);
+        
+        toast.success(
+          isBulkMode 
+            ? 'Order confirmed! Gift cards are being generated...'
+            : 'Order confirmed! Your gift will be delivered shortly.',
+          { duration: 5000 }
+        );
+
+        // Clear cart
         localStorage.removeItem('cart');
         window.dispatchEvent(new Event('storage'));
-
+        
         return;
       }
 
+      // ✅ All processing completed
+      if (paymentStatus === 'COMPLETED' && processingStatus === 'COMPLETED') {
+        console.log('✅ Order fully completed');
+        
+        setOrder({
+          ...orderData,
+          processingInBackground: false,
+          processingStatus: 'COMPLETED'
+        });
+        setIsProcessing(false);
+        
+        toast.success('Order completed successfully!', { duration: 3000 });
+
+        // Clear cart
+        localStorage.removeItem('cart');
+        window.dispatchEvent(new Event('storage'));
+        
+        return;
+      }
+
+      // Failed or cancelled
       if (paymentStatus === 'FAILED' || paymentStatus === 'CANCELLED') {
         setError('Payment failed. Please try again.');
         toast.error('Payment failed');
@@ -246,22 +292,34 @@ const PaymentStep = () => {
         return;
       }
 
+      // Continue polling
       if (attempts < maxAttempts) {
         setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
       } else {
+        // Max attempts reached - show success anyway
         toast.success(
-          'Payment is being processed. Check your email for confirmation.',
+          'Payment confirmed! Your order is being processed. Check your email for updates.',
           { duration: 6000 }
         );
+        
+        setOrder({
+          ...orderData,
+          processingInBackground: true,
+          processingStatus: 'IN_PROGRESS'
+        });
         setIsProcessing(false);
+
+        // Clear cart
+        localStorage.removeItem('cart');
+        window.dispatchEvent(new Event('storage'));
       }
     } catch (error) {
       console.error('Error polling:', error);
       if (attempts < maxAttempts) {
         setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
       } else {
-        setError('Could not verify payment. Check your email.');
-        toast.error('Failed to confirm payment');
+        setError('Could not verify order status. Check your email for confirmation.');
+        toast.error('Failed to confirm order status');
         setIsProcessing(false);
       }
     }
@@ -271,7 +329,7 @@ const PaymentStep = () => {
     setShowThankYou(true);
   };
 
-  // Render success screens (existing code)
+  // ✅ ENHANCED: Success screen with processing status
   if (order) {
     if (showThankYou) {
       return <ThankYouScreen />;
@@ -286,10 +344,13 @@ const PaymentStep = () => {
         isBulkMode={isBulkMode}
         onNext={handleNext}
         deliveryDetails={deliveryDetails}
+        processingInBackground={order.processingInBackground}
+        processingStatus={order.processingStatus}
       />
     );
   }
 
+  // ✅ ENHANCED: Better loading screen with status
   if (paymentSubmitted) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center">
@@ -299,9 +360,13 @@ const PaymentStep = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Payment Received!</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+            {processingStatus === 'PAYMENT_CONFIRMED' ? 'Payment Received!' : 'Processing Your Order...'}
+          </h1>
           <p className="text-gray-600">
-            We've received your payment and are now confirming your order. You'll receive an email confirmation shortly.
+            {processingStatus === 'PAYMENT_CONFIRMED' 
+              ? "We've received your payment and are now preparing your order."
+              : "Confirming your order and generating gift cards..."}
           </p>
           {pendingOrderId && (
             <p className="text-sm text-gray-500 mt-4">
@@ -310,8 +375,22 @@ const PaymentStep = () => {
           )}
           <div className="mt-6">
             <div className="animate-spin rounded-full h-8 w-8 border-4 border-pink-500 border-t-transparent mx-auto"></div>
-            <p className="text-sm text-gray-500 mt-2">Confirming your order status...</p>
+            <p className="text-sm text-gray-500 mt-2">
+              {isBulkMode 
+                ? `Processing ${quantity} gift cards...`
+                : 'Preparing your gift card...'}
+            </p>
           </div>
+          
+          {/* ✅ Progress indicator for bulk orders */}
+          {isBulkMode && quantity > 1 && (
+            <div className="mt-6 w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-pink-500 to-orange-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: '40%' }}
+              ></div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -319,61 +398,22 @@ const PaymentStep = () => {
 
   // Main payment form
   return (
-    <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
+    <div className="min-h-screen bg-gray-50 py-30 md:px-8 md:py-30">
       <Toaster />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
-        <div className="relative flex flex-col items-start gap-4 mb-6
-                                        md:flex-row md:items-center md:justify-between md:gap-0">
-
-          {/* Previous Button */}
+        <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
           <button
-            className="
-                                      relative inline-flex items-center justify-center gap-2
-                                      px-5 py-3 rounded-full font-semibold text-base
-                                      text-[#4A4A4A] bg-white border border-transparent
-                                      transition-all duration-300 overflow-hidden group cursor-pointer
-                                    "
+            className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-base text-[#4A4A4A] bg-white border border-transparent transition-all duration-300 overflow-hidden group cursor-pointer"
             onClick={() => { isBulkMode ? dispatch(setCurrentStep(7)) : dispatch(goBack()) }}
           >
-            {/* Outer gradient border */}
-            <span
-              className="
-                                        absolute inset-0 rounded-full p-[1.5px]
-                                        bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
-                                      "
-            ></span>
-            <span
-              className="
-                                        absolute inset-[1.5px] rounded-full bg-white
-                                        transition-all duration-300
-                                        group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
-                                      "
-            ></span>
-
-            {/* Button content */}
+            <span className="absolute inset-0 rounded-full p-[1.5px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42]"></span>
+            <span className="absolute inset-[2px] rounded-full bg-white transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-              <svg
-                width="8"
-                height="9"
-                viewBox="0 0 8 9"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="transition-all duration-300 group-hover:[&>path]:fill-white"
-              >
-                <path
-                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
-                  fill="url(#paint0_linear_584_1923)"
-                />
+              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
+                <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
                 <defs>
-                  <linearGradient
-                    id="paint0_linear_584_1923"
-                    x1="7.5"
-                    y1="3.01721"
-                    x2="-9.17006"
-                    y2="13.1895"
-                    gradientUnits="userSpaceOnUse"
-                  >
+                  <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
                     <stop stopColor="#ED457D" />
                     <stop offset="1" stopColor="#FA8F42" />
                   </linearGradient>
@@ -383,40 +423,26 @@ const PaymentStep = () => {
             </div>
           </button>
 
-          {/* Bulk Gifting Indicator */}
           {isBulkMode && (
-            <div
-              className="
-                                flex items-center gap-3 justify-center w-full
-                                md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
-                              "
-            >
+            <div className="flex items-center gap-3 justify-center w-full md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2">
               <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
-
               <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
-                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
-                    Bulk Gifting
-                  </span>
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">Bulk Gifting</span>
                 </div>
               </div>
-
               <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
-          {/* Desktop spacer only */}
           <div className="md:block w-[140px]" />
         </div>
 
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center mt-6">
-            {isBulkMode
-              ? 'Complete your payment securely'
-              : "You're almost there!"}
+            {isBulkMode ? 'Complete your payment securely' : "You're almost there!"}
           </h1>
-
           <p className="text-sm sm:text-base text-gray-600 text-center mt-2 max-w-2xl mx-auto">
             {isBulkMode
               ? 'Your vouchers will be generated instantly after payment'
@@ -461,14 +487,14 @@ const PaymentStep = () => {
               <button
                 onClick={handleInitiatePayment}
                 disabled={isProcessing || !isPaymentConfirmed}
-                className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
+                className={`w-full bg-linear-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
                        disabled:from-gray-300 disabled:to-gray-400
                        text-white py-3 sm:py-4 px-6 rounded-xl
                        font-semibold text-sm sm:text-base
                        transition-all duration-200
                        flex items-center justify-center gap-2
-                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer '}`}
+                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {isProcessing ? (
                   <>
@@ -523,12 +549,12 @@ const PaymentStep = () => {
 
         {/* Error */}
         {error && (
-          <div className="mt-6">
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-              <span className="text-red-600 font-bold">!</span>
-              <div>
-                <p className="font-semibold text-red-800">Payment Error</p>
-                <p className="text-sm text-red-700">{error}</p>
+          <div className="mt-4 sm:mt-6">
+            <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 sm:gap-4">
+              <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-100 text-red-600 font-bold flex items-center justify-center text-sm sm:text-base">!</span>
+              <div className="flex-1 max-w-full">
+                <p className="font-semibold text-red-800 text-sm sm:text-base">Payment Error</p>
+                <p className="text-xs sm:text-sm text-red-700 mt-0.5 wrap-break-word">{error}</p>
               </div>
             </div>
           </div>

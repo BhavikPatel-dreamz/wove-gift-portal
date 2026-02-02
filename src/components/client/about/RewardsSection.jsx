@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import Link from "next/link";
 import React from "react";
 import { useDispatch } from "react-redux";
@@ -13,186 +13,116 @@ const BulkGifting = () => {
   };
 
   return (
-    <div className="max-w-[70%] mx-auto mt-10 mb-14">
-      {/* Main container with custom styles and fade effect */}
-      <div className="relative">
-        {/* Card with gradient border mask */}
-        <div
-          className="flex flex-col md:flex-row items-center px-8 py-15"
-          style={{
-            borderRadius: "30px",
-            background: "#FFE6D4",
-            position: "relative",
-            isolation: "isolate",
-          }}
-        >
-          {/* Gradient border that fades out at bottom */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              borderRadius: "30px",
-              padding: "1.5px",
-              WebkitMaskComposite: "xor",
-              maskComposite: "exclude",
-              pointerEvents: "none",
-            }}
+    <div className="mx-auto mt-10 mb-14 px-4 sm:px-6 lg:px-0 max-w-7xl">
+      {/* Card */}
+      <div
+        className="relative flex flex-col md:flex-row items-center
+        rounded-[30px] bg-[#FFE6D4]
+        px-6 sm:px-8 md:px-12
+        py-10 md:py-14"
+      >
+        {/* Left content */}
+        <div className="w-full md:w-1/2 mb-10 md:mb-0 md:pr-10">
+          <h2
+            className="
+              font-semibold fontPoppins text-[#1A1A1A]
+              text-[28px]
+              sm:text-[32px]
+              md:text-[36px]
+              lg:text-[40px]
+              leading-tight mb-4
+            "
+          >
+            Rewards at scale,
+            <br className="hidden sm:block" />
+            made simple.
+          </h2>
+
+          <p className="text-gray-700 text-sm sm:text-base mb-6 max-w-md">
+            Buy in bulk, receive CSV codes instantly, track and reconcile with ease.
+            Perfect for staff rewards, client campaigns, and loyalty programs.
+          </p>
+
+          <Link
+            href="/gift?mode=bulk"
+            onClick={handleClick}
+            className="
+              inline-flex items-center gap-2
+              rounded-3xl px-5 py-3.5
+              text-sm font-semibold text-white
+              bg-linear-to-r from-pink-500 to-orange-400
+              hover:from-pink-600 hover:to-orange-500
+              transition
+            "
+          >
+            Explore Bulk Gifting
+            <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
+              <path
+                d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                fill="white"
+              />
+            </svg>
+          </Link>
+        </div>
+
+        {/* Right image */}
+        <div className="w-full md:w-1/2 flex justify-center md:justify-end">
+          <img
+            src="/gift.png"
+            alt="Bulk gifting illustration"
+            className="w-full max-w-sm md:max-w-full h-auto"
+            loading="lazy"
+            draggable={false}
           />
-
-          {/* Left text section */}
-          <div className="md:w-1/2 mb-8 md:mb-0 px-8 relative z-10">
-            <h2 className="text-[#1A1A1A] font-semibold text-[40px] md:text-3xl  mb-4 fontPoppins">
-              Rewards at scale,<br />made simple.
-            </h2>
-
-            <p className="text-gray-700 text-sm md:text-base mb-6 max-w-md">
-              Buy in bulk, receive CSV codes instantly, track and reconcile with ease. Perfect for staff rewards, client campaigns, and loyalty programs.
-            </p>
-            <Link
-              className="text-white rounded-3xl gap-2 py-3.5 cursor-pointer bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 transition px-5 font-semibold inline-flex items-center text-sm"
-              href="/gift?mode=bulk"
-              onClick={handleClick}
-            >
-              Explore Bulk Gifting
-
-              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
-              </svg>
-            </Link>
-          </div>
-
-          {/* Right image section */}
-          <div className="flex justify-center md:justify-end select-none relative z-10">
-            <img
-              src="/gift.png"
-              alt="Bulk gifting illustration"
-              className="w-full h-auto"
-              loading="lazy"
-              draggable={false}
-            />
-          </div>
         </div>
       </div>
 
-      {/* Features / Benefits Section */}
+      {/* Features */}
       <div
         className="
-    mt-8 
-    flex flex-wrap 
-    justify-center md:justify-between 
-    gap-2 sm:gap-6 md:gap-2
-    max-w-6xl mx-auto 
-    text-gray-700 text-sm sm:text-base font-medium 
-    px-4
-  "
-      >        <div className="flex items-center gap-3 whitespace-nowrap mb-4 md:mb-0">
-          <svg width="22" height="16" viewBox="0 0 22 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fillRule="evenodd" clipRule="evenodd" d="M17.1923 6.1936C14.4857 6.1936 12.2891 8.39027 12.2891 11.0969C12.2891 13.8035 14.4857 16.0002 17.1923 16.0002C19.8989 16.0002 22.0956 13.8035 22.0956 11.0969C22.0956 8.39027 19.8989 6.1936 17.1923 6.1936ZM15.1846 12.1601L16.2168 13.1924C16.294 13.2696 16.3866 13.3296 16.4886 13.3685C16.5906 13.4074 16.6997 13.4243 16.8087 13.418C16.9177 13.4118 17.0241 13.3826 17.121 13.3323C17.2179 13.282 17.3031 13.2118 17.3709 13.1263L19.3477 10.6344C19.4647 10.4726 19.5147 10.2719 19.4874 10.0741C19.4601 9.8763 19.3575 9.69668 19.201 9.57266C19.0445 9.44864 18.8462 9.38978 18.6474 9.40835C18.4486 9.42693 18.2646 9.52149 18.1338 9.67235L16.6979 11.484L16.2798 11.0659C16.1339 10.9248 15.9383 10.8467 15.7353 10.8484C15.5323 10.85 15.3381 10.9313 15.1945 11.0748C15.0509 11.2183 14.9694 11.4124 14.9675 11.6154C14.9657 11.8184 15.0436 12.014 15.1846 12.1601Z" fill="url(#paint0_linear_577_1497)" />
-            <path fillRule="evenodd" clipRule="evenodd" d="M14.7701 5.67748H-0.0976562V12.1292C-0.0976562 12.8817 0.201702 13.6043 0.73332 14.1369C1.2662 14.6687 1.98822 14.9676 2.74108 14.9679H12.6942C11.7658 13.8921 11.2557 12.5179 11.2573 11.0969C11.2577 9.95096 11.5895 8.82961 12.2128 7.86803C12.8361 6.90644 13.7242 6.14568 14.7701 5.67748ZM6.87119 10.3227H3.77335C3.56802 10.3227 3.3711 10.4043 3.22591 10.5494C3.08072 10.6946 2.99915 10.8916 2.99915 11.0969C2.99915 11.3022 3.08072 11.4991 3.22591 11.6443C3.3711 11.7895 3.56802 11.8711 3.77335 11.8711H6.87119C7.07652 11.8711 7.27344 11.7895 7.41863 11.6443C7.56382 11.4991 7.64539 11.3022 7.64539 11.0969C7.64539 10.8916 7.56382 10.6946 7.41863 10.5494C7.27344 10.4043 7.07652 10.3227 6.87119 10.3227ZM-0.0976562 4.12907H20.0316V2.83874C20.0316 2.08621 19.7322 1.36363 19.2006 0.830976C18.6677 0.299147 17.9457 0.000316096 17.1928 0H2.74108C1.98856 0 1.26597 0.299358 0.73332 0.830976C0.20149 1.36386 -0.0973402 2.08587 -0.0976562 2.83874V4.12907Z" fill="#002402" />
-            <defs>
-              <linearGradient id="paint0_linear_577_1497" x1="12.2891" y1="9.80167" x2="21.6237" y2="13.9694" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#ED457D" />
-                <stop offset="1" stopColor="#FA8F42" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span>Secure payments</span>
-        </div>
+          mt-8
+          flex flex-wrap
+          justify-center md:justify-between
+          gap-y-4 gap-x-6
+          text-gray-700
+          text-sm sm:text-base
+          font-medium
+        "
+      >
+        <Feature icon="payment" text="Secure payments" />
         <Separator />
-        <div className="flex items-center gap-3 whitespace-nowrap mb-4 md:mb-0">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1 18.6667C0.999593 18.9732 1.05967 19.2768 1.17678 19.5601C1.2939 19.8434 1.46575 20.1007 1.68251 20.3175C1.89926 20.5342 2.15664 20.7061 2.43992 20.8232C2.7232 20.9403 3.0268 21.0004 3.33333 21H12.6667C12.9732 21.0004 13.2768 20.9403 13.5601 20.8232C13.8434 20.7061 14.1007 20.5342 14.3175 20.3175C14.5342 20.1007 14.7061 19.8434 14.8232 19.5601C14.9403 19.2768 15.0004 18.9732 15 18.6667V16.3333H9.55556C8.52428 16.3329 7.53537 15.9231 6.80615 15.1938C6.07693 14.4646 5.66708 13.4757 5.66667 12.4444V7H3.33333C3.0268 6.99959 2.7232 7.05967 2.43992 7.17678C2.15664 7.2939 1.89926 7.46575 1.68251 7.68251C1.46575 7.89926 1.2939 8.15664 1.17678 8.43992C1.05967 8.7232 0.999593 9.0268 1 9.33333V18.6667Z" fill="#002402" />
-            <path d="M21 3.33333C21.0004 3.0268 20.9403 2.7232 20.8232 2.43992C20.7061 2.15664 20.5342 1.89926 20.3175 1.68251C20.1007 1.46575 19.8434 1.2939 19.5601 1.17678C19.2768 1.05967 18.9732 0.999593 18.6667 1H9.33333C9.0268 0.999593 8.7232 1.05967 8.43992 1.17678C8.15664 1.2939 7.89926 1.46575 7.68251 1.68251C7.46575 1.89926 7.2939 2.15664 7.17678 2.43992C7.05967 2.7232 6.99959 3.0268 7 3.33333V12.6667C6.99959 12.9732 7.05967 13.2768 7.17678 13.5601C7.2939 13.8434 7.46575 14.1007 7.68251 14.3175C7.89926 14.5342 8.15664 14.7061 8.43992 14.8232C8.7232 14.9403 9.0268 15.0004 9.33333 15H18.6667C18.9732 15.0004 19.2768 14.9403 19.5601 14.8232C19.8434 14.7061 20.1007 14.5342 20.3175 14.3175C20.5342 14.1007 20.7061 13.8434 20.8232 13.5601C20.9403 13.2768 21.0004 12.9732 21 12.6667V3.33333ZM17.6602 6.47556L13.5147 10.6258C13.3688 10.7716 13.171 10.8535 12.9648 10.8535C12.7585 10.8535 12.5607 10.7716 12.4149 10.6258L10.3398 8.55067C10.1981 8.40398 10.1197 8.20751 10.1215 8.00358C10.1232 7.79965 10.205 7.60457 10.3493 7.46036C10.4935 7.31616 10.6885 7.23436 10.8925 7.23259C11.0964 7.23081 11.2929 7.30921 11.4396 7.45089L12.964 8.97533L16.562 5.37733C16.6337 5.30305 16.7196 5.2438 16.8145 5.20303C16.9094 5.16227 17.0114 5.14081 17.1147 5.13992C17.218 5.13902 17.3204 5.1587 17.416 5.19781C17.5115 5.23691 17.5984 5.29467 17.6714 5.36769C17.7444 5.44072 17.8022 5.52756 17.8413 5.62315C17.8804 5.71873 17.9001 5.82115 17.8992 5.92442C17.8983 6.0277 17.8768 6.12976 17.8361 6.22465C17.7953 6.31954 17.7361 6.40536 17.6618 6.47711L17.6602 6.47556Z" fill="url(#paint0_linear_577_1506)" />
-            <defs>
-              <linearGradient id="paint0_linear_577_1506" x1="7" y1="6.15094" x2="20.3264" y2="12.1008" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#ED457D" />
-                <stop offset="1" stopColor="#FA8F42" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span>Brand-verified vouchers</span>
-        </div>
+        <Feature icon="voucher" text="Brand-verified vouchers" />
         <Separator />
-        <div className="flex items-center gap-3 whitespace-nowrap mb-4 md:mb-0">
-          <svg width="19" height="18" viewBox="0 0 19 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12.9923 3.80557V17.6829C12.9923 17.7624 12.9607 17.8386 12.9046 17.8949C12.8484 17.9511 12.7723 17.9826 12.6929 17.9826H8.80038C8.72312 17.9812 8.64925 17.9505 8.59369 17.8968C8.53813 17.843 8.50499 17.7702 8.50096 17.6929V13.9863C8.50096 13.4563 8.29065 12.9481 7.9163 12.5734C7.54195 12.1986 7.03423 11.9881 6.50482 11.9881C5.9754 11.9881 5.46768 12.1986 5.09333 12.5734C4.71898 12.9481 4.50867 13.4563 4.50867 13.9863V17.6829C4.5065 17.7567 4.47822 17.8274 4.42887 17.8823C4.37951 17.9372 4.3123 17.9727 4.23919 17.9826H2.01348C1.74242 18.0209 1.46617 17.9957 1.20654 17.9088C0.946905 17.8219 0.710995 17.6758 0.517423 17.4821C0.32385 17.2883 0.177912 17.0521 0.0911257 16.7922C0.00433919 16.5323 -0.020921 16.2558 0.0173381 15.9845V1.49768C0.0174821 1.27208 0.0685051 1.04942 0.166602 0.846318C0.264699 0.643213 0.407338 0.464898 0.583882 0.324672C0.760425 0.184446 0.966317 0.0859277 1.1862 0.0364647C1.40609 -0.0129983 1.63429 -0.0121297 1.85379 0.0390059L11.8345 2.3469C12.1646 2.42175 12.4592 2.60712 12.6698 2.87235C12.8803 3.13759 12.9941 3.46681 12.9923 3.80557ZM5.75626 8.99084C5.75495 8.79252 5.67567 8.60268 5.53557 8.46244C5.39547 8.3222 5.20583 8.24284 5.00771 8.24153H4.00963C3.8111 8.24153 3.6207 8.32047 3.48032 8.461C3.33994 8.60152 3.26108 8.79211 3.26108 8.99084C3.26108 9.18958 3.33994 9.38017 3.48032 9.52069C3.6207 9.66121 3.8111 9.74016 4.00963 9.74016H5.00771C5.20583 9.73885 5.39547 9.65948 5.53557 9.51924C5.67567 9.379 5.75495 9.18917 5.75626 8.99084ZM5.75626 5.99358C5.75495 5.79525 5.67567 5.60542 5.53557 5.46518C5.39547 5.32493 5.20583 5.24557 5.00771 5.24426H4.00963C3.8111 5.24426 3.6207 5.32321 3.48032 5.46373C3.33994 5.60425 3.26108 5.79485 3.26108 5.99358C3.26108 6.19231 3.33994 6.3829 3.48032 6.52342C3.6207 6.66395 3.8111 6.74289 4.00963 6.74289H5.00771C5.20583 6.74158 5.39547 6.66222 5.53557 6.52198C5.67567 6.38174 5.75495 6.1919 5.75626 5.99358ZM9.74855 8.99084C9.74725 8.79252 9.66796 8.60268 9.52786 8.46244C9.38776 8.3222 9.19812 8.24284 9 8.24153H8.00193C7.8034 8.24153 7.613 8.32047 7.47262 8.461C7.33224 8.60152 7.25337 8.79211 7.25337 8.99084C7.25337 9.18958 7.33224 9.38017 7.47262 9.52069C7.613 9.66121 7.8034 9.74016 8.00193 9.74016H9C9.19812 9.73885 9.38776 9.65948 9.52786 9.51924C9.66796 9.379 9.74725 9.18917 9.74855 8.99084ZM9.74855 5.99358C9.74725 5.79525 9.66796 5.60542 9.52786 5.46518C9.38776 5.32493 9.19812 5.24557 9 5.24426H8.00193C7.8034 5.24426 7.613 5.32321 7.47262 5.46373C7.33224 5.60425 7.25337 5.79485 7.25337 5.99358C7.25337 6.19231 7.33224 6.3829 7.47262 6.52342C7.613 6.66395 7.8034 6.74289 8.00193 6.74289H9C9.19812 6.74158 9.38776 6.66222 9.52786 6.52198C9.66796 6.38174 9.74725 6.1919 9.74855 5.99358Z" fill="#002402" />
-            <path d="M18.4933 15.9844V8.33142C18.4948 7.99123 18.3797 7.66084 18.1672 7.39538C17.9546 7.12992 17.6576 6.94544 17.3256 6.87275L15.3694 6.42316C15.3254 6.41115 15.2792 6.4096 15.2345 6.41863C15.1899 6.42767 15.1479 6.44703 15.112 6.47518C15.0762 6.50333 15.0474 6.53948 15.0279 6.58075C15.0085 6.62203 14.999 6.66728 15.0001 6.71289V17.6829C15.0001 17.7624 15.0316 17.8386 15.0878 17.8948C15.1439 17.951 15.2201 17.9826 15.2995 17.9826H16.4972C16.7683 18.0209 17.0445 17.9956 17.3041 17.9088C17.5638 17.8219 17.7997 17.6758 17.9933 17.482C18.1868 17.2883 18.3328 17.0521 18.4196 16.7922C18.5063 16.5323 18.5316 16.2558 18.4933 15.9844Z" fill="url(#paint0_linear_577_1516)" />
-            <defs>
-              <linearGradient id="paint0_linear_577_1516" x1="15" y1="10.676" x2="18.9359" y2="11.2084" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#ED457D" />
-                <stop offset="1" stopColor="#FA8F42" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span>Enterprise-ready</span>
-        </div>
-
+        <Feature icon="enterprise" text="Enterprise-ready" />
         <Separator />
-        <div className="flex items-center gap-3 whitespace-nowrap mb-4 md:mb-0">
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M22.0001 14.8888C22.0001 12.1587 20.4339 9.72227 18.0882 8.53711C18.0154 13.7716 13.7716 18.0154 8.53711 18.0882C9.72227 20.4339 12.1587 22.0001 14.8888 22.0001C16.1688 22.0001 17.4135 21.6592 18.5071 21.0115L21.969 21.969L21.0115 18.5072C21.6592 17.4135 22.0001 16.1687 22.0001 14.8888Z" fill="url(#paint0_linear_577_1527)" />
-            <path d="M16.8008 8.40039C16.8008 3.76836 13.0324 0 8.40039 0C3.76836 0 0 3.76836 0 8.40039C0 9.91001 0.401844 11.3798 1.16488 12.6702L0.0308516 16.7697L4.1305 15.6359C5.42094 16.3989 6.89077 16.8008 8.40039 16.8008C13.0324 16.8008 16.8008 13.0324 16.8008 8.40039ZM7.11133 6.44531H5.82227C5.82227 5.02365 6.97873 3.86719 8.40039 3.86719C9.82205 3.86719 10.9785 5.02365 10.9785 6.44531C10.9785 7.16689 10.673 7.86045 10.1401 8.34784L9.04492 9.35021V10.3555H7.75586V8.7826L9.26982 7.39686C9.54039 7.14927 9.68945 6.81141 9.68945 6.44531C9.68945 5.73448 9.11122 5.15625 8.40039 5.15625C7.68956 5.15625 7.11133 5.73448 7.11133 6.44531ZM7.75586 11.6445H9.04492V12.9336H7.75586V11.6445Z" fill="#002402" />
-            <defs>
-              <linearGradient id="paint0_linear_577_1527" x1="8.53711" y1="13.4905" x2="21.3523" y2="19.2121" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#ED457D" />
-                <stop offset="1" stopColor="#FA8F42" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span>Friendly support</span>
-        </div>
+        <Feature icon="support" text="Friendly support" />
       </div>
     </div>
   );
 };
 
+/* ---------- Helpers ---------- */
+
 const icons = {
   payment: (
-    <svg
-      className="w-5 h-5 mr-2 text-green-700 flex-shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <rect x="2" y="5" width="20" height="14" rx="2" ry="2" />
+    <svg className="w-5 h-5 mr-2 text-green-700" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
       <line x1="2" y1="10" x2="22" y2="10" />
     </svg>
   ),
   voucher: (
-    <svg
-      className="w-5 h-5 mr-2 text-pink-600 flex-shrink-0"
-      fill="currentColor"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
+    <svg className="w-5 h-5 mr-2 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
       <path d="M2 7v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7l-5-4H7L2 7zM7 10h10v4H7v-4z" />
     </svg>
   ),
   enterprise: (
-    <svg
-      className="w-5 h-5 mr-2 text-gray-800 flex-shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
+    <svg className="w-5 h-5 mr-2 text-gray-800" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
       <path d="M3 21v-8a2 2 0 012-2h1v10h2v-6h2v6h2v-10h1a2 2 0 012 2v8" />
       <path d="M7 10v-4h10v4" />
     </svg>
   ),
   support: (
-    <svg
-      className="w-5 h-5 mr-2 text-teal-600 flex-shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
+    <svg className="w-5 h-5 mr-2 text-teal-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
       <path d="M18 18v-2a4 4 0 00-8 0v2" />
       <circle cx="12" cy="10" r="4" />
       <path d="M5 9v-1a7 7 0 0114 0v1" />
@@ -201,14 +131,14 @@ const icons = {
 };
 
 const Feature = ({ icon, text }) => (
-  <div className="flex items-center whitespace-nowrap mb-4 md:mb-0">
+  <div className="flex items-center whitespace-nowrap">
     {icons[icon]}
     <span>{text}</span>
   </div>
 );
 
 const Separator = () => (
-  <div className="hidden md:block mx-6 border-l border-gray-300 h-5 self-center" />
+  <div className="hidden md:block border-l border-gray-300 h-5 self-center" />
 );
 
-export default BulkGifting
+export default BulkGifting;

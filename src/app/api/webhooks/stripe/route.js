@@ -1,13 +1,12 @@
 // app/api/webhooks/stripe/route.js
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { headers } from 'next/headers';
 import { completeOrderAfterPayment } from '@/lib/action/orderAction';
+import { prisma } from '../../../../lib/db';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// IMPORTANT: Disable body parsing for webhook
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
@@ -42,26 +41,23 @@ export async function POST(request) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object;
         console.log('💰 Payment succeeded:', paymentIntent.id);
-        console.log('📋 Payment intent metadata:', paymentIntent.metadata);
         
-        // Complete the order
-        await handlePaymentSuccess(paymentIntent);
+        // ✅ Handle payment success without waiting for completion
+        handlePaymentSuccess(paymentIntent);
         break;
       }
 
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object;
         console.log('❌ Payment failed:', paymentIntent.id);
-        console.log('📋 Payment intent metadata:', paymentIntent.metadata);
         
-        await handlePaymentFailure(paymentIntent);
+        handlePaymentFailure(paymentIntent);
         break;
       }
 
       case 'payment_intent.processing': {
         const paymentIntent = event.data.object;
         console.log('⏳ Payment processing:', paymentIntent.id);
-        // Order already in PROCESSING status
         break;
       }
 
@@ -69,7 +65,7 @@ export async function POST(request) {
         const paymentIntent = event.data.object;
         console.log('🚫 Payment canceled:', paymentIntent.id);
         
-        await handlePaymentCanceled(paymentIntent);
+        handlePaymentCanceled(paymentIntent);
         break;
       }
 
@@ -77,6 +73,7 @@ export async function POST(request) {
         console.log('Unhandled event type:', event.type);
     }
 
+    // ✅ Return immediately - don't wait for order processing
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error('Webhook error:', error);
@@ -87,64 +84,83 @@ export async function POST(request) {
   }
 }
 
-// Handle successful payment
+// ✅ Handle successful payment (non-blocking)
 async function handlePaymentSuccess(paymentIntent) {
   try {
-    const orderId = paymentIntent.metadata.orderId;
+    // ✅ Find ALL orders associated with this payment intent
+    const orders = await prisma.order.findMany({
+      where: { 
+        paymentIntentId: paymentIntent.id,
+        paymentStatus: 'PENDING'
+      },
+    });
 
-    if (!orderId) {
-      console.error('❌ No orderId in payment intent metadata');
+    if (!orders || orders.length === 0) {
+      console.error('❌ No pending orders found for payment intent:', paymentIntent.id);
       return;
     }
 
-    console.log(`🔄 Processing payment for order: ${orderId}`);
+    console.log(`🔄 Processing ${orders.length} orders for payment: ${paymentIntent.id}`);
 
-    // Complete the order (generate vouchers, send emails, etc.)
-    const result = await completeOrderAfterPayment(orderId, {
-      paymentIntentId: paymentIntent.id,
-      paymentMethod: paymentIntent.payment_method_types?.[0] || 'card',
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency,
+    // ✅ Process all orders in parallel
+    const processingPromises = orders.map(async (order) => {
+      try {
+        console.log(`📦 Processing order: ${order.orderNumber} (${order.id})`);
+
+        const result = await completeOrderAfterPayment(order.id, {
+          paymentIntentId: paymentIntent.id,
+          paymentMethod: paymentIntent.payment_method_types?.[0] || 'card',
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+        });
+
+        if (result.success) {
+          console.log(`✅ Order queued for processing: ${order.orderNumber}`);
+          return { success: true, orderId: order.id, orderNumber: order.orderNumber };
+        } else {
+          console.error(`❌ Failed to queue order ${order.orderNumber}:`, result.error);
+          return { success: false, orderId: order.id, orderNumber: order.orderNumber, error: result.error };
+        }
+      } catch (error) {
+        console.error(`❌ Error processing order ${order.id}:`, error);
+        return { success: false, orderId: order.id, error: error.message };
+      }
     });
 
-    if (result.success) {
-      console.log(`✅ Order completed successfully: ${orderId}`);
-      console.log(`📧 Emails sent, vouchers generated`);
-    } else {
-      console.error(`❌ Failed to complete order ${orderId}:`, result.error);
-      
-      // ✅ Still mark as completed if payment succeeded, even if voucher generation failed
-      // This prevents customer from being charged without getting an order
-      const { prisma } = await import('@/lib/db');
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          paymentStatus: 'COMPLETED',
-          paymentIntentId: paymentIntent.id,
-          paidAt: new Date(),
-        },
-      });
+    const results = await Promise.all(processingPromises);
+
+    const successCount = results.filter(r => r.success).length;
+    const failedCount = results.filter(r => !r.success).length;
+
+    console.log(`📊 Payment processing summary:`);
+    console.log(`   ✅ Successful: ${successCount}`);
+    console.log(`   ❌ Failed: ${failedCount}`);
+    console.log(`   📦 Total: ${orders.length}`);
+
+    // ✅ If any failed, log them for manual review
+    if (failedCount > 0) {
+      const failedOrders = results.filter(r => !r.success);
+      console.error('⚠️ Failed orders requiring attention:', failedOrders);
     }
+
   } catch (error) {
     console.error('❌ Error handling payment success:', error);
     
-    // ✅ CRITICAL: Mark payment as completed even if there's an error
-    // to prevent charging customer without order
+    // ✅ Fallback: Try to mark all orders as completed even if there's an error
     try {
-      const orderId = paymentIntent.metadata.orderId;
-      if (orderId) {
-        const { prisma } = await import('@/lib/db');
-        await prisma.order.update({
-          where: { id: orderId },
-          data: {
-            paymentStatus: 'COMPLETED',
-            paymentIntentId: paymentIntent.id,
-            paidAt: new Date(),
-          },
-        });
-      }
+      await prisma.order.updateMany({
+        where: { 
+          paymentIntentId: paymentIntent.id,
+          paymentStatus: 'PENDING'
+        },
+        data: {
+          paymentStatus: 'COMPLETED',
+          paidAt: new Date(),
+        },
+      });
+      console.log(`✅ Marked all orders as paid (fallback) for payment: ${paymentIntent.id}`);
     } catch (fallbackError) {
-      console.error('❌ Critical: Could not mark order as completed:', fallbackError);
+      console.error('❌ Critical: Could not mark orders as completed:', fallbackError);
     }
   }
 }
@@ -152,23 +168,27 @@ async function handlePaymentSuccess(paymentIntent) {
 // Handle failed payment
 async function handlePaymentFailure(paymentIntent) {
   try {
-    const orderId = paymentIntent.metadata.orderId;
+    // ✅ Find ALL orders associated with this payment intent
+    const orders = await prisma.order.findMany({
+      where: { paymentIntentId: paymentIntent.id },
+    });
 
-    if (!orderId) {
-      console.error('No orderId in payment intent metadata');
+    if (!orders || orders.length === 0) {
+      console.error('No orders found for failed payment intent');
       return;
     }
 
-    const { prisma } = await import('@/lib/db');
+    console.log(`❌ Marking ${orders.length} orders as failed`);
 
-    await prisma.order.update({
-      where: { id: orderId },
+    // ✅ Update all orders to FAILED status
+    await prisma.order.updateMany({
+      where: { paymentIntentId: paymentIntent.id },
       data: {
         paymentStatus: 'FAILED',
       },
     });
 
-    console.log('❌ Order marked as failed:', orderId);
+    console.log(`✅ ${orders.length} orders marked as failed`);
   } catch (error) {
     console.error('Error handling payment failure:', error);
   }
@@ -177,23 +197,27 @@ async function handlePaymentFailure(paymentIntent) {
 // Handle canceled payment
 async function handlePaymentCanceled(paymentIntent) {
   try {
-    const orderId = paymentIntent.metadata.orderId;
+    // ✅ Find ALL orders associated with this payment intent
+    const orders = await prisma.order.findMany({
+      where: { paymentIntentId: paymentIntent.id },
+    });
 
-    if (!orderId) {
-      console.error('No orderId in payment intent metadata');
+    if (!orders || orders.length === 0) {
+      console.error('No orders found for cancelled payment intent');
       return;
     }
 
-    const { prisma } = await import('@/lib/db');
+    console.log(`🚫 Marking ${orders.length} orders as cancelled`);
 
-    await prisma.order.update({
-      where: { id: orderId },
+    // ✅ Update all orders to CANCELLED status
+    await prisma.order.updateMany({
+      where: { paymentIntentId: paymentIntent.id },
       data: {
         paymentStatus: 'CANCELLED',
       },
     });
 
-    console.log('🚫 Order marked as cancelled:', orderId);
+    console.log(`✅ ${orders.length} orders marked as cancelled`);
   } catch (error) {
     console.error('Error handling payment cancellation:', error);
   }

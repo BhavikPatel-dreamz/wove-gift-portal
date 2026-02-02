@@ -101,6 +101,7 @@ const BrandEdit = () => {
     swiftCode: '',
     country: 'South Africa',
     accountVerification: false,
+    imagePreview:"",
 
     // Contacts
     contacts: [

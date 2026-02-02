@@ -85,14 +85,14 @@ const PaymentMethodSelector = ({ selectedTab, onTabChange, isBulkMode }) => {
         <label className="flex items-start gap-3 cursor-pointer select-none">
           <input
             type="checkbox"
-            checked={isPaymentConfirmed}
+            checked={isPaymentConfirmed || false}
             onChange={(e) => dispatch(setIsPaymentConfirmed(e.target.checked))}
             className="sr-only"
           />
           <div className={`
                           w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
                           ${isPaymentConfirmed
-              ? 'bg-gradient-to-r from-pink-500 to-orange-400 border-transparent'
+              ? 'bg-linear-to-r from-pink-500 to-orange-400 border-transparent'
               : 'bg-white border-gray-300'
             }
                         `}>

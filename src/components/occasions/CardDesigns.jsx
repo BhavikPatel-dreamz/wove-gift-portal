@@ -355,7 +355,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 px-3 sm:px-4">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 px-3 sm:px-4">
       <div className="max-w-7xl mx-auto">
         {/* Enhanced Header */}
         <div className="bg-white rounded-lg border border-[#E2E8F0] p-4 mb-4">
@@ -372,15 +372,15 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
 
               <div className="flex items-center space-x-3">
                 {occasion.emoji && occasion.emoji !== "Select Emoji" && (
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-xl border border-indigo-100">
+                  <div className="shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-xl border border-indigo-100">
                       {occasion.emoji}
                     </div>
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#1A1A1A] truncate max-w-[220px] sm:max-w-none">{occasion.name}</h1>
+                    <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#1A1A1A] truncate max-w-55 sm:max-w-none">{occasion.name}</h1>
                     <Badge
                       variant={occasion.active ? 'success' : 'default'}
                       className={occasion.active ? 'bg-green-50 text-green-700 border-green-200 text-xs px-2 py-1' : 'bg-gray-50 text-gray-600 border-gray-200 text-xs px-2 py-1'}
@@ -393,12 +393,12 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
               </div>
             </div>
 
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <Button
                 onClick={() => setIsCreatingCard(true)}
                 icon={Plus}
                 disabled={loading}
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 px-4 py-2 text-sm"
+                className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 px-4 py-2 text-sm"
               >
                 Create New Card
               </Button>
@@ -468,7 +468,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
         <div className="bg-[#FAFBFC] rounded-t-[10px] border border-[#E5E7EB] overflow-hidden">
           <div className="
   px-4 py-4 border-b border-gray-200
-  bg-gradient-to-r from-gray-50 to-white
+  bg-linear-to-r from-gray-50 to-white
   flex flex-col gap-3
   sm:flex-row sm:items-center sm:justify-between
 ">
@@ -607,7 +607,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
                     onClick={() => setIsCreatingCard(true)}
                     icon={Plus}
                     size="lg"
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    className="bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                   >
                     Create Your First Card
                   </Button>
@@ -670,7 +670,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
                             checked={card.active}
                             onChange={() => handleToggleCardActive(card.id, card.active)}
                             small
-                            className="flex-shrink-0"
+                            className="shrink-0"
                           />
                         </div>
                         <p className="text-sm text-[#4A4A4A] truncate mb-3">{card.description}</p>

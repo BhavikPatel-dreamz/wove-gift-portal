@@ -31,10 +31,29 @@ const textColors = ['#FFFFFF', '#000000', '#1F2937', '#374151', '#FF6B35', '#416
 
 // Draggable Layer Component
 const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
+  // Calculate responsive font size for text
+  const getResponsiveFontSize = (baseFontSize) => {
+    if (typeof window === 'undefined') return baseFontSize;
+    const width = window.innerWidth;
+    if (width < 640) return baseFontSize * 0.8; // Mobile
+    if (width < 768) return baseFontSize * 0.9; // Tablet
+    return baseFontSize; // Desktop
+  };
+
+  // Calculate responsive scale for emojis
+  const getResponsiveScale = (baseScale) => {
+    if (typeof window === 'undefined') return baseScale;
+    const width = window.innerWidth;
+    if (width < 640) return baseScale * 0.7; // Mobile
+    if (width < 768) return baseScale * 0.85; // Tablet
+    return baseScale; // Desktop
+  };
+
   return (
     <div
-      className={`absolute ${layer.locked ? 'cursor-not-allowed' : 'cursor-move'} ${isSelected ? 'ring-2 ring-blue-500' : ''
-        }`}
+      className={`absolute touch-none ${
+        layer.locked ? 'cursor-not-allowed' : 'cursor-move'
+      } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
       style={{
         left: `${layer.x}%`,
         top: `${layer.y}%`,
@@ -43,25 +62,25 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
         pointerEvents: layer.locked ? 'none' : 'auto',
         transformOrigin: 'center',
         zIndex: isSelected ? 10 : 1,
-        // Fixed: For images, use a wrapper that doesn't shrink
         ...(layer.type === 'image' && {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          minWidth: '50px', // Minimum width for selection ring
-          minHeight: '50px', // Minimum height for selection ring
+          minWidth: '40px',
+          minHeight: '40px',
         }),
       }}
       onMouseDown={(e) => onMouseDown(e, layer.id)}
+      onTouchStart={(e) => onMouseDown(e, layer.id)}
     >
       {(() => {
         switch (layer.type) {
           case 'text':
             return (
               <div
-                className="select-none whitespace-nowrap"
+                className="select-none whitespace-nowrap max-w-[90vw] overflow-hidden text-ellipsis"
                 style={{
-                  fontSize: `${layer.fontSize}px`,
+                  fontSize: `${getResponsiveFontSize(layer.fontSize)}px`,
                   fontWeight: layer.fontWeight,
                   color: layer.color,
                   textAlign: layer.textAlign,
@@ -69,6 +88,7 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
                   textDecoration: layer.textDecoration,
                   fontFamily: layer.fontFamily,
                   pointerEvents: 'none',
+                  wordBreak: 'break-word',
                 }}
               >
                 {layer.content}
@@ -79,7 +99,7 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
               <div
                 className="select-none"
                 style={{
-                  fontSize: `${layer.scale * 60}px`,
+                  fontSize: `${getResponsiveScale(layer.scale) * 60}px`,
                   lineHeight: 1,
                   pointerEvents: 'none',
                 }}
@@ -92,14 +112,15 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
               <img
                 src={layer.src}
                 alt="layer"
-                className="select-none"
+                className="select-none max-w-[90vw] h-auto"
                 style={{
-                  width: `${layer.width}px`,
-                  height: `${layer.height}px`,
+                  width: `${Math.min(layer.width, window.innerWidth * 0.9)}px`,
+                  height: 'auto',
+                  maxHeight: `${layer.height}px`,
                   objectFit: 'contain',
                   display: 'block',
                   pointerEvents: 'none',
-                  flexShrink: 0, // Prevent image from shrinking
+                  flexShrink: 0,
                 }}
                 draggable={false}
               />
@@ -111,7 +132,6 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
     </div>
   );
 };
-
 // Fixed: Advanced Card Creator with proper dragging
 const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthday' }) => {
   const [layers, setLayers] = useState([
@@ -677,20 +697,20 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
           {/* Left Tools - Horizontal on mobile, vertical on desktop */}
-          <div className="lg:w-14 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex lg:flex-col py-2 px-2 lg:py-3 lg:px-0 gap-1.5 lg:gap-2 overflow-x-auto lg:overflow-x-visible">
+          <div className="lg:w-14 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 flex lg:flex-col py-2 px-2 lg:py-3 lg:px-0 gap-1.5 lg:gap-2 overflow-x-auto lg:overflow-x-visible overflow-y-hidden justify-center">
             <button
               onClick={() => addLayer('text', { content: 'New Text', textAlign: 'center' })}
               className="tool-btn shrink-0"
               title="Add Text"
             >
-              <Type size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <Type size={16} className="sm:w-4.5 sm:h-4.5" />
             </button>
             <button
               onClick={() => imageInputRef.current?.click()}
               className="tool-btn shrink-0"
               title="Add Image"
             >
-              <ImageIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
+              <ImageIcon size={16} className="sm:w-4.5 sm:h-4.5" />
               <input ref={imageInputRef} type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, false)} />
             </button>
             <button
@@ -704,17 +724,17 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
             <div className="flex lg:flex-col items-center gap-1 shrink-0">
               <div className="text-[10px] text-gray-500 hidden lg:block mb-1">Zoom</div>
               <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="tool-btn-sm">
-                <ZoomIn size={12} className="sm:w-[14px] sm:h-[14px]" />
+                <ZoomIn size={12} className="sm:w-3.5 sm:h-3.5" />
               </button>
               <div className="text-[10px] sm:text-xs font-medium text-gray-700">{Math.round(zoom * 100)}%</div>
               <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="tool-btn-sm">
-                <ZoomOut size={12} className="sm:w-[14px] sm:h-[14px]" />
+                <ZoomOut size={12} className="sm:w-3.5 sm:h-3.5" />
               </button>
             </div>
           </div>
 
           {/* Canvas Area */}
-          <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 lg:p-6 overflow-auto bg-gray-50">
+          <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-4 lg:p-6 overflow-y-auto bg-gray-50 overflow-x-hidden">
             <div className="relative" style={{ transform: `scale(${zoom})`, transition: 'transform 0.2s' }}>
               <div
                 ref={cardRef}
@@ -885,19 +905,19 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
                           onClick={() => updateLayer(selectedLayer, { fontWeight: selectedLayerData.fontWeight === 'bold' ? 'normal' : 'bold' })}
                           className={`py-1.5 sm:py-2 rounded transition-colors ${selectedLayerData.fontWeight === 'bold' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                         >
-                          <Bold size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />
+                          <Bold size={12} className="sm:w-3.5 sm:h-3.5 mx-auto" />
                         </button>
                         <button
                           onClick={() => updateLayer(selectedLayer, { fontStyle: selectedLayerData.fontStyle === 'italic' ? 'normal' : 'italic' })}
                           className={`py-1.5 sm:py-2 rounded transition-colors ${selectedLayerData.fontStyle === 'italic' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                         >
-                          <Italic size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />
+                          <Italic size={12} className="sm:w-3.5 sm:h-3.5 mx-auto" />
                         </button>
                         <button
                           onClick={() => updateLayer(selectedLayer, { textDecoration: selectedLayerData.textDecoration === 'underline' ? 'none' : 'underline' })}
                           className={`py-1.5 sm:py-2 rounded transition-colors ${selectedLayerData.textDecoration === 'underline' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                         >
-                          <Underline size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />
+                          <Underline size={12} className="sm:w-3.5 sm:h-3.5 mx-auto" />
                         </button>
                       </div>
                       <div className="grid grid-cols-3 gap-1.5">
@@ -907,9 +927,9 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
                             onClick={() => updateLayer(selectedLayer, { textAlign: align })}
                             className={`py-1.5 sm:py-2 rounded transition-colors ${selectedLayerData.textAlign === align ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                           >
-                            {align === 'left' && <AlignLeft size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />}
-                            {align === 'center' && <AlignCenter size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />}
-                            {align === 'right' && <AlignRight size={12} className="sm:w-[14px] sm:h-[14px] mx-auto" />}
+                            {align === 'left' && <AlignLeft size={12} className="sm:w-3.5 sm:h-3.5 mx-auto" />}
+                            {align === 'center' && <AlignCenter size={12} className="sm:w-3.5 sm:h-3.5 mx-auto" />}
+                            {align === 'right' && <AlignRight size={12} className="sm:w-3.5 sm:h-3.5 mx-auto" />}
                           </button>
                         ))}
                       </div>
@@ -977,7 +997,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
                               className="p-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
                               disabled={selectedLayerData.width <= 20}
                             >
-                              <Minus size={10} className="sm:w-[14px] sm:h-[14px]" />
+                              <Minus size={10} className="sm:w-3.5 sm:h-3.5" />
                             </button>
                             <input
                               type="range"
@@ -992,7 +1012,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
                               className="p-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
                               disabled={selectedLayerData.width >= 400}
                             >
-                              <Plus size={10} className="sm:w-[14px] sm:h-[14px]" />
+                              <Plus size={10} className="sm:w-3.5 sm:h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -1007,7 +1027,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
                               className="p-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
                               disabled={selectedLayerData.height <= 20}
                             >
-                              <Minus size={10} className="sm:w-[14px] sm:h-[14px]" />
+                              <Minus size={10} className="sm:w-3.5 sm:h-3.5" />
                             </button>
                             <input
                               type="range"
@@ -1022,7 +1042,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
                               className="p-1 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
                               disabled={selectedLayerData.height >= 400}
                             >
-                              <Plus size={10} className="sm:w-[14px] sm:h-[14px]" />
+                              <Plus size={10} className="sm:w-3.5 sm:h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -1105,7 +1125,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
               {/* Save Button */}
               <button
                 onClick={handleSaveAndContinue}
-                className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all"
+                className="w-full py-2.5 sm:py-3 bg-linear-to-r from-blue-500 to-blue-600 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all"
               >
                 Save & Continue
               </button>
@@ -1311,7 +1331,7 @@ export default function SubCategorySelector() {
         <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-gray-200">
           <h2 className="text-xl font-semibold text-red-600">Oops! Something went wrong.</h2>
           <p className="text-gray-600 mt-2 text-sm">{error}</p>
-          <button onClick={() => fetchSubCategories(1)} className="mt-4 bg-gradient-to-r from-pink-500 to-orange-400 text-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm hover:from-pink-600 hover:to-orange-500">
+          <button onClick={() => fetchSubCategories(1)} className="mt-4 bg-linear-to-r from-pink-500 to-orange-400 text-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm hover:from-pink-600 hover:to-orange-500">
             Try Again
           </button>
         </div>
@@ -1340,14 +1360,14 @@ export default function SubCategorySelector() {
             <span
               className="
                 absolute inset-0 rounded-full p-[1.5px]
-                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                bg-linear-to-r from-[#ED457D] to-[#FA8F42]
               "
             ></span>
             <span
               className="
-                absolute inset-[1.5px] rounded-full bg-white
+                absolute inset-0.5 rounded-full bg-white
                 transition-all duration-300
-                group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+                group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
               "
             ></span>
 
@@ -1388,44 +1408,46 @@ export default function SubCategorySelector() {
             <div
               className="
         flex items-center gap-3 justify-center w-full
-        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
-              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
-              <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
-                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
+              <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
+                <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
                     Bulk Gifting
                   </span>
                 </div>
               </div>
 
-              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
           {/* Desktop spacer only */}
-          <div className="md:block w-[140px]" />
+          <div className="md:block w-35" />
         </div>
 
 
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-            Pick a {selectedOccasionName} Design They'll Love
+        <div className="text-center mb-8 sm:mb-10 md:mb-12 px-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
+            Pick a {selectedOccasionName} Design They&apos;ll Love
           </h1>
-          <p className="text-gray-600 text-base max-w-2xl mx-auto">
+
+          <p className="text-sm sm:text-base text-gray-600 max-w-md sm:max-w-xl md:max-w-2xl mx-auto">
             Select from our curated collection of beautiful, emotionally engaging {selectedOccasionName} cards
           </p>
         </div>
+
 
         {/* Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {/* Custom Card Option */}
           <div onClick={() => setIsCustomizing(true)} className="group cursor-pointer">
-            <div className="h-full rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl bg-gradient-to-b from-[#FFF5F5] to-white p-2 border-2 border-dashed border-[#FFB4B4] hover:border-pink-400">
-              <div className="flex flex-col items-center justify-center p-8 min-h-[400px]">
+            <div className="h-full rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl bg-linear-to-b from-[#FFF5F5] to-white p-2 border-2 border-dashed border-[#FFB4B4] hover:border-pink-400">
+              <div className="flex flex-col items-center justify-center p-8 min-h-100">
                 <div className="w-14 h-14 rounded-2xl border-2 border-[#FF69B4] flex items-center justify-center mb-6 bg-white group-hover:scale-110 transition-transform">
                   <Upload className="w-6 h-6 text-[#FF69B4]" strokeWidth={2.5} />
                 </div>
@@ -1446,7 +1468,7 @@ export default function SubCategorySelector() {
                   {subCategory.image ? (
                     <img src={subCategory.image} alt={subCategory.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-pink-100 to-orange-100 flex items-center justify-center">
+                    <div className="w-full h-full bg-linear-to-br from-pink-100 to-orange-100 flex items-center justify-center">
                       <span className="text-6xl opacity-80">{subCategory.emoji || '🎁'}</span>
                     </div>
                   )}
@@ -1454,7 +1476,7 @@ export default function SubCategorySelector() {
                 <div className="p-5">
                   <h3 className="font-bold text-lg text-gray-900 mb-2">{subCategory.name}</h3>
                   <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 mb-4">{subCategory.description}</p>
-                  <button className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-lg hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2">
+                  <button className="w-full py-3 px-4 bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-lg hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2">
                     Choose this Design
                     <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />

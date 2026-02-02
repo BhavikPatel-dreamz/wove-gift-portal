@@ -3,11 +3,11 @@ import { Search, ChevronDown, Heart, ArrowLeft, Sparkles } from 'lucide-react';
 
 // Header Component
 const BrandHeader = ({ title, subtitle, onBack }) => (
-  <div className="relative bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 p-8 text-center w-full mx-auto rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm">
+  <div className="relative bg-linear-to-br from-purple-50 via-pink-50 to-indigo-50 p-8 text-center w-full mx-auto rounded-2xl shadow-lg border border-white/20 backdrop-blur-sm">
     {/* Decorative background elements */}
     <div className="absolute inset-0 overflow-hidden rounded-2xl">
-      <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full opacity-30 blur-xl"></div>
-      <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-br from-indigo-200 to-pink-200 rounded-full opacity-20 blur-xl"></div>
+      <div className="absolute -top-4 -right-4 w-24 h-24 bg-linear-to-br from-pink-200 to-purple-200 rounded-full opacity-30 blur-xl"></div>
+      <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-linear-to-br from-indigo-200 to-pink-200 rounded-full opacity-20 blur-xl"></div>
     </div>
     
     <div className="relative z-10">
@@ -25,7 +25,7 @@ const BrandHeader = ({ title, subtitle, onBack }) => (
           <Sparkles className="text-pink-500 animate-pulse" size={24} />
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800">
             Pick Your{' '}
-            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent animate-gradient">
+            <span className="bg-linear-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent animate-gradient">
               Perfect Brand
             </span>
           </h1>

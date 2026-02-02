@@ -20,7 +20,7 @@ const FinalSelectionStep = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-6">
+    <div className="min-h-screen bg-linear-to-br from-purple-50 via-indigo-50 to-blue-50 p-6">
       <div className="max-w-4xl mx-auto">
         <ProgressIndicator />
 
@@ -33,7 +33,7 @@ const FinalSelectionStep = () => {
         </button>
 
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold bg-linear-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent mb-4">
             Review Your Selection
           </h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
@@ -44,7 +44,7 @@ const FinalSelectionStep = () => {
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
           <div className="space-y-6">
             {/* Brand Selection */}
-            <div className="flex items-center p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg">
+            <div className="flex items-center p-4 bg-linear-to-r from-purple-50 to-indigo-50 rounded-lg">
               <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
                 1
               </div>
@@ -58,7 +58,7 @@ const FinalSelectionStep = () => {
             </div>
 
             {/* Amount Selection */}
-            <div className="flex items-center p-4 bg-gradient-to-r from-pink-50 to-orange-50 rounded-lg">
+            <div className="flex items-center p-4 bg-linear-to-r from-pink-50 to-orange-50 rounded-lg">
               <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
                 2
               </div>
@@ -74,7 +74,7 @@ const FinalSelectionStep = () => {
             </div>
 
             {/* Occasion Selection */}
-            <div className="flex items-center p-4 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg">
+            <div className="flex items-center p-4 bg-linear-to-r from-orange-50 to-yellow-50 rounded-lg">
               <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
                 3
               </div>
@@ -87,7 +87,7 @@ const FinalSelectionStep = () => {
             </div>
 
             {/* Category Selection */}
-            <div className="flex items-center p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg">
+            <div className="flex items-center p-4 bg-linear-to-r from-teal-50 to-cyan-50 rounded-lg">
               <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
                 4
               </div>
@@ -100,7 +100,7 @@ const FinalSelectionStep = () => {
             </div>
 
             {/* Timing Selection */}
-            <div className="flex items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+            <div className="flex items-center p-4 bg-linear-to-r from-green-50 to-emerald-50 rounded-lg">
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
                 5
               </div>
@@ -118,7 +118,7 @@ const FinalSelectionStep = () => {
             </div>
 
             {/* Personal Message */}
-            <div className="flex items-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
+            <div className="flex items-center p-4 bg-linear-to-r from-indigo-50 to-purple-50 rounded-lg">
               <div className="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
                 6
               </div>
@@ -135,7 +135,7 @@ const FinalSelectionStep = () => {
           <div className="flex gap-4 mt-8">
             <button
               onClick={handleComplete}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white py-4 px-8 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
+              className="flex-1 bg-linear-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white py-4 px-8 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
               🎉 Complete Selection
             </button>

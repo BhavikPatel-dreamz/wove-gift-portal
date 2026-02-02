@@ -133,7 +133,7 @@ const SettlementDetailsModal = ({ isOpen, onClose, brandId, onFetchTabData }) =>
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
           {/* Header */}
-          <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between z-10">
+          <div className="sticky top-0 bg-linear-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between z-10">
             <div className="flex items-center gap-4">
               {brand.logo && (
                 <img src={brand.logo} alt={brand.brandName} className="w-12 h-12 rounded-lg" />
@@ -587,7 +587,7 @@ const ContactsTab = ({ data }) => {
         >
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
                 <User className="w-5 h-5 text-white" />
               </div>
               <div>

@@ -11,19 +11,19 @@ const Footer = () => {
   const links2 = [
     { name: "Terms & Conditions", path: "/termsandcondition" },
     { name: "Privacy Policy", path: "/privacy" },
-    { name: "FAQs / Help Center", path: "/gift" },
+    { name: "FAQs / Help Center", path: "/faq" },
     { name: "Contact Us", path: "/contact" }
   ];
 
   return (
-    <>    <footer className="bg-[background: linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%)] text-gray-800 pt-16 pb-[90px] px-6">
-      <div className="max-w-[1440px] mx-auto">
+    <>    <footer className="bg-[background: linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%)] text-gray-800 pt-16 pb-22.5 px-6">
+      <div className="max-w-360 mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_1.5fr] gap-12 mb-12"
         >
           {/* Branding Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-400 to-orange-400 flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 rounded-lg bg-linear-to-br from-pink-400 to-orange-400 flex items-center justify-center shadow-md">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
                 </svg>

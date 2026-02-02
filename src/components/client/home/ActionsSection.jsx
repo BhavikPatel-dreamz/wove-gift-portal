@@ -27,7 +27,6 @@ const ActionSelectionCards = (props) => {
       borderColor: "gradient-border-orange",
       iconBg: "bg-[#fdf6f0]",
       path: "/gift?mode=single"
-      
     },
     {
       icon: <GiftCardIcon/>,
@@ -51,7 +50,6 @@ const ActionSelectionCards = (props) => {
     }
   ];
   
-
   const handleCardClick = (card) => {
     if (card.path.startsWith('/gift')) {
       dispatch(resetFlow());
@@ -61,35 +59,43 @@ const ActionSelectionCards = (props) => {
   };
 
   return (
-    <div className="w-full max-w-full mx-auto px-4 py-12 bg-gray-50">
+    <div className="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 bg-gray-50">
       {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-[40px] font-semibold text-[#1A1A1A] mb-4">{title}</h1>
-        <p className="text-lg text-[#4A4A4A] max-w-2xl mx-auto">{subtitle}</p>
+      <div className="text-center mb-8 sm:mb-10 lg:mb-12">
+        <h1 className="text-2xl sm:text-3xl lg:text-[40px] font-semibold text-[#1A1A1A] mb-3 sm:mb-4 px-2">
+          {title}
+        </h1>
+        <p className="text-base sm:text-lg text-[#4A4A4A] max-w-2xl mx-auto px-4">
+          {subtitle}
+        </p>
       </div>
 
       {/* Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
         {actionCards.map((card, index) => (
           <div
             key={index}
-            className={`relative bg-white rounded-2xl p-8  ${card.borderColor} text-center hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer`}
+            className={`relative bg-white rounded-2xl p-6 sm:p-7 lg:p-8 ${card.borderColor} text-center hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer`}
             onClick={() => handleCardClick(card)}
           >
             {/* Icon */}
-            <div className={`w-[83px] h-[83px] ${card.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-6`}>
+            <div className={`w-17.5 h-17.5 sm:w-19.5 sm:h-19.5 lg:w-20.75 lg:h-20.75 ${card.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-5 sm:mb-6`}>
               {card.icon}
             </div>
 
             {/* Title */}
-            <h3 className="text-xl font-bold text-gray-900 mb-4">{card.title}</h3>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
+              {card.title}
+            </h3>
 
             {/* Description */}
-            <p className="text-gray-600 mb-8 leading-relaxed">{card.description}</p>
+            <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-7 lg:mb-8 leading-relaxed px-2">
+              {card.description}
+            </p>
 
             {/* Button */}
             <button 
-              className={`${card.buttonColor} text-white text-[16px] font-semibold py-3 px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto`}
+              className={`${card.buttonColor} text-white text-sm sm:text-[15px] lg:text-[16px] font-semibold py-2.5 sm:py-3 px-5 sm:px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto w-full sm:w-auto`}
               onClick={(e) => {
                 e.stopPropagation();
                 handleCardClick(card);

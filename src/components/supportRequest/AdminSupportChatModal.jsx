@@ -498,7 +498,7 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
                 {/* Right Side - Chat */}
                 <div className="flex-1 flex flex-col">
                     {/* Chat Header */}
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-tr-lg flex items-center justify-between">
+                    <div className="bg-linear-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-tr-lg flex items-center justify-between">
                         <div>
                             <h2 className="text-xl font-bold">Support Chat</h2>
                             <p className="text-sm text-blue-100 mt-1">
@@ -647,7 +647,7 @@ const MessageBubble = ({ message, formatTime }) => {
     return (
         <div className={`flex ${isAdmin ? 'justify-end' : 'justify-start'} mb-4`}>
             <div className={`max-w-[70%] flex gap-3 ${isAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
-                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isAdmin ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isAdmin ? 'bg-blue-600' : 'bg-gray-300'}`}>
                     {isAdmin ? (
                         <Headset className="w-4 h-4 text-white" />
                     ) : (
@@ -666,7 +666,7 @@ const MessageBubble = ({ message, formatTime }) => {
                             : 'bg-white text-gray-800 border border-gray-200 rounded-bl-sm'
                             }`}
                     >
-                        <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
+                        <p className="text-sm whitespace-pre-wrap wrap-break-word">{message.message}</p>
 
                         <div className={`flex items-center gap-1 mt-2 text-xs ${isAdmin ? 'text-blue-100 justify-end' : 'text-gray-500'}`}>
                             <span>{formatTime(message.createdAt)}</span>

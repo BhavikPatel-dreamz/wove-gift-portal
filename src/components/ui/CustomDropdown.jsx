@@ -29,7 +29,7 @@ const CustomDropdown = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-2 py-2.5 bg-white border border-[#4A4A4A] rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all flex items-center justify-between text-left"
+        className="w-full px-2 py-1 lg:py-2.5 bg-white border border-[#4A4A4A] rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all flex items-center justify-between text-left"
       >
         <span className="font-inter text-sm font-normal text-[#4A4A4A]">
           {displayText}

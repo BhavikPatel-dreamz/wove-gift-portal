@@ -141,21 +141,21 @@ const VouchersTab = ({
             {/* Statistics Cards */}
             {voucherStats && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="flex w-full h-[85px] flex-col justify-center gap-2 p-6 bg-[#EFF6FE] border border-[#BEDBFF] rounded-xl">
+                    <div className="flex w-full h-21.25 flex-col justify-center gap-2 p-6 bg-[#EFF6FE] border border-[#BEDBFF] rounded-xl">
                         <p className="text-[#1F59EE] text-[14px] font-semibold">Total Issued</p>
                         <p className="text-[#1F59EE] text-[16px] font-medium">{voucherStats.totalIssued || 0}</p>
                     </div>
-                    <div className="flex w-full h-[85px] justify-center flex-col gap-2 p-6 bg-[#F0FDF4] border border-[#E2E8F0] rounded-xl">
+                    <div className="flex w-full h-21.25 justify-center flex-col gap-2 p-6 bg-[#F0FDF4] border border-[#E2E8F0] rounded-xl">
                         <p className="text-[#00813B] text-[14px] font-semibold">Redeemed</p>
                         <p className="text-[#00813B] text-[16px] font-medium">
                             {voucherStats.totalRedeemed || 0}
                         </p>
                     </div>
-                    <div className="flex w-full h-[85px] justify-center flex-col gap-2 p-6 bg-[#FAF5FF] border border-[#E2E8F0] rounded-xl">
+                    <div className="flex w-full h-21.25 justify-center flex-col gap-2 p-6 bg-[#FAF5FF] border border-[#E2E8F0] rounded-xl">
                         <p className="text-[#9810FA] text-[14px] font-semibold">Unredeemed</p>
                         <p className="text-[#9810FA] text-[16px] font-medium">{voucherStats.totalUnredeemed || 0}</p>
                     </div>
-                    <div className="flex w-full h-[85px] justify-center flex-col gap-2 p-6 bg-[#FFF7ED] border border-[#E2E8F0] rounded-xl">
+                    <div className="flex w-full h-21.25 justify-center flex-col gap-2 p-6 bg-[#FFF7ED] border border-[#E2E8F0] rounded-xl">
                         <p className="text-[#F55101] text-[14px] font-semibold">Redemption Rate</p>
                         <p className="text-[#F55101] text-[16px] font-medium">{voucherStats.redemptionRate || 0}%</p>
                     </div>

@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Runs every day at 2:23 PM IST
-cron.schedule('23 18 * * *', () => {
+cron.schedule('00 09 * * *', () => {
   console.log('Running the send-scheduled-reports script...');
 
   const scriptPath = path.resolve(__dirname, './send-scheduled-reports.js');
@@ -29,4 +29,26 @@ cron.schedule('23 18 * * *', () => {
   timezone: 'Asia/Kolkata'
 });
 
-console.log('Cron job scheduler started. Scheduled for 2:23 PM IST daily.');
+// Runs every 5 minutes to process scheduled orders
+cron.schedule('*/1 * * * *', () => {
+  console.log('Running the process-scheduled-orders script...');
+
+  const scriptPath = path.resolve(__dirname, './process-scheduled-orders.js');
+
+  exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Error executing script:', error);
+      return;
+    }
+    if (stderr) {
+      console.error('Script stderr:', stderr);
+      return;
+    }
+    console.log('Script stdout:', stdout);
+  });
+}, {
+  scheduled: true,
+  timezone: 'Asia/Kolkata'
+});
+
+console.log('Cron job scheduler started. Scheduled for 2:23 PM IST daily and every 5 minutes for orders.');

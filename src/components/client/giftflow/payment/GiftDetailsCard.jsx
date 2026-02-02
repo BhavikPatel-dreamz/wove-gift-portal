@@ -58,14 +58,14 @@ const GiftDetailsCard = ({
               {brand?.logo ? (
                 <img src={brand.logo} alt={brand.brandName} className="w-full h-full object-contain rounded-lg" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xl">{(brand?.brandName || 'B').substring(0, 1).toUpperCase()}</span>
                 </div>
               )}
             </div>
             <div className="flex flex-col gap-1">
-              <h3 className="flex items-center gap-2 font-['Poppins'] text-[16px] font-semibold leading-[22px] text-[#1A1A1A]">
-                <span className="shrink-0">
+              <h3 className="flex items-center gap-2 font-['Poppins'] text-[16px] font-semibold leading-5.5 text-[#1A1A1A]">
+                <span className=" text-wrap">
                   {brand?.brandName || 'Gift Card'}
                 </span>
               </h3>
@@ -89,7 +89,7 @@ const GiftDetailsCard = ({
                   <path d="M11.3623 5.43393V5.43591C13.5322 6.09708 15.0512 5.83261 15.6299 5.10533C15.781 4.91623 15.9163 4.66829 16.006 4.40317C15.828 4.14399 15.5047 3.95688 14.9789 3.91522C13.8086 3.822 12.2079 4.82896 11.3623 5.43393Z" fill="#7B4001" />
                   <path d="M10.5659 5.43589C10.5659 5.43589 10.2766 4.51025 10.9999 4.51025C11.7232 4.51025 11.4339 5.43589 11.4339 5.43589C11.4339 5.43589 11.0723 5.76647 10.5659 5.43589Z" fill="#FF8A0E" />
                 </svg>
-                <p className="my-1 font-['Poppins'] text-[14px] font-semibold leading-[18px] text-[#1A1A1A]">
+                <p className="my-1 font-['Poppins'] text-[14px] font-semibold leading-4.5 text-[#1A1A1A]">
                   {formatAmount(amount)}
                 </p>
               </div>
@@ -97,11 +97,11 @@ const GiftDetailsCard = ({
           </div>
           
           <div className="flex gap-4 items-center flex-1">
-            <div className="w-16 h-16 shrink-0">
+            <div className="w-16 h-16 ">
               {subCategory?.image ? (
                 <img src={subCategory?.image} alt={subCategory?.name} className="w-full h-full object-contain rounded-lg" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xl">{(subCategory?.name || 'B').substring(0, 1).toUpperCase()}</span>
                 </div>
               )}
@@ -128,7 +128,7 @@ const GiftDetailsCard = ({
         <div className="border-b border-[#1A1A1A1A] mb-5">
           {message && (
             <div className="p-4 mb-4 rounded-[10px] border border-dashed border-[#A4A4A4] bg-[#F6F6F6]">
-              <p className="text-sm font-medium italic leading-[24px] text-[#4A4A4A] font-['Inter']">
+              <p className="text-sm font-medium italic leading-6 text-[#4A4A4A] font-['Inter']">
                 "{message}"</p>
             </div>
           )}
@@ -149,9 +149,9 @@ const GiftDetailsCard = ({
             </svg>
           </div>
           <div>
-            <p className="text-[#1A1A1A] font-['Poppins'] text-sm font-medium leading-[16px]">
+            <p className="text-[#1A1A1A] font-['Poppins'] text-sm font-medium leading-4">
               Delivering via
-              <span className="text-[#39AE41] font-['Poppins'] mx-1 text-sm font-medium leading-[16px]">
+              <span className="text-[#39AE41] font-['Poppins'] mx-1 text-sm font-medium leading-4">
                 {getDeliveryText(delivery)}
               </span>
               {getDeliveryDescription(delivery, details)}
@@ -163,44 +163,71 @@ const GiftDetailsCard = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-      <div className="flex items-center gap-3 pb-4 mb-4 border-b border-[#1A1A1A1A]">
-        <div className="w-10 h-10 bg-[linear-gradient(180deg,#FEF8F6_0%,#FDF7F8_100%)] rounded-lg flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 35 35" fill="none">
-            <path d="M5.62 29.9565C5.62 30.5337 6.10263 31 6.7 31H16.3525V18.7391H5.62V29.9565ZM18.6475 31H28.3C28.8974 31 29.38 30.5337 29.38 29.9565V18.7391H18.6475V31ZM29.92 10.913H24.9385C25.3975 10.2152 25.6675 9.38696 25.6675 8.5C25.6675 6.01848 23.5784 4 21.01 4C19.6128 4 18.3539 4.6 17.5 5.54565C16.6461 4.6 15.3873 4 13.99 4C11.4216 4 9.3325 6.01848 9.3325 8.5C9.3325 9.38696 9.59913 10.2152 10.0615 10.913H5.08C4.48263 10.913 4 11.3793 4 11.9565V16.5217H16.3525V10.913H18.6475V16.5217H31V11.9565C31 11.3793 30.5174 10.913 29.92 10.913ZM16.3525 10.7826H13.99C12.6873 10.7826 11.6275 9.7587 11.6275 8.5C11.6275 7.2413 12.6873 6.21739 13.99 6.21739C15.2928 6.21739 16.3525 7.2413 16.3525 8.5V10.7826ZM21.01 10.7826H18.6475V8.5C18.6475 7.2413 19.7073 6.21739 21.01 6.21739C22.3127 6.21739 23.3725 7.2413 23.3725 8.5C23.3725 9.7587 22.3127 10.7826 21.01 10.7826Z" fill="url(#paint0_linear_748_1896)" />
-            <defs>
-              <linearGradient id="paint0_linear_748_1896" x1="4" y1="13.934" x2="29.7008" y2="25.4087" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#ED457D" />
-                <stop offset="1" stopColor="#FA8F42" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">
-            {cartItems ? `Your Gift Cards (${cartItems.length})` : 'Your Beautiful Gift'}
-          </h2>
-          <p className="text-sm text-gray-600">Ready to make someone smile</p>
-        </div>
-      </div>
-
-      {/* Render single or multiple items with same design */}
-      {cartItems ? (
-        <div className="space-y-6">
-          {cartItems.map((item, index) => (
-            <div key={index}>
-              {renderSingleItem(item, index)}
-              {/* Divider between items except for last one */}
-              {index < cartItems.length - 1 && (
-                <div className="border-t border-gray-200 mt-6"></div>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        renderSingleItem()
-      )}
+<div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200">
+  {/* Header */}
+  <div className="flex items-start sm:items-center gap-3 sm:gap-4 pb-4 mb-4 border-b border-[#1A1A1A1A]">
+    {/* Icon */}
+    <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[linear-gradient(180deg,#FEF8F6_0%,#FDF7F8_100%)] rounded-lg flex items-center justify-center shrink-0">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="28"
+        height="28"
+        viewBox="0 0 35 35"
+        fill="none"
+        className="sm:w-8.75 sm:h-8.75"
+      >
+        <path
+          d="M5.62 29.9565C5.62 30.5337 6.10263 31 6.7 31H16.3525V18.7391H5.62V29.9565ZM18.6475 31H28.3C28.8974 31 29.38 30.5337 29.38 29.9565V18.7391H18.6475V31ZM29.92 10.913H24.9385C25.3975 10.2152 25.6675 9.38696 25.6675 8.5C25.6675 6.01848 23.5784 4 21.01 4C19.6128 4 18.3539 4.6 17.5 5.54565C16.6461 4.6 15.3873 4 13.99 4C11.4216 4 9.3325 6.01848 9.3325 8.5C9.3325 9.38696 9.59913 10.2152 10.0615 10.913H5.08C4.48263 10.913 4 11.3793 4 11.9565V16.5217H16.3525V10.913H18.6475V16.5217H31V11.9565C31 11.3793 30.5174 10.913 29.92 10.913Z"
+          fill="url(#paint0_linear)"
+        />
+        <defs>
+          <linearGradient
+            id="paint0_linear"
+            x1="4"
+            y1="13.934"
+            x2="29.7008"
+            y2="25.4087"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stopColor="#ED457D" />
+            <stop offset="1" stopColor="#FA8F42" />
+          </linearGradient>
+        </defs>
+      </svg>
     </div>
+
+    {/* Text */}
+    <div className="flex-1">
+      <h2 className="text-base sm:text-lg font-bold text-gray-900 leading-tight">
+        {cartItems
+          ? `Your Gift Cards (${cartItems.length})`
+          : 'Your Beautiful Gift'}
+      </h2>
+      <p className="text-xs sm:text-sm text-gray-600">
+        Ready to make someone smile
+      </p>
+    </div>
+  </div>
+
+  {/* Items */}
+  {cartItems ? (
+    <div className="space-y-4 sm:space-y-6">
+      {cartItems.map((item, index) => (
+        <div key={index}>
+          {renderSingleItem(item, index)}
+
+          {/* Divider */}
+          {index < cartItems.length - 1 && (
+            <div className="border-t border-gray-200 mt-4 sm:mt-6" />
+          )}
+        </div>
+      ))}
+    </div>
+  ) : (
+    renderSingleItem()
+  )}
+</div>
+
   );
 };
 

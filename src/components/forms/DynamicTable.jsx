@@ -72,7 +72,7 @@ const DynamicTable = ({
             value={filter.value || ""}
             onChange={(e) => handleFilterChange(filter.name, e.target.value)}
             placeholder={filter.placeholder}
-            className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-black min-w-[180px]"
+            className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm text-black min-w-45"
           />
         </div>
       );
@@ -86,7 +86,7 @@ const DynamicTable = ({
         placeholder={filter.placeholder}
         value={filter?.value || ""}
         onChange={(value) => handleFilterChange(filter.name, value)}
-        className="min-w-[200px]"
+        className="min-w-50"
       />
     );
   };
@@ -157,7 +157,7 @@ const DynamicTable = ({
   return (
     <div className={`bg-white rounded-xl border border-gray-200 shadow-sm ${className}`}>
       {/* Header Section */}
-      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white rounded-t-xl">
+      <div className="p-6 border-b border-gray-200 bg-linear-to-r from-gray-50 to-white rounded-t-xl">
         <div className="mb-6">
           <h1 className="text-[20px] font-semibold text-[#1A1A1A]">{title}</h1>
           <p className="text-[#64748B] text-[14px] font-normal">{subtitle}</p>
@@ -165,6 +165,8 @@ const DynamicTable = ({
 
         {/* Search and Filters */}
         <div className="flex flex-col lg:flex-row gap-4">
+
+          <div className="flex flex-wrap gap-2 text-black">
           <div className="relative flex-1">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <SearchIcon />
@@ -174,11 +176,9 @@ const DynamicTable = ({
               value={globalFilter ?? ""}
               onChange={handleSearchChange}
               placeholder={searchPlaceholder}
-              className="w-full placeholder-[#A6A6A6] text-black text-[12px] pl-11 pr-4 py-[11px] border border-gray-300 rounded-lg transition-all"
+              className="w-full placeholder-[#A6A6A6] text-black text-[12px] pl-11 pr-4 py-2.75 border border-gray-300 rounded-lg transition-all"
             />
           </div>
-
-          <div className="flex flex-wrap gap-2 text-black">
             {filters.map((filter, idx) => renderFilter(filter, idx))}
 
             {actions &&

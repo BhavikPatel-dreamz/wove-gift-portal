@@ -345,7 +345,7 @@ const DeliveryMethodStep = () => {
         )}
 
         <div className="flex flex-col items-center text-center">
-          <div className={`w-[74px] h-[74px] ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
+          <div className={`w-18.5 h-18.5 ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
             <method.icon className="w-8 h-8 text-white" />
           </div>
           <h3 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">{method.name}</h3>
@@ -428,7 +428,7 @@ const DeliveryMethodStep = () => {
                 <div className="flex items-center justify-center mt-6 sm:mt-8 pb-4">
                   <button
                     onClick={handleContinue}
-                    className="bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-3 px-8 sm:py-4 sm:px-12 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 transform hover:scale-105 shadow-lg flex gap-2 sm:gap-3 items-center"
+                    className="bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-3 px-8 sm:py-4 sm:px-12 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 transform hover:scale-105 shadow-lg flex gap-2 sm:gap-3 items-center"
                   >
                     Continue to Payment
                     <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">

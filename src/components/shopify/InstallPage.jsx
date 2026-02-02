@@ -57,7 +57,7 @@ export default function InstallPage() {
   };
 
   return (
-    <div className=" bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className=" bg-linear-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         {/* Main Installation Card */}
         <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm">
@@ -135,7 +135,7 @@ export default function InstallPage() {
               'Secure API integration with your store'
             ].map((feature, index) => (
               <div key={index} className="flex items-start space-x-3">
-                <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={16} />
+                <CheckCircle className="text-green-600 shrink-0 mt-0.5" size={16} />
                 <span className="text-sm text-gray-700">{feature}</span>
               </div>
             ))}

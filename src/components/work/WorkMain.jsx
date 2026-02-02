@@ -35,13 +35,13 @@ const WorkMain = () => {
   ]
 
   return (
-    <div className='max-w-[1440px] m-auto pt-[72px] px-4'>
+    <div className='max-w-360 m-auto pt-18 px-4'>
       {/* Hero Section */}
       <div className='text-center py-16'>
-        <h1 className='text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
+        <h1 className="text-3xl font-bold text-gray-900 my-4 px-4">
           How It Works
         </h1>
-        <p className='text-xl text-gray-600 max-w-2xl m-auto'>
+        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
           Get started in minutes with our simple, powerful platform designed to transform the way you work
         </p>
       </div>
@@ -52,9 +52,9 @@ const WorkMain = () => {
           <div key={index} className='relative'>
             {/* Connecting Line */}
             {index < steps.length - 1 && (
-              <div className='hidden lg:block absolute top-12 left-[60%] w-full h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 opacity-30' />
+              <div className='hidden lg:block absolute top-12 left-[60%] w-full h-0.5 bg-linear-to-r from-blue-400 to-purple-400 opacity-30' />
             )}
-            
+
             <div className='bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 relative z-10'>
               <div className='bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] text-white rounded-full w-16 h-16 flex items-center justify-center mb-6'>
                 {step.icon}
@@ -74,14 +74,14 @@ const WorkMain = () => {
       </div>
 
       {/* Features Grid */}
-      <div className='bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-12 mb-20'>
+      <div className='bg-linear-to-br from-blue-50 to-purple-50 rounded-3xl p-12 mb-20'>
         <h2 className='text-3xl font-bold text-center mb-12 text-gray-800'>
           Everything You Need to Succeed
         </h2>
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl m-auto'>
           {features.map((feature, index) => (
             <div key={index} className='flex items-center space-x-3 bg-white rounded-xl p-4 shadow-sm'>
-              <CheckCircle className='w-6 h-6 text-green-500 flex-shrink-0' />
+              <CheckCircle className='w-6 h-6 text-green-500 shrink-0' />
               <span className='text-gray-700 font-medium'>{feature}</span>
             </div>
           ))}
@@ -89,7 +89,7 @@ const WorkMain = () => {
       </div>
 
       {/* CTA Section */}
-      <div className='text-center py-16 bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] rounded-3xl mb-20'>
+      {/* <div className='text-center py-16 bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] rounded-3xl mb-20'>
         <h2 className='text-4xl font-bold text-white mb-6'>
           Ready to Get Started?
         </h2>
@@ -104,9 +104,9 @@ const WorkMain = () => {
             Schedule Demo
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }
- 
+
 export default WorkMain

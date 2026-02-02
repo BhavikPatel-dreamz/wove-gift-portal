@@ -314,11 +314,11 @@ const VouchersTab = ({ formData, updateFormData }) => {
                   />
                 </div>
 
-                <div className="flex items-center h-[38px]">
+                <div className="flex items-center h-9.5">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={isActive}
+                      checked={isActive || false}
                       onChange={(e) => setIsActive(e.target.checked)}
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500"
                     />
@@ -331,14 +331,14 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 <div className="flex justify-end md:justify-end">
                   <button
                     onClick={addDenomination}
-                    className="w-full max-w-fit px-2 bg-[#175EFD] hover:bg-blue-700 text-white px-2 py-3 rounded-md text-sm font-medium transition-colors"
+                    className="w-full max-w-fit bg-[#175EFD] hover:bg-blue-700 text-white px-2 py-3 rounded-md text-sm font-medium transition-colors"
                   >
                     + Add New Voucher
                   </button>
                 </div>
               </div>
 
-              <p className="font-inter text-xs font-medium leading-5 text-[#1F59EE] mt-3 break-words">
+              <p className="font-inter text-xs font-medium leading-5 text-[#1F59EE] mt-3 wrap-break-word">
                 * Required fields. Display name defaults to '{formData?.currency || "USD"}' if left empty.
               </p>
             </div>
@@ -516,9 +516,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
             </label>
             <div className="bg-gray-50 border border-gray-300 rounded-lg h-48">
               <div className="flex items-center justify-center">
-                {formData.logo ? (
+                {formData.logo || formData.imagePreview ? (
                   <img
-                    src={formData.logo}
+                    src={formData.logo || formData.imagePreview}
                     alt="Brand logo"
                     className="max-w-full max-h-full object-contain p-4"
                   />

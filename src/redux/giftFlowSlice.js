@@ -11,6 +11,8 @@ const giftFlowSlice = createSlice({
     selectedSubCategory: null,
     selectedTiming: null,
     personalMessage: "",
+    quantity: 0,
+    selectedDenomination: null,
     deliveryMethod: "email",
     deliveryDetails: {
       yourName: "",
@@ -25,6 +27,7 @@ const giftFlowSlice = createSlice({
       recipientEmailAddress: "",
       printDetails: {},
     },
+    companyInfo: null,
     isConfirmed:false,
     isPaymentConfirmed: false,
 
@@ -72,7 +75,12 @@ const giftFlowSlice = createSlice({
     setHasChanges: (state, action) => {
       state.hasChanges = action.payload;
     },
-
+    setQuantity: (state, action) => {
+      state.quantity = action.payload;
+    },
+    setSelectedDenomination: (state, action) => {
+      state.selectedDenomination = action.payload;
+    },
     goBack: (state) => {
       const currentStep = state.currentStep;
       if (currentStep > 1) {
@@ -148,6 +156,7 @@ const giftFlowSlice = createSlice({
           recipientEmailAddress: "",
           printDetails: {},
         },
+        companyInfo: null,
         searchTerm: "",
         selectedCategory: "All Categories",
         currentPage: 1,
@@ -380,6 +389,10 @@ const giftFlowSlice = createSlice({
       state.deliveryDetails[field] = value;
     },
 
+    setCompanyInfo: (state, action) => {
+      state.companyInfo = action.payload;
+    },
+
     // Amount & Occasions
     setSelectedAmount: (state, action) => {
       state.selectedAmount = action.payload;
@@ -493,6 +506,7 @@ export const {
   setDeliveryMethod,
   setDeliveryDetails,
   updateDeliveryDetail,
+  setCompanyInfo,
   setOccasions,
   setSubCategories,
   setLoading,
@@ -500,6 +514,8 @@ export const {
   setSelectedPaymentMethod,
   setIsConfirmed,
   setIsPaymentConfirmed,
+  setQuantity,
+  setSelectedDenomination,
 } = giftFlowSlice.actions;
 
 export default giftFlowSlice.reducer;

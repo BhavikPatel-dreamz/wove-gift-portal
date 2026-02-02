@@ -81,7 +81,7 @@ const SettlementTerms = ({ terms, error }) => {
   return (
     <div className="relative">
       <main className="flex w-full">
-        <div className="flex w-full max-w-[1200px] flex-col gap-6">
+        <div className="flex w-full max-w-300 flex-col gap-6">
           {/* Commission Pricing Card */}
           <div className="rounded-lg border border-gray-200 bg-white">
             <div className="border-b border-gray-200 px-5 py-4">

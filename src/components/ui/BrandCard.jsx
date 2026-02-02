@@ -45,7 +45,7 @@ export function BrandCard({ brand, onToggleFeatured, onToggleActive }) {
         <h3 className="font-bold text-lg text-gray-900 mb-1">{brand.name}</h3>
         <p className="text-gray-600 text-sm italic mb-3">"{brand.tagline}"</p>
 
-        <p className="text-gray-700 text-sm mb-4 line-clamp-2 min-h-[2.5rem]">
+        <p className="text-gray-700 text-sm mb-4 line-clamp-2 min-h-10">
           {brand.description}
         </p>
 

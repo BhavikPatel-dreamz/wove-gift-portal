@@ -92,15 +92,15 @@ const Sidebar = ({ isOpen, onClose }) => {
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between h-19 px-6 border-b border-gray-200">
+        {/* Header - Matching height with top header */}
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
               <div className="w-4 h-4 bg-white rounded-sm"></div>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-xs text-gray-500">
+              <h1 className="text-lg font-bold text-gray-900 leading-tight">Admin Dashboard</h1>
+              <p className="text-xs text-gray-500 leading-tight">
                 Gift Card Management & Analytics
               </p>
             </div>
