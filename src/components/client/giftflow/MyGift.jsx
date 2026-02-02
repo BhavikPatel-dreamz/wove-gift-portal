@@ -148,7 +148,7 @@ function MyGift() {
     const [start, end] = dates;
     setStartDate(start);
     setEndDate(end);
-    
+
     // Only trigger API call and close picker when both dates are selected
     if (start && end) {
       setCurrentPage(1);
@@ -326,7 +326,7 @@ function MyGift() {
     if (!bulkModalSearch.trim()) return selectedBulkOrder.cards;
 
     const searchLower = bulkModalSearch.toLowerCase();
-    return selectedBulkOrder.cards.filter(card => 
+    return selectedBulkOrder.cards.filter(card =>
       card.code?.toLowerCase().includes(searchLower) ||
       card.receiverEmail?.toLowerCase().includes(searchLower) ||
       card.receiverName?.toLowerCase().includes(searchLower) ||
@@ -343,10 +343,19 @@ function MyGift() {
     return (
       <div key={bulkOrderNumber} className="relative bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
         {/* Bulk Order Badge */}
-        <div className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full flex items-center gap-1">
-          <Users className="w-3 h-3" />
-          BULK ({stats.totalVouchers})
+        <div className="
+  absolute top-2 right-2
+  px-2 py-1
+  text-[10px] font-semibold
+  rounded-full
+  border border-[rgba(15,100,246,0.20)]
+  bg-[rgba(15,100,246,0.10)]
+  text-[#0F64F6]
+  flex items-center gap-1
+">
+          # BULK
         </div>
+
 
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -397,15 +406,21 @@ function MyGift() {
 
         <div className="flex justify-between items-center mb-3">
           <div>
-            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">TOTAL AMOUNT</p>
-            <p className="text-base sm:text-lg font-bold text-gray-900">
+            <p className="font-[Arial] text-[10px] leading-[15px] tracking-[0.25px] uppercase text-[#75738C] font-normal mb-1">
+              TOTAL AMOUNT
+            </p>
+
+            <p className="font-[Poppins] text-[18px] leading-[27px] font-semibold text-[#1A1A1A]">
               {stats.currencySymbol}{stats.totalAmount.toFixed(2)}
             </p>
+
           </div>
 
           <div>
-            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Purchase Date</p>
-            <p className="text-base sm:text-lg font-bold text-gray-900">
+            <p className="font-[Arial] text-[10px] leading-[15px] tracking-[0.25px] uppercase text-[#75738C] font-normal mb-1">
+              Purchase Date
+            </p>
+            <p className="font-[Poppins] text-[18px] leading-[27px] font-semibold text-[#1A1A1A]">
               {firstCard.purchaseDate || "N/A"}
             </p>
           </div>
@@ -493,7 +508,7 @@ function MyGift() {
               {card.currencySymbol}{card.totalAmount.toFixed(2)}
             </p>
           </div>
-         <div>
+          <div>
             <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Purchase Date</p>
             <p className="text-base sm:text-lg font-bold text-gray-900">
               {card.purchaseDate || "N/A"}
@@ -554,8 +569,8 @@ function MyGift() {
                 <span className="text-xs sm:text-sm font-medium text-[#4A5565]">View Details</span>
               </button>
               {card.status !== 'EXPIRED' && card.status !== 'CLAIMED' && card.isReceived && (
-                <button 
-                  onClick={handleRedeemClick} 
+                <button
+                  onClick={handleRedeemClick}
                   className="flex-1 py-2 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:shadow-lg transition-all">
                   <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="text-xs sm:text-sm font-medium">Redeem</span>
@@ -737,8 +752,8 @@ function MyGift() {
           <>
             {/* Gift Cards Grid - Render in order */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
-              {displayItems.map((item, index) => 
-                item.type === 'bulk' 
+              {displayItems.map((item, index) =>
+                item.type === 'bulk'
                   ? renderBulkOrderCard(item.bulkOrderNumber, item.cards)
                   : renderSingleOrderCard(item.card)
               )}
@@ -869,7 +884,7 @@ function MyGift() {
 
                           {/* Voucher Details */}
                           <div className="flex-1 min-w-0">
-                          
+
                             <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
                               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 14 14" fill="none">
                                 <path d="M11.667 2.91663H2.33366C1.68933 2.91663 1.16699 3.43896 1.16699 4.08329V9.91663C1.16699 10.561 1.68933 11.0833 2.33366 11.0833H11.667C12.3113 11.0833 12.8337 10.561 12.8337 9.91663V4.08329C12.8337 3.43896 12.3113 2.91663 11.667 2.91663Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
@@ -891,7 +906,7 @@ function MyGift() {
                             <p className="text-xs text-gray-500 mb-1">Amount</p>
                             <p className="font-bold text-gray-900">{card.currencySymbol}{card.totalAmount.toFixed(2)}</p>
                           </div>
-                          
+
                           {card?.receiverEmail == session?.user?.email && (
                             <div className="w-32">
                               <div className="flex justify-between text-xs text-gray-500 mb-1">

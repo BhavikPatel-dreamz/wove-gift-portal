@@ -372,7 +372,7 @@ export const createPendingOrder = async (orderData) => {
         orderData.sharedPaymentIntentId
       );
       
-      // Update the payment intent amount to include this order
+      // ✅ Update the payment intent amount to include this order
       const currentAmount = paymentIntent.amount;
       const newAmount = currentAmount + Math.round(totalAmount * 100);
       
@@ -381,6 +381,12 @@ export const createPendingOrder = async (orderData) => {
         {
           amount: newAmount,
           description: `${paymentIntent.description} + ${order.orderNumber}`,
+          metadata: {
+            ...paymentIntent.metadata,
+            [`order_${Object.keys(paymentIntent.metadata).filter(k => k.startsWith('order_')).length + 1}`]: order.id,
+            [`orderNumber_${Object.keys(paymentIntent.metadata).filter(k => k.startsWith('orderNumber_')).length + 1}`]: order.orderNumber,
+            totalOrders: String((parseInt(paymentIntent.metadata.totalOrders || '1') + 1)),
+          }
         }
       );
       
@@ -454,10 +460,11 @@ export const createPendingOrder = async (orderData) => {
         customer: customer.id,
         description: exportDescription,
         metadata: {
-          firstOrderId: order.id,
-          orderNumber: order.orderNumber,
+          order_1: order.id,
+          orderNumber_1: order.orderNumber,
           brandName: orderData.selectedBrand?.brandName || "Gift Card",
           userId: String(userId),
+          totalOrders: '1',
         },
         statement_descriptor: "GIFT CARD",
         statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
@@ -1529,9 +1536,9 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
         return `
     <tr style="border-bottom: 1px solid #e2e8f0;">
       <td style="padding: 12px 8px; font-size: 13px; color: #4a5568; text-align: center;">${index + 1}</td>
-      <td style="padding: 12px 8px; font-size: 12px; color: #1a1a1a; font-family: 'Courier New', monospace;">${vc.code}</td>
-      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a; text-align: center;">${orderData.selectedAmount?.currency || "₹"}${vc.originalValue}</td>
-      <td style="padding: 12px 8px; font-size: 12px; color: #4a5568; text-align: center;">${expiryDate}</td>
+      <td style="padding: 12px 8px; font-size: 12px; color: #1a1a1a; font-family: 'Courier New', monospace; word-break: break-all;">${vc.code}</td>
+      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a; text-align: center; white-space: nowrap;">${orderData.selectedAmount?.currency || "₹"}${vc.originalValue}</td>
+      <td style="padding: 12px 8px; font-size: 12px; color: #4a5568; text-align: center; white-space: nowrap;">${expiryDate}</td>
     </tr>
     `;
       })
@@ -1548,72 +1555,291 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
       subject: `📊 Bulk Gift Card Order - ${voucherCodes.length} Vouchers`,
       htmlContent: `
 <!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Bulk Gift Card Order</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table {border-collapse: collapse !important;}
+    .fallback-text { font-family: Arial, sans-serif !important; }
+  </style>
+  <![endif]-->
+  <style type="text/css">
+    /* Reset styles */
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    
+    /* Prevent iOS auto-linking */
+    a[x-apple-data-detectors] {
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }
+    
+    /* Responsive styles */
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        width: 100% !important;
+        margin: auto !important;
+      }
+      .fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+      .stack-column,
+      .stack-column-center {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        direction: ltr !important;
+      }
+      .stack-column-center {
+        text-align: center !important;
+      }
+      .center-on-narrow {
+        text-align: center !important;
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        float: none !important;
+      }
+      table.center-on-narrow {
+        display: inline-block !important;
+      }
+      
+      /* Mobile padding adjustments */
+      .mobile-padding {
+        padding: 20px !important;
+      }
+      .mobile-padding-lr {
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+      }
+      .mobile-padding-tb {
+        padding-top: 20px !important;
+        padding-bottom: 20px !important;
+      }
+      
+      /* Mobile font sizes */
+      .mobile-h1 {
+        font-size: 24px !important;
+        line-height: 32px !important;
+      }
+      .mobile-h2 {
+        font-size: 18px !important;
+        line-height: 26px !important;
+      }
+      .mobile-h3 {
+        font-size: 16px !important;
+        line-height: 24px !important;
+      }
+      .mobile-text {
+        font-size: 14px !important;
+        line-height: 22px !important;
+      }
+      .mobile-small {
+        font-size: 12px !important;
+        line-height: 18px !important;
+      }
+      
+      /* Hide on mobile */
+      .hide-mobile {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        mso-hide: all !important;
+      }
+      
+      /* Table adjustments for mobile */
+      .mobile-table {
+        font-size: 11px !important;
+      }
+      .mobile-table td {
+        padding: 8px 4px !important;
+      }
+      
+      /* Button full width on mobile */
+      .mobile-button {
+        width: 100% !important;
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f5f5f5; width: 100% !important; -webkit-font-smoothing: antialiased;">
+  
+  <!-- 100% background wrapper -->
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f5f5;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="width: 800px; max-width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden;">
+      <td align="center" style="padding: 20px 10px;">
+        
+        <!-- Email Container -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" class="email-container" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          
+          <!-- Header with Gradient -->
           <tr>
-            <td style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); padding: 40px; text-align: center;">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff;">📊 Bulk Gift Card Order</h1>
+            <td align="center" style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); padding: 40px 20px;" class="mobile-padding-tb">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; line-height: 36px;" class="mobile-h1 fallback-text">
+                📊 Bulk Gift Card Order
+              </h1>
             </td>
           </tr>
+          
+          <!-- Main Content -->
           <tr>
-            <td style="padding: 40px;">
-              <p style="margin: 0 0 8px; font-size: 18px; color: #1a1a1a; font-weight: 600;">Dear ${orderData.companyInfo.companyName},</p>
-              <p style="margin: 0 0 24px; font-size: 16px; color: #4a4a4a;">Your bulk gift card order has been processed successfully.</p>
+            <td style="padding: 40px 40px 20px;" class="mobile-padding">
+              <!-- Greeting -->
+              <p style="margin: 0 0 8px; font-size: 18px; color: #1a1a1a; font-weight: 600; line-height: 26px;" class="mobile-h3 fallback-text">
+                Dear ${orderData.companyInfo.companyName},
+              </p>
+              <p style="margin: 0 0 24px; font-size: 16px; color: #4a4a4a; line-height: 24px;" class="mobile-text fallback-text">
+                Your bulk gift card order has been processed successfully.
+              </p>
               
-              <div style="background-color: #f8f9fa; border-left: 4px solid #ED457D; padding: 24px; margin-bottom: 32px; border-radius: 8px;">
-                <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a;">📊 Order Summary</h3>
-                <table role="presentation" style="width: 100%;">
-                  <tr>
-                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;"><strong>Brand:</strong></td>
-                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">${orderData.selectedBrand?.brandName || "N/A"}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;"><strong>Total Vouchers:</strong></td>
-                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">${voucherCodes.length}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px 0 0; font-size: 16px; color: #1a1a1a; font-weight: 600;"><strong>Total Value:</strong></td>
-                    <td style="padding: 12px 0 0; font-size: 18px; font-weight: 700; color: #ED457D; text-align: right;">
-                      ${orderData.selectedAmount?.currency || "₹"}${(orderData.selectedAmount?.value || 0) * voucherCodes.length}
-                    </td>
-                  </tr>
+              <!-- Order Summary Box -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8f9fa; border-left: 4px solid #ED457D; border-radius: 8px; margin-bottom: 32px;">
+                <tr>
+                  <td style="padding: 24px;" class="mobile-padding">
+                    <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a; line-height: 26px;" class="mobile-h3 fallback-text">
+                      📊 Order Summary
+                    </h3>
+                    
+                    <!-- Summary Details Table -->
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
+                          <strong>Brand:</strong>
+                        </td>
+                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
+                          ${orderData.selectedBrand?.brandName || "N/A"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
+                          <strong>Total Vouchers:</strong>
+                        </td>
+                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
+                          ${voucherCodes.length}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0 0; font-size: 16px; color: #1a1a1a; font-weight: 600; line-height: 24px;" class="mobile-text fallback-text">
+                          <strong>Total Value:</strong>
+                        </td>
+                        <td align="right" style="padding: 12px 0 0; font-size: 18px; font-weight: 700; color: #ED457D; line-height: 26px;" class="mobile-h3 fallback-text">
+                          ${orderData.selectedAmount?.currency || "₹"}${(orderData.selectedAmount?.value || 0) * voucherCodes.length}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Voucher Codes Section -->
+          <tr>
+            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
+              <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a; line-height: 26px;" class="mobile-h3 fallback-text">
+                🎁 Your Voucher Codes
+              </h3>
+              
+              <!-- Responsive Table Wrapper -->
+              <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; min-width: 500px;" class="mobile-table">
+                  <!-- Table Header -->
+                  <thead>
+                    <tr style="background: #f8f9fa;">
+                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px;" class="fallback-text">
+                        #
+                      </th>
+                      <th align="left" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px;" class="fallback-text">
+                        Voucher Code
+                      </th>
+                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px;" class="fallback-text">
+                        Amount
+                      </th>
+                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px;" class="fallback-text">
+                        Expires
+                      </th>
+                    </tr>
+                  </thead>
+                  <!-- Table Body -->
+                  <tbody class="fallback-text">
+                    ${summaryRows}
+                  </tbody>
                 </table>
               </div>
               
-              <div style="margin-top: 32px;">
-                <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a;">🎁 Your Voucher Codes</h3>
-                <div style="overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0;">
-                  <table role="presentation" style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                      <tr style="background: #f8f9fa;">
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">#</th>
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Voucher Code</th>
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Amount</th>
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Expires</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${summaryRows}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <!-- Mobile Helper Text -->
+              <p style="margin: 12px 0 0; font-size: 11px; color: #6c757d; line-height: 16px; text-align: center;" class="mobile-small fallback-text">
+                💡 Tip: Scroll horizontally to view all columns on mobile devices
+              </p>
             </td>
           </tr>
+          
+          <!-- Support Section (Optional) -->
           <tr>
-            <td style="padding: 24px 40px; background-color: #f8f9fa;">
-              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center;">Thank you for using our gift card platform.</p>
+            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fff4f6; border-radius: 8px; border: 1px solid #fecdd3;">
+                <tr>
+                  <td style="padding: 20px;" class="mobile-padding">
+                    <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
+                      📌 Important Notes:
+                    </p>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
+                      <li style="margin-bottom: 6px;">Keep these voucher codes secure</li>
+                      <li style="margin-bottom: 6px;">Each code can only be used once</li>
+                      <li style="margin-bottom: 0;">Check expiry dates before distribution</li>
+                    </ul>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e2e8f0;" class="mobile-padding">
+              <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d; text-align: center; line-height: 18px;" class="mobile-small fallback-text">
+                Thank you for using our gift card platform.
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #9ca3af; text-align: center; line-height: 16px;" class="mobile-small fallback-text">
+                If you have any questions, please contact our support team.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+        <!-- End Email Container -->
+        
+        <!-- Extra Footer Space -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" class="email-container" style="max-width: 600px;">
+          <tr>
+            <td style="padding: 20px; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #9ca3af; line-height: 16px;" class="mobile-small fallback-text">
+                © ${new Date().getFullYear()} Gift Cards. All rights reserved.
+              </p>
             </td>
           </tr>
         </table>
+        
       </td>
     </tr>
   </table>
+  
 </body>
 </html>
       `,
@@ -1822,9 +2048,11 @@ function generateBulkSummaryEmailHTML(
   voucherCodes,
   bulkRecipients,
 ) {
-  const summaryRows = bulkRecipients
+  // Generate recipient rows
+  const recipientRows = bulkRecipients
     .map((recipient, index) => {
       const voucherCode = voucherCodes[index];
+      const code = voucherCode?.giftCard?.code || voucherCode?.code || "N/A";
       const expiryDate = voucherCode?.expiresAt
         ? new Date(voucherCode.expiresAt).toLocaleDateString()
         : "No Expiry";
@@ -1832,11 +2060,13 @@ function generateBulkSummaryEmailHTML(
       return `
     <tr style="border-bottom: 1px solid #e2e8f0;">
       <td style="padding: 12px 8px; font-size: 13px; color: #4a5568; text-align: center;">${index + 1}</td>
-      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a;">${recipient.recipientName}</td>
-      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a;">${recipient.recipientEmail}</td>
-      <td style="padding: 12px 8px; font-size: 12px; color: #1a1a1a; font-family: 'Courier New', monospace;">${voucherCode?.giftCard?.code || voucherCode?.code || "N/A"}</td>
-      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a; text-align: center;">${orderData.selectedAmount?.currency || "₹"}${voucherCode?.originalValue || 0}</td>
-      <td style="padding: 12px 8px; font-size: 12px; color: #4a5568; text-align: center;">${expiryDate}</td>
+      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a;">
+        <strong style="display: block; margin-bottom: 2px;">${recipient.recipientName}</strong>
+        <span style="font-size: 12px; color: #6b7280;">${recipient.recipientEmail}</span>
+      </td>
+      <td style="padding: 12px 8px; font-size: 12px; color: #1a1a1a; font-family: 'Courier New', monospace; word-break: break-all;">${code}</td>
+      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a; text-align: center; white-space: nowrap;">${orderData.selectedAmount?.currency || "₹"}${orderData.selectedAmount?.value || 0}</td>
+      <td style="padding: 12px 8px; font-size: 12px; color: #4a5568; text-align: center; white-space: nowrap;">${expiryDate}</td>
     </tr>
     `;
     })
@@ -1844,77 +2074,381 @@ function generateBulkSummaryEmailHTML(
 
   return `
 <!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Gift Card Distribution Summary</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table {border-collapse: collapse !important;}
+    .fallback-text { font-family: Arial, sans-serif !important; }
+  </style>
+  <![endif]-->
+  <style type="text/css">
+    /* Reset styles */
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    
+    /* Prevent iOS auto-linking */
+    a[x-apple-data-detectors] {
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }
+    
+    /* Responsive styles */
+    @media only screen and (max-width: 600px) {
+      .email-container {
+        width: 100% !important;
+        margin: auto !important;
+      }
+      .fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+      .stack-column,
+      .stack-column-center {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        direction: ltr !important;
+      }
+      .center-on-narrow {
+        text-align: center !important;
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        float: none !important;
+      }
+      
+      /* Mobile padding adjustments */
+      .mobile-padding {
+        padding: 20px !important;
+      }
+      .mobile-padding-lr {
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+      }
+      .mobile-padding-tb {
+        padding-top: 20px !important;
+        padding-bottom: 20px !important;
+      }
+      
+      /* Mobile font sizes */
+      .mobile-h1 {
+        font-size: 24px !important;
+        line-height: 32px !important;
+      }
+      .mobile-h2 {
+        font-size: 18px !important;
+        line-height: 26px !important;
+      }
+      .mobile-h3 {
+        font-size: 16px !important;
+        line-height: 24px !important;
+      }
+      .mobile-text {
+        font-size: 14px !important;
+        line-height: 22px !important;
+      }
+      .mobile-small {
+        font-size: 12px !important;
+        line-height: 18px !important;
+      }
+      
+      /* Table adjustments for mobile */
+      .mobile-table {
+        font-size: 10px !important;
+      }
+      .mobile-table td {
+        padding: 8px 4px !important;
+      }
+      .mobile-table strong {
+        font-size: 11px !important;
+      }
+      .mobile-table span {
+        font-size: 10px !important;
+      }
+      
+      /* Hide columns on mobile */
+      .hide-mobile {
+        display: none !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+        mso-hide: all !important;
+      }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f5f5f5; width: 100% !important; -webkit-font-smoothing: antialiased;">
+  
+  <!-- 100% background wrapper -->
+  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f5f5;">
     <tr>
-      <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="width: 900px; max-width: 100%; background-color: #ffffff; border-radius: 16px; overflow: hidden;">
+      <td align="center" style="padding: 20px 10px;">
+        
+        <!-- Email Container -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="650" class="email-container" style="max-width: 650px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           
+          <!-- Header with Gradient -->
           <tr>
-            <td style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); padding: 40px; text-align: center;">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff;">📊 Gift Card Distribution Summary</h1>
+            <td align="center" style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); padding: 40px 20px;" class="mobile-padding-tb">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; line-height: 36px;" class="mobile-h1 fallback-text">
+                🎁 Gift Card Distribution Summary
+              </h1>
             </td>
           </tr>
           
+          <!-- Main Content -->
           <tr>
-            <td style="padding: 40px;">
-              <p style="margin: 0 0 8px; font-size: 18px; color: #1a1a1a; font-weight: 600;">Dear ${orderData.companyInfo.companyName},</p>
-              <p style="margin: 0 0 24px; font-size: 16px; color: #4a4a4a;">Your bulk gift card order has been processed successfully.</p>
+            <td style="padding: 40px 40px 20px;" class="mobile-padding">
+              <!-- Greeting -->
+              <p style="margin: 0 0 8px; font-size: 18px; color: #1a1a1a; font-weight: 600; line-height: 26px;" class="mobile-h3 fallback-text">
+                Dear ${orderData.companyInfo.companyName},
+              </p>
+              <p style="margin: 0 0 24px; font-size: 16px; color: #4a4a4a; line-height: 24px;" class="mobile-text fallback-text">
+                Your bulk gift card order has been processed and distributed successfully.
+              </p>
               
-              <div style="background-color: #f8f9fa; border-left: 4px solid #ED457D; padding: 24px; margin-bottom: 32px; border-radius: 8px;">
-                <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a;">📊 Order Summary</h3>
-                <table role="presentation" style="width: 100%;">
-                  <tr>
-                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;"><strong>Brand:</strong></td>
-                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">${orderData.selectedBrand?.brandName || "N/A"}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; font-size: 14px; color: #4a5568;"><strong>Total Recipients:</strong></td>
-                    <td style="padding: 8px 0; font-size: 14px; color: #1a1a1a; text-align: right;">${bulkRecipients.length}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px 0 0; font-size: 16px; color: #1a1a1a; font-weight: 600;"><strong>Total Value:</strong></td>
-                    <td style="padding: 12px 0 0; font-size: 18px; font-weight: 700; color: #ED457D; text-align: right;">
-                      ${orderData.selectedAmount?.currency || "₹"}${(orderData.selectedAmount?.value || 0) * bulkRecipients.length}
-                    </td>
-                  </tr>
+              <!-- Order Summary Box -->
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8f9fa; border-left: 4px solid #ED457D; border-radius: 8px; margin-bottom: 32px;">
+                <tr>
+                  <td style="padding: 24px;" class="mobile-padding">
+                    <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a; line-height: 26px;" class="mobile-h3 fallback-text">
+                      📊 Order Summary
+                    </h3>
+                    
+                    <!-- Summary Details Table -->
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
+                          <strong>Brand:</strong>
+                        </td>
+                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
+                          ${orderData.selectedBrand?.brandName || "N/A"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
+                          <strong>Total Recipients:</strong>
+                        </td>
+                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
+                          ${bulkRecipients.length}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
+                          <strong>Amount per Gift:</strong>
+                        </td>
+                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
+                          ${orderData.selectedAmount?.currency || "₹"}${orderData.selectedAmount?.value || 0}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0 0; font-size: 16px; color: #1a1a1a; font-weight: 600; line-height: 24px;" class="mobile-text fallback-text">
+                          <strong>Total Value:</strong>
+                        </td>
+                        <td align="right" style="padding: 12px 0 0; font-size: 18px; font-weight: 700; color: #ED457D; line-height: 26px;" class="mobile-h3 fallback-text">
+                          ${orderData.selectedAmount?.currency || "₹"}${(orderData.selectedAmount?.value || 0) * bulkRecipients.length}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Distribution Details Section -->
+          <tr>
+            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
+              <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a; line-height: 26px;" class="mobile-h3 fallback-text">
+                📧 Distribution Details
+              </h3>
+              
+              <!-- Responsive Table Wrapper -->
+              <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; min-width: 600px;" class="mobile-table">
+                  <!-- Table Header -->
+                  <thead>
+                    <tr style="background: #f8f9fa;">
+                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 5%;" class="fallback-text">
+                        #
+                      </th>
+                      <th align="left" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 30%;" class="fallback-text">
+                        Recipient
+                      </th>
+                      <th align="left" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 35%;" class="fallback-text">
+                        Voucher Code
+                      </th>
+                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 15%;" class="fallback-text">
+                        Amount
+                      </th>
+                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 15%;" class="hide-mobile fallback-text">
+                        Expires
+                      </th>
+                    </tr>
+                  </thead>
+                  <!-- Table Body -->
+                  <tbody class="fallback-text">
+                    ${recipientRows}
+                  </tbody>
                 </table>
               </div>
               
-              <div style="margin-top: 32px;">
-                <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a;">📋 Distribution Details</h3>
-                <div style="overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0;">
-                  <table role="presentation" style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                      <tr style="background: #f8f9fa;">
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">#</th>
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Name</th>
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Email</th>
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Code</th>
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Amount</th>
-                        <th style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0;">Expires</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${summaryRows}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <!-- Mobile Helper Text -->
+              <p style="margin: 12px 0 0; font-size: 11px; color: #6c757d; line-height: 16px; text-align: center;" class="mobile-small fallback-text">
+                💡 Tip: Scroll horizontally to view all columns on mobile devices
+              </p>
             </td>
           </tr>
           
+          <!-- Status Indicators Section -->
           <tr>
-            <td style="padding: 24px 40px; background-color: #f8f9fa;">
-              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center;">Thank you for using our gift card platform.</p>
+            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ecfdf5; border-radius: 8px; border: 1px solid #a7f3d0;">
+                <tr>
+                  <td style="padding: 20px;" class="mobile-padding">
+                    <div style="text-align: center; margin-bottom: 12px;">
+                      <span style="display: inline-block; background-color: #10b981; color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;" class="fallback-text">
+                        ✓ All ${bulkRecipients.length} gift cards delivered
+                      </span>
+                    </div>
+                    <p style="margin: 0; font-size: 13px; color: #065f46; text-align: center; line-height: 20px;" class="mobile-small fallback-text">
+                      Each recipient has received their gift card via email
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Important Notes Section -->
+          <tr>
+            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fff4f6; border-radius: 8px; border: 1px solid #fecdd3;">
+                <tr>
+                  <td style="padding: 20px;" class="mobile-padding">
+                    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
+                      📌 Important Information:
+                    </p>
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td style="padding: 0 0 8px 0;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="padding-right: 8px; vertical-align: top;">
+                                <span style="color: #ED457D; font-weight: bold;">•</span>
+                              </td>
+                              <td>
+                                <span style="font-size: 13px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
+                                  This is a summary for your records - recipients have already received individual emails
+                                </span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 0 0 8px 0;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="padding-right: 8px; vertical-align: top;">
+                                <span style="color: #ED457D; font-weight: bold;">•</span>
+                              </td>
+                              <td>
+                                <span style="font-size: 13px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
+                                  Each voucher code can only be used once
+                                </span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 0;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="padding-right: 8px; vertical-align: top;">
+                                <span style="color: #ED457D; font-weight: bold;">•</span>
+                              </td>
+                              <td>
+                                <span style="font-size: 13px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
+                                  Keep this summary for your accounting and tracking purposes
+                                </span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Download Option (Optional) -->
+          <tr>
+            <td align="center" style="padding: 0 40px 40px;" class="mobile-padding-lr">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="border-radius: 8px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%);">
+                    <a href="#" style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 20px; text-decoration: none; padding: 14px 32px; color: #ffffff; display: inline-block; border-radius: 8px; mso-padding-alt: 0; text-align: center;" class="mobile-text">
+                      <!--[if mso]>
+                      <i style="letter-spacing: 32px; mso-font-width: -100%; mso-text-raise: 30pt;">&nbsp;</i>
+                      <![endif]-->
+                      <span style="mso-text-raise: 15pt;">📥 Download Full Report (CSV)</span>
+                      <!--[if mso]>
+                      <i style="letter-spacing: 32px; mso-font-width: -100%;">&nbsp;</i>
+                      <![endif]-->
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e2e8f0;" class="mobile-padding">
+              <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d; text-align: center; line-height: 18px;" class="mobile-small fallback-text">
+                Thank you for using our gift card platform.
+              </p>
+              <p style="margin: 0; font-size: 11px; color: #9ca3af; text-align: center; line-height: 16px;" class="mobile-small fallback-text">
+                If you have any questions or need support, please contact our team.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+        <!-- End Email Container -->
+        
+        <!-- Extra Footer Space -->
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="650" class="email-container" style="max-width: 650px;">
+          <tr>
+            <td style="padding: 20px; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #9ca3af; line-height: 16px;" class="mobile-small fallback-text">
+                © ${new Date().getFullYear()} Gift Cards. All rights reserved.
+              </p>
             </td>
           </tr>
         </table>
+        
       </td>
     </tr>
   </table>
+  
 </body>
 </html>
   `;

@@ -5,16 +5,18 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import toast, { Toaster } from 'react-hot-toast';
 import { createPendingOrder, getOrderStatus } from '../../../lib/action/orderAction';
-import { AlertCircle, Package, ShoppingBag, CheckCircle2, Clock } from 'lucide-react';
+import { AlertCircle, Package, ShoppingBag, CheckCircle2, Clock, Mail, Phone, MapPin, Users, Calendar, Loader2 } from 'lucide-react';
 import Header from '../../../components/client/home/Header';
 import { useSession } from '@/contexts/SessionContext';
 import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
 import PaymentMethodSelector from "../giftflow/payment/PaymentMethodSelector";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
 import BillingAddressForm from "../giftflow/payment/BillingAddressForm";
+import SuccessScreen from "../giftflow/payment/SuccessScreen";
 import { currencyList } from '../../brandsPartner/currency';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCart, clearBulkCart } from '@/redux/cartSlice';
+import { resetFlow } from '../../../redux/giftFlowSlice';
 
 if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
@@ -29,11 +31,14 @@ const CheckoutPage = () => {
   // Get cart items from Redux
   const cartItems = useSelector((state) => state.cart.items);
   const bulkItems = useSelector((state) => state.cart.bulkItems);
+  const {
+    isPaymentConfirmed,
+  } = useSelector((state) => state.giftFlowReducer);
 
   // State
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
-  const [completedOrders, setCompletedOrders] = useState([]);
+  const [order, setOrder] = useState(null); // Changed from completedOrders array to single order
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
   const [showThankYou, setShowThankYou] = useState(false);
@@ -55,13 +60,6 @@ const CheckoutPage = () => {
     country: 'US',
   });
   const [addressErrors, setAddressErrors] = useState({});
-
-  // Check if cart is empty and redirect
-  useEffect(() => {
-    if (cartItems.length === 0 && bulkItems.length === 0) {
-      window.location.href = '/';
-    }
-  }, [cartItems, bulkItems]);
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "R";
@@ -147,7 +145,7 @@ const CheckoutPage = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // ✅ UPDATED: Create separate pending orders for ALL cart items
+  // Create separate pending orders for ALL cart items
   const handleInitiatePayment = async () => {
     if (!validateBillingAddress()) {
       toast.error('Please fill in all required billing address fields');
@@ -166,7 +164,7 @@ const CheckoutPage = () => {
       const allOrderIds = [];
       const orderMetadata = [];
 
-      // ✅ Collect all items (bulk + regular)
+      // Collect all items (bulk + regular)
       const allItems = [
         ...bulkItems.map((item, i) => ({ ...item, type: 'bulk', index: i })),
         ...cartItems.map((item, i) => ({ ...item, type: 'regular', index: i }))
@@ -174,12 +172,11 @@ const CheckoutPage = () => {
 
       console.log(`📦 Creating ${allItems.length} orders...`);
 
-      // ✅ CRITICAL: Store shared payment intent details
       let sharedPaymentIntentId = null;
       let sharedClientSecret = null;
       let sharedCustomerId = null;
 
-      // ✅ Process each item sequentially to build up the payment intent
+      // Process each item sequentially
       for (let idx = 0; idx < allItems.length; idx++) {
         const item = allItems[idx];
         const isBulkItem = item.type === 'bulk';
@@ -203,7 +200,6 @@ const CheckoutPage = () => {
             deliveryMethod: item.deliveryOption,
             csvRecipients: item.csvRecipients || [],
             userId: session?.user?.id,
-            // ✅ Pass shared payment intent details (if not first order)
             sharedPaymentIntentId: sharedPaymentIntentId,
             customerId: sharedCustomerId,
           };
@@ -221,7 +217,6 @@ const CheckoutPage = () => {
             isBulkOrder: false,
             billingAddress,
             userId: session?.user?.id,
-            // ✅ Pass shared payment intent details (if not first order)
             sharedPaymentIntentId: sharedPaymentIntentId,
             customerId: sharedCustomerId,
           };
@@ -229,44 +224,46 @@ const CheckoutPage = () => {
 
         console.log(`Creating order ${idx + 1}/${allItems.length}...`);
 
-        // ✅ Create the order
         const result = await createPendingOrder(orderData);
 
         if (!result.success) {
           throw new Error(`Failed to create order ${idx + 1}: ${result.error}`);
         }
 
-        // ✅ Store order ID
         allOrderIds.push(result.data.orderId);
 
-        // ✅ If this is the FIRST order, save the payment intent details
         if (idx === 0) {
           sharedPaymentIntentId = result.data.paymentIntentId;
           sharedClientSecret = result.data.clientSecret;
           sharedCustomerId = result.data.customerId;
           console.log(`✅ First order created - Payment Intent: ${sharedPaymentIntentId}`);
-        } else {
-          console.log(`✅ Order ${idx + 1} linked to shared payment intent`);
         }
 
-        // ✅ Track metadata
+        // Store metadata with full item details
         orderMetadata.push({
           type: item.type,
           brand: item.selectedBrand?.brandName,
+          brandLogo: item.selectedBrand?.logo,
           amount: isBulkItem
             ? getAmountValue(item.selectedAmount) * item.quantity
             : getAmountValue(item.selectedAmount),
+          quantity: item.quantity || 1,
           orderNumber: result.data.orderNumber,
+          deliveryMethod: isBulkItem ? item.deliveryOption : item.deliveryMethod,
+          deliveryDetails: item.deliveryDetails,
+          csvRecipients: item.csvRecipients,
+          personalMessage: item.personalMessage,
+          occasion: item.selectedOccasion,
+          timing: item.selectedTiming,
         });
       }
 
       console.log(`✅ Created ${allOrderIds.length} orders successfully`);
-      console.log(`📋 All orders share payment intent: ${sharedPaymentIntentId}`);
 
       setPendingOrderIds(allOrderIds);
       setClientSecret(sharedClientSecret);
 
-      // ✅ Initialize order status tracking
+      // Initialize order status tracking with full details
       const initialStatuses = {};
       allOrderIds.forEach((orderId, idx) => {
         initialStatuses[orderId] = {
@@ -296,12 +293,11 @@ const CheckoutPage = () => {
     }
   };
 
+  console.log("cartItems",cartItems,bulkItems)
 
-  // ✅ Payment success handler
+  // ✅ ENHANCED: Payment success handler with better feedback
   const handlePaymentSuccess = (paymentIntent) => {
     console.log('💳 Payment intent succeeded:', paymentIntent.id);
-    console.log(`📦 Processing ${pendingOrderIds.length} orders`);
-
     setSharedPaymentIntentId(paymentIntent.id);
 
     toast.dismiss();
@@ -314,13 +310,13 @@ const CheckoutPage = () => {
     setIsProcessing(true);
     setProcessingStatus('PAYMENT_CONFIRMED');
 
-    // ✅ Start polling all orders
+    // Start polling with shorter delay
     setTimeout(() => {
       pollAllOrders(pendingOrderIds);
     }, 2000);
   };
 
-  // ✅ Poll all orders simultaneously
+  // ✅ ENHANCED: Smarter polling with better status detection
   const pollAllOrders = async (orderIds, attempts = 0) => {
     const maxAttempts = 20;
     const pollInterval = 2000;
@@ -328,7 +324,6 @@ const CheckoutPage = () => {
     try {
       console.log(`🔍 Polling ${orderIds.length} orders - Attempt ${attempts + 1}/${maxAttempts}`);
 
-      // ✅ Poll all orders in parallel
       const statusPromises = orderIds.map(orderId =>
         getOrderStatus(orderId).catch(err => ({
           success: false,
@@ -339,10 +334,10 @@ const CheckoutPage = () => {
 
       const responses = await Promise.all(statusPromises);
 
-      // ✅ Update order statuses
       const updatedStatuses = { ...orderStatuses };
       let allCompleted = true;
       let anyFailed = false;
+      let anyInProgress = false;
 
       responses.forEach((response, idx) => {
         const orderId = orderIds[idx];
@@ -360,6 +355,10 @@ const CheckoutPage = () => {
           allCompleted = false;
         }
 
+        if (paymentStatus === 'COMPLETED' && processingStatus === 'IN_PROGRESS') {
+          anyInProgress = true;
+        }
+
         if (paymentStatus === 'FAILED' || paymentStatus === 'CANCELLED') {
           anyFailed = true;
         }
@@ -367,57 +366,62 @@ const CheckoutPage = () => {
 
       setOrderStatuses(updatedStatuses);
 
-      // ✅ Check if any order is ready to show
-      const readyOrders = responses.filter(r => {
+      // ✅ Show order as soon as payment is confirmed - like PaymentStep
+      const confirmedOrders = responses.filter(r => {
         const paymentStatus = r?.paymentStatus || r?.order?.paymentStatus;
         return paymentStatus === 'COMPLETED';
       });
 
-      if (readyOrders.length > 0 && completedOrders.length === 0) {
-        // ✅ At least one order completed - show success
-        const completedOrdersData = readyOrders.map(r => r?.order || r);
-        setCompletedOrders(completedOrdersData);
+      if (confirmedOrders.length > 0 && !order) {
+        const firstOrderData = confirmedOrders[0]?.order || confirmedOrders[0];
+
+        // Set single order like PaymentStep
+        setOrder({
+          ...firstOrderData,
+          processingInBackground: anyInProgress,
+          processingStatus: confirmedOrders[0]?.processingStatus || 'IN_PROGRESS',
+          allOrders: responses.map(r => r?.order || r), // Keep all orders for reference
+          totalOrderCount: orderIds.length
+        });
         setIsProcessing(false);
+        dispatch(resetFlow());
 
-        toast.success(
-          `${readyOrders.length} order(s) confirmed! ${readyOrders.length < responses.length
-            ? `${responses.length - readyOrders.length} still processing...`
-            : ''
-          }`,
-          { duration: 5000 }
-        );
-
-        // ✅ Clear carts
-        if (bulkItems.length > 0) {
-          dispatch(clearBulkCart());
-        }
-        if (cartItems.length > 0) {
-          dispatch(clearCart());
+        if (anyInProgress) {
+          toast.success(
+            orderIds.length === 1
+              ? 'Order confirmed! Gift card is being generated...'
+              : `${confirmedOrders.length} order(s) confirmed! Gift cards are being generated...`,
+            { duration: 5000 }
+          );
+        } else {
+          toast.success('All orders completed successfully!', { duration: 3000 });
         }
 
+        if (bulkItems.length > 0) dispatch(clearBulkCart());
+        if (cartItems.length > 0) dispatch(clearCart());
         return;
       }
 
-      // ✅ All completed
-      if (allCompleted) {
-        const completedOrdersData = responses.map(r => r?.order || r);
-        setCompletedOrders(completedOrdersData);
+      // ✅ All processing completed
+      if (allCompleted && !anyInProgress && order) {
+        const firstOrderData = responses[0]?.order || responses[0];
+
+        setOrder({
+          ...firstOrderData,
+          processingInBackground: false,
+          processingStatus: 'COMPLETED',
+          allOrders: responses.map(r => r?.order || r),
+          totalOrderCount: orderIds.length
+        });
         setIsProcessing(false);
 
         toast.success('All orders completed successfully!', { duration: 3000 });
 
-        // ✅ Clear carts
-        if (bulkItems.length > 0) {
-          dispatch(clearBulkCart());
-        }
-        if (cartItems.length > 0) {
-          dispatch(clearCart());
-        }
-
+        if (bulkItems.length > 0) dispatch(clearBulkCart());
+        if (cartItems.length > 0) dispatch(clearCart());
         return;
       }
 
-      // ✅ Any failed
       if (anyFailed) {
         setError('Some orders failed. Please contact support.');
         toast.error('Some orders failed');
@@ -425,29 +429,31 @@ const CheckoutPage = () => {
         return;
       }
 
-      // ✅ Continue polling
+      // Continue polling
       if (attempts < maxAttempts) {
         setTimeout(() => pollAllOrders(orderIds, attempts + 1), pollInterval);
       } else {
-        // ✅ Max attempts - show what we have
+        // Max attempts reached - show success anyway
         toast.success(
           'Payment confirmed! Your orders are being processed. Check your email for updates.',
           { duration: 6000 }
         );
 
-        const partialOrders = responses.filter(r => r?.order).map(r => r.order);
-        if (partialOrders.length > 0) {
-          setCompletedOrders(partialOrders);
+        const firstOrderData = responses.filter(r => r?.order)[0]?.order || responses[0];
+
+        if (firstOrderData) {
+          setOrder({
+            ...firstOrderData,
+            processingInBackground: true,
+            processingStatus: 'IN_PROGRESS',
+            allOrders: responses.map(r => r?.order || r),
+            totalOrderCount: orderIds.length
+          });
         }
         setIsProcessing(false);
 
-        // ✅ Clear carts anyway
-        if (bulkItems.length > 0) {
-          dispatch(clearBulkCart());
-        }
-        if (cartItems.length > 0) {
-          dispatch(clearCart());
-        }
+        if (bulkItems.length > 0) dispatch(clearBulkCart());
+        if (cartItems.length > 0) dispatch(clearCart());
       }
     } catch (error) {
       console.error('Error polling orders:', error);
@@ -465,8 +471,8 @@ const CheckoutPage = () => {
     setShowThankYou(true);
   };
 
-  // ✅ Success screens
-  if (completedOrders.length > 0) {
+  // ✅ Success screen - using SuccessScreen component like PaymentStep
+  if (order) {
     if (showThankYou) {
       return (
         <div>
@@ -476,154 +482,78 @@ const CheckoutPage = () => {
       );
     }
 
+    // Calculate quantity for display (sum of all orders or single order)
+    const displayQuantity = order.totalOrderCount || 1;
+    const isBulkMode = order.totalOrderCount > 1 || (order.quantity && order.quantity > 1);
+
     return (
-      <div>
-        <Header />
-        <div className="min-h-screen bg-gray-50 py-8">
-          <div className="max-w-4xl mx-auto px-4">
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-12 h-12 text-green-600" />
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {completedOrders.length === 1 ? 'Order Confirmed!' : `${completedOrders.length} Orders Confirmed!`}
-                </h1>
-                <p className="text-gray-600">
-                  Your payment has been processed successfully
-                </p>
-              </div>
-
-              {/* ✅ Show all completed orders */}
-              <div className="space-y-4 mb-8">
-                {completedOrders.map((order, idx) => (
-                  <div key={order.id || idx} className="border border-gray-200 rounded-xl p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Order #{idx + 1}</p>
-                        <p className="font-semibold text-lg">{order.orderNumber}</p>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Completed
-                      </div>
-                    </div>
-
-                    {order.brand && (
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={order.brand.logo}
-                          alt={order.brand.brandName}
-                          className="w-12 h-12 object-contain rounded-lg border"
-                        />
-                        <div>
-                          <p className="font-medium">{order.brand.brandName}</p>
-                          <p className="text-sm text-gray-600">
-                            {getCurrencySymbol(order.currency)}{order.amount}
-                            {order.quantity > 1 && ` × ${order.quantity}`}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={handleNext}
-                className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 shadow-lg"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SuccessScreen
+        order={order}
+        selectedBrand={order.brand || cartItems[0]?.selectedBrand || bulkItems[0]?.selectedBrand}
+        quantity={displayQuantity}
+        selectedAmount={order.selectedAmount || order.amount}
+        isBulkMode={isBulkMode}
+        onNext={handleNext}
+        deliveryDetails={order.deliveryDetails}
+        processingInBackground={order.processingInBackground}
+        processingStatus={order.processingStatus}
+      />
     );
   }
 
-  // ✅ Processing screen
+  // ✅ Simple loading screen - EXACTLY like PaymentStep
   if (paymentSubmitted) {
+    const totalOrders = pendingOrderIds.length;
+    const hasBulkOrders = bulkItems.length > 0;
+
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center">
         <Header />
-        <div className="max-w-2xl w-full">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="mb-6">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-12 h-12 text-green-600" />
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Payment Received!
-              </h1>
-              <p className="text-gray-600">
-                Processing {pendingOrderIds.length} order{pendingOrderIds.length > 1 ? 's' : ''}...
-              </p>
-            </div>
-
-            {/* ✅ Order processing status */}
-            <div className="space-y-3 mb-6">
-              {pendingOrderIds.map((orderId, idx) => {
-                const status = orderStatuses[orderId];
-                const isProcessing = status?.paymentStatus === 'COMPLETED' && status?.processingStatus === 'IN_PROGRESS';
-                const isCompleted = status?.paymentStatus === 'COMPLETED' && status?.processingStatus === 'COMPLETED';
-                const isPending = !status?.paymentStatus || status?.paymentStatus === 'PENDING';
-
-                return (
-                  <div key={orderId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {status?.type === 'bulk' ? (
-                        <Package className="w-5 h-5 text-pink-500" />
-                      ) : (
-                        <ShoppingBag className="w-5 h-5 text-pink-500" />
-                      )}
-                      <div className="text-left">
-                        <p className="font-medium text-sm">
-                          {status?.metadata?.brand || 'Order'} #{idx + 1}
-                        </p>
-                        <p className="text-xs text-gray-500">{status?.orderNumber || orderId.slice(0, 8)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isCompleted && (
-                        <span className="text-green-600 flex items-center gap-1 text-sm">
-                          <CheckCircle2 className="w-4 h-4" /> Done
-                        </span>
-                      )}
-                      {isProcessing && (
-                        <span className="text-blue-600 flex items-center gap-1 text-sm">
-                          <Clock className="w-4 h-4 animate-spin" /> Processing
-                        </span>
-                      )}
-                      {isPending && (
-                        <div className="animate-spin h-4 w-4 border-2 border-pink-500 border-t-transparent rounded-full" />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* ✅ Progress bar */}
-            <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-              <div
-                className="bg-gradient-to-r from-pink-500 to-orange-500 h-3 rounded-full transition-all duration-500"
-                style={{
-                  width: `${(Object.values(orderStatuses).filter(s => s?.paymentStatus === 'COMPLETED').length / pendingOrderIds.length) * 100}%`
-                }}
-              />
-            </div>
-
-            <p className="text-sm text-gray-500">
-              This may take a few moments. Please don't close this page.
+        <div className="max-w-md">
+          <div className="mb-4">
+            <svg className="mx-auto h-16 w-16 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+            {processingStatus === 'PAYMENT_CONFIRMED' ? 'Payment Received!' : 'Processing Your Order...'}
+          </h1>
+          <p className="text-gray-600">
+            {processingStatus === 'PAYMENT_CONFIRMED'
+              ? "We've received your payment and are now preparing your orders."
+              : "Confirming your orders and generating gift cards..."}
+          </p>
+          {pendingOrderIds.length > 0 && (
+            <p className="text-sm text-gray-500 mt-4">
+              {totalOrders === 1
+                ? `Order ID: ${pendingOrderIds[0].slice(0, 8)}`
+                : `${totalOrders} Orders`}
+            </p>
+          )}
+          <div className="mt-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-pink-500 border-t-transparent mx-auto"></div>
+            <p className="text-sm text-gray-500 mt-2">
+              {totalOrders > 1
+                ? `Processing ${totalOrders} orders...`
+                : 'Preparing your gift card...'}
             </p>
           </div>
+
+          {/* Progress indicator for multiple orders */}
+          {totalOrders > 1 && (
+            <div className="mt-6 w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-pink-500 to-orange-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: '40%' }}
+              ></div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  // ✅ Main payment form
+  // Main payment form
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <Header />
@@ -698,8 +628,15 @@ const CheckoutPage = () => {
             {selectedPaymentTab === 'card' && !clientSecret && (
               <button
                 onClick={handleInitiatePayment}
-                disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white py-3 sm:py-4 px-6 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 flex items-center justify-center gap-2 shadow-lg disabled:cursor-not-allowed"
+                disabled={isProcessing || !isPaymentConfirmed}
+                className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
+                       hover:from-pink-600 hover:to-orange-600
+                       disabled:from-gray-300 disabled:to-gray-400
+                       text-white py-3 sm:py-4 px-6 rounded-xl
+                       font-semibold text-sm sm:text-base
+                       transition-all duration-200
+                       flex items-center justify-center gap-2
+                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {isProcessing ? (
                   <>
@@ -716,7 +653,7 @@ const CheckoutPage = () => {
           </div>
 
           {/* Right Column - Order Summary */}
-          <div className="space-y-5 sm:space-y-6">
+          <div className="space-y-5 sm:space-y-6 text-black">
             {/* Order Items Preview */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <h3 className="text-lg font-bold text-gray-900 mb-4">
