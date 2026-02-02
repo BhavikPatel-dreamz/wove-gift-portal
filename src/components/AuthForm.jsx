@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { signIn } from 'next-auth/react'
 
 export default function AuthForm({ type = 'login' }) {
   const [formData, setFormData] = useState({
@@ -87,7 +88,7 @@ export default function AuthForm({ type = 'login' }) {
   }
 
   const handleSocialLogin = (provider) => {
-    alert(`${provider} login clicked`)
+    signIn(provider, { callbackUrl: '/' })
   }
 
   const getError = (field) =>

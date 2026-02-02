@@ -817,9 +817,14 @@ function MyGift() {
       {/* Bulk Order Vouchers Modal - List View */}
       {isBulkModalOpen && selectedBulkOrder && (
         <div className="fixed inset-0 bg-black/50 bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 flex items-center justify-between">
+            <div
+              className="p-6 flex items-center justify-between rounded-t-[20px]"
+              style={{
+                background: 'linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)'
+              }}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
                   <Users className="w-6 h-6 text-white" />
@@ -838,7 +843,7 @@ function MyGift() {
             </div>
 
             {/* Search Bar */}
-            <div className="p-4 border-b border-gray-200 bg-gray-50 text-black">
+            <div className=" px-4 pt-4 bg-gray-50 text-black">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -878,12 +883,32 @@ function MyGift() {
                         {/* Left Section - Voucher Info */}
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           {/* Voucher Number */}
-                          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                          <div
+                            className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{
+                              background: 'linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)'
+                            }}
+                          >
                             <span className="text-white font-bold text-sm">#{index + 1}</span>
                           </div>
-
                           {/* Voucher Details */}
                           <div className="flex-1 min-w-0">
+
+                            <div className="text-xs text-gray-500 truncate">
+                              <span
+                                className="font-semibold"
+                                style={{
+                                  color: '#2F2E38',
+                                  fontFamily: 'Poppins',
+                                  fontSize: '12px',
+                                  lineHeight: '18px'
+                                }}
+                              >
+                                {card.receiverName || 'N/A'}
+                              </span>
+                              {' • '}
+                              <span>{card.receiverEmail || 'N/A'}</span>
+                            </div>
 
                             <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
                               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 14 14" fill="none">
@@ -892,11 +917,7 @@ function MyGift() {
                               </svg>
                               <span className="font-mono">{card.code}</span>
                             </div>
-                            <div className="text-xs text-gray-500 truncate">
-                              <span className="font-medium">{card.receiverName || 'N/A'}</span>
-                              {' • '}
-                              <span>{card.receiverEmail || 'N/A'}</span>
-                            </div>
+
                           </div>
                         </div>
 
@@ -931,7 +952,15 @@ function MyGift() {
 
             {/* Modal Footer */}
             <div className="border-t border-gray-200 p-4 bg-white flex justify-between items-center">
-              <p className="text-sm text-gray-600">
+              <p
+                style={{
+                  color: '#717171',
+                  fontFamily: 'Inter',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  lineHeight: '20px'
+                }}
+              >
                 {getFilteredBulkCards().length} voucher{getFilteredBulkCards().length !== 1 ? 's' : ''} displayed
               </p>
               <button
