@@ -18,53 +18,54 @@ model Session {
 }
 
 model User {
-  id         String     @id @default(cuid())
-  email      String     @unique
-  phone      String?
-  firstName  String
-  lastName   String
-  password   String
-  avatar     String?
-  role       UserRole   @default(CUSTOMER)
-  isActive   Boolean    @default(false)
-  isVerified Boolean    @default(false)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  auditLogs  AuditLog[]
-  orders     Order[]
-  wishlists  Wishlist[]
-  sessions   Session[]
+  id             String           @id @default(cuid())
+  email          String           @unique
+  phone          String?
+  firstName      String
+  lastName       String
+  password       String
+  avatar         String?
+  role           UserRole         @default(CUSTOMER)
+  isActive       Boolean          @default(false)
+  isVerified     Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  auditLogs      AuditLog[]
+  orders         Order[]
   supportRequest SupportRequest[]
+  wishlists      Wishlist[]
+  sessions       Session[]
+
   @@map("users")
 }
 
 model Brand {
-  id            String          @id @default(cuid())
-  brandName     String          @unique
-  currency      String?
-  domain        String?         @unique
-  slug          String          @unique
-  logo          String
-  description   String
-  website       String
-  contact       String
-  tagline       String?
-  color         String?
-  categoryName  String
-  isPrimary     Boolean         @default(false)
-  isActive      Boolean         @default(false)
-  isFeature     Boolean         @default(false)
-  notes         String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  brandBankings BrandBanking?
-  brandContacts BrandContacts[]
-  brandTerms    BrandTerms?
-  integrations  Integration[]
-  orders        Order[]
-  settlements   Settlements[]
-  vouchers      Vouchers[]
+  id              String            @id @default(cuid())
+  brandName       String            @unique
+  currency        String?
+  domain          String?           @unique
+  slug            String            @unique
+  logo            String
+  description     String
+  website         String
+  contact         String
+  tagline         String?
+  color           String?
+  categoryName    String
+  isPrimary       Boolean           @default(false)
+  isActive        Boolean           @default(false)
+  isFeature       Boolean           @default(false)
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  brandBankings   BrandBanking?
+  brandContacts   BrandContacts[]
+  brandTerms      BrandTerms?
+  integrations    Integration[]
+  orders          Order[]
   ScheduledReport ScheduledReport[]
+  settlements     Settlements[]
+  vouchers        Vouchers[]
 }
 
 model BrandContacts {
@@ -140,7 +141,7 @@ model Integration {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   brandId        String
-brand          Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  brand          Brand                @relation(fields: [brandId], references: [id], onDelete: Cascade)
   syncLogs       IntegrationSyncLog[]
 }
 
@@ -191,7 +192,7 @@ model Vouchers {
   productSku           String?
   isActive             Boolean            @default(true)
   brandId              String
-createdAt            DateTime           @default(now())
+  createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
   isExpiry             Boolean            @default(false)
   expiryPolicy         String?
@@ -223,12 +224,13 @@ model VoucherCode {
   lastSyncedRedeemedValue String?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
-  deliveryLogs            DeliveryLog[]
+  bulkRecipient           BulkRecipient?
   order                   Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
   giftCard                GiftCard?           @relation(fields: [shopifyGiftCardId], references: [id])
   voucher                 Vouchers            @relation(fields: [voucherId], references: [id], onDelete: Cascade)
   redemptions             VoucherRedemption[]
-  bulkRecipient           BulkRecipient?      // ✅ Added one-to-one relation
+  deliveryLogs            DeliveryLog[]
+
   @@index([orderId])
   @@index([voucherId])
 }
@@ -243,8 +245,8 @@ model VoucherRedemption {
   storeUrl       String?
   voucherCode    VoucherCode @relation(fields: [voucherCodeId], references: [id], onDelete: Cascade)
 
+  @@unique([transactionId, voucherCodeId, storeUrl])
   @@index([voucherCodeId])
-  @@unique([transactionId, voucherCodeId, storeUrl]) // Add this composite unique constraint
 }
 
 model Occasion {
@@ -334,13 +336,13 @@ model Order {
   isActive         Boolean              @default(true)
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
-  deliveryLogs     DeliveryLog[]
+  bulkRecipients   BulkRecipient[]
   brand            Brand                @relation(fields: [brandId], references: [id])
   occasion         Occasion             @relation(fields: [occasionId], references: [id])
   receiverDetail   ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
   user             User                 @relation(fields: [userId], references: [id])
   voucherCodes     VoucherCode[]
-  bulkRecipients    BulkRecipient[]
+  deliveryLogs     DeliveryLog[]
 
   @@index([userId])
   @@index([brandId])
@@ -349,24 +351,86 @@ model Order {
 }
 
 model DeliveryLog {
-  id            String               @id @default(cuid())
-  orderId       String
-  voucherCodeId String?
-  method        DeliveryMethodStatus
-  recipient     String
-  status        DeliveryStatus       @default(PENDING)
-  attemptCount  Int                  @default(0)
-  sentAt        DateTime?
-  deliveredAt   DateTime?
-  errorMessage  String?
-  messageId     String?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  order         Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  voucherCode   VoucherCode?         @relation(fields: [voucherCodeId], references: [id], onDelete: Cascade)
+  id                       String               @id @default(cuid())
+  orderId                  String
+  voucherCodeId            String?
+  method                   DeliveryMethodStatus
+  recipient                String
+  status                   DeliveryStatus       @default(PENDING)
+  attemptCount             Int                  @default(0)
+  sentAt                   DateTime?
+  deliveredAt              DateTime?
+  errorMessage             String?
+  messageId                String?
+  giftCardCreated          Boolean              @default(false)
+  giftCardCreatedAt        DateTime?
+  giftCardShopifyId        String?              @unique
+  giftCardError            String?
+  paymentStatus            PaymentStatus        @default(PENDING)
+  paymentUpdatedAt         DateTime?
+  voucherGenerated         Boolean              @default(false)
+  voucherGeneratedAt       DateTime?
+  voucherGenerationError   String?
+  shopifySyncStatus        SyncStatus?
+  shopifySyncedAt          DateTime?
+  shopifySyncError         String?
+  emailServiceStatus       String?
+  emailServiceId           String?
+  emailServiceError        String?
+  smsServiceStatus         String?
+  smsServiceId             String?
+  smsServiceError          String?
+  whatsappServiceStatus    String?
+  whatsappServiceId        String?
+  whatsappServiceError     String?
+  lastRetryAt              DateTime?
+  maxRetries               Int                  @default(3)
+  processingTimeMs         Int?
+  deliveryLatencyMs        Int?
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  gift_card_created        Boolean              @default(false)
+  gift_card_created_at     DateTime?            @db.Timestamp(6)
+  gift_card_shopify_id     String?              @unique
+  gift_card_error          String?
+  payment_status           String               @default("PENDING")
+  payment_updated_at       DateTime?            @db.Timestamp(6)
+  voucher_generated        Boolean              @default(false)
+  voucher_generated_at     DateTime?            @db.Timestamp(6)
+  voucher_generation_error String?
+  shopify_sync_status      String?
+  shopify_synced_at        DateTime?            @db.Timestamp(6)
+  shopify_sync_error       String?
+  email_service_status     String?
+  email_service_id         String?
+  email_service_error      String?
+  sms_service_status       String?
+  sms_service_id           String?
+  sms_service_error        String?
+  whatsapp_service_status  String?
+  whatsapp_service_id      String?
+  whatsapp_service_error   String?
+  last_retry_at            DateTime?            @db.Timestamp(6)
+  max_retries              Int                  @default(3)
+  processing_time_ms       Int?
+  delivery_latency_ms      Int?
+  order                    Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  voucherCode              VoucherCode?         @relation(fields: [voucherCodeId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([voucherCodeId])
   @@index([status])
+  @@index([giftCardCreated])
+  @@index([paymentStatus])
+  @@index([shopifySyncStatus])
+  @@index([emailServiceStatus])
+  @@index([sentAt])
+  @@index([deliveredAt])
+  @@index([email_service_status], map: "idx_delivery_logs_email_service_status")
+  @@index([gift_card_created], map: "idx_delivery_logs_gift_card_created")
+  @@index([payment_status], map: "idx_delivery_logs_payment_status")
+  @@index([shopify_sync_status], map: "idx_delivery_logs_shopify_sync_status")
+  @@map("delivery_logs")
 }
 
 model Settlements {
@@ -433,21 +497,21 @@ model AuditLog {
 }
 
 model ScheduledReport {
-  id                String                @id @default(cuid())
-  shop              String?
-  brandId           String?
-  frequency         String                // weekly, monthly, yearly
-  deliveryDay       String                // e.g., "monday" for weekly, "15" for monthly/yearly
-  deliveryMonth     String?               // e.g., "1" for January (for monthly/yearly)
-  deliveryYear      String?               // e.g., "2026" (for yearly)
-  emailRecipients   String                // comma-separated
-  reportTypes       Json
-  nextDeliveryDate  DateTime
-  lastDeliveryDate  DateTime?
-  status            ScheduledReportStatus @default(Active)
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
-  brand             Brand?                @relation(fields: [brandId], references: [id])
+  id               String                @id @default(cuid())
+  shop             String?
+  brandId          String?
+  frequency        String
+  deliveryDay      String
+  deliveryMonth    String?
+  deliveryYear     String?
+  emailRecipients  String
+  reportTypes      Json
+  nextDeliveryDate DateTime
+  lastDeliveryDate DateTime?
+  status           ScheduledReportStatus @default(Active)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  brand            Brand?                @relation(fields: [brandId], references: [id])
 
   @@index([shop])
   @@index([brandId])
@@ -499,22 +563,20 @@ model GiftCard {
 }
 
 model SupportRequest {
-  id          String        @id @default(cuid())
-  supportId   String        @unique
-  userId    String
+  id          String           @id @default(cuid())
+  supportId   String           @unique
   name        String
   email       String
   phone       String?
   orderNumber String?
   reason      String
   message     String?
-  status      SupportStatus @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  
-  // Relationship with messages
+  status      SupportStatus    @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  userId      String
   messages    SupportMessage[]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([email])
@@ -523,14 +585,13 @@ model SupportRequest {
 model SupportMessage {
   id               String         @id @default(cuid())
   supportRequestId String
-  senderType       SenderType     // CUSTOMER or ADMIN
+  senderType       SenderType
   senderName       String
   senderEmail      String?
-  message          String         @db.Text
-  attachments      String[]       @default([]) // Array of file URLs
+  message          String
+  attachments      String[]       @default([])
   isRead           Boolean        @default(false)
   createdAt        DateTime       @default(now())
-  
   supportRequest   SupportRequest @relation(fields: [supportRequestId], references: [id], onDelete: Cascade)
 
   @@index([supportRequestId])
@@ -538,38 +599,28 @@ model SupportMessage {
 }
 
 model BulkRecipient {
-  id                String   @id @default(cuid())
-  orderId           String
-  voucherCodeId     String?  @unique  // ✅ Made nullable with ?
-  
-  // Recipient Information
-  recipientName     String
-  recipientEmail    String
-  recipientPhone    String?
-  
-  // Gift Information
-  personalMessage   String?
-  
-  // Status Tracking
-  emailSent         Boolean  @default(false)
-  emailSentAt       DateTime?
-  emailDelivered    Boolean  @default(false)
-  emailDeliveredAt  DateTime?
-  emailError        String?
-  
-  // Metadata
-  rowNumber         Int      // Track which row in CSV
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  // Relations
-  order             Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  voucherCode       VoucherCode? @relation(fields: [voucherCodeId], references: [id])  // ✅ Made nullable
-  
+  id               String       @id @default(cuid())
+  orderId          String
+  voucherCodeId    String?      @unique
+  recipientName    String
+  recipientEmail   String
+  recipientPhone   String?
+  personalMessage  String?
+  emailSent        Boolean      @default(false)
+  emailSentAt      DateTime?
+  emailDelivered   Boolean      @default(false)
+  emailDeliveredAt DateTime?
+  emailError       String?
+  rowNumber        Int
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  voucherCode      VoucherCode? @relation(fields: [voucherCodeId], references: [id])
+
   @@index([orderId])
   @@index([recipientEmail])
   @@index([emailSent])
-  @@index([voucherCodeId])  // Added index for faster lookups
+  @@index([voucherCodeId])
 }
 
 enum UserRole {
@@ -695,4 +746,27 @@ enum SupportStatus {
 enum SenderType {
   CUSTOMER
   ADMIN
+}
+
+enum EmailServiceStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  BOUNCED
+  FAILED
+}
+
+enum SMSServiceStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum WhatsAppServiceStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
 }

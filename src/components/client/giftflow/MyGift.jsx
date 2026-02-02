@@ -148,7 +148,7 @@ function MyGift() {
     const [start, end] = dates;
     setStartDate(start);
     setEndDate(end);
-    
+
     // Only trigger API call and close picker when both dates are selected
     if (start && end) {
       setCurrentPage(1);
@@ -326,7 +326,7 @@ function MyGift() {
     if (!bulkModalSearch.trim()) return selectedBulkOrder.cards;
 
     const searchLower = bulkModalSearch.toLowerCase();
-    return selectedBulkOrder.cards.filter(card => 
+    return selectedBulkOrder.cards.filter(card =>
       card.code?.toLowerCase().includes(searchLower) ||
       card.receiverEmail?.toLowerCase().includes(searchLower) ||
       card.receiverName?.toLowerCase().includes(searchLower) ||
@@ -343,10 +343,19 @@ function MyGift() {
     return (
       <div key={bulkOrderNumber} className="relative bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
         {/* Bulk Order Badge */}
-        <div className="absolute top-2 right-2 px-2 py-1 bg-linear-to-r from-purple-500 to-pink-500 text-white text-[10px] font-semibold rounded-full flex items-center gap-1">
-          <Users className="w-3 h-3" />
-          BULK ({stats.totalVouchers})
+        <div className="
+  absolute top-2 right-2
+  px-2 py-1
+  text-[10px] font-semibold
+  rounded-full
+  border border-[rgba(15,100,246,0.20)]
+  bg-[rgba(15,100,246,0.10)]
+  text-[#0F64F6]
+  flex items-center gap-1
+">
+          # BULK
         </div>
+
 
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -397,15 +406,21 @@ function MyGift() {
 
         <div className="flex justify-between items-center mb-3">
           <div>
-            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">TOTAL AMOUNT</p>
-            <p className="text-base sm:text-lg font-bold text-gray-900">
+            <p className="font-[Arial] text-[10px] leading-[15px] tracking-[0.25px] uppercase text-[#75738C] font-normal mb-1">
+              TOTAL AMOUNT
+            </p>
+
+            <p className="font-[Poppins] text-[18px] leading-[27px] font-semibold text-[#1A1A1A]">
               {stats.currencySymbol}{stats.totalAmount.toFixed(2)}
             </p>
+
           </div>
 
           <div>
-            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Purchase Date</p>
-            <p className="text-base sm:text-lg font-bold text-gray-900">
+            <p className="font-[Arial] text-[10px] leading-[15px] tracking-[0.25px] uppercase text-[#75738C] font-normal mb-1">
+              Purchase Date
+            </p>
+            <p className="font-[Poppins] text-[18px] leading-[27px] font-semibold text-[#1A1A1A]">
               {firstCard.purchaseDate || "N/A"}
             </p>
           </div>
@@ -493,7 +508,7 @@ function MyGift() {
               {card.currencySymbol}{card.totalAmount.toFixed(2)}
             </p>
           </div>
-         <div>
+          <div>
             <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Purchase Date</p>
             <p className="text-base sm:text-lg font-bold text-gray-900">
               {card.purchaseDate || "N/A"}
@@ -554,9 +569,9 @@ function MyGift() {
                 <span className="text-xs sm:text-sm font-medium text-[#4A5565]">View Details</span>
               </button>
               {card.status !== 'EXPIRED' && card.status !== 'CLAIMED' && card.isReceived && (
-                <button 
-                  onClick={handleRedeemClick} 
-                  className="flex-1 py-2 bg-linear-to-r from-orange-400 to-red-500 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:shadow-lg transition-all">
+                <button
+                  onClick={handleRedeemClick}
+                  className="flex-1 py-2 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:shadow-lg transition-all">
                   <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="text-xs sm:text-sm font-medium">Redeem</span>
                 </button>
@@ -737,8 +752,8 @@ function MyGift() {
           <>
             {/* Gift Cards Grid - Render in order */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
-              {displayItems.map((item, index) => 
-                item.type === 'bulk' 
+              {displayItems.map((item, index) =>
+                item.type === 'bulk'
                   ? renderBulkOrderCard(item.bulkOrderNumber, item.cards)
                   : renderSingleOrderCard(item.card)
               )}
@@ -802,9 +817,14 @@ function MyGift() {
       {/* Bulk Order Vouchers Modal - List View */}
       {isBulkModalOpen && selectedBulkOrder && (
         <div className="fixed inset-0 bg-black/50 bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="bg-linear-to-r from-purple-500 to-pink-500 p-6 flex items-center justify-between">
+            <div
+              className="p-6 flex items-center justify-between rounded-t-[20px]"
+              style={{
+                background: 'linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)'
+              }}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
                   <Users className="w-6 h-6 text-white" />
@@ -823,7 +843,7 @@ function MyGift() {
             </div>
 
             {/* Search Bar */}
-            <div className="p-4 border-b border-gray-200 bg-gray-50 text-black">
+            <div className=" px-4 pt-4 bg-gray-50 text-black">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -863,13 +883,33 @@ function MyGift() {
                         {/* Left Section - Voucher Info */}
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           {/* Voucher Number */}
-                          <div className="shrink-0 w-10 h-10 rounded-full bg-linear-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                          <div
+                            className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                            style={{
+                              background: 'linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)'
+                            }}
+                          >
                             <span className="text-white font-bold text-sm">#{index + 1}</span>
                           </div>
-
                           {/* Voucher Details */}
                           <div className="flex-1 min-w-0">
-                          
+
+                            <div className="text-xs text-gray-500 truncate">
+                              <span
+                                className="font-semibold"
+                                style={{
+                                  color: '#2F2E38',
+                                  fontFamily: 'Poppins',
+                                  fontSize: '12px',
+                                  lineHeight: '18px'
+                                }}
+                              >
+                                {card.receiverName || 'N/A'}
+                              </span>
+                              {' • '}
+                              <span>{card.receiverEmail || 'N/A'}</span>
+                            </div>
+
                             <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
                               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 14 14" fill="none">
                                 <path d="M11.667 2.91663H2.33366C1.68933 2.91663 1.16699 3.43896 1.16699 4.08329V9.91663C1.16699 10.561 1.68933 11.0833 2.33366 11.0833H11.667C12.3113 11.0833 12.8337 10.561 12.8337 9.91663V4.08329C12.8337 3.43896 12.3113 2.91663 11.667 2.91663Z" stroke="currentColor" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
@@ -877,11 +917,7 @@ function MyGift() {
                               </svg>
                               <span className="font-mono">{card.code}</span>
                             </div>
-                            <div className="text-xs text-gray-500 truncate">
-                              <span className="font-medium">{card.receiverName || 'N/A'}</span>
-                              {' • '}
-                              <span>{card.receiverEmail || 'N/A'}</span>
-                            </div>
+
                           </div>
                         </div>
 
@@ -891,7 +927,7 @@ function MyGift() {
                             <p className="text-xs text-gray-500 mb-1">Amount</p>
                             <p className="font-bold text-gray-900">{card.currencySymbol}{card.totalAmount.toFixed(2)}</p>
                           </div>
-                          
+
                           {card?.receiverEmail == session?.user?.email && (
                             <div className="w-32">
                               <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -916,7 +952,15 @@ function MyGift() {
 
             {/* Modal Footer */}
             <div className="border-t border-gray-200 p-4 bg-white flex justify-between items-center">
-              <p className="text-sm text-gray-600">
+              <p
+                style={{
+                  color: '#717171',
+                  fontFamily: 'Inter',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  lineHeight: '20px'
+                }}
+              >
                 {getFilteredBulkCards().length} voucher{getFilteredBulkCards().length !== 1 ? 's' : ''} displayed
               </p>
               <button

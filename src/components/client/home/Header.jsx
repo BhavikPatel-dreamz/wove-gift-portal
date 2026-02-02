@@ -98,7 +98,7 @@ const Header = () => {
   };
 
   const handleNavClick = (item) => {
-    // if (item === 'Send Gift Card') dispatch(resetFlow());
+    if (item === 'Send Gift Card') dispatch(resetFlow());
     setMobileMenuOpen(false);
   };
   const pathname = usePathname();
