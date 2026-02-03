@@ -47,7 +47,7 @@ const WhyWoveExists = () => {
         <div className="flex-1 w-full max-w-md lg:max-w-lg">
           <div className="rounded-xl overflow-hidden shadow-lg">
             <img
-              src="/why.png"
+              src="/aboutimage.png"
               alt="Person showing Wove Gifts mobile app"
               className="w-full h-auto block object-cover"
             />
