@@ -286,9 +286,11 @@ export async function getGiftCards(filters) {
       const receiverName = vc.bulkRecipient?.recipientName || vc.order.receiverDetail?.name || "N/A";
       const receiverEmail = vc.bulkRecipient?.recipientEmail || vc.order.receiverDetail?.email || "N/A";
       const receiverPhone = vc.bulkRecipient?.recipientPhone || vc.order.receiverDetail?.phone || "N/A";
+      const deliveryMethod = vc.order.deliveryMethod;
 
       return {
         id: vc.id,
+        orderId: vc.order.id,
         orderNumber: vc.order.orderNumber,
         bulkOrderNumber: vc.order.bulkOrderNumber,
         code: displayCode,
@@ -332,6 +334,7 @@ export async function getGiftCards(filters) {
         isSent: isSent,
         isReceived: isReceived,
         isBulk: !!vc.order.bulkOrderNumber,
+        deliveryMethod: deliveryMethod,
         redemptions: vc.redemptions.map((redemption) => ({
           id: redemption.id,
           amountRedeemed: redemption.amountRedeemed,

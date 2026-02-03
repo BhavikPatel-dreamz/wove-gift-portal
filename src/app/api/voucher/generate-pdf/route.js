@@ -141,8 +141,9 @@ async function generatePDF(order) {
 
   // Voucher code box
   const voucherCode = order.voucherCodes[0];
+  // console.log("voucherCode",voucherCode)
   const actualCode = voucherCode?.giftCard?.code || voucherCode?.code || 'XXXX-XXXX-XXXX';
-  const formattedCode = formatVoucherCode(actualCode);
+  const formattedCode =  actualCode;
   
   doc.setFillColor(245, 245, 245);
   doc.roundedRect(15, currentY, pageWidth - 30, 10, 2, 2, 'F');
