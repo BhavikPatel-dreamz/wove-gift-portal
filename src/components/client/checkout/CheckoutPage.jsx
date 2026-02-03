@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
+// import { Elements } from "@stripe/react-stripe-js";
+// import { loadStripe } from "@stripe/stripe-js";
 import toast, { Toaster } from 'react-hot-toast';
-import { createPendingOrder, getOrderStatus } from '../../../lib/action/orderAction';
+import { createPendingOrder, getOrderStatus, completeOrderAfterPayment } from '../../../lib/action/orderAction';
 import { AlertCircle, Package, ShoppingBag, CheckCircle2, Clock, Mail, Phone, MapPin, Users, Calendar, Loader2 } from 'lucide-react';
 import Header from '../../../components/client/home/Header';
 import { useSession } from '@/contexts/SessionContext';
-import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
+// import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
 import PaymentMethodSelector from "../giftflow/payment/PaymentMethodSelector";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
 import BillingAddressForm from "../giftflow/payment/BillingAddressForm";
@@ -18,11 +18,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { clearCart, clearBulkCart } from '@/redux/cartSlice';
 import { resetFlow } from '../../../redux/giftFlowSlice';
 
-if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
-  throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
-}
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+// ✅ STRIPE CODE COMMENTED OUT
+// if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
+//   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
+// }
+// const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 const CheckoutPage = () => {
   const dispatch = useDispatch();
@@ -38,7 +38,7 @@ const CheckoutPage = () => {
   // State
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
-  const [order, setOrder] = useState(null); // Changed from completedOrders array to single order
+  const [order, setOrder] = useState(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
   const [showThankYou, setShowThankYou] = useState(false);
@@ -232,12 +232,13 @@ const CheckoutPage = () => {
 
         allOrderIds.push(result.data.orderId);
 
-        if (idx === 0) {
-          sharedPaymentIntentId = result.data.paymentIntentId;
-          sharedClientSecret = result.data.clientSecret;
-          sharedCustomerId = result.data.customerId;
-          console.log(`✅ First order created - Payment Intent: ${sharedPaymentIntentId}`);
-        }
+        // ✅ No payment intent tracking needed for test mode
+        // if (idx === 0) {
+        //   sharedPaymentIntentId = result.data.paymentIntentId;
+        //   sharedClientSecret = result.data.clientSecret;
+        //   sharedCustomerId = result.data.customerId;
+        //   console.log(`✅ First order created - Payment Intent: ${sharedPaymentIntentId}`);
+        // }
 
         // Store metadata with full item details
         orderMetadata.push({
@@ -261,7 +262,7 @@ const CheckoutPage = () => {
       console.log(`✅ Created ${allOrderIds.length} orders successfully`);
 
       setPendingOrderIds(allOrderIds);
-      setClientSecret(sharedClientSecret);
+      // setClientSecret(sharedClientSecret); // ✅ Not needed for test mode
 
       // Initialize order status tracking with full details
       const initialStatuses = {};
@@ -279,7 +280,7 @@ const CheckoutPage = () => {
       toast.success(`${allOrderIds.length} order(s) ready for payment`, { id: toastId });
 
       return {
-        clientSecret: sharedClientSecret,
+        // clientSecret: sharedClientSecret, // ✅ Not needed for test mode
         orderIds: allOrderIds
       };
 
@@ -293,12 +294,17 @@ const CheckoutPage = () => {
     }
   };
 
-  console.log("cartItems",cartItems,bulkItems)
+  console.log("cartItems", cartItems, bulkItems);
 
-  // ✅ ENHANCED: Payment success handler with better feedback
-  const handlePaymentSuccess = (paymentIntent) => {
-    console.log('💳 Payment intent succeeded:', paymentIntent.id);
-    setSharedPaymentIntentId(paymentIntent.id);
+  // ✅ TEST MODE: Simulate payment success
+  const handlePaymentSuccess = async (orderIds) => {
+    console.log('🧪 TEST MODE: Simulating payment success for orders:', orderIds);
+
+    if (!orderIds || orderIds.length === 0) {
+      console.error('❌ No order IDs provided to handlePaymentSuccess');
+      toast.error('Order IDs missing');
+      return;
+    }
 
     toast.dismiss();
     toast.success('Payment received! Processing your orders...', {
@@ -310,10 +316,36 @@ const CheckoutPage = () => {
     setIsProcessing(true);
     setProcessingStatus('PAYMENT_CONFIRMED');
 
-    // Start polling with shorter delay
-    setTimeout(() => {
-      pollAllOrders(pendingOrderIds);
-    }, 2000);
+    // ✅ Simulate webhook by calling completeOrderAfterPayment for each order
+    setTimeout(async () => {
+      try {
+        console.log(`🔄 Processing ${orderIds.length} orders...`);
+
+        for (const orderId of orderIds) {
+          console.log(`📦 Completing order: ${orderId}`);
+          
+          await completeOrderAfterPayment(orderId, {
+            paymentIntentId: 'test_pi_' + Date.now(), // Mock payment intent
+            paymentMethod: 'card',
+            amount: calculateCombinedTotal() * 100,
+            currency: getCurrency().toLowerCase(),
+          });
+        }
+
+        console.log('✅ All orders marked as completed, starting polling...');
+        
+        // Start polling after a short delay
+        setTimeout(() => {
+          pollAllOrders(orderIds);
+        }, 2000);
+
+      } catch (error) {
+        console.error('❌ Error simulating payment:', error);
+        toast.error('Failed to process payment');
+        setIsProcessing(false);
+        setPaymentSubmitted(false);
+      }
+    }, 1500); // Simulate network delay
   };
 
   // ✅ ENHANCED: Smarter polling with better status detection
@@ -380,7 +412,7 @@ const CheckoutPage = () => {
           ...firstOrderData,
           processingInBackground: anyInProgress,
           processingStatus: confirmedOrders[0]?.processingStatus || 'IN_PROGRESS',
-          allOrders: responses.map(r => r?.order || r), // Keep all orders for reference
+          allOrders: responses.map(r => r?.order || r),
           totalOrderCount: orderIds.length
         });
         setIsProcessing(false);
@@ -565,8 +597,8 @@ const CheckoutPage = () => {
             className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-base text-[#4A4A4A] bg-white border border-transparent transition-all duration-300 overflow-hidden group cursor-pointer"
             onClick={() => window.history.back()}
           >
-            <span className="absolute inset-0 rounded-full p-[1.5px] bg-linear-to-r from-[#ED457D] to-[#FA8F42]"></span>
-            <span className="absolute inset-[1.5px] rounded-full bg-white transition-all duration-300 group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
+            <span className="absolute inset-0 rounded-full p-[1.5px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42]"></span>
+            <span className="absolute inset-[1.5px] rounded-full bg-white transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
               <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
                 <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
@@ -608,7 +640,8 @@ const CheckoutPage = () => {
               isBulkMode={bulkItems.length > 0}
             />
 
-            {selectedPaymentTab === 'card' && clientSecret && (
+            {/* ✅ STRIPE CARD PAYMENT COMMENTED OUT */}
+            {/* {selectedPaymentTab === 'card' && clientSecret && (
               <Elements
                 stripe={stripePromise}
                 options={{
@@ -623,11 +656,18 @@ const CheckoutPage = () => {
                   onPaymentSuccess={handlePaymentSuccess}
                 />
               </Elements>
-            )}
+            )} */}
 
-            {selectedPaymentTab === 'card' && !clientSecret && (
+            {/* ✅ TEST MODE: Simple payment button */}
+            {selectedPaymentTab === 'card' && (
               <button
-                onClick={handleInitiatePayment}
+                onClick={async () => {
+                  const result = await handleInitiatePayment();
+                  if (result && result.orderIds) {
+                    // Simulate payment success after orders are created
+                    handlePaymentSuccess(result.orderIds);
+                  }
+                }}
                 disabled={isProcessing || !isPaymentConfirmed}
                 className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
@@ -641,11 +681,11 @@ const CheckoutPage = () => {
                 {isProcessing ? (
                   <>
                     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    Preparing {cartItems.length + bulkItems.length} order{cartItems.length + bulkItems.length > 1 ? 's' : ''}...
+                    {pendingOrderIds.length > 0 ? 'Processing Payment...' : `Preparing ${cartItems.length + bulkItems.length} order${cartItems.length + bulkItems.length > 1 ? 's' : ''}...`}
                   </>
                 ) : (
                   <>
-                    Proceed to Payment <span>→</span>
+                    {pendingOrderIds.length > 0 ? 'Complete Payment' : 'Proceed to Payment'} <span>→</span>
                   </>
                 )}
               </button>

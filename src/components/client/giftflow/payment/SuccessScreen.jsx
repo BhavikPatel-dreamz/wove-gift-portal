@@ -132,7 +132,7 @@ const SuccessScreen = ({
 
                 <div className="flex justify-between text-gray-700">
                   <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount}</span>
+                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount * calculateTotals([order]).totalVouchers}</span>
                 </div>
               </div>
             </div>
@@ -174,7 +174,7 @@ const SuccessScreen = ({
 
                 <div className="flex justify-between text-gray-700">
                   <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount}</span>
+                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount * calculateTotals([order]).totalVouchers}</span>
                 </div>
               </div>
 
