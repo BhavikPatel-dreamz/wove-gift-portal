@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Add turbopack config to resolve build issues
+  turbopack: {},
   experimental: {
     serverActions: {
       bodySizeLimit: '20mb', // default is 1mb, increase as needed
@@ -36,14 +38,17 @@ const nextConfig: NextConfig = {
     },
     webpack: (config, { isServer }) => {
         if (!isServer) {
-             config.resolve.fallback.fs = false
-             config.resolve.fallback.dns = false
-             config.resolve.fallback.net = false
+            // Ensure fallback object exists
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                fs: false,
+                dns: false,
+                net: false
+            };
         }
-
         return config;
-    }
-  };
+    },
+};
   
   export default nextConfig;
   
