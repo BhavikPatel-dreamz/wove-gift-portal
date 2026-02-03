@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Add turbopack config to resolve build issues
+  turbopack: {},
   experimental: {
     serverActions: {
       bodySizeLimit: '20mb',
