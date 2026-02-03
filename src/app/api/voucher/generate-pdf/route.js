@@ -1,12 +1,11 @@
 // app/api/voucher/generate-pdf/route.js
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/db';
-import QRCode from 'qrcode';
 import { jsPDF } from 'jspdf';
 
 export async function POST(request) {
   try {
-    const { orderId, orderNumber } = await request.json();
+    const { orderId } = await request.json();
 
     if (!orderId) {
       return NextResponse.json(
@@ -15,27 +14,15 @@ export async function POST(request) {
       );
     }
 
-    // Fetch order details with all necessary relations
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        brand: {
-          include: {
-            vouchers: true,
-          },
-        },
+        brand: true,
         occasion: true,
         voucherCodes: {
           include: {
+            giftCard: true,
             voucher: true,
-            giftCard: {
-              select: {
-                code: true,
-                balance: true,
-                initialValue: true,
-                expiresAt: true,
-              },
-            },
           },
         },
       },
@@ -48,7 +35,6 @@ export async function POST(request) {
       );
     }
 
-    // Check if delivery method is print
     if (order.deliveryMethod !== 'print') {
       return NextResponse.json(
         { error: 'This order is not configured for print delivery' },
@@ -56,10 +42,9 @@ export async function POST(request) {
       );
     }
 
-    // Generate PDF
-    const pdfBuffer = await generateGiftCardPDF(order);
+    // Generate PDF directly with jsPDF (no HTML2Canvas)
+    const pdfBuffer = await generatePDF(order);
 
-    // Return PDF as downloadable file
     return new NextResponse(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
@@ -75,201 +60,160 @@ export async function POST(request) {
   }
 }
 
-async function generateGiftCardPDF(order) {
+async function generatePDF(order) {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
-    format: 'a4',
+    format: [85, 120] // Business card size
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  
-  // Colors
-  const brandColor = order.brand.color || '#ED457D';
-  const gradientStart = hexToRgb(brandColor);
-  const gradientEnd = hexToRgb('#FA8F42');
 
-  // Add gradient background header
-  const gradient = doc.internal.pageSize.width;
-  for (let i = 0; i < 60; i++) {
-    const ratio = i / 60;
-    const r = Math.round(gradientStart.r + (gradientEnd.r - gradientStart.r) * ratio);
-    const g = Math.round(gradientStart.g + (gradientEnd.g - gradientStart.g) * ratio);
-    const b = Math.round(gradientStart.b + (gradientEnd.b - gradientStart.b) * ratio);
-    doc.setFillColor(r, g, b);
-    doc.rect(0, i, pageWidth, 1, 'F');
-  }
+  // White background
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-  // Add brand logo if available
-  if (order.brand.logo) {
-    try {
-      const logoData = await fetchImageAsBase64(order.brand.logo);
-      doc.addImage(logoData, 'PNG', 15, 15, 30, 30);
-    } catch (error) {
-      console.error('Error loading logo:', error);
-    }
-  }
+  // Helper function to center text
+  const centerText = (text, y, fontSize = 11, isBold = false) => {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+    const textWidth = doc.getTextWidth(text);
+    const x = (pageWidth - textWidth) / 2;
+    doc.text(text, x, y);
+    return { x, y };
+  };
 
-  // Title
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Gift Card', pageWidth / 2, 30, { align: 'center' });
+  // Occasion line
+  const occasionName = order.occasion?.name || 'Gift Card';
+  const occasionText = `${occasionName} - Gift Items`;
+  centerText(occasionText, 12, 9, true);
+
+  // Divider line
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.line(10, 18, pageWidth - 10, 18);
 
   // Brand name
-  doc.setFontSize(16);
-  doc.text(order.brand.brandName, pageWidth / 2, 40, { align: 'center' });
+  const brandName = order.brand?.brandName || 'HUX';
+  centerText(brandName, 28, 16, true);
 
-  // White content area
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(15, 70, pageWidth - 30, 180, 5, 5, 'F');
+  // Subtitle
+  const subtitle = order.brand?.subtitle || 
+                   (order.brand?.brandName ? `${order.brand.brandName}lee Fashion` : 'Huxlee Fashion');
+  centerText(subtitle, 34, 9, false);
 
-  // Content area
-  doc.setTextColor(0, 0, 0);
-  
-  // Occasion/Category
-  if (order.occasion) {
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Occasion: ${order.occasion.name}`, 25, 85);
-  }
-
-  // Amount - Large and centered
-  doc.setFontSize(36);
-  doc.setFont('helvetica', 'bold');
+  // Amount
   const currencySymbol = getCurrencySymbol(order.currency);
-  const amountText = `${currencySymbol}${order.amount}`;
-  doc.text(amountText, pageWidth / 2, 120, { align: 'center' });
+  const amountText = `${currencySymbol} ${order.amount}`;
+  centerText(amountText, 50, 18, true);
 
-  // Personal Message if available
+  // Currency code (smaller, beside amount)
+  // doc.setFontSize(11);
+  // doc.setFont('helvetica', 'normal');
+  // doc.setTextColor(120, 120, 120);
+  // doc.text(order.currency, pageWidth / 2 + 15, 50);
+
+  // Personal message if exists
+  let currentY = 62;
   if (order.message) {
-    doc.setFontSize(12);
+    centerText('PERSONAL MESSAGE', currentY, 7, true);
+    currentY += 6;
+    
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'italic');
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(60, 60, 60);
     
-    const messageLines = doc.splitTextToSize(order.message, pageWidth - 60);
-    doc.text(messageLines, pageWidth / 2, 140, { align: 'center' });
+    const message = `"${order.message}"`;
+    const maxWidth = pageWidth - 20;
+    const messageLines = doc.splitTextToSize(message, maxWidth);
+    
+    for (let i = 0; i < Math.min(messageLines.length, 2); i++) {
+      doc.text(messageLines[i], pageWidth / 2, currentY, { align: 'center' });
+      currentY += 5;
+    }
+    currentY += 4;
   }
 
-  // Voucher Code Section
-  let yPosition = order.message ? 170 : 150;
+  // Voucher code section
+  centerText('VOUCHER CODE', currentY, 7, true);
+  currentY += 6;
+
+  // Voucher code box
+  const voucherCode = order.voucherCodes[0];
+  const actualCode = voucherCode?.giftCard?.code || voucherCode?.code || 'XXXX-XXXX-XXXX';
+  const formattedCode = formatVoucherCode(actualCode);
   
-  for (let i = 0; i < order.voucherCodes.length; i++) {
-    const voucherCode = order.voucherCodes[i];
-    const actualCode = voucherCode.giftCard?.code || voucherCode.code;
+  doc.setFillColor(245, 245, 245);
+  doc.roundedRect(15, currentY, pageWidth - 30, 10, 2, 2, 'F');
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(15, currentY, pageWidth - 30, 10, 2, 2, 'S');
+  
+  doc.setFontSize(11);
+  doc.setFont('courier', 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text(formattedCode, pageWidth / 2, currentY + 6, { align: 'center' });
+  currentY += 16;
 
-    // Voucher code box
-    doc.setFillColor(245, 245, 250);
-    doc.roundedRect(25, yPosition, pageWidth - 50, 30, 3, 3, 'F');
-    
-    // "Voucher Code" label
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(100, 100, 100);
-    doc.text('VOUCHER CODE', pageWidth / 2, yPosition + 8, { align: 'center' });
-    
-    // Actual code
-    doc.setFontSize(16);
-    doc.setFont('courier', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text(actualCode, pageWidth / 2, yPosition + 20, { align: 'center' });
-
-    // PIN if available
-    if (voucherCode.pin) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`PIN: ${voucherCode.pin}`, pageWidth / 2, yPosition + 27, { align: 'center' });
-    }
-
-    // QR Code
-    if (actualCode) {
-      try {
-        const qrCodeDataUrl = await QRCode.toDataURL(actualCode, {
-          width: 200,
-          margin: 1,
-        });
-        doc.addImage(qrCodeDataUrl, 'PNG', pageWidth / 2 - 20, yPosition + 35, 40, 40);
-      } catch (error) {
-        console.error('Error generating QR code:', error);
-      }
-    }
-
-    yPosition += 85;
-  }
-
-  // Footer - Expiry and terms
-  doc.setFontSize(9);
+  // Validity text
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
   
-  const expiryText = getExpiryText(order);
-  doc.text(expiryText, pageWidth / 2, pageHeight - 30, { align: 'center' });
+  const validityText = getValidityText(order);
+  doc.text(validityText, pageWidth / 2, pageHeight - 10, { align: 'center' });
 
-  // Terms
-  doc.setFontSize(8);
-  const termsText = 'Please present this gift card at time of purchase. Keep this card safe as it cannot be replaced if lost or stolen.';
-  const termsLines = doc.splitTextToSize(termsText, pageWidth - 40);
-  doc.text(termsLines, pageWidth / 2, pageHeight - 20, { align: 'center' });
-
-  // Sender info if available
-  if (order.senderName) {
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'italic');
-    doc.text(`From: ${order.senderName}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-  }
+  // Add a subtle border
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.rect(5, 5, pageWidth - 10, pageHeight - 10, 'S');
 
   return doc.output('arraybuffer');
 }
 
 // Helper functions
-function hexToRgb(hex) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : { r: 237, g: 69, b: 125 }; // Default pink
-}
-
 function getCurrencySymbol(currency) {
   const symbols = {
     'ZAR': 'R',
     'USD': '$',
     'EUR': '€',
     'GBP': '£',
+    'AUD': '$',
+    'CAD': '$',
+    'JPY': '¥',
+    'INR': '₹',
   };
-  return symbols[currency] || currency;
+  return symbols[currency?.toUpperCase()] || '$';
 }
 
-function getExpiryText(order) {
-  const voucher = order.voucherCodes[0]?.voucher;
+function formatVoucherCode(code) {
+  if (!code || code === 'XXXX-XXXX-XXXX') return 'XXXX-XXXX-XXXX';
   
-  if (order.voucherCodes[0]?.expiresAt) {
-    const expiryDate = new Date(order.voucherCodes[0].expiresAt);
-    return `Valid until ${expiryDate.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+  const cleanCode = code.replace(/[^a-zA-Z0-9]/g, '');
+  
+  if (cleanCode.length >= 12) {
+    return `${cleanCode.substring(0, 4)}-${cleanCode.substring(4, 8)}-${cleanCode.substring(8, 12)}`.toUpperCase();
+  }
+  
+  return cleanCode.toUpperCase();
+}
+
+function getValidityText(order) {
+  const voucherCode = order.voucherCodes[0];
+  
+  if (voucherCode?.giftCard?.expiresAt) {
+    const date = new Date(voucherCode.giftCard.expiresAt);
+    return `Valid until ${date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
     })}`;
   }
   
-  if (voucher?.expiryValue) {
-    return `Valid for ${voucher.expiryValue} days from purchase`;
+  if (voucherCode?.voucher?.expiryValue) {
+    return `Valid for ${voucherCode.voucher.expiryValue} days`;
   }
   
-  return 'No expiration date';
-}
-
-async function fetchImageAsBase64(url) {
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const arrayBuffer = await blob.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    const mimeType = blob.type || 'image/png';
-    return `data:${mimeType};base64,${base64}`;
-  } catch (error) {
-    throw new Error(`Failed to fetch image: ${error.message}`);
-  }
+  return 'Valid for 365 days';
 }

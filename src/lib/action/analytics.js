@@ -5,23 +5,44 @@ import { prisma } from '../db'
 export async function fetchAnalyticsData(params = {}) {
   try {
     const { 
-      period = "year", 
+      period = "lastMonth", 
       brandId = null,
       dateFrom = null,
-      dateTo = null 
+      dateTo = null,
+      filterMonth = null
     } = params;
 
-    // Calculate date range - custom dates take priority over period
+    // Calculate date range - filterMonth takes priority, then custom dates, then period
     let dateRange;
-    if (dateFrom || dateTo) {
-      // Custom date range
-      const start = dateFrom ? new Date(dateFrom) : new Date(new Date().getFullYear(), 0, 1);
-      const end = dateTo ? new Date(dateTo) : new Date();
+    
+    if (filterMonth) {
+      // Month filter provided (format: "YYYY-MM")
+      const [year, month] = filterMonth.split('-').map(Number);
+      const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const end = new Date(year, month, 0, 23, 59, 59, 999);
+      dateRange = { start, end };
+    } else if (dateFrom && dateTo) {
+      // Both dates provided - use custom range
+      const start = new Date(dateFrom);
+      start.setHours(0, 0, 0, 0);
       
-      // Set end date to end of day
+      const end = new Date(dateTo);
       end.setHours(23, 59, 59, 999);
       
       dateRange = { start, end };
+    } else if (dateFrom || dateTo) {
+      // Only one date provided - use period-based range but adjust
+      const periodRange = getDateRange(period);
+      
+      if (dateFrom) {
+        const start = new Date(dateFrom);
+        start.setHours(0, 0, 0, 0);
+        dateRange = { start, end: periodRange.end };
+      } else {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        dateRange = { start: periodRange.start, end };
+      }
     } else {
       // Use period-based date range
       dateRange = getDateRange(period);
@@ -37,7 +58,8 @@ export async function fetchAnalyticsData(params = {}) {
       success: true,
       brandRedemptions,
       settlements,
-      period,
+      period: filterMonth || period,
+      filterMonth,
       dateRange: {
         start: dateRange.start?.toISOString(),
         end: dateRange.end?.toISOString(),
@@ -49,7 +71,8 @@ export async function fetchAnalyticsData(params = {}) {
       success: false,
       brandRedemptions: [],
       settlements: [],
-      period: "year",
+      period: "lastMonth",
+      filterMonth: null,
       error: error.message
     };
   }
@@ -187,7 +210,7 @@ async function getBrandRedemptionMetrics(dateRange, brandIdFilter = null) {
   }));
 }
 
-// Get settlement data - formatted for frontend
+// Get settlement data - formatted for frontend with proper calculation
 async function getSettlementData(dateRange, brandIdFilter = null) {
   const { start, end } = dateRange;
   
@@ -242,7 +265,7 @@ async function getSettlementData(dateRange, brandIdFilter = null) {
     whereClause.brandId = brandIdFilter;
   }
 
-  // Get settlements with brand details
+  // Get settlements with brand details and terms
   const settlements = await prisma.settlements.findMany({
     where: whereClause,
     include: {
@@ -252,24 +275,124 @@ async function getSettlementData(dateRange, brandIdFilter = null) {
           brandName: true,
           logo: true,
           currency: true,
+          brandTerms: {
+            select: {
+              settlementTrigger: true,
+              commissionType: true,
+              commissionValue: true,
+              breakageShare: true,
+              vatRate: true,
+            },
+          },
         },
       },
     },
     orderBy: {
-      netPayable: "desc",
+      periodStart: "desc",
     },
   });
 
-  // Format settlements to match frontend expectations
-  return settlements.map((settlement) => ({
-    brand: settlement.brand.brandName,
-    amount: Math.round(settlement.netPayable),
-    status: settlement.status,
-    currency: settlement.brand.currency || "USD",
-    periodStart: settlement.periodStart,
-    periodEnd: settlement.periodEnd,
-    settlementPeriod: settlement.settlementPeriod,
-  }));
+  // Process settlements with proper calculation logic
+  const processedSettlements = settlements.map((settlement) => {
+    const brandTerms = settlement.brand?.brandTerms;
+    const currency = settlement.brand?.currency || "USD";
+
+    const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
+    const baseAmount =
+      settlementTrigger === "onRedemption"
+        ? settlement.redeemedAmount
+        : settlement.totalSoldAmount;
+
+    // Commission calculation
+    let calculatedCommission = 0;
+    if (brandTerms && baseAmount > 0) {
+      if (brandTerms.commissionType === "Percentage") {
+        calculatedCommission = Math.round(
+          (baseAmount * brandTerms.commissionValue) / 100
+        );
+      } else if (brandTerms.commissionType === "Fixed") {
+        const itemCount =
+          settlementTrigger === "onRedemption"
+            ? settlement.totalRedeemed
+            : settlement.totalSold;
+        calculatedCommission = Math.round(
+          brandTerms.commissionValue * itemCount
+        );
+      }
+    }
+
+    const commissionAmount =
+      settlement.commissionAmount === 0 && baseAmount > 0
+        ? calculatedCommission
+        : (settlement.commissionAmount ?? calculatedCommission);
+
+    // VAT calculation
+    const vatRate = brandTerms?.vatRate || 0;
+    const calculatedVatAmount = Math.round(
+      (commissionAmount * vatRate) / 100
+    );
+
+    const vatAmount =
+      settlement.vatAmount === 0 && commissionAmount > 0
+        ? calculatedVatAmount
+        : (settlement.vatAmount ?? calculatedVatAmount);
+
+    // Breakage calculation
+    let calculatedBreakageAmount = 0;
+    if (brandTerms?.breakageShare && settlement.outstandingAmount > 0) {
+      calculatedBreakageAmount = Math.round(
+        (settlement.outstandingAmount * brandTerms.breakageShare) / 100
+      );
+    }
+
+    const breakageAmount =
+      settlement.breakageAmount === 0 && settlement.outstandingAmount > 0 && brandTerms?.breakageShare
+        ? calculatedBreakageAmount
+        : (settlement.breakageAmount ?? calculatedBreakageAmount);
+
+    // Net payable calculation
+    let calculatedNetPayable = 0;
+    if (baseAmount > 0) {
+      calculatedNetPayable =
+        baseAmount - commissionAmount + vatAmount - breakageAmount;
+    }
+
+    const netPayable =
+      settlement.netPayable === 0 && baseAmount > 0
+        ? calculatedNetPayable
+        : (settlement.netPayable ?? calculatedNetPayable);
+
+    // Calculate dynamic status
+    const totalPaid = settlement.totalPaid || 0;
+    const remainingAmount = Math.max(0, netPayable - totalPaid);
+    
+    let dynamicStatus;
+    if (remainingAmount === 0 && totalPaid > 0) {
+      dynamicStatus = "Paid";
+    } else if (totalPaid > 0 && remainingAmount > 0) {
+      dynamicStatus = "Partial";
+    } else {
+      dynamicStatus = settlement.status || "Pending";
+    }
+
+    return {
+      brand: settlement.brand.brandName,
+      amount: Math.round(netPayable),
+      status: dynamicStatus,
+      currency,
+      periodStart: settlement.periodStart,
+      periodEnd: settlement.periodEnd,
+      settlementPeriod: settlement.settlementPeriod,
+      totalPaid: Math.round(totalPaid),
+      remainingAmount: Math.round(remainingAmount),
+      baseAmount: Math.round(baseAmount),
+      commissionAmount: Math.round(commissionAmount),
+      vatAmount: Math.round(vatAmount),
+      breakageAmount: Math.round(breakageAmount),
+    };
+  });
+
+  return processedSettlements;
 }
 
 // Helper function to get all brands for filter dropdown
@@ -797,29 +920,51 @@ export async function processSettlement(settlementId, partialAmount, notes) {
 function getDateRange(period) {
   const now = new Date();
   let start, end;
-  end = now;
 
   switch (period) {
     case "today":
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
       break;
     case "week":
       start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
       break;
     case "month":
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      // Current month
+      start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+      break;
+    case "lastMonth":
+      // Previous month
+      const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      start = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1, 0, 0, 0, 0);
+      end = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0, 23, 59, 59, 999);
       break;
     case "quarter":
       const quarter = Math.floor(now.getMonth() / 3);
-      start = new Date(now.getFullYear(), quarter * 3, 1);
+      start = new Date(now.getFullYear(), quarter * 3, 1, 0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
       break;
     case "year":
-      start = new Date(now.getFullYear(), 0, 1);
+      start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+      end = new Date(now);
+      end.setHours(23, 59, 59, 999);
       break;
     case "all":
-    default:
       start = null;
       end = null;
+      break;
+    default:
+      // Default to last month
+      const defaultLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      start = new Date(defaultLastMonth.getFullYear(), defaultLastMonth.getMonth(), 1, 0, 0, 0, 0);
+      end = new Date(defaultLastMonth.getFullYear(), defaultLastMonth.getMonth() + 1, 0, 23, 59, 59, 999);
   }
   return { start, end };
 }

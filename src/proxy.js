@@ -127,10 +127,10 @@ export function proxy(request) {
     pathname.startsWith('/api/payment/process-card') ||
     // pathname.startsWith('/api/dashboard') || 
     // pathname.startsWith('/api/analytics')  ||
-    // pathname.startsWith(`/api/reports/custom`) ||
-    // pathname.startsWith(`/api/reports/schedule`) ||
-    // pathname.startsWith('/api/save-card') ||
-    // pathname.startsWith('/api/voucher/generate-pdf') ||
+    pathname.startsWith(`/api/reports/custom`) ||
+    pathname.startsWith(`/api/reports/schedule`) ||
+    pathname.startsWith('/api/save-card') ||
+    pathname.startsWith('/api/voucher/generate-pdf') ||
     pathname.startsWith('/api/auth/[...nextauth]') ||
     pathname.startsWith('/api/auth/providers') ||
     pathname.startsWith('/api/auth/csrf') || 

@@ -3,11 +3,12 @@ import React, { useTransition } from 'react';
 import { TrendingUp, DollarSign, Calendar, Building2 } from 'lucide-react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import CustomDropdown from '@/components/ui/CustomDropdown';
+import { useMemo } from 'react';
 
 const AnalyticsTracking = ({
   initialBrandRedemptions = [],
   initialSettlements = [],
-  initialPeriod = 'year',
+  initialPeriod = 'lastMonth',
   initialBrands = [],
 }) => {
   const router = useRouter();
@@ -23,10 +24,13 @@ const AnalyticsTracking = ({
   const currentDateFrom = searchParams.get('dateFrom') || '';
   const currentDateTo = searchParams.get('dateTo') || '';
   const currentPeriod = searchParams.get('period') || initialPeriod;
+  const currentMonth = searchParams.get('filterMonth') || null;
 
-  // Handle filter updates
+  // Handle filter updates - use startTransition only when both dates are set or cleared
   const handleUpdateParams = (updates) => {
     const params = new URLSearchParams(searchParams);
+
+    // Apply all updates
     Object.entries(updates).forEach(([key, value]) => {
       if (value) {
         params.set(key, value);
@@ -34,9 +38,22 @@ const AnalyticsTracking = ({
         params.delete(key);
       }
     });
-    startTransition(() => {
+
+    // Check if this is a partial date update
+    const updatingDateFrom = 'dateFrom' in updates;
+    const updatingDateTo = 'dateTo' in updates;
+    const isPartialDateUpdate = (updatingDateFrom && !updatingDateTo && !params.get('dateTo')) ||
+      (updatingDateTo && !updatingDateFrom && !params.get('dateFrom'));
+
+    // Only use transition if we have both dates or neither
+    if (!isPartialDateUpdate) {
+      startTransition(() => {
+        router.replace(`${pathname}?${params.toString()}`);
+      });
+    } else {
+      // For partial updates, just update without transition
       router.replace(`${pathname}?${params.toString()}`);
-    });
+    }
   };
 
   const handleBrandFilter = (value) => {
@@ -44,15 +61,45 @@ const AnalyticsTracking = ({
   };
 
   const handlePeriodFilter = (value) => {
-    handleUpdateParams({ period: value });
+    // When period changes, clear the month filter
+    handleUpdateParams({ period: value, filterMonth: '' });
   };
 
   const handleDateFromFilter = (value) => {
-    handleUpdateParams({ dateFrom: value });
+    const params = new URLSearchParams(searchParams);
+    const currentDateTo = params.get('dateTo');
+
+    // If we have both dates or neither, trigger transition
+    if (value && currentDateTo) {
+      handleUpdateParams({ dateFrom: value });
+    } else if (!value && !currentDateTo) {
+      handleUpdateParams({ dateFrom: value });
+    } else {
+      // Just update URL without transition for partial date
+      params.set('dateFrom', value);
+      router.replace(`${pathname}?${params.toString()}`);
+    }
   };
 
   const handleDateToFilter = (value) => {
-    handleUpdateParams({ dateTo: value });
+    const params = new URLSearchParams(searchParams);
+    const currentDateFrom = params.get('dateFrom');
+
+    // If we have both dates or neither, trigger transition
+    if (value && currentDateFrom) {
+      handleUpdateParams({ dateTo: value });
+    } else if (!value && !currentDateFrom) {
+      handleUpdateParams({ dateTo: value });
+    } else {
+      // Just update URL without transition for partial date
+      params.set('dateTo', value);
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  };
+
+  const handleMonthChange = (value) => {
+    // When month changes, clear period filter
+    handleUpdateParams({ filterMonth: value, period: '' });
   };
 
   // Prepare brand options
@@ -65,11 +112,29 @@ const AnalyticsTracking = ({
   const periodOptions = [
     { value: 'today', label: 'Today' },
     { value: 'week', label: 'This Week' },
-    { value: 'month', label: 'This Month' },
+    { value: 'month', label: 'Current Month' },
+    { value: 'lastMonth', label: 'Last Month' },
     { value: 'quarter', label: 'This Quarter' },
-    { value: 'year', label: 'This Year' },
-    { value: 'all', label: 'All Time' },
+    { value: 'year', label: 'This Year' }
   ];
+
+  // Generate month options (last 24 months)
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const label = date.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      options.push({ value, label });
+    }
+    return options;
+  }, []);
+
+  // Get current month label for display
+  const currentMonthLabel = currentMonth 
+    ? monthOptions.find(m => m.value === currentMonth)?.label || 'Select Month'
+    : 'Select Month';
 
   return (
     <div className="min-h-screen bg-white">
@@ -89,8 +154,8 @@ const AnalyticsTracking = ({
             <TrendingUp className="w-4 h-4" />
             Filter Analytics
           </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Brand Filter */}
             <div className="relative">
               <label className="block text-xs font-medium text-gray-600 mb-2">
@@ -108,7 +173,7 @@ const AnalyticsTracking = ({
             {/* Period Filter */}
             <div className="relative">
               <label className="block text-xs font-medium text-gray-600 mb-2">
-                Period
+                Quick Period
               </label>
               <CustomDropdown
                 options={periodOptions}
@@ -119,48 +184,31 @@ const AnalyticsTracking = ({
               />
             </div>
 
-            {/* Date From */}
+            {/* Month Filter */}
             <div className="relative">
               <label className="block text-xs font-medium text-gray-600 mb-2">
-                From Date
+                Specific Month
               </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                <input
-                  type="date"
-                  value={currentDateFrom}
-                  onChange={(e) => handleDateFromFilter(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Date To */}
-            <div className="relative">
-              <label className="block text-xs font-medium text-gray-600 mb-2">
-                To Date
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                <input
-                  type="date"
-                  value={currentDateTo}
-                  onChange={(e) => handleDateToFilter(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+              <CustomDropdown
+                value={currentMonthLabel}
+                onChange={handleMonthChange}
+                options={monthOptions}
+                placeholder="Select Month"
+                className="w-full"
+              />
             </div>
           </div>
 
           {/* Clear Filters Button */}
-          {(currentBrandId || currentDateFrom || currentDateTo || currentPeriod !== 'year') && (
+          {(currentBrandId || currentDateFrom || currentDateTo || currentMonth || (currentPeriod && currentPeriod !== 'lastMonth')) && (
             <div className="mt-4">
               <button
-                onClick={() => handleUpdateParams({ 
-                  brandId: '', 
-                  dateFrom: '', 
-                  dateTo: '', 
-                  period: 'year' 
+                onClick={() => handleUpdateParams({
+                  brandId: '',
+                  dateFrom: '',
+                  dateTo: '',
+                  period: 'lastMonth',
+                  filterMonth: ''
                 })}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
@@ -295,9 +343,9 @@ const AnalyticsTracking = ({
                     key={index}
                     className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-3">
                       {/* Left Side */}
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 text-sm mb-1">
                           {settlement.brand}
                         </h3>
@@ -305,22 +353,31 @@ const AnalyticsTracking = ({
                           {settlement.currency === 'ZAR' ? 'R' : settlement.currency === 'USD' ? '$' : '₹'}
                           {settlement.amount.toLocaleString()}
                         </p>
-                        {settlement.settlementPeriod && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {settlement.settlementPeriod}
-                          </p>
-                        )}
                       </div>
                       {/* Status Badge */}
-                      <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${
-                        settlement.status === 'Paid' 
-                          ? 'bg-green-50 text-green-600 border-green-300'
-                          : settlement.status === 'Partial'
+                      <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${settlement.status === 'Paid'
+                        ? 'bg-green-50 text-green-600 border-green-300'
+                        : settlement.status === 'Partial'
                           ? 'bg-blue-50 text-blue-600 border-blue-300'
                           : 'bg-orange-50 text-orange-600 border-orange-300'
-                      }`}>
+                        }`}>
                         {settlement.status}
                       </span>
+                    </div>
+
+                    {/* Additional Details */}
+                    <div className="text-xs text-gray-500 space-y-1">
+                      {settlement.settlementPeriod && (
+                        <p>Period: {settlement.settlementPeriod}</p>
+                      )}
+                      {settlement.totalPaid > 0 && (
+                        <p>Paid: {settlement.currency === 'ZAR' ? 'R' : settlement.currency === 'USD' ? '$' : '₹'}{settlement.totalPaid.toLocaleString()}</p>
+                      )}
+                      {settlement.remainingAmount > 0 && (
+                        <p className="text-orange-600 font-medium">
+                          Remaining: {settlement.currency === 'ZAR' ? 'R' : settlement.currency === 'USD' ? '$' : '₹'}{settlement.remainingAmount.toLocaleString()}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
