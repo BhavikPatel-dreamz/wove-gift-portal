@@ -43,10 +43,10 @@ const FeaturedBrands = ({
     <div
       className="
         bg-white
-        w-40 sm:w-45 md:w-53.25
-        h-20 sm:h-22.5 md:h-23.5
+        w-40 sm:w-48 md:w-56 lg:w-64
+        h-24 sm:h-28 md:h-32 lg:h-36
         rounded-[20px]
-        p-4 sm:p-6 md:p-8
+        p-4 sm:p-5 md:p-6
         flex
         items-center
         justify-center
@@ -64,10 +64,11 @@ const FeaturedBrands = ({
           <img
             src={brand.logo}
             alt={brand.brandName}
-            className="max-w-full max-h-full object-contain"
+            className="w-full h-full object-contain"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
           />
         ) : (
-          <span className="text-[0.9rem] sm:text-[0.95rem] font-medium tracking-tight text-[#c7c7c7] text-center">
+          <span className="text-base sm:text-lg md:text-xl font-medium tracking-tight text-[#c7c7c7] text-center">
             {brand.brandName}
           </span>
         )}
@@ -80,7 +81,7 @@ const FeaturedBrands = ({
 
   return (
     <section className="py-11 bg-linear-to-b from-[#FEF8F6] to-[#FDF7F8] overflow-hidden">
-      <div className="max-w-7xl mx-auto  sm:px-6">
+      <div className="max-w-7xl mx-auto sm:px-6">
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-[1.75rem] sm:text-[2.75rem] font-bold text-black mb-2 leading-tight tracking-tight brand-title">

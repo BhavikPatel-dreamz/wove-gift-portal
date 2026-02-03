@@ -199,7 +199,7 @@ export default function AuthForm({ type = 'login' }) {
               <div className="mt-6 flex justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => handleSocialLogin('Google')}
+                  onClick={() => handleSocialLogin('google')}
                   className="flex justify-center items-center py-3 px-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition w-full"
                 >
                   <svg className="w-6 h-6" viewBox="0 0 24 24">

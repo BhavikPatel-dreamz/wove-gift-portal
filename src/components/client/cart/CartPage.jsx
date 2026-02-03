@@ -15,6 +15,7 @@ import {
 import { removeFromCart, removeFromBulk } from '@/redux/cartSlice';
 import { currencyList } from '../../brandsPartner/currency';
 import toast from 'react-hot-toast';
+import { resetFlow } from '../../../redux/giftFlowSlice';
 
 const CartPage = () => {
   const cartItems = useSelector((state) => state.cart.items);
@@ -80,6 +81,11 @@ const CartPage = () => {
       router.push('/login?redirect=/cart');
     }
   };
+
+  const handleRedirect = () =>{
+    dispatch(resetFlow());
+    router.push('/gift');
+  }
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "$";
@@ -273,9 +279,9 @@ const CartPage = () => {
             <p className="mt-2 text-center font-['Inter'] font-medium text-[#4A4A4A] text-sm sm:text-[15px] md:text-[16px] leading-5 sm:leading-5.5 md:leading-6 max-w-md">
               Looks like you haven't added any gifts to your cart yet.
             </p>
-            <Link href="/gift" className="mt-6 sm:mt-7 md:mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-6 sm:px-7 md:px-8 py-2.5 sm:py-2.75 md:py-3 text-sm sm:text-[15px] md:text-base text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
+            <button onClick={()=> handleRedirect()} className="mt-6 sm:mt-7 md:mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-6 sm:px-7 md:px-8 py-2.5 sm:py-2.75 md:py-3 text-sm sm:text-[15px] md:text-base text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
               Start Gifting Now
-            </Link>
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10 lg:gap-12">
