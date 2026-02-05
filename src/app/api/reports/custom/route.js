@@ -793,7 +793,7 @@ async function generateLiabilitySnapshot(brandFilter, shop) {
 }
 
 
-// ==================== CSV CONVERTER ====================
+// ==================== CSV CONVERTER (FIXED ENCODING) ====================
 function convertToCSV(reportData, startDate, endDate) {
   let csv = "";
   const escape = (value) => {
@@ -808,10 +808,10 @@ function convertToCSV(reportData, startDate, endDate) {
   csv += `Generated: ${new Date().toISOString()}\n`;
   csv += `Period: ${startDate.toISOString().split("T")[0]} to ${endDate.toISOString().split("T")[0]}\n\n`;
 
-  // SALES SUMMARY
+  // SALES SUMMARY - FIXED: Removed === symbols
   if (reportData.salesSummary) {
     const sd = reportData.salesSummary;
-    csv += `\n=== SALES SUMMARY ===\n\n`;
+    csv += `\nSALES SUMMARY\n\n`;
     
     if (sd.summary) {
       csv += `Metric,Value\n`;
@@ -849,10 +849,10 @@ function convertToCSV(reportData, startDate, endDate) {
     }
   }
 
-  // REDEMPTION DETAILS
+  // REDEMPTION DETAILS - FIXED: Removed === symbols
   if (reportData.redemptionDetails) {
     const rd = reportData.redemptionDetails;
-    csv += `\n=== REDEMPTION DETAILS ===\n\n`;
+    csv += `\nREDEMPTION DETAILS\n\n`;
     
     if (rd.summary) {
       csv += `Metric,Value\n`;
@@ -875,10 +875,10 @@ function convertToCSV(reportData, startDate, endDate) {
     }
   }
 
-  // SETTLEMENT REPORTS
+  // SETTLEMENT REPORTS - FIXED: Removed === symbols
   if (reportData.settlementReports) {
     const sr = reportData.settlementReports;
-    csv += `\n=== SETTLEMENT REPORTS ===\n\n`;
+    csv += `\nSETTLEMENT REPORTS\n\n`;
     
     if (sr.summary) {
       csv += `Metric,Value\n`;
@@ -907,10 +907,10 @@ function convertToCSV(reportData, startDate, endDate) {
     }
   }
 
-  // TRANSACTION LOG
+  // TRANSACTION LOG - FIXED: Removed === symbols
   if (reportData.transactionLog) {
     const tl = reportData.transactionLog;
-    csv += `\n=== TRANSACTION LOG ===\n\n`;
+    csv += `\nTRANSACTION LOG\n\n`;
     csv += `Total Transactions: ${tl.totalTransactions}\n\n`;
 
     if (tl.transactions?.length > 0) {
@@ -923,10 +923,10 @@ function convertToCSV(reportData, startDate, endDate) {
     }
   }
 
-  // BRAND PERFORMANCE
+  // BRAND PERFORMANCE - FIXED: Removed === symbols
   if (reportData.brandPerformance) {
     const bp = reportData.brandPerformance;
-    csv += `\n=== BRAND PERFORMANCE ===\n\n`;
+    csv += `\nBRAND PERFORMANCE\n\n`;
     
     if (bp.summary) {
       csv += `Metric,Value\n`;
@@ -945,10 +945,10 @@ function convertToCSV(reportData, startDate, endDate) {
     }
   }
 
-  // LIABILITY SNAPSHOT
+  // LIABILITY SNAPSHOT - FIXED: Removed === symbols
   if (reportData.liabilitySnapshot) {
     const ls = reportData.liabilitySnapshot;
-    csv += `\n=== LIABILITY SNAPSHOT ===\n\n`;
+    csv += `\nLIABILITY SNAPSHOT\n\n`;
     csv += `As of Date: ${ls.asOfDate}\n\n`;
     
     if (ls.summary) {

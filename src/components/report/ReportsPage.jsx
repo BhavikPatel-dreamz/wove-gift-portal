@@ -263,7 +263,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
-                    pdf.text("📊 SALES SUMMARY", 14, yPos);
+                    pdf.text("SALES SUMMARY", 14, yPos);
                     pdf.setFont(undefined, 'normal');
                     yPos += 7;
 
@@ -358,7 +358,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
-                    pdf.text("🎫 REDEMPTION DETAILS", 14, yPos);
+                    pdf.text("REDEMPTION DETAILS", 14, yPos);
                     pdf.setFont(undefined, 'normal');
                     yPos += 7;
 
@@ -413,7 +413,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
-                    pdf.text("💰 SETTLEMENT REPORTS", 14, yPos);
+                    pdf.text("SETTLEMENT REPORTS", 14, yPos);
                     pdf.setFont(undefined, 'normal');
                     yPos += 7;
 
@@ -490,7 +490,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
-                    pdf.text("📝 TRANSACTION LOG", 14, yPos);
+                    pdf.text("TRANSACTION LOG", 14, yPos);
                     pdf.setFont(undefined, 'normal');
                     yPos += 7;
 
@@ -521,7 +521,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
-                    pdf.text("🏆 BRAND PERFORMANCE", 14, yPos);
+                    pdf.text("BRAND PERFORMANCE", 14, yPos);
                     pdf.setFont(undefined, 'normal');
                     yPos += 7;
 
@@ -570,7 +570,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                     checkAddPage(50);
                     pdf.setFontSize(14);
                     pdf.setFont(undefined, 'bold');
-                    pdf.text("⚠️ LIABILITY SNAPSHOT", 14, yPos);
+                    pdf.text("LIABILITY SNAPSHOT", 14, yPos);
                     pdf.setFont(undefined, 'normal');
                     yPos += 7;
 
