@@ -296,6 +296,7 @@ export const createPendingOrder = async (orderData) => {
         },
       });
 
+      // ✅ OPTIMIZED: Batch insert CSV recipients
       if (orderData.csvRecipients && orderData.csvRecipients.length > 0) {
         console.log(
           `📝 Storing ${orderData.csvRecipients.length} CSV recipients in database`,
@@ -353,29 +354,35 @@ export const createPendingOrder = async (orderData) => {
 
     console.log("✅ Pending order created:", order.orderNumber);
 
-    // ==================== CRITICAL FIX STARTS HERE ====================
+    // ==================== PAYMENT INTENT HANDLING ====================
     
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    // ✅ CHECK: Is this part of a multi-cart checkout?
     const isMultiCart = orderData.sharedPaymentIntentId;
-    
+
     let paymentIntent;
-    let customerId = orderData.customerId; // May be passed from first order
+    let customerId = orderData.customerId;
 
     if (isMultiCart) {
       // ✅ REUSE existing payment intent from first order
-      console.log(`🔗 Linking order ${order.orderNumber} to shared payment intent: ${orderData.sharedPaymentIntentId}`);
-      
-      paymentIntent = await stripe.paymentIntents.retrieve(
-        orderData.sharedPaymentIntentId
+      console.log(
+        `🔗 Linking order ${order.orderNumber} to shared payment intent: ${orderData.sharedPaymentIntentId}`,
       );
-      
-      // ✅ Update the payment intent amount to include this order
+
+      paymentIntent = await stripe.paymentIntents.retrieve(
+        orderData.sharedPaymentIntentId,
+      );
+
+      // ✅ OPTIMIZED: Calculate new amount and prepare metadata update
       const currentAmount = paymentIntent.amount;
       const newAmount = currentAmount + Math.round(totalAmount * 100);
-      
+
+      const existingOrderKeys = Object.keys(paymentIntent.metadata).filter(
+        (k) => k.startsWith("order_"),
+      );
+      const nextOrderIndex = existingOrderKeys.length + 1;
+
       paymentIntent = await stripe.paymentIntents.update(
         orderData.sharedPaymentIntentId,
         {
@@ -383,22 +390,24 @@ export const createPendingOrder = async (orderData) => {
           description: `${paymentIntent.description} + ${order.orderNumber}`,
           metadata: {
             ...paymentIntent.metadata,
-            [`order_${Object.keys(paymentIntent.metadata).filter(k => k.startsWith('order_')).length + 1}`]: order.id,
-            [`orderNumber_${Object.keys(paymentIntent.metadata).filter(k => k.startsWith('orderNumber_')).length + 1}`]: order.orderNumber,
-            totalOrders: String((parseInt(paymentIntent.metadata.totalOrders || '1') + 1)),
-          }
-        }
+            [`order_${nextOrderIndex}`]: order.id,
+            [`orderNumber_${nextOrderIndex}`]: order.orderNumber,
+            totalOrders: String(nextOrderIndex),
+          },
+        },
       );
-      
+
       await prisma.order.update({
         where: { id: order.id },
         data: {
           paymentIntentId: paymentIntent.id,
         },
       });
-      
-      console.log(`✅ Order ${order.orderNumber} linked to shared payment intent (Total: $${newAmount / 100})`);
-      
+
+      console.log(
+        `✅ Order ${order.orderNumber} linked to shared payment intent (Total: $${newAmount / 100})`,
+      );
+
       return {
         success: true,
         data: {
@@ -410,11 +419,12 @@ export const createPendingOrder = async (orderData) => {
           isShared: true,
         },
       };
-      
     } else {
       // ✅ CREATE NEW payment intent (first order in cart)
-      console.log(`🆕 Creating new payment intent for order ${order.orderNumber}`);
-      
+      console.log(
+        `🆕 Creating new payment intent for order ${order.orderNumber}`,
+      );
+
       const customerName = isBulkOrder
         ? orderData.companyInfo.companyName
         : orderData.deliveryDetails?.yourFullName || "Customer";
@@ -464,7 +474,7 @@ export const createPendingOrder = async (orderData) => {
           orderNumber_1: order.orderNumber,
           brandName: orderData.selectedBrand?.brandName || "Gift Card",
           userId: String(userId),
-          totalOrders: '1',
+          totalOrders: "1",
         },
         statement_descriptor: "GIFT CARD",
         statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
@@ -487,7 +497,10 @@ export const createPendingOrder = async (orderData) => {
         },
       });
 
-      console.log("✅ PaymentIntent created for first order:", paymentIntent.id);
+      console.log(
+        "✅ PaymentIntent created for first order:",
+        paymentIntent.id,
+      );
 
       return {
         success: true,
@@ -496,14 +509,11 @@ export const createPendingOrder = async (orderData) => {
           orderNumber: order.orderNumber,
           clientSecret: paymentIntent.client_secret,
           customerId: customer.id,
-          paymentIntentId: paymentIntent.id, // ✅ Return this for subsequent orders
+          paymentIntentId: paymentIntent.id,
           isShared: false,
         },
       };
     }
-    
-    // ==================== CRITICAL FIX ENDS HERE ====================
-    
   } catch (error) {
     console.error("❌ Pending order creation failed:", error);
 
@@ -533,6 +543,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
   try {
     console.log(`🔄 Starting order completion for: ${orderId}`);
 
+    // ✅ OPTIMIZED: Fetch order with only required relations
     const order = await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -581,6 +592,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
 
     await initializeDeliveryQueue(order, quantity, isBulkOrder);
 
+    // ✅ Fire and forget background processing
     processOrderInBackground(orderId).catch((error) => {
       console.error(
         `❌ Background processing error for order ${orderId}:`,
@@ -683,6 +695,7 @@ async function initializeDeliveryQueue(order, quantity, isBulkOrder) {
       });
     }
 
+    // ✅ OPTIMIZED: Single batch insert
     await prisma.deliveryLog.createMany({
       data: deliveryLogs,
     });
@@ -700,6 +713,7 @@ async function processOrderInBackground(orderId) {
   console.log(`🚀 Background processing started for order: ${orderId}`);
 
   try {
+    // ✅ OPTIMIZED: Fetch order with only required relations
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -739,6 +753,7 @@ async function processOrderInBackground(orderId) {
 
     const voucherConfig = selectedBrand.vouchers[0];
 
+    // ✅ OPTIMIZED: Fetch occasion/custom card details
     let occasionCategoryDetails = null;
     if (!order?.isCustom) {
       occasionCategoryDetails = await prisma.occasionCategory.findUnique({
@@ -778,6 +793,7 @@ async function processOrderInBackground(orderId) {
       personalMessage: order.message,
     };
 
+    // ✅ PROCESS ORDER BASED ON TYPE
     if (isBulkOrder && order.bulkRecipients.length > 0) {
       await processBulkOrderQueue(order, orderData, voucherConfig);
     } else if (isBulkOrder && order.bulkRecipients.length === 0) {
@@ -786,7 +802,10 @@ async function processOrderInBackground(orderId) {
       await processSingleOrderQueue(order, orderData, voucherConfig);
     }
 
-    await updateOrCreateSettlement(selectedBrand, order);
+    // ✅ CRITICAL FIX: Settlement is now called INSIDE each processing function
+    // AFTER voucher generation but BEFORE email sending
+    // This ensures settlement is recorded when gift cards are created,
+    // not dependent on email delivery success
 
     const processingTime = Date.now() - startTime;
     console.log(
@@ -828,6 +847,7 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
   const stepStartTime = Date.now();
 
   try {
+    // ==================== STEP 1: CREATE SHOPIFY GIFT CARD ====================
     console.log(`📝 Creating gift card for order ${order.orderNumber}`);
     const giftCardStartTime = Date.now();
 
@@ -851,6 +871,7 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
 
     console.log(`✅ Gift card created in ${giftCardCreationTime}ms`);
 
+    // ==================== STEP 2: SAVE GIFT CARD TO DATABASE ====================
     const giftCardInDb = await prisma.giftCard.upsert({
       where: { shopifyId: shopifyGiftCard.id },
       update: {
@@ -871,6 +892,7 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
       },
     });
 
+    // ==================== STEP 3: CREATE VOUCHER CODE ====================
     let expireDate = calculateExpiryDate(voucherConfig, order.amount);
 
     const voucherCode = await prisma.voucherCode.create({
@@ -910,7 +932,14 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
 
     console.log(`✅ Voucher code created: ${voucherCode.code}`);
 
-    // ✅ STEP 5: Send delivery message (ONLY for single orders, NOT bulk)
+    // ==================== ✅ CRITICAL FIX: UPDATE SETTLEMENT HERE ====================
+    // Settlement is updated AFTER successful voucher generation
+    // This ensures the gift card is actually created before recording the sale
+    await updateOrCreateSettlement(orderData.selectedBrand, order);
+    console.log(`✅ Settlement updated for order ${order.orderNumber}`);
+
+    // ==================== STEP 4: SEND DELIVERY MESSAGE ====================
+    // Email sending happens AFTER settlement, so settlement is not dependent on email success
     if (
       order.sendType === "sendImmediately" &&
       order.deliveryMethod !== "print"
@@ -991,11 +1020,14 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
 
 // ==================== REGULAR BULK ORDER (No CSV) ====================
 async function processRegularBulkOrder(order, orderData, voucherConfig) {
-  console.log(`📦 Processing regular bulk order (no CSV): ${order.orderNumber}`);
-  
+  console.log(
+    `📦 Processing regular bulk order (no CSV): ${order.orderNumber}`,
+  );
+
   const quantity = order.quantity;
   const voucherCodes = [];
 
+  // ✅ Generate all vouchers first
   for (let i = 0; i < quantity; i++) {
     console.log(`📝 Creating voucher ${i + 1}/${quantity}`);
 
@@ -1058,11 +1090,21 @@ async function processRegularBulkOrder(order, orderData, voucherConfig) {
       tokenizedLink: tokenizedLink,
     });
 
-    console.log(`✅ Voucher ${i + 1}/${quantity} created: ${shopifyGiftCard.code}`);
+    console.log(
+      `✅ Voucher ${i + 1}/${quantity} created: ${shopifyGiftCard.code}`,
+    );
   }
 
-  // ✅ Send bulk summary email based on deliveryOption
-  if (orderData.deliveryOption === "email" || orderData.deliveryOption === "csv") {
+  // ==================== ✅ CRITICAL FIX: UPDATE SETTLEMENT HERE ====================
+  // All vouchers generated successfully, update settlement BEFORE sending emails
+  await updateOrCreateSettlement(orderData.selectedBrand, order);
+  console.log(`✅ Settlement updated for bulk order ${order.orderNumber}`);
+
+  // ✅ Send bulk summary email based on deliveryOption (AFTER settlement)
+  if (
+    orderData.deliveryOption === "email" ||
+    orderData.deliveryOption === "csv"
+  ) {
     await sendRegularBulkSummaryEmail(order, orderData, voucherCodes);
   }
 
@@ -1092,6 +1134,9 @@ async function processBulkOrderQueue(order, orderData, voucherConfig) {
     orderBy: { rowNumber: "asc" },
   });
 
+  // ✅ Track successful voucher generations for settlement
+  let successfulVouchers = 0;
+
   for (let i = 0; i < pendingLogs.length; i += BATCH_SIZE) {
     const batch = pendingLogs.slice(i, i + BATCH_SIZE);
     const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
@@ -1101,7 +1146,8 @@ async function processBulkOrderQueue(order, orderData, voucherConfig) {
       `🔄 Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)`,
     );
 
-    await Promise.all(
+    // ✅ OPTIMIZED: Process batch in parallel
+    const batchResults = await Promise.allSettled(
       batch.map(async (deliveryLog, batchIndex) => {
         const globalIndex = i + batchIndex;
         const recipient = bulkRecipients[globalIndex];
@@ -1110,10 +1156,10 @@ async function processBulkOrderQueue(order, orderData, voucherConfig) {
           console.error(
             `No recipient found for delivery log at index ${globalIndex}`,
           );
-          return;
+          return { success: false };
         }
 
-        await processBulkItemQueue(
+        return await processBulkItemQueue(
           order,
           orderData,
           voucherConfig,
@@ -1125,20 +1171,37 @@ async function processBulkOrderQueue(order, orderData, voucherConfig) {
       }),
     );
 
+    // Count successful voucher generations
+    batchResults.forEach((result) => {
+      if (result.status === "fulfilled" && result.value?.success) {
+        successfulVouchers++;
+      }
+    });
+
     console.log(`✅ Batch ${batchNumber}/${totalBatches} completed`);
   }
 
-  // ✅ After all items processed, send appropriate email based on deliveryOption
+  // ==================== ✅ CRITICAL FIX: UPDATE SETTLEMENT HERE ====================
+  // All vouchers generated, update settlement BEFORE sending summary emails
+  // Settlement reflects actual vouchers created, not emails sent
+  if (successfulVouchers > 0) {
+    await updateOrCreateSettlement(orderData.selectedBrand, order);
+    console.log(
+      `✅ Settlement updated for ${successfulVouchers} vouchers in bulk order ${order.orderNumber}`,
+    );
+  }
+
+  // ✅ Send appropriate email based on deliveryOption (AFTER settlement)
   if (orderData.deliveryOption === "email") {
-    // Send summary email to company contact only
     await sendBulkSummaryEmail(order, orderData, bulkRecipients);
   } else if (orderData.deliveryOption === "multiple") {
-    // Individual emails already sent in processBulkItemQueue
-    // Still send summary to company contact
+    // Individual emails already sent, still send summary
     await sendBulkSummaryEmail(order, orderData, bulkRecipients);
   }
 
-  console.log(`✅ All ${pendingLogs.length} bulk items processed`);
+  console.log(
+    `✅ All ${pendingLogs.length} bulk items processed (${successfulVouchers} successful)`,
+  );
 }
 
 // ==================== Process individual bulk item (CSV recipient) ====================
@@ -1165,6 +1228,7 @@ async function processBulkItemQueue(
       message: recipient.personalMessage,
     };
 
+    // ==================== CREATE GIFT CARD ====================
     const shopifyGiftCard = await createShopifyGiftCard(
       orderData.selectedBrand,
       orderData,
@@ -1245,7 +1309,9 @@ async function processBulkItemQueue(
       },
     });
 
-    // ✅ ONLY send individual emails if deliveryOption is "multiple"
+    // ==================== SEND EMAIL (if deliveryOption is "multiple") ====================
+    // Email sending happens AFTER voucher creation
+    // If email fails, voucher was still created and settlement will be recorded
     if (orderData.deliveryOption === "multiple") {
       const deliveryStartTime = Date.now();
 
@@ -1283,7 +1349,7 @@ async function processBulkItemQueue(
         },
       });
     } else {
-      // ✅ For "email" delivery option, just mark as SENT (will get summary email later)
+      // For "email" delivery option, just mark as SENT (will get summary email later)
       await prisma.deliveryLog.update({
         where: { id: deliveryLog.id },
         data: {
@@ -1296,6 +1362,8 @@ async function processBulkItemQueue(
     console.log(
       `✅ Item ${itemNumber}/${totalItems} processed in ${Date.now() - stepStartTime}ms`,
     );
+
+    return { success: true };
   } catch (error) {
     console.error(
       `❌ Failed to process item ${itemNumber}/${totalItems}:`,
@@ -1318,11 +1386,12 @@ async function processBulkItemQueue(
         emailError: error.message,
       },
     });
+
+    return { success: false };
   }
 }
 
 // ==================== HELPER FUNCTIONS ====================
-
 function calculateExpiryDate(voucherConfig, amount) {
   let expireDate = null;
 
@@ -1441,7 +1510,6 @@ async function createShopifyGiftCard(
 }
 
 // ==================== EMAIL SENDING FUNCTIONS ====================
-
 async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
   try {
     if (deliveryMethod === "whatsapp") {
@@ -1905,7 +1973,6 @@ async function sendBulkSummaryEmail(order, orderData, bulkRecipients) {
 }
 
 // ==================== EMAIL TEMPLATES ====================
-
 function generateIndividualGiftEmailHTML(
   recipient,
   voucherCode,
