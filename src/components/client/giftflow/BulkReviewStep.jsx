@@ -8,10 +8,13 @@ import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
 import { ShoppingBasket } from 'lucide-react';
+import { useSession } from '@/contexts/SessionContext'
+import Link from 'next/link';
 
 const BulkReviewStep = () => {
     const dispatch = useDispatch();
     const router = useRouter();
+    const session = useSession();
 
     const { selectedBrand, isConfirmed, companyInfo: companyInfoFromRedux } = useSelector((state) => state.giftFlowReducer);
     const { bulkItems } = useSelector((state) => state.cart);
@@ -19,6 +22,9 @@ const BulkReviewStep = () => {
     const searchParams = useSearchParams();
     const mode = searchParams.get('mode');
     const isBulkMode = mode === 'bulk';
+
+
+    console.log('isBulkMode', bulkItems);
 
     // Get the most recent bulk item (last added)
     const currentBulkOrder = bulkItems[bulkItems.length - 1];
@@ -770,22 +776,36 @@ const BulkReviewStep = () => {
 
 
                         {/* Proceed to Checkout Button */}
-                        <button
-                            disabled={csvError !== "" || !isConfirmed || isProcessingFile}
-                            onClick={handleProceedToCheckout}
-                            className={`w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600
+                        {session?.user?.email ? (
+                            <button
+                                disabled={csvError !== "" || !isConfirmed || isProcessingFile}
+                                onClick={handleProceedToCheckout}
+                                className={`w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600
                          text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 
                          ${csvError === "" && isConfirmed && !isProcessingFile
-                                    ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
-                                    : 'opacity-50 cursor-not-allowed'
-                                }`}
-                        >
-                            {isProcessingFile ? 'Processing file...' : 'Proceed to Checkout'}
-                            <span className="text-xl"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
-                            </svg>
-                            </span>
-                        </button>
+                                        ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
+                                        : 'opacity-50 cursor-not-allowed'
+                                    }`}
+                            >
+                                {isProcessingFile ? 'Processing file...' : 'Proceed to Checkout'}
+                                <span className="text-xl"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                                </svg>
+                                </span>
+                            </button>
+                        ) : (
+                            <div className="flex flex-col items-center gap-2 text-center">
+                                <p className="text-[#1A1A1A] text-[14px] font-medium font-poppins">
+                                    Please log in to continue with your purchase
+                                </p>
+                                <Link
+                                    href="/login"
+                                    className="text-pink-500 font-semibold hover:underline transition"
+                                >
+                                    Login to your account →
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

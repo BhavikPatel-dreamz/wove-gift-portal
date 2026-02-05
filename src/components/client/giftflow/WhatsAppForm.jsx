@@ -6,6 +6,7 @@ import React from "react";
 import Image from "next/image";
 import { Edit } from "lucide-react";
 import { useDispatch } from "react-redux";
+import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
 
 const WhatsAppForm = ({
   formData,
