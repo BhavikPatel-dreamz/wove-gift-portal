@@ -33,6 +33,8 @@ export default function SettlementsClient({
 
   const router = useRouter();
 
+  console.log("initialData", initialData)
+
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "$";
@@ -141,7 +143,7 @@ export default function SettlementsClient({
     );
   };
 
-  
+
 
   const handleSync = async () => {
     setSyncing(true);
@@ -150,8 +152,8 @@ export default function SettlementsClient({
     try {
       const response = await syncShopifyDataMonthly()
 
-      console.log("response",response);
-      
+      console.log("response", response);
+
 
       if (response.ok) {
         toast.success(
@@ -213,7 +215,11 @@ export default function SettlementsClient({
               {baseAmount.toLocaleString()}
             </div>
             <div className="text-xs text-gray-500">
-              {row.totalSold || 0} Units • {trigger === "onRedemption" ? "Redeemed" : "Sold"}
+              {row.totalSold || 0} Units •{" "}
+              {trigger === "onRedemption"
+                ? `${row.totalRedeemed || 0} Redeemed`
+                : `${row.totalSold || 0} Sold`}
+
             </div>
           </div>
         );
@@ -384,14 +390,14 @@ export default function SettlementsClient({
               options: statusFilterOptions,
             },
           ]}
-          // actions={[
-          //   {
-          //     label: syncing ? "Syncing..." : "Sync Shopify",
-          //     icon: RefreshCw,
-          //     onClick: handleSync,
-          //     disabled: syncing,
-          //   }
-          // ]}
+        // actions={[
+        //   {
+        //     label: syncing ? "Syncing..." : "Sync Shopify",
+        //     icon: RefreshCw,
+        //     onClick: handleSync,
+        //     disabled: syncing,
+        //   }
+        // ]}
         />
       </div>
 
