@@ -34,6 +34,7 @@ function MyGift() {
   const [bulkModalSearch, setBulkModalSearch] = useState('');
   const datePickerRef = useRef(null);
   const session = useSession();
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const tabs = [
     { id: 'all', label: 'All Gifts' },
@@ -450,6 +451,44 @@ function MyGift() {
       handleRedeem(card);
     };
 
+    const handlePrintClick = async (e) => {
+      console.log("card", card)
+      e.stopPropagation();
+      setIsGeneratingPdf(true);
+      try {
+        const response = await fetch('/api/voucher/generate-pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            orderId: card.orderId,
+            orderNumber: card.orderNumber,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate PDF');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `gift-card-${card.orderNumber}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+      } finally {
+        setIsGeneratingPdf(false);
+      }
+    };
+
+
+
     return (
       <div key={card.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-4">
@@ -515,6 +554,25 @@ function MyGift() {
             </p>
           </div>
         </div>
+
+
+        {card.deliveryMethod === "print" && (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={handlePrintClick}
+              className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors">
+              {isGeneratingPdf ? (
+                <span className="text-xs sm:text-sm font-medium text-[#4A5565]">Generating...</span>
+              ) : (
+                <>
+                  <Download className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
+                  <span className="text-xs sm:text-sm font-medium text-[#4A5565]">Print</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
 
         {card?.receiverEmail == session?.user?.email && (
           <div>

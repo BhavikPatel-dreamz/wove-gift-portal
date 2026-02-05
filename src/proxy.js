@@ -117,8 +117,8 @@ export function proxy(request) {
     pathname.startsWith('/api/auth/signup') ||
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/logout') ||
-    // pathname.startsWith('/api/brand') ||
-    // pathname.startsWith('/api/occasion') ||
+    pathname.startsWith('/api/brand') ||
+    pathname.startsWith('/api/occasion') ||
     pathname.startsWith('/api/giftcard') ||
     pathname.startsWith('/api/shopify/products') ||
     pathname.startsWith('/api/shopify/gift-cards') ||
@@ -127,10 +127,10 @@ export function proxy(request) {
     pathname.startsWith('/api/payment/process-card') ||
     // pathname.startsWith('/api/dashboard') || 
     // pathname.startsWith('/api/analytics')  ||
-    // pathname.startsWith(`/api/reports/custom`) ||
-    // pathname.startsWith(`/api/reports/schedule`) ||
-    // pathname.startsWith('/api/save-card') ||
-    // pathname.startsWith('/api/voucher/generate-pdf') ||
+    pathname.startsWith(`/api/reports/custom`) ||
+    pathname.startsWith(`/api/reports/schedule`) ||
+    pathname.startsWith('/api/save-card') ||
+    pathname.startsWith('/api/voucher/generate-pdf') ||
     pathname.startsWith('/api/auth/[...nextauth]') ||
     pathname.startsWith('/api/auth/providers') ||
     pathname.startsWith('/api/auth/csrf') || 

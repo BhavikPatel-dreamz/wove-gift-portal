@@ -42,16 +42,17 @@ const DeliveryMethodStep = () => {
   const dispatch = useDispatch();
   const session = useSession();
 
-  
+
   const {
     deliveryMethod,
     deliveryDetails,
     selectedAmount,
     personalMessage,
     selectedSubCategory,
-    selectedBrand
+    selectedBrand,
+    selectedTiming
   } = useSelector((state) => state.giftFlowReducer);
-  
+
   const [selectedMethod, setSelectedMethod] = useState(deliveryMethod || null);
   const [showModal, setShowModal] = useState(false);
   const [errors, setErrors] = useState({});
@@ -328,11 +329,10 @@ const DeliveryMethodStep = () => {
       <div
         key={method.id}
         onClick={() => handleMethodChange(method.id)}
-        className={`relative p-8 rounded-2xl border-2 border-[#1A1A1A1A] cursor-pointer transition-all duration-200 ${
-          isSelected 
-            ? `${method.bgColor}` 
+        className={`relative p-8 rounded-2xl border-2 border-[#1A1A1A1A] cursor-pointer transition-all duration-200 ${isSelected
+            ? `${method.bgColor}`
             : `${method.bgColor} hover:border-gray-300 hover:shadow-md`
-        }`}
+          }`}
       >
         {/* Completed Badge */}
         {isCompleted && (
@@ -369,7 +369,7 @@ const DeliveryMethodStep = () => {
   }, [deliveryMethod, isMethodCompleted, selectedMethod, handleMethodChange]);
 
   return (
-  <div className="min-h-screen bg-white px-8 py-30">
+    <div className="min-h-screen bg-white px-8 py-30">
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
         <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block mb-6">
@@ -403,8 +403,11 @@ const DeliveryMethodStep = () => {
 
         {/* Delivery Method Selection */}
         <div className="mb-12 max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            {DELIVERY_METHODS.map(renderMethodCard)}
+          <div className={`grid grid-cols-1 ${selectedTiming?.type !== "schedule" ? "md:grid-cols-3" : "grid-cols-2"} gap-4 sm:gap-6`}>
+            {DELIVERY_METHODS
+              .filter(method => !(selectedTiming?.type === "schedule" && method.id === 'print'))
+              .map(renderMethodCard)
+            }
           </div>
         </div>
 

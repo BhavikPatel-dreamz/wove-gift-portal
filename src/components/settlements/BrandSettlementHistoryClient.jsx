@@ -16,7 +16,7 @@ const BrandSettlementHistoryClient = ({
     error,
 }) => {
     const router = useRouter();
-        const searchParams = useSearchParams();
+    const searchParams = useSearchParams();
     const currentPage = searchParams.get('page') || '1';
     const currentStatus = searchParams.get('status') || '';
     const currentYear = searchParams.get('year') || '';
@@ -31,6 +31,8 @@ const BrandSettlementHistoryClient = ({
         });
     }, []);
 
+    console.log("initialData", initialData)
+
     const statusFilterOptions = useMemo(
         () => [
             { value: "Pending", label: "Pending" },
@@ -42,8 +44,8 @@ const BrandSettlementHistoryClient = ({
         []
     );
 
-    console.log(("brandInfo",brandInfo));
-    
+    console.log(("brandInfo", brandInfo));
+
 
     const sortOptions = useMemo(
         () => [
@@ -125,7 +127,7 @@ const BrandSettlementHistoryClient = ({
     // Fixed formatDateRange function
     function formatDateRange(input) {
         if (!input || typeof input !== 'string') return 'N/A';
-        
+
         const monthMap = {
             Jan: '01', Feb: '02', Mar: '03', Apr: '04',
             May: '05', Jun: '06', Jul: '07', Aug: '08',
@@ -143,7 +145,7 @@ const BrandSettlementHistoryClient = ({
                 const cleanDateStr = dateStr.replace(',', '').trim();
                 const dateParts = cleanDateStr.split(' ');
                 if (dateParts.length !== 3) return dateStr;
-                
+
                 const [month, day, year] = dateParts;
                 const dayPadded = String(day).padStart(2, '0');
                 return `${dayPadded}/${monthMap[month] || '00'}/${year}`;
@@ -262,7 +264,7 @@ const BrandSettlementHistoryClient = ({
                     const row = info.row.original;
                     const baseAmount = info.getValue() || 0;
                     const trigger = row.settlementTrigger || row.brandTerms?.settlementTrigger;
-                    
+
                     return (
                         <div>
                             <div className="font-semibold text-[#1A1A1A]">
@@ -270,7 +272,11 @@ const BrandSettlementHistoryClient = ({
                                 {baseAmount.toLocaleString()}
                             </div>
                             <div className="text-xs text-gray-500">
-                                {row.totalSold || 0} Units • {trigger === "onRedemption" ? "Redeemed" : "Sold"}
+                                {row.totalSold || 0} Units •{" "}
+                                {trigger === "onRedemption"
+                                    ? `${row.totalRedeemed || 0} Redeemed`
+                                    : `${row.totalSold || 0} Sold`}
+
                             </div>
                         </div>
                     );
@@ -282,10 +288,10 @@ const BrandSettlementHistoryClient = ({
                     const row = info.row.original;
                     const redeemedAmount = row.redeemedAmount || 0;
                     const totalSoldAmount = row.totalSoldAmount || 0;
-                    const redemptionRate = totalSoldAmount > 0 
+                    const redemptionRate = totalSoldAmount > 0
                         ? Math.round((redeemedAmount / totalSoldAmount) * 100)
                         : 0;
-                    
+
                     return (
                         <div>
                             <div className="font-semibold text-[#1A1A1A]">
@@ -306,7 +312,7 @@ const BrandSettlementHistoryClient = ({
                     const vatRate = row.vatRate || row.brandTerms?.vatRate || 0;
                     const commissionAmount = row.commissionAmount || 0;
                     const vatAmount = row.vatAmount || 0;
-                    
+
                     return (
                         <div className="space-y-0.5">
                             <div className="text-[#1A1A1A] font-semibold">
@@ -333,10 +339,10 @@ const BrandSettlementHistoryClient = ({
                     const amount = info.getValue() || 0;
                     const row = info.row.original;
                     const totalPaid = row.totalPaid || 0;
-                    
+
                     const isFullyPaid = amount === 0 && totalPaid > 0;
                     const hasOutstanding = amount > 0;
-                    
+
                     return (
                         <div>
                             <div className={`font-semibold ${isFullyPaid ? 'text-green-600' : hasOutstanding ? 'text-orange-600' : 'text-gray-900'}`}>
@@ -436,19 +442,19 @@ const BrandSettlementHistoryClient = ({
                             name: "status",
                             placeholder: "Status: All",
                             options: statusFilterOptions,
-                            value:currentStatus
+                            value: currentStatus
                         },
                         {
                             name: "year",
                             placeholder: "Year: All",
                             options: yearOptions,
-                            value:currentYear,
+                            value: currentYear,
                         },
                         {
                             name: "sortby",
                             placeholder: "Sort By: Latest First",
                             options: sortOptions,
-                            value:currentSortBy
+                            value: currentSortBy
                         },
                     ]}
                     emptyMessage="No settlement history found. Try adjusting your filters."
