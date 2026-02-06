@@ -1595,6 +1595,23 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
     const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
     const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
 
+    // Initialize Cloudinary once
+    cloudinary.config({
+      cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.NEXT_CLOUDINARY_API_KEY,
+      api_secret: process.env.NEXT_CLOUDINARY_API_SECRET,
+      secure: true
+    });
+
+    // Validate Cloudinary configuration
+    if (!process.env.NEXT_CLOUDINARY_CLOUD_NAME || 
+        !process.env.NEXT_CLOUDINARY_API_KEY || 
+        !process.env.NEXT_CLOUDINARY_API_SECRET) {
+      console.error("❌ Cloudinary configuration missing. Required env vars: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET");
+    }
+
+    console.log("order, orderData",order, orderData)
+
     // Generate random password (8 characters alphanumeric)
     const csvPassword = Math.random()
       .toString(36)
@@ -3066,15 +3083,23 @@ export async function modifyRecipientAndResend(data) {
       };
     }
 
-    // Determine if this is a bulk order
-    const isBulkOrder =
-      isBulk || (order.bulkRecipients && order.bulkRecipients.length > 0);
+    // Determine order type based on bulkOrderNumber and deliveryMethod
+    const isBulkOrderWithMultipleRecipients =
+      order.bulkOrderNumber && 
+      order.bulkRecipients && 
+      order.bulkRecipients.length > 0 &&
+      order.deliveryMethod === "multiple";
+
+    const isBulkOrderWithSingleEmail =
+      order.bulkOrderNumber && 
+      order.deliveryMethod === "email" &&
+      (!order.bulkRecipients || order.bulkRecipients.length === 0);
 
     let deliveryResults = [];
     let auditChanges = [];
 
-    if (isBulkOrder) {
-      // ============= BULK ORDER PROCESSING =============
+    if (isBulkOrderWithMultipleRecipients) {
+      // ============= BULK ORDER WITH CSV RECIPIENTS (MULTIPLE EMAILS) =============
 
       // Start transaction for bulk updates
       const txResult = await prisma.$transaction(async (tx) => {
@@ -3189,8 +3214,6 @@ export async function modifyRecipientAndResend(data) {
           });
           continue;
         }
-
-        console.log("deliveryMethod", deliveryMethod);
 
         // Reconstruct orderData for delivery
         const deliveryOrderData = {
@@ -3307,6 +3330,163 @@ export async function modifyRecipientAndResend(data) {
           results: deliveryResults,
         },
       };
+    } else if (isBulkOrderWithSingleEmail) {
+      // ============= BULK ORDER WITH SINGLE EMAIL (MULTIPLE VOUCHERS TO ONE RECIPIENT) =============
+
+      const recipientUpdate = recipients[0];
+
+      if (!receiverDetailId || order.receiverDetailId !== receiverDetailId) {
+        return {
+          success: false,
+          message: "Receiver detail ID does not match the order.",
+          status: 400,
+        };
+      }
+
+      const oldReceiverDetails = {
+        name: order.receiverDetail.name,
+        email: order.receiverDetail.email,
+        phone: order.receiverDetail.phone,
+      };
+
+      // Get all voucher codes for this bulk order
+      const voucherCodes = order.voucherCodes;
+
+      if (!voucherCodes || voucherCodes.length === 0) {
+        return {
+          success: false,
+          message: "No voucher codes found for this bulk order",
+          status: 404,
+        };
+      }
+
+      // Start transaction for write operations only
+      const txResult = await prisma.$transaction(async (tx) => {
+        // 1. Update ReceiverDetail
+        const updatedReceiver = await tx.receiverDetail.update({
+          where: { id: receiverDetailId },
+          data: {
+            name: recipientUpdate.name,
+            email:
+              deliveryMethod === "email" || deliveryMethod === "multiple"
+                ? recipientUpdate.email
+                : null,
+            phone:
+              deliveryMethod === "whatsapp" || deliveryMethod === "multiple"
+                ? recipientUpdate.phone
+                : null,
+            updatedAt: new Date(),
+          },
+        });
+
+        // 2. Create delivery log for resend (one log for the bulk email)
+        const deliveryLog = await tx.deliveryLog.create({
+          data: {
+            orderId: order.id,
+            voucherCodeId: null, // No specific voucher for bulk email
+            method: deliveryMethod,
+            recipient:
+              deliveryMethod === "whatsapp"
+                ? recipientUpdate.phone
+                : recipientUpdate.email,
+            status: "PENDING",
+            attemptCount: 0,
+          },
+        });
+
+        // 3. Create audit log
+        await tx.auditLog.create({
+          data: {
+            action: "MODIFY_BULK_EMAIL_RECIPIENT",
+            entity: "ReceiverDetail",
+            entityId: receiverDetailId,
+            changes: {
+              orderNumber,
+              oldDetails: oldReceiverDetails,
+              newDetails: recipientUpdate,
+              deliveryMethod,
+              voucherCount: voucherCodes.length,
+            },
+          },
+        });
+
+        return { deliveryLog, updatedReceiver };
+      });
+
+      // Prepare all voucher codes for the bulk email
+      const voucherCodesData = voucherCodes.map((vc) => ({
+        ...vc,
+        code: vc.giftCard?.code || vc.code,
+        tokenizedLink: vc.tokenizedLink,
+      }));
+
+      // Reconstruct orderData for bulk email delivery
+      const orderData = {
+        selectedBrand: order.brand,
+        selectedSubCategory: order.isCustom
+          ? order.customCard
+          : order.subCategory,
+        selectedAmount: {
+          value: order.amount,
+          currency: order.currency,
+        },
+        quantity: order.quantity,
+        isBulkOrder: true,
+        companyInfo: {
+          companyName: order.senderName || "Gift Sender",
+          contactEmail: recipientUpdate.email,
+          contactNumber: recipientUpdate.phone,
+        },
+        deliveryOption: "email",
+        deliveryMethod: "email",
+        personalMessage: order.message,
+        customImageUrl: order.customImageUrl,
+        customVideoUrl: order.customVideoUrl,
+      };
+
+      try {
+        // Send bulk summary email with all vouchers
+        await sendRegularBulkSummaryEmail(order, orderData, voucherCodesData);
+
+        // Update delivery log as successful
+        await prisma.deliveryLog.update({
+          where: { id: txResult.deliveryLog.id },
+          data: {
+            status: "SENT",
+            sentAt: new Date(),
+            deliveredAt: new Date(),
+            attemptCount: 1,
+          },
+        });
+
+        return {
+          success: true,
+          message: `Recipient updated and bulk gift email with ${voucherCodes.length} voucher(s) sent successfully.`,
+          data: {
+            orderId: order.id,
+            deliveryLogId: txResult.deliveryLog.id,
+            voucherCount: voucherCodes.length,
+          },
+        };
+      } catch (error) {
+        console.error("Error sending bulk email:", error);
+
+        // Update delivery log as failed
+        await prisma.deliveryLog.update({
+          where: { id: txResult.deliveryLog.id },
+          data: {
+            status: "FAILED",
+            errorMessage: error.message,
+            attemptCount: 1,
+          },
+        });
+
+        return {
+          success: false,
+          message: `Failed to send bulk email: ${error.message}`,
+          status: 500,
+        };
+      }
     } else {
       // ============= SINGLE ORDER PROCESSING =============
 

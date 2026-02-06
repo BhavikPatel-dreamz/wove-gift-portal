@@ -70,7 +70,8 @@ function MyGift() {
             type: 'bulk',
             bulkOrderNumber: card.bulkOrderNumber,
             cards: bulkCards,
-            createdAt: card.purchaseDate // Use for any sorting if needed
+            createdAt: card.purchaseDate, // Use for any sorting if needed
+            orderNumber: card.orderNumber
           });
         }
         // If we've already processed this bulk order, skip it
@@ -367,7 +368,7 @@ function MyGift() {
               <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
                 {firstCard.brandName}
               </h3>
-              <p className="text-xs text-[#4A4A4A]">Bulk Order #{bulkOrderNumber}</p>
+              <p className="text-xs text-[#4A4A4A]">{bulkOrderNumber}</p>
               <div className="flex items-center gap-2 mt-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11.667 2.91663H2.33366C1.68933 2.91663 1.16699 3.43896 1.16699 4.08329V9.91663C1.16699 10.561 1.68933 11.0833 2.33366 11.0833H11.667C12.3113 11.0833 12.8337 10.561 12.8337 9.91663V4.08329C12.8337 3.43896 12.3113 2.91663 11.667 2.91663Z" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
@@ -812,7 +813,7 @@ function MyGift() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
               {displayItems.map((item, index) =>
                 item.type === 'bulk'
-                  ? renderBulkOrderCard(item.bulkOrderNumber, item.cards)
+                  ? renderBulkOrderCard(item.orderNumber, item.cards)
                   : renderSingleOrderCard(item.card)
               )}
             </div>
