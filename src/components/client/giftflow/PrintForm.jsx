@@ -90,7 +90,6 @@ const PrintForm = () => {
             {/* Amount */}
             <div className="text-center py-3">
               <div className="inline-flex items-center gap-2 bg-linear-to-r from-purple-50 to-pink-50 px-5 py-3 rounded-2xl">
-                <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 <span className="text-3xl sm:text-4xl font-bold text-gray-900">
                   {selectedAmount?.value}
                 </span>
