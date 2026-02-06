@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "../db.js";
+import { buildPayFastData, getPayFastConfig, getPayFastUrl } from "../payfast/payfastUtils.js";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
 
@@ -261,8 +262,8 @@ export const createPendingOrder = async (orderData) => {
       subtotal,
       discount,
       totalAmount,
-      currency: orderData.selectedAmount.currency || "USD",
-      paymentMethod: "stripe",
+      currency: orderData.selectedAmount.currency || "ZAR",
+      paymentMethod: "payfast",
       customImageUrl: orderData.customImageUrl || null,
       customVideoUrl: orderData.customVideoUrl || null,
       paymentStatus: "PENDING",
@@ -296,7 +297,7 @@ export const createPendingOrder = async (orderData) => {
         },
       });
 
-      // ✅ OPTIMIZED: Batch insert CSV recipients
+      // Store CSV recipients
       if (orderData.csvRecipients && orderData.csvRecipients.length > 0) {
         console.log(
           `📝 Storing ${orderData.csvRecipients.length} CSV recipients in database`,
@@ -354,166 +355,59 @@ export const createPendingOrder = async (orderData) => {
 
     console.log("✅ Pending order created:", order.orderNumber);
 
-    // ==================== PAYMENT INTENT HANDLING ====================
+    // ==================== PAYFAST PAYMENT DATA ====================
     
-    const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-    const isMultiCart = orderData.sharedPaymentIntentId;
-
-    let paymentIntent;
-    let customerId = orderData.customerId;
-
-    if (isMultiCart) {
-      // ✅ REUSE existing payment intent from first order
-      console.log(
-        `🔗 Linking order ${order.orderNumber} to shared payment intent: ${orderData.sharedPaymentIntentId}`,
-      );
-
-      paymentIntent = await stripe.paymentIntents.retrieve(
-        orderData.sharedPaymentIntentId,
-      );
-
-      // ✅ OPTIMIZED: Calculate new amount and prepare metadata update
-      const currentAmount = paymentIntent.amount;
-      const newAmount = currentAmount + Math.round(totalAmount * 100);
-
-      const existingOrderKeys = Object.keys(paymentIntent.metadata).filter(
-        (k) => k.startsWith("order_"),
-      );
-      const nextOrderIndex = existingOrderKeys.length + 1;
-
-      paymentIntent = await stripe.paymentIntents.update(
-        orderData.sharedPaymentIntentId,
-        {
-          amount: newAmount,
-          description: `${paymentIntent.description} + ${order.orderNumber}`,
-          metadata: {
-            ...paymentIntent.metadata,
-            [`order_${nextOrderIndex}`]: order.id,
-            [`orderNumber_${nextOrderIndex}`]: order.orderNumber,
-            totalOrders: String(nextOrderIndex),
-          },
-        },
-      );
-
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paymentIntentId: paymentIntent.id,
-        },
-      });
-
-      console.log(
-        `✅ Order ${order.orderNumber} linked to shared payment intent (Total: $${newAmount / 100})`,
-      );
-
-      return {
-        success: true,
-        data: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          clientSecret: paymentIntent.client_secret,
-          customerId: paymentIntent.customer,
-          paymentIntentId: paymentIntent.id,
-          isShared: true,
-        },
-      };
-    } else {
-      // ✅ CREATE NEW payment intent (first order in cart)
-      console.log(
-        `🆕 Creating new payment intent for order ${order.orderNumber}`,
-      );
-
-      const customerName = isBulkOrder
-        ? orderData.companyInfo.companyName
-        : orderData.deliveryDetails?.yourFullName || "Customer";
-
-      const customerEmail = isBulkOrder
-        ? orderData.companyInfo.contactEmail
-        : orderData.deliveryDetails?.yourEmailAddress || null;
-
-      if (!orderData.billingAddress) {
-        throw new ValidationError(
-          "Billing address is required for payment processing",
-        );
-      }
-
-      const customerAddress = {
-        line1: orderData.billingAddress.line1,
-        line2: orderData.billingAddress.line2 || null,
-        city: orderData.billingAddress.city,
-        state: orderData.billingAddress.state,
-        postal_code: orderData.billingAddress.postalCode,
-        country: orderData.billingAddress.country,
-      };
-
-      const customer = await stripe.customers.create({
-        name: customerName,
+    const payfastConfig = getPayFastConfig();
+    
+    // Extract customer name from billing address or delivery details
+    const customerName = isBulkOrder
+      ? orderData.companyInfo.companyName
+      : orderData.deliveryDetails?.yourFullName || "Customer";
+    
+    const [firstName, ...lastNameParts] = customerName.split(' ');
+    const lastName = lastNameParts.join(' ') || '';
+    
+    const customerEmail = isBulkOrder
+      ? orderData.companyInfo.contactEmail
+      : orderData.deliveryDetails?.yourEmailAddress || receiver.email;
+    
+    // Build PayFast payment data
+    const payfastData = buildPayFastData(
+      {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        totalAmount: totalAmount, // Amount in cents
+        itemName: `${orderData.selectedBrand.brandName} Gift Card`,
+        description: generateExportDescription(orderData, order.orderNumber),
+        isBulkOrder,
+        quantity,
+        firstName,
+        lastName,
         email: customerEmail,
-        address: customerAddress,
-        metadata: {
-          userId: String(userId),
-          firstOrderId: order.id,
-          orderNumber: order.orderNumber,
-        },
-      });
-
-      const exportDescription = generateExportDescription(
-        orderData,
-        order.orderNumber,
-      );
-
-      paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(totalAmount * 100),
-        currency: (orderData.selectedAmount.currency || "USD").toLowerCase(),
-        customer: customer.id,
-        description: exportDescription,
-        metadata: {
-          order_1: order.id,
-          orderNumber_1: order.orderNumber,
-          brandName: orderData.selectedBrand?.brandName || "Gift Card",
-          userId: String(userId),
-          totalOrders: "1",
-        },
-        statement_descriptor: "GIFT CARD",
-        statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
-        automatic_payment_methods: {
-          enabled: true,
-        },
-        shipping:
-          customerAddress.line1 !== "N/A"
-            ? {
-                name: customerName,
-                address: customerAddress,
-              }
-            : null,
-      });
-
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paymentIntentId: paymentIntent.id,
-        },
-      });
-
-      console.log(
-        "✅ PaymentIntent created for first order:",
-        paymentIntent.id,
-      );
-
-      return {
-        success: true,
-        data: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          clientSecret: paymentIntent.client_secret,
-          customerId: customer.id,
-          paymentIntentId: paymentIntent.id,
-          isShared: false,
-        },
-      };
-    }
+      },
+      payfastConfig
+    );
+    
+    // Store PayFast reference in order (for tracking)
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        paymentIntentId: `PF_${order.orderNumber}`, // Temporary reference until we get actual payment ID
+      },
+    });
+    
+    console.log('✅ PayFast payment data generated for order:', order.orderNumber);
+    
+    return {
+      success: true,
+      data: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        payfastUrl: getPayFastUrl(payfastConfig.isSandbox),
+        payfastData,
+      },
+    };
+    
   } catch (error) {
     console.error("❌ Pending order creation failed:", error);
 
@@ -538,12 +432,13 @@ export const createPendingOrder = async (orderData) => {
   }
 };
 
+
 // ==================== STEP 2: COMPLETE ORDER AFTER PAYMENT (WEBHOOK) ====================
 export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
   try {
     console.log(`🔄 Starting order completion for: ${orderId}`);
 
-    // ✅ OPTIMIZED: Fetch order with only required relations
+    // Update order with payment details
     const order = await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -600,7 +495,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
       );
     });
 
-    console.log(`✅ Order ${order.orderNumber} queued for processing`);
+     console.log(`✅ Order ${order.orderNumber} queued for processing`);
 
     return {
       success: true,
@@ -639,6 +534,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
     };
   }
 };
+
 
 // ==================== DELIVERY QUEUE INITIALIZATION ====================
 async function initializeDeliveryQueue(order, quantity, isBulkOrder) {

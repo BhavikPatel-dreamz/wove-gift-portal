@@ -1,15 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-// import { Elements } from "@stripe/react-stripe-js";
-// import { loadStripe } from "@stripe/stripe-js";
 import { useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
-import { createPendingOrder, getOrderStatus, completeOrderAfterPayment } from "../../../lib/action/orderAction";
+import { createPendingOrder, getOrderStatus } from "../../../lib/action/orderAction";
 import { useSession } from "@/contexts/SessionContext";
 
 // Import components
-// import StripeCardPayment from "./payment/StripeCardPayment";
 import PaymentMethodSelector from "./payment/PaymentMethodSelector";
 import GiftDetailsCard from "./payment/GiftDetailsCard";
 import PaymentSummary from "./payment/PaymentSummary";
@@ -19,18 +16,15 @@ import ThankYouScreen from "./payment/ThankYouScreen";
 import BillingAddressForm from "./payment/BillingAddressForm";
 import { currencyList } from "../../brandsPartner/currency";
 
-// ✅ STRIPE CODE COMMENTED OUT
-// if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
-//   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
-// }
-// const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
-
 const PaymentStep = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
   const session = useSession();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
+
+  // PayFast form reference
+  const payfastFormRef = useRef(null);
 
   // State
   const [isProcessing, setIsProcessing] = useState(false);
@@ -39,10 +33,11 @@ const PaymentStep = () => {
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
   const [showThankYou, setShowThankYou] = useState(false);
-  const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderId, setPendingOrderId] = useState(null);
+  const [payfastData, setPayfastData] = useState(null);
+  const [payfastUrl, setPayfastUrl] = useState(null);
 
-  // ✅ NEW: Processing status
+  // Processing status
   const [processingStatus, setProcessingStatus] = useState(null);
 
   // Billing address state
@@ -52,7 +47,7 @@ const PaymentStep = () => {
     city: '',
     state: '',
     postalCode: '',
-    country: 'IN',
+    country: 'ZA', // South Africa default for PayFast
   });
   const [addressErrors, setAddressErrors] = useState({});
 
@@ -135,8 +130,9 @@ const PaymentStep = () => {
       return null;
     }
 
-    if (clientSecret && pendingOrderId) {
-      return { clientSecret, orderId: pendingOrderId };
+    if (!isPaymentConfirmed) {
+      toast.error('Please confirm that all details are correct');
+      return null;
     }
 
     setIsProcessing(true);
@@ -179,10 +175,19 @@ const PaymentStep = () => {
 
       if (result?.success) {
         setPendingOrderId(result.data.orderId);
-        // setClientSecret(result.data.clientSecret); // ✅ Not needed for test mode
+        setPayfastData(result.data.payfastData);
+        setPayfastUrl(result.data.payfastUrl);
+        
         toast.success('Ready to process payment', { id: toastId });
+        
+        // Auto-submit PayFast form after a brief delay
+        setTimeout(() => {
+          if (payfastFormRef.current) {
+            payfastFormRef.current.submit();
+          }
+        }, 500);
+        
         return {
-          // clientSecret: result.data.clientSecret, // ✅ Not needed for test mode
           orderId: result.data.orderId
         };
       } else {
@@ -199,55 +204,7 @@ const PaymentStep = () => {
     }
   };
 
-  // ✅ TEST MODE: Simulate payment success
-  const handlePaymentSuccess = async (orderId) => {
-    console.log('🧪 TEST MODE: Simulating payment success for order:', orderId);
-
-    if (!orderId) {
-      console.error('❌ No order ID provided to handlePaymentSuccess');
-      toast.error('Order ID missing');
-      return;
-    }
-
-    toast.dismiss();
-    toast.success('Payment received! Processing your order...', {
-      id: 'payment-success',
-      duration: 3000
-    });
-
-    setPaymentSubmitted(true);
-    setIsProcessing(true);
-    setProcessingStatus('PAYMENT_CONFIRMED');
-
-    // ✅ Simulate webhook by calling completeOrderAfterPayment
-    setTimeout(async () => {
-      try {
-        console.log(`🔄 Completing order: ${orderId}`);
-
-        await completeOrderAfterPayment(orderId, {
-          paymentIntentId: 'test_pi_' + Date.now(), // Mock payment intent
-          paymentMethod: 'card',
-          amount: calculateTotal() * 100,
-          currency: (selectedAmount?.currency || 'USD').toLowerCase(),
-        });
-
-        console.log('✅ Order marked as completed, starting polling...');
-
-        // Start polling with shorter delay
-        setTimeout(() => {
-          pollOrderStatus(orderId);
-        }, 2000);
-
-      } catch (error) {
-        console.error('❌ Error simulating payment:', error);
-        toast.error('Failed to process payment');
-        setIsProcessing(false);
-        setPaymentSubmitted(false);
-      }
-    }, 1500); // Simulate network delay
-  };
-
-  // ✅ ENHANCED: Smarter polling with better status detection
+  // Poll order status after returning from PayFast
   const pollOrderStatus = async (orderId, attempts = 0) => {
     const maxAttempts = 20;
     const pollInterval = 2000;
@@ -265,11 +222,10 @@ const PaymentStep = () => {
         setProcessingStatus(processingStatus);
       }
 
-      // ✅ Payment confirmed and processing started - show order immediately
+      // Payment confirmed and processing started
       if (paymentStatus === 'COMPLETED' && processingStatus === 'IN_PROGRESS') {
         console.log('✅ Payment confirmed, processing in background');
 
-        // Show order with "processing" status
         setOrder({
           ...orderData,
           processingInBackground: true,
@@ -291,7 +247,7 @@ const PaymentStep = () => {
         return;
       }
 
-      // ✅ All processing completed
+      // All processing completed
       if (paymentStatus === 'COMPLETED' && processingStatus === 'COMPLETED') {
         console.log('✅ Order fully completed');
 
@@ -324,7 +280,7 @@ const PaymentStep = () => {
       if (attempts < maxAttempts) {
         setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
       } else {
-        // Max attempts reached - show success anyway
+        // Max attempts reached
         toast.success(
           'Payment confirmed! Your order is being processed. Check your email for updates.',
           { duration: 6000 }
@@ -353,11 +309,44 @@ const PaymentStep = () => {
     }
   };
 
+  // Check if returning from PayFast
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment_status');
+    const orderId = urlParams.get('order_id');
+
+    if (paymentStatus && orderId) {
+      setPaymentSubmitted(true);
+      setIsProcessing(true);
+      setPendingOrderId(orderId);
+
+      if (paymentStatus === 'success') {
+        toast.success('Payment received! Processing your order...', {
+          id: 'payment-success',
+          duration: 3000
+        });
+        setProcessingStatus('PAYMENT_CONFIRMED');
+        
+        // Start polling
+        setTimeout(() => {
+          pollOrderStatus(orderId);
+        }, 2000);
+      } else if (paymentStatus === 'cancel') {
+        toast.error('Payment was cancelled');
+        setIsProcessing(false);
+        setPaymentSubmitted(false);
+        
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, []);
+
   const handleNext = () => {
     setShowThankYou(true);
   };
 
-  // ✅ ENHANCED: Success screen with processing status
+  // Success screen
   if (order) {
     if (showThankYou) {
       return <ThankYouScreen />;
@@ -378,7 +367,7 @@ const PaymentStep = () => {
     );
   }
 
-  // ✅ ENHANCED: Better loading screen with status
+  // Loading screen
   if (paymentSubmitted) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center">
@@ -410,7 +399,7 @@ const PaymentStep = () => {
             </p>
           </div>
 
-          {/* ✅ Progress indicator for bulk orders */}
+          {/* Progress indicator for bulk orders */}
           {isBulkMode && quantity > 1 && (
             <div className="mt-6 w-full bg-gray-200 rounded-full h-2">
               <div
@@ -428,6 +417,26 @@ const PaymentStep = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-30 md:px-8 md:py-30">
       <Toaster />
+      
+      {/* Hidden PayFast Form */}
+      {payfastData && payfastUrl && (
+        <form
+          ref={payfastFormRef}
+          action={payfastUrl}
+          method="POST"
+          style={{ display: 'none' }}
+        >
+          {Object.entries(payfastData).map(([key, value]) => (
+            <input
+              key={key}
+              type="hidden"
+              name={key}
+              value={value}
+            />
+          ))}
+        </form>
+      )}
+
       <div className="max-w-7xl mx-auto sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
@@ -494,34 +503,37 @@ const PaymentStep = () => {
               isBulkMode={isBulkMode}
             />
 
-            {/* ✅ STRIPE CARD PAYMENT COMMENTED OUT */}
-            {/* {selectedPaymentTab === 'card' && clientSecret && (
-              <Elements
-                stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  appearance: { theme: 'stripe' },
-                }}
+            {/* PayFast Payment Button */}
+            {selectedPaymentTab === 'payfast' && (
+              <button
+                onClick={handleInitiatePayment}
+                disabled={isProcessing || !isPaymentConfirmed}
+                className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 
+                       hover:from-blue-600 hover:to-blue-700
+                       disabled:from-gray-300 disabled:to-gray-400
+                       text-white py-3 sm:py-4 px-6 rounded-xl
+                       font-semibold text-sm sm:text-base
+                       transition-all duration-200
+                       flex items-center justify-center gap-2
+                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                <StripeCardPayment
-                  clientSecret={clientSecret}
-                  isProcessing={isProcessing}
-                  onInitiatePayment={handleInitiatePayment}
-                  onPaymentSuccess={handlePaymentSuccess}
-                />
-              </Elements>
-            )} */}
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                    Redirecting to PayFast...
+                  </>
+                ) : (
+                  <>
+                    Pay with PayFast <span>→</span>
+                  </>
+                )}
+              </button>
+            )}
 
-            {/* ✅ TEST MODE: Simple payment button */}
+            {/* Card Payment Button */}
             {selectedPaymentTab === 'card' && (
               <button
-                onClick={async () => {
-                  const result = await handleInitiatePayment();
-                  if (result && result.orderId) {
-                    // Simulate payment success after order is created
-                    handlePaymentSuccess(result.orderId);
-                  }
-                }}
+                onClick={handleInitiatePayment}
                 disabled={isProcessing || !isPaymentConfirmed}
                 className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
@@ -535,11 +547,11 @@ const PaymentStep = () => {
                 {isProcessing ? (
                   <>
                     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    {pendingOrderId ? 'Processing Payment...' : 'Preparing...'}
+                    Redirecting to PayFast...
                   </>
                 ) : (
                   <>
-                    {pendingOrderId ? 'Complete Payment' : 'Proceed to Payment'} <span>→</span>
+                    Pay with Card <span>→</span>
                   </>
                 )}
               </button>
