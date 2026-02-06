@@ -2435,231 +2435,6 @@ async function groupSettlementsByBrand(allSettlements) {
   });
 }
 
-
-export async function getSettlementOverview(brandId) {
-  try {
-    // ==================== OPTIMIZE: Single query to get settlement with period ====================
-    const settlementData = await prisma.settlements.findFirst({
-      where: { brandId },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        settlementPeriod: true,
-        periodStart: true,
-        periodEnd: true,
-        totalSold: true,
-        totalSoldAmount: true,
-        totalRedeemed: true,
-        redeemedAmount: true,
-        outstanding: true,
-        outstandingAmount: true,
-        commissionAmount: true,
-        breakageAmount: true,
-        vatAmount: true,
-        netPayable: true,
-        totalPaid: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        brand: {
-          select: {
-            id: true,
-            brandName: true,
-            logo: true,
-            currency: true,
-            domain: true,
-            website: true,
-            contact: true,
-            isActive: true,
-          },
-        },
-      },
-    });
-
-    if (!settlementData) {
-      return { success: false, message: "Settlement not found", status: 404 };
-    }
-
-    // ==================== OPTIMIZE: Parallel queries for all data ====================
-    const [orders, deliveryGroups, voucherStats] = await Promise.all([
-      // Query 1: Orders with voucher codes and redemptions
-      prisma.order.findMany({
-        where: {
-          brandId,
-          createdAt: {
-            gte: settlementData.periodStart,
-            lte: settlementData.periodEnd,
-          },
-        },
-        select: {
-          id: true,
-          totalAmount: true,
-          createdAt: true,
-          voucherCodes: {
-            select: {
-              id: true,
-              isRedeemed: true,
-              redemptions: {
-                select: {
-                  amountRedeemed: true,
-                  redeemedAt: true,
-                },
-              },
-            },
-          },
-        },
-      }),
-
-      // Query 2: Delivery summary
-      prisma.deliveryLog.groupBy({
-        by: ["status"],
-        where: { 
-          order: { 
-            brandId,
-            createdAt: {
-              gte: settlementData.periodStart,
-              lte: settlementData.periodEnd,
-            },
-          } 
-        },
-        _count: true,
-      }),
-
-      // Query 3: Voucher statistics using aggregation
-      prisma.voucherCode.groupBy({
-        by: ["isRedeemed"],
-        where: {
-          order: {
-            brandId,
-            createdAt: {
-              gte: settlementData.periodStart,
-              lte: settlementData.periodEnd,
-            },
-          },
-        },
-        _count: true,
-      }),
-    ]);
-
-    // ==================== OPTIMIZE: Single-pass calculation of all metrics ====================
-    const metrics = orders.reduce(
-      (acc, order) => {
-        acc.totalSoldAmount += order.totalAmount;
-        acc.totalSold++;
-
-        order.voucherCodes.forEach((voucherCode) => {
-          if (voucherCode.redemptions?.length > 0) {
-            // Track unique redeemed vouchers
-            acc.uniqueRedeemedVouchers.add(voucherCode.id);
-
-            voucherCode.redemptions.forEach((redemption) => {
-              acc.redeemedAmount += redemption.amountRedeemed;
-              
-              const redemptionDate = redemption.redeemedAt;
-              if (!acc.lastRedemptionDate || redemptionDate > acc.lastRedemptionDate) {
-                acc.lastRedemptionDate = redemptionDate;
-              }
-            });
-          }
-        });
-
-        return acc;
-      },
-      {
-        totalSoldAmount: 0,
-        totalSold: 0,
-        redeemedAmount: 0,
-        lastRedemptionDate: null,
-        uniqueRedeemedVouchers: new Set(),
-      }
-    );
-
-    const totalRedeemed = metrics.uniqueRedeemedVouchers.size;
-    const outstanding = metrics.totalSold - totalRedeemed;
-    const outstandingAmount = metrics.totalSoldAmount - metrics.redeemedAmount;
-
-    // ==================== OPTIMIZE: Build delivery summary in single pass ====================
-    const deliverySummary = deliveryGroups.reduce(
-      (acc, group) => {
-        const count = group._count;
-        acc.total += count;
-        
-        const statusKey = group.status?.toLowerCase();
-        if (statusKey && statusKey in acc) {
-          acc[statusKey] = count;
-        }
-        
-        return acc;
-      },
-      {
-        total: 0,
-        pending: 0,
-        sent: 0,
-        delivered: 0,
-        failed: 0,
-        bounced: 0,
-      }
-    );
-
-    // ==================== OPTIMIZE: Use aggregated voucher stats ====================
-    const summaryTotalIssued = voucherStats.reduce((sum, stat) => sum + stat._count, 0);
-    const summaryTotalRedeemed = voucherStats.find(stat => stat.isRedeemed)?._count || 0;
-
-    // ==================== OPTIMIZE: Calculate rates once ====================
-    const redemptionRate = metrics.totalSold > 0
-      ? ((totalRedeemed / metrics.totalSold) * 100).toFixed(2)
-      : "0.00";
-
-    const voucherRedemptionRate = metrics.totalSoldAmount > 0
-      ? ((metrics.redeemedAmount / metrics.totalSoldAmount) * 100).toFixed(2)
-      : "0.00";
-
-    const settlementPeriod = `${settlementData.periodStart.toLocaleDateString()} - ${settlementData.periodEnd.toLocaleDateString()}`;
-
-    return {
-      success: true,
-      data: {
-        settlement: {
-          id: settlementData.id,
-          settlementPeriod: settlementData.settlementPeriod || settlementPeriod,
-          periodStart: settlementData.periodStart,
-          periodEnd: settlementData.periodEnd,
-          totalSold: metrics.totalSold,
-          totalSoldAmount: metrics.totalSoldAmount,
-          totalRedeemed,
-          redeemedAmount: metrics.redeemedAmount,
-          outstanding,
-          outstandingAmount,
-          redemptionRate,
-          lastRedemptionDate: metrics.lastRedemptionDate,
-          commissionAmount: settlementData.commissionAmount,
-          breakageAmount: settlementData.breakageAmount,
-          vatAmount: settlementData.vatAmount,
-          netPayable: settlementData.netPayable,
-          totalPaid: settlementData.totalPaid,
-          status: settlementData.status,
-          createdAt: settlementData.createdAt,
-          updatedAt: settlementData.updatedAt,
-        },
-        brand: settlementData.brand,
-        summary: {
-          totalVouchersIssued: summaryTotalIssued,
-          totalVouchersRedeemed: summaryTotalRedeemed,
-          totalVouchersUnredeemed: summaryTotalIssued - summaryTotalRedeemed,
-          totalSoldAmount: metrics.totalSoldAmount,
-          totalRedeemedAmount: metrics.redeemedAmount,
-          voucherRedemptionRate,
-          deliverySummary,
-        },
-      },
-    };
-  } catch (error) {
-    console.error("Error fetching overview:", error);
-    return { success: false, message: "Failed to fetch overview", status: 500 };
-  }
-}
-
-
 export async function getSettlementCalculation(brandId) {
   try {
     const settlement = await prisma.settlements.findFirst({
@@ -3186,89 +2961,160 @@ export async function getSettlementDetails(settlementId) {
       Math.max(...settlements.map((s) => new Date(s.periodEnd))),
     );
 
-    // Aggregate settlement data
-    const aggregatedData = settlements.reduce(
-      (acc, settlement) => {
-        return {
-          totalSold: acc.totalSold + (settlement.totalSold || 0),
-          totalSoldAmount:
-            acc.totalSoldAmount + (settlement.totalSoldAmount || 0),
-          totalRedeemed: acc.totalRedeemed + (settlement.totalRedeemed || 0),
-          redeemedAmount: acc.redeemedAmount + (settlement.redeemedAmount || 0),
-          outstanding: acc.outstanding + (settlement.outstanding || 0),
-          outstandingAmount:
-            acc.outstandingAmount + (settlement.outstandingAmount || 0),
-          commissionAmount:
-            acc.commissionAmount + (settlement.commissionAmount || 0),
-          breakageAmount: acc.breakageAmount + (settlement.breakageAmount || 0),
-          vatAmount: acc.vatAmount + (settlement.vatAmount || 0),
-          netPayable: acc.netPayable + (settlement.netPayable || 0),
-          totalPaid: acc.totalPaid + (settlement.totalPaid || 0),
-          remainingAmount:
-            acc.remainingAmount + (settlement.remainingAmount || 0),
-        };
+    // ===== CALCULATE FROM ACTUAL ORDERS (MATCHING getSettlementVouchersList) =====
+    
+    // Fetch all orders for this settlement period
+    const whereClause = {
+      brandId,
+      paymentStatus: { in: ["COMPLETED", "CANCELLED"] }, // ✅ Match voucher list
+      createdAt: {
+        gte: periodStart,
+        lte: periodEnd,
       },
-      {
-        totalSold: 0,
-        totalSoldAmount: 0,
-        totalRedeemed: 0,
-        redeemedAmount: 0,
-        outstanding: 0,
-        outstandingAmount: 0,
-        commissionAmount: 0,
-        breakageAmount: 0,
-        vatAmount: 0,
-        netPayable: 0,
-        totalPaid: 0,
-        remainingAmount: 0,
-      },
-    );
+    };
 
+    const allOrders = await prisma.order.findMany({
+      where: whereClause,
+      include: {
+        voucherCodes: {
+          include: {
+            redemptions: true,
+          },
+        },
+      },
+    });
+
+    // ===== CALCULATE ACCURATE METRICS FROM ORDERS (SAME AS getSettlementVouchersList) =====
+    let totalSold = 0;
+    let totalSoldAmount = 0;
+    let totalRedeemed = 0;
+    let redeemedAmount = 0;
+    let outstanding = 0;
+    let outstandingAmount = 0;
+
+    allOrders.forEach((order) => {
+      const orderRedemptionStatus = order.redemptionStatus;
+      
+      // Skip cancelled orders from financial calculations
+      if (orderRedemptionStatus === "Cancelled") {
+        return;
+      }
+
+      const totalVouchers = order.voucherCodes.length;
+      totalSold += totalVouchers;
+      totalSoldAmount += order.totalAmount || 0;
+
+      // Count redeemed vouchers
+      const redeemedVouchers = order.voucherCodes.filter((v) => {
+        const totalRedeemedAmount =
+          v.redemptions?.reduce((sum, r) => sum + (r.amountRedeemed || 0), 0) || 0;
+        return v.remainingValue === 0 || totalRedeemedAmount >= v.originalValue;
+      }).length;
+
+      const partiallyRedeemedVouchers = order.voucherCodes.filter((v) => {
+        const totalRedeemedAmount =
+          v.redemptions?.reduce((sum, r) => sum + (r.amountRedeemed || 0), 0) || 0;
+        return (
+          totalRedeemedAmount > 0 &&
+          v.remainingValue > 0 &&
+          v.remainingValue < v.originalValue
+        );
+      }).length;
+
+      totalRedeemed += redeemedVouchers + partiallyRedeemedVouchers;
+
+      // Calculate redeemed amount
+      const orderRedeemedAmount = order.voucherCodes.reduce((sum, v) => {
+        if (v.redemptions && v.redemptions.length > 0) {
+          return (
+            sum + v.redemptions.reduce((s, r) => s + (r.amountRedeemed || 0), 0)
+          );
+        }
+        return sum;
+      }, 0);
+
+      redeemedAmount += orderRedeemedAmount;
+
+      // Calculate outstanding
+      const orderOutstanding = order.totalAmount - orderRedeemedAmount;
+      if (orderOutstanding > 0) {
+        outstanding += redeemedVouchers + partiallyRedeemedVouchers > 0 ? 
+          (totalVouchers - redeemedVouchers - partiallyRedeemedVouchers) : totalVouchers;
+        outstandingAmount += orderOutstanding;
+      }
+    });
+
+    // ===== CALCULATE FINANCIAL BREAKDOWN =====
+    
     // Determine settlement trigger and base amount
     const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
     const baseAmount =
       settlementTrigger === "onRedemption"
-        ? aggregatedData.redeemedAmount
-        : aggregatedData.totalSoldAmount;
+        ? redeemedAmount
+        : totalSoldAmount;
 
-    // Recalculate if netPayable is 0 but shouldn't be
-    let commissionAmount = aggregatedData.commissionAmount;
-    let vatAmount = aggregatedData.vatAmount;
-    let breakageAmount = aggregatedData.breakageAmount;
-    let netPayable = aggregatedData.netPayable;
-
-    if (netPayable === 0 && baseAmount > 0) {
-      // Recalculate commission
-      if (brandTerms?.commissionType === "Percentage") {
+    // Calculate commission
+    let commissionAmount = 0;
+    if (brandTerms) {
+      if (brandTerms.commissionType === "Percentage") {
         commissionAmount = Math.round(
-          (baseAmount * brandTerms.commissionValue) / 100,
+          (baseAmount * (brandTerms.commissionValue || 0)) / 100,
         );
-      } else if (brandTerms?.commissionType === "Fixed") {
-        const itemCount =
+      } else if (brandTerms.commissionType === "Fixed") {
+        const transactionCount =
           settlementTrigger === "onRedemption"
-            ? aggregatedData.totalRedeemed
-            : aggregatedData.totalSold;
-        commissionAmount = Math.round(brandTerms.commissionValue * itemCount);
-      }
-
-      // Recalculate VAT on commission
-      if (brandTerms?.vatRate) {
-        vatAmount = Math.round((commissionAmount * brandTerms.vatRate) / 100);
-      }
-
-      // Recalculate breakage
-      if (brandTerms?.breakageShare && aggregatedData.outstandingAmount > 0) {
-        breakageAmount = Math.round(
-          (aggregatedData.outstandingAmount * brandTerms.breakageShare) / 100,
+            ? totalRedeemed
+            : totalSold;
+        commissionAmount = Math.round(
+          (brandTerms.commissionValue || 0) * transactionCount,
         );
       }
-
-      // Recalculate net payable
-      netPayable = baseAmount - commissionAmount + vatAmount - breakageAmount;
     }
 
-    // Recalculate remaining amount
-    const totalPaid = aggregatedData.totalPaid || 0;
+    // Calculate VAT on commission
+    const vatRate = brandTerms?.vatRate || 0;
+    const vatAmount = Math.round((commissionAmount * vatRate) / 100);
+
+    // Calculate breakage
+    let breakageAmount = 0;
+    if (brandTerms?.breakageShare && outstandingAmount > 0) {
+      breakageAmount = Math.round(
+        (outstandingAmount * brandTerms.breakageShare) / 100,
+      );
+    }
+
+    // Calculate net payable
+    const netPayable = Math.round(baseAmount - commissionAmount + vatAmount - breakageAmount);
+
+    // Get payment info from settlements
+    let totalPaid = 0;
+    let paymentHistory = [];
+    let lastPaymentDate = null;
+    
+    settlements.forEach((settlement) => {
+      totalPaid += settlement.totalPaid || 0;
+      
+      if (settlement.paymentHistory) {
+        const history = Array.isArray(settlement.paymentHistory)
+          ? settlement.paymentHistory
+          : [settlement.paymentHistory];
+        paymentHistory = [...paymentHistory, ...history];
+      }
+      
+      if (settlement.lastPaymentDate) {
+        if (
+          !lastPaymentDate ||
+          new Date(settlement.lastPaymentDate) > new Date(lastPaymentDate)
+        ) {
+          lastPaymentDate = settlement.lastPaymentDate;
+        }
+      }
+    });
+
+    // Sort payment history by date
+    paymentHistory.sort((a, b) => new Date(b.paidAt) - new Date(a.paidAt));
+
+    // Calculate remaining amount
     let remainingAmount = netPayable - totalPaid;
     if (remainingAmount < 0 && totalPaid >= netPayable) {
       remainingAmount = 0;
@@ -3276,11 +3122,8 @@ export async function getSettlementDetails(settlementId) {
 
     // Calculate redemption rate
     const redemptionRate =
-      aggregatedData.totalSoldAmount > 0
-        ? Math.round(
-            (aggregatedData.redeemedAmount / aggregatedData.totalSoldAmount) *
-              100,
-          )
+      totalSoldAmount > 0
+        ? Math.round((redeemedAmount / totalSoldAmount) * 100)
         : 0;
 
     // Determine status
@@ -3295,31 +3138,8 @@ export async function getSettlementDetails(settlementId) {
       status = settlements[0].status;
     }
 
-    // Get payment history
-    let paymentHistory = [];
-    let lastPaymentDate = null;
-    settlements.forEach((settlement) => {
-      if (settlement.paymentHistory) {
-        const history = Array.isArray(settlement.paymentHistory)
-          ? settlement.paymentHistory
-          : [settlement.paymentHistory];
-        paymentHistory = [...paymentHistory, ...history];
-      }
-      if (settlement.lastPaymentDate) {
-        if (
-          !lastPaymentDate ||
-          new Date(settlement.lastPaymentDate) > new Date(lastPaymentDate)
-        ) {
-          lastPaymentDate = settlement.lastPaymentDate;
-        }
-      }
-    });
-
-    // Sort payment history by date
-    paymentHistory.sort((a, b) => new Date(b.paidAt) - new Date(a.paidAt));
-
-    // ===== VOUCHER SUMMARY - COMPREHENSIVE CALCULATION =====
-    // Fetch all voucher codes for this brand and period from orders
+    // ===== VOUCHER SUMMARY - FROM ACTUAL VOUCHER CODES =====
+    
     const voucherCodes = await prisma.voucherCode.findMany({
       where: {
         order: {
@@ -3328,7 +3148,7 @@ export async function getSettlementDetails(settlementId) {
             gte: periodStart,
             lte: periodEnd,
           },
-          paymentStatus: "COMPLETED",
+          paymentStatus: { in: ["COMPLETED", "CANCELLED"] },
         },
       },
       include: {
@@ -3346,29 +3166,33 @@ export async function getSettlementDetails(settlementId) {
       },
     });
 
-    // Calculate voucher metrics
     const totalIssued = voucherCodes.length;
 
-    // Count redeemed vouchers - check multiple sources for accuracy
-    let redeemedCount = 0;
-    let unredeemedCount = 0;
+    // Count vouchers by status (excluding cancelled)
+    let voucherRedeemedCount = 0;
+    let voucherUnredeemedCount = 0;
 
     voucherCodes.forEach((voucher) => {
-      // A voucher is considered redeemed if:
-      // 1. isRedeemed flag is true, OR
-      // 2. It has redemption records, OR
-      // 3. remainingValue < originalValue
-      const hasRedemptions =
-        voucher.redemptions && voucher.redemptions.length > 0;
-      const isPartiallyRedeemed =
-        voucher.remainingValue < voucher.originalValue;
-      const isFullyRedeemed =
-        voucher.isRedeemed || voucher.remainingValue === 0;
+      // Skip cancelled orders
+      if (voucher.order.redemptionStatus === "Cancelled") {
+        return;
+      }
 
-      if (hasRedemptions || isPartiallyRedeemed || isFullyRedeemed) {
-        redeemedCount++;
+      const orderRedemptionStatus = voucher.order.redemptionStatus;
+      const hasRedemptions = voucher.redemptions && voucher.redemptions.length > 0;
+      const isPartiallyRedeemed = voucher.remainingValue < voucher.originalValue;
+      const isFullyRedeemed = voucher.isRedeemed || voucher.remainingValue === 0;
+
+      if (
+        orderRedemptionStatus === "Redeemed" ||
+        orderRedemptionStatus === "PartiallyRedeemed" ||
+        hasRedemptions ||
+        isPartiallyRedeemed ||
+        isFullyRedeemed
+      ) {
+        voucherRedeemedCount++;
       } else {
-        unredeemedCount++;
+        voucherUnredeemedCount++;
       }
     });
 
@@ -3379,7 +3203,6 @@ export async function getSettlementDetails(settlementId) {
 
     voucherCodes.forEach((voucher) => {
       if (voucher.deliveryLogs && voucher.deliveryLogs.length > 0) {
-        // Get the latest delivery log status
         const latestLog = voucher.deliveryLogs[0];
 
         if (latestLog.status === "DELIVERED") {
@@ -3396,7 +3219,6 @@ export async function getSettlementDetails(settlementId) {
           failed++;
         }
       } else {
-        // No delivery logs means it's pending
         pending++;
       }
     });
@@ -3413,18 +3235,9 @@ export async function getSettlementDetails(settlementId) {
       deliveryStatus = "Pending";
     }
 
-    // Calculate accurate redemption rate from actual voucher data
+    // Calculate accurate redemption rate from actual vouchers
     const actualRedemptionRate =
-      totalIssued > 0 ? Math.round((redeemedCount / totalIssued) * 100) : 0;
-
-    // If there's a mismatch with settlement data, log it for debugging
-    if (redeemedCount !== aggregatedData.totalRedeemed) {
-      console.warn("Redemption mismatch detected:", {
-        voucherCodesRedeemed: redeemedCount,
-        settlementRedeemed: aggregatedData.totalRedeemed,
-        settlementPeriod: `${periodStart} - ${periodEnd}`,
-      });
-    }
+      totalIssued > 0 ? Math.round((voucherRedeemedCount / totalIssued) * 100) : 0;
 
     const settlementDetails = {
       id: settlementIds.join(","),
@@ -3442,13 +3255,13 @@ export async function getSettlementDetails(settlementId) {
       // Settlement trigger
       settlementTrigger,
 
-      // Financial Metrics
-      totalSold: aggregatedData.totalSold,
-      totalSoldAmount: aggregatedData.totalSoldAmount,
-      totalRedeemed: aggregatedData.totalRedeemed,
-      redeemedAmount: aggregatedData.redeemedAmount,
-      outstanding: aggregatedData.outstanding,
-      outstandingAmount: aggregatedData.outstandingAmount,
+      // ✅ CORRECTED: Financial Metrics - FROM ACTUAL ORDERS
+      totalSold,
+      totalSoldAmount,
+      totalRedeemed,
+      redeemedAmount,
+      outstanding,
+      outstandingAmount,
       redemptionRate,
 
       // Financial Breakdown
@@ -3475,13 +3288,13 @@ export async function getSettlementDetails(settlementId) {
       // Voucher Summary - ACCURATE FROM ACTUAL VOUCHER DATA
       voucherSummary: {
         totalIssued,
-        redeemed: redeemedCount,
-        unredeemed: unredeemedCount,
+        redeemed: voucherRedeemedCount,
+        unredeemed: voucherUnredeemedCount,
         delivered,
         pending,
         failed,
         deliveryStatus,
-        redemptionRate: actualRedemptionRate, // Use calculated rate from actual vouchers
+        redemptionRate: actualRedemptionRate,
       },
 
       // Dates

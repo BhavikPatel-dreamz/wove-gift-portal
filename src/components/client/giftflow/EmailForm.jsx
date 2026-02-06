@@ -297,7 +297,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                                     <p className="text-xs text-gray-700">Amount</p>
                                                     <p className="text-sm font-semibold text-[#DC3415]">
                                                         {selectedAmount?.currency}
-                                                        {selectedAmount.value}
+                                                        {selectedAmount?.value}
                                                     </p>
                                                 </div>
                                             </div>

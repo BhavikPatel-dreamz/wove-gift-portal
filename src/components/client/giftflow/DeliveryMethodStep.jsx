@@ -321,52 +321,68 @@ const DeliveryMethodStep = () => {
     }
   }, [selectedMethod, formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage, selectedBrand]);
 
-  const renderMethodCard = useCallback((method) => {
-    const isCompleted = deliveryMethod === method.id && isMethodCompleted;
-    const isSelected = selectedMethod === method.id;
+const renderMethodCard = useCallback((method) => {
+  const isCompleted = deliveryMethod === method.id && isMethodCompleted;
+  const isSelected = selectedMethod === method.id;
+  const isDeliveryActive = deliveryMethod === method.id;
 
-    return (
-      <div
-        key={method.id}
-        onClick={() => handleMethodChange(method.id)}
-        className={`relative p-8 rounded-2xl border-2 border-[#1A1A1A1A] cursor-pointer transition-all duration-200 ${isSelected
-            ? `${method.bgColor}`
-            : `${method.bgColor} hover:border-gray-300 hover:shadow-md`
-          }`}
-      >
-        {/* Completed Badge */}
-        {isCompleted && (
-          <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            Completed
-          </div>
-        )}
+  return (
+    <div
+      key={method.id}
+      onClick={() => handleMethodChange(method.id)}
+      className={`
+        relative p-8 rounded-2xl cursor-pointer transition-all duration-200
+        ${method.bgColor}
 
-        <div className="flex flex-col items-center text-center">
-          <div className={`w-18.5 h-18.5 ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
-            <method.icon className="w-8 h-8 text-white" />
-          </div>
-          <h3 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">{method.name}</h3>
-          <p className="text-[16px] text-[#4A4A4A]">{method.description}</p>
-
-          {/* Edit Details Button */}
-          {isCompleted && (
-            <button
-              className="mt-4 text-sm text-blue-600 font-medium hover:text-blue-700 hover:underline transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMethodChange(method.id);
-              }}
-            >
-              Edit Details
-            </button>
-          )}
+        ${isDeliveryActive
+          ? "border-2 border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.3)]"
+          : "border-2 border-[#1A1A1A1A] hover:border-gray-300 hover:shadow-md"
+        }
+      `}
+    >
+      {/* Completed Badge */}
+      {isCompleted && (
+        <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Completed
         </div>
+      )}
+
+      <div className="flex flex-col items-center text-center">
+        <div className={`w-18.5 h-18.5 ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
+          <method.icon className="w-8 h-8 text-white" />
+        </div>
+
+        <h3 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">
+          {method.name}
+        </h3>
+
+        <p className="text-[16px] text-[#4A4A4A]">
+          {method.description}
+        </p>
+
+        {isCompleted && (
+          <button
+            className="mt-4 text-sm text-blue-600 font-medium hover:text-blue-700 hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMethodChange(method.id);
+            }}
+          >
+            Edit Details
+          </button>
+        )}
       </div>
-    );
-  }, [deliveryMethod, isMethodCompleted, selectedMethod, handleMethodChange]);
+    </div>
+  );
+}, [deliveryMethod, isMethodCompleted, selectedMethod, handleMethodChange]);
+
 
   return (
     <div className="min-h-screen bg-white px-8 py-30">

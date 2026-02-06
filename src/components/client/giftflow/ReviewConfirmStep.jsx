@@ -10,12 +10,15 @@ import HeartColorIcon from "../../../icons/HeartColorIcon"
 import EditIcon from "../../../icons/EditIcon"
 import { ShoppingBasket } from "lucide-react";
 import { currencyList } from "../../brandsPartner/currency";
+import Link from "next/link";
 
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
   const [error, setError] = useState('');
   const session = useSession();
   const router = useRouter();
+
+  console.log("session", session)
 
   const {
     selectedBrand,
@@ -249,7 +252,7 @@ const ReviewConfirmStep = () => {
               </div>
               <div>
                 <div className="flex items-start gap-2">
-                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">Recipient WhatsApp Number</div>
+                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">{deliveryMethod !== "email" ? "Recipient WhatsApp Number" : "Recipient Email Address"}</div>
                   <div>
                     <button onClick={() => redirectToDeliveryMethod()}>
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -264,7 +267,9 @@ const ReviewConfirmStep = () => {
                     </button>
                   </div>
                 </div>
-                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{deliveryMethod == "email" ? deliveryDetails?.recipientEmailAddress : deliveryDetails?.recipientWhatsAppNumber}</div>
+                {deliveryMethod !== "print" && (
+                  <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{deliveryMethod == "email" ? deliveryDetails?.recipientEmailAddress : deliveryDetails?.recipientWhatsAppNumber}</div>
+                )}
               </div>
             </div>
 
@@ -433,28 +438,42 @@ const ReviewConfirmStep = () => {
                     </button>
                   </div>
                 )}
+                {session?.user?.email ? (
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={!isConfirmed}
+                    className={`
+      w-full h-14 bg-linear-to-r from-pink-500 to-orange-400 text-white 
+      rounded-full font-semibold text-lg transition-all duration-200 shadow-lg 
+      flex items-center justify-center gap-2
+      ${isConfirmed
+                        ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
+                        : 'opacity-50 cursor-not-allowed'
+                      }
+    `}
+                  >
+                    Proceed to Payment
+                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
+                      <path
+                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <p className="text-[#1A1A1A] text-[14px] font-medium font-poppins">
+                      Please log in to continue with your purchase
+                    </p>
+                    <Link
+                      href="/login"
+                      className="text-pink-500 font-semibold hover:underline transition"
+                    >
+                      Login to your account →
+                    </Link>
+                  </div>
+                )}
 
-                <button
-                  onClick={handleBuyNow}
-                  disabled={!isConfirmed}
-                  className={`
-                    w-full h-14 bg-linear-to-r from-pink-500 to-orange-400 text-white 
-                    rounded-full font-semibold text-lg transition-all duration-200 shadow-lg 
-                    flex items-center justify-center gap-2
-                    ${isConfirmed
-                      ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
-                      : 'opacity-50 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  Proceed to Payment
-                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
-                    <path
-                      d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-                      fill="white"
-                    />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>

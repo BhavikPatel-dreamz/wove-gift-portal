@@ -276,7 +276,7 @@ const TermsTab = ({ formData, updateFormData }) => {
               step="0.01"
               min="0"
               max="100"
-              value={formData.vatRate}
+              value={formData.vatRate || 0}
               onChange={(e) => updateFormData('vatRate', parseFloat(e.target.value))}
             />
           </div>
