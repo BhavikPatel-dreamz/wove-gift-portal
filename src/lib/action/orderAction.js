@@ -1663,7 +1663,7 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
 
     // Get brand logo and gift card image URLs
     const brandLogoUrl = orderData.selectedBrand?.logo || "";
-    const giftCardImageUrl = orderData.selectedSubCategory?.image || "";
+    const giftCardImageUrl = orderData.selectedSubCategory?.image || order?.occasion?.image || "";
     const brandName = orderData.selectedBrand?.brandName || "Gift Card";
 
     const sendSmtpEmail = {
