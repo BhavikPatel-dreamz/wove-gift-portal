@@ -1982,9 +1982,20 @@ function generateIndividualGiftEmailHTML(
   companyName,
   personalMessage,
 ) {
+  const recipientName = recipient?.recipientName || "You";
+  const currency = orderData?.selectedAmount?.currency || "₹";
+  const amount = voucherCode?.originalValue || orderData?.selectedAmount?.value || "100";
+  const giftCode = voucherCode?.code || "XXXX-XXX-XXX";
+  const brandName = selectedBrand?.brandName || "Brand";
+  const claimUrl = voucherCode?.tokenizedLink || "#";
+  
+  // Direct URLs without getAbsoluteUrl() function
+  const brandLogoUrl = selectedBrand?.logo || null;
+  const giftCardImageUrl = orderData?.selectedSubCategory?.image || null;
+
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1993,83 +2004,65 @@ function generateIndividualGiftEmailHTML(
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+        <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
           
-          <!-- Header with Gradient -->
           <tr>
-            <td style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); padding: 50px 40px; text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 16px;">🎁</div>
-              <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #ffffff; line-height: 1.2;">
-                You've Received<br>a Gift!
-              </h1>
+            <td style="background-color: #ffe4e6; padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 18px; font-weight: 500; color: #1a1a1a;">You have received a Gift card!</h1>
             </td>
           </tr>
           
-          <!-- Body Content -->
           <tr>
             <td style="padding: 40px;">
-              <div style="text-align: center; margin-bottom: 32px;">
-                <p style="margin: 0 0 8px; font-size: 20px; color: #1a1a1a; font-weight: 600;">
-                  Hi ${recipient.recipientName}! 👋
-                </p>
-                <p style="margin: 0; font-size: 16px; color: #4a4a4a; line-height: 1.6;">
-                  ${companyName} has sent you a gift card for <strong style="color: #ED457D;">${selectedBrand?.brandName || "our store"}</strong>
-                </p>
-              </div>
+              <p style="margin: 0 0 8px; font-size: 14px; color: #1a1a1a;">hi ${recipientName.toLowerCase()},</p>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a;">Congratulations, you've received gift card from ${companyName}.</p>
               
-              ${
-                personalMessage
-                  ? `
-              <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffe4b5 100%); border-left: 4px solid #ffc107; padding: 20px; margin-bottom: 32px; border-radius: 12px;">
-                <p style="margin: 0 0 8px; font-size: 12px; color: #856404; text-transform: uppercase; font-weight: 600;">Personal Message</p>
-                <p style="margin: 0; font-size: 15px; color: #856404; font-style: italic;">"${personalMessage}"</p>
-              </div>
-              `
-                  : ""
-              }
+              ${personalMessage ? `<div style="margin-bottom: 32px;"><p style="margin: 0; font-size: 14px; color: #1a1a1a; line-height: 1.6;">"${personalMessage}"</p></div>` : ''}
               
-              <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; padding: 32px; margin-bottom: 32px;">
-                <h3 style="margin: 0 0 24px; font-size: 20px; color: #1a1a1a; font-weight: 600; text-align: center;">Your Gift Card Details</h3>
-                
-                <div style="margin-bottom: 24px;">
-                  <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d; text-transform: uppercase; text-align: center;">Your Gift Code</p>
-                  <div style="background: #ffffff; border: 3px dashed #ED457D; border-radius: 12px; padding: 20px; text-align: center;">
-                    <p style="margin: 0; font-family: 'Courier New', monospace; font-size: 24px; font-weight: 700; color: #1a1a1a; letter-spacing: 3px;">
-                      ${voucherCode.code}
-                    </p>
-                  </div>
-                </div>
-                
-                <div style="display: table; width: 100%;">
-                  <div style="display: table-row;">
-                    <div style="display: table-cell; width: 50%; padding: 16px; text-align: center; background-color: #ffffff; border-radius: 8px;">
-                      <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d;">Amount</p>
-                      <p style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">
-                        ${orderData.selectedAmount?.currency || "₹"}${voucherCode.originalValue}
-                      </p>
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
+                <tr>
+                  <td style="width: 60%; vertical-align: top; padding-right: 20px;">
+                    ${giftCardImageUrl ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">` : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #00d4ff 0%, #00a8ff 100%); border-radius: 12px;"><table role="presentation" style="width: 100%; height: 100%;"><tr><td align="center" style="vertical-align: middle;"><h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2></td></tr></table></div>`}
+                  </td>
+                  
+                  <td style="width: 40%; vertical-align: top;">
+                    ${brandLogoUrl ? `<div style="margin-bottom: 20px;"><img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 80px; height: auto; display: block;"></div>` : `<div style="margin-bottom: 20px;"><h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #e50914;">${brandName}</h3></div>`}
+                    
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Gift Code</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a; letter-spacing: 0.5px;">${giftCode}</p>
                     </div>
-                    <div style="display: table-cell; width: 50%; padding: 16px; text-align: center; background-color: #ffffff; border-radius: 8px;">
-                      <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d;">Expires</p>
-                      <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1a1a1a;">${expiryDate}</p>
+                    
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Amount:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">${currency}${amount}</p>
                     </div>
-                  </div>
-                </div>
-              </div>
+                    
+                    <div>
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Expires:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">${expiryDate}</p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
               
-              <div style="text-align: center; margin-bottom: 32px;">
-                <a href="${voucherCode.tokenizedLink}" 
-                   style="display: inline-block; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 50px; font-size: 18px; font-weight: 600;">
-                  Redeem Your Gift →
-                </a>
+              <table role="presentation" style="width: 100%; margin-top: 32px;">
+                <tr>
+                  <td align="center">
+                    <a href="${claimUrl}" style="display: inline-block; padding: 14px 0; width: 100%; max-width: 400px; background: linear-gradient(90deg, #ff6b9d 0%, #ff8f6b 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 15px; font-weight: 600; text-align: center; box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);">Redeem Now →</a>
+                  </td>
+                </tr>
+              </table>
+              
+              <div style="margin-top: 32px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; color: #666; line-height: 1.6;">Click the button above to redeem your gift card<br>Or visit: <a href="${claimUrl}" style="color: #ff6b9d; text-decoration: none;">${claimUrl}</a></p>
               </div>
             </td>
           </tr>
           
           <tr>
-            <td style="padding: 32px 40px; background: #f8f9fa;">
-              <p style="margin: 0; font-size: 13px; color: #6c757d; text-align: center;">
-                This gift was sent by ${companyName}
-              </p>
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.6;">This gift card was sent to you by ${companyName}.<br>If you have any questions, please contact our support team.</p>
             </td>
           </tr>
         </table>
@@ -2380,25 +2373,7 @@ function generateBulkSummaryEmailHTML(
             </td>
           </tr>
           
-          <!-- Status Indicators Section -->
-          <tr>
-            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ecfdf5; border-radius: 8px; border: 1px solid #a7f3d0;">
-                <tr>
-                  <td style="padding: 20px;" class="mobile-padding">
-                    <div style="text-align: center; margin-bottom: 12px;">
-                      <span style="display: inline-block; background-color: #10b981; color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;" class="fallback-text">
-                        ✓ All ${bulkRecipients.length} gift cards delivered
-                      </span>
-                    </div>
-                    <p style="margin: 0; font-size: 13px; color: #065f46; text-align: center; line-height: 20px;" class="mobile-small fallback-text">
-                      Each recipient has received their gift card via email
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+         
           
           <!-- Important Notes Section -->
           <tr>
@@ -2459,27 +2434,6 @@ function generateBulkSummaryEmailHTML(
                         </td>
                       </tr>
                     </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-          <!-- Download Option (Optional) -->
-          <tr>
-            <td align="center" style="padding: 0 40px 40px;" class="mobile-padding-lr">
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="border-radius: 8px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%);">
-                    <a href="#" style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 20px; text-decoration: none; padding: 14px 32px; color: #ffffff; display: inline-block; border-radius: 8px; mso-padding-alt: 0; text-align: center;" class="mobile-text">
-                      <!--[if mso]>
-                      <i style="letter-spacing: 32px; mso-font-width: -100%; mso-text-raise: 30pt;">&nbsp;</i>
-                      <![endif]-->
-                      <span style="mso-text-raise: 15pt;">📥 Download Full Report (CSV)</span>
-                      <!--[if mso]>
-                      <i style="letter-spacing: 32px; mso-font-width: -100%;">&nbsp;</i>
-                      <![endif]-->
-                    </a>
                   </td>
                 </tr>
               </table>
