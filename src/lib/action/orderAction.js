@@ -1,6 +1,13 @@
 "use server";
 
 import { prisma } from "../db.js";
+import {
+  getPayFastConfig,
+  buildPayFastData,
+  buildPayFastUrl,
+  generateSignature,
+  buildPayFastUrlDirect,
+} from "../payfast/payfastUtils.js";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
 import { v2 as cloudinary } from "cloudinary";
@@ -212,6 +219,7 @@ function generateExportDescription(orderData, orderNumber) {
 }
 
 // ==================== STEP 1: CREATE PENDING ORDER + PAYMENT INTENT ====================
+// ==================== STEP 1: CREATE PENDING ORDER + PAYMENT INTENT ====================
 export const createPendingOrder = async (orderData) => {
   try {
     const userId = orderData?.userId;
@@ -262,8 +270,8 @@ export const createPendingOrder = async (orderData) => {
       subtotal,
       discount,
       totalAmount,
-      currency: orderData.selectedAmount.currency || "USD",
-      paymentMethod: "stripe",
+      currency: orderData.selectedAmount.currency || "ZAR",
+      paymentMethod: "payfast",
       customImageUrl: orderData.customImageUrl || null,
       customVideoUrl: orderData.customVideoUrl || null,
       paymentStatus: "PENDING",
@@ -297,7 +305,7 @@ export const createPendingOrder = async (orderData) => {
         },
       });
 
-      // ✅ OPTIMIZED: Batch insert CSV recipients
+      // Store CSV recipients
       if (orderData.csvRecipients && orderData.csvRecipients.length > 0) {
         console.log(
           `📝 Storing ${orderData.csvRecipients.length} CSV recipients in database`,
@@ -355,165 +363,91 @@ export const createPendingOrder = async (orderData) => {
 
     console.log("✅ Pending order created:", order.orderNumber);
 
-    // ==================== PAYMENT INTENT HANDLING ====================
-    const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    // ==================== PAYFAST PAYMENT DATA ====================
 
-    const isMultiCart = orderData.sharedPaymentIntentId;
+    const payfastConfig = getPayFastConfig(order.id);
 
-    let paymentIntent;
-    let customerId = orderData.customerId;
+    // Extract customer name from billing address or delivery details
+    const customerName = isBulkOrder
+      ? orderData.companyInfo.companyName
+      : orderData.deliveryDetails?.yourFullName || "Customer";
 
-    if (isMultiCart) {
-      // ✅ REUSE existing payment intent from first order
-      console.log(
-        `🔗 Linking order ${order.orderNumber} to shared payment intent: ${orderData.sharedPaymentIntentId}`,
-      );
+    const [firstName, ...lastNameParts] = customerName.split(" ");
+    const lastName = lastNameParts.join(" ") || "";
 
-      paymentIntent = await stripe.paymentIntents.retrieve(
-        orderData.sharedPaymentIntentId,
-      );
+    const customerEmail = isBulkOrder
+      ? orderData.companyInfo.contactEmail
+      : orderData.deliveryDetails?.yourEmailAddress || receiver.email;
 
-      // ✅ OPTIMIZED: Calculate new amount and prepare metadata update
-      const currentAmount = paymentIntent.amount;
-      const newAmount = currentAmount + Math.round(totalAmount * 100);
+    // Build PayFast payment data
+    const payfastOrderData = {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      totalAmount: orderData?.totalAmount || 0, // Amount in cents
+      itemName: `${orderData.selectedBrand.brandName} Gift Card`,
+      description: generateExportDescription(orderData, order.orderNumber),
+      isBulkOrder,
+      quantity,
+      firstName,
+      lastName,
+      email: customerEmail,
+    };
 
-      const existingOrderKeys = Object.keys(paymentIntent.metadata).filter(
-        (k) => k.startsWith("order_"),
-      );
-      const nextOrderIndex = existingOrderKeys.length + 1;
+    // Add split payment if needed (for your example URL)
+    // Uncomment and configure if you need split payments
+    /*
+    payfastOrderData.subscriptionType = 2;
+    payfastOrderData.splitPayment = {
+      merchant_id: 10023922,
+      amount: "120"
+    };
+    */
 
-      paymentIntent = await stripe.paymentIntents.update(
-        orderData.sharedPaymentIntentId,
-        {
-          amount: newAmount,
-          description: `${paymentIntent.description} + ${order.orderNumber}`,
-          metadata: {
-            ...paymentIntent.metadata,
-            [`order_${nextOrderIndex}`]: order.id,
-            [`orderNumber_${nextOrderIndex}`]: order.orderNumber,
-            totalOrders: String(nextOrderIndex),
-          },
-        },
-      );
+    console.log("🔧 Building PayFast data with config:", {
+      merchantId: payfastConfig.merchantId,
+      isSandbox: payfastConfig.isSandbox,
+      hasPassphrase: !!payfastConfig.passphrase,
+    });
 
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paymentIntentId: paymentIntent.id,
-        },
-      });
+    const payfastData = buildPayFastData(payfastOrderData, payfastConfig);
 
-      console.log(
-        `✅ Order ${order.orderNumber} linked to shared payment intent (Total: $${newAmount / 100})`,
-      );
+    // Generate the complete PayFast URL with all parameters
+    const payfastUrl = buildPayFastUrlDirect(
+      payfastData,
+      payfastConfig.passphrase,
+      payfastConfig.isSandbox,
+    );
 
-      return {
-        success: true,
-        data: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          clientSecret: paymentIntent.client_secret,
-          customerId: paymentIntent.customer,
-          paymentIntentId: paymentIntent.id,
-          isShared: true,
-        },
-      };
-    } else {
-      // ✅ CREATE NEW payment intent (first order in cart)
-      console.log(
-        `🆕 Creating new payment intent for order ${order.orderNumber}`,
-      );
+    // Store PayFast reference in order (for tracking)
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        paymentIntentId: `PF_${order.orderNumber}`, // Temporary reference until we get actual payment ID
+      },
+    });
 
-      const customerName = isBulkOrder
-        ? orderData.companyInfo.companyName
-        : orderData.deliveryDetails?.yourFullName || "Customer";
+    console.log(
+      "✅ PayFast payment data generated for order:",
+      order.orderNumber,
+    );
+    console.log("🔗 PayFast URL:", payfastUrl);
+    console.log("🔐 Signature:", payfastData.signature);
 
-      const customerEmail = isBulkOrder
-        ? orderData.companyInfo.contactEmail
-        : orderData.deliveryDetails?.yourEmailAddress || null;
+    // Debug: Log the data that was signed
+    console.log(
+      "📦 Complete payfastData object:",
+      JSON.stringify(payfastData, null, 2),
+    );
 
-      if (!orderData.billingAddress) {
-        throw new ValidationError(
-          "Billing address is required for payment processing",
-        );
-      }
-
-      const customerAddress = {
-        line1: orderData.billingAddress.line1,
-        line2: orderData.billingAddress.line2 || null,
-        city: orderData.billingAddress.city,
-        state: orderData.billingAddress.state,
-        postal_code: orderData.billingAddress.postalCode,
-        country: orderData.billingAddress.country,
-      };
-
-      const customer = await stripe.customers.create({
-        name: customerName,
-        email: customerEmail,
-        address: customerAddress,
-        metadata: {
-          userId: String(userId),
-          firstOrderId: order.id,
-          orderNumber: order.orderNumber,
-        },
-      });
-
-      const exportDescription = generateExportDescription(
-        orderData,
-        order.orderNumber,
-      );
-
-      paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(totalAmount * 100),
-        currency: (orderData.selectedAmount.currency || "USD").toLowerCase(),
-        customer: customer.id,
-        description: exportDescription,
-        metadata: {
-          order_1: order.id,
-          orderNumber_1: order.orderNumber,
-          brandName: orderData.selectedBrand?.brandName || "Gift Card",
-          userId: String(userId),
-          totalOrders: "1",
-        },
-        statement_descriptor: "GIFT CARD",
-        statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
-        automatic_payment_methods: {
-          enabled: true,
-        },
-        shipping:
-          customerAddress.line1 !== "N/A"
-            ? {
-                name: customerName,
-                address: customerAddress,
-              }
-            : null,
-      });
-
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paymentIntentId: paymentIntent.id,
-        },
-      });
-
-      console.log(
-        "✅ PaymentIntent created for first order:",
-        paymentIntent.id,
-      );
-
-      return {
-        success: true,
-        data: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          clientSecret: paymentIntent.client_secret,
-          customerId: customer.id,
-          paymentIntentId: paymentIntent.id,
-          isShared: false,
-        },
-      };
-    }
+    return {
+      success: true,
+      data: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        payfastUrl, // Full URL with all parameters
+        payfastData, // Data object (for form POST if needed)
+      },
+    };
   } catch (error) {
     console.error("❌ Pending order creation failed:", error);
 
@@ -543,7 +477,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
   try {
     console.log(`🔄 Starting order completion for: ${orderId}`);
 
-    // ✅ OPTIMIZED: Fetch order with only required relations
+    // Update order with payment details
     const order = await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -1600,17 +1534,21 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
       cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
       api_key: process.env.NEXT_CLOUDINARY_API_KEY,
       api_secret: process.env.NEXT_CLOUDINARY_API_SECRET,
-      secure: true
+      secure: true,
     });
 
     // Validate Cloudinary configuration
-    if (!process.env.NEXT_CLOUDINARY_CLOUD_NAME || 
-        !process.env.NEXT_CLOUDINARY_API_KEY || 
-        !process.env.NEXT_CLOUDINARY_API_SECRET) {
-      console.error("❌ Cloudinary configuration missing. Required env vars: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET");
+    if (
+      !process.env.NEXT_CLOUDINARY_CLOUD_NAME ||
+      !process.env.NEXT_CLOUDINARY_API_KEY ||
+      !process.env.NEXT_CLOUDINARY_API_SECRET
+    ) {
+      console.error(
+        "❌ Cloudinary configuration missing. Required env vars: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET",
+      );
     }
 
-    console.log("order, orderData",order, orderData)
+    console.log("order, orderData", order, orderData);
 
     // Generate random password (8 characters alphanumeric)
     const csvPassword = Math.random()
@@ -1663,7 +1601,8 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
 
     // Get brand logo and gift card image URLs
     const brandLogoUrl = orderData.selectedBrand?.logo || "";
-    const giftCardImageUrl = orderData.selectedSubCategory?.image || order?.occasion?.image || "";
+    const giftCardImageUrl =
+      orderData.selectedSubCategory?.image || order?.occasion?.image || "";
     const brandName = orderData.selectedBrand?.brandName || "Gift Card";
 
     const sendSmtpEmail = {
@@ -1713,22 +1652,22 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
                 <tr>
                   <td style="width: 60%; vertical-align: top; padding-right: 20px;">
-                    ${giftCardImageUrl ? 
-                      `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">` 
-                      : 
-                      `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    ${
+                      giftCardImageUrl
+                        ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">`
+                        : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                         <h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2>
                       </div>`
                     }
                   </td>
                   
                   <td style="width: 40%; vertical-align: top;">
-                    ${brandLogoUrl ? 
-                      `<div style="margin-bottom: 20px;">
+                    ${
+                      brandLogoUrl
+                        ? `<div style="margin-bottom: 20px;">
                         <img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 120px; height: auto; display: block;">
-                      </div>` 
-                      : 
-                      `<div style="margin-bottom: 20px;">
+                      </div>`
+                        : `<div style="margin-bottom: 20px;">
                         <h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">${brandName}</h3>
                       </div>`
                     }
@@ -1985,7 +1924,12 @@ This gift was sent by ${companyName}
   `;
 }
 
-async function sendBulkDistributionSummaryEmail(order, orderData, voucherCodes, bulkRecipients) {
+async function sendBulkDistributionSummaryEmail(
+  order,
+  orderData,
+  voucherCodes,
+  bulkRecipients,
+) {
   try {
     const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
     const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
@@ -1997,7 +1941,8 @@ async function sendBulkDistributionSummaryEmail(order, orderData, voucherCodes, 
       .toUpperCase();
 
     // Generate CSV content with recipient details
-    const csvHeader = "S.No,Recipient Name,Recipient Email,Voucher Code,Amount,Currency,Expiry Date\n";
+    const csvHeader =
+      "S.No,Recipient Name,Recipient Email,Voucher Code,Amount,Currency,Expiry Date\n";
     const csvRows = bulkRecipients
       .map((recipient, index) => {
         const voucherCode = voucherCodes[index];
@@ -2093,22 +2038,22 @@ async function sendBulkDistributionSummaryEmail(order, orderData, voucherCodes, 
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
                 <tr>
                   <td style="width: 60%; vertical-align: top; padding-right: 20px;">
-                    ${giftCardImageUrl ? 
-                      `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">` 
-                      : 
-                      `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    ${
+                      giftCardImageUrl
+                        ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">`
+                        : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                         <h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2>
                       </div>`
                     }
                   </td>
                   
                   <td style="width: 40%; vertical-align: top;">
-                    ${brandLogoUrl ? 
-                      `<div style="margin-bottom: 20px;">
+                    ${
+                      brandLogoUrl
+                        ? `<div style="margin-bottom: 20px;">
                         <img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 120px; height: auto; display: block;">
-                      </div>` 
-                      : 
-                      `<div style="margin-bottom: 20px;">
+                      </div>`
+                        : `<div style="margin-bottom: 20px;">
                         <h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">${brandName}</h3>
                       </div>`
                     }
@@ -2229,7 +2174,7 @@ function generateBulkSummaryEmailHTML(
   voucherCodes,
   bulkRecipients,
   csvUrl,
-  csvPassword
+  csvPassword,
 ) {
   // Get brand logo and gift card image URLs
   const brandLogoUrl = orderData.selectedBrand?.logo || "";
@@ -2274,22 +2219,22 @@ function generateBulkSummaryEmailHTML(
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
                 <tr>
                   <td style="width: 60%; vertical-align: top; padding-right: 20px;">
-                    ${giftCardImageUrl ? 
-                      `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">` 
-                      : 
-                      `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    ${
+                      giftCardImageUrl
+                        ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">`
+                        : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                         <h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2>
                       </div>`
                     }
                   </td>
                   
                   <td style="width: 40%; vertical-align: top;">
-                    ${brandLogoUrl ? 
-                      `<div style="margin-bottom: 20px;">
+                    ${
+                      brandLogoUrl
+                        ? `<div style="margin-bottom: 20px;">
                         <img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 120px; height: auto; display: block;">
-                      </div>` 
-                      : 
-                      `<div style="margin-bottom: 20px;">
+                      </div>`
+                        : `<div style="margin-bottom: 20px;">
                         <h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">${brandName}</h3>
                       </div>`
                     }
@@ -2360,7 +2305,6 @@ function generateBulkSummaryEmailHTML(
 </html>
   `;
 }
-
 
 function generateBulkSummaryEmailText(
   order,
@@ -2736,8 +2680,13 @@ export async function getOrders(params = {}) {
 
 export async function getOrderById(orderId) {
   try {
-    const order = await prisma.order.findUnique({
-      where: { orderNumber: orderId },
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { orderNumber: orderId },
+          { id: orderId },
+        ],
+      },
       include: {
         brand: {
           select: {
@@ -2805,7 +2754,10 @@ export async function getOrderById(orderId) {
       return { success: false, message: "Order not found", status: 404 };
     }
 
-    // Compute redeemedAt for the order based on its voucher codes
+    // -----------------------------
+    // REST OF YOUR LOGIC IS PERFECT
+    // -----------------------------
+
     const redeemedDates = order.voucherCodes
       .map((vc) => vc.redeemedAt)
       .filter(Boolean);
@@ -2815,70 +2767,43 @@ export async function getOrderById(orderId) {
         ? new Date(Math.max(...redeemedDates.map((d) => d.getTime())))
         : null;
 
-    // Transform voucher codes to match VoucherDetails component structure
     const transformedVoucherCodes = order.voucherCodes.map((vc) => {
-      // Calculate totals from redemptions
       const totalRedeemed = vc.redemptions.reduce(
         (sum, r) => sum + (r.amountRedeemed || 0),
-        0,
+        0
       );
 
-      const redemptionCount = vc.redemptions.length;
-
-      const lastRedemptionDate =
-        vc.redemptions.length > 0 ? vc.redemptions[0].redeemedAt : null;
-
-      // Determine voucher status - CHECK ORDER REDEMPTION STATUS FIRST
       let status = "Active";
 
-      // Priority 1: Check if order is cancelled
-      if (order.redemptionStatus === "Cancelled") {
-        status = "Cancelled";
-      }
-      // Priority 2: Check if voucher is fully redeemed
-      else if (vc.isRedeemed || vc.remainingValue === 0) {
-        status = "Redeemed";
-      }
-      // Priority 3: Check if voucher is expired
-      else if (vc.expiresAt && new Date(vc.expiresAt) < new Date()) {
+      if (order.redemptionStatus === "Cancelled") status = "Cancelled";
+      else if (vc.isRedeemed || vc.remainingValue === 0) status = "Redeemed";
+      else if (vc.expiresAt && new Date(vc.expiresAt) < new Date())
         status = "Expired";
-      }
-      // Priority 4: Check if order is inactive
-      else if (!order.isActive) {
-        status = "Inactive";
-      }
-
-      // Transform redemption history to match VoucherDetails format
-      const redemptionHistory = vc.redemptions.map((r) => ({
-        redeemedAt: r.redeemedAt,
-        amountRedeemed: r.amountRedeemed,
-        balanceAfter: r.balanceAfter,
-        transactionId: r.transactionId,
-        storeUrl: r.storeUrl,
-      }));
+      else if (!order.isActive) status = "Inactive";
 
       return {
         id: vc.id,
         code: vc.code,
         orderNumber: order.orderNumber,
-        user: {
-          firstName: order.user.firstName,
-          lastName: order.user.lastName,
-          email: order.user.email,
-        },
+        user: order.user,
         voucherType: vc.voucher?.denominationType || "fixed",
         totalAmount: vc.originalValue,
         remainingAmount: vc.remainingValue,
         partialRedemption: vc.voucher?.partialRedemption || false,
-        totalRedeemed: totalRedeemed,
+        totalRedeemed,
         pendingAmount: vc.remainingValue,
-        redemptionCount: redemptionCount,
-        lastRedemptionDate: lastRedemptionDate,
+        redemptionCount: vc.redemptions.length,
+        lastRedemptionDate: vc.redemptions[0]?.redeemedAt || null,
         expiresAt: vc.expiresAt,
-        status: status,
+        status,
         currency: order.currency,
-        redemptionHistory: redemptionHistory,
-        // Additional fields that might be useful
+        redemptionHistory: vc.redemptions.map((r) => ({
+          redeemedAt: r.redeemedAt,
+          amountRedeemed: r.amountRedeemed,
+          balanceAfter: r.balanceAfter,
+          transactionId: r.transactionId,
+          storeUrl: r.storeUrl,
+        })),
         pin: vc.pin,
         qrCode: vc.qrCode,
         tokenizedLink: vc.tokenizedLink,
@@ -2888,76 +2813,17 @@ export async function getOrderById(orderId) {
       };
     });
 
-    // Transform bulk recipients if they exist
-    const transformedBulkRecipients = order.bulkRecipients.map((br) => {
-      const voucherCode = br.voucherCode;
-
-      // Calculate voucher status if voucher code exists
-      let voucherStatus = "Pending";
-      if (voucherCode) {
-        const totalRedeemed =
-          voucherCode.redemptions?.reduce(
-            (sum, r) => sum + (r.amountRedeemed || 0),
-            0,
-          ) || 0;
-
-        if (order.redemptionStatus === "Cancelled") {
-          voucherStatus = "Cancelled";
-        } else if (voucherCode.isRedeemed || voucherCode.remainingValue === 0) {
-          voucherStatus = "Redeemed";
-        } else if (
-          voucherCode.expiresAt &&
-          new Date(voucherCode.expiresAt) < new Date()
-        ) {
-          voucherStatus = "Expired";
-        } else if (!order.isActive) {
-          voucherStatus = "Inactive";
-        } else {
-          voucherStatus = "Active";
-        }
-      }
-
-      return {
-        id: br.id,
-        recipientName: br.recipientName,
-        recipientEmail: br.recipientEmail,
-        recipientPhone: br.recipientPhone,
-        personalMessage: br.personalMessage,
-        emailSent: br.emailSent,
-        emailSentAt: br.emailSentAt,
-        emailDelivered: br.emailDelivered,
-        emailDeliveredAt: br.emailDeliveredAt,
-        emailError: br.emailError,
-        rowNumber: br.rowNumber,
-        voucherCodeId: br.voucherCodeId,
-        voucherCode: voucherCode
-          ? {
-              id: voucherCode.id,
-              code: voucherCode.code,
-              originalValue: voucherCode.originalValue,
-              remainingValue: voucherCode.remainingValue,
-              isRedeemed: voucherCode.isRedeemed,
-              redeemedAt: voucherCode.redeemedAt,
-              expiresAt: voucherCode.expiresAt,
-              status: voucherStatus,
-              redemptionCount: voucherCode.redemptions?.length || 0,
-            }
-          : null,
-      };
-    });
-
-    // Attach computed fields to the order object
-    const enrichedOrder = {
-      ...order,
-      redeemedAt: orderRedeemedAt,
-      voucherCodes: transformedVoucherCodes,
-      bulkRecipients: transformedBulkRecipients,
-      isBulkOrder: order.bulkRecipients.length > 0,
+    return {
+      success: true,
+      data: {
+        ...order,
+        redeemedAt: orderRedeemedAt,
+        voucherCodes: transformedVoucherCodes,
+        isBulkOrder: order.bulkRecipients.length > 0,
+      },
     };
-
-    return { success: true, data: enrichedOrder };
   } catch (error) {
-    console.error(`Error fetching order with ID ${orderId}:`, error);
+    console.error(`Error fetching order ${orderId}:`, error);
     return {
       success: false,
       message: "Failed to fetch order",
@@ -2966,6 +2832,7 @@ export async function getOrderById(orderId) {
     };
   }
 }
+
 
 export async function getOrdersByUserId(userId) {
   try {
@@ -3085,13 +2952,13 @@ export async function modifyRecipientAndResend(data) {
 
     // Determine order type based on bulkOrderNumber and deliveryMethod
     const isBulkOrderWithMultipleRecipients =
-      order.bulkOrderNumber && 
-      order.bulkRecipients && 
+      order.bulkOrderNumber &&
+      order.bulkRecipients &&
       order.bulkRecipients.length > 0 &&
       order.deliveryMethod === "multiple";
 
     const isBulkOrderWithSingleEmail =
-      order.bulkOrderNumber && 
+      order.bulkOrderNumber &&
       order.deliveryMethod === "email" &&
       (!order.bulkRecipients || order.bulkRecipients.length === 0);
 

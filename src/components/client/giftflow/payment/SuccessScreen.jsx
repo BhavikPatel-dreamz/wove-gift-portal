@@ -65,12 +65,12 @@ const SuccessScreen = ({
   }
 
   return (
-    <div className="min-h-screen px-4 py-30 md:px-6 md:py-40">
+    <div className="min-h-screen px-4 py-5 md:px-6 md:py-5">
       <div className="max-w-[1440px] flex items-center justify-center m-auto mb-6">
         <div className="max-w-[800px] m-auto rounded-2xl p-8 text-center">
           {isBulkMode ? (
             <div>
-              <h1 className="text-[40px] font-bold text-[#1A1A1A] mb-4 fontPoppins">
+              <h1 className="text-[40px] font-bold text-[#1A1A1A] mb-4 mt-5 fontPoppins">
                 Your bulk order is complete!
               </h1>
               <p className="font-normal text-[16px] text-[#4A4A4A] mb-6">
@@ -78,7 +78,7 @@ const SuccessScreen = ({
               </p>
             </div>
           ) : (
-            <div className="mt-25">
+            <div className="mt-8">
               <img
                 src={isPrintDelivery ? "/Success.gif" : "/Success.gif"}
                 alt={"Success"}
@@ -204,12 +204,6 @@ const SuccessScreen = ({
                               PIN: <span className="font-mono font-semibold">{voucherCode.pin}</span>
                             </p>
                           )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500 mb-1">Value</p>
-                          <p className="font-bold text-gray-900">
-                            R{voucherCode.originalValue}
-                          </p>
                         </div>
                       </div>
                     </div>
