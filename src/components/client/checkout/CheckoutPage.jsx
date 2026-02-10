@@ -40,7 +40,7 @@ const CheckoutPage = () => {
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
-  const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
+  const [selectedPaymentTab, setSelectedPaymentTab] = useState('');
   const [showThankYou, setShowThankYou] = useState(false);
   const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderIds, setPendingOrderIds] = useState([]);
@@ -659,7 +659,7 @@ const CheckoutPage = () => {
             )} */}
 
             {/* ✅ TEST MODE: Simple payment button */}
-            {selectedPaymentTab === 'card' && (
+            {selectedPaymentTab !== '' && (
               <button
                 onClick={async () => {
                   const result = await handleInitiatePayment();
