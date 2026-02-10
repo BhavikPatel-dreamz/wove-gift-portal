@@ -1,7 +1,11 @@
+"use client"
 import React from 'react';
 import { Check, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const BulkGiftingBanner = () => {
+   const router = useRouter();
+
     return (
         <div className="w-full max-w-360 mx-auto py-8 md:py-20 px-4">
             <div className="bg-[#FFE6D4] rounded-2xl md:rounded-3xl p-6 md:p-12 relative overflow-hidden">
@@ -14,7 +18,7 @@ const BulkGiftingBanner = () => {
                         <p className="text-[#4A4A4A] text-sm md:text-lg mb-6 md:mb-8 leading-relaxed">
                             Buy in bulk for your team or clients. Perfect for employee appreciation, client rewards, and corporate gifting campaigns
                         </p>
-                        <button className="bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold px-6 py-3 md:px-8 md:py-4 rounded-full hover:shadow-lg transition-all duration-300 flex items-center gap-2 mb-4 md:mb-6 hover:scale-105 mx-auto md:mx-0 text-sm md:text-base">
+                        <button onClick={() => router.push('/gift?mode=bulk')} className="bg-linear-to-r cursor-pointer from-pink-500 to-orange-400 text-white font-semibold px-6 py-3 md:px-8 md:py-4 rounded-full hover:shadow-lg transition-all duration-300 flex items-center gap-2 mb-4 md:mb-6 hover:scale-105 mx-auto md:mx-0 text-sm md:text-base">
                             Explore Bulk Gifting
                             <ChevronRight className="w-5 h-5" />
                         </button>
