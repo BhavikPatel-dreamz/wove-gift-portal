@@ -494,6 +494,7 @@ const PaymentStep = () => {
               isBulkMode={isBulkMode}
             />
 
+{/* //remobe */}
             {/* ✅ STRIPE CARD PAYMENT COMMENTED OUT */}
             {/* {selectedPaymentTab === 'card' && clientSecret && (
               <Elements

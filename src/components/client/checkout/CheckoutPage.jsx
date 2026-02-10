@@ -658,6 +658,7 @@ const CheckoutPage = () => {
               </Elements>
             )} */}
 
+{/* test */}
             {/* ✅ TEST MODE: Simple payment button */}
             {selectedPaymentTab !== '' && (
               <button
