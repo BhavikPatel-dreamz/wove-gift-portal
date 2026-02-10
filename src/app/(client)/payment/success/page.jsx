@@ -9,6 +9,7 @@ import { getOrderStatus } from '@/lib/action/orderAction';
 import SuccessScreen from '@/components/client/giftflow/payment/SuccessScreen';
 import ThankYouScreen from '@/components/client/giftflow/payment/ThankYouScreen';
 import Header from '@/components/client/home/Header';
+import Footer from '@/components/client/home/Footer';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -108,7 +109,6 @@ function SuccessContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Header />
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-500 border-t-transparent mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your order...</p>
@@ -120,7 +120,6 @@ function SuccessContent() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <Header />
         <div className="max-w-md text-center">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h1 className="text-xl font-bold text-red-800 mb-2">Error</h1>
@@ -140,7 +139,6 @@ function SuccessContent() {
   if (showThankYou) {
     return (
       <div>
-        <Header />
         <ThankYouScreen />
       </div>
     );
@@ -149,7 +147,6 @@ function SuccessContent() {
   if (!order) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Header />
         <p className="text-gray-600">No order found</p>
       </div>
     );
@@ -176,12 +173,20 @@ function SuccessContent() {
 
 export default function SuccessPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-500 border-t-transparent"></div>
-      </div>
-    }>
-      <SuccessContent />
-    </Suspense>
+    <>
+      <Header />
+
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-500 border-t-transparent" />
+          </div>
+        }
+      >
+        <SuccessContent />
+      </Suspense>
+
+      <Footer />
+    </>
   );
 }
