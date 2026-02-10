@@ -678,32 +678,6 @@ const BulkReviewStep = () => {
                                                         </svg>
                                                         <span>{csvData.length} recipients loaded successfully</span>
                                                     </div>
-
-                                                    <div className="mt-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
-                                                        <table className="w-full text-xs">
-                                                            <thead className="bg-gray-100 sticky top-0">
-                                                                <tr>
-                                                                    <th className="p-2 text-left font-semibold">#</th>
-                                                                    <th className="p-2 text-left font-semibold">Name</th>
-                                                                    <th className="p-2 text-left font-semibold">Email</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {previewData.map((row, idx) => (
-                                                                    <tr key={idx} className="border-t hover:bg-gray-50">
-                                                                        <td className="p-2 text-gray-500">{idx + 1}</td>
-                                                                        <td className="p-2">{row.name}</td>
-                                                                        <td className="p-2 text-gray-600">{row.email}</td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                    {remainingCount > 0 && (
-                                                        <p className="text-xs text-gray-500 mt-2 text-center">
-                                                            ...and {remainingCount} more recipient{remainingCount !== 1 ? 's' : ''}
-                                                        </p>
-                                                    )}
                                                 </div>
                                             )}
                                         </div>
