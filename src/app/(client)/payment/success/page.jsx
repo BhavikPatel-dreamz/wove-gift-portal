@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { clearCart, clearBulkCart } from '@/redux/cartSlice';
-import { resetFlow } from '@/redux/giftFlowSlice';
+import { resetFlow,clearCsvFileData } from '@/redux/giftFlowSlice';
 import { getOrderStatus } from '@/lib/action/orderAction';
 import SuccessScreen from '@/components/client/giftflow/payment/SuccessScreen';
 import ThankYouScreen from '@/components/client/giftflow/payment/ThankYouScreen';
@@ -71,6 +71,7 @@ function SuccessContent() {
       dispatch(clearCart());
       dispatch(clearBulkCart());
       dispatch(resetFlow());
+      dispatch(clearCsvFileData());
 
       setLoading(false);
     } catch (err) {

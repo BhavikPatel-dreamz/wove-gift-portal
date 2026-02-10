@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import ProgressIndicator from "./ProgressIndicator";
-import { goBack, resetFlow } from "../../../redux/giftFlowSlice";
+import { goBack, resetFlow, clearCsvFileData } from "../../../redux/giftFlowSlice";
 import { ArrowLeft } from "lucide-react";
 
 const FinalSelectionStep = () => {
@@ -140,7 +140,10 @@ const FinalSelectionStep = () => {
               🎉 Complete Selection
             </button>
             <button
-              onClick={() => dispatch(resetFlow())}
+              onClick={() => {
+                dispatch(resetFlow());
+                dispatch(clearCsvFileData());
+              }}
               className="px-8 py-4 border-2 border-gray-300 text-gray-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
             >
               Start Over

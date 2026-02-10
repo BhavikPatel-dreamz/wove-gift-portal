@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { goBack, goNext, setIsConfirmed, setCompanyInfo } from '../../../redux/giftFlowSlice';
+import { goBack, goNext, setIsConfirmed, setCompanyInfo, setCsvFileData } from '../../../redux/giftFlowSlice';
 import { updateBulkCompanyInfo, addToBulk, addToBulkInCart } from '../../../redux/cartSlice';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
@@ -16,7 +16,7 @@ const BulkReviewStep = () => {
     const router = useRouter();
     const session = useSession();
 
-    const { selectedBrand, isConfirmed, companyInfo: companyInfoFromRedux } = useSelector((state) => state.giftFlowReducer);
+    const { selectedBrand, isConfirmed, companyInfo: companyInfoFromRedux, csvFileData } = useSelector((state) => state.giftFlowReducer);
     const { bulkItems } = useSelector((state) => state.cart);
 
     const searchParams = useSearchParams();
@@ -31,16 +31,26 @@ const BulkReviewStep = () => {
 
     // Local state only for form validation errors
     const [errors, setErrors] = useState({});
-    const [csvFile, setCsvFile] = useState(null);
-    const [csvData, setCsvData] = useState([]);
-    const [csvError, setCsvError] = useState('');
     const [isProcessingFile, setIsProcessingFile] = useState(false);
+
+    // Initialize local state from Redux
+    const [csvFile, setCsvFile] = useState(null);
+    const [csvData, setCsvData] = useState(csvFileData?.csvData || []);
+    const [csvError, setCsvError] = useState(csvFileData?.csvError || '');
 
     useEffect(() => {
         if (!companyInfoFromRedux && currentBulkOrder?.companyInfo) {
             dispatch(setCompanyInfo(currentBulkOrder.companyInfo));
         }
     }, [companyInfoFromRedux, currentBulkOrder, dispatch]);
+
+    // Load CSV data from Redux on mount
+    useEffect(() => {
+        if (csvFileData?.csvData && csvFileData.csvData.length > 0) {
+            setCsvData(csvFileData.csvData);
+            setCsvError(csvFileData.csvError || '');
+        }
+    }, [csvFileData]);
 
     const companyInfo = companyInfoFromRedux || currentBulkOrder?.companyInfo || {
         companyName: '',
@@ -85,7 +95,13 @@ const BulkReviewStep = () => {
 
         const fileExtension = file.name.split('.').pop()?.toLowerCase();
         if (!['csv', 'xlsx', 'xls'].includes(fileExtension)) {
-            setCsvError('Please upload a CSV or Excel file');
+            const errorMsg = 'Please upload a CSV or Excel file';
+            setCsvError(errorMsg);
+            dispatch(setCsvFileData({
+                fileName: null,
+                csvData: [],
+                csvError: errorMsg
+            }));
             return;
         }
 
@@ -109,11 +125,27 @@ const BulkReviewStep = () => {
             }
 
             if (!parsedData || parsedData.length === 0) {
-                setCsvError('File is empty or has no data');
+                const errorMsg = 'File is empty or has no data';
+                setCsvError(errorMsg);
+                dispatch(setCsvFileData({
+                    fileName: file.name,
+                    csvData: [],
+                    csvError: errorMsg
+                }));
+                setIsProcessingFile(false);
+                return;
             }
 
             if (parsedData.length > 1000) {
-                setCsvError('Maximum 1000 recipients allowed per upload');
+                const errorMsg = 'Maximum 1000 recipients allowed per upload';
+                setCsvError(errorMsg);
+                dispatch(setCsvFileData({
+                    fileName: file.name,
+                    csvData: [],
+                    csvError: errorMsg
+                }));
+                setIsProcessingFile(false);
+                return;
             }
 
             const requiredColumns = ['name', 'email'];
@@ -123,7 +155,15 @@ const BulkReviewStep = () => {
             );
 
             if (!hasRequiredColumns) {
-                setCsvError('CSV must contain "name" and "email" columns (case-insensitive)');
+                const errorMsg = 'CSV must contain "name" and "email" columns (case-insensitive)';
+                setCsvError(errorMsg);
+                dispatch(setCsvFileData({
+                    fileName: file.name,
+                    csvData: [],
+                    csvError: errorMsg
+                }));
+                setIsProcessingFile(false);
+                return;
             }
 
             const normalizedData = [];
@@ -175,31 +215,62 @@ const BulkReviewStep = () => {
                 });
             }
 
+            let errorMsg = '';
             if (errors.length > 0) {
                 const errorSummary = errors.length > 10
                     ? `${errors.slice(0, 10).join('\n')}\n...and ${errors.length - 10} more errors`
                     : errors.join('\n');
 
                 if (normalizedData.length === 0) {
-                    setCsvError(`All rows have errors:\n${errorSummary}`);
+                    errorMsg = `All rows have errors:\n${errorSummary}`;
+                    setCsvError(errorMsg);
+                    dispatch(setCsvFileData({
+                        fileName: file.name,
+                        csvData: [],
+                        csvError: errorMsg
+                    }));
+                    setIsProcessingFile(false);
+                    return;
                 } else {
-                    setCsvError(`Warning: ${errors.length} row(s) skipped due to errors. ${normalizedData.length} valid recipients loaded.`);
+                    errorMsg = `Warning: ${errors.length} row(s) skipped due to errors. ${normalizedData.length} valid recipients loaded.`;
+                    setCsvError(errorMsg);
                 }
             }
 
             if (normalizedData.length === 0) {
-                setCsvError('No valid recipients found in file');
+                errorMsg = 'No valid recipients found in file';
+                setCsvError(errorMsg);
+                dispatch(setCsvFileData({
+                    fileName: file.name,
+                    csvData: [],
+                    csvError: errorMsg
+                }));
+                setIsProcessingFile(false);
+                return;
             }
 
             // ✅ Validate quantity matches the bulk order quantity
             const orderQuantity = currentBulkOrder?.quantity || 0;
             if (normalizedData.length !== orderQuantity) {
-                setCsvError(
-                    `Recipient count mismatch: Your bulk order is for ${orderQuantity} vouchers, but the uploaded file contains ${normalizedData.length} recipients. Please upload a file with exactly ${orderQuantity} recipients.`
-                );
+                errorMsg = `Recipient count mismatch: Your bulk order is for ${orderQuantity} vouchers, but the uploaded file contains ${normalizedData.length} recipients. Please upload a file with exactly ${orderQuantity} recipients.`;
+                setCsvError(errorMsg);
+                dispatch(setCsvFileData({
+                    fileName: file.name,
+                    csvData: [],
+                    csvError: errorMsg
+                }));
+                setIsProcessingFile(false);
+                return;
             }
 
             setCsvData(normalizedData);
+            
+            // Save to Redux
+            dispatch(setCsvFileData({
+                fileName: file.name,
+                csvData: normalizedData,
+                csvError: errorMsg
+            }));
 
             setTimeout(() => {
                 dispatch(updateBulkCompanyInfo({
@@ -212,8 +283,14 @@ const BulkReviewStep = () => {
 
         } catch (error) {
             console.error('File processing error:', error);
-            setCsvError(error.message || 'Error parsing file. Please check the format and try again.');
+            const errorMsg = error.message || 'Error parsing file. Please check the format and try again.';
+            setCsvError(errorMsg);
             setCsvData([]);
+            dispatch(setCsvFileData({
+                fileName: file?.name || null,
+                csvData: [],
+                csvError: errorMsg
+            }));
         } finally {
             setIsProcessingFile(false);
         }
@@ -277,6 +354,11 @@ const BulkReviewStep = () => {
             setCsvData([]);
             setCsvFile(null);
             setCsvError('');
+            dispatch(setCsvFileData({
+                fileName: null,
+                csvData: [],
+                csvError: ''
+            }));
         }
     }, [companyInfo, dispatch]);
 
@@ -622,42 +704,99 @@ const BulkReviewStep = () => {
                                                 <button
                                                     type="button"
                                                     onClick={downloadSampleCSV}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                                    className="text-xs text-blue-600 hover:text-blue-800 underline cursor-pointer"
                                                 >
                                                     Download Sample CSV
                                                 </button>
                                             </div>
 
-                                            {/* ✅ Show required quantity */}
+                                            {/* Required quantity */}
                                             <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
                                                 <p className="text-sm font-semibold text-yellow-800">
                                                     ⚠️ Required: Exactly {currentBulkOrder?.quantity || 0} recipients
                                                 </p>
                                                 <p className="text-xs text-yellow-700 mt-1">
-                                                    Your bulk order is for {currentBulkOrder?.quantity || 0} vouchers.
                                                     Please upload a file with exactly {currentBulkOrder?.quantity || 0} recipients.
                                                 </p>
                                             </div>
 
                                             <p className="text-sm text-gray-600 mb-3">
-                                                Upload a CSV or Excel file with columns: <strong>name</strong>, <strong>email</strong>, phone (optional), message (optional)
+                                                CSV or Excel file with columns: <strong>name</strong>, <strong>email</strong>, phone (optional), message (optional)
                                             </p>
 
-                                            <div className="relative">
-                                                <input
-                                                    type="file"
-                                                    accept=".csv,.xlsx,.xls"
-                                                    onChange={handleFileUpload}
-                                                    disabled={isProcessingFile}
-                                                    className={`w-full text-sm ${isProcessingFile ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                />
-                                                {isProcessingFile && (
-                                                    <div className="absolute right-2 top-2">
-                                                        <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                                            {/* Show uploaded file name if exists */}
+                                            {csvFileData?.fileName && csvData.length > 0 && !isProcessingFile && (
+                                                <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd"
+                                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                                    clipRule="evenodd" />
+                                                            </svg>
+                                                            <div>
+                                                                <p className="text-green-800 font-medium text-sm">{csvFileData.fileName}</p>
+                                                                <p className="text-green-600 text-xs">{csvData.length} recipients loaded</p>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCsvData([]);
+                                                                setCsvFile(null);
+                                                                setCsvError('');
+                                                                dispatch(setCsvFileData({
+                                                                    fileName: null,
+                                                                    csvData: [],
+                                                                    csvError: ''
+                                                                }));
+                                                            }}
+                                                            className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                                        >
+                                                            Remove
+                                                        </button>
                                                     </div>
-                                                )}
-                                            </div>
+                                                </div>
+                                            )}
 
+                                            {/* Upload Box - only show if no file uploaded */}
+                                            {(!csvFileData?.fileName || csvData.length === 0) && (
+                                                <label className="relative flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer
+        bg-white border-blue-300 hover:bg-blue-100 transition">
+
+                                                    <input
+                                                        type="file"
+                                                        accept=".csv,.xlsx,.xls"
+                                                        onChange={handleFileUpload}
+                                                        disabled={isProcessingFile}
+                                                        className="hidden"
+                                                    />
+
+                                                    {!isProcessingFile ? (
+                                                        <>
+                                                            <svg className="w-10 h-10 text-blue-500 mb-2" fill="none" stroke="currentColor" strokeWidth="2"
+                                                                viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round"
+                                                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                            </svg>
+
+                                                            <p className="text-sm text-gray-700 font-medium">
+                                                                Click to upload or drag & drop
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                CSV, XLSX (max 5MB)
+                                                            </p>
+                                                        </>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center">
+                                                            <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+                                                            <p className="text-sm text-blue-600">Processing file…</p>
+                                                        </div>
+                                                    )}
+                                                </label>
+                                            )}
+
+                                            {/* Error messages */}
                                             {csvError && (
                                                 <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                                                     <p className="text-red-700 text-sm whitespace-pre-wrap">{csvError}</p>
@@ -667,17 +806,6 @@ const BulkReviewStep = () => {
                                             {errors.csvFile && (
                                                 <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                                                     <p className="text-red-700 text-sm">{errors.csvFile}</p>
-                                                </div>
-                                            )}
-
-                                            {csvData.length > 0 && !isProcessingFile && (
-                                                <div className="mt-3">
-                                                    <div className="flex items-center gap-2 text-green-600 text-sm font-medium mb-2">
-                                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                        </svg>
-                                                        <span>{csvData.length} recipients loaded successfully</span>
-                                                    </div>
                                                 </div>
                                             )}
                                         </div>

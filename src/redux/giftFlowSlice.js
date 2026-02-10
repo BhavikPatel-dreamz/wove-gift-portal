@@ -30,6 +30,11 @@ const giftFlowSlice = createSlice({
     companyInfo: null,
     isConfirmed:false,
     isPaymentConfirmed: false,
+    csvFileData: {
+      fileName: null,
+      csvData: [],
+      csvError: ''
+    },
 
     // Brand filtering & pagination
     searchTerm: "",
@@ -157,6 +162,11 @@ const giftFlowSlice = createSlice({
           printDetails: {},
         },
         companyInfo: null,
+        csvFileData: {
+          fileName: null,
+          csvData: [],
+          csvError: ''
+        },
         searchTerm: "",
         selectedCategory: "All Categories",
         currentPage: 1,
@@ -285,6 +295,19 @@ const giftFlowSlice = createSlice({
       state.selectedCategory = "All Categories";
       state.sortBy = "featured";
       state.currentPage = 1;
+    },
+
+    // CSV File Data
+    setCsvFileData: (state, action) => {
+      state.csvFileData = action.payload;
+    },
+
+    clearCsvFileData: (state) => {
+      state.csvFileData = {
+        fileName: null,
+        csvData: [],
+        csvError: ''
+      };
     },
 
     // Brands Data
@@ -516,6 +539,8 @@ export const {
   setIsPaymentConfirmed,
   setQuantity,
   setSelectedDenomination,
+  setCsvFileData,
+  clearCsvFileData,
 } = giftFlowSlice.actions;
 
 export default giftFlowSlice.reducer;

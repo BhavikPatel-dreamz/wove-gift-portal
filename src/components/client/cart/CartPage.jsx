@@ -15,7 +15,7 @@ import {
 import { removeFromCart, removeFromBulk } from '@/redux/cartSlice';
 import { currencyList } from '../../brandsPartner/currency';
 import toast from 'react-hot-toast';
-import { resetFlow } from '../../../redux/giftFlowSlice';
+import { resetFlow, clearCsvFileData } from '../../../redux/giftFlowSlice';
 
 const CartPage = () => {
   const cartItems = useSelector((state) => state.cart.items);
@@ -88,6 +88,7 @@ const CartPage = () => {
 
   const handleRedirect = () =>{
     dispatch(resetFlow());
+    dispatch(clearCsvFileData());
     router.push('/gift');
   }
 

@@ -1,5 +1,5 @@
 "use client"
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Gift, Sparkles, Shield, Globe } from 'lucide-react';
 import Link from 'next/link';
 import DashboardWishlistIcon from '@/icons/DashboardWishlistIcon';
@@ -9,7 +9,7 @@ import DashboardPartyPopper from '@/icons/DashboardPartyPopper';
 import DashboardGiftIcon from '@/icons/DashboardGiftIcon';
 import DashboardConfettiBall from '@/icons/DashboardConfettiBall';
 import { useDispatch } from 'react-redux';
-import { resetFlow, setCurrentStep } from '@/redux/giftFlowSlice';
+import { resetFlow, setCurrentStep,clearCsvFileData } from '@/redux/giftFlowSlice';
 
 const HeroSection = () => {
   const dispatch = useDispatch();
@@ -17,7 +17,15 @@ const HeroSection = () => {
   const handleClick = () => {
     dispatch(resetFlow());
     dispatch(setCurrentStep(1));
+    dispatch(clearCsvFileData());
   };
+
+
+  useEffect(() => {
+    dispatch(resetFlow());
+    dispatch(setCurrentStep(1));
+    dispatch(clearCsvFileData());
+  }, []);
 
 
   return (

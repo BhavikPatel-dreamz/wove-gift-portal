@@ -7,7 +7,7 @@ import GiftCardIcon from '@/icons/GiftCardIcon';
 import BoxIcon from '@/icons/BoxIcon';
 import RightArrow from '@/icons/RightArrow';
 import { useDispatch } from 'react-redux';
-import { setCurrentStep, resetFlow } from '@/redux/giftFlowSlice';
+import { setCurrentStep, resetFlow,clearCsvFileData } from '@/redux/giftFlowSlice';
 
 const ActionSelectionCards = (props) => {
   const router = useRouter();
@@ -54,6 +54,7 @@ const ActionSelectionCards = (props) => {
     if (card.path.startsWith('/gift')) {
       dispatch(resetFlow());
       dispatch(setCurrentStep(1));
+      dispatch(clearCsvFileData());
     }
     router.push(card.path);
   };

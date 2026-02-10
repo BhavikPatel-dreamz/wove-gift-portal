@@ -15,7 +15,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { destroySession } from '../../../lib/action/userAction/session';
 import { usePathname, useRouter } from 'next/navigation';
-import { resetFlow } from '../../../redux/giftFlowSlice';
+import { resetFlow,clearCsvFileData } from '../../../redux/giftFlowSlice';
 import { initializeCart, initializeBulkCart } from '../../../redux/cartSlice';
 
 
@@ -98,7 +98,10 @@ const Header = () => {
   };
 
   const handleNavClick = (item) => {
-    if (item === 'Send Gift Card') dispatch(resetFlow());
+    if (item === 'Send Gift Card') {
+      dispatch(resetFlow());
+      dispatch(clearCsvFileData());
+    }
     setMobileMenuOpen(false);
   };
   const pathname = usePathname();

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import React from "react";
 import { useDispatch } from "react-redux";
-import { setCurrentStep, resetFlow } from "@/redux/giftFlowSlice";
+import { setCurrentStep, resetFlow, clearCsvFileData } from "@/redux/giftFlowSlice";
 
 const BulkGifting = () => {
   const dispatch = useDispatch();
@@ -10,6 +10,7 @@ const BulkGifting = () => {
   const handleClick = () => {
     dispatch(resetFlow());
     dispatch(setCurrentStep(1));
+    dispatch(clearCsvFileData());
   };
 
   return (

@@ -16,7 +16,7 @@ import SuccessScreen from "../giftflow/payment/SuccessScreen";
 import { currencyList } from '../../brandsPartner/currency';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCart, clearBulkCart } from '@/redux/cartSlice';
-import { resetFlow } from '../../../redux/giftFlowSlice';
+import { resetFlow,clearCsvFileData } from '../../../redux/giftFlowSlice';
 
 // ✅ STRIPE CODE COMMENTED OUT
 // if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
@@ -417,6 +417,7 @@ const CheckoutPage = () => {
         });
         setIsProcessing(false);
         dispatch(resetFlow());
+        dispatch(clearCsvFileData());
 
         if (anyInProgress) {
           toast.success(
