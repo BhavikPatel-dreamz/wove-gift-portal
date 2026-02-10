@@ -1,136 +1,187 @@
-"use client";
+'use client';
 
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, XCircle, Loader } from "lucide-react";
-import Header from "../../../../components/client/home/Header";
-import Footer from "../../../../components/client/home/Footer";
-import { getOrderById } from "../../../../lib/action/orderAction";
-import SuccessScreen from "../../../../components/client/giftflow/payment/SuccessScreen";
-import ThankYouScreen from "../../../../components/client/giftflow/payment/ThankYouScreen";
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
+import { clearCart, clearBulkCart } from '@/redux/cartSlice';
+import { resetFlow } from '@/redux/giftFlowSlice';
+import { getOrderStatus } from '@/lib/action/orderAction';
+import SuccessScreen from '@/components/client/giftflow/payment/SuccessScreen';
+import ThankYouScreen from '@/components/client/giftflow/payment/ThankYouScreen';
+import Header from '@/components/client/home/Header';
 
-
-const PaymentSuccessContent = () => {
-  const router = useRouter();
+function SuccessContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const dispatch = useDispatch();
+  
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showThankYou, setShowThankYou] = useState(false);
 
-
   useEffect(() => {
-    const verifyOrder = async () => {
-      const orderId = searchParams.get("orderId");
+    const orderId = searchParams.get('orderId');
+    
+    if (!orderId) {
+      setError('No order ID provided');
+      setLoading(false);
+      return;
+    }
 
-      if (!orderId) {
-        setError("No order ID found in the URL.");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const orderData = await getOrderById(orderId);
-
-        if (orderData?.data) {
-          if (orderData.data?.paymentStatus === "completed" || orderData.data?.paymentStatus === "COMPLETED") {
-            setOrder(orderData.data);
-          } else {
-            setError(
-              "Payment is still pending. We will notify you once it is complete."
-            );
-          }
-        } else {
-          setError("Could not retrieve order details.");
-        }
-      } catch (err) {
-        setError("An error occurred while verifying your payment.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    verifyOrder();
+    // ✅ Fetch the order and all related orders
+    fetchOrderAndRelated(orderId);
   }, [searchParams]);
 
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="flex flex-col items-center text-center">
-          <Loader className="w-16 h-16 text-blue-500 animate-spin" />
-          <h1 className="mt-4 text-2xl font-bold">
-            Verifying your payment...
-          </h1>
-          <p className="text-gray-600">Please do not close this page.</p>
-        </div>
-      );
-    }
+  const fetchOrderAndRelated = async (orderId) => {
+    try {
+      console.log('🔍 Fetching order:', orderId);
 
-    if (error) {
-      return (
-        <div className="flex flex-col items-center text-center">
-          <XCircle className="w-16 h-16 text-red-500" />
-          <h1 className="mt-4 text-2xl font-bold">Payment Issue</h1>
-          <p className="text-gray-600">{error}</p>
-          <button
-            onClick={() => router.push("/gift")}
-            className="mt-6 px-4 py-2 font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600"
-          >
-            Back to Gifting
-          </button>
-        </div>
-      );
-    }
+      // ✅ Get the primary order
+      const primaryOrderResponse = await getOrderStatus(orderId);
 
-    if (order) {
-      if (showThankYou) {
-        return <ThankYouScreen />;
+      console.log("primaryOrderResponse",primaryOrderResponse)
+      
+      if (!primaryOrderResponse.success) {
+        throw new Error(primaryOrderResponse.error || 'Failed to fetch order');
       }
 
-      const displayQuantity = order.totalOrderCount || 1;
-      const isBulkMode =
-        order.totalOrderCount > 1 || (order.quantity && order.quantity > 1);
+      const primaryOrder = primaryOrderResponse.order;
 
-      return (
-        <SuccessScreen
-          order={order}
-          selectedBrand={
-            order.brand ||
-            order.selectedBrand
-          }
-          quantity={displayQuantity}
-          selectedAmount={order.selectedAmount || order.amount}
-          isBulkMode={isBulkMode}
-          onNext={() => setShowThankYou(true)}
-          deliveryDetails={order.deliveryDetails}
-          processingInBackground={order.processingInBackground}
-          processingStatus={order.processingStatus}
-        />
-      );
+      // ✅ Find all orders with the same payment intent (multi-cart orders)
+      const relatedOrders = await fetchRelatedOrders(primaryOrder.paymentIntentId);
+
+      console.log('✅ Found orders:', {
+        primary: primaryOrder.orderNumber,
+        total: relatedOrders.length,
+        orders: relatedOrders.map(o => o.orderNumber)
+      });
+
+      // ✅ Set order with all related orders
+      setOrder({
+        ...primaryOrder,
+        allOrders: relatedOrders,
+        totalOrderCount: relatedOrders.length,
+        processingInBackground: false,
+        processingStatus: 'COMPLETED'
+      });
+
+      // ✅ Clear cart items
+      dispatch(clearCart());
+      dispatch(clearBulkCart());
+      dispatch(resetFlow());
+
+      setLoading(false);
+    } catch (err) {
+      console.error('❌ Error fetching order:', err);
+      setError(err.message || 'Failed to load order details');
+      setLoading(false);
     }
-
-
-    return null;
   };
 
-  return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow flex items-center justify-center px-4 py-12 bg-gray-50">
-        <div className="w-full max-w-lg">{renderContent()}</div>
-      </main>
-      <Footer />
-    </div>
-  );
-};
+  // ✅ Helper function to fetch all orders with same payment intent
+  const fetchRelatedOrders = async (paymentIntentId) => {
+    try {
+      const response = await fetch('/api/orders/by-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentIntentId })
+      });
 
-const PaymentSuccessPage = () => {
+      if (!response.ok) {
+        throw new Error('Failed to fetch related orders');
+      }
+
+      const data = await response.json();
+      return data.orders || [];
+    } catch (error) {
+      console.error('Error fetching related orders:', error);
+      // Fallback: return just the primary order
+      return [];
+    }
+  };
+
+  const handleNext = () => {
+    setShowThankYou(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Header />
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your order...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Header />
+        <div className="max-w-md text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h1 className="text-xl font-bold text-red-800 mb-2">Error</h1>
+            <p className="text-red-600">{error}</p>
+            <button
+              onClick={() => router.push('/')}
+              className="mt-4 bg-pink-500 text-white px-6 py-2 rounded-lg hover:bg-pink-600"
+            >
+              Go Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showThankYou) {
+    return (
+      <div>
+        <Header />
+        <ThankYouScreen />
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Header />
+        <p className="text-gray-600">No order found</p>
+      </div>
+    );
+  }
+
+  // ✅ Determine if bulk order
+  const allOrders = order.allOrders || [order];
+  const isActualBulkOrder = order.bulkOrderNumber || allOrders.some(o => o.bulkOrderNumber);
+
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <PaymentSuccessContent />
+    <SuccessScreen
+      order={order}
+      selectedBrand={order.brand || allOrders[0]?.brand}
+      quantity={order.totalOrderCount || order.quantity || 1}
+      selectedAmount={order.selectedAmount || order.amount}
+      isBulkMode={isActualBulkOrder}
+      onNext={handleNext}
+      deliveryDetails={order.receiverDetail}
+      processingInBackground={order.processingInBackground}
+      processingStatus={order.processingStatus}
+    />
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-500 border-t-transparent"></div>
+      </div>
+    }>
+      <SuccessContent />
     </Suspense>
   );
-};
-
-export default PaymentSuccessPage;
+}

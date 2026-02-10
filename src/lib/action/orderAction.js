@@ -2426,6 +2426,7 @@ export async function getOrderStatus(orderId) {
       currency: order.currency,
       quantity: order.quantity,
       paymentStatus: order.paymentStatus,
+      paymentIntentId: order.paymentIntentId,
       deliveryMethod: order.deliveryMethod,
       createdAt: order.createdAt,
       brand: order.brand,

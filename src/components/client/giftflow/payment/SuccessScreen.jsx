@@ -15,9 +15,9 @@ const SuccessScreen = ({
 
   // ✅ Get all orders from the cart purchase
   const allOrders = order?.allOrders || [order];
+  
+  // ✅ FIX: Multi-cart is when we have multiple orders AND it's not a bulk order
   const isMultiCart = allOrders.length > 1;
-
-  console.log("isMultiCart",isMultiCart,allOrders)
 
   // Check if this is a print delivery order
   const isPrintDelivery = order?.deliveryMethod === 'print';
@@ -96,7 +96,8 @@ const SuccessScreen = ({
     <div className="min-h-screen px-4 py-5 md:px-6 md:py-5">
       <div className="max-w-[1440px] flex items-center justify-center m-auto mb-6">
         <div className="max-w-[800px] m-auto rounded-2xl p-8 text-center">
-          {isBulkMode ? (
+          {/* ✅ Show bulk order message ONLY for actual bulk orders */}
+          {isBulkMode && !isMultiCart ? (
             <div>
               <h1 className="text-[40px] font-bold text-[#1A1A1A] mb-4 mt-5 fontPoppins">
                 Your bulk order is complete!
@@ -125,7 +126,7 @@ const SuccessScreen = ({
                   ? `Your ${allOrders.length} gift card${allOrders.length > 1 ? 's are' : ' is'} ready!`
                   : isPrintDelivery
                     ? `Your ${selectedBrand?.brandName || order?.brand?.brandName} gift card is ready to print!`
-                    : `Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way to Friend!`
+                    : `Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way!`
                 }
               </p>
 
@@ -135,8 +136,8 @@ const SuccessScreen = ({
             </div>
           )}
 
-          {/* ✅ Multi-Cart Order Summary */}
-          {isMultiCart && (
+          {/* ✅ Multi-Cart Order Summary - Show ONLY for multi-cart, NOT bulk */}
+          {isMultiCart && !isBulkMode && (
             <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">Order Summary</h2>
               <div className="h-px bg-gray-200 mb-6"></div>
@@ -196,7 +197,7 @@ const SuccessScreen = ({
             </div>
           )}
 
-          {/* Bulk Mode Order Details */}
+          {/* Bulk Mode Order Details - Show ONLY for actual bulk orders */}
           {isBulkMode && !isMultiCart && (
             <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">Order details</h2>
@@ -301,7 +302,7 @@ const SuccessScreen = ({
             </div>
           )}
 
-          {/* Non-Print Delivery Info */}
+          {/* Non-Print Delivery Info - Show for single orders only */}
           {!isBulkMode && !isPrintDelivery && !isMultiCart && (
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-gray-200 mb-6">
               <div className="flex items-start gap-3">

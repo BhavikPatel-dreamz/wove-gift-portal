@@ -136,7 +136,8 @@ export function proxy(request) {
     pathname.startsWith('/api/auth/csrf') || 
     pathname.startsWith('/api/auth/signin/google') ||
     pathname.startsWith('/api/auth/callback/google') ||
-      pathname.startsWith('/api/auth') 
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/orders') 
   ) {
     return NextResponse.next()
   }
