@@ -40,7 +40,7 @@ const CheckoutPage = () => {
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
-  const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
+  const [selectedPaymentTab, setSelectedPaymentTab] = useState('');
   const [showThankYou, setShowThankYou] = useState(false);
   const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderIds, setPendingOrderIds] = useState([]);
@@ -589,41 +589,7 @@ const CheckoutPage = () => {
             )} */}
 
             {/* ✅ TEST MODE: Simple payment button */}
-            {/* PayFast Payment Button */}
-            {selectedPaymentTab === 'payfast' && (
-              <button
-                onClick={async () => {
-                  const result = await handleInitiatePayment();
-                  if (result && result.payfastUrl) {
-                    // ✅ Redirect to PayFast with combined payment
-                    window.location.href = result.payfastUrl;
-                  }
-                }}
-                disabled={isProcessing || !isPaymentConfirmed}
-                className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 
-                       hover:from-blue-600 hover:to-blue-700
-                       disabled:from-gray-300 disabled:to-gray-400
-                       text-white py-3 sm:py-4 px-6 rounded-xl
-                       font-semibold text-sm sm:text-base
-                       transition-all duration-200
-                       flex items-center justify-center gap-2
-                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    {pendingOrderIds.length > 0 ? 'Redirecting to PayFast...' : `Preparing ${cartItems.length + bulkItems.length} order${cartItems.length + bulkItems.length > 1 ? 's' : ''}...`}
-                  </>
-                ) : (
-                  <>
-                    Pay with PayFast <span>→</span>
-                  </>
-                )}
-              </button>
-            )}
-
-
-            {selectedPaymentTab === 'card' && (
+            {selectedPaymentTab !== '' && (
               <button
                 onClick={async () => {
                   const result = await handleInitiatePayment();

@@ -29,7 +29,7 @@ const PaymentStep = () => {
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
-  const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
+  const [selectedPaymentTab, setSelectedPaymentTab] = useState('');
   const [showThankYou, setShowThankYou] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState(null);
   const [payfastUrl, setPayfastUrl] = useState(null);
@@ -360,21 +360,17 @@ const PaymentStep = () => {
                        flex items-center justify-center gap-2
                        shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                {isProcessing ? (
-                  <>
-                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    Redirecting to PayFast...
-                  </>
-                ) : (
-                  <>
-                    Pay with PayFast <span>→</span>
-                  </>
-                )}
-              </button>
-            )}
+                <StripeCardPayment
+                  clientSecret={clientSecret}
+                  isProcessing={isProcessing}
+                  onInitiatePayment={handleInitiatePayment}
+                  onPaymentSuccess={handlePaymentSuccess}
+                />
+              </Elements>
+            )} */}
 
-            {/* Card Payment Button */}
-            {selectedPaymentTab === 'card' && (
+            {/* ✅ TEST MODE: Simple payment button */}
+            {selectedPaymentTab !== '' && (
               <button
                 onClick={handleInitiatePayment}
                 disabled={isProcessing || !isPaymentConfirmed}
