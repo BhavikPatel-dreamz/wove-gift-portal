@@ -219,250 +219,205 @@ function generateExportDescription(orderData, orderNumber) {
 }
 
 // ==================== STEP 1: CREATE PENDING ORDER + PAYMENT INTENT ====================
-// ==================== STEP 1: CREATE PENDING ORDER + PAYMENT INTENT ====================
 export const createPendingOrder = async (orderData) => {
   try {
     const userId = orderData?.userId;
-
-    console.log("=======pending order data========", orderData);
-
     if (!userId) {
       throw new AuthenticationError("User not authenticated");
     }
 
-    orderData.userId = userId;
-    validateOrderData(orderData);
+    // ✅ NEW: Check if this is a multi-cart order
+    const isMultiCart = orderData.isMultiCart === true;
+    const cartOrders = orderData.cartOrders || [orderData];
+    
+    const createdOrders = [];
+    let totalPaymentAmount = 0;
 
-    const isBulkOrder = orderData.isBulkOrder === true;
-    const receiver = await createReceiverDetail(orderData);
+    // Create all orders first
+    for (const singleOrderData of cartOrders) {
+      validateOrderData(singleOrderData);
+      const isBulkOrder = singleOrderData.isBulkOrder === true;
+      const receiver = await createReceiverDetail(singleOrderData);
 
-    const quantity =
-      isBulkOrder && orderData.csvRecipients?.length > 0
-        ? orderData.csvRecipients.length
-        : orderData.quantity || 1;
+      const quantity = isBulkOrder && singleOrderData.csvRecipients?.length > 0
+        ? singleOrderData.csvRecipients.length
+        : singleOrderData.quantity || 1;
 
-    const amount = Number(orderData.selectedAmount.value);
-    const subtotal = amount * quantity;
-    const discount = orderData.discountAmount || 0;
-    const totalAmount = subtotal - discount;
+      const amount = Number(singleOrderData.selectedAmount.value);
+      const subtotal = amount * quantity;
+      const discount = singleOrderData.discountAmount || 0;
+      const totalAmount = subtotal - discount;
 
-    const orderBase = {
-      orderNumber: generateOrderNumber(),
-      brandId: orderData.selectedBrand.id,
-      occasionId: orderData.selectedOccasion,
-      isCustom:
-        orderData.selectedSubCategory.category === "custom" ||
-        orderData.selectedSubCategory.category === "CUSTOM",
-      subCategoryId:
-        orderData.selectedSubCategory.category === "custom" ||
-        orderData.selectedSubCategory.category === "CUSTOM"
+      totalPaymentAmount += totalAmount;
+
+      const orderBase = {
+        orderNumber: generateOrderNumber(),
+        brandId: singleOrderData.selectedBrand.id,
+        occasionId: singleOrderData.selectedOccasion,
+        isCustom: singleOrderData.selectedSubCategory.category === "custom" || 
+                  singleOrderData.selectedSubCategory.category === "CUSTOM",
+        subCategoryId: singleOrderData.selectedSubCategory.category === "custom" || 
+                       singleOrderData.selectedSubCategory.category === "CUSTOM"
           ? null
-          : orderData.selectedSubCategory?.id,
-      customCardId:
-        orderData.selectedSubCategory.category === "custom" ||
-        orderData.selectedSubCategory.category === "CUSTOM"
-          ? orderData.selectedSubCategory?.id
+          : singleOrderData.selectedSubCategory?.id,
+        customCardId: singleOrderData.selectedSubCategory.category === "custom" || 
+                      singleOrderData.selectedSubCategory.category === "CUSTOM"
+          ? singleOrderData.selectedSubCategory?.id
           : null,
-      userId: String(userId),
-      receiverDetailId: receiver.id,
-      amount,
-      quantity,
-      subtotal,
-      discount,
-      totalAmount,
-      currency: orderData.selectedAmount.currency || "ZAR",
-      paymentMethod: "payfast",
-      customImageUrl: orderData.customImageUrl || null,
-      customVideoUrl: orderData.customVideoUrl || null,
-      paymentStatus: "PENDING",
-      redemptionStatus: "Issued",
-      isActive: true,
-    };
+        userId: String(userId),
+        receiverDetailId: receiver.id,
+        amount,
+        quantity,
+        subtotal,
+        discount,
+        totalAmount,
+        currency: singleOrderData.selectedAmount.currency || "ZAR",
+        paymentMethod: "payfast",
+        customImageUrl: singleOrderData.customImageUrl || null,
+        customVideoUrl: singleOrderData.customVideoUrl || null,
+        paymentStatus: "PENDING",
+        redemptionStatus: "Issued",
+        isActive: true,
+      };
 
-    let order;
-    if (isBulkOrder) {
-      const scheduledFor =
-        orderData.selectedTiming?.type === "schedule"
+      let order;
+      if (isBulkOrder) {
+        const scheduledFor = singleOrderData.selectedTiming?.type === "schedule"
           ? new Date(
-              orderData.selectedTiming.year,
-              orderData.selectedTiming.month,
-              orderData.selectedTiming.date,
-              Number(orderData.selectedTiming.time.split(":")[0]),
-              Number(orderData.selectedTiming.time.split(":")[1]),
+              singleOrderData.selectedTiming.year,
+              singleOrderData.selectedTiming.month,
+              singleOrderData.selectedTiming.date,
+              Number(singleOrderData.selectedTiming.time.split(":")[0]),
+              Number(singleOrderData.selectedTiming.time.split(":")[1])
             )
           : null;
 
-      order = await prisma.order.create({
-        data: {
-          ...orderBase,
-          bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-          deliveryMethod: orderData.deliveryOption || "email",
-          message: orderData.personalMessage || "",
-          senderName: orderData.companyInfo.companyName,
-          sendType: "sendImmediately",
-          scheduledFor: scheduledFor,
-          senderEmail: orderData.companyInfo.contactEmail,
-        },
-      });
+        order = await prisma.order.create({
+          data: {
+            ...orderBase,
+            bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+            deliveryMethod: singleOrderData.deliveryOption || "email",
+            message: singleOrderData.personalMessage || "",
+            senderName: singleOrderData.companyInfo.companyName,
+            sendType: "sendImmediately",
+            scheduledFor,
+            senderEmail: singleOrderData.companyInfo.contactEmail,
+          },
+        });
 
-      // Store CSV recipients
-      if (orderData.csvRecipients && orderData.csvRecipients.length > 0) {
-        console.log(
-          `📝 Storing ${orderData.csvRecipients.length} CSV recipients in database`,
-        );
-
-        const bulkRecipientsData = orderData.csvRecipients.map(
-          (recipient, index) => ({
+        if (singleOrderData.csvRecipients && singleOrderData.csvRecipients.length > 0) {
+          const bulkRecipientsData = singleOrderData.csvRecipients.map((recipient, index) => ({
             orderId: order.id,
             recipientName: recipient.name,
             recipientEmail: recipient.email,
             recipientPhone: recipient.phone || null,
-            personalMessage:
-              recipient.message || orderData.personalMessage || null,
+            personalMessage: recipient.message || singleOrderData.personalMessage || null,
             rowNumber: recipient.rowNumber || index + 1,
             voucherCodeId: null,
-          }),
-        );
+          }));
 
-        await prisma.bulkRecipient.createMany({
-          data: bulkRecipientsData,
-          skipDuplicates: true,
-        });
-
-        console.log(
-          `✅ Successfully stored ${bulkRecipientsData.length} recipients for order ${order.orderNumber}`,
-        );
-      }
-    } else {
-      const scheduledFor =
-        orderData.selectedTiming?.type === "schedule"
+          await prisma.bulkRecipient.createMany({
+            data: bulkRecipientsData,
+            skipDuplicates: true,
+          });
+        }
+      } else {
+        const scheduledFor = singleOrderData.selectedTiming?.type === "schedule"
           ? new Date(
-              orderData.selectedTiming.year,
-              orderData.selectedTiming.month,
-              orderData.selectedTiming.date,
-              Number(orderData.selectedTiming.time.split(":")[0]),
-              Number(orderData.selectedTiming.time.split(":")[1]),
+              singleOrderData.selectedTiming.year,
+              singleOrderData.selectedTiming.month,
+              singleOrderData.selectedTiming.date,
+              Number(singleOrderData.selectedTiming.time.split(":")[0]),
+              Number(singleOrderData.selectedTiming.time.split(":")[1])
             )
           : null;
 
-      order = await prisma.order.create({
-        data: {
-          ...orderBase,
-          deliveryMethod: orderData.deliveryMethod || "whatsapp",
-          message: orderData.personalMessage || "",
-          senderName: orderData.deliveryDetails?.yourFullName || null,
-          sendType:
-            orderData.selectedTiming?.type === "immediate"
+        order = await prisma.order.create({
+          data: {
+            ...orderBase,
+            deliveryMethod: singleOrderData.deliveryMethod || "whatsapp",
+            message: singleOrderData.personalMessage || "",
+            senderName: singleOrderData.deliveryDetails?.yourFullName || null,
+            sendType: singleOrderData.selectedTiming?.type === "immediate"
               ? "sendImmediately"
               : "scheduleLater",
-          scheduledFor,
-          senderEmail: orderData.deliveryDetails?.yourEmailAddress || null,
-        },
-      });
+            scheduledFor,
+            senderEmail: singleOrderData.deliveryDetails?.yourEmailAddress || null,
+          },
+        });
+      }
+
+      createdOrders.push(order);
     }
 
-    console.log("✅ Pending order created:", order.orderNumber);
-
-    // ==================== PAYFAST PAYMENT DATA ====================
-
-    const payfastConfig = getPayFastConfig(order.id);
-
-    // Extract customer name from billing address or delivery details
-    const customerName = isBulkOrder
-      ? orderData.companyInfo.companyName
-      : orderData.deliveryDetails?.yourFullName || "Customer";
+    // ✅ Generate ONE PayFast payment for ALL orders
+    const payfastConfig = getPayFastConfig(createdOrders[0].id);
+    
+    const customerName = isMultiCart 
+      ? (cartOrders[0].deliveryDetails?.yourFullName || cartOrders[0].companyInfo?.companyName || "Customer")
+      : (orderData.deliveryDetails?.yourFullName || orderData.companyInfo?.companyName || "Customer");
 
     const [firstName, ...lastNameParts] = customerName.split(" ");
     const lastName = lastNameParts.join(" ") || "";
 
-    const customerEmail = isBulkOrder
-      ? orderData.companyInfo.contactEmail
-      : orderData.deliveryDetails?.yourEmailAddress || receiver.email;
+    const customerEmail = isMultiCart
+      ? (cartOrders[0].deliveryDetails?.yourEmailAddress || cartOrders[0].companyInfo?.contactEmail)
+      : (orderData.deliveryDetails?.yourEmailAddress || orderData.companyInfo?.contactEmail);
 
-    // Build PayFast payment data
+    // Build combined order description
+    const itemNames = createdOrders.map(o => {
+      const orderDataForBrand = cartOrders.find(co => co.selectedBrand.id === o.brandId);
+      return orderDataForBrand?.selectedBrand?.brandName || "Gift Card";
+    }).join(", ");
+
     const payfastOrderData = {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      totalAmount: orderData?.totalAmount || 0, // Amount in cents
-      itemName: `${orderData.selectedBrand.brandName} Gift Card`,
-      description: generateExportDescription(orderData, order.orderNumber),
-      isBulkOrder,
-      quantity,
+      orderId: createdOrders[0].id, // Reference first order as primary
+      orderNumber: createdOrders.map(o => o.orderNumber).join(","), // Store all order numbers
+      totalAmount: totalPaymentAmount, // ✅ SUM of all orders
+      itemName: isMultiCart ? `${createdOrders.length} Gift Cards` : itemNames,
+      description: isMultiCart 
+        ? `Multi-cart purchase - ${createdOrders.length} items - Orders: ${createdOrders.map(o => o.orderNumber).join(", ")}`
+        : generateExportDescription(orderData, createdOrders[0].orderNumber),
+      isBulkOrder: false,
+      quantity: createdOrders.length,
       firstName,
       lastName,
       email: customerEmail,
     };
 
-    // Add split payment if needed (for your example URL)
-    // Uncomment and configure if you need split payments
-    /*
-    payfastOrderData.subscriptionType = 2;
-    payfastOrderData.splitPayment = {
-      merchant_id: 10023922,
-      amount: "120"
-    };
-    */
-
-    console.log("🔧 Building PayFast data with config:", {
-      merchantId: payfastConfig.merchantId,
-      isSandbox: payfastConfig.isSandbox,
-      hasPassphrase: !!payfastConfig.passphrase,
-    });
-
     const payfastData = buildPayFastData(payfastOrderData, payfastConfig);
-
-    // Generate the complete PayFast URL with all parameters
     const payfastUrl = buildPayFastUrlDirect(
       payfastData,
       payfastConfig.passphrase,
-      payfastConfig.isSandbox,
+      payfastConfig.isSandbox
     );
 
-    // Store PayFast reference in order (for tracking)
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentIntentId: `PF_${order.orderNumber}`, // Temporary reference until we get actual payment ID
-      },
-    });
+    // ✅ Store PayFast reference in ALL orders with shared payment intent
+    const sharedPaymentIntent = `PF_MULTI_${Date.now()}`;
+    for (const order of createdOrders) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          paymentIntentId: sharedPaymentIntent,
+        },
+      });
+    }
 
-    console.log(
-      "✅ PayFast payment data generated for order:",
-      order.orderNumber,
-    );
-    console.log("🔗 PayFast URL:", payfastUrl);
-    console.log("🔐 Signature:", payfastData.signature);
-
-    // Debug: Log the data that was signed
-    console.log(
-      "📦 Complete payfastData object:",
-      JSON.stringify(payfastData, null, 2),
-    );
+    console.log(`✅ Created ${createdOrders.length} orders with shared payment intent`);
+    console.log(`💰 Total PayFast amount: ${totalPaymentAmount}`);
 
     return {
       success: true,
       data: {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        payfastUrl, // Full URL with all parameters
-        payfastData, // Data object (for form POST if needed)
+        orderId: createdOrders[0].id,
+        orderIds: createdOrders.map(o => o.id),
+        orderNumber: createdOrders[0].orderNumber,
+        payfastUrl,
+        payfastData,
       },
     };
   } catch (error) {
     console.error("❌ Pending order creation failed:", error);
-
-    if (
-      error instanceof ValidationError ||
-      error instanceof AuthenticationError
-    ) {
-      return {
-        success: false,
-        error: error.message,
-        statusCode: error.statusCode,
-        errorType: error.name,
-      };
-    }
-
     return {
       success: false,
       error: error.message || "An unexpected error occurred",

@@ -13,6 +13,11 @@ const SuccessScreen = ({
   deliveryDetails
 }) => {
 
+  // ✅ Get all orders from the cart purchase
+  const allOrders = order?.allOrders || [order];
+  const isMultiCart = allOrders.length > 1;
+
+  console.log("isMultiCart",isMultiCart,allOrders)
 
   // Check if this is a print delivery order
   const isPrintDelivery = order?.deliveryMethod === 'print';
@@ -43,19 +48,14 @@ const SuccessScreen = ({
     }
   };
 
+  // ✅ Updated to handle multiple orders
   function calculateTotals(orders) {
     let totalVouchers = 0;
     let totalAmount = 0;
 
-    orders.forEach((order) => {
-      const orderList = Array.isArray(order.allOrders)
-        ? order.allOrders
-        : [order]; // direct purchase fallback
-
-      orderList.forEach((o) => {
-        totalVouchers += o.quantity || 0;
-        totalAmount += o.amount || 0;
-      });
+    orders.forEach((orderItem) => {
+      totalVouchers += orderItem.quantity || 1;
+      totalAmount += (orderItem.amount || orderItem.totalAmount || 0);
     });
 
     return {
@@ -63,6 +63,34 @@ const SuccessScreen = ({
       totalAmount,
     };
   }
+
+  const totals = calculateTotals(allOrders);
+
+  // ✅ Get all voucher codes from all orders
+  const getAllVoucherCodes = () => {
+    const allCodes = [];
+    allOrders.forEach(orderItem => {
+      if (orderItem.voucherCodes && Array.isArray(orderItem.voucherCodes)) {
+        allCodes.push(...orderItem.voucherCodes);
+      }
+    });
+    return allCodes;
+  };
+
+  const allVoucherCodes = getAllVoucherCodes();
+
+  // ✅ Get unique delivery methods
+  const getDeliveryMethods = () => {
+    const methods = new Set();
+    allOrders.forEach(orderItem => {
+      if (orderItem.deliveryMethod) {
+        methods.add(orderItem.deliveryMethod);
+      }
+    });
+    return Array.from(methods);
+  };
+
+  const deliveryMethods = getDeliveryMethods();
 
   return (
     <div className="min-h-screen px-4 py-5 md:px-6 md:py-5">
@@ -74,7 +102,7 @@ const SuccessScreen = ({
                 Your bulk order is complete!
               </h1>
               <p className="font-normal text-[16px] text-[#4A4A4A] mb-6">
-                We've emailed you a CSV file with all voucher codes to your email address.You can share these codes directly with your team or clients.
+                We've emailed you a CSV file with all voucher codes to your email address. You can share these codes directly with your team or clients.
               </p>
             </div>
           ) : (
@@ -85,34 +113,91 @@ const SuccessScreen = ({
                 className="w-26 h-26 m-auto mb-4"
               />
               <h1 className="text-[40px] font-bold text-[#1A1A1A] mb-4 fontPoppins">
-                {isPrintDelivery ? 'Order Complete!' : 'Gift Sent Successfully'}
+                {isMultiCart 
+                  ? 'Orders Complete!' 
+                  : isPrintDelivery 
+                    ? 'Order Complete!' 
+                    : 'Gift Sent Successfully'
+                }
               </h1>
               <p className="font-normal text-[16px] text-[#4A4A4A] mb-4">
-                {isPrintDelivery
-                  ? `Your ${selectedBrand?.brandName || order?.brand?.brandName} gift card is ready to print!`
-                  : `Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way to Friend!`
+                {isMultiCart 
+                  ? `Your ${allOrders.length} gift card${allOrders.length > 1 ? 's are' : ' is'} ready!`
+                  : isPrintDelivery
+                    ? `Your ${selectedBrand?.brandName || order?.brand?.brandName} gift card is ready to print!`
+                    : `Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way to Friend!`
                 }
               </p>
 
-              <p
-                className="
-    text-[#4A4A4A]
-    text-center
-    font-inter
-    text-[16px]
-    font-normal
-    leading-[24px]
-    mb-6
-  "
-              >
+              <p className="text-[#4A4A4A] text-center font-inter text-[16px] font-normal leading-[24px] mb-6">
                 <strong className="font-bold">Need help?</strong> Have questions or want to cancel or modify your gift? <Link href="/support">Contact Support</Link>
               </p>
+            </div>
+          )}
 
+          {/* ✅ Multi-Cart Order Summary */}
+          {isMultiCart && (
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">Order Summary</h2>
+              <div className="h-px bg-gray-200 mb-6"></div>
+              
+              {/* Individual Orders */}
+              <div className="space-y-4 mb-6">
+                {allOrders.map((orderItem, index) => (
+                  <div key={orderItem.id || index} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="text-left">
+                        <p className="font-semibold text-gray-900">{orderItem.brand?.brandName || 'Gift Card'}</p>
+                        <p className="text-sm text-gray-600">Order #{orderItem.orderNumber}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">
+                          R{(orderItem.amount || orderItem.totalAmount || 0).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {orderItem.quantity || 1} voucher{(orderItem.quantity || 1) > 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Delivery info for each order */}
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        {orderItem.deliveryMethod === 'email' && <Mail className="w-4 h-4" />}
+                        {orderItem.deliveryMethod === 'whatsapp' && <MessageSquare className="w-4 h-4" />}
+                        {orderItem.deliveryMethod === 'print' && <Printer className="w-4 h-4" />}
+                        <span>
+                          {orderItem.deliveryMethod === 'email' && (orderItem.receiverDetail?.email || 'Email delivery')}
+                          {orderItem.deliveryMethod === 'whatsapp' && (orderItem.receiverDetail?.phone || 'WhatsApp delivery')}
+                          {orderItem.deliveryMethod === 'print' && 'Print delivery'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Total Summary */}
+              <div className="h-px bg-gray-200 mb-4"></div>
+              <div className="space-y-3">
+                <div className="flex justify-between text-gray-700">
+                  <span>Total Orders:</span>
+                  <span className="font-semibold text-gray-900">{allOrders.length}</span>
+                </div>
+                <div className="flex justify-between text-gray-700">
+                  <span>Total Vouchers:</span>
+                  <span className="font-semibold text-gray-900">{totals.totalVouchers}</span>
+                </div>
+                <div className="flex justify-between text-gray-700">
+                  <span>Total Value:</span>
+                  <span className="font-semibold text-gray-900">R{totals.totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Bulk Mode Order Details */}
-          {isBulkMode && (
+          {isBulkMode && !isMultiCart && (
             <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">Order details</h2>
               <div className="h-px bg-gray-200 mb-6"></div>
@@ -127,28 +212,27 @@ const SuccessScreen = ({
                 </div>
                 <div className="flex justify-between text-gray-700">
                   <span>Vouchers Generated:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalVouchers}</span>
+                  <span className="font-semibold text-gray-900">{totals.totalVouchers}</span>
                 </div>
-
                 <div className="flex justify-between text-gray-700">
                   <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount * calculateTotals([order]).totalVouchers}</span>
+                  <span className="font-semibold text-gray-900">R{totals.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Print Delivery - Voucher Codes Display */}
-          {!isBulkMode && isPrintDelivery && order?.voucherCodes && order.voucherCodes.length > 0 && (
+          {/* ✅ Print Delivery - Show ALL Voucher Codes from ALL Orders */}
+          {!isBulkMode && deliveryMethods.includes('print') && allVoucherCodes.length > 0 && (
             <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
               <div className="flex items-start gap-3 mb-4">
                 <Printer className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
                 <div className="text-left flex-1">
                   <h2 className="text-lg font-bold text-gray-900 mb-2">
-                    Print-at-Home Gift Card
+                    Print-at-Home Gift Card{allVoucherCodes.length > 1 ? 's' : ''}
                   </h2>
                   <p className="text-sm text-gray-600">
-                    Your gift card is ready! Download the PDF below and print it on any printer.
+                    Your gift card{allVoucherCodes.length > 1 ? 's are' : ' is'} ready! Download the PDF{allVoucherCodes.length > 1 ? 's' : ''} below and print on any printer.
                     Perfect for hand delivery or surprise presentations.
                   </p>
                 </div>
@@ -159,34 +243,23 @@ const SuccessScreen = ({
               {/* Order Details */}
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-gray-700">
-                  <span>Order ID:</span>
-                  <span className="font-semibold text-gray-900">{order.orderNumber}</span>
+                  <span>Total Vouchers:</span>
+                  <span className="font-semibold text-gray-900">{allVoucherCodes.length}</span>
                 </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Brand:</span>
-                  <span className="font-semibold text-gray-900">{selectedBrand?.brandName || order?.brand?.brandName}</span>
-                </div>
-
-                <div className="flex justify-between text-gray-700">
-                  <span>Vouchers Generated:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalVouchers}</span>
-                </div>
-
                 <div className="flex justify-between text-gray-700">
                   <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount * calculateTotals([order]).totalVouchers}</span>
+                  <span className="font-semibold text-gray-900">R{totals.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
 
               <div className="h-px bg-gray-200 my-4"></div>
 
-              {/* Voucher Codes */}
+              {/* ✅ ALL Voucher Codes from ALL Orders */}
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-gray-700 text-left">
-                  Your Voucher Code{order.voucherCodes.length > 1 ? 's' : ''}:
+                  Your Voucher Code{allVoucherCodes.length > 1 ? 's' : ''}:
                 </p>
-                {order.voucherCodes.map((voucherCode, index) => {
-                  // Get the actual code from giftCard or fallback to voucherCode.code
+                {allVoucherCodes.map((voucherCode, index) => {
                   const actualCode = voucherCode.giftCard?.code || voucherCode.code;
 
                   return (
@@ -194,7 +267,7 @@ const SuccessScreen = ({
                       <div className="flex justify-between items-center">
                         <div className="text-left">
                           <p className="text-xs text-gray-500 uppercase mb-1">
-                            Voucher Code {order.voucherCodes.length > 1 ? `#${index + 1}` : ''}
+                            Voucher Code {allVoucherCodes.length > 1 ? `#${index + 1}` : ''}
                           </p>
                           <p className="font-mono text-lg font-bold text-gray-900">
                             {actualCode}
@@ -229,7 +302,7 @@ const SuccessScreen = ({
           )}
 
           {/* Non-Print Delivery Info */}
-          {!isBulkMode && !isPrintDelivery && (
+          {!isBulkMode && !isPrintDelivery && !isMultiCart && (
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-gray-200 mb-6">
               <div className="flex items-start gap-3">
                 {getDeliveryMethodIcon()}
@@ -246,7 +319,7 @@ const SuccessScreen = ({
           )}
 
           {/* Print Download Button */}
-          {!isBulkMode && isPrintDelivery && (
+          {!isBulkMode && deliveryMethods.includes('print') && (
             <div className="mb-6">
               <PrintVoucherButton
                 order={order}
