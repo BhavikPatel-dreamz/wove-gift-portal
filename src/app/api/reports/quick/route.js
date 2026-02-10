@@ -25,6 +25,9 @@ export async function GET(request) {
       case "monthly-report":
         reportData = await generateMonthlyReport();
         break;
+      case "yearly-report":
+        reportData = await generateYearlyReport();
+        break;
       case "unredeemed-liability":
         reportData = await generateUnredeemedLiability();
         break;
@@ -446,6 +449,35 @@ async function generateMonthlyReport() {
       .sort(([, a], [, b]) => b.revenue - a.revenue)
       .map(([category, stats]) => ({ category, ...stats })),
     topOccasions,
+  };
+}
+
+
+async function generateYearlyReport(year) {
+  console.log(`    Fetching yearly report data for ${year}...`);
+
+  const yearStart = new Date(year, 0, 1);
+  const yearEnd = new Date(year, 11, 31, 23, 59, 59);
+
+  const orders = await prisma.order.findMany({
+    where: {
+      paymentStatus: "COMPLETED",
+      createdAt: {
+        gte: yearStart,
+        lte: yearEnd,
+      },
+    },
+  });
+
+  return {
+    period: { year },
+    summary: {
+      totalOrders: orders.length,
+      totalRevenue: orders.reduce(
+        (sum, o) => sum + (o.totalAmount || 0),
+        0
+      ),
+    },
   };
 }
 

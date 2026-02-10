@@ -308,6 +308,12 @@ async function generateReportData(report) {
             `    ✓ Monthly Report: ${data.monthlyReport.summary.totalOrders} orders`,
           );
           break;
+        case "yearly-report":
+          data.yearlyReport = await generateYearlyReport();
+          console.log(
+            `    ✓ Yearly Report: ${data.yearlyReport.summary.totalOrders} orders`,
+          );
+          break;
         case "unredeemed-liability":
           data.unredeemedLiability = await generateUnredeemedLiability();
           console.log(
@@ -1365,6 +1371,35 @@ async function generateMonthlyReport() {
     },
   };
 }
+
+async function generateYearlyReport(year) {
+  console.log(`    Fetching yearly report data for ${year}...`);
+
+  const yearStart = new Date(year, 0, 1);
+  const yearEnd = new Date(year, 11, 31, 23, 59, 59);
+
+  const orders = await prisma.order.findMany({
+    where: {
+      paymentStatus: "COMPLETED",
+      createdAt: {
+        gte: yearStart,
+        lte: yearEnd,
+      },
+    },
+  });
+
+  return {
+    period: { year },
+    summary: {
+      totalOrders: orders.length,
+      totalRevenue: orders.reduce(
+        (sum, o) => sum + (o.totalAmount || 0),
+        0
+      ),
+    },
+  };
+}
+
 
 async function generateUnredeemedLiability() {
   console.log("    Fetching unredeemed liability data...");
