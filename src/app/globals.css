@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+
+.fontPoppins{
+  font-family:  var(--font-poppins), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.gradient-border-orange {
+  background: url('../../public/uploads/dashboard/orange-border.svg') no-repeat top;
+  background-size: cover;
+}
+
+.gradient-border-blue { 
+  background: url('../../public/uploads/dashboard/blue-border.svg') no-repeat top;
+  background-size: cover;
+}
+
+.gradient-border-green { 
+  background: url('../../public/uploads/dashboard/green-border.svg') no-repeat top;
+  background-size: cover;
+}
+
+.gradient-border {
+  border: 2px solid transparent;
+  border-image-source: linear-gradient(114.06deg, #000 11.36%, #FA8F42 90.28%);
+  border-image-slice: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .gradient-border-orange,
+  .gradient-border-blue,
+  .gradient-border-green {
+    background-size: contain;
+  }
+}
