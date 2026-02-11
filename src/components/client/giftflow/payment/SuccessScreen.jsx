@@ -13,7 +13,6 @@ const SuccessScreen = ({
   deliveryDetails
 }) => {
 
- console.log("order",order)
   // Check if this is a print delivery order
   const isPrintDelivery = order?.deliveryMethod === 'print';
 
@@ -126,7 +125,7 @@ const SuccessScreen = ({
           )}
 
           {/* Bulk Mode Order Details */}
-          {isBulkMode && (
+          {(isBulkMode || order?.allOrders) && (
             <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">Order details</h2>
               <div className="h-px bg-gray-200 mb-6"></div>
@@ -249,7 +248,7 @@ const SuccessScreen = ({
           )}
 
           {/* Non-Print Delivery Info */}
-          {!isBulkMode && !isPrintDelivery && (
+          {!isBulkMode && !isPrintDelivery && !order?.allOrders && (
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-gray-200 mb-6">
               <div className="flex items-start gap-3">
                 {getDeliveryMethodIcon()}
