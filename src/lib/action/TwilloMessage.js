@@ -480,6 +480,8 @@ export const SendGiftCardEmail = async (data, giftCard) => {
     // Step 1: Validate input
     validateEmailInput(data);
 
+    console.log("data",data)
+
     // Step 2: Initialize Brevo
     const apiInstance = initializeBrevoClient();
     const { senderEmail } = validateEmailInput(data);

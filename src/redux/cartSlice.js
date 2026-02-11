@@ -62,24 +62,30 @@ const cartSlice = createSlice({
     },
 
     // Bulk order cart actions
-    addToBulk: (state, action) => {
-      const newBulkItem = {
-        ...action.payload,
-        id: Date.now(), // Unique identifier for each bulk order
-        addedAt: new Date().toISOString(),
-        isBulkOrder: true,
-        // Initialize company info and delivery option with defaults
-        companyInfo: action.payload.companyInfo || {
-          companyName: '',
-          vatNumber: '',
-          contactNumber: '',
-          contactEmail: '',
-        },
-        deliveryOption: action.payload.deliveryOption || 'csv'
-      };
-      
-      state.bulkItems.push(newBulkItem);
+    // Bulk order cart actions
+addToBulk: (state, action) => {
+  // ✅ Check if a bulk order already exists
+  if (state.bulkItems.length > 1) {
+    // Don't add if bulk order already exists
+    return;
+  }
+  
+  const newBulkItem = {
+    ...action.payload,
+    id: Date.now(),
+    addedAt: new Date().toISOString(),
+    isBulkOrder: true,
+    companyInfo: action.payload.companyInfo || {
+      companyName: '',
+      vatNumber: '',
+      contactNumber: '',
+      contactEmail: '',
     },
+    deliveryOption: action.payload.deliveryOption || 'csv'
+  };
+  
+  state.bulkItems.push(newBulkItem);
+},
     
     addToBulkInCart: (state, action) => {
       // Sync bulkItems to cartItems and save to localStorage

@@ -18,6 +18,7 @@ const BulkReviewStep = () => {
 
     const { selectedBrand, isConfirmed, companyInfo: companyInfoFromRedux, csvFileData } = useSelector((state) => state.giftFlowReducer);
     const { bulkItems } = useSelector((state) => state.cart);
+    
 
     const searchParams = useSearchParams();
     const mode = searchParams.get('mode');
@@ -264,7 +265,7 @@ const BulkReviewStep = () => {
             }
 
             setCsvData(normalizedData);
-            
+
             // Save to Redux
             dispatch(setCsvFileData({
                 fileName: file.name,
@@ -371,6 +372,12 @@ const BulkReviewStep = () => {
 
         if (!currentBulkOrder) {
             toast.error('No bulk order found');
+            return;
+        }
+
+        // ✅ Check if a bulk order already exists in cart
+        if (bulkItems.length > 1) {
+            toast.error('Only 1 bulk order is allowed in cart. Please remove the existing bulk order first or proceed to checkout.');
             return;
         }
 

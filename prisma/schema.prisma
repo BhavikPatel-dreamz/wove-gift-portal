@@ -230,6 +230,7 @@ model VoucherCode {
   voucher                 Vouchers            @relation(fields: [voucherId], references: [id], onDelete: Cascade)
   redemptions             VoucherRedemption[]
   deliveryLogs            DeliveryLog[]
+  notificationDetails     NotificationDetail[]
 
   @@index([orderId])
   @@index([voucherId])
@@ -334,8 +335,24 @@ model Order {
   redemptionStatus RedemptionStatus     @default(Issued)
   redeemedAt       DateTime?
   isActive         Boolean              @default(true)
+  
+  // ✅ NEW FIELDS FOR QUEUE PROCESSING
+  isPaid                  Boolean              @default(false)
+  voucherEntries          Int                  @default(0)
+  vouchersCreated         Int                  @default(0)
+  allVouchersGenerated    Boolean              @default(false)
+  notificationsSent       Boolean              @default(false)
+  processingStatus        OrderProcessingStatus @default(PENDING)
+  processingStartedAt     DateTime?
+  processingCompletedAt   DateTime?
+  lastProcessedAt         DateTime?
+  processingErrors        Json?
+  retryCount              Int                  @default(0)
+  maxRetries              Int                  @default(3)
+  
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
+  
   bulkRecipients   BulkRecipient[]
   brand            Brand                @relation(fields: [brandId], references: [id])
   occasion         Occasion             @relation(fields: [occasionId], references: [id])
@@ -343,12 +360,66 @@ model Order {
   user             User                 @relation(fields: [userId], references: [id])
   voucherCodes     VoucherCode[]
   deliveryLogs     DeliveryLog[]
+  notificationDetails NotificationDetail[]
 
   @@index([userId])
   @@index([brandId])
   @@index([orderNumber])
   @@index([paymentStatus])
+  @@index([isPaid])
+  @@index([processingStatus])
+  @@index([allVouchersGenerated])
+  @@index([notificationsSent])
+  @@index([lastProcessedAt])
 }
+
+
+model NotificationDetail {
+  id                String              @id @default(cuid())
+  orderId           String
+  recipientEmail    String?
+  recipientPhone    String?
+  recipientName     String?
+  notificationType  NotificationType    @default(EMAIL)
+  status            NotificationStatus  @default(PENDING)
+  attemptCount      Int                 @default(0)
+  maxRetries        Int                 @default(3)
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  errorMessage      String?
+  messageId         String?
+  voucherCodeId     String?
+  bulkRecipientId   String?
+  
+  emailServiceStatus   String?
+  emailServiceId       String?
+  emailServiceError    String?
+  
+  whatsappServiceStatus String?
+  whatsappServiceId     String?
+  whatsappServiceError  String?
+  
+  smsServiceStatus     String?
+  smsServiceId         String?
+  smsServiceError      String?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  order             Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  voucherCode       VoucherCode?        @relation(fields: [voucherCodeId], references: [id])
+  bulkRecipient     BulkRecipient?      @relation(fields: [bulkRecipientId], references: [id])
+  
+  @@index([orderId])
+  @@index([status])
+  @@index([notificationType])
+  @@index([sentAt])
+  @@index([voucherCodeId])
+  @@index([bulkRecipientId])
+  @@map("notification_details")
+}
+
 
 model DeliveryLog {
   id                       String               @id @default(cuid())
@@ -616,6 +687,7 @@ model BulkRecipient {
   updatedAt        DateTime     @updatedAt
   order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   voucherCode      VoucherCode? @relation(fields: [voucherCodeId], references: [id])
+  notificationDetails NotificationDetail[]
 
   @@index([orderId])
   @@index([recipientEmail])
@@ -769,4 +841,35 @@ enum WhatsAppServiceStatus {
   DELIVERED
   READ
   FAILED
+}
+
+
+enum OrderProcessingStatus {
+  PENDING
+  PAYMENT_CONFIRMED
+  VOUCHERS_CREATING
+  VOUCHERS_CREATED
+  NOTIFICATIONS_SENDING
+  COMPLETED
+  FAILED
+  RETRYING
+}
+
+enum NotificationType {
+  EMAIL
+  WHATSAPP
+  SMS
+  BULK_EMAIL
+  SUMMARY_EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  QUEUED
+  SENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+  CANCELLED
 }

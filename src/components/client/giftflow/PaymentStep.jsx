@@ -1,15 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-// import { Elements } from "@stripe/react-stripe-js";
-// import { loadStripe } from "@stripe/stripe-js";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
-import { createPendingOrder, getOrderStatus, completeOrderAfterPayment } from "../../../lib/action/orderAction";
+import { createPendingOrder, getOrderStatus } from "../../../lib/action/orderAction";
 import { useSession } from "@/contexts/SessionContext";
 
 // Import components
-// import StripeCardPayment from "./payment/StripeCardPayment";
 import PaymentMethodSelector from "./payment/PaymentMethodSelector";
 import GiftDetailsCard from "./payment/GiftDetailsCard";
 import PaymentSummary from "./payment/PaymentSummary";
@@ -19,15 +16,10 @@ import ThankYouScreen from "./payment/ThankYouScreen";
 import BillingAddressForm from "./payment/BillingAddressForm";
 import { currencyList } from "../../brandsPartner/currency";
 
-// ✅ STRIPE CODE COMMENTED OUT
-// if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
-//   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
-// }
-// const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
-
 const PaymentStep = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const session = useSession();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
@@ -37,12 +29,12 @@ const PaymentStep = () => {
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
-  const [selectedPaymentTab, setSelectedPaymentTab] = useState('');
+  const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
   const [showThankYou, setShowThankYou] = useState(false);
-  const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderId, setPendingOrderId] = useState(null);
+  const [payfastUrl, setPayfastUrl] = useState(null);
 
-  // ✅ NEW: Processing status
+  // Processing status
   const [processingStatus, setProcessingStatus] = useState(null);
 
   // Billing address state
@@ -52,7 +44,7 @@ const PaymentStep = () => {
     city: '',
     state: '',
     postalCode: '',
-    country: 'IN',
+    country: 'ZA', // South Africa default for PayFast
   });
   const [addressErrors, setAddressErrors] = useState({});
 
@@ -79,6 +71,14 @@ const PaymentStep = () => {
   const companyInfo = isBulkMode && currentBulkOrder ? currentBulkOrder.companyInfo : null;
   const bulkDeliveryOption = isBulkMode && currentBulkOrder ? currentBulkOrder.deliveryOption : null;
   const csvRecipients = isBulkMode && currentBulkOrder ? currentBulkOrder.csvRecipients : [];
+
+  // Auto-redirect when payfastUrl is set
+  useEffect(() => {
+    if (payfastUrl) {
+      console.log('🚀 Redirecting to PayFast:', payfastUrl);
+      window.location.href = payfastUrl;
+    }
+  }, [payfastUrl]);
 
   // Validate billing address
   const validateBillingAddress = () => {
@@ -135,8 +135,9 @@ const PaymentStep = () => {
       return null;
     }
 
-    if (clientSecret && pendingOrderId) {
-      return { clientSecret, orderId: pendingOrderId };
+    if (!isPaymentConfirmed) {
+      toast.error('Please confirm that all details are correct');
+      return null;
     }
 
     setIsProcessing(true);
@@ -160,6 +161,7 @@ const PaymentStep = () => {
         deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
         csvRecipients,
         userId: session?.user?.id,
+        selectedTiming,
       } : {
         selectedBrand,
         selectedAmount,
@@ -179,10 +181,15 @@ const PaymentStep = () => {
 
       if (result?.success) {
         setPendingOrderId(result.data.orderId);
-        // setClientSecret(result.data.clientSecret); // ✅ Not needed for test mode
-        toast.success('Ready to process payment', { id: toastId });
+        
+        toast.success('Redirecting to payment...', { id: toastId });
+        
+        console.log('✅ PayFast URL received:', result.data.payfastUrl);
+        
+        // Set the URL to trigger redirect
+        setPayfastUrl(result.data.payfastUrl);
+        
         return {
-          // clientSecret: result.data.clientSecret, // ✅ Not needed for test mode
           orderId: result.data.orderId
         };
       } else {
@@ -191,6 +198,7 @@ const PaymentStep = () => {
         return null;
       }
     } catch (error) {
+      console.error('Payment initiation error:', error);
       setError("Failed to prepare order.");
       toast.error('Failed to prepare order.', { id: toastId });
       return null;
@@ -199,165 +207,22 @@ const PaymentStep = () => {
     }
   };
 
-  // ✅ TEST MODE: Simulate payment success
-  const handlePaymentSuccess = async (orderId) => {
-    console.log('🧪 TEST MODE: Simulating payment success for order:', orderId);
+  // Check if returning from PayFast
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId');
 
-    if (!orderId) {
-      console.error('❌ No order ID provided to handlePaymentSuccess');
-      toast.error('Order ID missing');
-      return;
+    if (orderId) {
+      // The new success/cancel pages will handle the status.
+      // This component doesn't need to do anything.
     }
-
-    toast.dismiss();
-    toast.success('Payment received! Processing your order...', {
-      id: 'payment-success',
-      duration: 3000
-    });
-
-    setPaymentSubmitted(true);
-    setIsProcessing(true);
-    setProcessingStatus('PAYMENT_CONFIRMED');
-
-    // ✅ Simulate webhook by calling completeOrderAfterPayment
-    setTimeout(async () => {
-      try {
-        console.log(`🔄 Completing order: ${orderId}`);
-
-        await completeOrderAfterPayment(orderId, {
-          paymentIntentId: 'test_pi_' + Date.now(), // Mock payment intent
-          paymentMethod: 'card',
-          amount: calculateTotal() * 100,
-          currency: (selectedAmount?.currency || 'USD').toLowerCase(),
-        });
-
-        console.log('✅ Order marked as completed, starting polling...');
-
-        // Start polling with shorter delay
-        setTimeout(() => {
-          pollOrderStatus(orderId);
-        }, 2000);
-
-      } catch (error) {
-        console.error('❌ Error simulating payment:', error);
-        toast.error('Failed to process payment');
-        setIsProcessing(false);
-        setPaymentSubmitted(false);
-      }
-    }, 1500); // Simulate network delay
-  };
-
-  // ✅ ENHANCED: Smarter polling with better status detection
-  const pollOrderStatus = async (orderId, attempts = 0) => {
-    const maxAttempts = 20;
-    const pollInterval = 2000;
-
-    try {
-      console.log(`🔍 Polling order status - Attempt ${attempts + 1}/${maxAttempts}`);
-      const response = await getOrderStatus(orderId);
-
-      const paymentStatus = response?.paymentStatus || response?.order?.paymentStatus;
-      const processingStatus = response?.processingStatus;
-      const orderData = response?.order || response;
-
-      // Update processing status
-      if (processingStatus) {
-        setProcessingStatus(processingStatus);
-      }
-
-      // ✅ Payment confirmed and processing started - show order immediately
-      if (paymentStatus === 'COMPLETED' && processingStatus === 'IN_PROGRESS') {
-        console.log('✅ Payment confirmed, processing in background');
-
-        // Show order with "processing" status
-        setOrder({
-          ...orderData,
-          processingInBackground: true,
-          processingStatus: 'IN_PROGRESS'
-        });
-        setIsProcessing(false);
-
-        toast.success(
-          isBulkMode
-            ? 'Order confirmed! Gift cards are being generated...'
-            : 'Order confirmed! Your gift will be delivered shortly.',
-          { duration: 5000 }
-        );
-
-        // Clear cart
-        localStorage.removeItem('cart');
-        window.dispatchEvent(new Event('storage'));
-
-        return;
-      }
-
-      // ✅ All processing completed
-      if (paymentStatus === 'COMPLETED' && processingStatus === 'COMPLETED') {
-        console.log('✅ Order fully completed');
-
-        setOrder({
-          ...orderData,
-          processingInBackground: false,
-          processingStatus: 'COMPLETED'
-        });
-        setIsProcessing(false);
-
-        toast.success('Order completed successfully!', { duration: 3000 });
-
-        // Clear cart
-        localStorage.removeItem('cart');
-        window.dispatchEvent(new Event('storage'));
-
-        return;
-      }
-
-      // Failed or cancelled
-      if (paymentStatus === 'FAILED' || paymentStatus === 'CANCELLED') {
-        setError('Payment failed. Please try again.');
-        toast.error('Payment failed');
-        setIsProcessing(false);
-        setPaymentSubmitted(false);
-        return;
-      }
-
-      // Continue polling
-      if (attempts < maxAttempts) {
-        setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
-      } else {
-        // Max attempts reached - show success anyway
-        toast.success(
-          'Payment confirmed! Your order is being processed. Check your email for updates.',
-          { duration: 6000 }
-        );
-
-        setOrder({
-          ...orderData,
-          processingInBackground: true,
-          processingStatus: 'IN_PROGRESS'
-        });
-        setIsProcessing(false);
-
-        // Clear cart
-        localStorage.removeItem('cart');
-        window.dispatchEvent(new Event('storage'));
-      }
-    } catch (error) {
-      console.error('Error polling:', error);
-      if (attempts < maxAttempts) {
-        setTimeout(() => pollOrderStatus(orderId, attempts + 1), pollInterval);
-      } else {
-        setError('Could not verify order status. Check your email for confirmation.');
-        toast.error('Failed to confirm order status');
-        setIsProcessing(false);
-      }
-    }
-  };
+  }, []);
 
   const handleNext = () => {
     setShowThankYou(true);
   };
 
-  // ✅ ENHANCED: Success screen with processing status
+  // Success screen
   if (order) {
     if (showThankYou) {
       return <ThankYouScreen />;
@@ -378,23 +243,21 @@ const PaymentStep = () => {
     );
   }
 
-  // ✅ ENHANCED: Better loading screen with status
-  if (paymentSubmitted) {
+  // Loading screen
+  if (paymentSubmitted || payfastUrl) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center">
         <div className="max-w-md">
           <div className="mb-4">
-            <svg className="mx-auto h-16 w-16 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="mx-auto h-16 w-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            {processingStatus === 'PAYMENT_CONFIRMED' ? 'Payment Received!' : 'Processing Your Order...'}
+            Redirecting to Payment...
           </h1>
           <p className="text-gray-600">
-            {processingStatus === 'PAYMENT_CONFIRMED'
-              ? "We've received your payment and are now preparing your order."
-              : "Confirming your order and generating gift cards..."}
+            Please wait while we redirect you to PayFast secure payment gateway
           </p>
           {pendingOrderId && (
             <p className="text-sm text-gray-500 mt-4">
@@ -402,23 +265,11 @@ const PaymentStep = () => {
             </p>
           )}
           <div className="mt-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-4 border-pink-500 border-t-transparent mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mx-auto"></div>
             <p className="text-sm text-gray-500 mt-2">
-              {isBulkMode
-                ? `Processing ${quantity} gift cards...`
-                : 'Preparing your gift card...'}
+              Do not close this window...
             </p>
           </div>
-
-          {/* ✅ Progress indicator for bulk orders */}
-          {isBulkMode && quantity > 1 && (
-            <div className="mt-6 w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-gradient-to-r from-pink-500 to-orange-500 h-2 rounded-full transition-all duration-500"
-                style={{ width: '40%' }}
-              ></div>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -428,6 +279,7 @@ const PaymentStep = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-30 md:px-8 md:py-30">
       <Toaster />
+
       <div className="max-w-7xl mx-auto sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
@@ -494,35 +346,37 @@ const PaymentStep = () => {
               isBulkMode={isBulkMode}
             />
 
-{/* //remobe */}
-            {/* ✅ STRIPE CARD PAYMENT COMMENTED OUT */}
-            {/* {selectedPaymentTab === 'card' && clientSecret && (
-              <Elements
-                stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  appearance: { theme: 'stripe' },
-                }}
-              >
-                <StripeCardPayment
-                  clientSecret={clientSecret}
-                  isProcessing={isProcessing}
-                  onInitiatePayment={handleInitiatePayment}
-                  onPaymentSuccess={handlePaymentSuccess}
-                />
-              </Elements>
-            )} */}
-
-            {/* ✅ TEST MODE: Simple payment button */}
-            {selectedPaymentTab !== '' && (
+            {/* PayFast Payment Button */}
+            {selectedPaymentTab === 'payfast' && (
               <button
-                onClick={async () => {
-                  const result = await handleInitiatePayment();
-                  if (result && result.orderId) {
-                    // Simulate payment success after order is created
-                    handlePaymentSuccess(result.orderId);
-                  }
-                }}
+                onClick={handleInitiatePayment}
+                disabled={isProcessing || !isPaymentConfirmed}
+                className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 
+                       hover:from-blue-600 hover:to-blue-700
+                       disabled:from-gray-300 disabled:to-gray-400
+                       text-white py-3 sm:py-4 px-6 rounded-xl
+                       font-semibold text-sm sm:text-base
+                       transition-all duration-200
+                       flex items-center justify-center gap-2
+                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                    Redirecting to PayFast...
+                  </>
+                ) : (
+                  <>
+                    Pay with PayFast <span>→</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Card Payment Button */}
+            {selectedPaymentTab === 'card' && (
+              <button
+                onClick={handleInitiatePayment}
                 disabled={isProcessing || !isPaymentConfirmed}
                 className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
@@ -536,11 +390,11 @@ const PaymentStep = () => {
                 {isProcessing ? (
                   <>
                     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    {pendingOrderId ? 'Processing Payment...' : 'Preparing...'}
+                    Redirecting to PayFast...
                   </>
                 ) : (
                   <>
-                    {pendingOrderId ? 'Complete Payment' : 'Proceed to Payment'} <span>→</span>
+                    Pay with Card <span>→</span>
                   </>
                 )}
               </button>

@@ -65,9 +65,9 @@ const CartPage = () => {
       isEditMode: true,
     }));
     dispatch(setCurrentStep(0));
-    if(type === 'regular'){
+    if (type === 'regular') {
       router.push('/gift');
-    }else if(type === 'bulk'){
+    } else if (type === 'bulk') {
       router.push('/gift?mode=bulk');
     }
   };
@@ -86,7 +86,7 @@ const CartPage = () => {
     }
   };
 
-  const handleRedirect = () =>{
+  const handleRedirect = () => {
     dispatch(resetFlow());
     dispatch(clearCsvFileData());
     router.push('/gift');
@@ -284,7 +284,7 @@ const CartPage = () => {
             <p className="mt-2 text-center font-['Inter'] font-medium text-[#4A4A4A] text-sm sm:text-[15px] md:text-[16px] leading-5 sm:leading-5.5 md:leading-6 max-w-md">
               Looks like you haven't added any gifts to your cart yet.
             </p>
-            <button onClick={()=> handleRedirect()} className="mt-6 sm:mt-7 md:mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-6 sm:px-7 md:px-8 py-2.5 sm:py-2.75 md:py-3 text-sm sm:text-[15px] md:text-base text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
+            <button onClick={() => handleRedirect()} className="mt-6 sm:mt-7 md:mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-6 sm:px-7 md:px-8 py-2.5 sm:py-2.75 md:py-3 text-sm sm:text-[15px] md:text-base text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
               Start Gifting Now
             </button>
           </div>
@@ -293,7 +293,7 @@ const CartPage = () => {
             <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
               {/* Regular Cart Items */}
               {activeTab === 'regular' && cartItems.map((item, index) => (
-                <div key={index} onClick={() => handleEditItem(item, index,"regular")} className="flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+                <div key={index} onClick={() => handleEditItem(item, index, "regular")} className="flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
                   <div className="flex cursor-pointer items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
                       <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
@@ -343,7 +343,7 @@ const CartPage = () => {
 
               {/* Bulk Cart Items */}
               {activeTab === 'bulk' && bulkItems.map((item, index) => (
-                <div key={index}  onClick={() => handleEditItem(item, index,"bulk")} className="flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+                <div key={index} onClick={() => handleEditItem(item, index, "bulk")} className="flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
                   <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
                       <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
@@ -401,6 +401,27 @@ const CartPage = () => {
                   </button>
                 </div>
               ))}
+
+              {/* ✅ ADD THIS MESSAGE HERE - After bulk items */}
+              {activeTab === 'bulk' && bulkItems.length === 1 && (
+                <div className="p-4 sm:p-5 rounded-[20px] bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-200">
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 mt-0.5">
+                      <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-['Poppins'] text-sm sm:text-[15px] font-semibold text-yellow-800 mb-1">
+                        Bulk Order Limit
+                      </h4>
+                      <p className="font-['Inter'] text-xs sm:text-[13px] text-yellow-700 leading-relaxed">
+                        Only one bulk order is allowed per cart. To add another bulk order, please complete this purchase first or remove this item from your cart.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Payment Summary - ✅ NOW SHOWS COMBINED TOTALS */}
@@ -409,7 +430,7 @@ const CartPage = () => {
                 <h2 className="mb-4 sm:mb-5 pb-3 sm:pb-4 font-['Poppins'] text-base sm:text-[17px] md:text-[18px] font-semibold leading-4.5 sm:leading-4.75 md:leading-5 tracking-[0.25px] text-[#1A1A1A]">
                   Payment Summary
                 </h2>
-                
+
                 {/* Show breakdown if both carts have items */}
                 {hasRegularItems && hasBulkItems && (
                   <div className="space-y-2 mb-3 pb-3 border-b border-gray-100">

@@ -13,7 +13,7 @@ const SuccessScreen = ({
   deliveryDetails
 }) => {
 
-
+ console.log("order",order)
   // Check if this is a print delivery order
   const isPrintDelivery = order?.deliveryMethod === 'print';
 
@@ -48,15 +48,29 @@ const SuccessScreen = ({
     let totalAmount = 0;
 
     orders.forEach((order) => {
-      const orderList = Array.isArray(order.allOrders)
+      // Check if there's an allOrders array with multiple orders
+      const orderList = Array.isArray(order.allOrders) && order.allOrders.length > 0
         ? order.allOrders
         : [order]; // direct purchase fallback
 
+      console.log("Processing orderList:", orderList);
+
       orderList.forEach((o) => {
-        totalVouchers += o.quantity || 0;
-        totalAmount += o.amount || 0;
+        const quantity = o.quantity || 0;
+        const amount = o.amount || 0;
+        
+        // Add to total vouchers
+        totalVouchers += quantity;
+        
+        // Calculate this order's total (amount × quantity) and add to running total
+        const orderTotal = amount * quantity;
+        totalAmount += orderTotal;
+        
+        console.log(`Order: amount=${amount}, quantity=${quantity}, orderTotal=${orderTotal}`);
       });
     });
+
+    console.log("Final totals:", { totalVouchers, totalAmount });
 
     return {
       totalVouchers,
@@ -132,7 +146,7 @@ const SuccessScreen = ({
 
                 <div className="flex justify-between text-gray-700">
                   <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount * calculateTotals([order]).totalVouchers}</span>
+                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount}</span>
                 </div>
               </div>
             </div>
@@ -174,7 +188,7 @@ const SuccessScreen = ({
 
                 <div className="flex justify-between text-gray-700">
                   <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount * calculateTotals([order]).totalVouchers}</span>
+                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount}</span>
                 </div>
               </div>
 

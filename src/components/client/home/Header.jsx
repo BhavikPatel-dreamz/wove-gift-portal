@@ -98,7 +98,7 @@ const Header = () => {
   };
 
   const handleNavClick = (item) => {
-    if (item === 'Send Gift Card') {
+    if (item == 'Send Gift Card') {
       dispatch(resetFlow());
       dispatch(clearCsvFileData());
     }
