@@ -99,10 +99,10 @@ export function buildPayFastData(orderData, config) {
     notifyUrl,
   } = config;
 
-  console.log("🔧 Building PayFast payment data...");
+  console.log("🔧 Building PayFast payment data...", orderData.totalAmount);
 
   // Include 5% fee in totalAmount
-  const amountWithFee = Number(orderData.totalAmount) * 1.05;
+  const amountWithFee = Math.ceil(Number(orderData.totalAmount) * 1.05);
 
   // Convert to Rands with 2 decimal places
   const amountInRands = amountWithFee.toFixed(2);

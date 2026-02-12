@@ -91,7 +91,7 @@ const SuccessScreen = ({
               </p>
             </div>
           ) : (
-            <div className="mt-25">
+            <div className="mt-0">
               <img
                 src={isPrintDelivery ? "/Success.gif" : "/Success.gif"}
                 alt={"Success"}
@@ -125,7 +125,7 @@ const SuccessScreen = ({
           )}
 
           {/* Bulk Mode Order Details */}
-          {(isBulkMode || order?.allOrders) && (
+          {(isBulkMode || order?.allOrders && order?.allOrders.length > 1) && (
             <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">Order details</h2>
               <div className="h-px bg-gray-200 mb-6"></div>
