@@ -375,11 +375,11 @@ const BulkReviewStep = () => {
             return;
         }
 
-        // ✅ Check if a bulk order already exists in cart
-        if (bulkItems.length > 1) {
-            toast.error('Only 1 bulk order is allowed in cart. Please remove the existing bulk order first or proceed to checkout.');
-            return;
-        }
+        // // ✅ Check if a bulk order already exists in cart
+        // if (bulkItems.length > 1) {
+        //     toast.error('Only 1 bulk order is allowed in cart. Please remove the existing bulk order first or proceed to checkout.');
+        //     return;
+        // }
 
         dispatch(addToBulkInCart(currentBulkOrder));
         toast.success('Bulk order added to cart!');

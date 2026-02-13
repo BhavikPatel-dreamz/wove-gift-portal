@@ -65,10 +65,10 @@ const cartSlice = createSlice({
     // Bulk order cart actions
 addToBulk: (state, action) => {
   // ✅ Check if a bulk order already exists
-  if (state.bulkItems.length > 1) {
-    // Don't add if bulk order already exists
-    return;
-  }
+  // if (state.bulkItems.length > 1) {
+  //   // Don't add if bulk order already exists
+  //   return;
+  // }
   
   const newBulkItem = {
     ...action.payload,
