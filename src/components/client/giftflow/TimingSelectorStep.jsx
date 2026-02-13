@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { goBack, goNext, setSelectedTiming } from "../../../redux/giftFlowSlice";
 import { ArrowLeft, Calendar, Clock, Check, X, SendIcon } from "lucide-react";
 import ProgressIndicator from "./ProgressIndicator";
+import CustomDropdown from "../../ui/CustomDropdown";
 
 const TimingSelectorStep = () => {
   const dispatch = useDispatch();
@@ -109,7 +110,7 @@ const TimingSelectorStep = () => {
           disabled={isPast}
           className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium transition-colors
             ${isPast ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'}
-            ${isSelected ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}
+            ${isSelected ? 'bg-blue-500 text-white hover:bg-blue-600 hover:text-black' : ''}
           `}
         >
           {day}
@@ -234,17 +235,18 @@ const TimingSelectorStep = () => {
                       <select
                         value={currentMonth}
                         onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
-                        className="px-2 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white"
+                        className="cursor-pointer px-2 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white"
                       >
                         {months.map((month, index) => (
                           <option key={month} value={index}>{month}</option>
                         ))}
                       </select>
+                      {/* <CustomDropdown options={months} value={currentMonth}   onChange={(e) => setCurrentMonth(parseInt(e.target.value))}/> */}
 
                       <select
                         value={currentYear}
                         onChange={(e) => setCurrentYear(parseInt(e.target.value))}
-                        className="px-2 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white"
+                        className="cursor-pointer px-2 py-1.5 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white"
                       >
                         {[2025, 2026, 2027].map(year => (
                           <option key={year} value={year}>{year}</option>
@@ -300,7 +302,7 @@ const TimingSelectorStep = () => {
                           <button
                             key={time}
                             onClick={() => setSelectedTime(time)}
-                            className="py-2 px-1.5 text-[11px] sm:text-xs font-medium rounded-lg transition-all hover:scale-105"
+                            className="cursor-pointer py-2 px-1.5 text-[11px] sm:text-xs font-medium rounded-lg transition-all hover:scale-105"
                             style={
                               isSelected
                                 ? {
@@ -348,7 +350,7 @@ const TimingSelectorStep = () => {
                     handleContinue();
                   }}
                   disabled={!selectedDate || !selectedTime}
-                  className="mt-6 mx-auto flex items-center justify-center gap-2 py-3 sm:py-4 px-8 sm:px-10 rounded-full text-white text-sm sm:text-base font-medium shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="cursor-pointer mt-6 mx-auto flex items-center justify-center gap-2 py-3 sm:py-4 px-8 sm:px-10 rounded-full text-white text-sm sm:text-base font-medium shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   style={{
                     background: "linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)",
                   }}
@@ -368,7 +370,7 @@ const TimingSelectorStep = () => {
         {selectedOption === 'immediate' && (
           <div className="text-center mt-12">
             <button
-              className="text-white py-4 px-10 rounded-[50px] font-medium text-base shadow-lg inline-flex items-center transition-transform duration-200 transform hover:scale-105 gap-2 "
+              className="cursor-pointer text-white py-4 px-10 rounded-[50px] font-medium text-base shadow-lg inline-flex items-center transition-transform duration-200 transform hover:scale-105 gap-2 "
               style={{
                 background: "linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)",
               }}

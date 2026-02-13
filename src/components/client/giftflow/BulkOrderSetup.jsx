@@ -485,7 +485,7 @@ const BulkOrderSetup = () => {
             <button
               onClick={handleAddToBulkOrder}
               disabled={(!selectedAmount || !quantity || parseInt(quantity) === 0) || parseInt(totalSpend) > 25000}
-              className="w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              className="w-full cursor-pointer bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               Add to Bulk Order {totalSpend}
               <span className="text-xl">
