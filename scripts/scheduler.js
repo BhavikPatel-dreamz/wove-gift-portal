@@ -8,30 +8,28 @@ import startCronJobs from '../src/lib/action/cronScheduler.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// // Runs every day at 2:23 PM IST
-// cron.schedule('00 09 * * *', () => {
-//   console.log('Running the send-scheduled-reports script...');
+// Runs every day at 2:23 PM IST
+cron.schedule('00 09 * * *', () => {
+  console.log('Running the send-scheduled-reports script...');
 
-//   const scriptPath = path.resolve(__dirname, './send-scheduled-reports.js');
+  const scriptPath = path.resolve(__dirname, './send-scheduled-reports.js');
 
-//   exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
-//     if (error) {
-//       console.error('Error executing script:', error);
-//       return;
-//     }
-//     if (stderr) {
-//       console.error('Script stderr:', stderr);
-//       return;
-//     }
-//     console.log('Script stdout:', stdout);
-//   });
-// }, {
-//   scheduled: true,
-//   timezone: 'Asia/Kolkata'
-// });
+  exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Error executing script:', error);
+      return;
+    }
+    if (stderr) {
+      console.error('Script stderr:', stderr);
+      return;
+    }
+    console.log('Script stdout:', stdout);
+  });
+}, {
+  scheduled: true,
+  timezone: 'Asia/Kolkata'
+});
 
 
-
+// start cron job for voucher processor and notification processor
 startCronJobs();
-
-console.log('Cron job scheduler started. Scheduled for 2:23 PM IST daily, every minute for scheduled orders, and every second for the order process queue.');
