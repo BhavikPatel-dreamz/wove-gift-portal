@@ -3083,8 +3083,8 @@ export async function getSettlementDetails(settlementId) {
       );
     }
 
-    // Calculate net payable
-    const netPayable = Math.round(baseAmount - commissionAmount + vatAmount - breakageAmount);
+    // Calculate net payable (Base Amount - Total Commission with VAT - Breakage)
+    const netPayable = Math.round(baseAmount - commissionAmount);
 
     // Get payment info from settlements
     let totalPaid = 0;
@@ -3152,17 +3152,25 @@ export async function getSettlementDetails(settlementId) {
         },
       },
       include: {
-        deliveryLogs: {
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
         redemptions: {
           orderBy: {
             redeemedAt: "desc",
           },
         },
-        order: true,
+        order: {
+          include: {
+            notificationDetails: {
+              where: {
+                voucherCodeId: {
+                  not: null,
+                },
+              },
+              orderBy: {
+                updatedAt: "desc",
+              },
+            },
+          },
+        },
       },
     });
 
@@ -3196,25 +3204,38 @@ export async function getSettlementDetails(settlementId) {
       }
     });
 
-    // Delivery status calculation
+    // Delivery status calculation - FROM NOTIFICATION DETAILS
     let delivered = 0;
     let pending = 0;
     let failed = 0;
 
     voucherCodes.forEach((voucher) => {
-      if (voucher.deliveryLogs && voucher.deliveryLogs.length > 0) {
-        const latestLog = voucher.deliveryLogs[0];
+      // Get notification details for this voucher code
+      const notifications = voucher.order.notificationDetails?.filter(
+        n => n.voucherCodeId === voucher.id
+      ) || [];
 
-        if (latestLog.status === "DELIVERED") {
+      if (notifications.length > 0) {
+        // Get the latest notification status
+        const latestNotification = notifications.reduce((latest, current) => {
+          return new Date(current.updatedAt) > new Date(latest.updatedAt) 
+            ? current 
+            : latest;
+        });
+
+        if (latestNotification.status === "DELIVERED") {
           delivered++;
         } else if (
-          latestLog.status === "PENDING" ||
-          latestLog.status === "SENT"
+          latestNotification.status === "PENDING" ||
+          latestNotification.status === "QUEUED" ||
+          latestNotification.status === "SENDING" ||
+          latestNotification.status === "SENT"
         ) {
           pending++;
         } else if (
-          latestLog.status === "FAILED" ||
-          latestLog.status === "BOUNCED"
+          latestNotification.status === "FAILED" ||
+          latestNotification.status === "BOUNCED" ||
+          latestNotification.status === "CANCELLED"
         ) {
           failed++;
         }
@@ -3285,7 +3306,7 @@ export async function getSettlementDetails(settlementId) {
       paymentHistory,
       paymentCount: paymentHistory.length,
 
-      // Voucher Summary - ACCURATE FROM ACTUAL VOUCHER DATA
+      // Voucher Summary - ACCURATE FROM ACTUAL VOUCHER DATA WITH NOTIFICATION DETAILS
       voucherSummary: {
         totalIssued,
         redeemed: voucherRedeemedCount,
@@ -4128,7 +4149,7 @@ export async function getBrandSettlementHistory(brandId, params = {}, shop = nul
       let calculatedNetPayable = 0;
       if (baseAmount > 0) {
         calculatedNetPayable =
-          baseAmount - commissionAmount + vatAmount - breakageAmount;
+          baseAmount - commissionAmount;
       }
 
       const netPayable =

@@ -25,9 +25,9 @@ const BrandSettlementHistoryClient = () => {
     const searchParams = useSearchParams();
     const params = useParams();
     const { navigate, updateQueryParams } = useShopifyNavigation();
-    const settlementId = useParams({strict:false})
-  
-    
+    const settlementId = useParams({ strict: false })
+
+
     const searchDebounceRef = useRef(null);
     const isMountedRef = useRef(true);
 
@@ -140,7 +140,7 @@ const BrandSettlementHistoryClient = () => {
     // Subsequent loads (filters/search changes)
     useEffect(() => {
         if (loading) return;
-        
+
         fetchBrandSettlementHistory(false);
     }, [currentPage, currentStatus, currentYear, currentSortBy, currentSearch]);
 
@@ -211,9 +211,9 @@ const BrandSettlementHistoryClient = () => {
             }
 
             const newUrl = `${pathname}?${params.toString()}`;
-            
+
             console.log('Updating URL params to:', newUrl);
-            
+
             updateQueryParams(newUrl);
         },
         [searchParams, pathname, shop, updateQueryParams]
@@ -271,19 +271,19 @@ const BrandSettlementHistoryClient = () => {
             console.log("hello")
             const params = new URLSearchParams();
             const currentParams = new URLSearchParams(window.location.search);
-            
+
             const shopParam = currentParams.get('shop') || shop;
             const hostParam = currentParams.get('host');
             const embeddedParam = currentParams.get('embedded');
-            
+
             if (shopParam) params.set('shop', shopParam);
             if (hostParam) params.set('host', hostParam);
             if (embeddedParam) params.set('embedded', embeddedParam);
-            
+
             const basePath = `shopify/settlements/${settlementId}/overview`;
             const fullUrl = params.toString() ? `${basePath}?${params.toString()}` : basePath;
-            console.log(fullUrl,"fullUrl")
-    
+            console.log(fullUrl, "fullUrl")
+
             navigate(fullUrl);
         },
         [brandId, shop, navigate]
@@ -436,11 +436,6 @@ const BrandSettlementHistoryClient = () => {
                 cell: (info) => {
                     const row = info.row.original;
                     const netPayable = info.getValue() || 0;
-                    const commissionType = row.brandTerms?.commissionType;
-                    const commissionValue = row.brandTerms?.commissionValue || 0;
-                    const vatRate = row.vatRate || row.brandTerms?.vatRate || 0;
-                    const commissionAmount = row.commissionAmount || 0;
-                    const vatAmount = row.vatAmount || 0;
 
                     return (
                         <div className="space-y-0.5">
@@ -448,7 +443,7 @@ const BrandSettlementHistoryClient = () => {
                                 {getCurrencySymbol(row.currency)}
                                 {netPayable.toLocaleString()}
                             </div>
-                            {commissionAmount >= 1 && commissionType && (
+                            {/* {commissionAmount >= 1 && commissionType && (
                                 <div className="text-xs text-red-600">
                                     -{commissionValue}% Commission on Base Amount
                                 </div>
@@ -457,7 +452,36 @@ const BrandSettlementHistoryClient = () => {
                                 <div className="text-xs text-green-600">
                                     +{vatRate}% VAT on Commission
                                 </div>
-                            )}
+                            )} */}
+                        </div>
+                    );
+                },
+            }),
+            columnHelper.accessor("commission", {
+                header: "COMMISSION",
+                cell: (info) => {
+                   const commissionValue = info.row.original?.commissionAmount || 0;
+                    return (
+                        <div className="space-y-0.5">
+                            <div className="text-[#1A1A1A] font-semibold">
+                                {getCurrencySymbol(info.row.original.currency)}
+                                {commissionValue.toLocaleString()}
+                            </div>
+                        </div>
+                    );
+                },
+            }),
+            columnHelper.accessor("vatAmount", {
+                header: "VAT",
+                cell: (info) => {
+                    const row = info.row.original;
+                    const vatAmount = info.getValue() || 0;
+                    return (
+                        <div className="space-y-0.5">
+                            <div className="text-[#1A1A1A] font-semibold">
+                                {getCurrencySymbol(row.currency)}
+                                {vatAmount.toLocaleString()}
+                            </div>
                         </div>
                     );
                 },
@@ -520,7 +544,7 @@ const BrandSettlementHistoryClient = () => {
         [columnHelper, getCurrencySymbol, formatDate, StatusBadge]
     );
 
-  
+
     if (error) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">

@@ -54,8 +54,6 @@ const SettlementDetailsPage = async ({ params, searchParams }) => {
         notFound();
     }
 
-    console.log("Settlement data:", settlement);
-
     return (
         <>
             <OverviewTab settlement={settlement} shop={shop} host={host} />

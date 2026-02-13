@@ -174,7 +174,7 @@ const OverviewTab = ({ settlement }) => {
                                         Commission ({settlement.commissionValue}{settlement.commissionType === "Percentage" ? "%" : ""})
                                     </span>
                                     <span className="text-sm font-semibold text-red-600">
-                                        -{getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.commissionAmount)}
+                                        {getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.commissionAmount)}
                                     </span>
                                 </div>
                             )}
@@ -182,7 +182,7 @@ const OverviewTab = ({ settlement }) => {
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-700">VAT ({settlement.vatRate}%)</span>
                                     <span className="text-sm font-semibold text-green-600">
-                                        +{getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.vatAmount)}
+                                        {getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.vatAmount)}
                                     </span>
                                 </div>
                             )}
@@ -190,7 +190,7 @@ const OverviewTab = ({ settlement }) => {
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-700">Breakage</span>
                                     <span className="text-sm font-semibold text-red-600">
-                                        -{getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.breakageAmount)}
+                                        {getCurrencySymbol(settlement.currency)}{formatCurrency(settlement.breakageAmount)}
                                     </span>
                                 </div>
                             )}
