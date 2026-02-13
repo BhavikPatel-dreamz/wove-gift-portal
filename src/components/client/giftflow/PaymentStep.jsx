@@ -31,7 +31,6 @@ const PaymentStep = () => {
   const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
   const [showThankYou, setShowThankYou] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState(null);
-  const [payfastUrl, setPayfastUrl] = useState(null);
 
   const [addressErrors, setAddressErrors] = useState({});
 
@@ -59,14 +58,6 @@ const PaymentStep = () => {
   const bulkDeliveryOption = isBulkMode && currentBulkOrder ? currentBulkOrder.deliveryOption : null;
   const csvRecipients = isBulkMode && currentBulkOrder ? currentBulkOrder.csvRecipients : [];
 
-  // Auto-redirect when payfastUrl is set
-  useEffect(() => {
-    if (payfastUrl) {
-      console.log('🚀 Redirecting to PayFast:', payfastUrl);
-      window.location.href = payfastUrl;
-    }
-  }, [payfastUrl]);
-
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "";
 
@@ -91,7 +82,7 @@ const PaymentStep = () => {
     return Number(totalAmount) + Number(serviceFee);
   };
 
-  // Initiate payment with billing address
+  // Initiate payment with direct redirect
   const handleInitiatePayment = async () => {
 
     if (!isPaymentConfirmed) {
@@ -139,12 +130,12 @@ const PaymentStep = () => {
       if (result?.success) {
         setPendingOrderId(result.data.orderId);
         
-        toast.success('Redirecting to payment...', { id: toastId });
+        toast.dismiss(toastId);
         
         console.log('✅ PayFast URL received:', result.data.payfastUrl);
         
-        // Set the URL to trigger redirect
-        setPayfastUrl(result.data.payfastUrl);
+        // Direct redirect without showing loading screen
+        window.location.href = result.data.payfastUrl;
         
         return {
           orderId: result.data.orderId
@@ -197,38 +188,6 @@ const PaymentStep = () => {
         processingInBackground={order.processingInBackground}
         processingStatus={order.processingStatus}
       />
-    );
-  }
-
-  // Loading screen
-  if (paymentSubmitted || payfastUrl) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 text-center">
-        <div className="max-w-md">
-          <div className="mb-4">
-            <svg className="mx-auto h-16 w-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            Redirecting to Payment...
-          </h1>
-          <p className="text-gray-600">
-            Please wait while we redirect you to PayFast secure payment gateway
-          </p>
-          {pendingOrderId && (
-            <p className="text-sm text-gray-500 mt-4">
-              Order ID: <span className="font-medium">{pendingOrderId}</span>
-            </p>
-          )}
-          <div className="mt-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mx-auto"></div>
-            <p className="text-sm text-gray-500 mt-2">
-              Do not close this window...
-            </p>
-          </div>
-        </div>
-      </div>
     );
   }
 
@@ -315,7 +274,7 @@ const PaymentStep = () => {
                 {isProcessing ? (
                   <>
                     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    Redirecting to PayFast...
+                    Processing...
                   </>
                 ) : (
                   <>
@@ -342,7 +301,7 @@ const PaymentStep = () => {
                 {isProcessing ? (
                   <>
                     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    Redirecting to PayFast...
+                    Processing...
                   </>
                 ) : (
                   <>
