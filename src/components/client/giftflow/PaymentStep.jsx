@@ -13,7 +13,6 @@ import PaymentSummary from "./payment/PaymentSummary";
 import BulkPaymentSummary from "./payment/BulkPaymentSummary";
 import SuccessScreen from "./payment/SuccessScreen";
 import ThankYouScreen from "./payment/ThankYouScreen";
-import BillingAddressForm from "./payment/BillingAddressForm";
 import { currencyList } from "../../brandsPartner/currency";
 
 const PaymentStep = () => {
@@ -34,18 +33,6 @@ const PaymentStep = () => {
   const [pendingOrderId, setPendingOrderId] = useState(null);
   const [payfastUrl, setPayfastUrl] = useState(null);
 
-  // Processing status
-  const [processingStatus, setProcessingStatus] = useState(null);
-
-  // Billing address state
-  const [billingAddress, setBillingAddress] = useState({
-    line1: '',
-    line2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'ZA', // South Africa default for PayFast
-  });
   const [addressErrors, setAddressErrors] = useState({});
 
   // Redux selectors
@@ -80,30 +67,6 @@ const PaymentStep = () => {
     }
   }, [payfastUrl]);
 
-  // Validate billing address
-  const validateBillingAddress = () => {
-    const errors = {};
-
-    if (!billingAddress.line1 || billingAddress.line1.trim() === '') {
-      errors.line1 = 'Address is required';
-    }
-    if (!billingAddress.city || billingAddress.city.trim() === '') {
-      errors.city = 'City is required';
-    }
-    if (!billingAddress.state || billingAddress.state.trim() === '') {
-      errors.state = 'State is required';
-    }
-    if (!billingAddress.postalCode || billingAddress.postalCode.trim() === '') {
-      errors.postalCode = 'Postal code is required';
-    }
-    if (!billingAddress.country || billingAddress.country.trim() === '') {
-      errors.country = 'Country is required';
-    }
-
-    setAddressErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "";
 
@@ -130,10 +93,6 @@ const PaymentStep = () => {
 
   // Initiate payment with billing address
   const handleInitiatePayment = async () => {
-    if (!validateBillingAddress()) {
-      toast.error('Please fill in all required billing address fields');
-      return null;
-    }
 
     if (!isPaymentConfirmed) {
       toast.error('Please confirm that all details are correct');
@@ -157,7 +116,6 @@ const PaymentStep = () => {
         totalAmount: calculateTotal(),
         isBulkOrder: true,
         totalSpend: currentBulkOrder.totalSpend,
-        billingAddress,
         deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
         csvRecipients,
         userId: session?.user?.id,
@@ -173,7 +131,6 @@ const PaymentStep = () => {
         selectedTiming,
         totalAmount: calculateTotal(),
         isBulkOrder: false,
-        billingAddress,
         userId: session?.user?.id,
       };
 
@@ -334,11 +291,6 @@ const PaymentStep = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Left Column */}
           <div className="space-y-5 sm:space-y-6">
-            <BillingAddressForm
-              address={billingAddress}
-              onChange={setBillingAddress}
-              errors={addressErrors}
-            />
 
             <PaymentMethodSelector
               selectedTab={selectedPaymentTab}
@@ -394,7 +346,7 @@ const PaymentStep = () => {
                   </>
                 ) : (
                   <>
-                    Pay with Card <span>→</span>
+                    Pay with PayFast <span>→</span>
                   </>
                 )}
               </button>

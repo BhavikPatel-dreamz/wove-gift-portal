@@ -11,7 +11,6 @@ import { useSession } from '@/contexts/SessionContext';
 // import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
 import PaymentMethodSelector from "../giftflow/payment/PaymentMethodSelector";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
-import BillingAddressForm from "../giftflow/payment/BillingAddressForm";
 import SuccessScreen from "../giftflow/payment/SuccessScreen";
 import { currencyList } from '../../brandsPartner/currency';
 import { useDispatch, useSelector } from 'react-redux';
@@ -49,16 +48,6 @@ const CheckoutPage = () => {
 
   // Track individual order processing
   const [orderStatuses, setOrderStatuses] = useState({});
-
-  // Billing address state
-  const [billingAddress, setBillingAddress] = useState({
-    line1: '',
-    line2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'US',
-  });
   const [addressErrors, setAddressErrors] = useState({});
 
   const getCurrencySymbol = (code) =>
@@ -121,37 +110,8 @@ const CheckoutPage = () => {
     return calculateCombinedSubtotal() + calculateCombinedServiceFee();
   };
 
-  // Validate billing address
-  const validateBillingAddress = () => {
-    const errors = {};
-
-    if (!billingAddress.line1 || billingAddress.line1.trim() === '') {
-      errors.line1 = 'Address is required';
-    }
-    if (!billingAddress.city || billingAddress.city.trim() === '') {
-      errors.city = 'City is required';
-    }
-    if (!billingAddress.state || billingAddress.state.trim() === '') {
-      errors.state = 'State is required';
-    }
-    if (!billingAddress.postalCode || billingAddress.postalCode.trim() === '') {
-      errors.postalCode = 'Postal code is required';
-    }
-    if (!billingAddress.country || billingAddress.country.trim() === '') {
-      errors.country = 'Country is required';
-    }
-
-    setAddressErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   // Create separate pending orders for ALL cart items
   const handleInitiatePayment = async () => {
-    if (!validateBillingAddress()) {
-      toast.error('Please fill in all required billing address fields');
-      return null;
-    }
-
     setIsProcessing(true);
     setError(null);
     const toastId = toast.loading('Preparing your orders...');
@@ -171,7 +131,6 @@ const CheckoutPage = () => {
           totalAmount: getAmountValue(item.selectedAmount) * item.quantity,
           isBulkOrder: true,
           totalSpend: item.totalSpend,
-          billingAddress,
           deliveryMethod: item.deliveryOption,
           csvRecipients: item.csvRecipients || [],
           userId: session?.user?.id,
@@ -188,7 +147,6 @@ const CheckoutPage = () => {
           selectedTiming: item.selectedTiming,
           totalAmount: getAmountValue(item.selectedAmount),
           isBulkOrder: false,
-          billingAddress,
           userId: session?.user?.id,
         })),
       ];
@@ -197,8 +155,7 @@ const CheckoutPage = () => {
       const result = await createPendingOrder({
         isMultiCart: true,
         cartOrders: allCartOrders,
-        userId: session?.user?.id,
-        billingAddress,
+        userId: session?.user?.id
       });
 
       if (!result.success) {
@@ -506,12 +463,6 @@ const CheckoutPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Left Column - Payment */}
           <div className="space-y-5 sm:space-y-6">
-            <BillingAddressForm
-              address={billingAddress}
-              onChange={setBillingAddress}
-              errors={addressErrors}
-            />
-
             <PaymentMethodSelector
               selectedTab={selectedPaymentTab}
               onTabChange={setSelectedPaymentTab}

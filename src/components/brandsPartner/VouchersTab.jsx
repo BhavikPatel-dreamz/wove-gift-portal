@@ -359,8 +359,8 @@ const VouchersTab = ({ formData, updateFormData }) => {
             <div
               key={denom.id}
               className={`border rounded-lg p-4 transition-all ${denom.isActive
-                  ? "bg-white border-gray-200"
-                  : "bg-gray-50 border-gray-300 opacity-60"
+                ? "bg-white border-gray-200"
+                : "bg-gray-50 border-gray-300 opacity-60"
                 }`}
             >
               {/* Header Row */}
@@ -391,8 +391,8 @@ const VouchersTab = ({ formData, updateFormData }) => {
                     <button
                       onClick={() => toggleDenominationActive(denom.id)}
                       className={`w-full sm:w-auto px-4 py-2 rounded-md text-sm font-medium transition-colors ${denom.isActive
-                          ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
-                          : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
+                        ? "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100"
+                        : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
                         }`}
                     >
                       {denom.isActive ? "Active" : "Inactive"}
@@ -514,13 +514,16 @@ const VouchersTab = ({ formData, updateFormData }) => {
             <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
               Brand Logo*
             </label>
-            <div className="bg-gray-50 border border-gray-300 rounded-lg h-48">
-              <div className="flex items-center justify-center">
+
+            <div className="bg-gray-50 border border-gray-300 rounded-lg h-48 overflow-hidden flex flex-col">
+
+              {/* Image Container */}
+              <div className="flex-1 flex items-center justify-center overflow-hidden my-2 ronded-2">
                 {formData.logo || formData.imagePreview ? (
                   <img
                     src={formData.logo || formData.imagePreview}
                     alt="Brand logo"
-                    className="max-w-full max-h-full object-contain p-4"
+                    className="max-w-full max-h-full object-contain"
                   />
                 ) : (
                   <div className="text-center">
@@ -538,22 +541,25 @@ const VouchersTab = ({ formData, updateFormData }) => {
                   </div>
                 )}
               </div>
-              <p className="text-sm text-gray-500 text-center">
+
+              {/* Expiry Text */}
+              {/* <p className="text-sm text-gray-500 text-center pb-2">
                 Expires{" "}
                 {formData.denominations?.[0]?.expiresAt
-                  ? new Date(
-                    formData.denominations[0].expiresAt
-                  ).toLocaleDateString("en-US", {
-                    month: "2-digit",
-                    day: "2-digit",
-                    year: "numeric",
-                  })
+                  ? new Date(formData.denominations[0].expiresAt).toLocaleDateString(
+                    "en-US",
+                    {
+                      month: "2-digit",
+                      day: "2-digit",
+                      year: "numeric",
+                    }
+                  )
                   : "31/12/2025"}
-              </p>
+              </p> */}
             </div>
-
           </div>
         </div>
+
       </div>
     </div>
   );

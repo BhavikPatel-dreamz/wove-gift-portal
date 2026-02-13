@@ -255,25 +255,21 @@ const CoreTab = ({ formData, updateFormData }) => {
                 onClick={() => fileInputRef.current?.click()}
                 style={{ cursor: 'pointer' }}
               >
-                {formData.imagePreview ? (
+                {formData.logo || formData.imagePreview ? (
                   <div className="relative">
                     {/* Use Next.js Image component for Cloudinary URLs, regular img for local previews */}
-                    {isCloudinaryUrl(formData.imagePreview) ? (
+                    {isCloudinaryUrl(formData.logo || formData.imagePreview) ? (
                       <div className="relative w-full h-24 mb-2">
                         <Image
-                          src={formData.imagePreview}
+                          src={formData.logo || formData.imagePreview}
                           alt="Logo preview"
                           fill
                           className="object-contain rounded"
-                          unoptimized={!formData?.imagePreview.includes('cloudinary.com')}
-                          onError={(e) => {
-                            console.error('Image load error:', e);
-                          }}
                         />
                       </div>
                     ) : (
                       <img
-                        src={formData.imagePreview}
+                        src={formData.logo || formData.imagePreview}
                         alt="Logo preview"
                         className="mx-auto mb-2 max-h-24 w-auto rounded"
                         onError={(e) => {
@@ -309,7 +305,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                 )}
               </div>
 
-              {formData.imagePreview && (
+              {(formData.logo || formData.imagePreview) && (
                 <button
                   type="button"
                   onClick={removeFile}
@@ -319,6 +315,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                   <X size={16} />
                 </button>
               )}
+
 
               <input
                 ref={fileInputRef}
