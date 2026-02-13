@@ -1,11 +1,12 @@
 /**
- * NOTIFICATION PROCESSOR - BULLETPROOF EMAIL DELIVERY
+ * NOTIFICATION PROCESSOR - BULLETPROOF EMAIL DELIVERY WITH SCHEDULED SEND
  * 
  * CRITICAL FIXES:
  * 1. Process ONE order at a time
  * 2. Ensure ALL emails are sent before marking complete
  * 3. Proper retry logic for failed emails
  * 4. Complete logging in NotificationDetail table
+ * 5. ✅ NEW: Respect scheduledFor time with UTC comparison
  */
 
 import cron from "node-cron";
@@ -55,6 +56,32 @@ async function processNotificationsQueue() {
     const order = ordersToNotify[0];
     
     console.log(`📋 Processing notifications for: ${order.orderNumber}`);
+    
+    // ✅ Check if this is a scheduled order with UTC comparison
+    if (order.sendType === 'scheduleLater' && order.scheduledFor) {
+      const scheduledTimeUTC = new Date(order.scheduledFor);
+      const nowUTC = new Date();
+      
+      // Double-check that the scheduled time has actually passed
+      if (scheduledTimeUTC > nowUTC) {
+        console.log(
+          `⏰ Skipping order ${order.orderNumber}:`,
+          `\n  Scheduled UTC: ${scheduledTimeUTC.toISOString()}`,
+          `\n  Current UTC:   ${nowUTC.toISOString()}`,
+          `\n  Time until scheduled: ${Math.round((scheduledTimeUTC - nowUTC) / 60000)} minutes`
+        );
+        return { success: true, processed: 0, message: "Order not yet ready to send" };
+      }
+      
+      console.log(
+        `\n✓ Processing scheduled order: ${order.orderNumber}`,
+        `\n  Scheduled UTC: ${scheduledTimeUTC.toISOString()} (${scheduledTimeUTC.toUTCString()})`,
+        `\n  Current UTC:   ${nowUTC.toISOString()} (${nowUTC.toUTCString()})`,
+        `\n  Delay: ${Math.round((nowUTC - scheduledTimeUTC) / 60000)} minutes past scheduled time`
+      );
+    } else {
+      console.log(`🚀 [${order.orderNumber}] Immediate send order`);
+    }
 
     try {
       // Mark as processing
@@ -101,6 +128,12 @@ async function processNotificationsQueue() {
 }
 
 async function findOrdersReadyForNotification() {
+  // ✅ Get current time in UTC
+  const nowUTC = new Date();
+  
+  console.log(`🕐 Current UTC time: ${nowUTC.toISOString()}`);
+  console.log(`🕐 Current UTC time (readable): ${nowUTC.toUTCString()}`);
+  
   const orders = await prisma.$queryRaw`
     SELECT 
       o.id,
@@ -118,7 +151,9 @@ async function findOrdersReadyForNotification() {
       o."retryCount",
       o."subCategoryId",
       o."customCardId",
-      o."isCustom"
+      o."isCustom",
+      o."sendType",
+      o."scheduledFor"
     FROM "Order" o
     WHERE 
       o."isPaid" = true
@@ -126,7 +161,22 @@ async function findOrdersReadyForNotification() {
       AND o."notificationsSent" = false
       AND o."processingStatus" = 'VOUCHERS_CREATED'
       AND o."retryCount" < ${MAX_RETRIES}
-    ORDER BY o."paidAt" ASC, o."createdAt" ASC
+      AND (
+        o."sendType" = 'sendImmediately'
+        OR (
+          o."sendType" = 'scheduleLater' 
+          AND o."scheduledFor" IS NOT NULL 
+          AND o."scheduledFor" <= ${nowUTC}
+        )
+      )
+    ORDER BY 
+      CASE 
+        WHEN o."sendType" = 'sendImmediately' THEN 0
+        ELSE 1
+      END,
+      o."scheduledFor" ASC NULLS LAST,
+      o."paidAt" ASC, 
+      o."createdAt" ASC
     LIMIT 1
     FOR UPDATE SKIP LOCKED
   `;
@@ -155,7 +205,7 @@ async function findOrdersReadyForNotification() {
           giftCard: { select: { code: true } },
         },
         orderBy: { createdAt: "asc" },
-        take: order.quantity, // ✅ CRITICAL: Limit to order quantity
+        take: order.quantity,
       },
     },
   });
@@ -652,7 +702,7 @@ function generateIndividualGiftEmailHTML(
                     ${giftCardImageUrl ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px;">` : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ff6b9d 0%, #ff8f6b 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;"><h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2></div>`}
                   </td>
                   <td style="width: 40%; vertical-align: top;">
-                    ${brandLogoUrl ? `<div style="margin-bottom: 20px;"><img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 80px; height: auto;"></div>` : `<div style="margin-bottom: 20px;"><h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ff6b9d;">${brandName}</h3></div>`}
+                    ${brandLogoUrl ? `<div style="margin-bottom: 20px;"><img src="${brandLogoUrl}" alt="${brand?.brandName}" style="max-width: 80px; height: auto;"></div>` : `<div style="margin-bottom: 20px;"><h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ff6b9d;">${brand?.brandName}</h3></div>`}
                     <div style="margin-bottom: 20px;">
                       <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Gift Code</p>
                       <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">${giftCode}</p>
@@ -715,9 +765,8 @@ function generateBulkEmailHTML(order, orderData, voucherCodes, csvUrl, brandLogo
                   <td style="width: 60%;">
                     ${giftCardImageUrl ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px;">` : ""}
                   </td>
-<td style="width: 40%; vertical-align: top;">
+                  <td style="width: 40%; vertical-align: top;">
                     ${brandLogoUrl ? `<div style="margin-bottom: 20px;"><img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 80px; height: auto;"></div>` : `<div style="margin-bottom: 20px;"><h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ff6b9d;">${brandName}</h3></div>`}
-                 
                     <p style="margin: 0 0 12px; font-size: 13px; font-weight: 600;">Total Vouchers: ${voucherCodes.length}</p>
                     <p style="margin: 0 0 12px; font-size: 13px; font-weight: 600;">Total Value: ${order.currency}${order.amount * voucherCodes.length}</p>
                   </td>
