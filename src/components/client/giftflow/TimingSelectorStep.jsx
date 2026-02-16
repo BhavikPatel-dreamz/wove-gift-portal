@@ -160,7 +160,12 @@ const TimingSelectorStep = () => {
         <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto mb-16">
           {/* Send Immediately */}
           <div
-            onClick={() => handleTimingSelect('immediate')}
+           onClick={() => {
+            setSelectedOption('immediate');
+            dispatch(setSelectedTiming({ type: 'immediate' }));
+            dispatch(goNext());
+          }}
+          
             className={`relative p-8 border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${selectedOption === 'immediate'
               ? 'border-blue-400 bg-blue-50 shadow-lg rounded-[20px] '
               : 'border-[#1A1A1A33] rounded-[20px] bg-[#E9F3FF] hover:border-blue-300'
@@ -367,7 +372,7 @@ const TimingSelectorStep = () => {
         )}
 
         {/* Continue Button (for immediate option) */}
-        {selectedOption === 'immediate' && (
+        {/* {selectedOption === 'immediate' && (
           <div className="text-center mt-12">
             <button
               className="cursor-pointer text-white py-4 px-10 rounded-[50px] font-medium text-base shadow-lg inline-flex items-center transition-transform duration-200 transform hover:scale-105 gap-2 "
@@ -386,7 +391,7 @@ const TimingSelectorStep = () => {
 
             </button>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
