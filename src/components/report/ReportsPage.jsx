@@ -211,10 +211,10 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
             let reports = [];
             switch (reportId) {
                 case 'daily-settlement':
-                    reports = ['settlementReports', 'salesSummary'];
+                    reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
                     break;
                 case 'weekly-summary':
-                    reports = ['salesSummary', 'redemptionDetails', 'brandPerformance'];
+                  reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
                     break;
                 case 'monthly-report':
                     reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
@@ -272,12 +272,12 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
             pdf.setFont(undefined, 'normal');
             pdf.setFontSize(10);
             yPos += 6;
-            pdf.text(`Period: ${data.period?.startDate} to ${data.period?.endDate}`, 14, yPos);
-            yPos += 5;
+            pdf.text(`Period: ${startDate} to ${endDate}`, 14, yPos);
+            yPos += 6;
             pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, yPos);
             yPos += 12;
 
-            // SALES SUMMARY
+            // SALES SUMMARY (Always present)
             if (data.data?.salesSummary) {
                 const sd = data.data.salesSummary;
                 checkAddPage(50);
@@ -349,7 +349,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 }
             }
 
-            // REDEMPTION DETAILS
+            // REDEMPTION DETAILS (Always present)
             if (data.data?.redemptionDetails) {
                 const rd = data.data.redemptionDetails;
                 checkAddPage(50);
@@ -403,7 +403,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 }
             }
 
-            // SETTLEMENT REPORTS
+            // SETTLEMENT REPORTS (Always present)
             if (data.data?.settlementReports) {
                 const sr = data.data.settlementReports;
                 checkAddPage(50);
@@ -455,7 +455,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 }
             }
 
-            // BRAND PERFORMANCE
+            // BRAND PERFORMANCE (Always present)
             if (data.data?.brandPerformance) {
                 const bp = data.data.brandPerformance;
                 checkAddPage(50);
@@ -504,7 +504,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 }
             }
 
-            // LIABILITY SNAPSHOT
+             // LIABILITY SNAPSHOT
             if (data.data?.liabilitySnapshot) {
                 const ls = data.data.liabilitySnapshot;
                 checkAddPage(50);
