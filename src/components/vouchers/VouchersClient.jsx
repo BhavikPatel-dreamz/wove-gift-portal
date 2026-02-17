@@ -422,11 +422,6 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
             onClick: handleSync,
             disabled: syncing,
           }] : []),
-          {
-            label: "Export",
-            icon: Download,
-            onClick: handleExport,
-          },
         ]}
         emptyMessage={error || "No vouchers found. Try adjusting your filters."}
       />
