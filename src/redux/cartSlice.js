@@ -1,5 +1,49 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+const defaultBulkCompanyInfo = {
+  companyName: '',
+  vatNumber: '',
+  contactNumber: '',
+  contactEmail: '',
+};
+
+const normalizeBulkDeliveryOption = (option, csvRecipients = []) => {
+  const normalizedOption = typeof option === 'string' ? option.trim().toLowerCase() : '';
+
+  // Legacy values are mapped to current UI values.
+  if (
+    normalizedOption === 'multiple' ||
+    normalizedOption === 'csv' ||
+    normalizedOption === 'emails' ||
+    normalizedOption === 'individual' ||
+    normalizedOption === 'individual_emails'
+  ) {
+    return 'multiple';
+  }
+
+  // Infer CSV mode from recipient payload for older saved cart items.
+  if (!normalizedOption && Array.isArray(csvRecipients) && csvRecipients.length > 0) {
+    return 'multiple';
+  }
+
+  return 'email';
+};
+
+const normalizeBulkItem = (item, fallbackId) => {
+  const normalizedCompanyInfo = item?.companyInfo
+    ? { ...defaultBulkCompanyInfo, ...item.companyInfo }
+    : { ...defaultBulkCompanyInfo };
+
+  return {
+    ...item,
+    id: item?.id ?? fallbackId ?? Date.now(),
+    isBulkOrder: true,
+    companyInfo: normalizedCompanyInfo,
+    deliveryOption: normalizeBulkDeliveryOption(item?.deliveryOption, item?.csvRecipients),
+    csvRecipients: Array.isArray(item?.csvRecipients) ? item.csvRecipients : [],
+  };
+};
+
 const getInitialCart = () => {
   if (typeof window !== 'undefined') {
     const cart = localStorage.getItem('cart');
@@ -16,12 +60,19 @@ const getInitialBulkCart = () => {
   return [];
 };
 
+const getInitialNormalizedBulkCart = () => {
+  const bulkCart = getInitialBulkCart();
+  return bulkCart.map((item, index) => normalizeBulkItem(item, Date.now() + index));
+};
+
+const initialBulkCart = getInitialNormalizedBulkCart();
+
 const cartSlice = createSlice({
   name: 'cart',
   initialState: {
     items: getInitialCart(),
-    bulkItems: [],
-    cartItems: getInitialBulkCart(),
+    bulkItems: [...initialBulkCart],
+    cartItems: [...initialBulkCart],
   },
   reducers: {
     // Regular single gift cart actions
@@ -70,26 +121,17 @@ addToBulk: (state, action) => {
   //   return;
   // }
   
-  const newBulkItem = {
+  const newBulkItem = normalizeBulkItem({
     ...action.payload,
-    id: Date.now(),
     addedAt: new Date().toISOString(),
-    isBulkOrder: true,
-    companyInfo: action.payload.companyInfo || {
-      companyName: '',
-      vatNumber: '',
-      contactNumber: '',
-      contactEmail: '',
-    },
-    deliveryOption: action.payload.deliveryOption || 'csv'
-  };
+  }, Date.now());
   
   state.bulkItems.push(newBulkItem);
 },
     
     addToBulkInCart: (state, action) => {
       // Sync bulkItems to cartItems and save to localStorage
-      state.cartItems = [...state.bulkItems];
+      state.cartItems = state.bulkItems.map((item, index) => normalizeBulkItem(item, Date.now() + index));
       if (typeof window !== 'undefined') {
         localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
       }
@@ -98,11 +140,11 @@ addToBulk: (state, action) => {
     updateBulkItem: (state, action) => {
       const { index, item } = action.payload;
       if (state.bulkItems[index]) {
-        state.bulkItems[index] = {
+        state.bulkItems[index] = normalizeBulkItem({
           ...item,
-          id: state.bulkItems[index].id, // Keep original ID
+          id: state.bulkItems[index].id,
           updatedAt: new Date().toISOString()
-        };
+        }, state.bulkItems[index].id);
         // Also update cartItems
         state.cartItems = [...state.bulkItems];
         if (typeof window !== 'undefined') {
@@ -115,11 +157,11 @@ addToBulk: (state, action) => {
       const { id, updates } = action.payload;
       const itemIndex = state.bulkItems.findIndex(item => item.id === id);
       if (itemIndex !== -1) {
-        state.bulkItems[itemIndex] = {
+        state.bulkItems[itemIndex] = normalizeBulkItem({
           ...state.bulkItems[itemIndex],
           ...updates,
           updatedAt: new Date().toISOString()
-        };
+        }, state.bulkItems[itemIndex].id);
         // Also update cartItems
         state.cartItems = [...state.bulkItems];
         if (typeof window !== 'undefined') {
@@ -133,14 +175,18 @@ addToBulk: (state, action) => {
       const { companyInfo, deliveryOption, quantity, csvRecipients } = action.payload;
       if (state.bulkItems.length > 0) {
         const lastIndex = state.bulkItems.length - 1;
-        state.bulkItems[lastIndex] = {
+        const currentItem = state.bulkItems[lastIndex];
+
+        state.bulkItems[lastIndex] = normalizeBulkItem({
           ...state.bulkItems[lastIndex],
-          companyInfo: companyInfo || state.bulkItems[lastIndex].companyInfo,
-          deliveryOption: deliveryOption || state.bulkItems[lastIndex].deliveryOption,
-          quantity: quantity || state.bulkItems[lastIndex].quantity,
-          csvRecipients: csvRecipients || state.bulkItems[lastIndex].csvRecipients,
+          companyInfo: companyInfo ?? currentItem.companyInfo,
+          deliveryOption: deliveryOption !== undefined && deliveryOption !== null
+            ? deliveryOption
+            : currentItem.deliveryOption,
+          quantity: quantity ?? currentItem.quantity,
+          csvRecipients: csvRecipients ?? currentItem.csvRecipients,
           updatedAt: new Date().toISOString()
-        };
+        }, currentItem.id);
         // Also update cartItems
         // state.cartItems = [...state.bulkItems];
       }
@@ -151,12 +197,14 @@ addToBulk: (state, action) => {
       const { id, companyInfo, deliveryOption } = action.payload;
       const itemIndex = state.bulkItems.findIndex(item => item.id === id);
       if (itemIndex !== -1) {
-        state.bulkItems[itemIndex] = {
+        state.bulkItems[itemIndex] = normalizeBulkItem({
           ...state.bulkItems[itemIndex],
-          companyInfo: companyInfo || state.bulkItems[itemIndex].companyInfo,
-          deliveryOption: deliveryOption || state.bulkItems[itemIndex].deliveryOption,
+          companyInfo: companyInfo ?? state.bulkItems[itemIndex].companyInfo,
+          deliveryOption: deliveryOption !== undefined && deliveryOption !== null
+            ? deliveryOption
+            : state.bulkItems[itemIndex].deliveryOption,
           updatedAt: new Date().toISOString()
-        };
+        }, state.bulkItems[itemIndex].id);
         // Also update cartItems
         state.cartItems = [...state.bulkItems];
         if (typeof window !== 'undefined') {
@@ -187,8 +235,16 @@ addToBulk: (state, action) => {
     
     initializeBulkCart: (state) => {
       const bulkCart = getInitialBulkCart();
-      state.cartItems = bulkCart;
-      state.bulkItems = bulkCart;
+      const normalizedBulkCart = bulkCart.map((item, index) => normalizeBulkItem(item, Date.now() + index));
+      state.cartItems = normalizedBulkCart;
+      state.bulkItems = normalizedBulkCart;
+
+      if (typeof window !== 'undefined') {
+        const needsRewrite = JSON.stringify(bulkCart) !== JSON.stringify(normalizedBulkCart);
+        if (needsRewrite) {
+          localStorage.setItem('bulkCart', JSON.stringify(normalizedBulkCart));
+        }
+      }
     },
     
     clearBulkCart: (state) => {

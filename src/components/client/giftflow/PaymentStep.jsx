@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams, useRouter } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
@@ -15,12 +15,34 @@ import SuccessScreen from "./payment/SuccessScreen";
 import ThankYouScreen from "./payment/ThankYouScreen";
 import { currencyList } from "../../brandsPartner/currency";
 
+const normalizeBulkDeliveryOption = (value, csvRecipients = []) => {
+  const option = typeof value === "string" ? value.trim().toLowerCase() : "";
+
+  if (
+    option === "multiple" ||
+    option === "csv" ||
+    option === "emails" ||
+    option === "individual" ||
+    option === "individual_emails"
+  ) {
+    return "multiple";
+  }
+
+  if (!option && Array.isArray(csvRecipients) && csvRecipients.length > 0) {
+    return "multiple";
+  }
+
+  return "email";
+};
+
 const PaymentStep = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
   const router = useRouter();
   const session = useSession();
   const mode = searchParams.get('mode');
+  const editBulkIdFromUrl = searchParams.get('editBulkId');
+  const editBulkIndexFromUrl = searchParams.get('editBulkIndex');
   const isBulkMode = mode === 'bulk';
 
   // State
@@ -46,17 +68,69 @@ const PaymentStep = () => {
     selectedTiming,
     selectedOccasionName,
     isPaymentConfirmed,
+    isEditMode,
+    editFlowType,
+    editingIndex,
+    editingBulkOrderId,
   } = useSelector((state) => state.giftFlowReducer);
 
   const { bulkItems } = useSelector((state) => state.cart);
-  const currentBulkOrder = isBulkMode && bulkItems.length > 0 ? bulkItems[bulkItems.length - 1] : null;
+  const currentBulkOrderIndex = useMemo(() => {
+    if (!isBulkMode || !bulkItems.length) return -1;
+
+    if (editBulkIdFromUrl) {
+      const indexByUrlId = bulkItems.findIndex(
+        (item) => String(item?.id) === String(editBulkIdFromUrl)
+      );
+      if (indexByUrlId !== -1) return indexByUrlId;
+    }
+
+    if (editBulkIndexFromUrl !== null && editBulkIndexFromUrl !== undefined) {
+      const parsedIndex = Number(editBulkIndexFromUrl);
+      if (Number.isInteger(parsedIndex) && parsedIndex >= 0 && bulkItems[parsedIndex]) {
+        return parsedIndex;
+      }
+    }
+
+    if (isEditMode && editFlowType === 'bulk') {
+      if (editingBulkOrderId !== null && editingBulkOrderId !== undefined) {
+        const indexById = bulkItems.findIndex((item) => item?.id === editingBulkOrderId);
+        if (indexById !== -1) return indexById;
+      }
+
+      if (
+        editingIndex !== null &&
+        editingIndex !== undefined &&
+        bulkItems[editingIndex]
+      ) {
+        return editingIndex;
+      }
+    }
+
+    return bulkItems.length - 1;
+  }, [
+    isBulkMode,
+    bulkItems,
+    editBulkIdFromUrl,
+    editBulkIndexFromUrl,
+    isEditMode,
+    editFlowType,
+    editingBulkOrderId,
+    editingIndex
+  ]);
+  const currentBulkOrder = currentBulkOrderIndex >= 0 ? bulkItems[currentBulkOrderIndex] : null;
 
   // Derived values
   const selectedAmount = isBulkMode && currentBulkOrder ? currentBulkOrder.selectedAmount : giftFlowAmount;
   const quantity = isBulkMode && currentBulkOrder ? currentBulkOrder.quantity : 1;
   const companyInfo = isBulkMode && currentBulkOrder ? currentBulkOrder.companyInfo : null;
-  const bulkDeliveryOption = isBulkMode && currentBulkOrder ? currentBulkOrder.deliveryOption : null;
+  const bulkDeliveryOption = isBulkMode && currentBulkOrder
+    ? normalizeBulkDeliveryOption(currentBulkOrder.deliveryOption, currentBulkOrder.csvRecipients)
+    : null;
   const csvRecipients = isBulkMode && currentBulkOrder ? currentBulkOrder.csvRecipients : [];
+  const effectiveBulkBrand = isBulkMode && currentBulkOrder
+    ? (currentBulkOrder.selectedBrand || selectedBrand)
+    : selectedBrand;
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "";
@@ -96,21 +170,21 @@ const PaymentStep = () => {
 
     try {
       const orderData = isBulkMode ? {
-        selectedBrand,
+        selectedBrand: effectiveBulkBrand,
         selectedAmount,
-        personalMessage,
+        personalMessage: currentBulkOrder?.personalMessage || personalMessage,
         quantity,
         companyInfo,
         deliveryOption: bulkDeliveryOption,
-        selectedOccasion,
-        selectedSubCategory,
+        selectedOccasion: currentBulkOrder?.selectedOccasion || selectedOccasion,
+        selectedSubCategory: currentBulkOrder?.selectedSubCategory || selectedSubCategory,
         totalAmount: calculateTotal(),
         isBulkOrder: true,
         totalSpend: currentBulkOrder.totalSpend,
         deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
         csvRecipients,
         userId: session?.user?.id,
-        selectedTiming,
+        selectedTiming: currentBulkOrder?.selectedTiming || selectedTiming,
       } : {
         selectedBrand,
         selectedAmount,
@@ -179,7 +253,7 @@ const PaymentStep = () => {
     return (
       <SuccessScreen
         order={order}
-        selectedBrand={selectedBrand}
+        selectedBrand={effectiveBulkBrand}
         quantity={quantity}
         selectedAmount={selectedAmount}
         isBulkMode={isBulkMode}

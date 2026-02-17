@@ -63,12 +63,24 @@ const CartPage = () => {
       ...item,
       editingIndex: index,
       isEditMode: true,
+      editFlowType: type,
+      editingBulkOrderId: type === 'bulk' ? item?.id ?? null : null,
+      deliveryFormEditReturn: {
+        enabled: false,
+        method: null,
+        returnStep: null,
+      },
     }));
-    dispatch(setCurrentStep(0));
+    dispatch(setCurrentStep(1));
     if (type === 'regular') {
       router.push('/gift');
     } else if (type === 'bulk') {
-      router.push('/gift?mode=bulk');
+      const query = new URLSearchParams({ mode: 'bulk' });
+      if (item?.id !== undefined && item?.id !== null) {
+        query.set('editBulkId', String(item.id));
+      }
+      query.set('editBulkIndex', String(index));
+      router.push(`/gift?${query.toString()}`);
     }
   };
 

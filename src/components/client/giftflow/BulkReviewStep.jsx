@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext, setIsConfirmed, setCompanyInfo, setCsvFileData } from '../../../redux/giftFlowSlice';
-import { updateBulkCompanyInfo, addToBulk, addToBulkInCart } from '../../../redux/cartSlice';
+import { updateBulkCompanyInfo, updateBulkItem, addToBulkInCart } from '../../../redux/cartSlice';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
@@ -11,24 +11,99 @@ import { ShoppingBasket } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext'
 import Link from 'next/link';
 
+const normalizeBulkDeliveryOption = (value, csvRecipients = []) => {
+    const option = typeof value === 'string' ? value.trim().toLowerCase() : '';
+
+    if (
+        option === 'multiple' ||
+        option === 'csv' ||
+        option === 'emails' ||
+        option === 'individual' ||
+        option === 'individual_emails'
+    ) {
+        return 'multiple';
+    }
+
+    if (!option && Array.isArray(csvRecipients) && csvRecipients.length > 0) {
+        return 'multiple';
+    }
+
+    return 'email';
+};
+
 const BulkReviewStep = () => {
     const dispatch = useDispatch();
     const router = useRouter();
     const session = useSession();
 
-    const { selectedBrand, isConfirmed, companyInfo: companyInfoFromRedux, csvFileData } = useSelector((state) => state.giftFlowReducer);
+    const {
+        selectedBrand,
+        isConfirmed,
+        companyInfo: companyInfoFromRedux,
+        csvFileData,
+        isEditMode,
+        editFlowType,
+        editingIndex,
+        editingBulkOrderId,
+    } = useSelector((state) => state.giftFlowReducer);
     const { bulkItems } = useSelector((state) => state.cart);
     
 
     const searchParams = useSearchParams();
     const mode = searchParams.get('mode');
+    const editBulkIdFromUrl = searchParams.get('editBulkId');
+    const editBulkIndexFromUrl = searchParams.get('editBulkIndex');
     const isBulkMode = mode === 'bulk';
 
+    // Resolve the correct bulk order:
+    // 1) By url edit id from cart click
+    // 2) By url edit index
+    // 3) By redux edit id/index in edit mode
+    // 4) Fallback to latest bulk order
+    const currentBulkOrderIndex = useMemo(() => {
+        if (!bulkItems?.length) return -1;
 
-    console.log('isBulkMode', bulkItems);
+        if (editBulkIdFromUrl) {
+            const indexByUrlId = bulkItems.findIndex(
+                (item) => String(item?.id) === String(editBulkIdFromUrl)
+            );
+            if (indexByUrlId !== -1) return indexByUrlId;
+        }
 
-    // Get the most recent bulk item (last added)
-    const currentBulkOrder = bulkItems[bulkItems.length - 1];
+        if (editBulkIndexFromUrl !== null && editBulkIndexFromUrl !== undefined) {
+            const parsedIndex = Number(editBulkIndexFromUrl);
+            if (Number.isInteger(parsedIndex) && parsedIndex >= 0 && bulkItems[parsedIndex]) {
+                return parsedIndex;
+            }
+        }
+
+        if (isEditMode && editFlowType === 'bulk') {
+            if (editingBulkOrderId !== null && editingBulkOrderId !== undefined) {
+                const indexById = bulkItems.findIndex((item) => item?.id === editingBulkOrderId);
+                if (indexById !== -1) return indexById;
+            }
+
+            if (
+                editingIndex !== null &&
+                editingIndex !== undefined &&
+                bulkItems[editingIndex]
+            ) {
+                return editingIndex;
+            }
+        }
+
+        return bulkItems.length - 1;
+    }, [
+        bulkItems,
+        editBulkIdFromUrl,
+        editBulkIndexFromUrl,
+        isEditMode,
+        editFlowType,
+        editingBulkOrderId,
+        editingIndex
+    ]);
+
+    const currentBulkOrder = currentBulkOrderIndex >= 0 ? bulkItems[currentBulkOrderIndex] : null;
 
     // Local state only for form validation errors
     const [errors, setErrors] = useState({});
@@ -38,20 +113,53 @@ const BulkReviewStep = () => {
     const [csvFile, setCsvFile] = useState(null);
     const [csvData, setCsvData] = useState(csvFileData?.csvData || []);
     const [csvError, setCsvError] = useState(csvFileData?.csvError || '');
+    const hydratedBulkOrderKeyRef = useRef(null);
 
     useEffect(() => {
-        if (!companyInfoFromRedux && currentBulkOrder?.companyInfo) {
+        if (currentBulkOrder?.companyInfo && (isEditMode || !companyInfoFromRedux)) {
             dispatch(setCompanyInfo(currentBulkOrder.companyInfo));
         }
-    }, [companyInfoFromRedux, currentBulkOrder, dispatch]);
+    }, [companyInfoFromRedux, currentBulkOrder, isEditMode, dispatch]);
 
-    // Load CSV data from Redux on mount
+    // Keep local CSV preview synced with Redux csv state.
     useEffect(() => {
-        if (csvFileData?.csvData && csvFileData.csvData.length > 0) {
-            setCsvData(csvFileData.csvData);
-            setCsvError(csvFileData.csvError || '');
-        }
+        setCsvData(csvFileData?.csvData || []);
+        setCsvError(csvFileData?.csvError || '');
     }, [csvFileData]);
+
+    // When opening a bulk order from cart/edit mode, hydrate csv data from that order.
+    useEffect(() => {
+        if (!currentBulkOrder) return;
+
+        const orderKey = currentBulkOrder?.id ?? currentBulkOrderIndex;
+        if (hydratedBulkOrderKeyRef.current === orderKey) return;
+        hydratedBulkOrderKeyRef.current = orderKey;
+
+        const recipients = Array.isArray(currentBulkOrder.csvRecipients) ? currentBulkOrder.csvRecipients : [];
+        const normalizedOption = normalizeBulkDeliveryOption(
+            currentBulkOrder.deliveryOption,
+            currentBulkOrder.csvRecipients
+        );
+
+        if (normalizedOption === 'multiple' && recipients.length > 0) {
+            setCsvData(recipients);
+            setCsvError('');
+            dispatch(setCsvFileData({
+                fileName: currentBulkOrder.csvFileName || `recipients_${orderKey}.csv`,
+                csvData: recipients,
+                csvError: ''
+            }));
+            return;
+        }
+
+        setCsvData([]);
+        setCsvError('');
+        dispatch(setCsvFileData({
+            fileName: null,
+            csvData: [],
+            csvError: ''
+        }));
+    }, [currentBulkOrder, currentBulkOrderIndex, dispatch]);
 
     const companyInfo = companyInfoFromRedux || currentBulkOrder?.companyInfo || {
         companyName: '',
@@ -59,8 +167,58 @@ const BulkReviewStep = () => {
         contactNumber: '',
         contactEmail: ''
     };
+    const displayBrand = selectedBrand || currentBulkOrder?.selectedBrand;
 
-    const deliveryOption = currentBulkOrder?.deliveryOption || 'email';
+    const deliveryOption = normalizeBulkDeliveryOption(
+        currentBulkOrder?.deliveryOption,
+        currentBulkOrder?.csvRecipients
+    );
+    const isBulkCartEdit = isEditMode &&
+        editFlowType === 'bulk' &&
+        (
+            editBulkIdFromUrl !== null ||
+            editBulkIndexFromUrl !== null ||
+            (editingBulkOrderId !== null && editingBulkOrderId !== undefined) ||
+            (editingIndex !== null && editingIndex !== undefined)
+        );
+
+    const syncCurrentBulkOrder = useCallback((updates) => {
+        if (!currentBulkOrder) return;
+        const nextDeliveryOption = normalizeBulkDeliveryOption(
+            updates.deliveryOption ?? currentBulkOrder.deliveryOption,
+            updates.csvRecipients ?? currentBulkOrder.csvRecipients
+        );
+
+        if (
+            isEditMode &&
+            editFlowType === 'bulk' &&
+            currentBulkOrderIndex >= 0
+        ) {
+            dispatch(updateBulkItem({
+                index: currentBulkOrderIndex,
+                item: {
+                    ...currentBulkOrder,
+                    ...updates,
+                    deliveryOption: nextDeliveryOption
+                }
+            }));
+            return;
+        }
+
+        dispatch(updateBulkCompanyInfo({
+            companyInfo: updates.companyInfo ?? companyInfo,
+            deliveryOption: nextDeliveryOption,
+            quantity: updates.quantity ?? currentBulkOrder.quantity,
+            csvRecipients: updates.csvRecipients ?? currentBulkOrder.csvRecipients
+        }));
+    }, [
+        currentBulkOrder,
+        isEditMode,
+        editFlowType,
+        currentBulkOrderIndex,
+        dispatch,
+        companyInfo
+    ]);
 
     // Memoize preview data to avoid re-rendering issues
     const previewData = useMemo(() => csvData.slice(0, 5), [csvData]);
@@ -274,12 +432,12 @@ const BulkReviewStep = () => {
             }));
 
             setTimeout(() => {
-                dispatch(updateBulkCompanyInfo({
+                syncCurrentBulkOrder({
                     companyInfo,
                     deliveryOption,
                     quantity: normalizedData.length,
                     csvRecipients: normalizedData
-                }));
+                });
             }, 100);
 
         } catch (error) {
@@ -295,7 +453,7 @@ const BulkReviewStep = () => {
         } finally {
             setIsProcessingFile(false);
         }
-    }, [companyInfo, deliveryOption, dispatch, currentBulkOrder]);
+    }, [companyInfo, deliveryOption, dispatch, currentBulkOrder, syncCurrentBulkOrder]);
 
     const validateForm = () => {
         const newErrors = {};
@@ -332,10 +490,10 @@ const BulkReviewStep = () => {
         const newCompanyInfo = { ...companyInfo, [field]: value };
 
         dispatch(setCompanyInfo(newCompanyInfo));
-        dispatch(updateBulkCompanyInfo({
+        syncCurrentBulkOrder({
             companyInfo: newCompanyInfo,
             deliveryOption,
-        }));
+        });
 
         if (errors[field]) {
             setErrors(prev => ({
@@ -343,13 +501,13 @@ const BulkReviewStep = () => {
                 [field]: ''
             }));
         }
-    }, [companyInfo, deliveryOption, errors, dispatch]);
+    }, [companyInfo, deliveryOption, errors, dispatch, syncCurrentBulkOrder]);
 
     const handleDeliveryOptionChange = useCallback((value) => {
-        dispatch(updateBulkCompanyInfo({
+        syncCurrentBulkOrder({
             companyInfo,
             deliveryOption: value
-        }));
+        });
 
         if (value !== 'multiple') {
             setCsvData([]);
@@ -361,7 +519,7 @@ const BulkReviewStep = () => {
                 csvError: ''
             }));
         }
-    }, [companyInfo, dispatch]);
+    }, [companyInfo, dispatch, syncCurrentBulkOrder]);
 
     // Add to Cart Handler
     const handleAddToCart = () => {
@@ -382,7 +540,7 @@ const BulkReviewStep = () => {
         // }
 
         dispatch(addToBulkInCart(currentBulkOrder));
-        toast.success('Bulk order added to cart!');
+        toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
         router.push('/cart');
     };
 
@@ -539,23 +697,23 @@ const BulkReviewStep = () => {
                     </div>
 
                     {/* Order Summary Card */}
-                    <div className="max-w-172 mx-auto bg-[#F9F9F9] rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm mb-6">
+                    <div className="max-w-180 mx-auto bg-[#F9F9F9] rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm mb-6">
                         <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
                             Order Summary
                         </h3>
 
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-2 bg-gray-50 rounded-xl">
                             <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0">
-                                {selectedBrand?.logo ? (
+                                {displayBrand?.logo ? (
                                     <img
-                                        src={selectedBrand.logo}
-                                        alt={selectedBrand.brandName || selectedBrand.name}
+                                        src={displayBrand?.logo}
+                                        alt={displayBrand?.brandName || displayBrand?.name}
                                         className="w-full h-full object-contain"
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
                                         <span className="text-white font-bold text-xl sm:text-2xl">
-                                            {(selectedBrand?.brandName || selectedBrand?.name || 'B')
+                                            {(displayBrand?.brandName || displayBrand?.name || 'B')
                                                 .substring(0, 1)
                                                 .toUpperCase()}
                                         </span>
@@ -569,7 +727,7 @@ const BulkReviewStep = () => {
                                         Brand
                                     </p>
                                     <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
-                                        {selectedBrand?.brandName || selectedBrand?.name}
+                                        {displayBrand?.brandName || displayBrand?.name}
                                     </p>
                                 </div>
 
@@ -607,7 +765,7 @@ const BulkReviewStep = () => {
 
 
                     {/* Company Information Card */}
-                    <div className="max-w-172 m-auto p-px rounded-[20px] shadow-sm mb-6" style={{ background: 'linear-gradient(114.06deg, #ED457D 11.36%, #FA8F42 90.28%)' }}>
+                    <div className="max-w-180 m-auto p-px rounded-[20px] shadow-sm mb-6" style={{ background: 'linear-gradient(114.06deg, #ED457D 11.36%, #FA8F42 90.28%)' }}>
 
                         <div className="p-6 bg-[linear-gradient(180deg,#FEF8F6_0%,#FDF7F8_100%)] rounded-[20px]">
                             <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 fontPoppins">Company Information</h3>
@@ -877,7 +1035,7 @@ const BulkReviewStep = () => {
                                     }
   `}
                             >
-                                {isProcessingFile ? 'Processing file...' : 'Add to Cart'}
+                                {isProcessingFile ? 'Processing file...' : (isBulkCartEdit ? 'Update Cart Order' : 'Add to Cart')}
                                 <ShoppingBasket className="w-5 h-5" />
                             </button>
 

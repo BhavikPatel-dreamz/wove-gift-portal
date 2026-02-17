@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext , setQuantity, setSelectedAmount } from '../../../redux/giftFlowSlice';
-import { addToBulk } from '../../../redux/cartSlice';
+import { addToBulk, updateBulkItem } from '../../../redux/cartSlice';
 
 const BulkOrderSetup = () => {
   const dispatch = useDispatch();
@@ -17,11 +17,14 @@ const BulkOrderSetup = () => {
     selectedTiming,
     selectedSubCategory,
     editingIndex,
+    editFlowType,
+    editingBulkOrderId,
     isEditMode,
     selectedOccasion,
     isConfirmed,
     quantity,
   } = useSelector((state) => state.giftFlowReducer);
+  const { bulkItems } = useSelector((state) => state.cart);
 
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
@@ -29,7 +32,52 @@ const BulkOrderSetup = () => {
   const dropdownRef = useRef(null);
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
+  const editBulkIdFromUrl = searchParams.get('editBulkId');
+  const editBulkIndexFromUrl = searchParams.get('editBulkIndex');
   const isBulkMode = mode === 'bulk';
+
+  const editingBulkItemIndex = useMemo(() => {
+    if (!bulkItems?.length) return -1;
+
+    if (editBulkIdFromUrl) {
+      const indexByUrlId = bulkItems.findIndex(
+        (item) => String(item?.id) === String(editBulkIdFromUrl)
+      );
+      if (indexByUrlId !== -1) return indexByUrlId;
+    }
+
+    if (editBulkIndexFromUrl !== null && editBulkIndexFromUrl !== undefined) {
+      const parsedIndex = Number(editBulkIndexFromUrl);
+      if (Number.isInteger(parsedIndex) && parsedIndex >= 0 && bulkItems[parsedIndex]) {
+        return parsedIndex;
+      }
+    }
+
+    if (isEditMode && editFlowType === 'bulk') {
+      if (editingBulkOrderId !== null && editingBulkOrderId !== undefined) {
+        const indexById = bulkItems.findIndex((item) => item?.id === editingBulkOrderId);
+        if (indexById !== -1) return indexById;
+      }
+
+      if (
+        editingIndex !== null &&
+        editingIndex !== undefined &&
+        bulkItems[editingIndex]
+      ) {
+        return editingIndex;
+      }
+    }
+
+    return -1;
+  }, [
+    bulkItems,
+    editBulkIdFromUrl,
+    editBulkIndexFromUrl,
+    isEditMode,
+    editFlowType,
+    editingBulkOrderId,
+    editingIndex
+  ]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -166,8 +214,25 @@ const BulkOrderSetup = () => {
       isBulkOrder: true
     };
 
-    // Dispatch to cart
-    dispatch(addToBulk(bulkOrderItem));
+    const hasBulkEditContext = isEditMode && editFlowType === 'bulk';
+
+    // In edit mode we must update an existing item; never create a new one.
+    if (hasBulkEditContext) {
+      if (editingBulkItemIndex < 0) {
+        setError('Could not find selected bulk order to update. Please return to cart and try again.');
+        return;
+      }
+
+      dispatch(updateBulkItem({
+        index: editingBulkItemIndex,
+        item: {
+          ...bulkItems[editingBulkItemIndex],
+          ...bulkOrderItem
+        }
+      }));
+    } else {
+      dispatch(addToBulk(bulkOrderItem));
+    }
 
     // Reset and navigate
     dispatch(goNext());
