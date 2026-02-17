@@ -76,6 +76,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [loadingFormat, setLoadingFormat] = useState(null); // 'csv' | 'pdf' | null
     const [scheduledReports, setScheduledReports] = useState([]);
+    const [scheduledReportsLoading, setScheduledReportsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(null); // Holds ID of report being edited
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [quickReportLoading, setQuickReportLoading] = useState(null); // Tracks which quick report is loading
@@ -1162,7 +1163,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
     // Fetch scheduled reports
     const fetchScheduledReports = async () => {
         try {
-            setLoading(true);
+            setScheduledReportsLoading(true);
             const response = await fetch(`/api/reports/schedule`);
             const data = await response.json();
             if (data.success) {
@@ -1171,10 +1172,10 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 toast.error(data.message || 'Failed to load scheduled reports');
             }
         } catch (error) {
-            console.error('Failed to fetch scheduled reports:', error);
-            toast.error('Failed to load scheduled reports');
+            console.log('Failed to fetch scheduled reports:', error);
+            // toast.error('Failed to load scheduled reports');
         } finally {
-            setLoading(false);
+            setScheduledReportsLoading(false);
         }
     };
 
@@ -1693,7 +1694,36 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {scheduledReports.length > 0 ? scheduledReports.map((report) => (
+                                        {scheduledReportsLoading ? (
+                                            Array.from({ length: 4 }).map((_, idx) => (
+                                                <tr key={`schedule-skeleton-${idx}`} className="animate-pulse">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="h-4 w-28 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="h-4 w-20 bg-gray-200 rounded mb-2" />
+                                                        <div className="h-3 w-32 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="h-4 w-48 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="h-3 w-24 bg-gray-200 rounded mb-2" />
+                                                        <div className="h-3 w-20 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="h-4 w-24 bg-gray-200 rounded mb-2" />
+                                                        <div className="h-3 w-16 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="h-6 w-16 bg-gray-200 rounded-full" />
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                        <div className="ml-auto h-4 w-14 bg-gray-200 rounded" />
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : scheduledReports.length > 0 ? scheduledReports.map((report) => (
                                             <tr key={report.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm font-medium text-gray-900">
