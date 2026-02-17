@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, X } from "lucide-react";
-import { goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
+import { clearDeliveryFormEditReturn, goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
 import MailIcons from "../../../icons/MailIcon";
 import WhatsupIcon from '../../../icons/WhatsupIcon';
 import PrinterIcon from '../../../icons/PrinterIcon';
@@ -45,6 +45,7 @@ const DeliveryMethodStep = () => {
 
   const {
     deliveryMethod,
+    deliveryFormEditReturn,
     deliveryDetails,
     selectedAmount,
     personalMessage,
@@ -106,6 +107,24 @@ const DeliveryMethodStep = () => {
       }));
     }
   }, [deliveryMethod, deliveryDetails]);
+
+  // If user came from delivery preview edit flow, reopen the same method modal automatically.
+  useEffect(() => {
+    if (!deliveryFormEditReturn?.enabled) return;
+
+    const methodToOpen = deliveryFormEditReturn.method || deliveryMethod || selectedMethod;
+    if (!methodToOpen) return;
+
+    setSelectedMethod(methodToOpen);
+    setShowModal(true);
+    setErrors({});
+
+    if (deliveryMethod !== methodToOpen) {
+      dispatch(setDeliveryMethod(methodToOpen));
+    }
+
+    dispatch(clearDeliveryFormEditReturn());
+  }, [deliveryFormEditReturn, deliveryMethod, selectedMethod, dispatch]);
 
   // Check if method has been completed
   const isMethodCompleted = useMemo(() => {

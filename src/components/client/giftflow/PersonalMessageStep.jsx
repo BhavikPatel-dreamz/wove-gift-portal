@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { goBack, goNext, setPersonalMessage } from "../../../redux/giftFlowSlice";
+import { clearDeliveryFormEditReturn, goBack, goNext, setCurrentStep, setPersonalMessage } from "../../../redux/giftFlowSlice";
 import ProgressIndicator from "./ProgressIndicator";
 import { ArrowLeft } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 
 const PersonalMessageStep = () => {
   const dispatch = useDispatch();
-  const { personalMessage } = useSelector((state) => state.giftFlowReducer);
+  const { personalMessage, deliveryFormEditReturn } = useSelector((state) => state.giftFlowReducer);
   const [message, setMessage] = useState(personalMessage || '');
   const [error, setError] = useState('');
   const maxChars = 300;
@@ -40,6 +40,14 @@ const PersonalMessageStep = () => {
 
     // Clear error and proceed
     setError('');
+    if (deliveryFormEditReturn?.enabled) {
+      const returnStep = deliveryFormEditReturn?.returnStep || 7;
+      dispatch(setCurrentStep(returnStep));
+      if (returnStep !== 7) {
+        dispatch(clearDeliveryFormEditReturn());
+      }
+      return;
+    }
     dispatch(goNext());
   };
 

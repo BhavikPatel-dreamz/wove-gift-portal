@@ -2,13 +2,13 @@
 import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { goBack, goNext, setSelectedAmount } from "../../../redux/giftFlowSlice";
+import { clearDeliveryFormEditReturn, goBack, goNext, setCurrentStep, setSelectedAmount } from "../../../redux/giftFlowSlice";
 import { useSearchParams } from "next/navigation";
 import { currencyList } from "../../../components/brandsPartner/currency";
 
 const GiftCardSelector = () => {
   const dispatch = useDispatch();
-  const { selectedBrand, selectedAmount } = useSelector((state) => state.giftFlowReducer);
+  const { selectedBrand, selectedAmount, deliveryFormEditReturn } = useSelector((state) => state.giftFlowReducer);
 
   const voucherData = selectedBrand?.vouchers[0];
   const denominationType = voucherData?.denominationType;
@@ -33,11 +33,23 @@ const GiftCardSelector = () => {
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "R";
 
+  const goToNextStep = () => {
+    if (deliveryFormEditReturn?.enabled) {
+      const returnStep = deliveryFormEditReturn?.returnStep || 7;
+      dispatch(setCurrentStep(returnStep));
+      if (returnStep !== 7) {
+        dispatch(clearDeliveryFormEditReturn());
+      }
+      return;
+    }
+    dispatch(goNext());
+  };
+
   const handleAmountClick = (amount) => {
     setLocalSelectedAmount(amount);
     dispatch(setSelectedAmount(amount));
     setTimeout(() => {
-      dispatch(goNext());
+      goToNextStep();
     }, 300);
   };
 
@@ -61,7 +73,7 @@ const GiftCardSelector = () => {
     dispatch(setSelectedAmount(customVoucher));
 
     setTimeout(() => {
-      dispatch(goNext());
+      goToNextStep();
     }, 300);
   };
 

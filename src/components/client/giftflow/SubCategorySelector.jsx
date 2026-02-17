@@ -8,7 +8,7 @@ import {
   Minus, Plus, RotateCw, ZoomIn, ZoomOut, Palette
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { goBack, goNext, setLoading, setSelectedSubCategory, setSubCategories, setError } from '../../../redux/giftFlowSlice';
+import { clearDeliveryFormEditReturn, goBack, goNext, setCurrentStep, setLoading, setSelectedSubCategory, setSubCategories, setError } from '../../../redux/giftFlowSlice';
 import { useSearchParams } from 'next/navigation';
 import { saveCustomCard } from '../../../lib/action/customCardAction';
 import CustomEmojiPicker from '../../occasions/EmojiPicker';
@@ -1262,7 +1262,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
 // Main Component
 export default function SubCategorySelector() {
   const dispatch = useDispatch();
-  const { selectedOccasion, subCategories, loading, error, subCategoriesPagination, currentSubCategoryPage, selectedSubCategory } = useSelector((state) => state.giftFlowReducer);
+  const { selectedOccasion, subCategories, loading, error, subCategoriesPagination, currentSubCategoryPage, selectedSubCategory, deliveryFormEditReturn } = useSelector((state) => state.giftFlowReducer);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [selectedOccasionName, setSelectedOccationName] = useState('');
   const searchParams = useSearchParams();
@@ -1296,16 +1296,28 @@ export default function SubCategorySelector() {
     if (selectedOccasion) fetchSubCategories(1);
   }, [selectedOccasion, fetchSubCategories]);
 
+  const proceedAfterEditOrNext = useCallback(() => {
+    if (deliveryFormEditReturn?.enabled) {
+      const returnStep = deliveryFormEditReturn?.returnStep || 7;
+      dispatch(setCurrentStep(returnStep));
+      if (returnStep !== 7) {
+        dispatch(clearDeliveryFormEditReturn());
+      }
+      return;
+    }
+    dispatch(goNext());
+  }, [deliveryFormEditReturn, dispatch]);
+
   const handleSubCategorySelect = useCallback((subCategory) => {
     dispatch(setSelectedSubCategory(subCategory));
-    dispatch(goNext());
-  }, [dispatch]);
+    proceedAfterEditOrNext();
+  }, [dispatch, proceedAfterEditOrNext]);
 
   const handleCustomCardSave = useCallback((customCardData) => {
     dispatch(setSelectedSubCategory(customCardData));
     setIsCustomizing(false);
-    dispatch(goNext());
-  }, [dispatch]);
+    proceedAfterEditOrNext();
+  }, [dispatch, proceedAfterEditOrNext]);
 
   const handleLoadMore = useCallback(() => {
     if (subCategoriesPagination?.hasNextPage) {

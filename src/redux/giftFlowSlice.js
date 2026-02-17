@@ -27,6 +27,11 @@ const giftFlowSlice = createSlice({
       recipientEmailAddress: "",
       printDetails: {},
     },
+    deliveryFormEditReturn: {
+      enabled: false,
+      method: null,
+      returnStep: null,
+    },
     companyInfo: null,
     isConfirmed:false,
     isPaymentConfirmed: false,
@@ -160,6 +165,11 @@ const giftFlowSlice = createSlice({
           recipientFullName: "",
           recipientEmailAddress: "",
           printDetails: {},
+        },
+        deliveryFormEditReturn: {
+          enabled: false,
+          method: null,
+          returnStep: null,
         },
         companyInfo: null,
         csvFileData: {
@@ -411,6 +421,13 @@ const giftFlowSlice = createSlice({
       const { field, value } = action.payload;
       state.deliveryDetails[field] = value;
     },
+    setDeliveryFormEditReturn: (state, action) => {
+      const { enabled = false, method = null, returnStep = null } = action.payload || {};
+      state.deliveryFormEditReturn = { enabled, method, returnStep };
+    },
+    clearDeliveryFormEditReturn: (state) => {
+      state.deliveryFormEditReturn = { enabled: false, method: null, returnStep: null };
+    },
 
     setCompanyInfo: (state, action) => {
       state.companyInfo = action.payload;
@@ -529,6 +546,8 @@ export const {
   setDeliveryMethod,
   setDeliveryDetails,
   updateDeliveryDetail,
+  setDeliveryFormEditReturn,
+  clearDeliveryFormEditReturn,
   setCompanyInfo,
   setOccasions,
   setSubCategories,

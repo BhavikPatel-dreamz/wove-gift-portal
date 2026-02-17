@@ -1,24 +1,33 @@
 import React from 'react';
 import { Mail } from 'lucide-react';
-import { EditIcon } from 'lucide-react';
 import Image from 'next/image';
-import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
-import { useDispatch } from 'react-redux';
+import { setCurrentStep, setDeliveryFormEditReturn } from "../../../redux/giftFlowSlice";
+import { useDispatch, useSelector } from 'react-redux';
 
 const EmailForm = ({ formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage }) => {
 
     const dispatch = useDispatch();
+    const { deliveryMethod } = useSelector((state) => state.giftFlowReducer);
+
+    const startEditFlow = (step) => {
+        dispatch(setDeliveryFormEditReturn({
+            enabled: true,
+            method: deliveryMethod || 'email',
+            returnStep: 7,
+        }));
+        dispatch(setCurrentStep(step));
+    };
 
     const goToMessageStep = () => {
-        dispatch(setCurrentStep(5));
+        startEditFlow(5);
     }
 
     const goToAmountStep = () => {
-        dispatch(setCurrentStep(2));
+        startEditFlow(2);
     }
 
     const goToOccationCategoryStep = () => {
-        dispatch(setCurrentStep(4));
+        startEditFlow(4);
     }
 
 
