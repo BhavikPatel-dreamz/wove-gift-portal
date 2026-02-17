@@ -860,7 +860,6 @@ function generateIndividualGiftEmailHTML(
                 <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #000000;">💡 How to use your gift card:</p>
                 <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #000000; line-height: 1.8;">
                   <li>Click "Redeem Now" above</li>
-                  <li>Follow the instructions to activate your gift</li>
                   <li>Enjoy your ${brandName} experience!</li>
                 </ol>
               </div>
@@ -998,7 +997,6 @@ function generateBulkEmailHTML(
                   <li>Download the CSV file containing all voucher codes</li>
                   <li>Distribute codes to your recipients via your preferred method</li>
                   <li>Recipients can redeem using the codes provided</li>
-                  <li>Track redemption status in your dashboard</li>
                 </ul>
               </div>
             </td>
