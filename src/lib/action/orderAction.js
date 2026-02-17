@@ -348,7 +348,8 @@ export const createPendingOrder = async (orderData) => {
     }
 
     // ✅ GENERATE PAYFAST PAYMENT URL
-    const payfastConfig = getPayFastConfig(createdOrders[0].id);
+    const paymentSource = isMultiCart ? "cart" : "direct";
+    const payfastConfig = getPayFastConfig(createdOrders[0].id, paymentSource);
     
     const customerName = isMultiCart 
       ? (cartOrders[0].deliveryDetails?.yourFullName || cartOrders[0].companyInfo?.companyName || "Customer")

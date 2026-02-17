@@ -352,7 +352,7 @@ export const PAYFAST_STATUS = {
 /**
  * Load PayFast config from environment
  */
-export function getPayFastConfig(orderId = null) {
+export function getPayFastConfig(orderId = null, source = null) {
   const isSandbox = process.env.NEXT_PAYFAST_SANDBOX === "true";
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -366,6 +366,11 @@ export function getPayFastConfig(orderId = null) {
   if (orderId) {
     returnUrl.searchParams.set("orderId", orderId);
     cancelUrl.searchParams.set("orderId", orderId);
+  }
+
+  if (source) {
+    returnUrl.searchParams.set("source", source);
+    cancelUrl.searchParams.set("source", source);
   }
 
   const merchantId = isSandbox

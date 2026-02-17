@@ -23,6 +23,7 @@ function SuccessContent() {
 
   useEffect(() => {
     const orderId = searchParams.get('orderId');
+    const source = searchParams.get('source');
     
     if (!orderId) {
       setError('No order ID provided');
@@ -31,10 +32,10 @@ function SuccessContent() {
     }
 
     // ✅ Fetch the order and all related orders
-    fetchOrderAndRelated(orderId);
+    fetchOrderAndRelated(orderId, source);
   }, [searchParams]);
 
-  const fetchOrderAndRelated = async (orderId) => {
+  const fetchOrderAndRelated = async (orderId, source) => {
     try {
       console.log('🔍 Fetching order:', orderId);
 
@@ -67,9 +68,11 @@ function SuccessContent() {
         processingStatus: 'COMPLETED'
       });
 
-      // ✅ Clear cart items
-      dispatch(clearCart());
-      dispatch(clearBulkCart());
+      // ✅ Only clear cart when payment originated from /checkout (cart flow)
+      if (source === 'cart') {
+        dispatch(clearCart());
+        dispatch(clearBulkCart());
+      }
       dispatch(resetFlow());
       dispatch(clearCsvFileData());
 
