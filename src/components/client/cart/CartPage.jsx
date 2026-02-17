@@ -344,7 +344,7 @@ const CartPage = () => {
               {/* Bulk Cart Items */}
               {activeTab === 'bulk' && bulkItems.map((item, index) => (
                 <div key={index} onClick={() => handleEditItem(item, index, "bulk")} className="flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
-                  <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
+                  <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0 cursor-pointer">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
                       <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
                     </div>

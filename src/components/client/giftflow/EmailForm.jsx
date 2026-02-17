@@ -305,7 +305,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
 
                                         {/* Redeem Button */}
                                         <button
-                                            className="w-full bg-linear-to-r from-pink-500 to-orange-400 text-white py-3 rounded-full font-semibold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2"
+                                            className="cursor-pointer w-full bg-linear-to-r from-pink-500 to-orange-400 text-white py-3 rounded-full font-semibold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2"
                                             onClick={() => {
                                                 const url =
                                                     selectedBrand?.website ||

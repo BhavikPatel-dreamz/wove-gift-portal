@@ -142,7 +142,7 @@ const PersonalMessageStep = () => {
               Write from Your Heart
             </h1>
             <p className="text-gray-500 text-sm sm:text-base max-w-xl mx-auto">
-              Add a heartfelt message to make this gift special
+            Add a heartfelt message to make this gift card special
             </p>
           </div>
 
@@ -210,7 +210,7 @@ const PersonalMessageStep = () => {
             <button
               onClick={handleContinue}
               disabled={isMessageEmpty}
-              className={`w-full  items-center mx-auto justify-center flex  gap-2 sm:w-auto px-10 py-4 rounded-full font-semibold text-base transition-all shadow-lg
+              className={`w-full cursor-pointer  items-center mx-auto justify-center flex  gap-2 sm:w-auto px-10 py-4 rounded-full font-semibold text-base transition-all shadow-lg
           ${isMessageEmpty
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-linear-to-r from-pink-500 to-orange-400 hover:scale-105'

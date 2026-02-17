@@ -23,7 +23,7 @@ const BulkGiftingBanner = () => {
                 <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                     {/* Content - Mobile: Bottom, Desktop: Left */}
                     <div className="z-10 max-w-xl order-2 md:order-1 text-center md:text-left">
-                        <h1 className="text-2xl md:text-[40px] font-semibold text-[#1A1A1A] mb-3 md:mb-4 leading-tight">
+                        <h1 className="text-2xl md:text-[40px] font-semibold text-[#1A1A1A] mb-3 md:mb-4 leading-tight fontPoppins">
                             Need to send lots of gifts?
                         </h1>
                         <p className="text-[#4A4A4A] text-sm md:text-lg mb-6 md:mb-8 leading-relaxed">

@@ -1462,30 +1462,67 @@ export default function SubCategorySelector() {
 
           {/* Category Cards */}
           {subCategories.map((subCategory, index) => (
-            <div key={`${subCategory.id}-${index}`} onClick={() => handleSubCategorySelect(subCategory)} className="group cursor-pointer">
-              <div className={`h-full bg-white rounded-2xl p-2 overflow-hidden transition-all duration-300 hover:shadow-xl border ${selectedSubCategory?.id === subCategory.id ? 'border-2 border-blue-500' : 'border-gray-200 hover:border-pink-200'}`}>
-                <div className="w-full h-64 overflow-hidden rounded-2xl bg-gray-100">
-                  {subCategory.image ? (
-                    <img src={subCategory.image} alt={subCategory.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-                  ) : (
-                    <div className="w-full h-full bg-linear-to-br from-pink-100 to-orange-100 flex items-center justify-center">
-                      <span className="text-6xl opacity-80">{subCategory.emoji || '🎁'}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-lg text-gray-900 mb-2">{subCategory.name}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 mb-4">{subCategory.description}</p>
-                  <button className="w-full py-3 px-4 bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-lg hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2">
-                    Choose this Design
-                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+  <div
+    key={`${subCategory.id}-${index}`}
+    onClick={() => handleSubCategorySelect(subCategory)}
+    className="group cursor-pointer h-full"
+  >
+    <div
+      className={`h-full bg-white rounded-2xl p-2 overflow-hidden transition-all duration-300 hover:shadow-xl 
+      border flex flex-col
+      ${selectedSubCategory?.id === subCategory.id
+          ? "border-2 border-blue-500"
+          : "border-gray-200 hover:border-pink-200"
+        }`}
+    >
+      {/* Image */}
+      <div className="w-full h-64 overflow-hidden rounded-2xl bg-gray-100">
+        {subCategory.image ? (
+          <img
+            src={subCategory.image}
+            alt={subCategory.name}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full bg-linear-to-br from-pink-100 to-orange-100 flex items-center justify-center">
+            <span className="text-6xl opacity-80">
+              {subCategory.emoji || "🎁"}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-5 flex flex-col flex-1">
+        <h3 className="font-bold text-lg text-gray-900 mb-2 ">
+          {subCategory.name}
+        </h3>
+
+        <p className="text-gray-600 text-sm leading-relaxed mb-4">
+          {subCategory.description}
+        </p>
+
+        {/* Button pinned to bottom */}
+        <button className="mt-auto w-full py-3 px-4 bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-lg hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 cursor-pointer">
+          Choose this Design
+          <svg
+            width="8"
+            height="9"
+            viewBox="0 0 8 9"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+              fill="white"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+))}
+
         </div>
 
         {/* Load More */}
