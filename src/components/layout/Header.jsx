@@ -37,7 +37,7 @@ const Header = ({ onMenuClick }) => {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-5.25 sm:px-6">
+    <header className="bg-white border-b border-gray-200 px-4 py-5 sm:px-6">
       <div className="flex items-center justify-between">
         {/* Left side: menu & search */}
         <div className="flex items-center space-x-4">
@@ -73,18 +73,20 @@ const Header = ({ onMenuClick }) => {
               {user ? getUserInitials() : <User className="w-4 h-4" />}
             </div>
 
-            <Button
+             <button
+              type="button"
               onClick={handleLogout}
               variant="outline"
               size="sm"
               disabled={loading}
               className="flex items-center space-x-2"
+              className="group inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-200 hover:border-red-300 hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-gray-300 disabled:hover:bg-white disabled:hover:text-gray-700"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">
                 {loading ? 'Signing out...' : 'Sign Out'}
               </span>
-            </Button>
+            </button>
           </div>
         </div>
       </div>
