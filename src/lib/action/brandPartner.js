@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { v2 as cloudinary } from "cloudinary";
 import { uploadFile, deleteFile } from "../utils/cloudinary";
+import { sendEmail } from "../email";
 
 const SALT_ROUNDS = 12;
 const TRANSACTION_TIMEOUT = 10000; // 10 seconds
@@ -181,6 +182,60 @@ function generateSlug(brandName) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function getPrimaryContact(contacts = []) {
+  if (!Array.isArray(contacts) || contacts.length === 0) return null;
+  return contacts.find((contact) => contact?.isPrimary) || contacts[0];
+}
+
+async function sendBrandPartnerWelcomeEmail({ brandName, contact }) {
+  const contactName = contact?.name || "Partner";
+  const recipientEmail = contact?.email?.trim();
+
+  if (!recipientEmail) {
+    return {
+      sent: false,
+      reason: "No recipient email",
+    };
+  }
+
+  const subject = `Your brand has been added to Wove`;
+
+  const text = `Hello ${contactName},
+
+Your brand "${brandName}" was successfully added to the Wove platform.
+
+If we need anything else, our team will reach out.
+
+Thanks,
+Wove Team`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 24px;">
+      <h2 style="margin: 0 0 16px; color: #111827;">Brand Added Successfully</h2>
+      <p style="margin: 0 0 12px;">Hello ${contactName},</p>
+      <p style="margin: 0 0 12px;">
+        Your brand <strong>${brandName}</strong> was successfully added to the Wove platform.
+      </p>
+      <p style="margin: 0 0 12px;">
+        If we need anything else, our team will reach out.
+      </p>
+      <p style="margin: 24px 0 0;">Thanks,<br />Wove Team</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: recipientEmail,
+    subject,
+    html,
+    text,
+  });
+
+  return {
+    sent: true,
+    email: recipientEmail,
+  };
 }
 
 // Helper function to prepare integration data with hashing
@@ -417,9 +472,31 @@ export async function createBrandPartner(formData) {
       },
     );
 
+    let emailMessage = "";
+
+    if (validatedData.isActive) {
+      const notificationContact = getPrimaryContact(validatedData.contacts);
+
+      try {
+        const emailResult = await sendBrandPartnerWelcomeEmail({
+          brandName: validatedData.brandName,
+          contact: notificationContact,
+        });
+
+        if (emailResult.sent) {
+          emailMessage = ` A confirmation email was sent to ${emailResult.email}.`;
+        } else {
+          emailMessage = " No contact email was available to send confirmation.";
+        }
+      } catch (emailError) {
+        console.error("Failed to send brand partner confirmation email:", emailError);
+        emailMessage = " Brand partner was created, but the confirmation email could not be sent.";
+      }
+    }
+
     return {
       success: true,
-      message: "Brand partner created successfully",
+      message: `Brand partner created successfully.${emailMessage}`.trim(),
       data: result,
       status: 201,
     };
