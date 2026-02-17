@@ -70,7 +70,7 @@ export async function POST(req) {
       if (!numericGiftCardId) continue;
 
       try {
-        // ✅ CHECK IF THIS TRANSACTION WAS ALREADY PROCESSED (COMPOSITE UNIQUE KEY)
+        // ✅ CHECK IF THIS TRANSACTION WAS ALREADY PROCESSED
         const existingRedemption = await prisma.voucherRedemption.findFirst({
           where: {
             transactionId: transactionId,
@@ -81,7 +81,7 @@ export async function POST(req) {
         if (existingRedemption) {
           console.log(`⏭️ Transaction ${transactionId} already processed, skipping...`);
           skippedCount++;
-          continue; // Skip this transaction - PREVENTS DUPLICATES
+          continue;
         }
 
         const giftCardGid = `gid://shopify/GiftCard/${numericGiftCardId}`;
@@ -89,7 +89,7 @@ export async function POST(req) {
         const giftCard = await prisma.giftCard.findUnique({
           where: { shopifyId: giftCardGid },
         });
-        
+
         if (!giftCard) {
           console.log(`⚠️ Gift card ${giftCardGid} not found in database`);
           continue;
@@ -98,7 +98,7 @@ export async function POST(req) {
         const voucherCode = await prisma.voucherCode.findUnique({
           where: { shopifyGiftCardId: giftCard.id },
         });
-        
+
         if (!voucherCode) {
           console.log(`⚠️ Voucher code not found for gift card ${giftCard.id}`);
           continue;
@@ -125,13 +125,11 @@ export async function POST(req) {
           }
 
           if (actualAmountRedeemed <= 0) {
-            console.log(
-              `⏭️ Transaction ${transactionId} has zero amount, skipping...`
-            );
+            console.log(`⏭️ Transaction ${transactionId} has zero amount, skipping...`);
             return null;
           }
 
-          // CREATE REDEMPTION RECORD
+          // ─── CREATE REDEMPTION RECORD ──────────────────────────────────
           const redemption = await tx.voucherRedemption.create({
             data: {
               voucherCodeId: voucherCode.id,
@@ -143,7 +141,7 @@ export async function POST(req) {
             },
           });
 
-          // UPDATE VOUCHER CODE
+          // ─── UPDATE VOUCHER CODE ───────────────────────────────────────
           await tx.voucherCode.update({
             where: { id: voucherCode.id },
             data: {
@@ -156,25 +154,29 @@ export async function POST(req) {
             },
           });
 
-          // UPDATE ORDER STATUS
+          // ─── UPDATE ORDER STATUS ───────────────────────────────────────
           await tx.order.update({
             where: { id: voucherCode.orderId },
             data: {
-              redemptionStatus: isFullyRedeemed
-                ? "Redeemed"
-                : "PartiallyRedeemed",
+              redemptionStatus: isFullyRedeemed ? "Redeemed" : "PartiallyRedeemed",
               redeemedAt: isFullyRedeemed
                 ? new Date(txn.processed_at)
                 : voucherCode.redeemedAt,
             },
           });
 
-          // UPDATE SETTLEMENT
+          // ─── UPDATE SETTLEMENT ─────────────────────────────────────────
           const orderForSettlement = await tx.order.findUnique({
             where: { id: voucherCode.orderId },
             select: {
               brandId: true,
               createdAt: true,
+              quantity: true,
+              brand: {
+                include: {
+                  brandTerms: true,
+                },
+              },
             },
           });
 
@@ -182,6 +184,10 @@ export async function POST(req) {
             const settlementPeriod = `${orderForSettlement.createdAt.getFullYear()}-${String(
               orderForSettlement.createdAt.getMonth() + 1
             ).padStart(2, "0")}`;
+
+            // ✅ Read settlementTrigger from brand terms
+            const brandTerms = orderForSettlement.brand?.brandTerms;
+            const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
 
             const settlement = await tx.settlements.findFirst({
               where: {
@@ -191,16 +197,78 @@ export async function POST(req) {
             });
 
             if (settlement) {
-              await tx.settlements.update({
-                where: { id: settlement.id },
-                data: {
-                  redeemedAmount: { increment: actualAmountRedeemed },
-                  outstandingAmount: { decrement: actualAmountRedeemed },
-                  ...(isFullyRedeemed && { totalRedeemed: { increment: 1 } }),
-                  ...(isFullyRedeemed && { outstanding: { decrement: 1 } }),
-                  updatedAt: new Date(),
-                },
-              });
+              if (settlementTrigger === "onPurchase") {
+                // ✅ onPurchase brands: Commission/VAT/netPayable were already locked in
+                // at purchase time. Here we ONLY update redemption tracking fields.
+                await tx.settlements.update({
+                  where: { id: settlement.id },
+                  data: {
+                    // ─── Redemption tracking only ──────────────────────────
+                    redeemedAmount:    { increment: actualAmountRedeemed },
+                    outstandingAmount: { decrement: actualAmountRedeemed },
+                    ...(isFullyRedeemed && { totalRedeemed: { increment: 1 } }),
+                    ...(isFullyRedeemed && { outstanding:   { decrement: 1 } }),
+                    // ⛔ commissionAmount / vatAmount / netPayable intentionally skipped
+                    updatedAt: new Date(),
+                  },
+                });
+
+                console.log(
+                  `💰 [onPurchase] Settlement updated for period ${settlementPeriod}: ` +
+                  `redeemed=${actualAmountRedeemed}, financials already captured at purchase`
+                );
+
+              } else {
+                // ✅ onRedemption brands: Commission/VAT/netPayable are calculated NOW
+                // based on the actual amount redeemed.
+                let commissionOnRedeemed = 0;
+                if (brandTerms?.commissionType === "Percentage") {
+                  commissionOnRedeemed = Math.round(
+                    (actualAmountRedeemed * brandTerms.commissionValue) / 100
+                  );
+                } else if (brandTerms?.commissionType === "Fixed") {
+                  // Fixed commission is per voucher — only charge on full redemption
+                  commissionOnRedeemed = isFullyRedeemed
+                    ? Math.round(brandTerms.commissionValue)
+                    : 0;
+                }
+
+                const vatRate = brandTerms?.vatRate || 0;
+                const vatOnRedeemed = Math.round(
+                  (commissionOnRedeemed * vatRate) / 100
+                );
+                const netPayableOnRedeemed = actualAmountRedeemed - commissionOnRedeemed;
+
+                await tx.settlements.update({
+                  where: { id: settlement.id },
+                  data: {
+                    // ─── Redemption tracking ───────────────────────────────
+                    redeemedAmount:    { increment: actualAmountRedeemed },
+                    outstandingAmount: { decrement: actualAmountRedeemed },
+                    ...(isFullyRedeemed && { totalRedeemed: { increment: 1 } }),
+                    ...(isFullyRedeemed && { outstanding:   { decrement: 1 } }),
+
+                    // ─── Financial calculation on redemption ───────────────
+                    commissionAmount: { increment: commissionOnRedeemed },
+                    vatAmount:        { increment: vatOnRedeemed },
+                    netPayable:       { increment: netPayableOnRedeemed },
+
+                    updatedAt: new Date(),
+                  },
+                });
+
+                console.log(
+                  `💰 [onRedemption] Settlement updated for period ${settlementPeriod}: ` +
+                  `redeemed=${actualAmountRedeemed}, commission=${commissionOnRedeemed}, ` +
+                  `vat=${vatOnRedeemed}, netPayable=${netPayableOnRedeemed}`
+                );
+              }
+            } else {
+              // ⚠️ Settlement row missing — should not happen if purchase ran first
+              console.warn(
+                `⚠️ No settlement found for brand ${orderForSettlement.brandId} ` +
+                `period ${settlementPeriod} — skipping settlement update`
+              );
             }
           }
 
@@ -213,7 +281,6 @@ export async function POST(req) {
         } else {
           skippedCount++;
         }
-
       } catch (dbError) {
         console.error(`❌ Error processing gift card ${numericGiftCardId}:`, dbError);
       }
@@ -221,9 +288,10 @@ export async function POST(req) {
 
     return NextResponse.json({
       success: true,
-      message: redemptions.length > 0 
-        ? `Processed ${redemptions.length} new redemption(s), skipped ${skippedCount} duplicate(s)`
-        : `All ${skippedCount} transaction(s) already processed (duplicates prevented)`,
+      message:
+        redemptions.length > 0
+          ? `Processed ${redemptions.length} new redemption(s), skipped ${skippedCount} duplicate(s)`
+          : `All ${skippedCount} transaction(s) already processed (duplicates prevented)`,
       redemptionsCount: redemptions.length,
       skippedCount: skippedCount,
       data: redemptions.map((r) => ({

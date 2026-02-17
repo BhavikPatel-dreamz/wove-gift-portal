@@ -534,19 +534,7 @@ async function updateOrCreateSettlement(selectedBrand, order) {
 
     const brandTerms = selectedBrand.brandTerms;
     const grossAmount = order.totalAmount;
-
-    // Commission calculation
-    let commissionAmount = 0;
-    if (brandTerms?.commissionType === "Percentage") {
-      commissionAmount = Math.round((grossAmount * brandTerms.commissionValue) / 100);
-    } else if (brandTerms?.commissionType === "Fixed") {
-      commissionAmount = Math.round(brandTerms.commissionValue * order.quantity);
-    }
-
-    // VAT calculation
-    const vatRate = brandTerms?.vatRate || 0;
-    const vatAmount = Math.round((commissionAmount * vatRate) / 100);
-    const netPayable = grossAmount - commissionAmount;
+    const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
 
     const existingSettlement = await prisma.settlements.findFirst({
       where: {
@@ -555,45 +543,103 @@ async function updateOrCreateSettlement(selectedBrand, order) {
       },
     });
 
-    if (existingSettlement) {
-      await prisma.settlements.update({
-        where: { id: existingSettlement.id },
-        data: {
-          totalSold: { increment: order.quantity },
-          totalSoldAmount: { increment: grossAmount },
-          outstanding: { increment: order.quantity },
-          outstandingAmount: { increment: grossAmount },
-          commissionAmount: { increment: commissionAmount },
-          vatAmount: { increment: vatAmount },
-          netPayable: { increment: netPayable },
-          updatedAt: new Date(),
-        },
-      });
-      console.log(`✅ Settlement updated: ${settlementPeriod}`);
+    if (settlementTrigger === "onPurchase") {
+      // ✅ onPurchase: Commission, VAT, and netPayable are calculated NOW at purchase time.
+      // The redemption webhook will only update redeemedAmount/outstanding counts,
+      // NOT touch commissionAmount/vatAmount/netPayable.
+
+      let commissionAmount = 0;
+      if (brandTerms?.commissionType === "Percentage") {
+        commissionAmount = Math.round((grossAmount * brandTerms.commissionValue) / 100);
+      } else if (brandTerms?.commissionType === "Fixed") {
+        commissionAmount = Math.round(brandTerms.commissionValue * order.quantity);
+      }
+
+      const vatRate = brandTerms?.vatRate || 0;
+      const vatAmount = Math.round((commissionAmount * vatRate) / 100);
+      const netPayable = grossAmount - commissionAmount;
+
+      if (existingSettlement) {
+        await prisma.settlements.update({
+          where: { id: existingSettlement.id },
+          data: {
+            totalSold:         { increment: order.quantity },
+            totalSoldAmount:   { increment: grossAmount },
+            outstanding:       { increment: order.quantity },
+            outstandingAmount: { increment: grossAmount },
+            commissionAmount:  { increment: commissionAmount },
+            vatAmount:         { increment: vatAmount },
+            netPayable:        { increment: netPayable },
+            updatedAt: new Date(),
+          },
+        });
+        console.log(`✅ [onPurchase] Settlement updated: ${settlementPeriod}`);
+      } else {
+        await prisma.settlements.create({
+          data: {
+            brandId:          selectedBrand.id,
+            settlementPeriod,
+            periodStart,
+            periodEnd,
+            totalSold:        order.quantity,
+            totalSoldAmount:  grossAmount,
+            totalRedeemed:    0,
+            redeemedAmount:   0,
+            outstanding:      order.quantity,
+            outstandingAmount: grossAmount,
+            commissionAmount,
+            vatAmount,
+            breakageAmount:   0,
+            netPayable,
+            status: "Pending",
+          },
+        });
+        console.log(`✅ [onPurchase] Settlement created: ${settlementPeriod}`);
+      }
+
     } else {
-      await prisma.settlements.create({
-        data: {
-          brandId: selectedBrand.id,
-          settlementPeriod,
-          periodStart,
-          periodEnd,
-          totalSold: order.quantity,
-          totalSoldAmount: grossAmount,
-          totalRedeemed: 0,
-          redeemedAmount: 0,
-          outstanding: order.quantity,
-          outstandingAmount: grossAmount,
-          commissionAmount,
-          vatAmount,
-          breakageAmount: 0,
-          netPayable,
-          status: "Pending",
-        },
-      });
-      console.log(`✅ Settlement created: ${settlementPeriod}`);
+      // ✅ onRedemption: Commission, VAT, and netPayable are NOT calculated here.
+      // They are fully managed by the redemption webhook per actual redemption event.
+      // Purchase only seeds the row with sales volume and outstanding balances.
+
+      if (existingSettlement) {
+        await prisma.settlements.update({
+          where: { id: existingSettlement.id },
+          data: {
+            totalSold:         { increment: order.quantity },
+            totalSoldAmount:   { increment: grossAmount },
+            outstanding:       { increment: order.quantity },
+            outstandingAmount: { increment: grossAmount },
+            updatedAt: new Date(),
+          },
+        });
+        console.log(`✅ [onRedemption] Settlement updated: ${settlementPeriod}`);
+      } else {
+        await prisma.settlements.create({
+          data: {
+            brandId:          selectedBrand.id,
+            settlementPeriod,
+            periodStart,
+            periodEnd,
+            totalSold:        order.quantity,
+            totalSoldAmount:  grossAmount,
+            totalRedeemed:    0,
+            redeemedAmount:   0,
+            outstanding:      order.quantity,
+            outstandingAmount: grossAmount,
+            commissionAmount: 0,   // ← redemption webhook owns this
+            vatAmount:        0,   // ← redemption webhook owns this
+            breakageAmount:   0,
+            netPayable:       0,   // ← redemption webhook owns this
+            status: "Pending",
+          },
+        });
+        console.log(`✅ [onRedemption] Settlement created: ${settlementPeriod}`);
+      }
     }
+
   } catch (error) {
-    console.error(`⚠️ Settlement update failed:`, error.message);
+    console.error(`⚠️ [${order.orderNumber}] Settlement update failed:`, error.message);
   }
 }
 

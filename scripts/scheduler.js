@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Runs every day at 2:23 PM IST
-cron.schedule('23 18 * * *', () => {
+cron.schedule('37 10 * * *', () => {
   console.log('Running the send-scheduled-reports script...');
 
   const scriptPath = path.resolve(__dirname, './send-scheduled-reports.js');
@@ -32,6 +32,6 @@ cron.schedule('23 18 * * *', () => {
 
 
 // start cron job for voucher processor and notification processor
-// startCronJobs();
+startCronJobs();
 
  console.log('Running the scheduler script...');
