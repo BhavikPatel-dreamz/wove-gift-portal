@@ -2,8 +2,8 @@ name: Scheduled Cron Jobs
 
 on:
   schedule:
-    # Voucher processor - every 5 minutes
-    - cron: '*/5 * * * *'
+    # Voucher processor - every minute
+    - cron: '* * * * *'
     # Notification processor - every 5 minutes
     - cron: '*/5 * * * *'
     # Scheduled reports - every hour at 15 minutes past
@@ -25,7 +25,6 @@ on:
 
 env:
   VERCEL_URL: ${{ secrets.VERCEL_URL }}
-  CRON_SECRET: ${{ secrets.CRON_SECRET }}
 
 jobs:
   voucher-processor:
@@ -34,8 +33,12 @@ jobs:
     steps:
       - name: Trigger Voucher Processor
         run: |
+          echo "VERCEL_URL: ${{ env.VERCEL_URL }}"
+          if [ -z "${{ env.VERCEL_URL }}" ]; then
+            echo "Error: VERCEL_URL is not set"
+            exit 1
+          fi
           curl -f -X POST \
-            -H "Authorization: Bearer ${{ env.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             "${{ env.VERCEL_URL }}/api/cron/voucher-processor" || exit 1
 
@@ -45,8 +48,12 @@ jobs:
     steps:
       - name: Trigger Notification Processor
         run: |
+          echo "VERCEL_URL: ${{ env.VERCEL_URL }}"
+          if [ -z "${{ env.VERCEL_URL }}" ]; then
+            echo "Error: VERCEL_URL is not set"
+            exit 1
+          fi
           curl -f -X POST \
-            -H "Authorization: Bearer ${{ env.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             "${{ env.VERCEL_URL }}/api/cron/notification-processor" || exit 1
 
@@ -56,7 +63,11 @@ jobs:
     steps:
       - name: Trigger Scheduled Reports
         run: |
+          echo "VERCEL_URL: ${{ env.VERCEL_URL }}"
+          if [ -z "${{ env.VERCEL_URL }}" ]; then
+            echo "Error: VERCEL_URL is not set"
+            exit 1
+          fi
           curl -f -X POST \
-            -H "Authorization: Bearer ${{ env.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             "${{ env.VERCEL_URL }}/api/cron/scheduled-reports" || exit 1
