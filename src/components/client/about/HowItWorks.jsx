@@ -1,50 +1,30 @@
 import React from "react";
-import {
-  BadgeDollarSign,
-  MessageSquareHeart,
-  Send,
-  ShieldCheck,
-  Store,
-} from "lucide-react";
+import SendIcon from '@/icons/SendIcon';
+import StartIcon from '@/icons/StartIcon';
+import SparklesIcon from '@/icons/SparklesIcon';
 
 const steps = [
   {
-    icon: Store,
-    title: "Choose Brand",
-    desc: "Pick your preferred brand from trusted partners.",
-    leftClassMd: "md:left-[17%]",
+    icon: StartIcon,
+    title: "Choose brand & amount",
+    desc: "Start by selecting a brand, then choose the gift card amount.",
+    leftClassMd: "md:left-[25%]",
     rotateClassMd: "md:-rotate-[6deg]",
     zClassMd: "md:z-10",
   },
   {
-    icon: BadgeDollarSign,
-    title: "Set Amount",
-    desc: "Choose the gift card value based on your budget.",
-    leftClassMd: "md:left-[35%]",
-    rotateClassMd: "md:rotate-[6deg]",
-    zClassMd: "md:z-20",
-  },
-  {
-    icon: MessageSquareHeart,
-    title: "Personalize",
-    desc: "Add occasion, category, and a personal message.",
+    icon: SparklesIcon,
+    title: "Personalize the gift",
+    desc: "Set occasion and category, then add your personal message.",
     leftClassMd: "md:left-[52%]",
-    rotateClassMd: "md:-rotate-[4deg]",
+    rotateClassMd: "md:rotate-[8deg]",
     zClassMd: "md:z-30",
   },
   {
-    icon: Send,
-    title: "Delivery Setup",
-    desc: "Choose timing and delivery, or configure bulk gifting.",
-    leftClassMd: "md:left-[69%]",
-    rotateClassMd: "md:rotate-[5deg]",
-    zClassMd: "md:z-20",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Review & Pay",
-    desc: "Review details and complete secure payment.",
-    leftClassMd: "md:left-[87%]",
+    icon: SendIcon,
+    title: "Deliver, review & pay",
+    desc: "Choose timing/delivery (or bulk setup), review details, and pay securely.",
+    leftClassMd: "md:left-[80%]",
     rotateClassMd: "md:-rotate-[6deg]",
     zClassMd: "md:z-10",
   },
@@ -58,7 +38,7 @@ export default function HowItWorksOverlap() {
       </h2>
 
       {/* Main container */}
-      <div className="relative w-full h-auto md:h-[28rem]">
+      <div className="relative w-full h-auto md:h-96">
         {/* Mobile: scrollable row | Desktop: positioned overlaps */}
         <div className="flex md:block gap-6 overflow-x-auto md:overflow-visible px-2 md:px-0 items-stretch md:items-center justify-start md:justify-center snap-x snap-mandatory scroll-smooth">
           {steps.map(
