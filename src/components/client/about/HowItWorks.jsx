@@ -1,30 +1,50 @@
 import React from "react";
-import SendIcon from '@/icons/SendIcon';
-import StartIcon from '@/icons/StartIcon';
-import SparklesIcon from '@/icons/SparklesIcon';
+import {
+  BadgeDollarSign,
+  MessageSquareHeart,
+  Send,
+  ShieldCheck,
+  Store,
+} from "lucide-react";
 
 const steps = [
   {
-    icon: StartIcon,
-    title: "Choose a brand",
-    desc: "Filter by country to see local partners.",
-    leftClassMd: "md:left-[25%]",
+    icon: Store,
+    title: "Choose Brand",
+    desc: "Pick your preferred brand from trusted partners.",
+    leftClassMd: "md:left-[17%]",
     rotateClassMd: "md:-rotate-[6deg]",
     zClassMd: "md:z-10",
   },
   {
-    icon: SparklesIcon,
+    icon: BadgeDollarSign,
+    title: "Set Amount",
+    desc: "Choose the gift card value based on your budget.",
+    leftClassMd: "md:left-[35%]",
+    rotateClassMd: "md:rotate-[6deg]",
+    zClassMd: "md:z-20",
+  },
+  {
+    icon: MessageSquareHeart,
     title: "Personalize",
-    desc: "Add a note (and optional video message).",
+    desc: "Add occasion, category, and a personal message.",
     leftClassMd: "md:left-[52%]",
-    rotateClassMd: "md:rotate-[8deg]",
+    rotateClassMd: "md:-rotate-[4deg]",
     zClassMd: "md:z-30",
   },
   {
-    icon: SendIcon,
-    title: "Send & smile",
-    desc: "Instant delivery; easy redemption at checkout.",
-    leftClassMd: "md:left-[80%]",
+    icon: Send,
+    title: "Delivery Setup",
+    desc: "Choose timing and delivery, or configure bulk gifting.",
+    leftClassMd: "md:left-[69%]",
+    rotateClassMd: "md:rotate-[5deg]",
+    zClassMd: "md:z-20",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Review & Pay",
+    desc: "Review details and complete secure payment.",
+    leftClassMd: "md:left-[87%]",
     rotateClassMd: "md:-rotate-[6deg]",
     zClassMd: "md:z-10",
   },
@@ -38,7 +58,7 @@ export default function HowItWorksOverlap() {
       </h2>
 
       {/* Main container */}
-      <div className="relative w-full h-auto md:h-96">
+      <div className="relative w-full h-auto md:h-[28rem]">
         {/* Mobile: scrollable row | Desktop: positioned overlaps */}
         <div className="flex md:block gap-6 overflow-x-auto md:overflow-visible px-2 md:px-0 items-stretch md:items-center justify-start md:justify-center snap-x snap-mandatory scroll-smooth">
           {steps.map(
