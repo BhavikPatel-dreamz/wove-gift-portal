@@ -683,14 +683,12 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
                           {new Date(card.createdAt).toLocaleDateString()}
                         </span>
                         <div className="relative">
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <button
                             onClick={() => setOpenDropdown(openDropdown === card.id ? null : card.id)}
                             className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 h-6 w-6"
                           >
                             <MoreVertical className="h-3 w-3" />
-                          </Button>
+                          </button>
                           {openDropdown === card.id && (
                             <div ref={dropdownRef} className="absolute right-0 bottom-full mb-1 w-40 origin-bottom-right rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50 overflow-hidden">
                               <button
