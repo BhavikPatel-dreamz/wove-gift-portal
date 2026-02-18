@@ -44,7 +44,7 @@ export const notificationProcessorCron = () => {
   console.log("📧 [NOTIFICATION CRON] Notification processor scheduled (every 15 seconds)");
 };
 
-async function processNotificationsQueue() {
+export async function processNotificationsQueue() {
   try {
     // ✅ CRITICAL: Process ONE order at a time
     const ordersToNotify = await findOrdersReadyForNotification();

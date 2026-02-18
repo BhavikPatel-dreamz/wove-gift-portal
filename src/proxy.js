@@ -11,6 +11,7 @@ export function proxy(request) {
     '/api/shopify/auth',
     '/api/shopify/auth/callback',
     '/api/webhooks',
+    '/api/cron',
     '/shopify/install',
     '/shopify/auth-required',
     '/_next',
@@ -138,7 +139,8 @@ export function proxy(request) {
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/orders')  ||
     pathname.startsWith('/api/newsletter') ||
-    pathname.startsWith('/api/contact')
+    pathname.startsWith('/api/contact') ||
+    pathname.startsWith('/api/cron')
   ) {
     return NextResponse.next()
   }
