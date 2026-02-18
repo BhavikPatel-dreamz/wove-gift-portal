@@ -46,12 +46,22 @@ const Sidebar = ({ isOpen, onClose }) => {
     return pathname === href || pathname.startsWith(href + '/');
   };
 
+  // Only treat exact URLs as "already on this page".
+  // This still allows navigation from nested detail routes (e.g. /settlements/:id/overview)
+  // back to their section root (/settlements).
+  const isExactItem = (href) => {
+    if (href === '/dashboard') {
+      return pathname === '/' || pathname === '/dashboard';
+    }
+    return pathname === href;
+  };
+
   // Handle navigation with unsaved changes check
   const handleNavigation = (e, href) => {
     e.preventDefault();
 
     // Don't navigate if already on the page
-    if (isActiveItem(href)) {
+    if (isExactItem(href)) {
       onClose();
       return;
     }

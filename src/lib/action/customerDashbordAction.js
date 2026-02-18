@@ -52,6 +52,8 @@ export async function getGiftCards(filters) {
 
     // Build where clause based on user role and tab selection
     const whereClause = {};
+    const pendingOrderWhereClause = {};
+    const includePendingOrders = status !== "expired";
 
     // If user is not admin, filter based on sent/received
     if (session.user.role !== "ADMIN") {
@@ -59,11 +61,15 @@ export async function getGiftCards(filters) {
         whereClause.order = {
           userId: session.user.id,
         };
+        pendingOrderWhereClause.userId = session.user.id;
       } else if (status === "received") {
         whereClause.order = {
           receiverDetail: {
             email: session.user.email,
           },
+        };
+        pendingOrderWhereClause.receiverDetail = {
+          email: session.user.email,
         };
       } else if (status === "all") {
         whereClause.OR = [
@@ -77,6 +83,16 @@ export async function getGiftCards(filters) {
               receiverDetail: {
                 email: session.user.email,
               },
+            },
+          },
+        ];
+        pendingOrderWhereClause.OR = [
+          {
+            userId: session.user.id,
+          },
+          {
+            receiverDetail: {
+              email: session.user.email,
             },
           },
         ];
@@ -138,11 +154,45 @@ export async function getGiftCards(filters) {
         },
       ];
 
+      const pendingOrderSearchConditions = [
+        {
+          user: {
+            email: { contains: searchQuery, mode: "insensitive" },
+          },
+        },
+        {
+          receiverDetail: {
+            email: { contains: searchQuery, mode: "insensitive" },
+          },
+        },
+        {
+          brand: {
+            brandName: { contains: searchQuery, mode: "insensitive" },
+          },
+        },
+        {
+          orderNumber: { contains: searchQuery, mode: "insensitive" },
+        },
+        {
+          bulkOrderNumber: { contains: searchQuery, mode: "insensitive" },
+        },
+      ];
+
       if (whereClause.OR) {
         whereClause.AND = [{ OR: whereClause.OR }, { OR: searchConditions }];
         delete whereClause.OR;
       } else {
         whereClause.OR = searchConditions;
+      }
+
+      if (pendingOrderWhereClause.OR) {
+        pendingOrderWhereClause.AND = [
+          { OR: pendingOrderWhereClause.OR },
+          { OR: pendingOrderSearchConditions },
+        ];
+        delete pendingOrderWhereClause.OR;
+      } else {
+        pendingOrderWhereClause.OR = pendingOrderSearchConditions;
       }
     }
 
@@ -151,6 +201,10 @@ export async function getGiftCards(filters) {
       whereClause.createdAt = {};
       if (startDate) whereClause.createdAt.gte = new Date(startDate);
       if (endDate) whereClause.createdAt.lte = new Date(endDate);
+
+      pendingOrderWhereClause.createdAt = {};
+      if (startDate) pendingOrderWhereClause.createdAt.gte = new Date(startDate);
+      if (endDate) pendingOrderWhereClause.createdAt.lte = new Date(endDate);
     }
 
     // ============================================
@@ -158,57 +212,97 @@ export async function getGiftCards(filters) {
     // ============================================
     
     // First, get all voucher codes to group them
-    const allVoucherCodes = await prisma.voucherCode.findMany({
-      where: whereClause,
-      include: {
-        order: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
+    const [allVoucherCodes, pendingPaidOrders] = await Promise.all([
+      prisma.voucherCode.findMany({
+        where: whereClause,
+        include: {
+          order: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+              receiverDetail: {
+                select: {
+                  name: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+              brand: {
+                select: {
+                  brandName: true,
+                  domain: true,
+                },
               },
             },
-            receiverDetail: {
-              select: {
-                name: true,
-                email: true,
-                phone: true,
-              },
-            },
-            brand: {
-              select: {
-                brandName: true,
-                domain: true,
-              },
+          },
+          giftCard: {
+            select: {
+              code: true,
             },
           },
-        },
-        giftCard: {
-          select: {
-            code: true,
+          redemptions: {
+            orderBy: {
+              redeemedAt: "desc",
+            },
+          },
+          bulkRecipient: {
+            select: {
+              recipientName: true,
+              recipientEmail: true,
+              recipientPhone: true,
+              personalMessage: true,
+            },
           },
         },
-        redemptions: {
-          orderBy: {
-            redeemedAt: "desc",
-          },
+        orderBy: {
+          createdAt: "desc",
         },
-        bulkRecipient: {
-          select: {
-            recipientName: true,
-            recipientEmail: true,
-            recipientPhone: true,
-            personalMessage: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+      }),
+      includePendingOrders
+        ? prisma.order.findMany({
+            where: {
+              ...pendingOrderWhereClause,
+              paymentStatus: "COMPLETED",
+              voucherCodes: {
+                none: {},
+              },
+            },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+              receiverDetail: {
+                select: {
+                  name: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+              brand: {
+                select: {
+                  brandName: true,
+                  domain: true,
+                },
+              },
+            },
+            orderBy: [
+              { paidAt: "desc" },
+              { createdAt: "desc" },
+            ],
+          })
+        : Promise.resolve([]),
+    ]);
 
     // Group by bulk order number and single orders
     const groupedOrders = {};
@@ -247,6 +341,15 @@ export async function getGiftCards(filters) {
         type: 'single',
         voucher: vc,
         createdAt: vc.createdAt,
+      });
+    });
+
+    // Add paid orders that are still waiting for voucher generation
+    pendingPaidOrders.forEach((order) => {
+      displayItems.push({
+        type: "pending",
+        order,
+        createdAt: order.paidAt || order.createdAt,
       });
     });
 
@@ -346,6 +449,55 @@ export async function getGiftCards(filters) {
       };
     };
 
+    const transformPendingOrder = (order) => {
+      const isSent = order.userId === session.user.id;
+      const isReceived = order.receiverDetail?.email === session.user.email;
+      const currency = order.currency || "USD";
+      const currencySymbol = getCurrencySymbol(currency);
+
+      return {
+        id: `pending-${order.id}`,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        bulkOrderNumber: order.bulkOrderNumber,
+        code: "Generating voucher...",
+        fullCode: null,
+        status: "PROCESSING",
+        user: {
+          name: `${order.user?.firstName || ""} ${order.user?.lastName || ""}`.trim(),
+          email: order.user?.email || "N/A",
+        },
+        receiverName: order.receiverDetail?.name || "N/A",
+        receiverEmail: order.receiverDetail?.email || "N/A",
+        receiverPhone: order.receiverDetail?.phone || "N/A",
+        totalAmount: order.totalAmount,
+        remaining: order.totalAmount,
+        spent: 0,
+        currency,
+        currencySymbol,
+        denominationType: "fixed",
+        lastRedemption: null,
+        purchaseDate: new Date(order.paidAt || order.createdAt).toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+          year: "numeric",
+        }),
+        expires: null,
+        expiresAtRaw: null,
+        brandName: order.brand?.brandName || "N/A",
+        brandDomain: order.brand?.domain || null,
+        isSent,
+        isReceived,
+        isBulk: !!order.bulkOrderNumber,
+        deliveryMethod: order.deliveryMethod,
+        redemptions: [],
+        isPendingVoucher: true,
+        processingStatus: order.processingStatus,
+        paymentStatus: order.paymentStatus,
+        quantity: order.quantity || 1,
+      };
+    };
+
     // Transform paginated items
     const giftCards = [];
     paginatedItems.forEach((item) => {
@@ -354,6 +506,8 @@ export async function getGiftCards(filters) {
         item.vouchers.forEach((vc) => {
           giftCards.push(transformVoucherCode(vc));
         });
+      } else if (item.type === "pending") {
+        giftCards.push(transformPendingOrder(item.order));
       } else {
         // For single orders, transform the single voucher
         giftCards.push(transformVoucherCode(item.voucher));
@@ -370,6 +524,7 @@ export async function getGiftCards(filters) {
           totalCount: totalDisplayItems, // Total "display items" not total vouchers
           totalPages: totalPages,
           totalVouchers: allVoucherCodes.length, // Actual voucher count for reference
+          pendingOrders: pendingPaidOrders.length,
         },
         userRole: session.user.role,
         userId: session.user.id,

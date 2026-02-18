@@ -1,76 +1,84 @@
 import React from 'react'
-import { Zap, Users, CheckCircle, Sparkles } from 'lucide-react'
+import {
+  BadgeDollarSign,
+  MessageSquareHeart,
+  Send,
+  ShieldCheck,
+  Store
+} from 'lucide-react'
 
 const WorkMain = () => {
   const steps = [
     {
-      icon: <Zap className="w-8 h-8" />,
-      title: "Choose a brand",
-      description: "Filter by country to see local partners."
+      icon: <Store className="w-6 h-6" />,
+      title: "Choose Brand",
+      description: "Select your preferred brand from trusted partners."
     },
     {
-      icon: <Users className="w-8 h-8" />,
+      icon: <BadgeDollarSign className="w-6 h-6" />,
+      title: "Set Amount",
+      description: "Pick a gift card value that fits your budget."
+    },
+    {
+      icon: <MessageSquareHeart className="w-6 h-6" />,
       title: "Personalize",
-      description: "Add a note (and optional video message)."
+      description: "Choose occasion/category and add your message."
     },
     {
-      icon: <Sparkles className="w-8 h-8" />,
-      title: "Send & smile",
-      description: "Instant delivery; easy redemption at checkout."
+      icon: <Send className="w-6 h-6" />,
+      title: "Delivery Setup",
+      description: "Set timing and delivery method, or configure bulk flow."
     },
     {
-      icon: <CheckCircle className="w-8 h-8" />,
-      title: "Achieve Your Goals",
-      description: "Track progress, measure success, and scale."
+      icon: <ShieldCheck className="w-6 h-6" />,
+      title: "Review & Pay",
+      description: "Confirm details and complete secure payment."
     }
   ]
 
-  const features = [
-    "Real-time collaboration",
-    "Advanced analytics",
-    "Secure cloud storage",
-    "24/7 customer support",
-    "Mobile & desktop apps",
-    "API integrations"
-  ]
-
   return (
-    <div className='max-w-360 m-auto pt-18 px-4'>
+    <div className='max-w-360 m-auto pt-18 px-4 sm:px-6 lg:px-8'>
       {/* Hero Section */}
-      <div className='text-center py-16'>
-        <h1 className="text-3xl font-bold text-gray-900 my-4 px-4">
+      <div className='text-center py-12 sm:py-16'>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 my-4">
           How It Works
         </h1>
-        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
-          Get started in minutes with our simple, powerful platform designed to transform the way you work
+        <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+          A simple 5-step flow to send thoughtful gift cards quickly.
         </p>
       </div>
 
       {/* Steps Section */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20'>
-        {steps.map((step, index) => (
-          <div key={index} className='relative'>
-            {/* Connecting Line */}
-            {index < steps.length - 1 && (
-              <div className='hidden lg:block absolute top-12 left-[60%] w-full h-0.5 bg-linear-to-r from-blue-400 to-purple-400 opacity-30' />
-            )}
+      <div className='relative mb-20'>
+        <div className='pointer-events-none absolute inset-x-0 -top-6 h-36 bg-linear-to-r from-[#FFE6D4]/70 via-[#FDEDF5]/70 to-[#FFF4DA]/70 blur-3xl' />
+        <div className='relative grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 auto-rows-fr gap-5 lg:gap-6'>
+          {steps.map((step, index) => (
+            <div key={index} className='relative h-full'>
+              {/* Connecting Line */}
+              {index < steps.length - 1 && (
+                <div className='hidden xl:block absolute top-12 left-[62%] w-full h-px bg-linear-to-r from-[#F8B28D] via-[#ED457D] to-[#FA8F42] opacity-40' />
+              )}
 
-            <div className='bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 relative z-10'>
-              <div className='bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] text-white rounded-full w-16 h-16 flex items-center justify-center mb-6'>
-                {step.icon}
+              <div className='group relative z-10 h-full min-h-[250px] rounded-2xl border border-[#F3DDD3] bg-white p-6 shadow-[0_10px_28px_rgba(20,20,20,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_34px_rgba(20,20,20,0.12)] flex flex-col'>
+                <div className='flex items-center justify-between mb-5'>
+                  <span className='inline-flex items-center px-3 h-7 rounded-full bg-[#FFF3ED] text-[#E65A3A] text-xs font-bold tracking-wide'>
+                    STEP {index + 1}
+                  </span>
+                  <div className='bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] text-white rounded-xl w-12 h-12 flex items-center justify-center shadow-md transition-transform duration-300 group-hover:scale-105'>
+                    {step.icon}
+                  </div>
               </div>
-              <div className='text-sm font-semibold text-black mb-2'>
-                STEP {index + 1}
+
+                <h3 className='text-lg font-bold mb-2 text-gray-900 leading-snug'>
+                  {step.title}
+                </h3>
+                <p className='text-gray-600 leading-relaxed text-sm sm:text-base'>
+                  {step.description}
+                </p>
               </div>
-              <h3 className='text-xl font-bold mb-3 text-gray-800'>
-                {step.title}
-              </h3>
-              <p className='text-gray-600 leading-relaxed'>
-                {step.description}
-              </p>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
      

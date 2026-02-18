@@ -462,7 +462,13 @@ const CartPage = () => {
                     {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedTotal().toFixed(2)}
                   </span>
                 </div>
-                <Button onClick={handleProceedToPayment} className="w-full mt-6 sm:mt-7 md:mt-8 text-base sm:text-[17px] md:text-lg py-2.5 sm:py-2.75 md:py-3">
+                <Button onClick={handleProceedToPayment}  className={`w-full mt-10 bg-gradient-to-r from-pink-500 to-orange-500 
+                       hover:from-pink-600 hover:to-orange-600
+                       disabled:from-gray-300 disabled:to-gray-400
+                       text-white py-3 sm:py-4 px-6 rounded-xl
+                       font-semibold text-sm sm:text-base
+                       transition-all duration-200
+                       flex items-center justify-center gap-2 cursor-pointer`}>
                   {session ? 'Proceed to Payment' : 'Login to Continue'}
                 </Button>
               </div>

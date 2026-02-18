@@ -237,7 +237,8 @@ function MyGift() {
       'ACTIVE': 'bg-blue-100 text-blue-600 border-[1px] border-[#0F64F633]',
       'CLAIMED': 'bg-green-100 text-green-600 border-[1px] border-[#22C55E33]',
       'UNCLAIMED': 'bg-gray-100 text-gray-600 border-[1px] border-[#D1D5DB]',
-      'EXPIRED': 'bg-red-100 text-red-600 border-[1px] border-[#EF444433]'
+      'EXPIRED': 'bg-red-100 text-red-600 border-[1px] border-[#EF444433]',
+      'PROCESSING': 'bg-amber-100 text-amber-700 border-[1px] border-[#F59E0B55]'
     };
     return colors[status] || 'bg-gray-100 text-gray-600';
   };
@@ -247,7 +248,8 @@ function MyGift() {
       'ACTIVE': 'from-pink-400 to-orange-400',
       'CLAIMED': 'from-orange-400 to-red-400',
       'UNCLAIMED': 'from-orange-400 to-red-500',
-      'EXPIRED': 'from-gray-400 to-gray-500'
+      'EXPIRED': 'from-gray-400 to-gray-500',
+      'PROCESSING': 'from-amber-400 to-yellow-500'
     };
     return colors[status] || 'from-pink-400 to-orange-400';
   };
@@ -307,7 +309,7 @@ function MyGift() {
 
   // Calculate bulk order statistics
   const getBulkOrderStats = (cards) => {
-    const totalVouchers = cards.length;
+    const totalVouchers = cards.reduce((sum, card) => sum + (card.quantity || 1), 0);
     const totalAmount = cards.reduce((sum, card) => sum + card.totalAmount, 0);
     const totalRemaining = cards.reduce((sum, card) => sum + card.remaining, 0);
     const currencySymbol = cards[0]?.currencySymbol || '$';
@@ -381,7 +383,7 @@ function MyGift() {
             </div>
           </div>
 
-          {firstCard?.receiverEmail == session?.user?.email && (
+          {(firstCard.isPendingVoucher || firstCard?.receiverEmail == session?.user?.email) && (
             <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(overallStatus)} whitespace-nowrap`}>
               {overallStatus}
             </span>
@@ -429,12 +431,22 @@ function MyGift() {
         </div>
 
         <div className="flex gap-2 sm:gap-3">
-          <button
-            onClick={() => handleOpenBulkModal(bulkOrderNumber, cards)}
-            className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors">
-            <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
-            <span className="text-xs sm:text-sm font-medium text-[#4A5565]">View All {stats.totalVouchers} Vouchers</span>
-          </button>
+          {firstCard.isPendingVoucher ? (
+            <button
+              type="button"
+              disabled
+              className="flex-1 py-2 border border-amber-200 bg-amber-50 text-amber-700 rounded-lg flex items-center justify-center gap-1 sm:gap-2 cursor-not-allowed"
+            >
+              <span className="text-xs sm:text-sm font-medium">Voucher generation in progress</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => handleOpenBulkModal(bulkOrderNumber, cards)}
+              className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors">
+              <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
+              <span className="text-xs sm:text-sm font-medium text-[#4A5565]">View All {stats.totalVouchers} Vouchers</span>
+            </button>
+          )}
         </div>
       </div>
     );
@@ -514,7 +526,7 @@ function MyGift() {
             </div>
           </div>
 
-          {card?.receiverEmail == session?.user?.email && (
+          {(card.isPendingVoucher || card?.receiverEmail == session?.user?.email) && (
             <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(card.status)} whitespace-nowrap`}>
               {card.status}
             </span>
@@ -556,8 +568,16 @@ function MyGift() {
           </div>
         </div>
 
+        {card.isPendingVoucher && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+            <p className="text-xs text-amber-700">
+              Payment successful. Voucher is being generated and will share shortly.
+            </p>
+          </div>
+        )}
 
-        {card.deliveryMethod === "print" && (
+
+        {card.deliveryMethod === "print" && !card.isPendingVoucher && (
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={handlePrintClick}
@@ -575,7 +595,7 @@ function MyGift() {
         )}
 
 
-        {card?.receiverEmail == session?.user?.email && (
+        {card?.receiverEmail == session?.user?.email && !card.isPendingVoucher && (
           <div>
             <div className="mb-4">
               <div className="w-full bg-gray-200 rounded-full h-2">
