@@ -15,7 +15,7 @@ import {
 import { removeFromCart, removeFromBulk } from '@/redux/cartSlice';
 import { currencyList } from '../../brandsPartner/currency';
 import toast from 'react-hot-toast';
-import { resetFlow } from '../../../redux/giftFlowSlice';
+import { resetFlow, clearCsvFileData } from '../../../redux/giftFlowSlice';
 
 const CartPage = () => {
   const cartItems = useSelector((state) => state.cart.items);
@@ -63,12 +63,24 @@ const CartPage = () => {
       ...item,
       editingIndex: index,
       isEditMode: true,
+      editFlowType: type,
+      editingBulkOrderId: type === 'bulk' ? item?.id ?? null : null,
+      deliveryFormEditReturn: {
+        enabled: false,
+        method: null,
+        returnStep: null,
+      },
     }));
-    dispatch(setCurrentStep(0));
-    if(type === 'regular'){
+    dispatch(setCurrentStep(1));
+    if (type === 'regular') {
       router.push('/gift');
-    }else if(type === 'bulk'){
-      router.push('/gift?mode=bulk');
+    } else if (type === 'bulk') {
+      const query = new URLSearchParams({ mode: 'bulk' });
+      if (item?.id !== undefined && item?.id !== null) {
+        query.set('editBulkId', String(item.id));
+      }
+      query.set('editBulkIndex', String(index));
+      router.push(`/gift?${query.toString()}`);
     }
   };
 
@@ -86,8 +98,9 @@ const CartPage = () => {
     }
   };
 
-  const handleRedirect = () =>{
+  const handleRedirect = () => {
     dispatch(resetFlow());
+    dispatch(clearCsvFileData());
     router.push('/gift');
   }
 
@@ -283,7 +296,7 @@ const CartPage = () => {
             <p className="mt-2 text-center font-['Inter'] font-medium text-[#4A4A4A] text-sm sm:text-[15px] md:text-[16px] leading-5 sm:leading-5.5 md:leading-6 max-w-md">
               Looks like you haven't added any gifts to your cart yet.
             </p>
-            <button onClick={()=> handleRedirect()} className="mt-6 sm:mt-7 md:mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-6 sm:px-7 md:px-8 py-2.5 sm:py-2.75 md:py-3 text-sm sm:text-[15px] md:text-base text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
+            <button onClick={() => handleRedirect()} className="mt-6 sm:mt-7 md:mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-6 sm:px-7 md:px-8 py-2.5 sm:py-2.75 md:py-3 text-sm sm:text-[15px] md:text-base text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
               Start Gifting Now
             </button>
           </div>
@@ -292,7 +305,7 @@ const CartPage = () => {
             <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
               {/* Regular Cart Items */}
               {activeTab === 'regular' && cartItems.map((item, index) => (
-                <div key={index} onClick={() => handleEditItem(item, index,"regular")} className="flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+                <div key={index} onClick={() => handleEditItem(item, index, "regular")} className="flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
                   <div className="flex cursor-pointer items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
                       <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
@@ -342,8 +355,8 @@ const CartPage = () => {
 
               {/* Bulk Cart Items */}
               {activeTab === 'bulk' && bulkItems.map((item, index) => (
-                <div key={index}  onClick={() => handleEditItem(item, index,"bulk")} className="flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
-                  <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
+                <div key={index} onClick={() => handleEditItem(item, index, "bulk")} className="flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+                  <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0 cursor-pointer">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
                       <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
                     </div>
@@ -400,6 +413,7 @@ const CartPage = () => {
                   </button>
                 </div>
               ))}
+
             </div>
 
             {/* Payment Summary - ✅ NOW SHOWS COMBINED TOTALS */}
@@ -408,7 +422,7 @@ const CartPage = () => {
                 <h2 className="mb-4 sm:mb-5 pb-3 sm:pb-4 font-['Poppins'] text-base sm:text-[17px] md:text-[18px] font-semibold leading-4.5 sm:leading-4.75 md:leading-5 tracking-[0.25px] text-[#1A1A1A]">
                   Payment Summary
                 </h2>
-                
+
                 {/* Show breakdown if both carts have items */}
                 {hasRegularItems && hasBulkItems && (
                   <div className="space-y-2 mb-3 pb-3 border-b border-gray-100">

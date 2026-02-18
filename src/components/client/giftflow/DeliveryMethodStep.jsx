@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, X } from "lucide-react";
-import { goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
+import { clearDeliveryFormEditReturn, goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
 import MailIcons from "../../../icons/MailIcon";
 import WhatsupIcon from '../../../icons/WhatsupIcon';
 import PrinterIcon from '../../../icons/PrinterIcon';
@@ -45,6 +45,7 @@ const DeliveryMethodStep = () => {
 
   const {
     deliveryMethod,
+    deliveryFormEditReturn,
     deliveryDetails,
     selectedAmount,
     personalMessage,
@@ -106,6 +107,24 @@ const DeliveryMethodStep = () => {
       }));
     }
   }, [deliveryMethod, deliveryDetails]);
+
+  // If user came from delivery preview edit flow, reopen the same method modal automatically.
+  useEffect(() => {
+    if (!deliveryFormEditReturn?.enabled) return;
+
+    const methodToOpen = deliveryFormEditReturn.method || deliveryMethod || selectedMethod;
+    if (!methodToOpen) return;
+
+    setSelectedMethod(methodToOpen);
+    setShowModal(true);
+    setErrors({});
+
+    if (deliveryMethod !== methodToOpen) {
+      dispatch(setDeliveryMethod(methodToOpen));
+    }
+
+    dispatch(clearDeliveryFormEditReturn());
+  }, [deliveryFormEditReturn, deliveryMethod, selectedMethod, dispatch]);
 
   // Check if method has been completed
   const isMethodCompleted = useMemo(() => {
@@ -391,7 +410,7 @@ const renderMethodCard = useCallback((method) => {
         <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block mb-6">
           <button
             onClick={() => dispatch(goBack())}
-            className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-full bg-white hover:bg-rose-50 
+            className="cursor-pointer flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-full bg-white hover:bg-rose-50 
                        transition-all duration-200 shadow-sm hover:shadow-md"
           >
             <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
@@ -434,7 +453,7 @@ const renderMethodCard = useCallback((method) => {
               {/* Close Button */}
               <button
                 onClick={handleCloseModal}
-                className="absolute top-4 right-4 sm:top-6 sm:right-6 w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors z-50"
+                className="cursor-pointer absolute top-4 right-4 sm:top-6 sm:right-6 w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors z-50"
               >
                 <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
               </button>
@@ -447,7 +466,7 @@ const renderMethodCard = useCallback((method) => {
                 <div className="flex items-center justify-center mt-6 sm:mt-8 pb-4">
                   <button
                     onClick={handleContinue}
-                    className="bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-3 px-8 sm:py-4 sm:px-12 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 transform hover:scale-105 shadow-lg flex gap-2 sm:gap-3 items-center"
+                    className="cursor-pointer bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-3 px-8 sm:py-4 sm:px-12 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 transform hover:scale-105 shadow-lg flex gap-2 sm:gap-3 items-center"
                   >
                     Continue to Payment
                     <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">

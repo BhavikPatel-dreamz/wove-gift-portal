@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, Clock } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 const ContactMain = () => {
   const [formData, setFormData] = useState({
@@ -8,10 +8,44 @@ const ContactMain = () => {
     subject: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState({ type: '', message: '' });
 
-  const handleSubmit = () => {
-    alert('Message sent successfully!');
-    setFormData({ name: '', email: '', subject: '', message: '' });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
+    setStatus({ type: '', message: '' });
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to send message.');
+      }
+
+      setStatus({ type: 'success', message: result.message });
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+      setStatus({
+        type: 'error',
+        message: error?.message || 'Failed to send message. Please try again.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -22,10 +56,10 @@ const ContactMain = () => {
   };
 
   return (
-    <div className="max-w-360 m-auto pt-18.75 min-h-screen px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-173 m-auto pt-18.75 px-4 sm:px-6 lg:px-8 pb-20 text-black">
+      <div className="max-w-7xl mx-auto mt-15">
         {/* Header */}
-        <div className="text-center mb-12 sm:mb-16">
+        <div className="text-center mb-5 x sm:mb-16">
           <h1 className="text-3xl font-bold text-gray-900 my-4 px-4">
             Get In Touch
           </h1>
@@ -34,176 +68,86 @@ const ContactMain = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-          {/* Contact Information */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Contact Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">
-                Contact Information
-              </h2>
-              
-              <div className="space-y-6">
-                <div className="flex items-start">
-                  <div className="shrink-0">
-                    <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-                  </div>
-                  <div className="ml-3 sm:ml-4">
-                    <p className="text-sm font-medium text-gray-900">Email</p>
-                    <p className="text-sm text-gray-600 break-all">contact@company.com</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="shrink-0">
-                    <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-                  </div>
-                  <div className="ml-3 sm:ml-4">
-                    <p className="text-sm font-medium text-gray-900">Phone</p>
-                    <p className="text-sm text-gray-600">+1 (555) 123-4567</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="shrink-0">
-                    <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-                  </div>
-                  <div className="ml-3 sm:ml-4">
-                    <p className="text-sm font-medium text-gray-900">Address</p>
-                    <p className="text-sm text-gray-600">
-                      123 Business Street<br />
-                      New York, NY 10001
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <div className="shrink-0">
-                    <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-                  </div>
-                  <div className="ml-3 sm:ml-4">
-                    <p className="text-sm font-medium text-gray-900">Hours</p>
-                    <p className="text-sm text-gray-600">
-                      Mon - Fri: 9:00 AM - 6:00 PM<br />
-                      Sat - Sun: Closed
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Social Links */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
-                Follow Us
-              </h3>
-              <div className="flex space-x-3 sm:space-x-4">
-                <button 
-                  className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-colors duration-200"
-                  aria-label="Facebook"
-                >
-                  <span className="text-sm font-bold">f</span>
-                </button>
-                <button 
-                  className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-colors duration-200"
-                  aria-label="Twitter"
-                >
-                  <span className="text-sm font-bold">tw</span>
-                </button>
-                <button 
-                  className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-colors duration-200"
-                  aria-label="LinkedIn"
-                >
-                  <span className="text-sm font-bold">in</span>
-                </button>
-                <button 
-                  className="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-colors duration-200"
-                  aria-label="Instagram"
-                >
-                  <span className="text-sm font-bold">ig</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Contact Form */}
+        <div className="grid grid-cols-1">
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 md:p-12">
-              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-6">
-                Send Us a Message
-              </h2>
-              
-              <div className="space-y-5 sm:space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                      Your Name
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none transition-all duration-200"
-                      placeholder="John Doe"
-                    />
-                  </div>
+            <div className="bg-white rounded-2xl shadow-lg p-[30px] ">
+              <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
 
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none transition-all duration-200"
-                      placeholder="john@example.com"
-                    />
-                  </div>
+                <div>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all"
+                    placeholder="John Doe"
+                    required
+                  />
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                    Subject
-                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all"
+                    placeholder="john@example.com"
+                    required
+                  />
+                </div>
+
+                <div>
                   <input
                     type="text"
                     id="subject"
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none transition-all duration-200"
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all"
                     placeholder="How can we help?"
+                    required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                    Message
-                  </label>
                   <textarea
                     id="message"
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
                     rows={6}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none transition-all duration-200 resize-none"
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all resize-none"
                     placeholder="Tell us more about your inquiry..."
+                    required
                   />
                 </div>
 
                 <button
-                  onClick={handleSubmit}
-                  className="w-full bg-indigo-600 text-white py-3 sm:py-4 px-6 rounded-lg font-medium hover:bg-indigo-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl active:scale-[0.98]"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] text-white py-3 sm:py-4 px-6 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl active:scale-[0.98]"
                 >
-                  <span>Send Message</span>
+                  <span>{isSubmitting ? 'Sending...' : 'Send Message'}</span>
                   <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
-              </div>
+                {status.message && (
+                  <p
+                    className={`text-sm ${status.type === 'success' ? 'text-green-600' : 'text-red-500'}`}
+                    role="status"
+                  >
+                    {status.message}
+                  </p>
+                )}
+
+              </form>
+
             </div>
           </div>
         </div>

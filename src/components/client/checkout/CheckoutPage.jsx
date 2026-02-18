@@ -11,7 +11,6 @@ import { useSession } from '@/contexts/SessionContext';
 // import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
 import PaymentMethodSelector from "../giftflow/payment/PaymentMethodSelector";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
-import BillingAddressForm from "../giftflow/payment/BillingAddressForm";
 import SuccessScreen from "../giftflow/payment/SuccessScreen";
 import { currencyList } from '../../brandsPartner/currency';
 import { useDispatch, useSelector } from 'react-redux';
@@ -40,7 +39,7 @@ const CheckoutPage = () => {
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
-  const [selectedPaymentTab, setSelectedPaymentTab] = useState('');
+  const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
   const [showThankYou, setShowThankYou] = useState(false);
   const [clientSecret, setClientSecret] = useState(null);
   const [pendingOrderIds, setPendingOrderIds] = useState([]);
@@ -49,16 +48,6 @@ const CheckoutPage = () => {
 
   // Track individual order processing
   const [orderStatuses, setOrderStatuses] = useState({});
-
-  // Billing address state
-  const [billingAddress, setBillingAddress] = useState({
-    line1: '',
-    line2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'US',
-  });
   const [addressErrors, setAddressErrors] = useState({});
 
   const getCurrencySymbol = (code) =>
@@ -121,167 +110,65 @@ const CheckoutPage = () => {
     return calculateCombinedSubtotal() + calculateCombinedServiceFee();
   };
 
-  // Validate billing address
-  const validateBillingAddress = () => {
-    const errors = {};
-
-    if (!billingAddress.line1 || billingAddress.line1.trim() === '') {
-      errors.line1 = 'Address is required';
-    }
-    if (!billingAddress.city || billingAddress.city.trim() === '') {
-      errors.city = 'City is required';
-    }
-    if (!billingAddress.state || billingAddress.state.trim() === '') {
-      errors.state = 'State is required';
-    }
-    if (!billingAddress.postalCode || billingAddress.postalCode.trim() === '') {
-      errors.postalCode = 'Postal code is required';
-    }
-    if (!billingAddress.country || billingAddress.country.trim() === '') {
-      errors.country = 'Country is required';
-    }
-
-    setAddressErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   // Create separate pending orders for ALL cart items
   const handleInitiatePayment = async () => {
-    if (!validateBillingAddress()) {
-      toast.error('Please fill in all required billing address fields');
-      return null;
-    }
-
-    if (clientSecret && pendingOrderIds.length > 0) {
-      return { clientSecret, orderIds: pendingOrderIds };
-    }
-
     setIsProcessing(true);
     setError(null);
     const toastId = toast.loading('Preparing your orders...');
 
     try {
-      const allOrderIds = [];
-      const orderMetadata = [];
-
-      // Collect all items (bulk + regular)
-      const allItems = [
-        ...bulkItems.map((item, i) => ({ ...item, type: 'bulk', index: i })),
-        ...cartItems.map((item, i) => ({ ...item, type: 'regular', index: i }))
+      // ✅ Prepare all cart items as separate order data
+      const allCartOrders = [
+        ...bulkItems.map((item) => ({
+          selectedBrand: item.selectedBrand,
+          selectedAmount: item.selectedAmount,
+          personalMessage: item.personalMessage,
+          quantity: item.quantity,
+          companyInfo: item.companyInfo,
+          deliveryOption: item.deliveryOption,
+          selectedOccasion: item.selectedOccasion,
+          selectedSubCategory: item.selectedSubCategory,
+          totalAmount: getAmountValue(item.selectedAmount) * item.quantity,
+          isBulkOrder: true,
+          totalSpend: item.totalSpend,
+          deliveryMethod: item.deliveryOption,
+          csvRecipients: item.csvRecipients || [],
+          userId: session?.user?.id,
+          selectedTiming: item.selectedTiming,
+        })),
+        ...cartItems.map((item) => ({
+          selectedBrand: item.selectedBrand,
+          selectedAmount: item.selectedAmount,
+          personalMessage: item.personalMessage,
+          deliveryMethod: item.deliveryMethod,
+          deliveryDetails: item.deliveryDetails,
+          selectedOccasion: item.selectedOccasion,
+          selectedSubCategory: item.selectedSubCategory,
+          selectedTiming: item.selectedTiming,
+          totalAmount: getAmountValue(item.selectedAmount),
+          isBulkOrder: false,
+          userId: session?.user?.id,
+        })),
       ];
 
-      console.log(`📦 Creating ${allItems.length} orders...`);
+      // ✅ Send as multi-cart order
+      const result = await createPendingOrder({
+        isMultiCart: true,
+        cartOrders: allCartOrders,
+        userId: session?.user?.id
+      });
 
-      let sharedPaymentIntentId = null;
-      let sharedClientSecret = null;
-      let sharedCustomerId = null;
-
-      // Process each item sequentially
-      for (let idx = 0; idx < allItems.length; idx++) {
-        const item = allItems[idx];
-        const isBulkItem = item.type === 'bulk';
-
-        // Build order data
-        let orderData;
-        if (isBulkItem) {
-          orderData = {
-            selectedBrand: item.selectedBrand,
-            selectedAmount: item.selectedAmount,
-            personalMessage: item.personalMessage,
-            quantity: item.quantity,
-            companyInfo: item.companyInfo,
-            deliveryOption: item.deliveryOption,
-            selectedOccasion: item.selectedOccasion,
-            selectedSubCategory: item.selectedSubCategory,
-            totalAmount: getAmountValue(item.selectedAmount) * item.quantity,
-            isBulkOrder: true,
-            totalSpend: item.totalSpend,
-            billingAddress,
-            deliveryMethod: item.deliveryOption,
-            csvRecipients: item.csvRecipients || [],
-            userId: session?.user?.id,
-            sharedPaymentIntentId: sharedPaymentIntentId,
-            customerId: sharedCustomerId,
-          };
-        } else {
-          orderData = {
-            selectedBrand: item.selectedBrand,
-            selectedAmount: item.selectedAmount,
-            personalMessage: item.personalMessage,
-            deliveryMethod: item.deliveryMethod,
-            deliveryDetails: item.deliveryDetails,
-            selectedOccasion: item.selectedOccasion,
-            selectedSubCategory: item.selectedSubCategory,
-            selectedTiming: item.selectedTiming,
-            totalAmount: getAmountValue(item.selectedAmount),
-            isBulkOrder: false,
-            billingAddress,
-            userId: session?.user?.id,
-            sharedPaymentIntentId: sharedPaymentIntentId,
-            customerId: sharedCustomerId,
-          };
-        }
-
-        console.log(`Creating order ${idx + 1}/${allItems.length}...`);
-
-        const result = await createPendingOrder(orderData);
-
-        if (!result.success) {
-          throw new Error(`Failed to create order ${idx + 1}: ${result.error}`);
-        }
-
-        allOrderIds.push(result.data.orderId);
-
-        // ✅ No payment intent tracking needed for test mode
-        // if (idx === 0) {
-        //   sharedPaymentIntentId = result.data.paymentIntentId;
-        //   sharedClientSecret = result.data.clientSecret;
-        //   sharedCustomerId = result.data.customerId;
-        //   console.log(`✅ First order created - Payment Intent: ${sharedPaymentIntentId}`);
-        // }
-
-        // Store metadata with full item details
-        orderMetadata.push({
-          type: item.type,
-          brand: item.selectedBrand?.brandName,
-          brandLogo: item.selectedBrand?.logo,
-          amount: isBulkItem
-            ? getAmountValue(item.selectedAmount) * item.quantity
-            : getAmountValue(item.selectedAmount),
-          quantity: item.quantity || 1,
-          orderNumber: result.data.orderNumber,
-          deliveryMethod: isBulkItem ? item.deliveryOption : item.deliveryMethod,
-          deliveryDetails: item.deliveryDetails,
-          csvRecipients: item.csvRecipients,
-          personalMessage: item.personalMessage,
-          occasion: item.selectedOccasion,
-          timing: item.selectedTiming,
-        });
+      if (!result.success) {
+        throw new Error(`Failed to create orders: ${result.error}`);
       }
 
-      console.log(`✅ Created ${allOrderIds.length} orders successfully`);
+      setPendingOrderIds(result.data.orderIds);
 
-      setPendingOrderIds(allOrderIds);
-      // setClientSecret(sharedClientSecret); // ✅ Not needed for test mode
-
-      // Initialize order status tracking with full details
-      const initialStatuses = {};
-      allOrderIds.forEach((orderId, idx) => {
-        initialStatuses[orderId] = {
-          status: 'PENDING',
-          orderNumber: orderMetadata[idx].orderNumber,
-          type: orderMetadata[idx].type,
-          index: idx,
-          metadata: orderMetadata[idx],
-        };
-      });
-      setOrderStatuses(initialStatuses);
-
-      toast.success(`${allOrderIds.length} order(s) ready for payment`, { id: toastId });
+      toast.success(`${result.data.orderIds.length} order(s) ready for payment`, { id: toastId });
 
       return {
-        // clientSecret: sharedClientSecret, // ✅ Not needed for test mode
-        orderIds: allOrderIds
+        orderIds: result.data.orderIds,
+        payfastUrl: result.data.payfastUrl, // ✅ Redirect to PayFast
       };
 
     } catch (error) {
@@ -295,58 +182,6 @@ const CheckoutPage = () => {
   };
 
   console.log("cartItems", cartItems, bulkItems);
-
-  // ✅ TEST MODE: Simulate payment success
-  const handlePaymentSuccess = async (orderIds) => {
-    console.log('🧪 TEST MODE: Simulating payment success for orders:', orderIds);
-
-    if (!orderIds || orderIds.length === 0) {
-      console.error('❌ No order IDs provided to handlePaymentSuccess');
-      toast.error('Order IDs missing');
-      return;
-    }
-
-    toast.dismiss();
-    toast.success('Payment received! Processing your orders...', {
-      id: 'payment-success',
-      duration: 3000
-    });
-
-    setPaymentSubmitted(true);
-    setIsProcessing(true);
-    setProcessingStatus('PAYMENT_CONFIRMED');
-
-    // ✅ Simulate webhook by calling completeOrderAfterPayment for each order
-    setTimeout(async () => {
-      try {
-        console.log(`🔄 Processing ${orderIds.length} orders...`);
-
-        for (const orderId of orderIds) {
-          console.log(`📦 Completing order: ${orderId}`);
-          
-          await completeOrderAfterPayment(orderId, {
-            paymentIntentId: 'test_pi_' + Date.now(), // Mock payment intent
-            paymentMethod: 'card',
-            amount: calculateCombinedTotal() * 100,
-            currency: getCurrency().toLowerCase(),
-          });
-        }
-
-        console.log('✅ All orders marked as completed, starting polling...');
-        
-        // Start polling after a short delay
-        setTimeout(() => {
-          pollAllOrders(orderIds);
-        }, 2000);
-
-      } catch (error) {
-        console.error('❌ Error simulating payment:', error);
-        toast.error('Failed to process payment');
-        setIsProcessing(false);
-        setPaymentSubmitted(false);
-      }
-    }, 1500); // Simulate network delay
-  };
 
   // ✅ ENHANCED: Smarter polling with better status detection
   const pollAllOrders = async (orderIds, attempts = 0) => {
@@ -628,12 +463,6 @@ const CheckoutPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Left Column - Payment */}
           <div className="space-y-5 sm:space-y-6">
-            <BillingAddressForm
-              address={billingAddress}
-              onChange={setBillingAddress}
-              errors={addressErrors}
-            />
-
             <PaymentMethodSelector
               selectedTab={selectedPaymentTab}
               onTabChange={setSelectedPaymentTab}
@@ -658,15 +487,48 @@ const CheckoutPage = () => {
               </Elements>
             )} */}
 
-{/* test */}
             {/* ✅ TEST MODE: Simple payment button */}
-            {selectedPaymentTab !== '' && (
+            {/* PayFast Payment Button */}
+            {selectedPaymentTab === 'payfast' && (
               <button
                 onClick={async () => {
                   const result = await handleInitiatePayment();
-                  if (result && result.orderIds) {
-                    // Simulate payment success after orders are created
-                    handlePaymentSuccess(result.orderIds);
+                  if (result && result.payfastUrl) {
+                    // ✅ Redirect to PayFast with combined payment
+                    window.location.href = result.payfastUrl;
+                  }
+                }}
+                disabled={isProcessing || !isPaymentConfirmed}
+                className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 
+                       hover:from-blue-600 hover:to-blue-700
+                       disabled:from-gray-300 disabled:to-gray-400
+                       text-white py-3 sm:py-4 px-6 rounded-xl
+                       font-semibold text-sm sm:text-base
+                       transition-all duration-200
+                       flex items-center justify-center gap-2
+                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                    {pendingOrderIds.length > 0 ? 'Redirecting to PayFast...' : `Preparing ${cartItems.length + bulkItems.length} order${cartItems.length + bulkItems.length > 1 ? 's' : ''}...`}
+                  </>
+                ) : (
+                  <>
+                    Pay with PayFast <span>→</span>
+                  </>
+                )}
+              </button>
+            )}
+
+
+            {selectedPaymentTab === 'card' && (
+              <button
+                onClick={async () => {
+                  const result = await handleInitiatePayment();
+                  if (result && result.payfastUrl) {
+                    // ✅ Redirect to PayFast with combined payment
+                    window.location.href = result.payfastUrl;
                   }
                 }}
                 disabled={isProcessing || !isPaymentConfirmed}

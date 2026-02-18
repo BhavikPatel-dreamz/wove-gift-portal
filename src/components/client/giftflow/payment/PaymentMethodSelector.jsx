@@ -62,7 +62,7 @@ const PaymentMethodSelector = ({ selectedTab, onTabChange, isBulkMode }) => {
           </div>
         </button>
 
-        <button
+        {/* <button
           onClick={() => onTabChange('card')}
           className={`flex-1 flex items-center gap-3 p-4 rounded-[20px] border-2 transition-all ${selectedTab === 'card' ? 'border-[#9333EA] bg-pink-100' : 'border-gray-200 bg-white hover:border-gray-300'
             }`}
@@ -77,7 +77,7 @@ const PaymentMethodSelector = ({ selectedTab, onTabChange, isBulkMode }) => {
             <p className="font-semibold text-gray-900 text-sm">Card</p>
             <p className="text-xs text-gray-600">Visa, Mastercard</p>
           </div>
-        </button>
+        </button> */}
       </div>
 
       {/* Confirmation Checkbox */}

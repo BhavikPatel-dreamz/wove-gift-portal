@@ -2,12 +2,6 @@
 import React from 'react';
 import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
 
-// Register fonts if needed (optional)
-// Font.register({
-//   family: 'Roboto',
-//   src: 'https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4mxP.ttf'
-// });
-
 const styles = StyleSheet.create({
   page: {
     backgroundColor: '#f5f5f5',
@@ -38,7 +32,7 @@ const styles = StyleSheet.create({
   gradientBackground: {
     width: '100%',
     height: '100%',
-    background: 'linear-gradient(135deg, #ED457D 0%, #FA8F42 100%)',
+    backgroundColor: '#ED457D',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -48,7 +42,6 @@ const styles = StyleSheet.create({
     top: 12,
     right: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    backdropFilter: 'blur(10px)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -187,6 +180,35 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   
+  // How to Use Section
+  instructionsContainer: {
+    backgroundColor: '#fffbf0',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  instructionsTitle: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  instructionsList: {
+    paddingLeft: 12,
+  },
+  instructionItem: {
+    fontSize: 8,
+    color: '#374151',
+    marginBottom: 4,
+    lineHeight: 1.5,
+  },
+  websiteLink: {
+    fontSize: 8,
+    color: '#111827',
+    marginTop: 6,
+    fontWeight: 'bold',
+  },
+  
   // Footer Section
   footer: {
     backgroundColor: '#f9fafb',
@@ -196,10 +218,22 @@ const styles = StyleSheet.create({
     borderTopStyle: 'solid',
   },
   footerText: {
-    fontSize: 8,
+    fontSize: 7,
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 1.6,
+    marginBottom: 6,
+  },
+  footerLinks: {
+    fontSize: 7,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  footerCopyright: {
+    fontSize: 6,
+    color: '#adb5bd',
+    textAlign: 'center',
   },
 });
 
@@ -217,6 +251,7 @@ const GiftCardPDF = ({
   const amount = voucherCode?.originalValue || orderData?.selectedAmount?.value || "100";
   const giftCode = voucherCode?.code || "XXXX-XXXX-XXXX";
   const brandName = selectedBrand?.brandName || "Brand";
+  const brandWebsite = selectedBrand?.website || selectedBrand?.domain || "";
   
   const brandLogoUrl = selectedBrand?.logo || null;
   const giftCardImageUrl = orderData?.selectedSubCategory?.image || null;
@@ -282,9 +317,6 @@ const GiftCardPDF = ({
             {/* Amount Section */}
             <View style={styles.amountContainer}>
               <View style={styles.amountRow}>
-                {/* <Text style={styles.currencySymbol}>
-                  {getCurrencySymbol(currency)}
-                </Text> */}
                 <Text style={styles.amount}>{amount}</Text>
                 <Text style={styles.currencyCode}>{currency}</Text>
               </View>
@@ -303,11 +335,36 @@ const GiftCardPDF = ({
               <Text style={styles.voucherLabel}>Voucher Code</Text>
               <Text style={styles.voucherCode}>{giftCode}</Text>
             </View>
+
+            {/* How to Use Section */}
+            <View style={styles.instructionsContainer}>
+              <Text style={styles.instructionsTitle}>How to use your gift card:</Text>
+              <View style={styles.instructionsList}>
+                <Text style={styles.instructionItem}>1. Visit the brand website below</Text>
+                <Text style={styles.instructionItem}>2. Enter your voucher code at checkout</Text>
+                <Text style={styles.instructionItem}>3. Enjoy your {brandName} experience!</Text>
+              </View>
+              {brandWebsite && (
+                <Text style={styles.websiteLink}>Brand Website: {brandWebsite}</Text>
+              )}
+            </View>
           </View>
 
           {/* Footer Section */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>{expiryDate}</Text>
+            <Text style={styles.footerText}>
+              This gift card was sent to you via WoveGifts, powered by MyPerks.
+            </Text>
+            <Text style={styles.footerText}>
+              Need help? Contact us at hello@wovegifts.com
+            </Text>
+            <Text style={styles.footerLinks}>
+              Terms & Conditions | Privacy Policy
+            </Text>
+            <Text style={styles.footerCopyright}>
+              © 2024 WoveGifts (a MyPerks company)
+            </Text>
           </View>
         </View>
       </Page>

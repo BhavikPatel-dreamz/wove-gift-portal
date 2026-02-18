@@ -3,10 +3,8 @@ import { Phone } from "lucide-react";
 import { MessageCircleCode } from "lucide-react";
 import { ArrowLeft } from "lucide-react";
 import React from "react";
-import Image from "next/image";
-import { Edit } from "lucide-react";
-import { useDispatch } from "react-redux";
-import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { setCurrentStep, setDeliveryFormEditReturn } from "../../../redux/giftFlowSlice";
 
 const WhatsAppForm = ({
   formData,
@@ -16,19 +14,32 @@ const WhatsAppForm = ({
   selectedSubCategory,
   selectedAmount,
   personalMessage,
+  selectedBrand,
 }) => {
   const dispatch = useDispatch();
+  const { deliveryMethod } = useSelector((state) => state.giftFlowReducer);
+
+  const startEditFlow = (step) => {
+    dispatch(
+      setDeliveryFormEditReturn({
+        enabled: true,
+        method: deliveryMethod || "whatsapp",
+        returnStep: 7,
+      })
+    );
+    dispatch(setCurrentStep(step));
+  };
 
   const goToMessageStep = () => {
-    dispatch(setCurrentStep(5));
+    startEditFlow(5);
   };
 
   const goToAmountStep = () => {
-    dispatch(setCurrentStep(2));
+    startEditFlow(2);
   };
 
   const goToOccationCategoryStep = () => {
-    dispatch(setCurrentStep(4));
+    startEditFlow(4);
   };
 
   return (
@@ -337,7 +348,7 @@ const WhatsAppForm = ({
 "
             >
               <button
-                onClick={() => dispatch(setCurrentStep(4))}
+                onClick={goToOccationCategoryStep}
                 className="
       flex items-center gap-2
       px-4 py-2.5 sm:px-5 sm:py-3 rounded-full
@@ -387,7 +398,7 @@ const WhatsAppForm = ({
 "
             >
               <button
-                onClick={() => dispatch(setCurrentStep(2))}
+                onClick={goToAmountStep}
                 className="
       flex items-center gap-2
       px-4 py-2.5 sm:px-5 sm:py-3 rounded-full
@@ -437,7 +448,7 @@ const WhatsAppForm = ({
 "
             >
               <button
-                onClick={() => dispatch(setCurrentStep(5))}
+                onClick={goToMessageStep}
                 className="
       flex items-center gap-2
       px-4 py-2.5 sm:px-5 sm:py-3 rounded-full

@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { clearCart, clearBulkCart } from '@/redux/cartSlice';
-import { resetFlow } from '@/redux/giftFlowSlice';
+import { resetFlow,clearCsvFileData } from '@/redux/giftFlowSlice';
 import { getOrderStatus } from '@/lib/action/orderAction';
 import SuccessScreen from '@/components/client/giftflow/payment/SuccessScreen';
 import ThankYouScreen from '@/components/client/giftflow/payment/ThankYouScreen';
@@ -23,6 +23,7 @@ function SuccessContent() {
 
   useEffect(() => {
     const orderId = searchParams.get('orderId');
+    const source = searchParams.get('source');
     
     if (!orderId) {
       setError('No order ID provided');
@@ -31,10 +32,10 @@ function SuccessContent() {
     }
 
     // ✅ Fetch the order and all related orders
-    fetchOrderAndRelated(orderId);
+    fetchOrderAndRelated(orderId, source);
   }, [searchParams]);
 
-  const fetchOrderAndRelated = async (orderId) => {
+  const fetchOrderAndRelated = async (orderId, source) => {
     try {
       console.log('🔍 Fetching order:', orderId);
 
@@ -67,10 +68,13 @@ function SuccessContent() {
         processingStatus: 'COMPLETED'
       });
 
-      // ✅ Clear cart items
-      dispatch(clearCart());
-      dispatch(clearBulkCart());
+      // ✅ Only clear cart when payment originated from /checkout (cart flow)
+      if (source === 'cart') {
+        dispatch(clearCart());
+        dispatch(clearBulkCart());
+      }
       dispatch(resetFlow());
+      dispatch(clearCsvFileData());
 
       setLoading(false);
     } catch (err) {

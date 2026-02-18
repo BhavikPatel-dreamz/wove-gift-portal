@@ -1,24 +1,33 @@
 import React from 'react';
 import { Mail } from 'lucide-react';
-import { EditIcon } from 'lucide-react';
 import Image from 'next/image';
-import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
-import { useDispatch } from 'react-redux';
+import { setCurrentStep, setDeliveryFormEditReturn } from "../../../redux/giftFlowSlice";
+import { useDispatch, useSelector } from 'react-redux';
 
 const EmailForm = ({ formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage }) => {
 
     const dispatch = useDispatch();
+    const { deliveryMethod } = useSelector((state) => state.giftFlowReducer);
+
+    const startEditFlow = (step) => {
+        dispatch(setDeliveryFormEditReturn({
+            enabled: true,
+            method: deliveryMethod || 'email',
+            returnStep: 7,
+        }));
+        dispatch(setCurrentStep(step));
+    };
 
     const goToMessageStep = () => {
-        dispatch(setCurrentStep(5));
+        startEditFlow(5);
     }
 
     const goToAmountStep = () => {
-        dispatch(setCurrentStep(2));
+        startEditFlow(2);
     }
 
     const goToOccationCategoryStep = () => {
-        dispatch(setCurrentStep(4));
+        startEditFlow(4);
     }
 
 
@@ -305,7 +314,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
 
                                         {/* Redeem Button */}
                                         <button
-                                            className="w-full bg-linear-to-r from-pink-500 to-orange-400 text-white py-3 rounded-full font-semibold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2"
+                                            className="cursor-pointer w-full bg-linear-to-r from-pink-500 to-orange-400 text-white py-3 rounded-full font-semibold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2"
                                             onClick={() => {
                                                 const url =
                                                     selectedBrand?.website ||

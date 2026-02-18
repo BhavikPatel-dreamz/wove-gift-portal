@@ -39,8 +39,6 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
     );
 };
 
-
-
 export default function ReportsPage({ shop, notAllowSchedule }) {
     const [brands, setBrands] = useState([]);
     const [brandLoading, setBrandLoading] = useState(false);
@@ -78,8 +76,10 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
     const [message, setMessage] = useState({ type: '', text: '' });
     const [loadingFormat, setLoadingFormat] = useState(null); // 'csv' | 'pdf' | null
     const [scheduledReports, setScheduledReports] = useState([]);
+    const [scheduledReportsLoading, setScheduledReportsLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(null); // Holds ID of report being edited
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [quickReportLoading, setQuickReportLoading] = useState(null); // Tracks which quick report is loading
 
     // Fetch brands on component mount
     React.useEffect(() => {
@@ -90,13 +90,12 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 const data = await response.json();
                 if (data.success) {
                     setBrands(data.data);
-                    if(notAllowSchedule){
+                    if (notAllowSchedule) {
                         setCustomReport({ ...customReport, brand: data?.data?.[0]?.id || 'all' })
                     }
                 }
             } catch (error) {
                 console.error('Failed to fetch brands:', error);
-                // setMessage({ type: 'error', text: 'Failed to load brands' });
                 toast.error('Failed to load brands');
             } finally {
                 setBrandLoading(false);
@@ -134,10 +133,10 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
             textColor: 'text-purple-700'
         },
         {
-            id: 'unredeemed-liability',
-            title: 'Unredeemed Liability',
-            description: 'Outstanding voucher value',
-            icon: '🎁',
+            id: 'yearly-report',
+            title: 'yearly Report',
+            description: 'Current month overview',
+            icon: '📋',
             color: 'bg-orange-50 border-orange-200',
             iconBg: 'bg-orange-100',
             textColor: 'text-orange-700'
@@ -159,6 +158,417 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
         { value: '12', label: 'December' }
     ];
 
+    // Handle Quick Report Download
+    const handleQuickReport = async (reportId) => {
+        setQuickReportLoading(reportId);
+
+        try {
+            let startDate, endDate;
+            const now = new Date();
+
+
+            // Calculate date ranges based on report type
+            switch (reportId) {
+                case 'daily-settlement': {
+                    const start = new Date(now);
+                    start.setHours(0, 0, 0, 0);
+
+                    startDate = start.toISOString().split('T')[0];
+                    endDate = now.toISOString().split('T')[0];
+                    break;
+                }
+
+                case 'weekly-summary': {
+                    const start = new Date(now);
+                    start.setDate(start.getDate() - 6); // last 7 days inclusive
+
+                    startDate = start.toISOString().split('T')[0];
+                    endDate = now.toISOString().split('T')[0];
+                    break;
+                }
+
+                case 'monthly-report': {
+                    const start = new Date(now);
+                    start.setMonth(start.getMonth() - 1);
+                    start.setDate(start.getDate() + 1); // rolling month
+
+                    startDate = start.toISOString().split('T')[0];
+                    endDate = now.toISOString().split('T')[0];
+                    break;
+                }
+
+                case 'yearly-report': {
+                    const start = new Date(now);
+                    start.setFullYear(start.getFullYear() - 1);
+                    start.setDate(start.getDate() + 1); // rolling year
+
+                    startDate = start.toISOString().split('T')[0];
+                    endDate = now.toISOString().split('T')[0];
+                    break;
+                }
+            }
+
+            // Determine which reports to include
+            let reports = [];
+            switch (reportId) {
+                case 'daily-settlement':
+                    reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
+                    break;
+                case 'weekly-summary':
+                  reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
+                    break;
+                case 'monthly-report':
+                    reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
+                    break;
+                case 'yearly-report':
+                    reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
+                    break;
+            }
+
+            const response = await fetch("/api/reports/custom", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    shop,
+                    startDate,
+                    endDate,
+                    brand: 'all',
+                    status: null,
+                    reports,
+                    format: 'pdf',
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to generate report");
+            }
+
+            const data = await response.json();
+
+            // Generate PDF
+            const pdf = new jsPDF();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            let yPos = 20;
+
+            const formatCurrency = (amount) => {
+                if (amount === null || amount === undefined) return 'Rs 0';
+                return `Rs ${Number(amount).toLocaleString('en-IN')}`;
+            };
+
+            const checkAddPage = (space = 40) => {
+                if (yPos + space > pageHeight - 20) {
+                    pdf.addPage();
+                    yPos = 20;
+                }
+            };
+
+            // Get report title
+            const reportTitle = quickReports.find(r => r.id === reportId)?.title || 'Report';
+
+            // Title
+            pdf.setFontSize(20);
+            pdf.setFont(undefined, 'bold');
+            pdf.text(reportTitle, 14, yPos);
+            pdf.setFont(undefined, 'normal');
+            pdf.setFontSize(10);
+            yPos += 6;
+            pdf.text(`Period: ${startDate} to ${endDate}`, 14, yPos);
+            yPos += 6;
+            pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, yPos);
+            yPos += 12;
+
+            // SALES SUMMARY (Always present)
+            if (data.data?.salesSummary) {
+                const sd = data.data.salesSummary;
+                checkAddPage(50);
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text("SALES SUMMARY", 14, yPos);
+                pdf.setFont(undefined, 'normal');
+                yPos += 7;
+
+                if (sd.summary) {
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Metric", "Value"]],
+                        body: [
+                            ["Total Orders", sd.summary.totalOrders.toLocaleString()],
+                            ["Total Revenue", formatCurrency(sd.summary.totalRevenue)],
+                            ["Total Discount", formatCurrency(sd.summary.totalDiscount)],
+                            ["Total Quantity", sd.summary.totalQuantity.toLocaleString()],
+                            ["Avg Order Value", formatCurrency(sd.summary.avgOrderValue)],
+                        ],
+                        theme: 'grid',
+                        headStyles: { fillColor: [41, 128, 185], fontSize: 10 },
+                        styles: { fontSize: 9 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+
+                if (sd.revenueByPaymentMethod?.length > 0) {
+                    checkAddPage(50);
+                    pdf.setFontSize(12);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text("Revenue by Payment Method", 14, yPos);
+                    pdf.setFont(undefined, 'normal');
+                    yPos += 5;
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Payment Method", "Orders", "Revenue"]],
+                        body: sd.revenueByPaymentMethod.map(i => [
+                            i.method,
+                            i.orders.toLocaleString(),
+                            formatCurrency(i.revenue)
+                        ]),
+                        theme: 'striped',
+                        styles: { fontSize: 9 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+
+                if (sd.dailyBreakdown?.length > 0) {
+                    checkAddPage(50);
+                    pdf.setFontSize(12);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text("Daily Breakdown", 14, yPos);
+                    pdf.setFont(undefined, 'normal');
+                    yPos += 5;
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Date", "Orders", "Revenue", "Quantity"]],
+                        body: sd.dailyBreakdown.slice(0, 30).map(i => [
+                            i.date,
+                            i.orders.toLocaleString(),
+                            formatCurrency(i.revenue),
+                            i.quantity.toLocaleString()
+                        ]),
+                        theme: 'striped',
+                        styles: { fontSize: 8 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+            }
+
+            // REDEMPTION DETAILS (Always present)
+            if (data.data?.redemptionDetails) {
+                const rd = data.data.redemptionDetails;
+                checkAddPage(50);
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text("REDEMPTION DETAILS", 14, yPos);
+                pdf.setFont(undefined, 'normal');
+                yPos += 7;
+
+                if (rd.summary) {
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Metric", "Value"]],
+                        body: [
+                            ["Total Issued", rd.summary.totalIssued.toLocaleString()],
+                            ["Total Redeemed", rd.summary.totalRedeemed.toLocaleString()],
+                            ["Partially Redeemed", rd.summary.totalPartiallyRedeemed.toLocaleString()],
+                            ["Active", rd.summary.totalActive.toLocaleString()],
+                            ["Issued Value", formatCurrency(rd.summary.totalIssuedValue)],
+                            ["Redeemed Value", formatCurrency(rd.summary.totalRedeemedValue)],
+                            ["Redemption Rate", `${rd.summary.redemptionRate}%`],
+                        ],
+                        theme: 'grid',
+                        headStyles: { fillColor: [46, 204, 113], fontSize: 10 },
+                        styles: { fontSize: 9 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+
+                if (rd.vouchers?.length > 0) {
+                    checkAddPage(50);
+                    pdf.setFontSize(12);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text(`Voucher Details (${Math.min(rd.vouchers.length, 50)})`, 14, yPos);
+                    pdf.setFont(undefined, 'normal');
+                    yPos += 5;
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Code", "Brand", "Original", "Remaining", "Status"]],
+                        body: rd.vouchers.slice(0, 50).map(v => [
+                            v.code,
+                            v.brandName,
+                            formatCurrency(v.originalValue),
+                            formatCurrency(v.remainingValue),
+                            v.status
+                        ]),
+                        theme: 'striped',
+                        styles: { fontSize: 7 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+            }
+
+            // SETTLEMENT REPORTS (Always present)
+            if (data.data?.settlementReports) {
+                const sr = data.data.settlementReports;
+                checkAddPage(50);
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text("SETTLEMENT REPORTS", 14, yPos);
+                pdf.setFont(undefined, 'normal');
+                yPos += 7;
+
+                if (sr.summary) {
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Metric", "Value"]],
+                        body: [
+                            ["Total Settlements", sr.summary.totalSettlements.toLocaleString()],
+                            ["Total Amount", formatCurrency(sr.summary.totalAmount)],
+                            ["Total Commission", formatCurrency(sr.summary.totalCommission)],
+                            ["Total VAT", formatCurrency(sr.summary.totalVAT)],
+                            ["Total Paid", formatCurrency(sr.summary.totalPaid)],
+                            ["Total Remaining", formatCurrency(sr.summary.totalRemaining)],
+                        ],
+                        theme: 'grid',
+                        headStyles: { fillColor: [230, 126, 34], fontSize: 10 },
+                        styles: { fontSize: 9 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+
+                if (sr.settlements?.length > 0) {
+                    checkAddPage(50);
+                    pdf.setFontSize(12);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text(`Settlement Details (${sr.settlements.length})`, 14, yPos);
+                    pdf.setFont(undefined, 'normal');
+                    yPos += 5;
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Brand", "Period", "Net Payable", "Status"]],
+                        body: sr.settlements.map(s => [
+                            s.brandName,
+                            s.settlementPeriod,
+                            formatCurrency(s.netPayable),
+                            s.status
+                        ]),
+                        theme: 'striped',
+                        styles: { fontSize: 7 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+            }
+
+            // BRAND PERFORMANCE (Always present)
+            if (data.data?.brandPerformance) {
+                const bp = data.data.brandPerformance;
+                checkAddPage(50);
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text("BRAND PERFORMANCE", 14, yPos);
+                pdf.setFont(undefined, 'normal');
+                yPos += 7;
+
+                if (bp.summary) {
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Metric", "Value"]],
+                        body: [
+                            ["Total Brands", bp.summary.totalBrands.toLocaleString()],
+                            ["Total Revenue", formatCurrency(bp.summary.totalRevenue)],
+                            ["Avg Redemption Rate", `${bp.summary.avgRedemptionRate}%`],
+                        ],
+                        theme: 'grid',
+                        headStyles: { fillColor: [155, 89, 182], fontSize: 10 },
+                        styles: { fontSize: 9 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+
+                if (bp.brands?.length > 0) {
+                    checkAddPage(50);
+                    pdf.setFontSize(12);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text(`Brand Details (${bp.brands.length})`, 14, yPos);
+                    pdf.setFont(undefined, 'normal');
+                    yPos += 5;
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Brand", "Orders", "Revenue", "Redemption Rate"]],
+                        body: bp.brands.map(b => [
+                            b.brandName,
+                            b.totalOrders,
+                            formatCurrency(b.totalRevenue),
+                            `${b.redemptionRate}%`
+                        ]),
+                        theme: 'striped',
+                        styles: { fontSize: 8 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+            }
+
+             // LIABILITY SNAPSHOT
+            if (data.data?.liabilitySnapshot) {
+                const ls = data.data.liabilitySnapshot;
+                checkAddPage(50);
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text("LIABILITY SNAPSHOT", 14, yPos);
+                pdf.setFont(undefined, 'normal');
+                yPos += 7;
+
+                pdf.setFontSize(10);
+                pdf.text(`As of: ${ls.asOfDate}`, 14, yPos);
+                yPos += 5;
+
+                if (ls.summary) {
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Metric", "Value"]],
+                        body: [
+                            ["Total Vouchers", ls.summary.totalVouchers.toLocaleString()],
+                            ["Total Liability", formatCurrency(ls.summary.totalLiability)],
+                            ["Total Brands", ls.summary.totalBrands.toLocaleString()],
+                        ],
+                        theme: 'grid',
+                        headStyles: { fillColor: [231, 76, 60], fontSize: 10 },
+                        styles: { fontSize: 9 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+
+                if (ls.byBrand?.length > 0) {
+                    checkAddPage(50);
+                    pdf.setFontSize(12);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.text("Liability by Brand", 14, yPos);
+                    pdf.setFont(undefined, 'normal');
+                    yPos += 5;
+                    autoTable(pdf, {
+                        startY: yPos,
+                        head: [["Brand", "Vouchers", "Liability"]],
+                        body: ls.byBrand.map(b => [
+                            b.brandName,
+                            b.totalVouchers.toLocaleString(),
+                            formatCurrency(b.totalLiability)
+                        ]),
+                        theme: 'striped',
+                        styles: { fontSize: 8 },
+                    });
+                    yPos = pdf.lastAutoTable.finalY + 8;
+                }
+            }
+
+            const dateStr = new Date().toISOString().split("T")[0];
+            pdf.save(`${reportId}-${dateStr}.pdf`);
+            toast.success(`${reportTitle} downloaded successfully!`);
+
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to generate report. Please try again.");
+        } finally {
+            setQuickReportLoading(null);
+        }
+    };
+
     const handleCustomReportDownload = async (format) => {
         setLoading(true);
         setMessage({ type: "", text: "" });
@@ -169,16 +579,13 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
         );
 
         if (selectedReports.length === 0) {
-            // setMessage({ type: "error", text: "Please select at least one report type" });
             toast.error("Please select at least one report type");
-
             setLoading(false);
             setLoadingFormat(null);
             return;
         }
 
         if (!customReport.startDate || !customReport.endDate) {
-            // setMessage({ type: "error", text: "Please select start and end dates" });
             toast.error("Please select start and end dates");
             setLoading(false);
             setLoadingFormat(null);
@@ -219,7 +626,6 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                // setMessage({ type: "success", text: "CSV downloaded successfully!" });
                 toast.success("CSV downloaded successfully!");
                 setLoadingFormat(null);
                 return;
@@ -617,7 +1023,6 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 }
 
                 pdf.save(`custom-report-${dateStr}.pdf`);
-                // setMessage({ type: "success", text: "PDF generated successfully!" });
                 toast.success("PDF generated successfully!");
                 setLoadingFormat(null);
 
@@ -634,13 +1039,11 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            // setMessage({ type: "success", text: "JSON downloaded successfully!" });
             toast.success("JSON downloaded successfully!");
 
 
         } catch (err) {
             console.error(err);
-            // setMessage({ type: "error", text: err.message || "Failed to generate report" });
             toast.error("Failed to generate report. Please try again.");
         } finally {
             setLoading(false);
@@ -657,14 +1060,12 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
         );
 
         if (!scheduledReport.frequency || !scheduledReport.deliveryDay || selectedReportTypes.length === 0) {
-            // setMessage({ type: 'error', text: 'Please fill all required fields and select at least one report type' });
             toast.error('Please fill all the required fields');
             setLoading(false);
             return;
         }
 
         if (!scheduledReport.emailRecipients) {
-            // setMessage({ type: 'error', text: 'Please enter email recipient(s)' });
             toast.error('Please enter email recipient(s)');
             setLoading(false);
             return;
@@ -692,7 +1093,6 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
 
             console.log("response", data, response)
             if (response.ok) {
-                // setMessage({ type: 'success', text: 'Report scheduled successfully!' });
                 toast.success('Report scheduled successfully!');
                 setScheduledReport({
                     frequency: 'weekly',
@@ -705,11 +1105,9 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 });
                 fetchScheduledReports();
             } else {
-                // setMessage({ type: 'error', text: data.message || 'Failed to schedule report' });
                 toast.error(data.message || 'Failed to schedule report.');
             }
         } catch (error) {
-            // setMessage({ type: 'error', text: 'An error occurred while scheduling the report' });
             console.log("error", error)
             toast.error('An error occurred while scheduling the report');
         } finally {
@@ -765,7 +1163,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
     // Fetch scheduled reports
     const fetchScheduledReports = async () => {
         try {
-            setLoading(true);
+            setScheduledReportsLoading(true);
             const response = await fetch(`/api/reports/schedule`);
             const data = await response.json();
             if (data.success) {
@@ -774,10 +1172,10 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 toast.error(data.message || 'Failed to load scheduled reports');
             }
         } catch (error) {
-            console.error('Failed to fetch scheduled reports:', error);
-            toast.error('Failed to load scheduled reports');
+            console.log('Failed to fetch scheduled reports:', error);
+            // toast.error('Failed to load scheduled reports');
         } finally {
-            setLoading(false);
+            setScheduledReportsLoading(false);
         }
     };
 
@@ -855,20 +1253,29 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
 
                 {/* Quick Reports Grid */}
                 <div className="mb-8">
-                    {/* <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Reports</h2> */}
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Reports</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {quickReports.map((report) => (
                             <button
                                 key={report.id}
-                                // onClick={() => handleQuickReport(report.id)}
-                                disabled={loading}
-                                className={`${report.color} border-2 rounded-xl p-6 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                                onClick={() => handleQuickReport(report.id)}
+                                disabled={quickReportLoading === report.id}
+                                className={`${report.color} border-2 rounded-xl p-6 text-left transition-all hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed relative`}
                             >
                                 <div className={`${report.iconBg} w-12 h-12 rounded-lg flex items-center justify-center text-2xl mb-4`}>
-                                    {report.icon}
+                                    {quickReportLoading === report.id ? (
+                                        <Loader2 className="w-6 h-6 animate-spin" />
+                                    ) : (
+                                        report.icon
+                                    )}
                                 </div>
                                 <h3 className={`${report.textColor} font-semibold text-lg mb-1`}>{report.title}</h3>
                                 <p className="text-gray-600 text-sm">{report.description}</p>
+                                {quickReportLoading === report.id && (
+                                    <div className="absolute top-4 right-4">
+                                        <Download className="w-5 h-5 text-gray-400 animate-pulse" />
+                                    </div>
+                                )}
                             </button>
                         ))}
                     </div>
@@ -1076,6 +1483,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                     <div>
                                         <p className="text-sm font-medium text-blue-900">Report Tips</p>
                                         <ul className="text-xs text-blue-700 mt-2 space-y-1">
+                                            <li>• Click quick report buttons above for instant downloads</li>
                                             <li>• Select multiple report types for comprehensive analysis</li>
                                             <li>• CSV format is best for data manipulation in Excel</li>
                                             <li>• PDF format provides formatted, print-ready reports</li>
@@ -1137,7 +1545,6 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                         >
                                             <option value="weekly">Weekly</option>
                                             <option value="monthly">Monthly</option>
-                                            {/* <option value="yearly">Yearly</option> */}
                                         </select>
                                         <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                                     </div>
@@ -1287,7 +1694,36 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {scheduledReports.length > 0 ? scheduledReports.map((report) => (
+                                        {scheduledReportsLoading ? (
+                                            Array.from({ length: 4 }).map((_, idx) => (
+                                                <tr key={`schedule-skeleton-${idx}`} className="animate-pulse">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="h-4 w-28 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="h-4 w-20 bg-gray-200 rounded mb-2" />
+                                                        <div className="h-3 w-32 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="h-4 w-48 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="h-3 w-24 bg-gray-200 rounded mb-2" />
+                                                        <div className="h-3 w-20 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="h-4 w-24 bg-gray-200 rounded mb-2" />
+                                                        <div className="h-3 w-16 bg-gray-200 rounded" />
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="h-6 w-16 bg-gray-200 rounded-full" />
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                        <div className="ml-auto h-4 w-14 bg-gray-200 rounded" />
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : scheduledReports.length > 0 ? scheduledReports.map((report) => (
                                             <tr key={report.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm font-medium text-gray-900">

@@ -164,7 +164,7 @@ const SearchBar = ({
 
         {/* Filter Dropdown */}
         <div 
-          className="relative w-full sm:w-auto sm:min-w-50" 
+          className="relative w-full sm:w-auto sm:min-w-60" 
           ref={dropdownRef}
           onKeyDown={handleKeyDown}
         >

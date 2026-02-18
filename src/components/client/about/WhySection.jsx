@@ -2,7 +2,7 @@
 import Link from "next/link";
 import React from "react";
 import { useDispatch } from "react-redux";
-import { setCurrentStep, resetFlow } from "@/redux/giftFlowSlice";
+import { setCurrentStep, resetFlow ,clearCsvFileData} from "@/redux/giftFlowSlice";
 
 const WhyWoveExists = () => {
   const dispatch = useDispatch();
@@ -10,6 +10,7 @@ const WhyWoveExists = () => {
   const handleClick = () => {
     dispatch(resetFlow());
     dispatch(setCurrentStep(1));
+    dispatch(clearCsvFileData());
   };
 
   return (
@@ -44,13 +45,17 @@ const WhyWoveExists = () => {
         </div>
 
         {/* Right image */}
-        <div className="flex-1 w-full max-w-md lg:max-w-lg">
-          <div className="rounded-xl overflow-hidden shadow-lg">
+        <div className="flex-1 w-full h-full  max-w-md lg:max-w-151.25">
+          <div className="rounded-xl overflow-hidden shadow-lg relative">
             <img
               src="/aboutimage.png"
               alt="Person showing Wove Gifts mobile app"
-              className="w-full h-auto block object-cover"
+              className="w-151.25 h-151.25 block object-cover"
             />
+
+            <div className="absolute bg-white p-5 bottom-5 rounded-[20px] left-5 right-5 text-center text-[#1A1A1A] font-bold">
+            “Give freedom to choose, and the gift always fits.”
+            </div>
           </div>
         </div>
       </div>

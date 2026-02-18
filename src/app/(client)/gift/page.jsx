@@ -35,6 +35,8 @@ const PageContent = () => {
     page: parseInt(searchParams.get("page")) || 1,
     sort: searchParams.get("sort") || "",
     mode: searchParams.get("mode") || "",
+    editBulkId: searchParams.get("editBulkId") || "",
+    editBulkIndex: searchParams.get("editBulkIndex") || "",
   }), [searchParams]);
 
   // Cache for prefetched data
@@ -193,6 +195,12 @@ const PageContent = () => {
       if (urlParams.mode) {
         params.set("mode", urlParams.mode);
       }
+      if (urlParams.editBulkId) {
+        params.set("editBulkId", urlParams.editBulkId);
+      }
+      if (urlParams.editBulkIndex) {
+        params.set("editBulkIndex", urlParams.editBulkIndex);
+      }
 
       // Reset to page 1 when filters change (except when explicitly changing page)
       if (!updates.page && (updates.search !== undefined || updates.category !== undefined || updates.sort !== undefined)) {
@@ -202,15 +210,25 @@ const PageContent = () => {
       const newUrl = params.toString() ? `?${params.toString()}` : "";
       router.replace(`${pathname}${newUrl}`, { scroll: false });
     });
-  }, [searchParams, urlParams.mode, router, pathname]);
+  }, [searchParams, urlParams.mode, urlParams.editBulkId, urlParams.editBulkIndex, router, pathname]);
 
   // Clear all filters
   const clearFilters = useCallback(() => {
     startTransition(() => {
-      const newUrl = urlParams.mode ? `?mode=${urlParams.mode}` : "";
+      const params = new URLSearchParams();
+      if (urlParams.mode) {
+        params.set("mode", urlParams.mode);
+      }
+      if (urlParams.editBulkId) {
+        params.set("editBulkId", urlParams.editBulkId);
+      }
+      if (urlParams.editBulkIndex) {
+        params.set("editBulkIndex", urlParams.editBulkIndex);
+      }
+      const newUrl = params.toString() ? `?${params.toString()}` : "";
       router.replace(`${pathname}${newUrl}`, { scroll: false });
     });
-  }, [urlParams.mode, router, pathname]);
+  }, [urlParams.mode, urlParams.editBulkId, urlParams.editBulkIndex, router, pathname]);
 
   return (
     <div className="min-h-screen bg-gray-50">

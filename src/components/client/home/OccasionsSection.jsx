@@ -1,7 +1,7 @@
 "use client";
 import { useDispatch } from 'react-redux';
 import { usePathname, useRouter } from 'next/navigation';
-import { setSelectedOccasion, setCurrentStep, resetFlow } from '@/redux/giftFlowSlice';
+import { setSelectedOccasion, setCurrentStep, resetFlow,clearCsvFileData } from '@/redux/giftFlowSlice';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 const OccasionsSection = ({ occasions = [], isLoading = false }) => {
@@ -46,6 +46,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
     if (pathname === "/") {
       dispatch(resetFlow());
       dispatch(setSelectedOccasion(occasion.id));
+      dispatch(clearCsvFileData());
       router.push('/gift');
     } else {
       dispatch(setSelectedOccasion(occasion.id));

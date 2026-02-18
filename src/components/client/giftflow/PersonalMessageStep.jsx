@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { goBack, goNext, setPersonalMessage } from "../../../redux/giftFlowSlice";
+import { clearDeliveryFormEditReturn, goBack, goNext, setCurrentStep, setPersonalMessage } from "../../../redux/giftFlowSlice";
 import ProgressIndicator from "./ProgressIndicator";
 import { ArrowLeft } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 
 const PersonalMessageStep = () => {
   const dispatch = useDispatch();
-  const { personalMessage } = useSelector((state) => state.giftFlowReducer);
+  const { personalMessage, deliveryFormEditReturn } = useSelector((state) => state.giftFlowReducer);
   const [message, setMessage] = useState(personalMessage || '');
   const [error, setError] = useState('');
   const maxChars = 300;
@@ -40,6 +40,14 @@ const PersonalMessageStep = () => {
 
     // Clear error and proceed
     setError('');
+    if (deliveryFormEditReturn?.enabled) {
+      const returnStep = deliveryFormEditReturn?.returnStep || 7;
+      dispatch(setCurrentStep(returnStep));
+      if (returnStep !== 7) {
+        dispatch(clearDeliveryFormEditReturn());
+      }
+      return;
+    }
     dispatch(goNext());
   };
 
@@ -142,7 +150,7 @@ const PersonalMessageStep = () => {
               Write from Your Heart
             </h1>
             <p className="text-gray-500 text-sm sm:text-base max-w-xl mx-auto">
-              Add a heartfelt message to make this gift special
+            Add a heartfelt message to make this gift card special
             </p>
           </div>
 
@@ -210,7 +218,7 @@ const PersonalMessageStep = () => {
             <button
               onClick={handleContinue}
               disabled={isMessageEmpty}
-              className={`w-full  items-center mx-auto justify-center flex  gap-2 sm:w-auto px-10 py-4 rounded-full font-semibold text-base transition-all shadow-lg
+              className={`w-full cursor-pointer  items-center mx-auto justify-center flex  gap-2 sm:w-auto px-10 py-4 rounded-full font-semibold text-base transition-all shadow-lg
           ${isMessageEmpty
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-linear-to-r from-pink-500 to-orange-400 hover:scale-105'

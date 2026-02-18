@@ -13,7 +13,6 @@ const SuccessScreen = ({
   deliveryDetails
 }) => {
 
-
   // Check if this is a print delivery order
   const isPrintDelivery = order?.deliveryMethod === 'print';
 
@@ -48,15 +47,29 @@ const SuccessScreen = ({
     let totalAmount = 0;
 
     orders.forEach((order) => {
-      const orderList = Array.isArray(order.allOrders)
+      // Check if there's an allOrders array with multiple orders
+      const orderList = Array.isArray(order.allOrders) && order.allOrders.length > 0
         ? order.allOrders
         : [order]; // direct purchase fallback
 
+      console.log("Processing orderList:", orderList);
+
       orderList.forEach((o) => {
-        totalVouchers += o.quantity || 0;
-        totalAmount += o.amount || 0;
+        const quantity = o.quantity || 0;
+        const amount = o.amount || 0;
+        
+        // Add to total vouchers
+        totalVouchers += quantity;
+        
+        // Calculate this order's total (amount × quantity) and add to running total
+        const orderTotal = amount * quantity;
+        totalAmount += orderTotal;
+        
+        console.log(`Order: amount=${amount}, quantity=${quantity}, orderTotal=${orderTotal}`);
       });
     });
+
+    console.log("Final totals:", { totalVouchers, totalAmount });
 
     return {
       totalVouchers,
@@ -78,7 +91,7 @@ const SuccessScreen = ({
               </p>
             </div>
           ) : (
-            <div className="mt-25">
+            <div className="mt-0">
               <img
                 src={isPrintDelivery ? "/Success.gif" : "/Success.gif"}
                 alt={"Success"}
@@ -112,7 +125,7 @@ const SuccessScreen = ({
           )}
 
           {/* Bulk Mode Order Details */}
-          {isBulkMode && (
+          {(isBulkMode || order?.allOrders && order?.allOrders.length > 1) && (
             <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">Order details</h2>
               <div className="h-px bg-gray-200 mb-6"></div>
@@ -132,7 +145,7 @@ const SuccessScreen = ({
 
                 <div className="flex justify-between text-gray-700">
                   <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount * calculateTotals([order]).totalVouchers}</span>
+                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount}</span>
                 </div>
               </div>
             </div>
@@ -174,7 +187,7 @@ const SuccessScreen = ({
 
                 <div className="flex justify-between text-gray-700">
                   <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount * calculateTotals([order]).totalVouchers}</span>
+                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount}</span>
                 </div>
               </div>
 
@@ -235,7 +248,7 @@ const SuccessScreen = ({
           )}
 
           {/* Non-Print Delivery Info */}
-          {!isBulkMode && !isPrintDelivery && (
+          {!isBulkMode && !isPrintDelivery && !order?.allOrders && (
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-gray-200 mb-6">
               <div className="flex items-start gap-3">
                 {getDeliveryMethodIcon()}

@@ -99,10 +99,10 @@ export function buildPayFastData(orderData, config) {
     notifyUrl,
   } = config;
 
-  console.log("🔧 Building PayFast payment data...");
+  console.log("🔧 Building PayFast payment data...", orderData.totalAmount);
 
   // Include 5% fee in totalAmount
-  const amountWithFee = Number(orderData.totalAmount) * 1.05;
+  const amountWithFee = Math.ceil(Number(orderData.totalAmount) * 1.05);
 
   // Convert to Rands with 2 decimal places
   const amountInRands = amountWithFee.toFixed(2);
@@ -352,7 +352,7 @@ export const PAYFAST_STATUS = {
 /**
  * Load PayFast config from environment
  */
-export function getPayFastConfig(orderId = null) {
+export function getPayFastConfig(orderId = null, source = null) {
   const isSandbox = process.env.NEXT_PAYFAST_SANDBOX === "true";
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -366,6 +366,11 @@ export function getPayFastConfig(orderId = null) {
   if (orderId) {
     returnUrl.searchParams.set("orderId", orderId);
     cancelUrl.searchParams.set("orderId", orderId);
+  }
+
+  if (source) {
+    returnUrl.searchParams.set("source", source);
+    cancelUrl.searchParams.set("source", source);
   }
 
   const merchantId = isSandbox

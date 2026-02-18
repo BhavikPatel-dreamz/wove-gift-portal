@@ -1,6 +1,14 @@
+
 "use server";
 
 import { prisma } from "../db.js";
+import {
+  getPayFastConfig,
+  buildPayFastData,
+  buildPayFastUrl,
+  generateSignature,
+  buildPayFastUrlDirect,
+} from "../payfast/payfastUtils.js";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
 import { v2 as cloudinary } from "cloudinary";
@@ -161,40 +169,45 @@ function validateOrderData(orderData) {
   return true;
 }
 
-// ==================== DATABASE OPERATIONS ====================
+// ==================== CREATE RECEIVER DETAIL ====================
 async function createReceiverDetail(orderData) {
-  try {
-    const isBulkOrder = orderData.isBulkOrder === true;
+  const isBulkOrder = orderData.isBulkOrder === true;
 
-    if (isBulkOrder) {
-      return await prisma.receiverDetail.create({
-        data: {
-          name: orderData.companyInfo.companyName,
-          email: orderData.companyInfo.contactEmail,
-          phone: orderData.companyInfo.contactNumber,
-        },
-      });
-    } else {
-      const { deliveryDetails, deliveryMethod } = orderData;
-      return await prisma.receiverDetail.create({
-        data: {
-          name:
-            deliveryDetails.recipientFullName || deliveryDetails?.recipientName,
-          email:
-            deliveryMethod === "email"
-              ? deliveryDetails.recipientEmailAddress
-              : null,
-          phone:
-            deliveryMethod === "whatsapp"
-              ? deliveryDetails.recipientWhatsAppNumber
-              : null,
-        },
-      });
-    }
-  } catch (error) {
-    throw new Error(`Failed to create receiver detail: ${error.message}`);
+  if (isBulkOrder) {
+    return await prisma.receiverDetail.create({
+      data: {
+        name: orderData.companyInfo.companyName,
+        email: orderData.companyInfo.contactEmail,
+        phone: orderData.companyInfo.contactNumber,
+      },
+    });
+  } else {
+    const { deliveryDetails, deliveryMethod } = orderData;
+    return await prisma.receiverDetail.create({
+      data: {
+        name: deliveryDetails.recipientFullName || deliveryDetails?.recipientName,
+        email: deliveryMethod === "email" ? deliveryDetails.recipientEmailAddress : null,
+        phone: deliveryMethod === "whatsapp" ? deliveryDetails.recipientWhatsAppNumber : null,
+      },
+    });
   }
 }
+
+// ==================== CALCULATE SCHEDULED TIME ====================
+function calculateScheduledTime(selectedTiming) {
+  if (!selectedTiming || selectedTiming.type === "immediate") {
+    return null;
+  }
+
+  return new Date(
+    selectedTiming.year,
+    selectedTiming.month,
+    selectedTiming.date,
+    Number(selectedTiming.time.split(":")[0]),
+    Number(selectedTiming.time.split(":")[1])
+  );
+}
+
 
 function generateExportDescription(orderData, orderNumber) {
   const isBulkOrder = orderData.isBulkOrder === true;
@@ -215,335 +228,257 @@ function generateExportDescription(orderData, orderNumber) {
 export const createPendingOrder = async (orderData) => {
   try {
     const userId = orderData?.userId;
-
-    console.log("=======pending order data========", orderData);
-
     if (!userId) {
       throw new AuthenticationError("User not authenticated");
     }
 
-    orderData.userId = userId;
-    validateOrderData(orderData);
+    // Check if multi-cart order
+    const isMultiCart = orderData.isMultiCart === true;
+    const cartOrders = orderData.cartOrders || [orderData];
+    
+    const createdOrders = [];
+    let totalPaymentAmount = 0;
 
-    const isBulkOrder = orderData.isBulkOrder === true;
-    const receiver = await createReceiverDetail(orderData);
+    // ✅ CREATE ALL ORDERS FIRST (NO VOUCHER GENERATION)
+    for (const singleOrderData of cartOrders) {
+      validateOrderData(singleOrderData);
+      const isBulkOrder = singleOrderData.isBulkOrder === true;
+      const receiver = await createReceiverDetail(singleOrderData);
 
-    const quantity =
-      isBulkOrder && orderData.csvRecipients?.length > 0
-        ? orderData.csvRecipients.length
-        : orderData.quantity || 1;
+      // Calculate quantity
+      const quantity = isBulkOrder && singleOrderData.csvRecipients?.length > 0
+        ? singleOrderData.csvRecipients.length
+        : singleOrderData.quantity || 1;
 
-    const amount = Number(orderData.selectedAmount.value);
-    const subtotal = amount * quantity;
-    const discount = orderData.discountAmount || 0;
-    const totalAmount = subtotal - discount;
+      const amount = Number(singleOrderData.selectedAmount.value);
+      const subtotal = amount * quantity;
+      const discount = singleOrderData.discountAmount || 0;
+      const totalAmount = subtotal - discount;
 
-    const orderBase = {
-      orderNumber: generateOrderNumber(),
-      brandId: orderData.selectedBrand.id,
-      occasionId: orderData.selectedOccasion,
-      isCustom:
-        orderData.selectedSubCategory.category === "custom" ||
-        orderData.selectedSubCategory.category === "CUSTOM",
-      subCategoryId:
-        orderData.selectedSubCategory.category === "custom" ||
-        orderData.selectedSubCategory.category === "CUSTOM"
-          ? null
-          : orderData.selectedSubCategory?.id,
-      customCardId:
-        orderData.selectedSubCategory.category === "custom" ||
-        orderData.selectedSubCategory.category === "CUSTOM"
-          ? orderData.selectedSubCategory?.id
-          : null,
-      userId: String(userId),
-      receiverDetailId: receiver.id,
-      amount,
-      quantity,
-      subtotal,
-      discount,
-      totalAmount,
-      currency: orderData.selectedAmount.currency || "USD",
-      paymentMethod: "stripe",
-      customImageUrl: orderData.customImageUrl || null,
-      customVideoUrl: orderData.customVideoUrl || null,
-      paymentStatus: "PENDING",
-      redemptionStatus: "Issued",
-      isActive: true,
-    };
+      totalPaymentAmount += totalAmount;
 
-    let order;
-    if (isBulkOrder) {
-      const scheduledFor =
-        orderData.selectedTiming?.type === "schedule"
-          ? new Date(
-              orderData.selectedTiming.year,
-              orderData.selectedTiming.month,
-              orderData.selectedTiming.date,
-              Number(orderData.selectedTiming.time.split(":")[0]),
-              Number(orderData.selectedTiming.time.split(":")[1]),
-            )
-          : null;
+      // Determine if custom occasion
+      const isCustom = singleOrderData.selectedSubCategory.category === "custom" || 
+                       singleOrderData.selectedSubCategory.category === "CUSTOM";
 
-      order = await prisma.order.create({
-        data: {
-          ...orderBase,
-          bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-          deliveryMethod: orderData.deliveryOption || "email",
-          message: orderData.personalMessage || "",
-          senderName: orderData.companyInfo.companyName,
-          sendType: "sendImmediately",
-          scheduledFor: scheduledFor,
-          senderEmail: orderData.companyInfo.contactEmail,
-        },
-      });
+      const scheduledFor = calculateScheduledTime(singleOrderData.selectedTiming);
 
-      // ✅ OPTIMIZED: Batch insert CSV recipients
-      if (orderData.csvRecipients && orderData.csvRecipients.length > 0) {
-        console.log(
-          `📝 Storing ${orderData.csvRecipients.length} CSV recipients in database`,
-        );
+      // Base order data
+      const orderBase = {
+        orderNumber: generateOrderNumber(),
+        brandId: singleOrderData.selectedBrand.id,
+        occasionId: singleOrderData.selectedOccasion,
+        isCustom,
+        subCategoryId: isCustom ? null : singleOrderData.selectedSubCategory?.id,
+        customCardId: isCustom ? singleOrderData.selectedSubCategory?.id : null,
+        userId: String(userId),
+        receiverDetailId: receiver.id,
+        amount,
+        quantity,
+        subtotal,
+        discount,
+        totalAmount,
+        currency: singleOrderData.selectedAmount.currency || "ZAR",
+        paymentMethod: "payfast",
+        customImageUrl: singleOrderData.customImageUrl || null,
+        customVideoUrl: singleOrderData.customVideoUrl || null,
+        paymentStatus: "PENDING",
+        redemptionStatus: "Issued",
+        isActive: true,
+        
+        // ✅ NEW: Queue processing fields
+        isPaid: false,
+        voucherEntries: quantity, // Total vouchers needed
+        vouchersCreated: 0,
+        allVouchersGenerated: false,
+        notificationsSent: false,
+        processingStatus: "PENDING",
+        retryCount: 0,
+        maxRetries: 3,
+      };
 
-        const bulkRecipientsData = orderData.csvRecipients.map(
-          (recipient, index) => ({
+      let order;
+      
+      if (isBulkOrder) {
+        order = await prisma.order.create({
+          data: {
+            ...orderBase,
+            bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+            deliveryMethod: singleOrderData.deliveryOption || "email",
+            message: singleOrderData.personalMessage || "",
+            senderName: singleOrderData.companyInfo.companyName,
+            sendType: scheduledFor ? "scheduleLater" : "sendImmediately",
+            scheduledFor,
+            senderEmail: singleOrderData.companyInfo.contactEmail,
+          },
+        });
+
+        // ✅ CREATE BULK RECIPIENTS (NO VOUCHERS YET)
+        if (singleOrderData.csvRecipients && singleOrderData.csvRecipients.length > 0) {
+          const bulkRecipientsData = singleOrderData.csvRecipients.map((recipient, index) => ({
             orderId: order.id,
             recipientName: recipient.name,
             recipientEmail: recipient.email,
             recipientPhone: recipient.phone || null,
-            personalMessage:
-              recipient.message || orderData.personalMessage || null,
+            personalMessage: recipient.message || singleOrderData.personalMessage || null,
             rowNumber: recipient.rowNumber || index + 1,
-            voucherCodeId: null,
-          }),
-        );
+            voucherCodeId: null, // Will be set by cron processor
+          }));
 
-        await prisma.bulkRecipient.createMany({
-          data: bulkRecipientsData,
-          skipDuplicates: true,
-        });
-
-        console.log(
-          `✅ Successfully stored ${bulkRecipientsData.length} recipients for order ${order.orderNumber}`,
-        );
-      }
-    } else {
-      const scheduledFor =
-        orderData.selectedTiming?.type === "schedule"
-          ? new Date(
-              orderData.selectedTiming.year,
-              orderData.selectedTiming.month,
-              orderData.selectedTiming.date,
-              Number(orderData.selectedTiming.time.split(":")[0]),
-              Number(orderData.selectedTiming.time.split(":")[1]),
-            )
-          : null;
-
-      order = await prisma.order.create({
-        data: {
-          ...orderBase,
-          deliveryMethod: orderData.deliveryMethod || "whatsapp",
-          message: orderData.personalMessage || "",
-          senderName: orderData.deliveryDetails?.yourFullName || null,
-          sendType:
-            orderData.selectedTiming?.type === "immediate"
-              ? "sendImmediately"
-              : "scheduleLater",
-          scheduledFor,
-          senderEmail: orderData.deliveryDetails?.yourEmailAddress || null,
-        },
-      });
-    }
-
-    console.log("✅ Pending order created:", order.orderNumber);
-
-    // ==================== PAYMENT INTENT HANDLING ====================
-    const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-    const isMultiCart = orderData.sharedPaymentIntentId;
-
-    let paymentIntent;
-    let customerId = orderData.customerId;
-
-    if (isMultiCart) {
-      // ✅ REUSE existing payment intent from first order
-      console.log(
-        `🔗 Linking order ${order.orderNumber} to shared payment intent: ${orderData.sharedPaymentIntentId}`,
-      );
-
-      paymentIntent = await stripe.paymentIntents.retrieve(
-        orderData.sharedPaymentIntentId,
-      );
-
-      // ✅ OPTIMIZED: Calculate new amount and prepare metadata update
-      const currentAmount = paymentIntent.amount;
-      const newAmount = currentAmount + Math.round(totalAmount * 100);
-
-      const existingOrderKeys = Object.keys(paymentIntent.metadata).filter(
-        (k) => k.startsWith("order_"),
-      );
-      const nextOrderIndex = existingOrderKeys.length + 1;
-
-      paymentIntent = await stripe.paymentIntents.update(
-        orderData.sharedPaymentIntentId,
-        {
-          amount: newAmount,
-          description: `${paymentIntent.description} + ${order.orderNumber}`,
-          metadata: {
-            ...paymentIntent.metadata,
-            [`order_${nextOrderIndex}`]: order.id,
-            [`orderNumber_${nextOrderIndex}`]: order.orderNumber,
-            totalOrders: String(nextOrderIndex),
+          await prisma.bulkRecipient.createMany({
+            data: bulkRecipientsData,
+            skipDuplicates: true,
+          });
+        }
+      } else {
+        order = await prisma.order.create({
+          data: {
+            ...orderBase,
+            deliveryMethod: singleOrderData.deliveryMethod || "whatsapp",
+            message: singleOrderData.personalMessage || "",
+            senderName: singleOrderData.deliveryDetails?.yourFullName || null,
+            sendType: scheduledFor ? "scheduleLater" : "sendImmediately",
+            scheduledFor,
+            senderEmail: singleOrderData.deliveryDetails?.yourEmailAddress || null,
           },
-        },
-      );
-
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paymentIntentId: paymentIntent.id,
-        },
-      });
-
-      console.log(
-        `✅ Order ${order.orderNumber} linked to shared payment intent (Total: $${newAmount / 100})`,
-      );
-
-      return {
-        success: true,
-        data: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          clientSecret: paymentIntent.client_secret,
-          customerId: paymentIntent.customer,
-          paymentIntentId: paymentIntent.id,
-          isShared: true,
-        },
-      };
-    } else {
-      // ✅ CREATE NEW payment intent (first order in cart)
-      console.log(
-        `🆕 Creating new payment intent for order ${order.orderNumber}`,
-      );
-
-      const customerName = isBulkOrder
-        ? orderData.companyInfo.companyName
-        : orderData.deliveryDetails?.yourFullName || "Customer";
-
-      const customerEmail = isBulkOrder
-        ? orderData.companyInfo.contactEmail
-        : orderData.deliveryDetails?.yourEmailAddress || null;
-
-      if (!orderData.billingAddress) {
-        throw new ValidationError(
-          "Billing address is required for payment processing",
-        );
+        });
       }
 
-      const customerAddress = {
-        line1: orderData.billingAddress.line1,
-        line2: orderData.billingAddress.line2 || null,
-        city: orderData.billingAddress.city,
-        state: orderData.billingAddress.state,
-        postal_code: orderData.billingAddress.postalCode,
-        country: orderData.billingAddress.country,
-      };
+      createdOrders.push(order);
+    }
 
-      const customer = await stripe.customers.create({
-        name: customerName,
-        email: customerEmail,
-        address: customerAddress,
-        metadata: {
-          userId: String(userId),
-          firstOrderId: order.id,
-          orderNumber: order.orderNumber,
-        },
-      });
+    // ✅ GENERATE PAYFAST PAYMENT URL
+    const paymentSource = isMultiCart ? "cart" : "direct";
+    const payfastConfig = getPayFastConfig(createdOrders[0].id, paymentSource);
+    
+    const customerName = isMultiCart 
+      ? (cartOrders[0].deliveryDetails?.yourFullName || cartOrders[0].companyInfo?.companyName || "Customer")
+      : (orderData.deliveryDetails?.yourFullName || orderData.companyInfo?.companyName || "Customer");
 
-      const exportDescription = generateExportDescription(
-        orderData,
-        order.orderNumber,
-      );
+    const [firstName, ...lastNameParts] = customerName.split(" ");
+    const lastName = lastNameParts.join(" ") || "";
 
-      paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(totalAmount * 100),
-        currency: (orderData.selectedAmount.currency || "USD").toLowerCase(),
-        customer: customer.id,
-        description: exportDescription,
-        metadata: {
-          order_1: order.id,
-          orderNumber_1: order.orderNumber,
-          brandName: orderData.selectedBrand?.brandName || "Gift Card",
-          userId: String(userId),
-          totalOrders: "1",
-        },
-        statement_descriptor: "GIFT CARD",
-        statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
-        automatic_payment_methods: {
-          enabled: true,
-        },
-        shipping:
-          customerAddress.line1 !== "N/A"
-            ? {
-                name: customerName,
-                address: customerAddress,
-              }
-            : null,
-      });
+    const customerEmail = isMultiCart
+      ? (cartOrders[0].deliveryDetails?.yourEmailAddress || cartOrders[0].companyInfo?.contactEmail)
+      : (orderData.deliveryDetails?.yourEmailAddress || orderData.companyInfo?.contactEmail);
 
+    const itemNames = createdOrders.map(o => {
+      const orderDataForBrand = cartOrders.find(co => co.selectedBrand.id === o.brandId);
+      return orderDataForBrand?.selectedBrand?.brandName || "Gift Card";
+    }).join(", ");
+
+    const payfastOrderData = {
+      orderId: createdOrders[0].id,
+      orderNumber: createdOrders.map(o => o.orderNumber).join(","),
+      totalAmount: totalPaymentAmount,
+      itemName: isMultiCart ? `${createdOrders.length} Gift Cards` : itemNames,
+      description: isMultiCart 
+        ? `Multi-cart purchase - ${createdOrders.length} items`
+        : `Gift card order - ${createdOrders[0].orderNumber}`,
+      isBulkOrder: false,
+      quantity: createdOrders.length,
+      firstName,
+      lastName,
+      email: customerEmail,
+    };
+
+    const payfastData = buildPayFastData(payfastOrderData, payfastConfig);
+    const payfastUrl = buildPayFastUrlDirect(
+      payfastData,
+      payfastConfig.passphrase,
+      payfastConfig.isSandbox
+    );
+
+    // ✅ STORE PAYMENT INTENT IN ALL ORDERS
+    const sharedPaymentIntent = `PF_MULTI_${Date.now()}`;
+    for (const order of createdOrders) {
       await prisma.order.update({
         where: { id: order.id },
-        data: {
-          paymentIntentId: paymentIntent.id,
-        },
+        data: { paymentIntentId: sharedPaymentIntent },
       });
-
-      console.log(
-        "✅ PaymentIntent created for first order:",
-        paymentIntent.id,
-      );
-
-      return {
-        success: true,
-        data: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          clientSecret: paymentIntent.client_secret,
-          customerId: customer.id,
-          paymentIntentId: paymentIntent.id,
-          isShared: false,
-        },
-      };
     }
+
+    console.log(`✅ Created ${createdOrders.length} orders with payment intent`);
+    console.log(`💰 Total PayFast amount: ${totalPaymentAmount}`);
+
+    return {
+      success: true,
+      data: {
+        orderId: createdOrders[0].id,
+        orderIds: createdOrders.map(o => o.id),
+        orderNumber: createdOrders[0].orderNumber,
+        payfastUrl,
+        payfastData,
+      },
+    };
   } catch (error) {
-    console.error("❌ Pending order creation failed:", error);
-
-    if (
-      error instanceof ValidationError ||
-      error instanceof AuthenticationError
-    ) {
-      return {
-        success: false,
-        error: error.message,
-        statusCode: error.statusCode,
-        errorType: error.name,
-      };
-    }
-
+    console.error("❌ Order creation failed:", error);
     return {
       success: false,
       error: error.message || "An unexpected error occurred",
-      statusCode: 500,
-      errorType: "InternalServerError",
+      statusCode: error.statusCode || 500,
+      errorType: error.name || "InternalServerError",
     };
   }
 };
+
+// ==================== STEP 2: MARK ORDER AS PAID (Called by webhook) ====================
+export const markOrderAsPaid = async (orderId, paymentDetails) => {
+  try {
+    console.log(`💰 Marking order ${orderId} as PAID`);
+
+    // Check if order is scheduled for future
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { scheduledFor: true, sendType: true },
+    });
+
+    const isScheduled = order?.sendType === "scheduleLater" && order?.scheduledFor;
+    const processingStatus = isScheduled ? "PAYMENT_CONFIRMED" : "PAYMENT_CONFIRMED";
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: "COMPLETED",
+        paymentIntentId: paymentDetails.paymentIntentId,
+        paidAt: new Date(),
+        isPaid: true,
+        processingStatus,
+        lastProcessedAt: new Date(),
+      },
+    });
+
+    console.log(`✅ Order marked as PAID - ${isScheduled ? 'Scheduled for later' : 'Cron will process it'}`);
+
+    return {
+      success: true,
+      message: "Order marked as paid, processing will begin shortly",
+      data: {
+        orderId,
+        paymentStatus: "COMPLETED",
+        processingStatus,
+        isScheduled,
+      },
+    };
+  } catch (error) {
+    console.error(`❌ Failed to mark order ${orderId} as paid:`, error.message);
+
+    return {
+      success: false,
+      error: `Failed to mark order as paid: ${error.message}`,
+      statusCode: error.statusCode || 500,
+      errorType: error.name || "InternalServerError",
+    };
+  }
+};
+
 
 // ==================== STEP 2: COMPLETE ORDER AFTER PAYMENT (WEBHOOK) ====================
 export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
   try {
     console.log(`🔄 Starting order completion for: ${orderId}`);
 
-    // ✅ OPTIMIZED: Fetch order with only required relations
+    // Update order with payment details
     const order = await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -1600,17 +1535,21 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
       cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
       api_key: process.env.NEXT_CLOUDINARY_API_KEY,
       api_secret: process.env.NEXT_CLOUDINARY_API_SECRET,
-      secure: true
+      secure: true,
     });
 
     // Validate Cloudinary configuration
-    if (!process.env.NEXT_CLOUDINARY_CLOUD_NAME || 
-        !process.env.NEXT_CLOUDINARY_API_KEY || 
-        !process.env.NEXT_CLOUDINARY_API_SECRET) {
-      console.error("❌ Cloudinary configuration missing. Required env vars: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET");
+    if (
+      !process.env.NEXT_CLOUDINARY_CLOUD_NAME ||
+      !process.env.NEXT_CLOUDINARY_API_KEY ||
+      !process.env.NEXT_CLOUDINARY_API_SECRET
+    ) {
+      console.error(
+        "❌ Cloudinary configuration missing. Required env vars: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET",
+      );
     }
 
-    console.log("order, orderData",order, orderData)
+    console.log("order, orderData", order, orderData);
 
     // Generate random password (8 characters alphanumeric)
     const csvPassword = Math.random()
@@ -1663,7 +1602,8 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
 
     // Get brand logo and gift card image URLs
     const brandLogoUrl = orderData.selectedBrand?.logo || "";
-    const giftCardImageUrl = orderData.selectedSubCategory?.image || order?.occasion?.image || "";
+    const giftCardImageUrl =
+      orderData.selectedSubCategory?.image || order?.occasion?.image || "";
     const brandName = orderData.selectedBrand?.brandName || "Gift Card";
 
     const sendSmtpEmail = {
@@ -1713,22 +1653,22 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
                 <tr>
                   <td style="width: 60%; vertical-align: top; padding-right: 20px;">
-                    ${giftCardImageUrl ? 
-                      `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">` 
-                      : 
-                      `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    ${
+                      giftCardImageUrl
+                        ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">`
+                        : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                         <h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2>
                       </div>`
                     }
                   </td>
                   
                   <td style="width: 40%; vertical-align: top;">
-                    ${brandLogoUrl ? 
-                      `<div style="margin-bottom: 20px;">
+                    ${
+                      brandLogoUrl
+                        ? `<div style="margin-bottom: 20px;">
                         <img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 120px; height: auto; display: block;">
-                      </div>` 
-                      : 
-                      `<div style="margin-bottom: 20px;">
+                      </div>`
+                        : `<div style="margin-bottom: 20px;">
                         <h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">${brandName}</h3>
                       </div>`
                     }
@@ -1985,7 +1925,12 @@ This gift was sent by ${companyName}
   `;
 }
 
-async function sendBulkDistributionSummaryEmail(order, orderData, voucherCodes, bulkRecipients) {
+async function sendBulkDistributionSummaryEmail(
+  order,
+  orderData,
+  voucherCodes,
+  bulkRecipients,
+) {
   try {
     const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
     const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
@@ -1997,7 +1942,8 @@ async function sendBulkDistributionSummaryEmail(order, orderData, voucherCodes, 
       .toUpperCase();
 
     // Generate CSV content with recipient details
-    const csvHeader = "S.No,Recipient Name,Recipient Email,Voucher Code,Amount,Currency,Expiry Date\n";
+    const csvHeader =
+      "S.No,Recipient Name,Recipient Email,Voucher Code,Amount,Currency,Expiry Date\n";
     const csvRows = bulkRecipients
       .map((recipient, index) => {
         const voucherCode = voucherCodes[index];
@@ -2093,22 +2039,22 @@ async function sendBulkDistributionSummaryEmail(order, orderData, voucherCodes, 
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
                 <tr>
                   <td style="width: 60%; vertical-align: top; padding-right: 20px;">
-                    ${giftCardImageUrl ? 
-                      `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">` 
-                      : 
-                      `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    ${
+                      giftCardImageUrl
+                        ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">`
+                        : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                         <h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2>
                       </div>`
                     }
                   </td>
                   
                   <td style="width: 40%; vertical-align: top;">
-                    ${brandLogoUrl ? 
-                      `<div style="margin-bottom: 20px;">
+                    ${
+                      brandLogoUrl
+                        ? `<div style="margin-bottom: 20px;">
                         <img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 120px; height: auto; display: block;">
-                      </div>` 
-                      : 
-                      `<div style="margin-bottom: 20px;">
+                      </div>`
+                        : `<div style="margin-bottom: 20px;">
                         <h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">${brandName}</h3>
                       </div>`
                     }
@@ -2229,7 +2175,7 @@ function generateBulkSummaryEmailHTML(
   voucherCodes,
   bulkRecipients,
   csvUrl,
-  csvPassword
+  csvPassword,
 ) {
   // Get brand logo and gift card image URLs
   const brandLogoUrl = orderData.selectedBrand?.logo || "";
@@ -2274,22 +2220,22 @@ function generateBulkSummaryEmailHTML(
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
                 <tr>
                   <td style="width: 60%; vertical-align: top; padding-right: 20px;">
-                    ${giftCardImageUrl ? 
-                      `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">` 
-                      : 
-                      `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    ${
+                      giftCardImageUrl
+                        ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">`
+                        : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                         <h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2>
                       </div>`
                     }
                   </td>
                   
                   <td style="width: 40%; vertical-align: top;">
-                    ${brandLogoUrl ? 
-                      `<div style="margin-bottom: 20px;">
+                    ${
+                      brandLogoUrl
+                        ? `<div style="margin-bottom: 20px;">
                         <img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 120px; height: auto; display: block;">
-                      </div>` 
-                      : 
-                      `<div style="margin-bottom: 20px;">
+                      </div>`
+                        : `<div style="margin-bottom: 20px;">
                         <h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">${brandName}</h3>
                       </div>`
                     }
@@ -2360,7 +2306,6 @@ function generateBulkSummaryEmailHTML(
 </html>
   `;
 }
-
 
 function generateBulkSummaryEmailText(
   order,
@@ -2527,6 +2472,7 @@ export async function getOrderStatus(orderId) {
       currency: order.currency,
       quantity: order.quantity,
       paymentStatus: order.paymentStatus,
+      paymentIntentId: order.paymentIntentId,
       deliveryMethod: order.deliveryMethod,
       createdAt: order.createdAt,
       brand: order.brand,
@@ -2736,8 +2682,13 @@ export async function getOrders(params = {}) {
 
 export async function getOrderById(orderId) {
   try {
-    const order = await prisma.order.findUnique({
-      where: { orderNumber: orderId },
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { orderNumber: orderId },
+          { id: orderId },
+        ],
+      },
       include: {
         brand: {
           select: {
@@ -2805,7 +2756,10 @@ export async function getOrderById(orderId) {
       return { success: false, message: "Order not found", status: 404 };
     }
 
-    // Compute redeemedAt for the order based on its voucher codes
+    // -----------------------------
+    // REST OF YOUR LOGIC IS PERFECT
+    // -----------------------------
+
     const redeemedDates = order.voucherCodes
       .map((vc) => vc.redeemedAt)
       .filter(Boolean);
@@ -2815,70 +2769,43 @@ export async function getOrderById(orderId) {
         ? new Date(Math.max(...redeemedDates.map((d) => d.getTime())))
         : null;
 
-    // Transform voucher codes to match VoucherDetails component structure
     const transformedVoucherCodes = order.voucherCodes.map((vc) => {
-      // Calculate totals from redemptions
       const totalRedeemed = vc.redemptions.reduce(
         (sum, r) => sum + (r.amountRedeemed || 0),
-        0,
+        0
       );
 
-      const redemptionCount = vc.redemptions.length;
-
-      const lastRedemptionDate =
-        vc.redemptions.length > 0 ? vc.redemptions[0].redeemedAt : null;
-
-      // Determine voucher status - CHECK ORDER REDEMPTION STATUS FIRST
       let status = "Active";
 
-      // Priority 1: Check if order is cancelled
-      if (order.redemptionStatus === "Cancelled") {
-        status = "Cancelled";
-      }
-      // Priority 2: Check if voucher is fully redeemed
-      else if (vc.isRedeemed || vc.remainingValue === 0) {
-        status = "Redeemed";
-      }
-      // Priority 3: Check if voucher is expired
-      else if (vc.expiresAt && new Date(vc.expiresAt) < new Date()) {
+      if (order.redemptionStatus === "Cancelled") status = "Cancelled";
+      else if (vc.isRedeemed || vc.remainingValue === 0) status = "Redeemed";
+      else if (vc.expiresAt && new Date(vc.expiresAt) < new Date())
         status = "Expired";
-      }
-      // Priority 4: Check if order is inactive
-      else if (!order.isActive) {
-        status = "Inactive";
-      }
-
-      // Transform redemption history to match VoucherDetails format
-      const redemptionHistory = vc.redemptions.map((r) => ({
-        redeemedAt: r.redeemedAt,
-        amountRedeemed: r.amountRedeemed,
-        balanceAfter: r.balanceAfter,
-        transactionId: r.transactionId,
-        storeUrl: r.storeUrl,
-      }));
+      else if (!order.isActive) status = "Inactive";
 
       return {
         id: vc.id,
         code: vc.code,
         orderNumber: order.orderNumber,
-        user: {
-          firstName: order.user.firstName,
-          lastName: order.user.lastName,
-          email: order.user.email,
-        },
+        user: order.user,
         voucherType: vc.voucher?.denominationType || "fixed",
         totalAmount: vc.originalValue,
         remainingAmount: vc.remainingValue,
         partialRedemption: vc.voucher?.partialRedemption || false,
-        totalRedeemed: totalRedeemed,
+        totalRedeemed,
         pendingAmount: vc.remainingValue,
-        redemptionCount: redemptionCount,
-        lastRedemptionDate: lastRedemptionDate,
+        redemptionCount: vc.redemptions.length,
+        lastRedemptionDate: vc.redemptions[0]?.redeemedAt || null,
         expiresAt: vc.expiresAt,
-        status: status,
+        status,
         currency: order.currency,
-        redemptionHistory: redemptionHistory,
-        // Additional fields that might be useful
+        redemptionHistory: vc.redemptions.map((r) => ({
+          redeemedAt: r.redeemedAt,
+          amountRedeemed: r.amountRedeemed,
+          balanceAfter: r.balanceAfter,
+          transactionId: r.transactionId,
+          storeUrl: r.storeUrl,
+        })),
         pin: vc.pin,
         qrCode: vc.qrCode,
         tokenizedLink: vc.tokenizedLink,
@@ -2888,76 +2815,17 @@ export async function getOrderById(orderId) {
       };
     });
 
-    // Transform bulk recipients if they exist
-    const transformedBulkRecipients = order.bulkRecipients.map((br) => {
-      const voucherCode = br.voucherCode;
-
-      // Calculate voucher status if voucher code exists
-      let voucherStatus = "Pending";
-      if (voucherCode) {
-        const totalRedeemed =
-          voucherCode.redemptions?.reduce(
-            (sum, r) => sum + (r.amountRedeemed || 0),
-            0,
-          ) || 0;
-
-        if (order.redemptionStatus === "Cancelled") {
-          voucherStatus = "Cancelled";
-        } else if (voucherCode.isRedeemed || voucherCode.remainingValue === 0) {
-          voucherStatus = "Redeemed";
-        } else if (
-          voucherCode.expiresAt &&
-          new Date(voucherCode.expiresAt) < new Date()
-        ) {
-          voucherStatus = "Expired";
-        } else if (!order.isActive) {
-          voucherStatus = "Inactive";
-        } else {
-          voucherStatus = "Active";
-        }
-      }
-
-      return {
-        id: br.id,
-        recipientName: br.recipientName,
-        recipientEmail: br.recipientEmail,
-        recipientPhone: br.recipientPhone,
-        personalMessage: br.personalMessage,
-        emailSent: br.emailSent,
-        emailSentAt: br.emailSentAt,
-        emailDelivered: br.emailDelivered,
-        emailDeliveredAt: br.emailDeliveredAt,
-        emailError: br.emailError,
-        rowNumber: br.rowNumber,
-        voucherCodeId: br.voucherCodeId,
-        voucherCode: voucherCode
-          ? {
-              id: voucherCode.id,
-              code: voucherCode.code,
-              originalValue: voucherCode.originalValue,
-              remainingValue: voucherCode.remainingValue,
-              isRedeemed: voucherCode.isRedeemed,
-              redeemedAt: voucherCode.redeemedAt,
-              expiresAt: voucherCode.expiresAt,
-              status: voucherStatus,
-              redemptionCount: voucherCode.redemptions?.length || 0,
-            }
-          : null,
-      };
-    });
-
-    // Attach computed fields to the order object
-    const enrichedOrder = {
-      ...order,
-      redeemedAt: orderRedeemedAt,
-      voucherCodes: transformedVoucherCodes,
-      bulkRecipients: transformedBulkRecipients,
-      isBulkOrder: order.bulkRecipients.length > 0,
+    return {
+      success: true,
+      data: {
+        ...order,
+        redeemedAt: orderRedeemedAt,
+        voucherCodes: transformedVoucherCodes,
+        isBulkOrder: order.bulkRecipients.length > 0,
+      },
     };
-
-    return { success: true, data: enrichedOrder };
   } catch (error) {
-    console.error(`Error fetching order with ID ${orderId}:`, error);
+    console.error(`Error fetching order ${orderId}:`, error);
     return {
       success: false,
       message: "Failed to fetch order",
@@ -2966,6 +2834,7 @@ export async function getOrderById(orderId) {
     };
   }
 }
+
 
 export async function getOrdersByUserId(userId) {
   try {
@@ -3085,13 +2954,13 @@ export async function modifyRecipientAndResend(data) {
 
     // Determine order type based on bulkOrderNumber and deliveryMethod
     const isBulkOrderWithMultipleRecipients =
-      order.bulkOrderNumber && 
-      order.bulkRecipients && 
+      order.bulkOrderNumber &&
+      order.bulkRecipients &&
       order.bulkRecipients.length > 0 &&
       order.deliveryMethod === "multiple";
 
     const isBulkOrderWithSingleEmail =
-      order.bulkOrderNumber && 
+      order.bulkOrderNumber &&
       order.deliveryMethod === "email" &&
       (!order.bulkRecipients || order.bulkRecipients.length === 0);
 

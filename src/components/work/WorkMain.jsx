@@ -73,20 +73,7 @@ const WorkMain = () => {
         ))}
       </div>
 
-      {/* Features Grid */}
-      <div className='bg-linear-to-br from-blue-50 to-purple-50 rounded-3xl p-12 mb-20'>
-        <h2 className='text-3xl font-bold text-center mb-12 text-gray-800'>
-          Everything You Need to Succeed
-        </h2>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl m-auto'>
-          {features.map((feature, index) => (
-            <div key={index} className='flex items-center space-x-3 bg-white rounded-xl p-4 shadow-sm'>
-              <CheckCircle className='w-6 h-6 text-green-500 shrink-0' />
-              <span className='text-gray-700 font-medium'>{feature}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+     
 
       {/* CTA Section */}
       {/* <div className='text-center py-16 bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] rounded-3xl mb-20'>

@@ -131,7 +131,7 @@ const FeaturedBrands = ({
         {/* CTA */}
         <div className="text-center">
           <Link href="/gift">
-            <button className="px-6 sm:px-8 py-3 bg-linear-to-r from-[#FF6B9D] to-[#FFA06B] text-white rounded-full font-semibold hover:shadow-lg transition-all duration-300">
+            <button className="px-6 cursor-pointer sm:px-8 py-3 bg-linear-to-r from-[#FF6B9D] to-[#FFA06B] text-white rounded-full font-semibold hover:shadow-lg transition-all duration-300">
               See all Brands <span className="pl-2">▸</span>
             </button>
           </Link>

@@ -287,8 +287,10 @@ async function generateRedemptionDetails(whereClause) {
 }
 
 async function generateSettlementReports(startDate, endDate, brandFilter, shop, statusFilter) {
+  // ✅ Filter by period overlap, not createdAt
   const whereClause = {
-    createdAt: { gte: startDate, lte: endDate },
+    periodStart: { lte: endDate },
+    periodEnd:   { gte: startDate },
   };
 
   if (shop) {
@@ -303,6 +305,7 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
     whereClause.status = statusFilter;
   }
 
+  // ✅ Fetch ALL stored fields — no recalculation needed
   const settlements = await prisma.settlements.findMany({
     where: whereClause,
     select: {
@@ -311,18 +314,39 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
       settlementPeriod: true,
       periodStart: true,
       periodEnd: true,
+      // ── Sales ─────────────────────────────────────
+      totalSold: true,
+      totalSoldAmount: true,
+      // ── Redemptions ───────────────────────────────
+      totalRedeemed: true,
+      redeemedAmount: true,
+      // ── Outstanding ───────────────────────────────
+      outstanding: true,
+      outstandingAmount: true,
+      // ── Financials (maintained by cron/webhook) ───
+      commissionAmount: true,
+      vatAmount: true,
+      breakageAmount: true,
+      netPayable: true,
+      // ── Payments ──────────────────────────────────
       totalPaid: true,
+      remainingAmount: true,
+      paymentCount: true,
+      lastPaymentDate: true,
       paymentHistory: true,
+      paymentReference: true,
+      // ── Meta ──────────────────────────────────────
       status: true,
       paidAt: true,
-      paymentReference: true,
       notes: true,
+      createdAt: true,
       brand: {
         select: {
           brandName: true,
           brandTerms: {
             select: {
               settlementTrigger: true,
+              commissionType: true,
               commissionValue: true,
               vatRate: true,
             },
@@ -330,230 +354,155 @@ async function generateSettlementReports(startDate, endDate, brandFilter, shop, 
         },
       },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ settlementPeriod: "desc" }, { brand: { brandName: "asc" } }],
   });
 
-  // Batch fetch redemptions and vouchers for all settlements at once
-  const settlementIds = settlements.map(s => s.brandId);
-  const periodRanges = settlements.map(s => ({ 
-    brandId: s.brandId,
-    start: s.periodStart, 
-    end: s.periodEnd 
-  }));
+  const formattedSettlements = settlements.map((s) => {
+    const settlementTrigger = s.brand.brandTerms?.settlementTrigger || "onRedemption";
 
-  // Optimize by fetching all needed data in parallel
-  const [allRedemptions, allVouchers] = await Promise.all([
-    prisma.voucherRedemption.findMany({
-      where: {
-        OR: periodRanges.map(({ brandId, start, end }) => ({
-          redeemedAt: { gte: start, lte: end },
-          voucherCode: { order: { brandId } },
-        })),
-      },
-      select: {
-        amountRedeemed: true,
-        redeemedAt: true,
-        voucherCode: {
-          select: {
-            order: { select: { brandId: true } },
-          },
-        },
-      },
-    }),
-    prisma.voucherCode.findMany({
-      where: {
-        OR: periodRanges.map(({ brandId, start, end }) => ({
-          createdAt: { gte: start, lte: end },
-          order: { 
-            brandId,
-            paymentStatus: 'COMPLETED',
-          },
-        })),
-      },
-      select: {
-        originalValue: true,
-        remainingValue: true,
-        isRedeemed: true,
-        createdAt: true,
-        order: {
-          select: { brandId: true, createdAt: true },
-        },
-        redemptions: {
-          select: { amountRedeemed: true },
-        },
-      },
-    }),
-  ]);
-
-  const recalculatedSettlements = settlements.map((settlement) => {
-    const settlementTrigger = settlement.brand.brandTerms?.settlementTrigger || 'onRedemption';
-    
-    let totalSold = 0;
-    let totalSoldAmount = 0;
-    let totalRedeemed = 0;
-    let redeemedAmount = 0;
-    let outstanding = 0;
-    let outstandingAmount = 0;
-
-    if (settlementTrigger === 'onRedemption') {
-      // Filter redemptions for this settlement
-      const redemptions = allRedemptions.filter(r => 
-        r.voucherCode.order.brandId === settlement.brandId &&
-        r.redeemedAt >= settlement.periodStart &&
-        r.redeemedAt <= settlement.periodEnd
-      );
-
-      redeemedAmount = redemptions.reduce((sum, r) => sum + r.amountRedeemed, 0);
-      totalRedeemed = redemptions.length;
-
-      // Filter vouchers for this settlement
-      const issuedVouchers = allVouchers.filter(v =>
-        v.order.brandId === settlement.brandId &&
-        v.createdAt >= settlement.periodStart &&
-        v.createdAt <= settlement.periodEnd
-      );
-
-      totalSold = issuedVouchers.length;
-      totalSoldAmount = issuedVouchers.reduce((sum, v) => sum + v.originalValue, 0);
-      
-      outstanding = totalSold - totalRedeemed;
-      outstandingAmount = totalSoldAmount - redeemedAmount;
-
-    } else if (settlementTrigger === 'onPurchase') {
-      const soldVouchers = allVouchers.filter(v =>
-        v.order.brandId === settlement.brandId &&
-        v.createdAt >= settlement.periodStart &&
-        v.createdAt <= settlement.periodEnd
-      );
-
-      totalSold = soldVouchers.length;
-      totalSoldAmount = soldVouchers.reduce((sum, v) => sum + v.originalValue, 0);
-      redeemedAmount = totalSoldAmount;
-      
-      totalRedeemed = soldVouchers.filter(v => 
-        v.isRedeemed || v.remainingValue === 0 || v.redemptions.length > 0
-      ).length;
-      
-      outstanding = 0;
-      outstandingAmount = 0;
-    }
-
-    const commissionRate = settlement.brand.brandTerms?.commissionValue ?? 0;
-    const commissionAmount = redeemedAmount * (commissionRate / 100);
-    const vatRate = settlement.brand.brandTerms?.vatRate ?? 0;
-    const vatAmount = commissionAmount * (vatRate / 100);
-    const netPayable = redeemedAmount - commissionAmount + vatAmount;
-
-    const totalPaid = settlement.totalPaid || 0;
-    const remainingAmount = Math.max(0, netPayable - totalPaid);
-    
-    // Parse payment history safely
+    // ✅ Parse payment history safely
     let paymentHistory = [];
     try {
-      if (settlement.paymentHistory) {
-        paymentHistory = typeof settlement.paymentHistory === 'string' 
-          ? JSON.parse(settlement.paymentHistory)
-          : Array.isArray(settlement.paymentHistory) 
-            ? settlement.paymentHistory 
+      if (s.paymentHistory) {
+        paymentHistory =
+          typeof s.paymentHistory === "string"
+            ? JSON.parse(s.paymentHistory)
+            : Array.isArray(s.paymentHistory)
+            ? s.paymentHistory
             : [];
       }
     } catch (e) {
-      console.error('Error parsing payment history:', e);
+      console.error(`Error parsing paymentHistory for settlement ${s.id}:`, e);
     }
 
-    const paymentCount = paymentHistory.length;
-    
-    let lastPaymentDate = null;
-    if (paymentHistory.length > 0) {
-      const sortedPayments = [...paymentHistory].sort((a, b) => 
-        new Date(b.paidAt) - new Date(a.paidAt)
+    // ✅ Read stored financial values — correctly maintained per trigger:
+    //    onPurchase  → commissionAmount/vatAmount/netPayable set at purchase, 0 on redemption
+    //    onRedemption → commissionAmount/vatAmount/netPayable accumulated per redemption event
+    const commissionAmount = s.commissionAmount ?? 0;
+    const vatAmount        = s.vatAmount        ?? 0;
+    const breakageAmount   = s.breakageAmount   ?? 0;
+    const netPayable       = s.netPayable       ?? 0;
+    const totalPaid        = s.totalPaid        ?? 0;
+
+    // ✅ Recalculate remainingAmount live in case totalPaid was updated
+    const remainingAmount = Math.max(0, netPayable - totalPaid);
+
+    // ✅ Derive lastPaymentDate from paymentHistory if DB field is empty
+    let lastPaymentDate = s.lastPaymentDate || null;
+    if (!lastPaymentDate && paymentHistory.length > 0) {
+      const sorted = [...paymentHistory].sort(
+        (a, b) => new Date(b.paidAt) - new Date(a.paidAt)
       );
-      lastPaymentDate = sortedPayments[0].paidAt;
+      lastPaymentDate = sorted[0].paidAt;
     }
 
     return {
-      id: settlement.id,
-      brandId: settlement.brandId,
-      brandName: settlement.brand.brandName,
+      id:               s.id,
+      brandId:          s.brandId,
+      brandName:        s.brand.brandName,
       settlementTrigger,
-      settlementPeriod: settlement.settlementPeriod,
-      periodStart: settlement.periodStart,
-      periodEnd: settlement.periodEnd,
-      totalSold,
-      totalSoldAmount,
-      totalRedeemed,
-      redeemedAmount,
-      outstanding,
-      outstandingAmount,
-      commissionAmount: Math.round(commissionAmount),
-      vatAmount: Math.round(vatAmount),
-      netPayable: Math.round(netPayable),
-      totalPaid: Math.round(totalPaid),
-      remainingAmount: Math.round(remainingAmount),
-      paymentCount,
+      commissionType:   s.brand.brandTerms?.commissionType  || "Percentage",
+      commissionValue:  s.brand.brandTerms?.commissionValue ?? 0,
+      vatRate:          s.brand.brandTerms?.vatRate         ?? 0,
+      settlementPeriod: s.settlementPeriod,
+      periodStart:      s.periodStart,
+      periodEnd:        s.periodEnd,
+      // ── Sales ────────────────────────────────────────────────────────
+      totalSold:        s.totalSold        ?? 0,
+      totalSoldAmount:  s.totalSoldAmount  ?? 0,
+      // ── Redemptions ──────────────────────────────────────────────────
+      // onRedemption: incremented per redemption event
+      // onPurchase:   incremented when voucher is redeemed (tracking only)
+      totalRedeemed:  s.totalRedeemed  ?? 0,
+      redeemedAmount: s.redeemedAmount ?? 0,
+      // ── Outstanding ──────────────────────────────────────────────────
+      // onRedemption: outstanding = totalSold - totalRedeemed
+      // onPurchase:   outstanding decrements on redemption for tracking
+      outstanding:       s.outstanding       ?? 0,
+      outstandingAmount: s.outstandingAmount ?? 0,
+      // ── Financials ───────────────────────────────────────────────────
+      commissionAmount,
+      vatAmount,
+      breakageAmount,
+      netPayable,
+      // ── Payments ─────────────────────────────────────────────────────
+      totalPaid,
+      remainingAmount,
+      paymentCount:    s.paymentCount ?? paymentHistory.length,
       lastPaymentDate,
       paymentHistory,
-      status: settlement.status,
-      paidAt: settlement.paidAt,
-      paymentReference: settlement.paymentReference,
-      notes: settlement.notes,
+      // ── Meta ─────────────────────────────────────────────────────────
+      status:           s.status,
+      paidAt:           s.paidAt,
+      paymentReference: s.paymentReference,
+      notes:            s.notes,
     };
   });
 
-  const statusSummary = recalculatedSettlements.reduce((acc, s) => {
-    if (s.status && acc[s.status]) {
-      acc[s.status].count++;
-      acc[s.status].amount += s.netPayable;
-      acc[s.status].paid += s.totalPaid;
-      acc[s.status].remaining += s.remainingAmount;
+  // ✅ Status summary — keys match what frontend/CSV expects
+  const statusSummary = formattedSettlements.reduce(
+    (acc, s) => {
+      const key = s.status;
+      if (acc[key]) {
+        acc[key].count++;
+        acc[key].amount    += s.netPayable;
+        acc[key].paid      += s.totalPaid;
+        acc[key].remaining += s.remainingAmount;
+      }
+      return acc;
+    },
+    {
+      Pending:  { count: 0, amount: 0, paid: 0, remaining: 0 },
+      Paid:     { count: 0, amount: 0, paid: 0, remaining: 0 },
+      Partial:  { count: 0, amount: 0, paid: 0, remaining: 0 },
+      InReview: { count: 0, amount: 0, paid: 0, remaining: 0 },
+      Disputed: { count: 0, amount: 0, paid: 0, remaining: 0 },
     }
-    return acc;
-  }, {
-    Pending: { count: 0, amount: 0, paid: 0, remaining: 0 },
-    Paid: { count: 0, amount: 0, paid: 0, remaining: 0 },
-    Partial: { count: 0, amount: 0, paid: 0, remaining: 0 },
-    InReview: { count: 0, amount: 0, paid: 0, remaining: 0 },
-    Disputed: { count: 0, amount: 0, paid: 0, remaining: 0 },
-  });
+  );
 
   return {
     summary: {
-      totalSettlements: recalculatedSettlements.length,
-      totalAmount: recalculatedSettlements.reduce((sum, s) => sum + s.netPayable, 0),
-      totalCommission: recalculatedSettlements.reduce((sum, s) => sum + s.commissionAmount, 0),
-      totalVAT: recalculatedSettlements.reduce((sum, s) => sum + (s.vatAmount || 0), 0),
-      totalPaid: recalculatedSettlements.reduce((sum, s) => sum + (s.totalPaid || 0), 0),
-      totalRemaining: recalculatedSettlements.reduce((sum, s) => sum + (s.remainingAmount || 0), 0),
-      byStatus: Object.entries(statusSummary).map(([status, data]) => ({ 
-        status, 
-        ...data
-      })),
+      totalSettlements:    formattedSettlements.length,
+      totalSoldAmount:     formattedSettlements.reduce((sum, s) => sum + s.totalSoldAmount,  0),
+      totalRedeemedAmount: formattedSettlements.reduce((sum, s) => sum + s.redeemedAmount,   0),
+      totalCommission:     formattedSettlements.reduce((sum, s) => sum + s.commissionAmount, 0),
+      totalVAT:            formattedSettlements.reduce((sum, s) => sum + s.vatAmount,        0),
+      totalAmount:         formattedSettlements.reduce((sum, s) => sum + s.netPayable,       0),
+      totalPaid:           formattedSettlements.reduce((sum, s) => sum + s.totalPaid,        0),
+      totalRemaining:      formattedSettlements.reduce((sum, s) => sum + s.remainingAmount,  0),
+      byStatus: Object.entries(statusSummary).map(([status, data]) => ({ status, ...data })),
     },
-    settlements: recalculatedSettlements.map((s) => ({
-      id: s.id,
-      brandName: s.brandName,
+    settlements: formattedSettlements.map((s) => ({
+      id:               s.id,
+      brandName:        s.brandName,
       settlementTrigger: s.settlementTrigger,
+      commissionType:   s.commissionType,
+      commissionValue:  s.commissionValue,
+      vatRate:          s.vatRate,
       settlementPeriod: s.settlementPeriod,
-      periodStart: s.periodStart.toISOString().split("T")[0],
-      periodEnd: s.periodEnd.toISOString().split("T")[0],
-      totalSold: s.totalSold,
-      totalSoldAmount: s.totalSoldAmount,
-      totalRedeemed: s.totalRedeemed,
-      redeemedAmount: s.redeemedAmount,
-      outstanding: s.outstanding,
+      periodStart:      s.periodStart.toISOString().split("T")[0],
+      periodEnd:        s.periodEnd.toISOString().split("T")[0],
+      totalSold:        s.totalSold,
+      totalSoldAmount:  s.totalSoldAmount,
+      totalRedeemed:    s.totalRedeemed,
+      redeemedAmount:   s.redeemedAmount,
+      outstanding:      s.outstanding,
       outstandingAmount: s.outstandingAmount,
       commissionAmount: s.commissionAmount,
-      vatAmount: s.vatAmount,
-      netPayable: s.netPayable,
-      totalPaid: s.totalPaid,
-      remainingAmount: s.remainingAmount,
-      paymentCount: s.paymentCount,
-      lastPaymentDate: s.lastPaymentDate ? new Date(s.lastPaymentDate).toISOString().split("T")[0] : null,
-      paymentHistory: s.paymentHistory,
-      status: s.status,
-      paidAt: s.paidAt ? s.paidAt.toISOString().split("T")[0] : null,
+      vatAmount:        s.vatAmount,
+      breakageAmount:   s.breakageAmount,
+      netPayable:       s.netPayable,
+      totalPaid:        s.totalPaid,
+      remainingAmount:  s.remainingAmount,
+      paymentCount:     s.paymentCount,
+      lastPaymentDate:  s.lastPaymentDate
+        ? new Date(s.lastPaymentDate).toISOString().split("T")[0]
+        : null,
+      paymentHistory:   s.paymentHistory,
+      status:           s.status,
+      paidAt:           s.paidAt ? s.paidAt.toISOString().split("T")[0] : null,
       paymentReference: s.paymentReference,
-      notes: s.notes,
+      notes:            s.notes,
     })),
   };
 }

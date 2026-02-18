@@ -49,7 +49,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   // Handle navigation with unsaved changes check
   const handleNavigation = (e, href) => {
     e.preventDefault();
-    
+
     // Don't navigate if already on the page
     if (isActiveItem(href)) {
       onClose();
@@ -87,12 +87,34 @@ const Sidebar = ({ isOpen, onClose }) => {
       `}>
         <div className="flex items-center justify-between h-fit px-6 border-b border-gray-200 py-2">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-              <div className="w-4 h-4 bg-white rounded-sm"></div>
+            <div className="w-fit h-fit ">
+              <svg width="50" height="60" viewBox="0 0 50 60"  fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g filter="url(#filter0_d_2405_1275)">
+                  <rect x="15" y="12" width="34" height="34" rx="3" fill="url(#paint0_linear_2405_1275)" shapeRendering="crispEdges" />
+                  <path d="M32.3117 20.7734C33.4691 20.7734 34.579 21.2332 35.3973 22.0515C36.2156 22.8699 36.6754 23.9798 36.6754 25.1371C36.6754 26.2944 36.2156 27.4043 35.3973 28.2226C34.579 29.041 33.4691 29.5007 32.3117 29.5007C31.1544 29.5007 30.0445 29.041 29.2262 28.2226C28.4078 27.4043 27.9481 26.2944 27.9481 25.1371C27.9481 23.9798 28.4078 22.8699 29.2262 22.0515C30.0445 21.2332 31.1544 20.7734 32.3117 20.7734ZM32.3117 38.228C32.3117 38.228 41.039 38.228 41.039 36.0462C41.039 33.428 36.7845 30.5916 32.3117 30.5916C27.839 30.5916 23.5845 33.428 23.5845 36.0462C23.5845 38.228 32.3117 38.228 32.3117 38.228Z" fill="white" />
+                </g>
+                <defs>
+                  <filter id="filter0_d_2405_1275" x="-5" y="0" width="74" height="74" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
+                    <feOffset dy="8" />
+                    <feGaussianBlur stdDeviation="10" />
+                    <feComposite in2="hardAlpha" operator="out" />
+                    <feColorMatrix type="matrix" values="0 0 0 0 0.968627 0 0 0 0 0.486275 0 0 0 0 0.317647 0 0 0 0.2 0" />
+                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2405_1275" />
+                    <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_2405_1275" result="shape" />
+                  </filter>
+                  <linearGradient id="paint0_linear_2405_1275" x1="15" y1="24.5094" x2="47.364" y2="38.9591" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#ED457D" />
+                    <stop offset="1" stopColor="#FA8F42" />
+                  </linearGradient>
+                </defs>
+              </svg>
+
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-xs text-gray-500">Gift Card Management & Analytics</p>
+              <h1 className="text-md font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-xs text-gray-500 pb-2">Gift Card Management</p>
             </div>
           </div>
           {/* Close button - only show on screens smaller than md */}

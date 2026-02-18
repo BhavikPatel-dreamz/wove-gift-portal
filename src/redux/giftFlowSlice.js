@@ -11,6 +11,10 @@ const giftFlowSlice = createSlice({
     selectedSubCategory: null,
     selectedTiming: null,
     personalMessage: "",
+    editingIndex: null,
+    isEditMode: false,
+    editFlowType: null,
+    editingBulkOrderId: null,
     quantity: 0,
     selectedDenomination: null,
     deliveryMethod: "email",
@@ -27,9 +31,19 @@ const giftFlowSlice = createSlice({
       recipientEmailAddress: "",
       printDetails: {},
     },
+    deliveryFormEditReturn: {
+      enabled: false,
+      method: null,
+      returnStep: null,
+    },
     companyInfo: null,
     isConfirmed:false,
     isPaymentConfirmed: false,
+    csvFileData: {
+      fileName: null,
+      csvData: [],
+      csvError: ''
+    },
 
     // Brand filtering & pagination
     searchTerm: "",
@@ -142,6 +156,10 @@ const giftFlowSlice = createSlice({
         selectedSubCategory: null,
         selectedTiming: null,
         personalMessage: "",
+        editingIndex: null,
+        isEditMode: false,
+        editFlowType: null,
+        editingBulkOrderId: null,
         deliveryMethod: null,
         deliveryDetails: {
           yourName: "",
@@ -156,7 +174,17 @@ const giftFlowSlice = createSlice({
           recipientEmailAddress: "",
           printDetails: {},
         },
+        deliveryFormEditReturn: {
+          enabled: false,
+          method: null,
+          returnStep: null,
+        },
         companyInfo: null,
+        csvFileData: {
+          fileName: null,
+          csvData: [],
+          csvError: ''
+        },
         searchTerm: "",
         selectedCategory: "All Categories",
         currentPage: 1,
@@ -287,6 +315,19 @@ const giftFlowSlice = createSlice({
       state.currentPage = 1;
     },
 
+    // CSV File Data
+    setCsvFileData: (state, action) => {
+      state.csvFileData = action.payload;
+    },
+
+    clearCsvFileData: (state) => {
+      state.csvFileData = {
+        fileName: null,
+        csvData: [],
+        csvError: ''
+      };
+    },
+
     // Brands Data
     setPremiumBrands: (state, action) => {
       const brands = action.payload.map((brand) => {
@@ -387,6 +428,13 @@ const giftFlowSlice = createSlice({
     updateDeliveryDetail: (state, action) => {
       const { field, value } = action.payload;
       state.deliveryDetails[field] = value;
+    },
+    setDeliveryFormEditReturn: (state, action) => {
+      const { enabled = false, method = null, returnStep = null } = action.payload || {};
+      state.deliveryFormEditReturn = { enabled, method, returnStep };
+    },
+    clearDeliveryFormEditReturn: (state) => {
+      state.deliveryFormEditReturn = { enabled: false, method: null, returnStep: null };
     },
 
     setCompanyInfo: (state, action) => {
@@ -506,6 +554,8 @@ export const {
   setDeliveryMethod,
   setDeliveryDetails,
   updateDeliveryDetail,
+  setDeliveryFormEditReturn,
+  clearDeliveryFormEditReturn,
   setCompanyInfo,
   setOccasions,
   setSubCategories,
@@ -516,6 +566,8 @@ export const {
   setIsPaymentConfirmed,
   setQuantity,
   setSelectedDenomination,
+  setCsvFileData,
+  clearCsvFileData,
 } = giftFlowSlice.actions;
 
 export default giftFlowSlice.reducer;
