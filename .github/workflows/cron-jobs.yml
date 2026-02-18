@@ -8,6 +8,8 @@ on:
     - cron: '*/5 * * * *'
     # Scheduled reports - every hour at 15 minutes past
     - cron: '15 * * * *'
+    # Testing - every 2 minutes
+    - cron: '*/2 * * * *'
   
   # Allow manual triggering
   workflow_dispatch:
@@ -22,6 +24,7 @@ on:
           - voucher-processor
           - notification-processor
           - scheduled-reports
+          - testing
 
 env:
   VERCEL_URL: ${{ secrets.VERCEL_URL }}
@@ -71,3 +74,18 @@ jobs:
           curl -f -X POST \
             -H "Content-Type: application/json" \
             "${{ env.VERCEL_URL }}/api/cron/scheduled-reports" || exit 1
+
+  testing:
+    if: github.event.schedule == '*/2 * * * *' || github.event.inputs.job_type == 'testing' || github.event.inputs.job_type == 'all'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Testing
+        run: |
+          echo "VERCEL_URL: ${{ env.VERCEL_URL }}"
+          if [ -z "${{ env.VERCEL_URL }}" ]; then
+            echo "Error: VERCEL_URL is not set"
+            exit 1
+          fi
+          curl -f -X POST \
+            -H "Content-Type: application/json" \
+            "${{ env.VERCEL_URL }}/api/cron/testing" || exit 1
