@@ -30,7 +30,7 @@ export const voucherProcessorCron = () => {
   console.log("🎟️ [VOUCHER CRON] Voucher processor scheduled (every 10 seconds)");
 };
 
-async function processVouchersQueue() {
+export async function processVouchersQueue() {
   try {
     // ✅ CRITICAL: Process ONE order at a time
     const ordersToProcess = await findOrdersNeedingVouchers();

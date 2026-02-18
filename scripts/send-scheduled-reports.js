@@ -6,8 +6,10 @@ import { calculateNextDeliveryDate } from "../src/lib/utils.js";
 import pkg from "jspdf";
 const { jsPDF } = pkg;
 import autoTable from "jspdf-autotable";
+import path from "path";
+import { fileURLToPath } from "url";
 
-async function sendScheduledReports() {
+export async function sendScheduledReports() {
   console.log("========================================");
   console.log("Starting to send scheduled reports...");
   console.log("Current time:", new Date().toISOString());
@@ -22,6 +24,12 @@ async function sendScheduledReports() {
   console.log("Date range for query:");
   console.log("  From:", today.toISOString());
   console.log("  To:", tomorrow.toISOString());
+
+  const summary = {
+    total: 0,
+    processed: 0,
+    failed: 0,
+  };
 
   try {
     const reportsToSend = await prisma.scheduledReport.findMany({
@@ -44,10 +52,11 @@ async function sendScheduledReports() {
     });
 
     console.log(`\n✓ Found ${reportsToSend.length} reports to send.`);
+    summary.total = reportsToSend.length;
 
     if (reportsToSend.length === 0) {
       console.log("No reports scheduled for today. Exiting.");
-      return;
+      return summary;
     }
 
     for (const report of reportsToSend) {
@@ -114,20 +123,27 @@ async function sendScheduledReports() {
 
         console.log(`✓ Updated next delivery date to: ${nextDeliveryDate.toISOString()}`);
         console.log("✓ Report processing completed successfully");
+        summary.processed += 1;
       } catch (error) {
         console.error(`\n✗ ERROR processing report ID: ${report.id}`);
         console.error("Error details:", error.message);
         console.error("Stack trace:", error.stack);
+        summary.failed += 1;
       }
     }
 
     console.log("\n========================================");
     console.log("Finished sending scheduled reports.");
     console.log("========================================");
+    return summary;
   } catch (error) {
     console.error("\n✗ CRITICAL ERROR fetching reports to send:");
     console.error("Error details:", error.message);
     console.error("Stack trace:", error.stack);
+    return {
+      ...summary,
+      error: error.message,
+    };
   } finally {
     await prisma.$disconnect();
     console.log("Database connection closed.");
@@ -1018,8 +1034,15 @@ function generateEmailHTML(report, reportData, startDate, endDate) {
 
 // ==================== RUN ====================
 
-sendScheduledReports().catch((error) => {
-  console.error("\n✗ FATAL ERROR:");
-  console.error(error);
-  process.exit(1);
-});
+const isDirectExecution =
+  process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectExecution) {
+  sendScheduledReports().catch((error) => {
+    console.error("\n✗ FATAL ERROR:");
+    console.error(error);
+    process.exit(1);
+  });
+}
+
+export default sendScheduledReports;
