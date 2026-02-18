@@ -3,19 +3,15 @@
   "crons": [
     {
       "path": "/api/cron/voucher-processor",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/notification-processor",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 10 * * *"
     },
     {
       "path": "/api/cron/scheduled-reports",
-      "schedule": "*/30 * * * *"
-    },
-     {
-      "path": "/api/cron/testing",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 }
