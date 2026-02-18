@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, Clock } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 const ContactMain = () => {
   const [formData, setFormData] = useState({
@@ -8,10 +8,44 @@ const ContactMain = () => {
     subject: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState({ type: '', message: '' });
 
-  const handleSubmit = () => {
-    alert('Message sent successfully!');
-    setFormData({ name: '', email: '', subject: '', message: '' });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
+    setStatus({ type: '', message: '' });
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || 'Failed to send message.');
+      }
+
+      setStatus({ type: 'success', message: result.message });
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+      setStatus({
+        type: 'error',
+        message: error?.message || 'Failed to send message. Please try again.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -22,10 +56,10 @@ const ContactMain = () => {
   };
 
   return (
-    <div className="max-w-173 m-auto pt-18.75 min-h-screen px-4 sm:px-6 lg:px-8 pb-20">
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-173 m-auto pt-18.75 px-4 sm:px-6 lg:px-8 pb-20 text-black">
+      <div className="max-w-7xl mx-auto mt-15">
         {/* Header */}
-        <div className="text-center mb-12 sm:mb-16">
+        <div className="text-center mb-5 x sm:mb-16">
           <h1 className="text-3xl font-bold text-gray-900 my-4 px-4">
             Get In Touch
           </h1>
@@ -37,7 +71,7 @@ const ContactMain = () => {
         <div className="grid grid-cols-1">
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg p-[30px] ">
-              <div className="space-y-5 sm:space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
 
                 <div>
                   <input
@@ -46,8 +80,10 @@ const ContactMain = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all"
                     placeholder="John Doe"
+                    required
                   />
                 </div>
 
@@ -58,8 +94,10 @@ const ContactMain = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all"
                     placeholder="john@example.com"
+                    required
                   />
                 </div>
 
@@ -70,8 +108,10 @@ const ContactMain = () => {
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all"
                     placeholder="How can we help?"
+                    required
                   />
                 </div>
 
@@ -82,20 +122,31 @@ const ContactMain = () => {
                     value={formData.message}
                     onChange={handleChange}
                     rows={6}
+                    disabled={isSubmitting}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all resize-none"
                     placeholder="Tell us more about your inquiry..."
+                    required
                   />
                 </div>
 
                 <button
-                  onClick={handleSubmit}
+                  type="submit"
+                  disabled={isSubmitting}
                   className="w-full bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] text-white py-3 sm:py-4 px-6 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl active:scale-[0.98]"
                 >
-                  <span>Send Message</span>
+                  <span>{isSubmitting ? 'Sending...' : 'Send Message'}</span>
                   <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
+                {status.message && (
+                  <p
+                    className={`text-sm ${status.type === 'success' ? 'text-green-600' : 'text-red-500'}`}
+                    role="status"
+                  >
+                    {status.message}
+                  </p>
+                )}
 
-              </div>
+              </form>
 
             </div>
           </div>

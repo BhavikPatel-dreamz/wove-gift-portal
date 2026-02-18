@@ -1,4 +1,6 @@
-import { Instagram, Facebook, Linkedin } from "lucide-react";
+"use client";
+
+import { useState } from "react";
 
 const Footer = () => {
   const links = [
@@ -40,6 +42,61 @@ const Footer = () => {
     },
   ];
 
+  const [subscriberEmail, setSubscriberEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
+  const currentYear = new Date().getFullYear();
+
+  const handleSubscribe = async (event) => {
+    event.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
+    const email = subscriberEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      setFeedback({
+        type: "error",
+        message: "Please enter a valid email address.",
+      });
+      return;
+    }
+
+    setFeedback({ type: "", message: "" });
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || "Subscription failed.");
+      }
+
+      setSubscriberEmail("");
+      setFeedback({
+        type: "success",
+        message: result.message,
+      });
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        message: error?.message || "Unable to subscribe right now.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>    <footer className="bg-linear-to-b from-[#FEF8F6] to-[#FDF7F8] text-gray-800 pt-16 pb-20 px-6">
@@ -141,21 +198,36 @@ const Footer = () => {
               STAY IN THE LOOP
             </h4>
             <p className="text-[#4A4A4A] text-[16px] font-medium mb-5 leading-relaxed">
-              Get updates and special gifting moments
+              Get updates, special gifting moments, and announcements
             </p>
-            <div className="flex flex-col gap-3">
+            <form onSubmit={handleSubscribe} className="flex flex-col gap-3">
               <input
                 type="email"
-                placeholder="Enter your mail"
+                value={subscriberEmail}
+                onChange={(event) => setSubscriberEmail(event.target.value)}
+                placeholder="Enter your email"
+                disabled={isSubmitting}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all"
               />
-              <button className="bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 w-fit cursor-pointer">
-                Subscribe
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 w-fit cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {isSubmitting ? "Subscribing..." : "Subscribe"}
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               </button>
-            </div>
+              {feedback.message && (
+                <p
+                  className={`text-sm ${feedback.type === "success" ? "text-green-600" : "text-red-500"}`}
+                  role="status"
+                >
+                  {feedback.message}
+                </p>
+              )}
+            </form>
           </div>
         </div>
 
@@ -164,7 +236,7 @@ const Footer = () => {
     </footer>
       <div className="py-6 border-t border-gray-200 text-center bg-linear-to-b from-[#FEF8F6] to-[#FDF7F8]">
         <p className="text-gray-600 text-sm">
-          © 2025 Wove Gift. All rights reserved.
+          © {currentYear} Wove Gift. All rights reserved.
         </p>
       </div>
     </>

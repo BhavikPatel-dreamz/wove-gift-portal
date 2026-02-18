@@ -614,6 +614,18 @@ model ScheduledReport {
   @@index([nextDeliveryDate])
 }
 
+model NewsletterSubscription {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  wantsAnnouncements Boolean  @default(true)
+  source             String   @default("footer")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([wantsAnnouncements])
+  @@map("newsletter_subscriptions")
+}
+
 model ShopifySession {
   id          String    @id @default(cuid())
   shop        String    @unique

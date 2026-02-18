@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
-import path from 'path';
 
 export function proxy(request) {
   const { pathname } = request.nextUrl
@@ -137,7 +136,9 @@ export function proxy(request) {
     pathname.startsWith('/api/auth/signin/google') ||
     pathname.startsWith('/api/auth/callback/google') ||
     pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/api/orders') 
+    pathname.startsWith('/api/orders')  ||
+    pathname.startsWith('/api/newsletter') ||
+    pathname.startsWith('/api/contact')
   ) {
     return NextResponse.next()
   }
