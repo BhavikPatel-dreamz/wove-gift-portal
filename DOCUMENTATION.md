@@ -130,7 +130,6 @@ Layout/auth boundaries:
 
 | Endpoint | Methods | Purpose |
 | --- | --- | --- |
-| `/api/analytics` | `GET` | Analytics metrics for redemption + settlements by period |
 | `/api/auth/[...nextauth]` | `GET,POST` | NextAuth endpoints (Google OAuth flow) |
 | `/api/auth/login` | `POST` | Local login + session creation |
 | `/api/auth/logout` | `POST` | Session destruction |
@@ -141,7 +140,6 @@ Layout/auth boundaries:
 | `/api/cron/notification-processor` | `GET` | Notification queue processor trigger |
 | `/api/cron/scheduled-reports` | `GET` | Scheduled report dispatch trigger |
 | `/api/cron/voucher-processor` | `GET` | Voucher generation queue trigger |
-| `/api/dashboard` | `GET` | Dashboard stats endpoint |
 | `/api/giftcard` | `GET,POST` | Gift card fetch/create via Shopify integration |
 | `/api/giftcard/stats` | `GET` | Gift card aggregate stats for a shop/brand |
 | `/api/newsletter` | `POST` | Newsletter subscription upsert |
@@ -377,7 +375,6 @@ Seed users from `prisma/seed.js`:
 ## 14) Testing
 - Test command: `pnpm test`
 - Current coverage is minimal.
-- Existing test file: `src/app/api/dashboard/route.test.js`.
 
 ## 15) Current Risks and Gaps (from code)
 - Repository currently includes a committed `.env` file with real secrets. Rotate and remove from VCS.

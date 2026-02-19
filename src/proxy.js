@@ -21,8 +21,6 @@ export function proxy(request) {
 
   // API routes that don't need Shopify auth
   const publicApiRoutes = [
-    '/api/dashboard',
-    '/api/analytics',
     '/api/reports/custom',
     '/api/reports/schedule',
   ];
@@ -125,8 +123,6 @@ export function proxy(request) {
     pathname.startsWith('/api/shopify/shop') ||
     pathname.startsWith('/api/sync-shopify') ||
     pathname.startsWith('/api/payment/process-card') ||
-    // pathname.startsWith('/api/dashboard') || 
-    // pathname.startsWith('/api/analytics')  ||
     pathname.startsWith(`/api/reports/custom`) ||
     pathname.startsWith(`/api/reports/schedule`) ||
     pathname.startsWith('/api/save-card') ||

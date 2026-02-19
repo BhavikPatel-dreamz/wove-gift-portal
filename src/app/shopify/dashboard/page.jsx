@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Gift, DollarSign, CreditCard, Clock, TrendingUp, Users, Award, Package, Calendar, X } from 'lucide-react';
+import { getDashboardData } from '../../../lib/action/dashbordAction';
 
 // Skeleton Components
 const SkeletonMetricCard = ({ color = "blue" }) => {
@@ -134,19 +135,11 @@ const Dashboard = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams({
+        const data = await getDashboardData({
           period,
           ...(shop && { shop }),
-          ...(startDate && endDate && { startDate, endDate }),
+          ...(startDate && endDate ? { startDate, endDate } : {}),
         });
-
-        const response = await fetch(`/api/dashboard?${params.toString()}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-        
-        const data = await response.json();
         setDashboardData(data);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
