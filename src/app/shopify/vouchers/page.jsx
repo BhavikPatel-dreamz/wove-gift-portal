@@ -9,6 +9,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import VoucherDetails from "@/components/vouchers/VoucherDetails";
 import { useSession } from "@/contexts/SessionContext";
 import { useSearchParams } from "next/navigation";
+import { currencyList } from "../../../components/brandsPartner/currency";
 
 export default function VouchersManagement() {
     const session = useSession();
@@ -63,10 +64,10 @@ export default function VouchersManagement() {
                 userId: session?.user?.id,
                 userRole: session?.user?.role,
                 pageSize: 10,
-                shop:shop
+                shop: shop
             });
 
-          
+
 
             if (response.success) {
                 setVouchers(response.data);
@@ -87,8 +88,8 @@ export default function VouchersManagement() {
         }
     };
 
-    console.log("vouchers",vouchers);
-    
+    console.log("vouchers", vouchers);
+
 
     const fetchBulkOrderDetails = async (bulkOrderNumber, orderNumber) => {
         setBulkLoading(true);
@@ -255,44 +256,41 @@ export default function VouchersManagement() {
 
     const isAdmin = session?.user?.role === 'ADMIN';
 
+     const getCurrencySymbol = (code) =>
+        currencyList.find((c) => c.code === code)?.symbol || "";
+
     const customColumns = [
+        columnHelper.accessor("Brand", {
+            header: "Brands",
+            cell: (info) => (
+                <div>
+                    <div className="font-semibold text-gray-900">{info.row.original.brandName}</div>
+                </div>
+            ),
+        }),
         columnHelper.accessor("orderNumber", {
             header: "Order Number",
-            cell: (info) => {
-                const row = info.row.original;
-                return (
-                    <div className="flex items-center w-40">
-                        <span className="font-semibold text-gray-900">{info.getValue()}</span>
-                    </div>
-                );
-            },
+            cell: (info) => (
+                <div className="flex items-center w-40">
+                    <span className="font-semibold text-gray-900">{info.getValue()}</span>
+                </div>
+            ),
         }),
         columnHelper.accessor("bulkOrderNumber", {
             header: "Bulk Order Number",
-            cell: (info) => {
-                const row = info.row.original;
-                return (
-                    <div className="font-semibold text-gray-900 w-40">
-                        {info.getValue() || '-'}
-                        {/* {row.isBulkOrder && (
-              <div className="mt-1">
-                <span className="text-xs text-green-600">{row.voucherCount} vouchers</span>
-              </div>
-            )} */}
-                    </div>
-                );
-            },
+            cell: (info) => (
+                <div className="font-semibold text-gray-900 w-40">
+                    {info.getValue() || '-'}
+                </div>
+            ),
         }),
         columnHelper.accessor("code", {
             header: "Voucher Code",
-            cell: (info) => {
-                const row = info.row.original;
-                return (
-                    <div>
-                        <div className="font-semibold text-gray-900">{info.getValue()}</div>
-                    </div>
-                );
-            },
+            cell: (info) => (
+                <div>
+                    <div className="font-semibold text-gray-900">{info.getValue()}</div>
+                </div>
+            ),
         }),
         ...(isAdmin ? [
             columnHelper.accessor("user", {
@@ -300,7 +298,7 @@ export default function VouchersManagement() {
                 cell: (info) => {
                     const user = info.getValue();
                     return (
-                        <div className="max-w-20">
+                        <div>
                             <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
                             <div className="text-xs text-gray-500">{user?.email}</div>
                         </div>
@@ -310,11 +308,11 @@ export default function VouchersManagement() {
         ] : []),
         columnHelper.accessor("totalAmount", {
             header: "Total Amount",
-            cell: (info) => <div className="text-gray-900 font-medium">${info.getValue()?.toFixed(2)}</div>,
+            cell: (info) => <div className="text-gray-900 font-medium">{getCurrencySymbol(info.row.original.currency)}{info.getValue()?.toFixed(2)}</div>,
         }),
         columnHelper.accessor("remainingAmount", {
             header: "Remaining Amount",
-            cell: (info) => <div className="text-gray-900 font-medium">${info.getValue()?.toFixed(2)}</div>,
+            cell: (info) => <div className="text-gray-900 font-medium">{getCurrencySymbol(info.row.original.currency)}{info.getValue()?.toFixed(2)}</div>,
         }),
         columnHelper.accessor("status", {
             header: "Status",
@@ -323,13 +321,20 @@ export default function VouchersManagement() {
                 return <StatusBadge status={info.getValue()} statusBreakdown={row.statusBreakdown} />;
             },
         }),
-        columnHelper.accessor("lastRedemptionDate", {
-            header: "Last Redemption Date",
-            cell: (info) => (
-                <div className="text-gray-700">
-                    {info.getValue() ? new Date(info.getValue()).toLocaleDateString() : "-"}
-                </div>
-            ),
+        columnHelper.accessor("createdAt", {
+            header: "Issued Date",
+            cell: (info) => {
+                if (!info.getValue()) return <div className="text-gray-700">-</div>;
+
+                const date = new Date(info.getValue());
+                const formatted = date.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+
+                return <div className="text-gray-700">{formatted}</div>;
+            },
         }),
         columnHelper.display({
             id: "actions",

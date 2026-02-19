@@ -2,6 +2,55 @@
 
 import { prisma } from '../db';
 
+export async function getBrandsForReports({
+  activeOnly = true,
+  limit = 100,
+  shop,
+} = {}) {
+  try {
+    const whereClause = {};
+
+    if (activeOnly) {
+      whereClause.isActive = true;
+    }
+
+    if (shop && shop !== "undefined") {
+      whereClause.domain = shop;
+    }
+
+    const brands = await prisma.brand.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        brandName: true,
+        logo: true,
+        categoryName: true,
+        isActive: true,
+        isFeature: true,
+      },
+      orderBy: {
+        brandName: "asc",
+      },
+      take: limit,
+    });
+
+    return {
+      success: true,
+      data: brands,
+      count: brands.length,
+    };
+  } catch (error) {
+    console.error("Error fetching report brands:", error);
+    return {
+      success: false,
+      message: "Failed to fetch brands",
+      error: error.message,
+      data: [],
+      count: 0,
+    };
+  }
+}
+
 export async function getBrandsForClient({
   searchTerm = "",
   category = "All Categories",

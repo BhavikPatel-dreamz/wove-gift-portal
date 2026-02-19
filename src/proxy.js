@@ -4,8 +4,6 @@ import jwt from 'jsonwebtoken'
 export function proxy(request) {
   const { pathname } = request.nextUrl
 
-  console.log("pathname",pathname.startsWith('/api/brand') )
-
   // Public routes - no authentication required
   const publicRoutes = [
     '/api/shopify/auth',
@@ -21,8 +19,6 @@ export function proxy(request) {
 
   // API routes that don't need Shopify auth
   const publicApiRoutes = [
-    '/api/dashboard',
-    '/api/analytics',
     '/api/reports/custom',
     '/api/reports/schedule',
   ];
@@ -117,16 +113,12 @@ export function proxy(request) {
     pathname.startsWith('/api/auth/signup') ||
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/logout') ||
-    pathname.startsWith('/api/brand') ||
-    pathname.startsWith('/api/occasion') ||
     pathname.startsWith('/api/giftcard') ||
     pathname.startsWith('/api/shopify/products') ||
     pathname.startsWith('/api/shopify/gift-cards') ||
     pathname.startsWith('/api/shopify/shop') ||
     pathname.startsWith('/api/sync-shopify') ||
     pathname.startsWith('/api/payment/process-card') ||
-    // pathname.startsWith('/api/dashboard') || 
-    // pathname.startsWith('/api/analytics')  ||
     pathname.startsWith(`/api/reports/custom`) ||
     pathname.startsWith(`/api/reports/schedule`) ||
     pathname.startsWith('/api/save-card') ||

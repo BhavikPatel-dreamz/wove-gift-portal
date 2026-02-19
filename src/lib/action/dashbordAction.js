@@ -1,7 +1,10 @@
+"use server";
+
 import { prisma } from "../db";
 
 export async function getDashboardData(options = {}) {
   try {
+    console.log("options",options)
     const { period = "all", startDate, endDate, shop } = options;
     const dateRange = getDateRange(period, startDate, endDate);
 
