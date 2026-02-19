@@ -135,7 +135,6 @@ Layout/auth boundaries:
 | `/api/auth/logout` | `POST` | Session destruction |
 | `/api/auth/signup` | `POST` | Local signup + session creation |
 | `/api/brand-analytics` | `GET,POST` | Brand analytics read + settlement payment update |
-| `/api/brand` | `DELETE,GET,PATCH,POST` | Brand CRUD and list |
 | `/api/contact` | `POST` | Contact form email relay |
 | `/api/cron/notification-processor` | `GET` | Notification queue processor trigger |
 | `/api/cron/scheduled-reports` | `GET` | Scheduled report dispatch trigger |

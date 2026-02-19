@@ -4,6 +4,7 @@ import { Calendar, Download, FileText, AlertCircle, ChevronDown, Loader2, CheckC
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from 'react-hot-toast';
+import { getBrandsForReports } from '../../lib/action/brandFetch';
 
 // Confirmation Modal Component
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = "Confirm", cancelText = "Cancel" }) => {
@@ -86,13 +87,17 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
         const fetchBrands = async () => {
             try {
                 setBrandLoading(true);
-                const response = await fetch(`/api/brand?active=true${shop ? `&shop=${shop}` : ''}`);
-                const data = await response.json();
+                const data = await getBrandsForReports({
+                    activeOnly: true,
+                    ...(shop ? { shop } : {}),
+                });
                 if (data.success) {
                     setBrands(data.data);
                     if (notAllowSchedule) {
-                        setCustomReport({ ...customReport, brand: data?.data?.[0]?.id || 'all' })
+                        setCustomReport((prev) => ({ ...prev, brand: data?.data?.[0]?.id || 'all' }));
                     }
+                } else {
+                    toast.error(data.message || 'Failed to load brands');
                 }
             } catch (error) {
                 console.error('Failed to fetch brands:', error);
@@ -102,7 +107,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
             }
         };
         fetchBrands();
-    }, [shop]);
+    }, [shop, notAllowSchedule]);
 
     const quickReports = [
         {
