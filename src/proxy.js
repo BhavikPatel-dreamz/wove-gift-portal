@@ -113,7 +113,6 @@ export function proxy(request) {
     pathname.startsWith('/api/auth/signup') ||
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/logout') ||
-    pathname.startsWith('/api/occasion') ||
     pathname.startsWith('/api/giftcard') ||
     pathname.startsWith('/api/shopify/products') ||
     pathname.startsWith('/api/shopify/gift-cards') ||

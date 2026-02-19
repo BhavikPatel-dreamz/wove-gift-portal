@@ -141,7 +141,6 @@ Layout/auth boundaries:
 | `/api/giftcard` | `GET,POST` | Gift card fetch/create via Shopify integration |
 | `/api/giftcard/stats` | `GET` | Gift card aggregate stats for a shop/brand |
 | `/api/newsletter` | `POST` | Newsletter subscription upsert |
-| `/api/occasion` | `DELETE,PATCH,POST` | Occasion CRUD |
 | `/api/orders/by-payment-intent` | `POST` | Fetch all orders by Stripe paymentIntentId |
 | `/api/payment/create-intent` | `POST` | Stripe PaymentIntent creation |
 | `/api/payment/process-card` | `POST` | Legacy Stripe charge flow |
