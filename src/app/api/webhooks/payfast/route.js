@@ -9,8 +9,9 @@
  * 3. Find all orders related to this payment
  * 4. Mark orders as PAID (isPaid = true)
  * 5. Set processingStatus = PAYMENT_CONFIRMED
- * 6. Cron Job 1 (Voucher Processor) picks it up and creates vouchers
- * 7. Cron Job 2 (Notification Processor) sends notifications
+ * 6. Trigger Voucher Processor after 5 seconds
+ * 7. Trigger Notification Processor right after voucher processing completes
+ * 8. Retry Notification Processor after 5 seconds
  * 
  * Database checks ensure:
  * ✅ Order exists and is PENDING before marking as paid
@@ -20,6 +21,79 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { processVouchersQueue } from "../../../../lib/action/cronProcessor";
+import { processNotificationsQueue } from "../../../../lib/action/Notificationprocessorcron";
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function runPostPaymentProcessingSequence({ sequenceId, orderNumbers }) {
+  console.log(
+    `🚀 [${sequenceId}] Starting sequence for orders: ${
+      orderNumbers.join(", ") || "N/A"
+    }`
+  );
+
+  let voucherResult = null;
+
+  try {
+    voucherResult = await processVouchersQueue();
+    console.log(`✅ [${sequenceId}] Voucher processor completed:`, voucherResult);
+  } catch (error) {
+    console.error(`❌ [${sequenceId}] Voucher processor failed:`, error.message);
+  }
+
+  // Run notifications only after voucher processing has finished.
+  // This avoids "No orders ready for notification" while vouchers are still being created.
+  try {
+    const notificationResult1 = await processNotificationsQueue();
+    console.log(
+      `✅ [${sequenceId}] Notification processor #1 completed:`,
+      notificationResult1
+    );
+  } catch (error) {
+    console.error(
+      `❌ [${sequenceId}] Notification processor #1 failed:`,
+      error.message
+    );
+  }
+
+  await delay(5000);
+
+  try {
+    const notificationResult2 = await processNotificationsQueue();
+    console.log(
+      `✅ [${sequenceId}] Notification processor #2 completed:`,
+      notificationResult2
+    );
+  } catch (error) {
+    console.error(
+      `❌ [${sequenceId}] Notification processor #2 failed:`,
+      error.message
+    );
+  }
+
+  console.log(`🏁 [${sequenceId}] Sequence finished`);
+}
+
+function schedulePostPaymentProcessing({ paymentId, orderNumbers }) {
+  const safeOrderNumbers = Array.isArray(orderNumbers) ? orderNumbers : [];
+  const sequenceId = `${paymentId || "payfast"}-${Date.now()}`;
+
+  console.log(
+    `⏳ [${sequenceId}] Scheduling processors for orders: ${
+      safeOrderNumbers.join(", ") || "N/A"
+    }`
+  );
+
+  setTimeout(() => {
+    void runPostPaymentProcessingSequence({
+      sequenceId,
+      orderNumbers: safeOrderNumbers,
+    });
+  }, 5000);
+
+  return sequenceId;
+}
 
 /**
  * PayFast ITN Webhook Handler
@@ -244,24 +318,42 @@ export async function POST(request) {
     console.log(`  ✅ Successfully updated: ${successCount}`);
     console.log(`  ❌ Failed to update: ${failureCount}`);
     console.log(`  ⏱️ Processing time: ${processingTime}ms`);
-    console.log(`\n🚀 Cron jobs will process vouchers and send notifications`);
+    let backgroundSequenceId = null;
+
+    if (successCount > 0) {
+      const paidOrderNumbers = updateResults
+        .filter((r) => r.success)
+        .map((r) => r.orderNumber);
+
+      backgroundSequenceId = schedulePostPaymentProcessing({
+        paymentId: paymentDetails.paymentIntentId,
+        orderNumbers: paidOrderNumbers,
+      });
+    }
+
+    const responseTime = Date.now() - startTime;
+    console.log(`\n🚀 Returning webhook success immediately`);
+    console.log(`  ⏱️ Response time: ${responseTime}ms`);
     console.log("=".repeat(80) + "\n");
 
     return NextResponse.json(
       {
         success: true,
-        message: "Orders marked as paid - processing will begin shortly",
+        message:
+          "Orders marked as paid. Delayed processor sequence started in background.",
         summary: {
           totalOrders: ordersToUpdate.length,
           successfulUpdates: successCount,
           failedUpdates: failureCount,
-          processingTimeMs: processingTime,
+          processingTimeMs: responseTime,
         },
         results: updateResults,
         nextSteps: {
-          step1: "Job 1 (Voucher Processor) will create vouchers in ~10 seconds",
-          step2: "Job 2 (Notification Processor) will send notifications in ~15 seconds",
+          step1: "Voucher Processor scheduled at +5 seconds",
+          step2: "Notification Processor runs after voucher processing completes",
+          step3: "Notification Processor retries 5 seconds later",
         },
+        backgroundSequenceId,
       },
       { status: 200 }
     );
@@ -284,7 +376,7 @@ export async function POST(request) {
  * GET endpoint for webhook status check
  * Use this to verify the endpoint is alive
  */
-export async function GET(request) {
+export async function GET() {
   try {
     const orderStats = await prisma.order.groupBy({
       by: ["processingStatus"],
