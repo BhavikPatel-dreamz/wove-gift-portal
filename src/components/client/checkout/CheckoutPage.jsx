@@ -163,21 +163,32 @@ const CheckoutPage = () => {
       }
 
       setPendingOrderIds(result.data.orderIds);
+      const redirectUrl = result?.data?.payfastUrl;
+      if (!redirectUrl) {
+        setError("Payment link was not received.");
+        toast.error("Failed to get payment link.", { id: toastId });
+        setIsProcessing(false);
+        return null;
+      }
 
-      toast.success(`${result.data.orderIds.length} order(s) ready for payment`, { id: toastId });
+      toast.loading('Redirecting to PayFast...', { id: toastId });
+
+      // Keep button/loading state visible until browser leaves this page.
+      setTimeout(() => {
+        window.location.assign(redirectUrl);
+      }, 100);
 
       return {
         orderIds: result.data.orderIds,
-        payfastUrl: result.data.payfastUrl, // ✅ Redirect to PayFast
+        payfastUrl: redirectUrl,
       };
 
     } catch (error) {
       console.error('Error creating orders:', error);
       setError(error.message || "Failed to prepare orders.");
       toast.error(error.message || 'Failed to prepare orders.', { id: toastId });
-      return null;
-    } finally {
       setIsProcessing(false);
+      return null;
     }
   };
 
@@ -491,13 +502,7 @@ const CheckoutPage = () => {
             {/* PayFast Payment Button */}
             {selectedPaymentTab === 'payfast' && (
               <button
-                onClick={async () => {
-                  const result = await handleInitiatePayment();
-                  if (result && result.payfastUrl) {
-                    // ✅ Redirect to PayFast with combined payment
-                    window.location.href = result.payfastUrl;
-                  }
-                }}
+                onClick={handleInitiatePayment}
                 disabled={isProcessing || !isPaymentConfirmed}
                 className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 
                        hover:from-blue-600 hover:to-blue-700
@@ -524,13 +529,7 @@ const CheckoutPage = () => {
 
             {selectedPaymentTab === 'card' && (
               <button
-                onClick={async () => {
-                  const result = await handleInitiatePayment();
-                  if (result && result.payfastUrl) {
-                    // ✅ Redirect to PayFast with combined payment
-                    window.location.href = result.payfastUrl;
-                  }
-                }}
+                onClick={handleInitiatePayment}
                 disabled={isProcessing || !isPaymentConfirmed}
                 className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600

@@ -203,29 +203,39 @@ const PaymentStep = () => {
 
       if (result?.success) {
         setPendingOrderId(result.data.orderId);
-        
-        toast.dismiss(toastId);
-        
-        console.log('✅ PayFast URL received:', result.data.payfastUrl);
-        
-        // Direct redirect without showing loading screen
-        window.location.href = result.data.payfastUrl;
-        
+
+        const redirectUrl = result?.data?.payfastUrl;
+        if (!redirectUrl) {
+          setError("Payment link was not received.");
+          toast.error("Failed to get payment link.", { id: toastId });
+          setIsProcessing(false);
+          return null;
+        }
+
+        console.log('✅ PayFast URL received:', redirectUrl);
+        toast.loading('Redirecting to PayFast...', { id: toastId });
+        setPaymentSubmitted(true);
+
+        // Keep button loading visible until browser leaves this page.
+        setTimeout(() => {
+          window.location.assign(redirectUrl);
+        }, 100);
+
         return {
           orderId: result.data.orderId
         };
       } else {
         setError(result.error);
         toast.error(result.error, { id: toastId });
+        setIsProcessing(false);
         return null;
       }
     } catch (error) {
       console.error('Payment initiation error:', error);
       setError("Failed to prepare order.");
       toast.error('Failed to prepare order.', { id: toastId });
-      return null;
-    } finally {
       setIsProcessing(false);
+      return null;
     }
   };
 
