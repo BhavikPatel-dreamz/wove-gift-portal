@@ -6,15 +6,15 @@ const Footer = () => {
   const links = [
     { name: "Home", path: "/" },
     { name: "How It Works", path: "/work" },
-    { name: "Brands", path: "/gift" },
-    { name: "Reviews", path: "/reviews" }
+    { name: "Contact Us", path: "/contact" },
+    { name: "Brands", path: "/gift" }
   ];
 
   const links2 = [
     { name: "Terms & Conditions", path: "/termsandcondition" },
     { name: "Privacy Policy", path: "/privacy" },
-    { name: "FAQs / Help Center", path: "/faq" },
-    { name: "Contact Us", path: "/contact" }
+    { name: "PAIA Manual", path: "/paia-manual" },
+    { name: "Refund Policy", path: "/refund-policy" }
   ];
 
   const socialLinks = [
@@ -138,11 +138,11 @@ const Footer = () => {
                  flex items-center justify-center 
                  "
                   >
-                   
-                      <span className="w-5 h-5">
-                        {icon}
-                      </span>
-                   
+
+                    <span className="w-5 h-5">
+                      {icon}
+                    </span>
+
                   </a>
 
                 </div>

@@ -96,31 +96,21 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <div className="w-fit h-fit">
-              <svg width="60" height="70" viewBox="0 0 60 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g filter="url(#filter0_d_2405_1275)">
-                  <rect x="15" y="12" width="34" height="34" rx="3" fill="url(#paint0_linear_2405_1275)" shapeRendering="crispEdges" />
-                  <path d="M32.3117 20.7734C33.4691 20.7734 34.579 21.2332 35.3973 22.0515C36.2156 22.8699 36.6754 23.9798 36.6754 25.1371C36.6754 26.2944 36.2156 27.4043 35.3973 28.2226C34.579 29.041 33.4691 29.5007 32.3117 29.5007C31.1544 29.5007 30.0445 29.041 29.2262 28.2226C28.4078 27.4043 27.9481 26.2944 27.9481 25.1371C27.9481 23.9798 28.4078 22.8699 29.2262 22.0515C30.0445 21.2332 31.1544 20.7734 32.3117 20.7734ZM32.3117 38.228C32.3117 38.228 41.039 38.228 41.039 36.0462C41.039 33.428 36.7845 30.5916 32.3117 30.5916C27.839 30.5916 23.5845 33.428 23.5845 36.0462C23.5845 38.228 32.3117 38.228 32.3117 38.228Z" fill="white" />
-                </g>
+              <svg width="49" height="49" viewBox="0 0 49 49" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 0H39C44.5228 0 49 4.47715 49 10V39C49 44.5228 44.5228 49 39 49H10C4.47715 49 0 44.5228 0 39V10C0 4.47715 4.47715 0 10 0Z" fill="url(#paint0_linear_3906_4784)" />
+                <path d="M35.3889 19.0557H13.6111C12.8594 19.0557 12.25 19.6651 12.25 20.4169V23.1391C12.25 23.8908 12.8594 24.5002 13.6111 24.5002H35.3889C36.1406 24.5002 36.75 23.8908 36.75 23.1391V20.4169C36.75 19.6651 36.1406 19.0557 35.3889 19.0557Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M24.5 19.0557V36.7502" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M34.0283 24.5V34.0278C34.0283 34.7498 33.7415 35.4422 33.2309 35.9527C32.7204 36.4632 32.028 36.75 31.306 36.75H17.6949C16.973 36.75 16.2805 36.4632 15.77 35.9527C15.2595 35.4422 14.9727 34.7498 14.9727 34.0278V24.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M18.3755 19.0551C17.473 19.0551 16.6075 18.6966 15.9694 18.0585C15.3312 17.4203 14.9727 16.5548 14.9727 15.6524C14.9727 14.7499 15.3312 13.8844 15.9694 13.2462C16.6075 12.6081 17.473 12.2496 18.3755 12.2496C19.6885 12.2267 20.9752 12.8638 22.0678 14.0778C23.1604 15.2918 24.0081 17.0263 24.5005 19.0551C24.9928 17.0263 25.8406 15.2918 26.9332 14.0778C28.0257 12.8638 29.3124 12.2267 30.6255 12.2496C31.528 12.2496 32.3935 12.6081 33.0316 13.2462C33.6698 13.8844 34.0283 14.7499 34.0283 15.6524C34.0283 16.5548 33.6698 17.4203 33.0316 18.0585C32.3935 18.6966 31.528 19.0551 30.6255 19.0551" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 <defs>
-                  <filter id="filter0_d_2405_1275" x="-5" y="0" width="74" height="74" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha" />
-                    <feOffset dy="8" />
-                    <feGaussianBlur stdDeviation="10" />
-                    <feComposite in2="hardAlpha" operator="out" />
-                    <feColorMatrix type="matrix" values="0 0 0 0 0.968627 0 0 0 0 0.486275 0 0 0 0 0.317647 0 0 0 0.2 0" />
-                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_2405_1275" />
-                    <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_2405_1275" result="shape" />
-                  </filter>
-                  <linearGradient id="paint0_linear_2405_1275" x1="15" y1="24.5094" x2="47.364" y2="38.9591" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#ED457D" />
-                    <stop offset="1" stopColor="#FA8F42" />
+                  <linearGradient id="paint0_linear_3906_4784" x1="49" y1="18.0283" x2="2.3578" y2="38.8528" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#ED457D" />
+                    <stop offset="1" stop-color="#FA8F42" />
                   </linearGradient>
                 </defs>
               </svg>
-
             </div>
-             <div>
+            <div>
               <h1 className="text-sm font-bold text-gray-900">Admin Dashboard</h1>
               <p className="text-xs text-gray-500 mb-2">Gift Card Management</p>
             </div>
