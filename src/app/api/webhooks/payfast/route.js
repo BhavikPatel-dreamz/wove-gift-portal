@@ -57,7 +57,7 @@ async function runPostPaymentProcessingSequence({ sequenceId, orderNumbers }) {
     );
   }
 
-  await delay(5000);
+  await delay(2000);
 
   try {
     const notificationResult2 = await processNotificationsQueue();
@@ -90,7 +90,7 @@ function schedulePostPaymentProcessing({ paymentId, orderNumbers }) {
       sequenceId,
       orderNumbers: safeOrderNumbers,
     });
-  }, 5000);
+  }, 2000);
 
   return sequenceId;
 }
