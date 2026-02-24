@@ -95,9 +95,9 @@ const Sidebar = ({ isOpen, onClose }) => {
         md:translate-x-0 md:static md:inset-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center justify-between h-fit px-6 border-b border-gray-200 py-2">
+        <div className="flex items-center justify-between h-20 px-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="w-fit h-fit ">
+            <div className="w-fit h-fit">
               <svg width="49" height="49" viewBox="0 0 49 49" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10 0H39C44.5228 0 49 4.47715 49 10V39C49 44.5228 44.5228 49 39 49H10C4.47715 49 0 44.5228 0 39V10C0 4.47715 4.47715 0 10 0Z" fill="url(#paint0_linear_3906_4784)" />
                 <path d="M35.3889 19.0557H13.6111C12.8594 19.0557 12.25 19.6651 12.25 20.4169V23.1391C12.25 23.8908 12.8594 24.5002 13.6111 24.5002H35.3889C36.1406 24.5002 36.75 23.8908 36.75 23.1391V20.4169C36.75 19.6651 36.1406 19.0557 35.3889 19.0557Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -114,7 +114,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h1 className="text-md font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-xs text-gray-500 pb-2">Gift Card Management</p>
+              <p className="text-xs text-gray-500">Gift Card Management</p>
             </div>
           </div>
           {/* Close button - only show on screens smaller than md */}

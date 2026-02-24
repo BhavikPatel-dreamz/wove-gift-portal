@@ -37,8 +37,8 @@ const Header = ({ onMenuClick }) => {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-5 sm:px-6">
-      <div className="flex items-center justify-between">
+    <header className="bg-white border-b border-gray-200 px-4 sm:px-6 h-20 flex items-center">
+      <div className="flex w-full items-center justify-between">
         {/* Left side: menu & search */}
         <div className="flex items-center space-x-4">
           {/* Menu button - hidden on md and above */}

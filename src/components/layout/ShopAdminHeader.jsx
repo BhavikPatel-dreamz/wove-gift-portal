@@ -2,8 +2,8 @@ import { Search } from "lucide-react";
 
 const ShopAdminHeader = ({ shopParam }) => {
     return (
-        <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
-            <div className="flex items-center justify-between">
+        <header className="bg-white border-b border-gray-200 px-4 lg:px-6 h-20 flex items-center">
+            <div className="flex w-full items-center justify-between">
                 <div className="flex items-center">
                     <div className="relative max-w-md flex gap-2">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
