@@ -2,13 +2,13 @@
 import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { goBack, goNext, setSelectedAmount } from "../../../redux/giftFlowSlice";
+import { clearDeliveryFormEditReturn, goBack, goNext, setCurrentStep, setSelectedAmount } from "../../../redux/giftFlowSlice";
 import { useSearchParams } from "next/navigation";
 import { currencyList } from "../../../components/brandsPartner/currency";
 
 const GiftCardSelector = () => {
   const dispatch = useDispatch();
-  const { selectedBrand, selectedAmount } = useSelector((state) => state.giftFlowReducer);
+  const { selectedBrand, selectedAmount, deliveryFormEditReturn } = useSelector((state) => state.giftFlowReducer);
 
   const voucherData = selectedBrand?.vouchers[0];
   const denominationType = voucherData?.denominationType;
@@ -33,11 +33,23 @@ const GiftCardSelector = () => {
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "R";
 
+  const goToNextStep = () => {
+    if (deliveryFormEditReturn?.enabled) {
+      const returnStep = deliveryFormEditReturn?.returnStep || 7;
+      dispatch(setCurrentStep(returnStep));
+      if (returnStep !== 7) {
+        dispatch(clearDeliveryFormEditReturn());
+      }
+      return;
+    }
+    dispatch(goNext());
+  };
+
   const handleAmountClick = (amount) => {
     setLocalSelectedAmount(amount);
     dispatch(setSelectedAmount(amount));
     setTimeout(() => {
-      dispatch(goNext());
+      goToNextStep();
     }, 300);
   };
 
@@ -61,7 +73,7 @@ const GiftCardSelector = () => {
     dispatch(setSelectedAmount(customVoucher));
 
     setTimeout(() => {
-      dispatch(goNext());
+      goToNextStep();
     }, 300);
   };
 
@@ -78,13 +90,7 @@ const GiftCardSelector = () => {
   };
 
   return (
-    <div
-      className="
-        min-h-screen 
-       bg-[linear-gradient(0deg,#fff,#fff),linear-gradient(126.43deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)]
-        py-30 px-4
-      "
-    >
+    <div className="min-h-screen bg-white bg-[linear-gradient(126deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)] py-30 px-4">
       <div className="max-w-7xl mx-auto sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
@@ -193,7 +199,7 @@ const GiftCardSelector = () => {
             {presetAmounts.map((amount) => (
               <button
                 key={amount.id}
-                className={`relative bg-white rounded-xl border-2 p-8 w-45 transition-all duration-200 hover:shadow-md ${localSelectedAmount?.id === amount.id
+                className={`cursor-pointer relative bg-white rounded-xl border-2 p-8 w-45 transition-all duration-200 hover:shadow-md ${localSelectedAmount?.id === amount.id
                   ? 'border-purple-400 shadow-lg scale-105'
                   : 'border-gray-200 hover:border-gray-300'
                   }`}
@@ -281,7 +287,7 @@ const GiftCardSelector = () => {
                   {/* Button */}
                   <button
                     onClick={handleCustomAmountSelect}
-                    className="w-full sm:w-auto bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white px-6 py-3 rounded-3xl font-bold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
+                    className="cursor-pointer w-full sm:w-auto bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white px-6 py-3 rounded-3xl font-bold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
                   >
                     Select
                     <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">

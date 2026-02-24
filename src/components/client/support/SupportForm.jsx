@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createSupportRequest } from '@/lib/action/supportAction';
 import { getOrdersByUserId } from '@/lib/action/orderAction';
+import CustomDropdown from '../../ui/CustomDropdown';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/contexts/SessionContext';
 
@@ -22,6 +23,21 @@ export default function SupportForm() {
   const [showSuccessFull, setShowSuccessFull] = useState(false);
   const [loading, setLoading] = useState(false);
   const [supportId, setSupportId] = useState('');
+
+  const handleOrderChange = useCallback((value) => {
+    setFormData((prev) => ({ ...prev, orderNumber: value }));
+  }, []);
+
+  const handleReasonChange = useCallback((value) => {
+    setFormData((prev) => ({ ...prev, reason: value }));
+  }, []);
+
+  const reasonOptions = [
+    { value: 'cancel', label: 'Cancel Gift' },
+    { value: 'modify', label: 'Modify Gift' },
+    { value: 'wrong-details', label: 'Wrong Details' },
+    { value: 'other', label: 'Other' },
+  ];
 
   // Memoized handler to prevent recreation
   const handleChange = useCallback((e) => {
@@ -87,6 +103,15 @@ export default function SupportForm() {
     router.push('/');
   }, [router]);
 
+  const orderOptions = useMemo(
+    () =>
+      orders.map((order) => ({
+        value: order.orderNumber,
+        label: order.orderNumber,
+      })),
+    [orders]
+  );
+
   // Check if form is valid
   const isFormValid = useMemo(() => {
     return formData.name && formData.email && formData.reason;
@@ -111,7 +136,7 @@ export default function SupportForm() {
               value={formData.name}
               onChange={handleChange}
               placeholder="Enter Your Name"
-              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none"
+              className="w-full text-sm font-normal text-[#4A4A4A] px-2 py-1 lg:py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none"
               required
             />
 
@@ -121,7 +146,7 @@ export default function SupportForm() {
               value={formData.email}
               onChange={handleChange}
               placeholder="Enter Your Email"
-              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none"
+              className="w-full text-sm font-normal text-[#4A4A4A] px-2 py-1 lg:py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none"
               required
             />
 
@@ -130,36 +155,24 @@ export default function SupportForm() {
               value={formData.phone}
               onChange={handleChange}
               placeholder="Enter Phone / WhatsApp"
-              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none"
+              className="w-full text-sm font-normal text-[#4A4A4A]  px-2 py-1 lg:py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none"
             />
 
-            <select
-              id="orderNumber"
+            <CustomDropdown
               value={formData.orderNumber}
-              onChange={handleChange}
-              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-gray-600"
-            >
-              <option value="">Select Voucher / Order Number</option>
-              {orders.map((order) => (
-                <option key={order.id} value={order.orderNumber}>
-                  {order.orderNumber}
-                </option>
-              ))}
-            </select>
+              onChange={handleOrderChange}
+              options={orderOptions} 
+              placeholder="Select Voucher / Order Number"
+              className="w-full border border-gray-200 rounded-xl"
+            />
 
-            <select
-              id="reason"
+            <CustomDropdown
               value={formData.reason}
-              onChange={handleChange}
-              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none text-gray-600"
-              required
-            >
-              <option value="">Select Reason</option>
-              <option value="cancel">Cancel Gift</option>
-              <option value="modify">Modify Gift</option>
-              <option value="wrong-details">Wrong Details</option>
-              <option value="other">Other</option>
-            </select>
+              onChange={handleReasonChange}
+              options={reasonOptions}
+              placeholder="Select Reason"
+             className="w-full border border-gray-200 rounded-xl"
+            />
 
             <textarea
               id="message"
@@ -167,7 +180,7 @@ export default function SupportForm() {
               onChange={handleChange}
               rows={4}
               placeholder="Your Message (Optional)"
-              className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none resize-none"
+              className="w-full text-sm font-normal text-[#4A4A4A]  px-2 py-1 lg:py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 outline-none resize-none"
             />
 
             <button

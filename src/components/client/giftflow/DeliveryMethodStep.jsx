@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, X } from "lucide-react";
-import { goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
+import { clearDeliveryFormEditReturn, goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
 import MailIcons from "../../../icons/MailIcon";
 import WhatsupIcon from '../../../icons/WhatsupIcon';
 import PrinterIcon from '../../../icons/PrinterIcon';
@@ -42,16 +42,18 @@ const DeliveryMethodStep = () => {
   const dispatch = useDispatch();
   const session = useSession();
 
-  
+
   const {
     deliveryMethod,
+    deliveryFormEditReturn,
     deliveryDetails,
     selectedAmount,
     personalMessage,
     selectedSubCategory,
-    selectedBrand
+    selectedBrand,
+    selectedTiming
   } = useSelector((state) => state.giftFlowReducer);
-  
+
   const [selectedMethod, setSelectedMethod] = useState(deliveryMethod || null);
   const [showModal, setShowModal] = useState(false);
   const [errors, setErrors] = useState({});
@@ -105,6 +107,24 @@ const DeliveryMethodStep = () => {
       }));
     }
   }, [deliveryMethod, deliveryDetails]);
+
+  // If user came from delivery preview edit flow, reopen the same method modal automatically.
+  useEffect(() => {
+    if (!deliveryFormEditReturn?.enabled) return;
+
+    const methodToOpen = deliveryFormEditReturn.method || deliveryMethod || selectedMethod;
+    if (!methodToOpen) return;
+
+    setSelectedMethod(methodToOpen);
+    setShowModal(true);
+    setErrors({});
+
+    if (deliveryMethod !== methodToOpen) {
+      dispatch(setDeliveryMethod(methodToOpen));
+    }
+
+    dispatch(clearDeliveryFormEditReturn());
+  }, [deliveryFormEditReturn, deliveryMethod, selectedMethod, dispatch]);
 
   // Check if method has been completed
   const isMethodCompleted = useMemo(() => {
@@ -320,62 +340,77 @@ const DeliveryMethodStep = () => {
     }
   }, [selectedMethod, formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage, selectedBrand]);
 
-  const renderMethodCard = useCallback((method) => {
-    const isCompleted = deliveryMethod === method.id && isMethodCompleted;
-    const isSelected = selectedMethod === method.id;
-
-    return (
-      <div
-        key={method.id}
-        onClick={() => handleMethodChange(method.id)}
-        className={`relative p-8 rounded-2xl border-2 border-[#1A1A1A1A] cursor-pointer transition-all duration-200 ${
-          isSelected 
-            ? `${method.bgColor}` 
-            : `${method.bgColor} hover:border-gray-300 hover:shadow-md`
-        }`}
-      >
-        {/* Completed Badge */}
-        {isCompleted && (
-          <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            Completed
-          </div>
-        )}
-
-        <div className="flex flex-col items-center text-center">
-          <div className={`w-18.5 h-18.5 ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
-            <method.icon className="w-8 h-8 text-white" />
-          </div>
-          <h3 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">{method.name}</h3>
-          <p className="text-[16px] text-[#4A4A4A]">{method.description}</p>
-
-          {/* Edit Details Button */}
-          {isCompleted && (
-            <button
-              className="mt-4 text-sm text-blue-600 font-medium hover:text-blue-700 hover:underline transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMethodChange(method.id);
-              }}
-            >
-              Edit Details
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }, [deliveryMethod, isMethodCompleted, selectedMethod, handleMethodChange]);
+const renderMethodCard = useCallback((method) => {
+  const isCompleted = deliveryMethod === method.id && isMethodCompleted;
+  const isSelected = selectedMethod === method.id;
+  const isDeliveryActive = deliveryMethod === method.id;
 
   return (
-  <div className="min-h-screen bg-white px-8 py-30">
+    <div
+      key={method.id}
+      onClick={() => handleMethodChange(method.id)}
+      className={`
+        relative p-8 rounded-2xl cursor-pointer transition-all duration-200
+        ${method.bgColor}
+
+        ${isDeliveryActive
+          ? "border-2 border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.3)]"
+          : "border-2 border-[#1A1A1A1A] hover:border-gray-300 hover:shadow-md"
+        }
+      `}
+    >
+      {/* Completed Badge */}
+      {isCompleted && (
+        <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Completed
+        </div>
+      )}
+
+      <div className="flex flex-col items-center text-center">
+        <div className={`w-18.5 h-18.5 ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
+          <method.icon className="w-8 h-8 text-white" />
+        </div>
+
+        <h3 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">
+          {method.name}
+        </h3>
+
+        <p className="text-[16px] text-[#4A4A4A]">
+          {method.description}
+        </p>
+
+        {isCompleted && (
+          <button
+            className="mt-4 text-sm text-blue-600 font-medium hover:text-blue-700 hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMethodChange(method.id);
+            }}
+          >
+            Edit Details
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}, [deliveryMethod, isMethodCompleted, selectedMethod, handleMethodChange]);
+
+
+  return (
+    <div className="min-h-screen bg-white px-8 py-30">
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
         <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block mb-6">
           <button
             onClick={() => dispatch(goBack())}
-            className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-full bg-white hover:bg-rose-50 
+            className="cursor-pointer flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-full bg-white hover:bg-rose-50 
                        transition-all duration-200 shadow-sm hover:shadow-md"
           >
             <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
@@ -403,8 +438,11 @@ const DeliveryMethodStep = () => {
 
         {/* Delivery Method Selection */}
         <div className="mb-12 max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-            {DELIVERY_METHODS.map(renderMethodCard)}
+          <div className={`grid grid-cols-1 ${selectedTiming?.type !== "schedule" ? "md:grid-cols-3" : "grid-cols-2"} gap-4 sm:gap-6`}>
+            {DELIVERY_METHODS
+              .filter(method => !(selectedTiming?.type === "schedule" && method.id === 'print'))
+              .map(renderMethodCard)
+            }
           </div>
         </div>
 
@@ -415,7 +453,7 @@ const DeliveryMethodStep = () => {
               {/* Close Button */}
               <button
                 onClick={handleCloseModal}
-                className="absolute top-4 right-4 sm:top-6 sm:right-6 w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors z-50"
+                className="cursor-pointer absolute top-4 right-4 sm:top-6 sm:right-6 w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors z-50"
               >
                 <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
               </button>
@@ -428,7 +466,7 @@ const DeliveryMethodStep = () => {
                 <div className="flex items-center justify-center mt-6 sm:mt-8 pb-4">
                   <button
                     onClick={handleContinue}
-                    className="bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-3 px-8 sm:py-4 sm:px-12 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 transform hover:scale-105 shadow-lg flex gap-2 sm:gap-3 items-center"
+                    className="cursor-pointer bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-3 px-8 sm:py-4 sm:px-12 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 transform hover:scale-105 shadow-lg flex gap-2 sm:gap-3 items-center"
                   >
                     Continue to Payment
                     <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">

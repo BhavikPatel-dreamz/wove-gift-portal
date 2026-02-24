@@ -101,7 +101,7 @@ const VouchersTab = ({
 
         return (
             <span className={`text-xs font-medium px-2.5 py-2 rounded-md ${config[status] || config.Pending}`}>
-                {status}
+                {status == "Active" ? "Issued" : status}
             </span>
         );
     }, []);
@@ -152,8 +152,8 @@ const VouchersTab = ({
                         </p>
                     </div>
                     <div className="flex w-full h-21.25 justify-center flex-col gap-2 p-6 bg-[#FAF5FF] border border-[#E2E8F0] rounded-xl">
-                        <p className="text-[#9810FA] text-[14px] font-semibold">Unredeemed</p>
-                        <p className="text-[#9810FA] text-[16px] font-medium">{voucherStats.totalUnredeemed || 0}</p>
+                        <p className="text-[#9810FA] text-[14px] font-semibold">Partially Redeemed</p>
+                        <p className="text-[#9810FA] text-[16px] font-medium">{voucherStats.totalPartiallyRedeemed || 0}</p>
                     </div>
                     <div className="flex w-full h-21.25 justify-center flex-col gap-2 p-6 bg-[#FFF7ED] border border-[#E2E8F0] rounded-xl">
                         <p className="text-[#F55101] text-[14px] font-semibold">Redemption Rate</p>

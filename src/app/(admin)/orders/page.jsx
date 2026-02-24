@@ -212,13 +212,7 @@ export default function GiftOrdersManagement() {
               ],
             },
           ]}
-          actions={[
-            {
-              label: "Export",
-              icon: Download,
-              onClick: handleExport,
-            },
-          ]}
+         
           emptyMessage={error || "No orders found. Try adjusting your filters."}
         />
 

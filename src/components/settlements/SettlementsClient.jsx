@@ -33,6 +33,8 @@ export default function SettlementsClient({
 
   const router = useRouter();
 
+  console.log("initialData", initialData)
+
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "$";
@@ -141,7 +143,7 @@ export default function SettlementsClient({
     );
   };
 
-  
+
 
   const handleSync = async () => {
     setSyncing(true);
@@ -150,8 +152,8 @@ export default function SettlementsClient({
     try {
       const response = await syncShopifyDataMonthly()
 
-      console.log("response",response);
-      
+      console.log("response", response);
+
 
       if (response.ok) {
         toast.success(
@@ -213,23 +215,21 @@ export default function SettlementsClient({
               {baseAmount.toLocaleString()}
             </div>
             <div className="text-xs text-gray-500">
-              {row.totalSold || 0} Units • {trigger === "onRedemption" ? "Redeemed" : "Sold"}
+              {row.totalSold || 0} Units •{" "}
+              {trigger === "onRedemption"
+                ? `${row.totalRedeemed || 0} Redeemed`
+                : `${row.totalSold || 0} Sold`}
+
             </div>
           </div>
         );
       },
     }),
     columnHelper.accessor("netPayable", {
-      header: "Net Payable",
+      header: "NET PAYABLE",
       cell: (info) => {
         const row = info.row.original;
         const netPayable = info.getValue() || 0;
-        const baseAmount = row.baseAmount || 0;
-        const commissionType = row.brandTerms?.commissionType;
-        const commissionValue = row.brandTerms?.commissionValue || 0;
-        const vatRate = row.vatRate || row.brandTerms?.vatRate || 0;
-        const commissionAmount = row.commissionAmount || 0;
-        const vatAmount = row.vatAmount || 0;
 
         return (
           <div className="space-y-0.5">
@@ -237,16 +237,46 @@ export default function SettlementsClient({
               {getCurrencySymbol(row.currency)}
               {netPayable.toLocaleString()}
             </div>
-            {commissionAmount >= 1 && commissionType && (
-              <div className="text-xs text-red-600">
-                -{commissionValue}% Commission on Base Amount
-              </div>
-            )}
-            {vatRate > 0 && vatAmount > 0 && (
-              <div className="text-xs text-green-600">
-                +{vatRate}% VAT on Commission
-              </div>
-            )}
+            {/* {commissionAmount >= 1 && commissionType && (
+                                <div className="text-xs text-red-600">
+                                    -{commissionValue}% Commission on Base Amount
+                                </div>
+                            )}
+                            {vatRate >= 1 && vatAmount >= 1 && (
+                                <div className="text-xs text-green-600">
+                                    +{vatRate}% VAT on Commission
+                                </div>
+                            )} */}
+          </div>
+        );
+      },
+    }),
+    columnHelper.accessor("commission", {
+      header: "COMMISSION",
+      cell: (info) => {
+        const commissionValue = info.row.original?.commissionAmount || 0;
+        
+        return (
+          <div className="space-y-0.5">
+            <div className="text-[#1A1A1A] font-semibold">
+              {getCurrencySymbol(info.row.original.currency)}
+              {commissionValue.toLocaleString()}
+            </div>
+          </div>
+        );
+      },
+    }),
+    columnHelper.accessor("vatAmount", {
+      header: "VAT",
+      cell: (info) => {
+        const row = info.row.original;
+        const vatAmount = info.getValue() || 0;
+        return (
+          <div className="space-y-0.5">
+            <div className="text-[#1A1A1A] font-semibold">
+              {getCurrencySymbol(row.currency)}
+              {vatAmount.toLocaleString()}
+            </div>
           </div>
         );
       },
@@ -384,14 +414,14 @@ export default function SettlementsClient({
               options: statusFilterOptions,
             },
           ]}
-          // actions={[
-          //   {
-          //     label: syncing ? "Syncing..." : "Sync Shopify",
-          //     icon: RefreshCw,
-          //     onClick: handleSync,
-          //     disabled: syncing,
-          //   }
-          // ]}
+        // actions={[
+        //   {
+        //     label: syncing ? "Syncing..." : "Sync Shopify",
+        //     icon: RefreshCw,
+        //     onClick: handleSync,
+        //     disabled: syncing,
+        //   }
+        // ]}
         />
       </div>
 

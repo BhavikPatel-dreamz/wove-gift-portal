@@ -423,7 +423,7 @@ const OverviewTab = ({ settlement, brand, summary, getCurrencySymbol }) => {
             <div className="bg-orange-50 rounded p-3">
               <p className="text-xs text-orange-600">Breakage</p>
               <p className="text-lg font-semibold text-orange-700">
-                -{getCurrencySymbol(brand.currency)}{settlement.breakageAmount?.toLocaleString() || 0}
+                {getCurrencySymbol(brand.currency)}{settlement.breakageAmount?.toLocaleString() || 0}
               </p>
             </div>
           )}
@@ -431,7 +431,7 @@ const OverviewTab = ({ settlement, brand, summary, getCurrencySymbol }) => {
             <div className="bg-green-50 rounded p-3">
               <p className="text-xs text-green-600">VAT</p>
               <p className="text-lg font-semibold text-green-700">
-                +{getCurrencySymbol(brand.currency)}{settlement.vatAmount?.toLocaleString() || 0}
+                {getCurrencySymbol(brand.currency)}{settlement.vatAmount?.toLocaleString() || 0}
               </p>
             </div>
           )}

@@ -641,7 +641,7 @@ h6,
 /* ===== PROCESS SECTION STYLES ===== */
 
 .process-section {
-  padding: 80px 0 38px !important;
+  padding: 80px 0 92px !important;
   background: linear-gradient(180deg, #FEF8F6 0%, #FDF7F8 100%) !important;
   background-color: white !important; /* fallback */
   overflow: hidden !important;
@@ -690,11 +690,11 @@ h6,
 
 /* Card Rotation Effects */
 .process-card-2 {
-  transform: rotate(6.45deg) !important;
+  transform: rotate(14.45deg) !important
 }
 
 .process-card-4 {
-  transform: rotate(-8.51deg) !important;
+  transform: rotate(-14.51deg) !important;
 }
 
 .process-step-icon-wrapper {

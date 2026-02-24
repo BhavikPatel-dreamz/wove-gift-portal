@@ -37,7 +37,6 @@ const SettlementDetailsPage = async ({ params }) => {
         notFound();
     }
 
-    console.log("Settlement data:", settlement);
 
     return (
         <>

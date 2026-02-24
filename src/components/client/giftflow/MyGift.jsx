@@ -34,6 +34,7 @@ function MyGift() {
   const [bulkModalSearch, setBulkModalSearch] = useState('');
   const datePickerRef = useRef(null);
   const session = useSession();
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const tabs = [
     { id: 'all', label: 'All Gifts' },
@@ -69,7 +70,8 @@ function MyGift() {
             type: 'bulk',
             bulkOrderNumber: card.bulkOrderNumber,
             cards: bulkCards,
-            createdAt: card.purchaseDate // Use for any sorting if needed
+            createdAt: card.purchaseDate, // Use for any sorting if needed
+            orderNumber: card.orderNumber
           });
         }
         // If we've already processed this bulk order, skip it
@@ -235,7 +237,8 @@ function MyGift() {
       'ACTIVE': 'bg-blue-100 text-blue-600 border-[1px] border-[#0F64F633]',
       'CLAIMED': 'bg-green-100 text-green-600 border-[1px] border-[#22C55E33]',
       'UNCLAIMED': 'bg-gray-100 text-gray-600 border-[1px] border-[#D1D5DB]',
-      'EXPIRED': 'bg-red-100 text-red-600 border-[1px] border-[#EF444433]'
+      'EXPIRED': 'bg-red-100 text-red-600 border-[1px] border-[#EF444433]',
+      'PROCESSING': 'bg-amber-100 text-amber-700 border-[1px] border-[#F59E0B55]'
     };
     return colors[status] || 'bg-gray-100 text-gray-600';
   };
@@ -245,7 +248,8 @@ function MyGift() {
       'ACTIVE': 'from-pink-400 to-orange-400',
       'CLAIMED': 'from-orange-400 to-red-400',
       'UNCLAIMED': 'from-orange-400 to-red-500',
-      'EXPIRED': 'from-gray-400 to-gray-500'
+      'EXPIRED': 'from-gray-400 to-gray-500',
+      'PROCESSING': 'from-amber-400 to-yellow-500'
     };
     return colors[status] || 'from-pink-400 to-orange-400';
   };
@@ -305,7 +309,7 @@ function MyGift() {
 
   // Calculate bulk order statistics
   const getBulkOrderStats = (cards) => {
-    const totalVouchers = cards.length;
+    const totalVouchers = cards.reduce((sum, card) => sum + (card.quantity || 1), 0);
     const totalAmount = cards.reduce((sum, card) => sum + card.totalAmount, 0);
     const totalRemaining = cards.reduce((sum, card) => sum + card.remaining, 0);
     const currencySymbol = cards[0]?.currencySymbol || '$';
@@ -366,7 +370,7 @@ function MyGift() {
               <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
                 {firstCard.brandName}
               </h3>
-              <p className="text-xs text-[#4A4A4A]">Bulk Order #{bulkOrderNumber}</p>
+              <p className="text-xs text-[#4A4A4A]">{bulkOrderNumber}</p>
               <div className="flex items-center gap-2 mt-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M11.667 2.91663H2.33366C1.68933 2.91663 1.16699 3.43896 1.16699 4.08329V9.91663C1.16699 10.561 1.68933 11.0833 2.33366 11.0833H11.667C12.3113 11.0833 12.8337 10.561 12.8337 9.91663V4.08329C12.8337 3.43896 12.3113 2.91663 11.667 2.91663Z" stroke="#99A1AF" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round" />
@@ -379,7 +383,7 @@ function MyGift() {
             </div>
           </div>
 
-          {firstCard?.receiverEmail == session?.user?.email && (
+          {(firstCard.isPendingVoucher || firstCard?.receiverEmail == session?.user?.email) && (
             <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(overallStatus)} whitespace-nowrap`}>
               {overallStatus}
             </span>
@@ -427,12 +431,22 @@ function MyGift() {
         </div>
 
         <div className="flex gap-2 sm:gap-3">
-          <button
-            onClick={() => handleOpenBulkModal(bulkOrderNumber, cards)}
-            className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors">
-            <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
-            <span className="text-xs sm:text-sm font-medium text-[#4A5565]">View All {stats.totalVouchers} Vouchers</span>
-          </button>
+          {firstCard.isPendingVoucher ? (
+            <button
+              type="button"
+              disabled
+              className="flex-1 py-2 border border-amber-200 bg-amber-50 text-amber-700 rounded-lg flex items-center justify-center gap-1 sm:gap-2 cursor-not-allowed"
+            >
+              <span className="text-xs sm:text-sm font-medium">Voucher generation in progress</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => handleOpenBulkModal(bulkOrderNumber, cards)}
+              className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors">
+              <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
+              <span className="text-xs sm:text-sm font-medium text-[#4A5565]">View All {stats.totalVouchers} Vouchers</span>
+            </button>
+          )}
         </div>
       </div>
     );
@@ -449,6 +463,44 @@ function MyGift() {
       e.stopPropagation();
       handleRedeem(card);
     };
+
+    const handlePrintClick = async (e) => {
+      console.log("card", card)
+      e.stopPropagation();
+      setIsGeneratingPdf(true);
+      try {
+        const response = await fetch('/api/voucher/generate-pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            orderId: card.orderId,
+            orderNumber: card.orderNumber,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate PDF');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `gift-card-${card.orderNumber}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+      } finally {
+        setIsGeneratingPdf(false);
+      }
+    };
+
+
 
     return (
       <div key={card.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
@@ -474,7 +526,7 @@ function MyGift() {
             </div>
           </div>
 
-          {card?.receiverEmail == session?.user?.email && (
+          {(card.isPendingVoucher || card?.receiverEmail == session?.user?.email) && (
             <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(card.status)} whitespace-nowrap`}>
               {card.status}
             </span>
@@ -516,7 +568,34 @@ function MyGift() {
           </div>
         </div>
 
-        {card?.receiverEmail == session?.user?.email && (
+        {card.isPendingVoucher && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+            <p className="text-xs text-amber-700">
+              Payment successful. Voucher is being generated and will share shortly.
+            </p>
+          </div>
+        )}
+
+
+        {card.deliveryMethod === "print" && !card.isPendingVoucher && (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={handlePrintClick}
+              className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors">
+              {isGeneratingPdf ? (
+                <span className="text-xs sm:text-sm font-medium text-[#4A5565]">Generating...</span>
+              ) : (
+                <>
+                  <Download className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
+                  <span className="text-xs sm:text-sm font-medium text-[#4A5565]">Print</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+
+        {card?.receiverEmail == session?.user?.email && !card.isPendingVoucher && (
           <div>
             <div className="mb-4">
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -754,7 +833,7 @@ function MyGift() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
               {displayItems.map((item, index) =>
                 item.type === 'bulk'
-                  ? renderBulkOrderCard(item.bulkOrderNumber, item.cards)
+                  ? renderBulkOrderCard(item.orderNumber, item.cards)
                   : renderSingleOrderCard(item.card)
               )}
             </div>

@@ -347,7 +347,7 @@ const AddBrandPartner = () => {
         const result = await createBrandPartner(submitData);
         
         if (result.success) {
-          toast.success('Draft saved successfully!');
+          toast.success(result.message || 'Draft saved successfully!');
           router.push('/brandsPartner');
         } else {
           if (result.errors) {
@@ -382,7 +382,7 @@ const AddBrandPartner = () => {
         const result = await createBrandPartner(submitData);
         
         if (result.success) {
-          toast.success('Brand partner published successfully!');
+          toast.success(result.message || 'Brand partner published successfully!');
           router.push('/brandsPartner');
         } else {
           if (result.errors) {

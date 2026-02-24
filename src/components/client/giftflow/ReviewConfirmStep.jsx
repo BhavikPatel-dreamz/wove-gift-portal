@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
-import { goBack, goNext, resetFlow, setCurrentStep, setIsConfirmed } from "../../../redux/giftFlowSlice";
+import { goBack, goNext, resetFlow, setCurrentStep, setDeliveryFormEditReturn, setIsConfirmed } from "../../../redux/giftFlowSlice";
 import { addToCart, updateCartItem } from "../../../redux/cartSlice";
 import { useSession } from '@/contexts/SessionContext'
 import { useRouter } from "next/navigation";
@@ -10,12 +10,15 @@ import HeartColorIcon from "../../../icons/HeartColorIcon"
 import EditIcon from "../../../icons/EditIcon"
 import { ShoppingBasket } from "lucide-react";
 import { currencyList } from "../../brandsPartner/currency";
+import Link from "next/link";
 
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
   const [error, setError] = useState('');
   const session = useSession();
   const router = useRouter();
+
+  console.log("session", session)
 
   const {
     selectedBrand,
@@ -64,12 +67,21 @@ const ReviewConfirmStep = () => {
     dispatch(goBack());
   };
 
+  const startReviewEditFlow = (step) => {
+    dispatch(setDeliveryFormEditReturn({
+      enabled: true,
+      method: deliveryMethod || null,
+      returnStep: 8,
+    }));
+    dispatch(setCurrentStep(step));
+  };
+
   const handleEditMessage = () => {
-    dispatch({ type: "giftFlow/setCurrentStep", payload: 5 });
+    startReviewEditFlow(5);
   };
 
   const handleChangeCard = () => {
-    dispatch({ type: "giftFlow/setCurrentStep", payload: 1 });
+    startReviewEditFlow(2);
   };
 
   const handleAddToCart = () => {
@@ -111,7 +123,7 @@ const ReviewConfirmStep = () => {
   };
 
   const redirectToDeliveryMethod = () => {
-    dispatch(setCurrentStep(7));
+    startReviewEditFlow(7);
   }
 
 
@@ -174,7 +186,7 @@ const ReviewConfirmStep = () => {
                   />
                 ) : null}
 
-                <button onClick={() => dispatch(setCurrentStep(3))}>
+                <button onClick={() => startReviewEditFlow(3)}>
                   <div className="absolute top-2 right-2 bg-white rounded-full p-1 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                       <path d="M3 17.46V20.5C3 20.78 3.22 21 3.5 21H6.54C6.67 21 6.8 20.95 6.89 20.85L17.81 9.94L14.06 6.19L3.15 17.1C3.05 17.2 3 17.32 3 17.46ZM20.71 7.04C20.8027 6.94749 20.8762 6.8376 20.9264 6.71663C20.9766 6.59565 21.0024 6.46597 21.0024 6.335C21.0024 6.20403 20.9766 6.07435 20.9264 5.95338C20.8762 5.83241 20.8027 5.72252 20.71 5.63L18.37 3.29C18.2775 3.1973 18.1676 3.12375 18.0466 3.07357C17.9257 3.02339 17.796 2.99756 17.665 2.99756C17.534 2.99756 17.4043 3.02339 17.2834 3.07357C17.1624 3.12375 17.0525 3.1973 16.96 3.29L15.13 5.12L18.88 8.87L20.71 7.04Z" fill="url(#paint0_linear_736_2123)" />
@@ -249,7 +261,7 @@ const ReviewConfirmStep = () => {
               </div>
               <div>
                 <div className="flex items-start gap-2">
-                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">Recipient WhatsApp Number</div>
+                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">{deliveryMethod !== "email" ? "Recipient WhatsApp Number" : "Recipient Email Address"}</div>
                   <div>
                     <button onClick={() => redirectToDeliveryMethod()}>
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -264,7 +276,9 @@ const ReviewConfirmStep = () => {
                     </button>
                   </div>
                 </div>
-                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{deliveryMethod == "email" ? deliveryDetails?.recipientEmailAddress : deliveryDetails?.recipientWhatsAppNumber}</div>
+                {deliveryMethod !== "print" && (
+                  <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{deliveryMethod == "email" ? deliveryDetails?.recipientEmailAddress : deliveryDetails?.recipientWhatsAppNumber}</div>
+                )}
               </div>
             </div>
 
@@ -433,28 +447,42 @@ const ReviewConfirmStep = () => {
                     </button>
                   </div>
                 )}
+                {session?.user?.email ? (
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={!isConfirmed}
+                    className={`
+      w-full h-14 bg-linear-to-r from-pink-500 to-orange-400 text-white 
+      rounded-full font-semibold text-lg transition-all duration-200 shadow-lg 
+      flex items-center justify-center gap-2
+      ${isConfirmed
+                        ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
+                        : 'opacity-50 cursor-not-allowed'
+                      }
+    `}
+                  >
+                    Proceed to Payment
+                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
+                      <path
+                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-center">
+                    <p className="text-[#1A1A1A] text-[14px] font-medium font-poppins">
+                      Please log in to continue with your purchase
+                    </p>
+                    <Link
+                      href="/login"
+                      className="text-pink-500 font-semibold hover:underline transition"
+                    >
+                      Login to your account →
+                    </Link>
+                  </div>
+                )}
 
-                <button
-                  onClick={handleBuyNow}
-                  disabled={!isConfirmed}
-                  className={`
-                    w-full h-14 bg-linear-to-r from-pink-500 to-orange-400 text-white 
-                    rounded-full font-semibold text-lg transition-all duration-200 shadow-lg 
-                    flex items-center justify-center gap-2
-                    ${isConfirmed
-                      ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
-                      : 'opacity-50 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  Proceed to Payment
-                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
-                    <path
-                      d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-                      fill="white"
-                    />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>

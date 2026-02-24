@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { exec } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import startCronJobs from '../src/lib/action/cronScheduler.js';
 
 // ES module dirname fix
 const __filename = fileURLToPath(import.meta.url);
@@ -29,26 +30,8 @@ cron.schedule('00 09 * * *', () => {
   timezone: 'Asia/Kolkata'
 });
 
-// Runs every 5 minutes to process scheduled orders
-cron.schedule('*/1 * * * *', () => {
-  console.log('Running the process-scheduled-orders script...');
 
-  const scriptPath = path.resolve(__dirname, './process-scheduled-orders.js');
+// start cron job for voucher processor and notification processor
+startCronJobs();
 
-  exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
-    if (error) {
-      console.error('Error executing script:', error);
-      return;
-    }
-    if (stderr) {
-      console.error('Script stderr:', stderr);
-      return;
-    }
-    console.log('Script stdout:', stdout);
-  });
-}, {
-  scheduled: true,
-  timezone: 'Asia/Kolkata'
-});
-
-console.log('Cron job scheduler started. Scheduled for 2:23 PM IST daily and every 5 minutes for orders.');
+ console.log('Running the scheduler script...');

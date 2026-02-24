@@ -6,11 +6,12 @@ export default async function AnalyticsPage({ searchParams }) {
   // Await searchParams
   const resolvedSearchParams = await searchParams;
   
-  // Extract filter parameters
-  const period = resolvedSearchParams?.period || "year";
+  // Extract filter parameters with lastMonth as default
+  const period = resolvedSearchParams?.period || "lastMonth";
   const brandId = resolvedSearchParams?.brandId || null;
   const dateFrom = resolvedSearchParams?.dateFrom || null;
   const dateTo = resolvedSearchParams?.dateTo || null;
+  const filterMonth = resolvedSearchParams?.filterMonth || null;
 
   // Fetch analytics data and brands in parallel
   const [analyticsData, brandsResult] = await Promise.all([
@@ -19,6 +20,7 @@ export default async function AnalyticsPage({ searchParams }) {
       brandId,
       dateFrom,
       dateTo,
+      filterMonth,
     }),
     getBrandsForAnalytics(),
   ]);

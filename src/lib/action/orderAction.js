@@ -1,8 +1,17 @@
+
 "use server";
 
 import { prisma } from "../db.js";
+import {
+  getPayFastConfig,
+  buildPayFastData,
+  buildPayFastUrl,
+  generateSignature,
+  buildPayFastUrlDirect,
+} from "../payfast/payfastUtils.js";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
+import { v2 as cloudinary } from "cloudinary";
 
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
@@ -160,40 +169,45 @@ function validateOrderData(orderData) {
   return true;
 }
 
-// ==================== DATABASE OPERATIONS ====================
+// ==================== CREATE RECEIVER DETAIL ====================
 async function createReceiverDetail(orderData) {
-  try {
-    const isBulkOrder = orderData.isBulkOrder === true;
+  const isBulkOrder = orderData.isBulkOrder === true;
 
-    if (isBulkOrder) {
-      return await prisma.receiverDetail.create({
-        data: {
-          name: orderData.companyInfo.companyName,
-          email: orderData.companyInfo.contactEmail,
-          phone: orderData.companyInfo.contactNumber,
-        },
-      });
-    } else {
-      const { deliveryDetails, deliveryMethod } = orderData;
-      return await prisma.receiverDetail.create({
-        data: {
-          name:
-            deliveryDetails.recipientFullName || deliveryDetails?.recipientName,
-          email:
-            deliveryMethod === "email"
-              ? deliveryDetails.recipientEmailAddress
-              : null,
-          phone:
-            deliveryMethod === "whatsapp"
-              ? deliveryDetails.recipientWhatsAppNumber
-              : null,
-        },
-      });
-    }
-  } catch (error) {
-    throw new Error(`Failed to create receiver detail: ${error.message}`);
+  if (isBulkOrder) {
+    return await prisma.receiverDetail.create({
+      data: {
+        name: orderData.companyInfo.companyName,
+        email: orderData.companyInfo.contactEmail,
+        phone: orderData.companyInfo.contactNumber,
+      },
+    });
+  } else {
+    const { deliveryDetails, deliveryMethod } = orderData;
+    return await prisma.receiverDetail.create({
+      data: {
+        name: deliveryDetails.recipientFullName || deliveryDetails?.recipientName,
+        email: deliveryMethod === "email" ? deliveryDetails.recipientEmailAddress : null,
+        phone: deliveryMethod === "whatsapp" ? deliveryDetails.recipientWhatsAppNumber : null,
+      },
+    });
   }
 }
+
+// ==================== CALCULATE SCHEDULED TIME ====================
+function calculateScheduledTime(selectedTiming) {
+  if (!selectedTiming || selectedTiming.type === "immediate") {
+    return null;
+  }
+
+  return new Date(
+    selectedTiming.year,
+    selectedTiming.month,
+    selectedTiming.date,
+    Number(selectedTiming.time.split(":")[0]),
+    Number(selectedTiming.time.split(":")[1])
+  );
+}
+
 
 function generateExportDescription(orderData, orderNumber) {
   const isBulkOrder = orderData.isBulkOrder === true;
@@ -214,325 +228,257 @@ function generateExportDescription(orderData, orderNumber) {
 export const createPendingOrder = async (orderData) => {
   try {
     const userId = orderData?.userId;
-
-    console.log("=======pending order data========", orderData);
-
     if (!userId) {
       throw new AuthenticationError("User not authenticated");
     }
 
-    orderData.userId = userId;
-    validateOrderData(orderData);
+    // Check if multi-cart order
+    const isMultiCart = orderData.isMultiCart === true;
+    const cartOrders = orderData.cartOrders || [orderData];
+    
+    const createdOrders = [];
+    let totalPaymentAmount = 0;
 
-    const isBulkOrder = orderData.isBulkOrder === true;
-    const receiver = await createReceiverDetail(orderData);
+    // ✅ CREATE ALL ORDERS FIRST (NO VOUCHER GENERATION)
+    for (const singleOrderData of cartOrders) {
+      validateOrderData(singleOrderData);
+      const isBulkOrder = singleOrderData.isBulkOrder === true;
+      const receiver = await createReceiverDetail(singleOrderData);
 
-    const quantity =
-      isBulkOrder && orderData.csvRecipients?.length > 0
-        ? orderData.csvRecipients.length
-        : orderData.quantity || 1;
+      // Calculate quantity
+      const quantity = isBulkOrder && singleOrderData.csvRecipients?.length > 0
+        ? singleOrderData.csvRecipients.length
+        : singleOrderData.quantity || 1;
 
-    const amount = Number(orderData.selectedAmount.value);
-    const subtotal = amount * quantity;
-    const discount = orderData.discountAmount || 0;
-    const totalAmount = subtotal - discount;
+      const amount = Number(singleOrderData.selectedAmount.value);
+      const subtotal = amount * quantity;
+      const discount = singleOrderData.discountAmount || 0;
+      const totalAmount = subtotal - discount;
 
-    const orderBase = {
-      orderNumber: generateOrderNumber(),
-      brandId: orderData.selectedBrand.id,
-      occasionId: orderData.selectedOccasion,
-      isCustom:
-        orderData.selectedSubCategory.category === "custom" ||
-        orderData.selectedSubCategory.category === "CUSTOM",
-      subCategoryId:
-        orderData.selectedSubCategory.category === "custom" ||
-        orderData.selectedSubCategory.category === "CUSTOM"
-          ? null
-          : orderData.selectedSubCategory?.id,
-      customCardId:
-        orderData.selectedSubCategory.category === "custom" ||
-        orderData.selectedSubCategory.category === "CUSTOM"
-          ? orderData.selectedSubCategory?.id
-          : null,
-      userId: String(userId),
-      receiverDetailId: receiver.id,
-      amount,
-      quantity,
-      subtotal,
-      discount,
-      totalAmount,
-      currency: orderData.selectedAmount.currency || "USD",
-      paymentMethod: "stripe",
-      customImageUrl: orderData.customImageUrl || null,
-      customVideoUrl: orderData.customVideoUrl || null,
-      paymentStatus: "PENDING",
-      redemptionStatus: "Issued",
-      isActive: true,
-    };
+      totalPaymentAmount += totalAmount;
 
-    let order;
-    if (isBulkOrder) {
-      const scheduledFor =
-        orderData.selectedTiming?.type === "schedule"
-          ? new Date(
-              orderData.selectedTiming.year,
-              orderData.selectedTiming.month,
-              orderData.selectedTiming.date,
-              Number(orderData.selectedTiming.time.split(":")[0]),
-              Number(orderData.selectedTiming.time.split(":")[1]),
-            )
-          : null;
+      // Determine if custom occasion
+      const isCustom = singleOrderData.selectedSubCategory.category === "custom" || 
+                       singleOrderData.selectedSubCategory.category === "CUSTOM";
 
-      order = await prisma.order.create({
-        data: {
-          ...orderBase,
-          bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-          deliveryMethod: orderData.deliveryOption || "email",
-          message: orderData.personalMessage || "",
-          senderName: orderData.companyInfo.companyName,
-          sendType: "sendImmediately",
-          scheduledFor: scheduledFor,
-          senderEmail: orderData.companyInfo.contactEmail,
-        },
-      });
+      const scheduledFor = calculateScheduledTime(singleOrderData.selectedTiming);
 
-      if (orderData.csvRecipients && orderData.csvRecipients.length > 0) {
-        console.log(
-          `📝 Storing ${orderData.csvRecipients.length} CSV recipients in database`,
-        );
+      // Base order data
+      const orderBase = {
+        orderNumber: generateOrderNumber(),
+        brandId: singleOrderData.selectedBrand.id,
+        occasionId: singleOrderData.selectedOccasion,
+        isCustom,
+        subCategoryId: isCustom ? null : singleOrderData.selectedSubCategory?.id,
+        customCardId: isCustom ? singleOrderData.selectedSubCategory?.id : null,
+        userId: String(userId),
+        receiverDetailId: receiver.id,
+        amount,
+        quantity,
+        subtotal,
+        discount,
+        totalAmount,
+        currency: singleOrderData.selectedAmount.currency || "ZAR",
+        paymentMethod: "payfast",
+        customImageUrl: singleOrderData.customImageUrl || null,
+        customVideoUrl: singleOrderData.customVideoUrl || null,
+        paymentStatus: "PENDING",
+        redemptionStatus: "Issued",
+        isActive: true,
+        
+        // ✅ NEW: Queue processing fields
+        isPaid: false,
+        voucherEntries: quantity, // Total vouchers needed
+        vouchersCreated: 0,
+        allVouchersGenerated: false,
+        notificationsSent: false,
+        processingStatus: "PENDING",
+        retryCount: 0,
+        maxRetries: 3,
+      };
 
-        const bulkRecipientsData = orderData.csvRecipients.map(
-          (recipient, index) => ({
+      let order;
+      
+      if (isBulkOrder) {
+        order = await prisma.order.create({
+          data: {
+            ...orderBase,
+            bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+            deliveryMethod: singleOrderData.deliveryOption || "email",
+            message: singleOrderData.personalMessage || "",
+            senderName: singleOrderData.companyInfo.companyName,
+            sendType: scheduledFor ? "scheduleLater" : "sendImmediately",
+            scheduledFor,
+            senderEmail: singleOrderData.companyInfo.contactEmail,
+          },
+        });
+
+        // ✅ CREATE BULK RECIPIENTS (NO VOUCHERS YET)
+        if (singleOrderData.csvRecipients && singleOrderData.csvRecipients.length > 0) {
+          const bulkRecipientsData = singleOrderData.csvRecipients.map((recipient, index) => ({
             orderId: order.id,
             recipientName: recipient.name,
             recipientEmail: recipient.email,
             recipientPhone: recipient.phone || null,
-            personalMessage:
-              recipient.message || orderData.personalMessage || null,
+            personalMessage: recipient.message || singleOrderData.personalMessage || null,
             rowNumber: recipient.rowNumber || index + 1,
-            voucherCodeId: null,
-          }),
-        );
+            voucherCodeId: null, // Will be set by cron processor
+          }));
 
-        await prisma.bulkRecipient.createMany({
-          data: bulkRecipientsData,
-          skipDuplicates: true,
-        });
-
-        console.log(
-          `✅ Successfully stored ${bulkRecipientsData.length} recipients for order ${order.orderNumber}`,
-        );
-      }
-    } else {
-      const scheduledFor =
-        orderData.selectedTiming?.type === "schedule"
-          ? new Date(
-              orderData.selectedTiming.year,
-              orderData.selectedTiming.month,
-              orderData.selectedTiming.date,
-              Number(orderData.selectedTiming.time.split(":")[0]),
-              Number(orderData.selectedTiming.time.split(":")[1]),
-            )
-          : null;
-
-      order = await prisma.order.create({
-        data: {
-          ...orderBase,
-          deliveryMethod: orderData.deliveryMethod || "whatsapp",
-          message: orderData.personalMessage || "",
-          senderName: orderData.deliveryDetails?.yourFullName || null,
-          sendType:
-            orderData.selectedTiming?.type === "immediate"
-              ? "sendImmediately"
-              : "scheduleLater",
-          scheduledFor,
-          senderEmail: orderData.deliveryDetails?.yourEmailAddress || null,
-        },
-      });
-    }
-
-    console.log("✅ Pending order created:", order.orderNumber);
-
-    // ==================== CRITICAL FIX STARTS HERE ====================
-    
-    const Stripe = (await import("stripe")).default;
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-    // ✅ CHECK: Is this part of a multi-cart checkout?
-    const isMultiCart = orderData.sharedPaymentIntentId;
-    
-    let paymentIntent;
-    let customerId = orderData.customerId; // May be passed from first order
-
-    if (isMultiCart) {
-      // ✅ REUSE existing payment intent from first order
-      console.log(`🔗 Linking order ${order.orderNumber} to shared payment intent: ${orderData.sharedPaymentIntentId}`);
-      
-      paymentIntent = await stripe.paymentIntents.retrieve(
-        orderData.sharedPaymentIntentId
-      );
-      
-      // ✅ Update the payment intent amount to include this order
-      const currentAmount = paymentIntent.amount;
-      const newAmount = currentAmount + Math.round(totalAmount * 100);
-      
-      paymentIntent = await stripe.paymentIntents.update(
-        orderData.sharedPaymentIntentId,
-        {
-          amount: newAmount,
-          description: `${paymentIntent.description} + ${order.orderNumber}`,
-          metadata: {
-            ...paymentIntent.metadata,
-            [`order_${Object.keys(paymentIntent.metadata).filter(k => k.startsWith('order_')).length + 1}`]: order.id,
-            [`orderNumber_${Object.keys(paymentIntent.metadata).filter(k => k.startsWith('orderNumber_')).length + 1}`]: order.orderNumber,
-            totalOrders: String((parseInt(paymentIntent.metadata.totalOrders || '1') + 1)),
-          }
+          await prisma.bulkRecipient.createMany({
+            data: bulkRecipientsData,
+            skipDuplicates: true,
+          });
         }
-      );
-      
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paymentIntentId: paymentIntent.id,
-        },
-      });
-      
-      console.log(`✅ Order ${order.orderNumber} linked to shared payment intent (Total: $${newAmount / 100})`);
-      
-      return {
-        success: true,
-        data: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          clientSecret: paymentIntent.client_secret,
-          customerId: paymentIntent.customer,
-          paymentIntentId: paymentIntent.id,
-          isShared: true,
-        },
-      };
-      
-    } else {
-      // ✅ CREATE NEW payment intent (first order in cart)
-      console.log(`🆕 Creating new payment intent for order ${order.orderNumber}`);
-      
-      const customerName = isBulkOrder
-        ? orderData.companyInfo.companyName
-        : orderData.deliveryDetails?.yourFullName || "Customer";
-
-      const customerEmail = isBulkOrder
-        ? orderData.companyInfo.contactEmail
-        : orderData.deliveryDetails?.yourEmailAddress || null;
-
-      if (!orderData.billingAddress) {
-        throw new ValidationError(
-          "Billing address is required for payment processing",
-        );
+      } else {
+        order = await prisma.order.create({
+          data: {
+            ...orderBase,
+            deliveryMethod: singleOrderData.deliveryMethod || "whatsapp",
+            message: singleOrderData.personalMessage || "",
+            senderName: singleOrderData.deliveryDetails?.yourFullName || null,
+            sendType: scheduledFor ? "scheduleLater" : "sendImmediately",
+            scheduledFor,
+            senderEmail: singleOrderData.deliveryDetails?.yourEmailAddress || null,
+          },
+        });
       }
 
-      const customerAddress = {
-        line1: orderData.billingAddress.line1,
-        line2: orderData.billingAddress.line2 || null,
-        city: orderData.billingAddress.city,
-        state: orderData.billingAddress.state,
-        postal_code: orderData.billingAddress.postalCode,
-        country: orderData.billingAddress.country,
-      };
+      createdOrders.push(order);
+    }
 
-      const customer = await stripe.customers.create({
-        name: customerName,
-        email: customerEmail,
-        address: customerAddress,
-        metadata: {
-          userId: String(userId),
-          firstOrderId: order.id,
-          orderNumber: order.orderNumber,
-        },
-      });
+    // ✅ GENERATE PAYFAST PAYMENT URL
+    const paymentSource = isMultiCart ? "cart" : "direct";
+    const payfastConfig = getPayFastConfig(createdOrders[0].id, paymentSource);
+    
+    const customerName = isMultiCart 
+      ? (cartOrders[0].deliveryDetails?.yourFullName || cartOrders[0].companyInfo?.companyName || "Customer")
+      : (orderData.deliveryDetails?.yourFullName || orderData.companyInfo?.companyName || "Customer");
 
-      const exportDescription = generateExportDescription(
-        orderData,
-        order.orderNumber,
-      );
+    const [firstName, ...lastNameParts] = customerName.split(" ");
+    const lastName = lastNameParts.join(" ") || "";
 
-      paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(totalAmount * 100),
-        currency: (orderData.selectedAmount.currency || "USD").toLowerCase(),
-        customer: customer.id,
-        description: exportDescription,
-        metadata: {
-          order_1: order.id,
-          orderNumber_1: order.orderNumber,
-          brandName: orderData.selectedBrand?.brandName || "Gift Card",
-          userId: String(userId),
-          totalOrders: '1',
-        },
-        statement_descriptor: "GIFT CARD",
-        statement_descriptor_suffix: `GC${order.orderNumber.slice(-8)}`,
-        automatic_payment_methods: {
-          enabled: true,
-        },
-        shipping:
-          customerAddress.line1 !== "N/A"
-            ? {
-                name: customerName,
-                address: customerAddress,
-              }
-            : null,
-      });
+    const customerEmail = isMultiCart
+      ? (cartOrders[0].deliveryDetails?.yourEmailAddress || cartOrders[0].companyInfo?.contactEmail)
+      : (orderData.deliveryDetails?.yourEmailAddress || orderData.companyInfo?.contactEmail);
 
+    const itemNames = createdOrders.map(o => {
+      const orderDataForBrand = cartOrders.find(co => co.selectedBrand.id === o.brandId);
+      return orderDataForBrand?.selectedBrand?.brandName || "Gift Card";
+    }).join(", ");
+
+    const payfastOrderData = {
+      orderId: createdOrders[0].id,
+      orderNumber: createdOrders.map(o => o.orderNumber).join(","),
+      totalAmount: totalPaymentAmount,
+      itemName: isMultiCart ? `${createdOrders.length} Gift Cards` : itemNames,
+      description: isMultiCart 
+        ? `Multi-cart purchase - ${createdOrders.length} items`
+        : `Gift card order - ${createdOrders[0].orderNumber}`,
+      isBulkOrder: false,
+      quantity: createdOrders.length,
+      firstName,
+      lastName,
+      email: customerEmail,
+    };
+
+    const payfastData = buildPayFastData(payfastOrderData, payfastConfig);
+    const payfastUrl = buildPayFastUrlDirect(
+      payfastData,
+      payfastConfig.passphrase,
+      payfastConfig.isSandbox
+    );
+
+    // ✅ STORE PAYMENT INTENT IN ALL ORDERS
+    const sharedPaymentIntent = `PF_MULTI_${Date.now()}`;
+    for (const order of createdOrders) {
       await prisma.order.update({
         where: { id: order.id },
-        data: {
-          paymentIntentId: paymentIntent.id,
-        },
+        data: { paymentIntentId: sharedPaymentIntent },
       });
-
-      console.log("✅ PaymentIntent created for first order:", paymentIntent.id);
-
-      return {
-        success: true,
-        data: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          clientSecret: paymentIntent.client_secret,
-          customerId: customer.id,
-          paymentIntentId: paymentIntent.id, // ✅ Return this for subsequent orders
-          isShared: false,
-        },
-      };
     }
-    
-    // ==================== CRITICAL FIX ENDS HERE ====================
-    
+
+    console.log(`✅ Created ${createdOrders.length} orders with payment intent`);
+    console.log(`💰 Total PayFast amount: ${totalPaymentAmount}`);
+
+    return {
+      success: true,
+      data: {
+        orderId: createdOrders[0].id,
+        orderIds: createdOrders.map(o => o.id),
+        orderNumber: createdOrders[0].orderNumber,
+        payfastUrl,
+        payfastData,
+      },
+    };
   } catch (error) {
-    console.error("❌ Pending order creation failed:", error);
-
-    if (
-      error instanceof ValidationError ||
-      error instanceof AuthenticationError
-    ) {
-      return {
-        success: false,
-        error: error.message,
-        statusCode: error.statusCode,
-        errorType: error.name,
-      };
-    }
-
+    console.error("❌ Order creation failed:", error);
     return {
       success: false,
       error: error.message || "An unexpected error occurred",
-      statusCode: 500,
-      errorType: "InternalServerError",
+      statusCode: error.statusCode || 500,
+      errorType: error.name || "InternalServerError",
     };
   }
 };
+
+// ==================== STEP 2: MARK ORDER AS PAID (Called by webhook) ====================
+export const markOrderAsPaid = async (orderId, paymentDetails) => {
+  try {
+    console.log(`💰 Marking order ${orderId} as PAID`);
+
+    // Check if order is scheduled for future
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { scheduledFor: true, sendType: true },
+    });
+
+    const isScheduled = order?.sendType === "scheduleLater" && order?.scheduledFor;
+    const processingStatus = isScheduled ? "PAYMENT_CONFIRMED" : "PAYMENT_CONFIRMED";
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paymentStatus: "COMPLETED",
+        paymentIntentId: paymentDetails.paymentIntentId,
+        paidAt: new Date(),
+        isPaid: true,
+        processingStatus,
+        lastProcessedAt: new Date(),
+      },
+    });
+
+    console.log(`✅ Order marked as PAID - ${isScheduled ? 'Scheduled for later' : 'Cron will process it'}`);
+
+    return {
+      success: true,
+      message: "Order marked as paid, processing will begin shortly",
+      data: {
+        orderId,
+        paymentStatus: "COMPLETED",
+        processingStatus,
+        isScheduled,
+      },
+    };
+  } catch (error) {
+    console.error(`❌ Failed to mark order ${orderId} as paid:`, error.message);
+
+    return {
+      success: false,
+      error: `Failed to mark order as paid: ${error.message}`,
+      statusCode: error.statusCode || 500,
+      errorType: error.name || "InternalServerError",
+    };
+  }
+};
+
 
 // ==================== STEP 2: COMPLETE ORDER AFTER PAYMENT (WEBHOOK) ====================
 export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
   try {
     console.log(`🔄 Starting order completion for: ${orderId}`);
 
+    // Update order with payment details
     const order = await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -581,6 +527,7 @@ export const completeOrderAfterPayment = async (orderId, paymentDetails) => {
 
     await initializeDeliveryQueue(order, quantity, isBulkOrder);
 
+    // ✅ Fire and forget background processing
     processOrderInBackground(orderId).catch((error) => {
       console.error(
         `❌ Background processing error for order ${orderId}:`,
@@ -683,6 +630,7 @@ async function initializeDeliveryQueue(order, quantity, isBulkOrder) {
       });
     }
 
+    // ✅ OPTIMIZED: Single batch insert
     await prisma.deliveryLog.createMany({
       data: deliveryLogs,
     });
@@ -700,6 +648,7 @@ async function processOrderInBackground(orderId) {
   console.log(`🚀 Background processing started for order: ${orderId}`);
 
   try {
+    // ✅ OPTIMIZED: Fetch order with only required relations
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -739,6 +688,7 @@ async function processOrderInBackground(orderId) {
 
     const voucherConfig = selectedBrand.vouchers[0];
 
+    // ✅ OPTIMIZED: Fetch occasion/custom card details
     let occasionCategoryDetails = null;
     if (!order?.isCustom) {
       occasionCategoryDetails = await prisma.occasionCategory.findUnique({
@@ -778,6 +728,7 @@ async function processOrderInBackground(orderId) {
       personalMessage: order.message,
     };
 
+    // ✅ PROCESS ORDER BASED ON TYPE
     if (isBulkOrder && order.bulkRecipients.length > 0) {
       await processBulkOrderQueue(order, orderData, voucherConfig);
     } else if (isBulkOrder && order.bulkRecipients.length === 0) {
@@ -786,7 +737,10 @@ async function processOrderInBackground(orderId) {
       await processSingleOrderQueue(order, orderData, voucherConfig);
     }
 
-    await updateOrCreateSettlement(selectedBrand, order);
+    // ✅ CRITICAL FIX: Settlement is now called INSIDE each processing function
+    // AFTER voucher generation but BEFORE email sending
+    // This ensures settlement is recorded when gift cards are created,
+    // not dependent on email delivery success
 
     const processingTime = Date.now() - startTime;
     console.log(
@@ -828,6 +782,7 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
   const stepStartTime = Date.now();
 
   try {
+    // ==================== STEP 1: CREATE SHOPIFY GIFT CARD ====================
     console.log(`📝 Creating gift card for order ${order.orderNumber}`);
     const giftCardStartTime = Date.now();
 
@@ -851,6 +806,7 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
 
     console.log(`✅ Gift card created in ${giftCardCreationTime}ms`);
 
+    // ==================== STEP 2: SAVE GIFT CARD TO DATABASE ====================
     const giftCardInDb = await prisma.giftCard.upsert({
       where: { shopifyId: shopifyGiftCard.id },
       update: {
@@ -871,6 +827,7 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
       },
     });
 
+    // ==================== STEP 3: CREATE VOUCHER CODE ====================
     let expireDate = calculateExpiryDate(voucherConfig, order.amount);
 
     const voucherCode = await prisma.voucherCode.create({
@@ -910,7 +867,14 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
 
     console.log(`✅ Voucher code created: ${voucherCode.code}`);
 
-    // ✅ STEP 5: Send delivery message (ONLY for single orders, NOT bulk)
+    // ==================== ✅ CRITICAL FIX: UPDATE SETTLEMENT HERE ====================
+    // Settlement is updated AFTER successful voucher generation
+    // This ensures the gift card is actually created before recording the sale
+    await updateOrCreateSettlement(orderData.selectedBrand, order);
+    console.log(`✅ Settlement updated for order ${order.orderNumber}`);
+
+    // ==================== STEP 4: SEND DELIVERY MESSAGE ====================
+    // Email sending happens AFTER settlement, so settlement is not dependent on email success
     if (
       order.sendType === "sendImmediately" &&
       order.deliveryMethod !== "print"
@@ -991,11 +955,14 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
 
 // ==================== REGULAR BULK ORDER (No CSV) ====================
 async function processRegularBulkOrder(order, orderData, voucherConfig) {
-  console.log(`📦 Processing regular bulk order (no CSV): ${order.orderNumber}`);
-  
+  console.log(
+    `📦 Processing regular bulk order (no CSV): ${order.orderNumber}`,
+  );
+
   const quantity = order.quantity;
   const voucherCodes = [];
 
+  // ✅ Generate all vouchers first
   for (let i = 0; i < quantity; i++) {
     console.log(`📝 Creating voucher ${i + 1}/${quantity}`);
 
@@ -1058,11 +1025,21 @@ async function processRegularBulkOrder(order, orderData, voucherConfig) {
       tokenizedLink: tokenizedLink,
     });
 
-    console.log(`✅ Voucher ${i + 1}/${quantity} created: ${shopifyGiftCard.code}`);
+    console.log(
+      `✅ Voucher ${i + 1}/${quantity} created: ${shopifyGiftCard.code}`,
+    );
   }
 
-  // ✅ Send bulk summary email based on deliveryOption
-  if (orderData.deliveryOption === "email" || orderData.deliveryOption === "csv") {
+  // ==================== ✅ CRITICAL FIX: UPDATE SETTLEMENT HERE ====================
+  // All vouchers generated successfully, update settlement BEFORE sending emails
+  await updateOrCreateSettlement(orderData.selectedBrand, order);
+  console.log(`✅ Settlement updated for bulk order ${order.orderNumber}`);
+
+  // ✅ Send bulk summary email based on deliveryOption (AFTER settlement)
+  if (
+    orderData.deliveryOption === "email" ||
+    orderData.deliveryOption === "csv"
+  ) {
     await sendRegularBulkSummaryEmail(order, orderData, voucherCodes);
   }
 
@@ -1092,6 +1069,9 @@ async function processBulkOrderQueue(order, orderData, voucherConfig) {
     orderBy: { rowNumber: "asc" },
   });
 
+  // ✅ Track successful voucher generations for settlement
+  let successfulVouchers = 0;
+
   for (let i = 0; i < pendingLogs.length; i += BATCH_SIZE) {
     const batch = pendingLogs.slice(i, i + BATCH_SIZE);
     const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
@@ -1101,7 +1081,8 @@ async function processBulkOrderQueue(order, orderData, voucherConfig) {
       `🔄 Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)`,
     );
 
-    await Promise.all(
+    // ✅ OPTIMIZED: Process batch in parallel
+    const batchResults = await Promise.allSettled(
       batch.map(async (deliveryLog, batchIndex) => {
         const globalIndex = i + batchIndex;
         const recipient = bulkRecipients[globalIndex];
@@ -1110,10 +1091,10 @@ async function processBulkOrderQueue(order, orderData, voucherConfig) {
           console.error(
             `No recipient found for delivery log at index ${globalIndex}`,
           );
-          return;
+          return { success: false };
         }
 
-        await processBulkItemQueue(
+        return await processBulkItemQueue(
           order,
           orderData,
           voucherConfig,
@@ -1125,20 +1106,37 @@ async function processBulkOrderQueue(order, orderData, voucherConfig) {
       }),
     );
 
+    // Count successful voucher generations
+    batchResults.forEach((result) => {
+      if (result.status === "fulfilled" && result.value?.success) {
+        successfulVouchers++;
+      }
+    });
+
     console.log(`✅ Batch ${batchNumber}/${totalBatches} completed`);
   }
 
-  // ✅ After all items processed, send appropriate email based on deliveryOption
+  // ==================== ✅ CRITICAL FIX: UPDATE SETTLEMENT HERE ====================
+  // All vouchers generated, update settlement BEFORE sending summary emails
+  // Settlement reflects actual vouchers created, not emails sent
+  if (successfulVouchers > 0) {
+    await updateOrCreateSettlement(orderData.selectedBrand, order);
+    console.log(
+      `✅ Settlement updated for ${successfulVouchers} vouchers in bulk order ${order.orderNumber}`,
+    );
+  }
+
+  // ✅ Send appropriate email based on deliveryOption (AFTER settlement)
   if (orderData.deliveryOption === "email") {
-    // Send summary email to company contact only
     await sendBulkSummaryEmail(order, orderData, bulkRecipients);
   } else if (orderData.deliveryOption === "multiple") {
-    // Individual emails already sent in processBulkItemQueue
-    // Still send summary to company contact
+    // Individual emails already sent, still send summary
     await sendBulkSummaryEmail(order, orderData, bulkRecipients);
   }
 
-  console.log(`✅ All ${pendingLogs.length} bulk items processed`);
+  console.log(
+    `✅ All ${pendingLogs.length} bulk items processed (${successfulVouchers} successful)`,
+  );
 }
 
 // ==================== Process individual bulk item (CSV recipient) ====================
@@ -1165,6 +1163,7 @@ async function processBulkItemQueue(
       message: recipient.personalMessage,
     };
 
+    // ==================== CREATE GIFT CARD ====================
     const shopifyGiftCard = await createShopifyGiftCard(
       orderData.selectedBrand,
       orderData,
@@ -1245,7 +1244,9 @@ async function processBulkItemQueue(
       },
     });
 
-    // ✅ ONLY send individual emails if deliveryOption is "multiple"
+    // ==================== SEND EMAIL (if deliveryOption is "multiple") ====================
+    // Email sending happens AFTER voucher creation
+    // If email fails, voucher was still created and settlement will be recorded
     if (orderData.deliveryOption === "multiple") {
       const deliveryStartTime = Date.now();
 
@@ -1283,7 +1284,7 @@ async function processBulkItemQueue(
         },
       });
     } else {
-      // ✅ For "email" delivery option, just mark as SENT (will get summary email later)
+      // For "email" delivery option, just mark as SENT (will get summary email later)
       await prisma.deliveryLog.update({
         where: { id: deliveryLog.id },
         data: {
@@ -1296,6 +1297,8 @@ async function processBulkItemQueue(
     console.log(
       `✅ Item ${itemNumber}/${totalItems} processed in ${Date.now() - stepStartTime}ms`,
     );
+
+    return { success: true };
   } catch (error) {
     console.error(
       `❌ Failed to process item ${itemNumber}/${totalItems}:`,
@@ -1318,11 +1321,12 @@ async function processBulkItemQueue(
         emailError: error.message,
       },
     });
+
+    return { success: false };
   }
 }
 
 // ==================== HELPER FUNCTIONS ====================
-
 function calculateExpiryDate(voucherConfig, amount) {
   let expireDate = null;
 
@@ -1441,7 +1445,6 @@ async function createShopifyGiftCard(
 }
 
 // ==================== EMAIL SENDING FUNCTIONS ====================
-
 async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
   try {
     if (deliveryMethod === "whatsapp") {
@@ -1527,22 +1530,81 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
     const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
     const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
 
-    const summaryRows = voucherCodes
+    // Initialize Cloudinary once
+    cloudinary.config({
+      cloud_name: process.env.NEXT_CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.NEXT_CLOUDINARY_API_KEY,
+      api_secret: process.env.NEXT_CLOUDINARY_API_SECRET,
+      secure: true,
+    });
+
+    // Validate Cloudinary configuration
+    if (
+      !process.env.NEXT_CLOUDINARY_CLOUD_NAME ||
+      !process.env.NEXT_CLOUDINARY_API_KEY ||
+      !process.env.NEXT_CLOUDINARY_API_SECRET
+    ) {
+      console.error(
+        "❌ Cloudinary configuration missing. Required env vars: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET",
+      );
+    }
+
+    console.log("order, orderData", order, orderData);
+
+    // Generate random password (8 characters alphanumeric)
+    const csvPassword = Math.random()
+      .toString(36)
+      .substring(2, 10)
+      .toUpperCase();
+
+    // Generate CSV content
+    const csvHeader = "S.No,Voucher Code,Amount,Currency,Expiry Date\n";
+    const csvRows = voucherCodes
       .map((vc, index) => {
         const expiryDate = vc.expiresAt
           ? new Date(vc.expiresAt).toLocaleDateString()
           : "No Expiry";
 
-        return `
-    <tr style="border-bottom: 1px solid #e2e8f0;">
-      <td style="padding: 12px 8px; font-size: 13px; color: #4a5568; text-align: center;">${index + 1}</td>
-      <td style="padding: 12px 8px; font-size: 12px; color: #1a1a1a; font-family: 'Courier New', monospace; word-break: break-all;">${vc.code}</td>
-      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a; text-align: center; white-space: nowrap;">${orderData.selectedAmount?.currency || "₹"}${vc.originalValue}</td>
-      <td style="padding: 12px 8px; font-size: 12px; color: #4a5568; text-align: center; white-space: nowrap;">${expiryDate}</td>
-    </tr>
-    `;
+        return `${index + 1},${vc.code},${vc.originalValue},${orderData.selectedAmount?.currency || "₹"},${expiryDate}`;
       })
-      .join("");
+      .join("\n");
+
+    const csvContent = csvHeader + csvRows;
+
+    // Convert CSV to buffer for upload
+    const csvBuffer = Buffer.from(csvContent, "utf-8");
+
+    // Upload CSV to Cloudinary with raw resource type
+    const timestamp = Date.now();
+    const fileName = `vouchers_${orderData.companyInfo.companyName.replace(/\s+/g, "_")}_${timestamp}`;
+
+    // We need to upload directly since uploadFile doesn't support resource_type
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            folder: "bulk-vouchers",
+            resource_type: "raw", // Important: for non-image files like CSV
+            public_id: fileName,
+            format: "csv",
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          },
+        )
+        .end(csvBuffer);
+    });
+
+    const csvUrl = uploadResult.secure_url;
+
+    console.log(`✅ CSV uploaded to Cloudinary: ${csvUrl}`);
+
+    // Get brand logo and gift card image URLs
+    const brandLogoUrl = orderData.selectedBrand?.logo || "";
+    const giftCardImageUrl =
+      orderData.selectedSubCategory?.image || order?.occasion?.image || "";
+    const brandName = orderData.selectedBrand?.brandName || "Gift Card";
 
     const sendSmtpEmail = {
       sender: { email: senderEmail, name: senderName },
@@ -1552,7 +1614,7 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
           name: orderData.companyInfo.companyName,
         },
       ],
-      subject: `📊 Bulk Gift Card Order - ${voucherCodes.length} Vouchers`,
+      subject: `🎁 Bulk Gift Card Order - ${voucherCodes.length} Vouchers Ready`,
       htmlContent: `
 <!DOCTYPE html>
 <html lang="en">
@@ -1560,282 +1622,109 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="x-apple-disable-message-reformatting">
-  <title>Bulk Gift Card Order</title>
-  <!--[if mso]>
-  <style type="text/css">
-    table {border-collapse: collapse !important;}
-    .fallback-text { font-family: Arial, sans-serif !important; }
-  </style>
-  <![endif]-->
-  <style type="text/css">
-    /* Reset styles */
-    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-    
-    /* Prevent iOS auto-linking */
-    a[x-apple-data-detectors] {
-      color: inherit !important;
-      text-decoration: none !important;
-      font-size: inherit !important;
-      font-family: inherit !important;
-      font-weight: inherit !important;
-      line-height: inherit !important;
-    }
-    
-    /* Responsive styles */
-    @media only screen and (max-width: 600px) {
-      .email-container {
-        width: 100% !important;
-        margin: auto !important;
-      }
-      .fluid {
-        width: 100% !important;
-        max-width: 100% !important;
-        height: auto !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-      }
-      .stack-column,
-      .stack-column-center {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        direction: ltr !important;
-      }
-      .stack-column-center {
-        text-align: center !important;
-      }
-      .center-on-narrow {
-        text-align: center !important;
-        display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        float: none !important;
-      }
-      table.center-on-narrow {
-        display: inline-block !important;
-      }
-      
-      /* Mobile padding adjustments */
-      .mobile-padding {
-        padding: 20px !important;
-      }
-      .mobile-padding-lr {
-        padding-left: 15px !important;
-        padding-right: 15px !important;
-      }
-      .mobile-padding-tb {
-        padding-top: 20px !important;
-        padding-bottom: 20px !important;
-      }
-      
-      /* Mobile font sizes */
-      .mobile-h1 {
-        font-size: 24px !important;
-        line-height: 32px !important;
-      }
-      .mobile-h2 {
-        font-size: 18px !important;
-        line-height: 26px !important;
-      }
-      .mobile-h3 {
-        font-size: 16px !important;
-        line-height: 24px !important;
-      }
-      .mobile-text {
-        font-size: 14px !important;
-        line-height: 22px !important;
-      }
-      .mobile-small {
-        font-size: 12px !important;
-        line-height: 18px !important;
-      }
-      
-      /* Hide on mobile */
-      .hide-mobile {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-        overflow: hidden !important;
-        mso-hide: all !important;
-      }
-      
-      /* Table adjustments for mobile */
-      .mobile-table {
-        font-size: 11px !important;
-      }
-      .mobile-table td {
-        padding: 8px 4px !important;
-      }
-      
-      /* Button full width on mobile */
-      .mobile-button {
-        width: 100% !important;
-        display: block !important;
-      }
-    }
-  </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f5f5f5; width: 100% !important; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   
-  <!-- 100% background wrapper -->
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
-      <td align="center" style="padding: 20px 10px;">
-        
-        <!-- Email Container -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" class="email-container" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
           
-          <!-- Header with Gradient -->
+          <!-- Header -->
           <tr>
-            <td align="center" style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); padding: 40px 20px;" class="mobile-padding-tb">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; line-height: 36px;" class="mobile-h1 fallback-text">
-                📊 Bulk Gift Card Order
+            <td style="background-color: #ffe4e6; padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 18px; font-weight: 500; color: #1a1a1a;">
+                🎁 Your Bulk Gift Card Order is Ready!
               </h1>
             </td>
           </tr>
           
           <!-- Main Content -->
           <tr>
-            <td style="padding: 40px 40px 20px;" class="mobile-padding">
-              <!-- Greeting -->
-              <p style="margin: 0 0 8px; font-size: 18px; color: #1a1a1a; font-weight: 600; line-height: 26px;" class="mobile-h3 fallback-text">
-                Dear ${orderData.companyInfo.companyName},
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 8px; font-size: 14px; color: #1a1a1a;">
+                Hi ${orderData.companyInfo.companyName},
               </p>
-              <p style="margin: 0 0 24px; font-size: 16px; color: #4a4a4a; line-height: 24px;" class="mobile-text fallback-text">
-                Your bulk gift card order has been processed successfully.
+              <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a;">
+                Congratulations! Your bulk gift card order has been processed successfully.
               </p>
               
-              <!-- Order Summary Box -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8f9fa; border-left: 4px solid #ED457D; border-radius: 8px; margin-bottom: 32px;">
+              <!-- Gift Card Display Section -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
                 <tr>
-                  <td style="padding: 24px;" class="mobile-padding">
-                    <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a; line-height: 26px;" class="mobile-h3 fallback-text">
-                      📊 Order Summary
-                    </h3>
+                  <td style="width: 60%; vertical-align: top; padding-right: 20px;">
+                    ${
+                      giftCardImageUrl
+                        ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">`
+                        : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2>
+                      </div>`
+                    }
+                  </td>
+                  
+                  <td style="width: 40%; vertical-align: top;">
+                    ${
+                      brandLogoUrl
+                        ? `<div style="margin-bottom: 20px;">
+                        <img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 120px; height: auto; display: block;">
+                      </div>`
+                        : `<div style="margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">${brandName}</h3>
+                      </div>`
+                    }
                     
-                    <!-- Summary Details Table -->
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                      <tr>
-                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
-                          <strong>Brand:</strong>
-                        </td>
-                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
-                          ${orderData.selectedBrand?.brandName || "N/A"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
-                          <strong>Total Vouchers:</strong>
-                        </td>
-                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
-                          ${voucherCodes.length}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 12px 0 0; font-size: 16px; color: #1a1a1a; font-weight: 600; line-height: 24px;" class="mobile-text fallback-text">
-                          <strong>Total Value:</strong>
-                        </td>
-                        <td align="right" style="padding: 12px 0 0; font-size: 18px; font-weight: 700; color: #ED457D; line-height: 26px;" class="mobile-h3 fallback-text">
-                          ${orderData.selectedAmount?.currency || "₹"}${(orderData.selectedAmount?.value || 0) * voucherCodes.length}
-                        </td>
-                      </tr>
-                    </table>
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Total Vouchers:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">${voucherCodes.length}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Amount per Voucher:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">
+                        ${orderData.selectedAmount?.currency || "₹"}${orderData.selectedAmount?.value || 0}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Total Value:</p>
+                      <p style="margin: 0; font-size: 18px; font-weight: 700; color: #ED457D;">
+                        ${orderData.selectedAmount?.currency || "₹"}${(orderData.selectedAmount?.value || 0) * voucherCodes.length}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               </table>
-            </td>
-          </tr>
-          
-          <!-- Voucher Codes Section -->
-          <tr>
-            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
-              <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a; line-height: 26px;" class="mobile-h3 fallback-text">
-                🎁 Your Voucher Codes
-              </h3>
-              
-              <!-- Responsive Table Wrapper -->
-              <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; min-width: 500px;" class="mobile-table">
-                  <!-- Table Header -->
-                  <thead>
-                    <tr style="background: #f8f9fa;">
-                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px;" class="fallback-text">
-                        #
-                      </th>
-                      <th align="left" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px;" class="fallback-text">
-                        Voucher Code
-                      </th>
-                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px;" class="fallback-text">
-                        Amount
-                      </th>
-                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px;" class="fallback-text">
-                        Expires
-                      </th>
-                    </tr>
-                  </thead>
-                  <!-- Table Body -->
-                  <tbody class="fallback-text">
-                    ${summaryRows}
-                  </tbody>
-                </table>
-              </div>
-              
-              <!-- Mobile Helper Text -->
-              <p style="margin: 12px 0 0; font-size: 11px; color: #6c757d; line-height: 16px; text-align: center;" class="mobile-small fallback-text">
-                💡 Tip: Scroll horizontally to view all columns on mobile devices
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Support Section (Optional) -->
-          <tr>
-            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fff4f6; border-radius: 8px; border: 1px solid #fecdd3;">
+                            
+              <!-- Download Button -->
+              <table role="presentation" style="width: 100%; margin-top: 32px;">
                 <tr>
-                  <td style="padding: 20px;" class="mobile-padding">
-                    <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
-                      📌 Important Notes:
-                    </p>
-                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
-                      <li style="margin-bottom: 6px;">Keep these voucher codes secure</li>
-                      <li style="margin-bottom: 6px;">Each code can only be used once</li>
-                      <li style="margin-bottom: 0;">Check expiry dates before distribution</li>
-                    </ul>
+                  <td align="center">
+                    <a href="${csvUrl}" style="display: inline-block; padding: 14px 0; width: 100%; max-width: 400px; background: linear-gradient(90deg, #ED457D 0%, #FA8F42 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 15px; font-weight: 600; text-align: center; box-shadow: 0 4px 12px rgba(237, 69, 125, 0.3);">
+                      📥 Download Voucher Codes (CSV)
+                    </a>
                   </td>
                 </tr>
               </table>
+              
+              <div style="margin-top: 32px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; color: #666; line-height: 1.6;">
+                  Click the button above to download all ${voucherCodes.length} voucher codes<br>
+                  The CSV file contains: Code, Amount, Currency, and Expiry Date
+                </p>
+              </div>
             </td>
           </tr>
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e2e8f0;" class="mobile-padding">
-              <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d; text-align: center; line-height: 18px;" class="mobile-small fallback-text">
-                Thank you for using our gift card platform.
-              </p>
-              <p style="margin: 0; font-size: 11px; color: #9ca3af; text-align: center; line-height: 16px;" class="mobile-small fallback-text">
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.6;">
+                Thank you for using our gift card platform.<br>
                 If you have any questions, please contact our support team.
               </p>
             </td>
           </tr>
-          
         </table>
-        <!-- End Email Container -->
-        
-        <!-- Extra Footer Space -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" class="email-container" style="max-width: 600px;">
-          <tr>
-            <td style="padding: 20px; text-align: center;">
-              <p style="margin: 0; font-size: 11px; color: #9ca3af; line-height: 16px;" class="mobile-small fallback-text">
-                © ${new Date().getFullYear()} Gift Cards. All rights reserved.
-              </p>
-            </td>
-          </tr>
-        </table>
-        
       </td>
     </tr>
   </table>
@@ -1850,6 +1739,7 @@ async function sendRegularBulkSummaryEmail(order, orderData, voucherCodes) {
     console.log(
       `✅ Regular bulk summary email sent to ${orderData.companyInfo.contactEmail}`,
     );
+    console.log(`🔐 CSV Password: ${csvPassword}`);
   } catch (error) {
     console.error(`❌ Failed to send regular bulk summary email:`, error);
   }
@@ -1905,7 +1795,6 @@ async function sendBulkSummaryEmail(order, orderData, bulkRecipients) {
 }
 
 // ==================== EMAIL TEMPLATES ====================
-
 function generateIndividualGiftEmailHTML(
   recipient,
   voucherCode,
@@ -1915,9 +1804,21 @@ function generateIndividualGiftEmailHTML(
   companyName,
   personalMessage,
 ) {
+  const recipientName = recipient?.recipientName || "You";
+  const currency = orderData?.selectedAmount?.currency || "₹";
+  const amount =
+    voucherCode?.originalValue || orderData?.selectedAmount?.value || "100";
+  const giftCode = voucherCode?.code || "XXXX-XXX-XXX";
+  const brandName = selectedBrand?.brandName || "Brand";
+  const claimUrl = voucherCode?.tokenizedLink || "#";
+
+  // Direct URLs without getAbsoluteUrl() function
+  const brandLogoUrl = selectedBrand?.logo || null;
+  const giftCardImageUrl = orderData?.selectedSubCategory?.image || null;
+
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1926,83 +1827,65 @@ function generateIndividualGiftEmailHTML(
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" style="width: 600px; max-width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+        <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
           
-          <!-- Header with Gradient -->
           <tr>
-            <td style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); padding: 50px 40px; text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 16px;">🎁</div>
-              <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #ffffff; line-height: 1.2;">
-                You've Received<br>a Gift!
-              </h1>
+            <td style="background-color: #ffe4e6; padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 18px; font-weight: 500; color: #1a1a1a;">You have received a Gift card!</h1>
             </td>
           </tr>
           
-          <!-- Body Content -->
           <tr>
             <td style="padding: 40px;">
-              <div style="text-align: center; margin-bottom: 32px;">
-                <p style="margin: 0 0 8px; font-size: 20px; color: #1a1a1a; font-weight: 600;">
-                  Hi ${recipient.recipientName}! 👋
-                </p>
-                <p style="margin: 0; font-size: 16px; color: #4a4a4a; line-height: 1.6;">
-                  ${companyName} has sent you a gift card for <strong style="color: #ED457D;">${selectedBrand?.brandName || "our store"}</strong>
-                </p>
-              </div>
+              <p style="margin: 0 0 8px; font-size: 14px; color: #1a1a1a;">hi ${recipientName.toLowerCase()},</p>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a;">Congratulations, you've received gift card from ${companyName}.</p>
               
-              ${
-                personalMessage
-                  ? `
-              <div style="background: linear-gradient(135deg, #fff3cd 0%, #ffe4b5 100%); border-left: 4px solid #ffc107; padding: 20px; margin-bottom: 32px; border-radius: 12px;">
-                <p style="margin: 0 0 8px; font-size: 12px; color: #856404; text-transform: uppercase; font-weight: 600;">Personal Message</p>
-                <p style="margin: 0; font-size: 15px; color: #856404; font-style: italic;">"${personalMessage}"</p>
-              </div>
-              `
-                  : ""
-              }
+              ${personalMessage ? `<div style="margin-bottom: 32px;"><p style="margin: 0; font-size: 14px; color: #1a1a1a; line-height: 1.6;">"${personalMessage}"</p></div>` : ""}
               
-              <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 16px; padding: 32px; margin-bottom: 32px;">
-                <h3 style="margin: 0 0 24px; font-size: 20px; color: #1a1a1a; font-weight: 600; text-align: center;">Your Gift Card Details</h3>
-                
-                <div style="margin-bottom: 24px;">
-                  <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d; text-transform: uppercase; text-align: center;">Your Gift Code</p>
-                  <div style="background: #ffffff; border: 3px dashed #ED457D; border-radius: 12px; padding: 20px; text-align: center;">
-                    <p style="margin: 0; font-family: 'Courier New', monospace; font-size: 24px; font-weight: 700; color: #1a1a1a; letter-spacing: 3px;">
-                      ${voucherCode.code}
-                    </p>
-                  </div>
-                </div>
-                
-                <div style="display: table; width: 100%;">
-                  <div style="display: table-row;">
-                    <div style="display: table-cell; width: 50%; padding: 16px; text-align: center; background-color: #ffffff; border-radius: 8px;">
-                      <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d;">Amount</p>
-                      <p style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">
-                        ${orderData.selectedAmount?.currency || "₹"}${voucherCode.originalValue}
-                      </p>
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
+                <tr>
+                  <td style="width: 60%; vertical-align: top; padding-right: 20px;">
+                    ${giftCardImageUrl ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">` : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #00d4ff 0%, #00a8ff 100%); border-radius: 12px;"><table role="presentation" style="width: 100%; height: 100%;"><tr><td align="center" style="vertical-align: middle;"><h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2></td></tr></table></div>`}
+                  </td>
+                  
+                  <td style="width: 40%; vertical-align: top;">
+                    ${brandLogoUrl ? `<div style="margin-bottom: 20px;"><img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 80px; height: auto; display: block;"></div>` : `<div style="margin-bottom: 20px;"><h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #e50914;">${brandName}</h3></div>`}
+                    
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Gift Code</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a; letter-spacing: 0.5px;">${giftCode}</p>
                     </div>
-                    <div style="display: table-cell; width: 50%; padding: 16px; text-align: center; background-color: #ffffff; border-radius: 8px;">
-                      <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d;">Expires</p>
-                      <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1a1a1a;">${expiryDate}</p>
+                    
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Amount:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">${currency}${amount}</p>
                     </div>
-                  </div>
-                </div>
-              </div>
+                    
+                    <div>
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Expires:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">${expiryDate}</p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
               
-              <div style="text-align: center; margin-bottom: 32px;">
-                <a href="${voucherCode.tokenizedLink}" 
-                   style="display: inline-block; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 50px; font-size: 18px; font-weight: 600;">
-                  Redeem Your Gift →
-                </a>
+              <table role="presentation" style="width: 100%; margin-top: 32px;">
+                <tr>
+                  <td align="center">
+                    <a href="${claimUrl}" style="display: inline-block; padding: 14px 0; width: 100%; max-width: 400px; background: linear-gradient(90deg, #ff6b9d 0%, #ff8f6b 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 15px; font-weight: 600; text-align: center; box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);">Redeem Now →</a>
+                  </td>
+                </tr>
+              </table>
+              
+              <div style="margin-top: 32px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; color: #666; line-height: 1.6;">Click the button above to redeem your gift card<br>Or visit: <a href="${claimUrl}" style="color: #ff6b9d; text-decoration: none;">${claimUrl}</a></p>
               </div>
             </td>
           </tr>
           
           <tr>
-            <td style="padding: 32px 40px; background: #f8f9fa;">
-              <p style="margin: 0; font-size: 13px; color: #6c757d; text-align: center;">
-                This gift was sent by ${companyName}
-              </p>
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.6;">This gift card was sent to you by ${companyName}.<br>If you have any questions, please contact our support team.</p>
             </td>
           </tr>
         </table>
@@ -2042,35 +1925,262 @@ This gift was sent by ${companyName}
   `;
 }
 
-function generateBulkSummaryEmailHTML(
+async function sendBulkDistributionSummaryEmail(
   order,
   orderData,
   voucherCodes,
   bulkRecipients,
 ) {
-  // Generate recipient rows
-  const recipientRows = bulkRecipients
-    .map((recipient, index) => {
-      const voucherCode = voucherCodes[index];
-      const code = voucherCode?.giftCard?.code || voucherCode?.code || "N/A";
-      const expiryDate = voucherCode?.expiresAt
-        ? new Date(voucherCode.expiresAt).toLocaleDateString()
-        : "No Expiry";
+  try {
+    const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
+    const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Gift Cards";
 
-      return `
-    <tr style="border-bottom: 1px solid #e2e8f0;">
-      <td style="padding: 12px 8px; font-size: 13px; color: #4a5568; text-align: center;">${index + 1}</td>
-      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a;">
-        <strong style="display: block; margin-bottom: 2px;">${recipient.recipientName}</strong>
-        <span style="font-size: 12px; color: #6b7280;">${recipient.recipientEmail}</span>
+    // Generate random password (8 characters alphanumeric)
+    const csvPassword = Math.random()
+      .toString(36)
+      .substring(2, 10)
+      .toUpperCase();
+
+    // Generate CSV content with recipient details
+    const csvHeader =
+      "S.No,Recipient Name,Recipient Email,Voucher Code,Amount,Currency,Expiry Date\n";
+    const csvRows = bulkRecipients
+      .map((recipient, index) => {
+        const voucherCode = voucherCodes[index];
+        const code = voucherCode?.giftCard?.code || voucherCode?.code || "N/A";
+        const expiryDate = voucherCode?.expiresAt
+          ? new Date(voucherCode.expiresAt).toLocaleDateString()
+          : "No Expiry";
+
+        return `${index + 1},${recipient.recipientName},${recipient.recipientEmail},${code},${orderData.selectedAmount?.value || 0},${orderData.selectedAmount?.currency || "₹"},${expiryDate}`;
+      })
+      .join("\n");
+
+    const csvContent = csvHeader + csvRows;
+
+    // Convert CSV to buffer for upload
+    const csvBuffer = Buffer.from(csvContent, "utf-8");
+
+    // Upload CSV to Cloudinary with raw resource type
+    const timestamp = Date.now();
+    const fileName = `distribution_${orderData.companyInfo.companyName.replace(/\s+/g, "_")}_${timestamp}`;
+
+    // Upload directly since uploadFile doesn't support resource_type
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          {
+            folder: "bulk-vouchers",
+            resource_type: "raw",
+            public_id: fileName,
+            format: "csv",
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          },
+        )
+        .end(csvBuffer);
+    });
+
+    const csvUrl = uploadResult.secure_url;
+
+    console.log(`✅ CSV uploaded to Cloudinary: ${csvUrl}`);
+
+    // Get brand logo and gift card image URLs
+    const brandLogoUrl = orderData.selectedBrand?.logo || "";
+    const giftCardImageUrl = orderData.selectedSubCategory?.image || "";
+    const brandName = orderData.selectedBrand?.brandName || "Gift Card";
+
+    const sendSmtpEmail = {
+      sender: { email: senderEmail, name: senderName },
+      to: [
+        {
+          email: orderData.companyInfo.contactEmail,
+          name: orderData.companyInfo.companyName,
+        },
+      ],
+      subject: `🎁 Gift Cards Distributed - ${bulkRecipients.length} Recipients`,
+      htmlContent: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #ffe4e6; padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 18px; font-weight: 500; color: #1a1a1a;">
+                🎁 Gift Cards Distributed Successfully!
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 8px; font-size: 14px; color: #1a1a1a;">
+                Hi ${orderData.companyInfo.companyName},
+              </p>
+              <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a;">
+                Great news! Your bulk gift cards have been sent to all ${bulkRecipients.length} recipients.
+              </p>
+              
+              <!-- Gift Card Display Section -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
+                <tr>
+                  <td style="width: 60%; vertical-align: top; padding-right: 20px;">
+                    ${
+                      giftCardImageUrl
+                        ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">`
+                        : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2>
+                      </div>`
+                    }
+                  </td>
+                  
+                  <td style="width: 40%; vertical-align: top;">
+                    ${
+                      brandLogoUrl
+                        ? `<div style="margin-bottom: 20px;">
+                        <img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 120px; height: auto; display: block;">
+                      </div>`
+                        : `<div style="margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">${brandName}</h3>
+                      </div>`
+                    }
+                    
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Total Recipients:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">${bulkRecipients.length}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Amount per Gift:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">
+                        ${orderData.selectedAmount?.currency || "₹"}${orderData.selectedAmount?.value || 0}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Total Value:</p>
+                      <p style="margin: 0; font-size: 18px; font-weight: 700; color: #ED457D;">
+                        ${orderData.selectedAmount?.currency || "₹"}${(orderData.selectedAmount?.value || 0) * bulkRecipients.length}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Status Message -->
+              <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+                <p style="margin: 0; font-size: 14px; color: #065f46; line-height: 1.6;">
+                  ✅ All ${bulkRecipients.length} recipients have received their gift cards via email with individual redemption links.
+                </p>
+              </div>
+              
+              <!-- Password Display -->
+              <div style="background-color: #f8f9fa; border-left: 4px solid #ED457D; border-radius: 8px; padding: 24px; margin-bottom: 32px;">
+                <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #1a1a1a;">
+                  🔐 Distribution Report Password
+                </p>
+                <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a; font-family: 'Courier New', monospace; letter-spacing: 2px;">
+                  ${csvPassword}
+                </p>
+                <p style="margin: 12px 0 0; font-size: 12px; color: #6c757d;">
+                  Keep this password secure. You'll need it to access the complete distribution report.
+                </p>
+              </div>
+              
+              <!-- Download Button -->
+              <table role="presentation" style="width: 100%; margin-top: 32px;">
+                <tr>
+                  <td align="center">
+                    <a href="${csvUrl}" style="display: inline-block; padding: 14px 0; width: 100%; max-width: 400px; background: linear-gradient(90deg, #ED457D 0%, #FA8F42 100%); color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 15px; font-weight: 600; text-align: center; box-shadow: 0 4px 12px rgba(237, 69, 125, 0.3);">
+                      📥 Download Distribution Report (CSV)
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <div style="margin-top: 32px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; color: #666; line-height: 1.6;">
+                  Download the complete report with all ${bulkRecipients.length} recipients<br>
+                  Includes: Name, Email, Voucher Code, Amount, and Expiry Date
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Important Notes -->
+          <tr>
+            <td style="padding: 0 40px 40px;">
+              <div style="background-color: #fff4f6; border-radius: 8px; border: 1px solid #fecdd3; padding: 20px;">
+                <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #1a1a1a;">
+                  📌 Important Information:
+                </p>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4a5568; line-height: 1.8;">
+                  <li style="margin-bottom: 6px;">This summary is for your records only</li>
+                  <li style="margin-bottom: 6px;">All recipients have already received individual emails</li>
+                  <li style="margin-bottom: 6px;">Each voucher code can only be used once</li>
+                  <li style="margin-bottom: 0;">Download the CSV for complete tracking details</li>
+                </ul>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.6;">
+                Thank you for using our gift card platform.<br>
+                If you have any questions, please contact our support team.
+              </p>
+            </td>
+          </tr>
+        </table>
       </td>
-      <td style="padding: 12px 8px; font-size: 12px; color: #1a1a1a; font-family: 'Courier New', monospace; word-break: break-all;">${code}</td>
-      <td style="padding: 12px 8px; font-size: 13px; color: #1a1a1a; text-align: center; white-space: nowrap;">${orderData.selectedAmount?.currency || "₹"}${orderData.selectedAmount?.value || 0}</td>
-      <td style="padding: 12px 8px; font-size: 12px; color: #4a5568; text-align: center; white-space: nowrap;">${expiryDate}</td>
     </tr>
-    `;
-    })
-    .join("");
+  </table>
+  
+</body>
+</html>
+      `,
+    };
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+    console.log(
+      `✅ Bulk distribution summary email sent to ${orderData.companyInfo.contactEmail}`,
+    );
+    console.log(`🔐 CSV Password: ${csvPassword}`);
+  } catch (error) {
+    console.error(`❌ Failed to send bulk distribution summary email:`, error);
+  }
+}
+
+// Alternative: If you want to keep it as a function that just generates HTML
+function generateBulkSummaryEmailHTML(
+  order,
+  orderData,
+  voucherCodes,
+  bulkRecipients,
+  csvUrl,
+  csvPassword,
+) {
+  // Get brand logo and gift card image URLs
+  const brandLogoUrl = orderData.selectedBrand?.logo || "";
+  const giftCardImageUrl = orderData.selectedSubCategory?.image || "";
+  const brandName = orderData.selectedBrand?.brandName || "Gift Card";
 
   return `
 <!DOCTYPE html>
@@ -2079,372 +2189,115 @@ function generateBulkSummaryEmailHTML(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="x-apple-disable-message-reformatting">
-  <title>Gift Card Distribution Summary</title>
-  <!--[if mso]>
-  <style type="text/css">
-    table {border-collapse: collapse !important;}
-    .fallback-text { font-family: Arial, sans-serif !important; }
-  </style>
-  <![endif]-->
-  <style type="text/css">
-    /* Reset styles */
-    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-    
-    /* Prevent iOS auto-linking */
-    a[x-apple-data-detectors] {
-      color: inherit !important;
-      text-decoration: none !important;
-      font-size: inherit !important;
-      font-family: inherit !important;
-      font-weight: inherit !important;
-      line-height: inherit !important;
-    }
-    
-    /* Responsive styles */
-    @media only screen and (max-width: 600px) {
-      .email-container {
-        width: 100% !important;
-        margin: auto !important;
-      }
-      .fluid {
-        width: 100% !important;
-        max-width: 100% !important;
-        height: auto !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-      }
-      .stack-column,
-      .stack-column-center {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        direction: ltr !important;
-      }
-      .center-on-narrow {
-        text-align: center !important;
-        display: block !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-        float: none !important;
-      }
-      
-      /* Mobile padding adjustments */
-      .mobile-padding {
-        padding: 20px !important;
-      }
-      .mobile-padding-lr {
-        padding-left: 15px !important;
-        padding-right: 15px !important;
-      }
-      .mobile-padding-tb {
-        padding-top: 20px !important;
-        padding-bottom: 20px !important;
-      }
-      
-      /* Mobile font sizes */
-      .mobile-h1 {
-        font-size: 24px !important;
-        line-height: 32px !important;
-      }
-      .mobile-h2 {
-        font-size: 18px !important;
-        line-height: 26px !important;
-      }
-      .mobile-h3 {
-        font-size: 16px !important;
-        line-height: 24px !important;
-      }
-      .mobile-text {
-        font-size: 14px !important;
-        line-height: 22px !important;
-      }
-      .mobile-small {
-        font-size: 12px !important;
-        line-height: 18px !important;
-      }
-      
-      /* Table adjustments for mobile */
-      .mobile-table {
-        font-size: 10px !important;
-      }
-      .mobile-table td {
-        padding: 8px 4px !important;
-      }
-      .mobile-table strong {
-        font-size: 11px !important;
-      }
-      .mobile-table span {
-        font-size: 10px !important;
-      }
-      
-      /* Hide columns on mobile */
-      .hide-mobile {
-        display: none !important;
-        max-height: 0 !important;
-        overflow: hidden !important;
-        mso-hide: all !important;
-      }
-    }
-  </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f5f5f5; width: 100% !important; -webkit-font-smoothing: antialiased;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   
-  <!-- 100% background wrapper -->
-  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
-      <td align="center" style="padding: 20px 10px;">
-        
-        <!-- Email Container -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="650" class="email-container" style="max-width: 650px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
           
-          <!-- Header with Gradient -->
+          <!-- Header -->
           <tr>
-            <td align="center" style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); padding: 40px 20px;" class="mobile-padding-tb">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; line-height: 36px;" class="mobile-h1 fallback-text">
-                🎁 Gift Card Distribution Summary
+            <td style="background-color: #ffe4e6; padding: 24px 40px; text-align: center;">
+              <h1 style="margin: 0; font-size: 18px; font-weight: 500; color: #1a1a1a;">
+                🎁 Gift Cards Distributed Successfully!
               </h1>
             </td>
           </tr>
           
           <!-- Main Content -->
           <tr>
-            <td style="padding: 40px 40px 20px;" class="mobile-padding">
-              <!-- Greeting -->
-              <p style="margin: 0 0 8px; font-size: 18px; color: #1a1a1a; font-weight: 600; line-height: 26px;" class="mobile-h3 fallback-text">
-                Dear ${orderData.companyInfo.companyName},
+            <td style="padding: 40px;">
+              <p style="margin: 0 0 8px; font-size: 14px; color: #1a1a1a;">
+                Hi ${orderData.companyInfo.companyName},
               </p>
-              <p style="margin: 0 0 24px; font-size: 16px; color: #4a4a4a; line-height: 24px;" class="mobile-text fallback-text">
-                Your bulk gift card order has been processed and distributed successfully.
+              <p style="margin: 0 0 24px; font-size: 14px; color: #1a1a1a;">
+                Great news! Your bulk gift cards have been sent to all ${bulkRecipients.length} recipients.
               </p>
               
-              <!-- Order Summary Box -->
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8f9fa; border-left: 4px solid #ED457D; border-radius: 8px; margin-bottom: 32px;">
+              <!-- Gift Card Display Section -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 32px;">
                 <tr>
-                  <td style="padding: 24px;" class="mobile-padding">
-                    <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a; line-height: 26px;" class="mobile-h3 fallback-text">
-                      📊 Order Summary
-                    </h3>
+                  <td style="width: 60%; vertical-align: top; padding-right: 20px;">
+                    ${
+                      giftCardImageUrl
+                        ? `<img src="${giftCardImageUrl}" alt="Gift Card" style="width: 100%; max-width: 280px; height: auto; border-radius: 12px; display: block;">`
+                        : `<div style="width: 100%; max-width: 280px; height: 200px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <h2 style="color: white; font-size: 32px; font-weight: 700; margin: 0;">GIFT CARD</h2>
+                      </div>`
+                    }
+                  </td>
+                  
+                  <td style="width: 40%; vertical-align: top;">
+                    ${
+                      brandLogoUrl
+                        ? `<div style="margin-bottom: 20px;">
+                        <img src="${brandLogoUrl}" alt="${brandName}" style="max-width: 120px; height: auto; display: block;">
+                      </div>`
+                        : `<div style="margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 24px; font-weight: 700; color: #ED457D;">${brandName}</h3>
+                      </div>`
+                    }
                     
-                    <!-- Summary Details Table -->
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                      <tr>
-                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
-                          <strong>Brand:</strong>
-                        </td>
-                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
-                          ${orderData.selectedBrand?.brandName || "N/A"}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
-                          <strong>Total Recipients:</strong>
-                        </td>
-                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
-                          ${bulkRecipients.length}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 8px 0; font-size: 14px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
-                          <strong>Amount per Gift:</strong>
-                        </td>
-                        <td align="right" style="padding: 8px 0; font-size: 14px; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
-                          ${orderData.selectedAmount?.currency || "₹"}${orderData.selectedAmount?.value || 0}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 12px 0 0; font-size: 16px; color: #1a1a1a; font-weight: 600; line-height: 24px;" class="mobile-text fallback-text">
-                          <strong>Total Value:</strong>
-                        </td>
-                        <td align="right" style="padding: 12px 0 0; font-size: 18px; font-weight: 700; color: #ED457D; line-height: 26px;" class="mobile-h3 fallback-text">
-                          ${orderData.selectedAmount?.currency || "₹"}${(orderData.selectedAmount?.value || 0) * bulkRecipients.length}
-                        </td>
-                      </tr>
-                    </table>
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Total Recipients:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">${bulkRecipients.length}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Amount per Gift:</p>
+                      <p style="margin: 0; font-size: 14px; font-weight: 500; color: #1a1a1a;">
+                        ${orderData.selectedAmount?.currency || "₹"}${orderData.selectedAmount?.value || 0}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #1a1a1a;">Total Value:</p>
+                      <p style="margin: 0; font-size: 18px; font-weight: 700; color: #ED457D;">
+                        ${orderData.selectedAmount?.currency || "₹"}${(orderData.selectedAmount?.value || 0) * bulkRecipients.length}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               </table>
-            </td>
-          </tr>
-          
-          <!-- Distribution Details Section -->
-          <tr>
-            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
-              <h3 style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #1a1a1a; line-height: 26px;" class="mobile-h3 fallback-text">
-                📧 Distribution Details
-              </h3>
               
-              <!-- Responsive Table Wrapper -->
-              <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; border: 1px solid #e2e8f0;">
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; min-width: 600px;" class="mobile-table">
-                  <!-- Table Header -->
-                  <thead>
-                    <tr style="background: #f8f9fa;">
-                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 5%;" class="fallback-text">
-                        #
-                      </th>
-                      <th align="left" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 30%;" class="fallback-text">
-                        Recipient
-                      </th>
-                      <th align="left" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 35%;" class="fallback-text">
-                        Voucher Code
-                      </th>
-                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 15%;" class="fallback-text">
-                        Amount
-                      </th>
-                      <th align="center" style="padding: 14px 8px; font-size: 12px; font-weight: 600; color: #4a5568; border-bottom: 2px solid #e2e8f0; line-height: 18px; width: 15%;" class="hide-mobile fallback-text">
-                        Expires
-                      </th>
-                    </tr>
-                  </thead>
-                  <!-- Table Body -->
-                  <tbody class="fallback-text">
-                    ${recipientRows}
-                  </tbody>
-                </table>
+              <!-- Status Message -->
+              <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; border-radius: 8px; padding: 16px; margin-bottom: 32px;">
+                <p style="margin: 0; font-size: 14px; color: #065f46; line-height: 1.6;">
+                  ✅ All ${bulkRecipients.length} recipients have received their gift cards via email with individual redemption links.
+                </p>
               </div>
               
-              <!-- Mobile Helper Text -->
-              <p style="margin: 12px 0 0; font-size: 11px; color: #6c757d; line-height: 16px; text-align: center;" class="mobile-small fallback-text">
-                💡 Tip: Scroll horizontally to view all columns on mobile devices
-              </p>
             </td>
           </tr>
           
-          <!-- Status Indicators Section -->
+          <!-- Important Notes -->
           <tr>
-            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ecfdf5; border-radius: 8px; border: 1px solid #a7f3d0;">
-                <tr>
-                  <td style="padding: 20px;" class="mobile-padding">
-                    <div style="text-align: center; margin-bottom: 12px;">
-                      <span style="display: inline-block; background-color: #10b981; color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;" class="fallback-text">
-                        ✓ All ${bulkRecipients.length} gift cards delivered
-                      </span>
-                    </div>
-                    <p style="margin: 0; font-size: 13px; color: #065f46; text-align: center; line-height: 20px;" class="mobile-small fallback-text">
-                      Each recipient has received their gift card via email
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-          <!-- Important Notes Section -->
-          <tr>
-            <td style="padding: 0 40px 40px;" class="mobile-padding-lr">
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fff4f6; border-radius: 8px; border: 1px solid #fecdd3;">
-                <tr>
-                  <td style="padding: 20px;" class="mobile-padding">
-                    <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #1a1a1a; line-height: 20px;" class="mobile-small fallback-text">
-                      📌 Important Information:
-                    </p>
-                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                      <tr>
-                        <td style="padding: 0 0 8px 0;">
-                          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td style="padding-right: 8px; vertical-align: top;">
-                                <span style="color: #ED457D; font-weight: bold;">•</span>
-                              </td>
-                              <td>
-                                <span style="font-size: 13px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
-                                  This is a summary for your records - recipients have already received individual emails
-                                </span>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 0 0 8px 0;">
-                          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td style="padding-right: 8px; vertical-align: top;">
-                                <span style="color: #ED457D; font-weight: bold;">•</span>
-                              </td>
-                              <td>
-                                <span style="font-size: 13px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
-                                  Each voucher code can only be used once
-                                </span>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 0;">
-                          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td style="padding-right: 8px; vertical-align: top;">
-                                <span style="color: #ED457D; font-weight: bold;">•</span>
-                              </td>
-                              <td>
-                                <span style="font-size: 13px; color: #4a5568; line-height: 20px;" class="mobile-small fallback-text">
-                                  Keep this summary for your accounting and tracking purposes
-                                </span>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-          <!-- Download Option (Optional) -->
-          <tr>
-            <td align="center" style="padding: 0 40px 40px;" class="mobile-padding-lr">
-              <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="border-radius: 8px; background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%);">
-                    <a href="#" style="background: linear-gradient(135deg, #ED457D 0%, #FA8F42 100%); border: none; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 20px; text-decoration: none; padding: 14px 32px; color: #ffffff; display: inline-block; border-radius: 8px; mso-padding-alt: 0; text-align: center;" class="mobile-text">
-                      <!--[if mso]>
-                      <i style="letter-spacing: 32px; mso-font-width: -100%; mso-text-raise: 30pt;">&nbsp;</i>
-                      <![endif]-->
-                      <span style="mso-text-raise: 15pt;">📥 Download Full Report (CSV)</span>
-                      <!--[if mso]>
-                      <i style="letter-spacing: 32px; mso-font-width: -100%;">&nbsp;</i>
-                      <![endif]-->
-                    </a>
-                  </td>
-                </tr>
-              </table>
+            <td style="padding: 0 40px 40px;">
+              <div style="background-color: #fff4f6; border-radius: 8px; border: 1px solid #fecdd3; padding: 20px;">
+                <p style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #1a1a1a;">
+                  📌 Important Information:
+                </p>
+                <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #4a5568; line-height: 1.8;">
+                  <li style="margin-bottom: 6px;">This summary is for your records only</li>
+                  <li style="margin-bottom: 6px;">All recipients have already received individual emails</li>
+                  <li style="margin-bottom: 6px;">Each voucher code can only be used once</li>
+                </ul>
+              </div>
             </td>
           </tr>
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e2e8f0;" class="mobile-padding">
-              <p style="margin: 0 0 8px; font-size: 12px; color: #6c757d; text-align: center; line-height: 18px;" class="mobile-small fallback-text">
-                Thank you for using our gift card platform.
-              </p>
-              <p style="margin: 0; font-size: 11px; color: #9ca3af; text-align: center; line-height: 16px;" class="mobile-small fallback-text">
-                If you have any questions or need support, please contact our team.
-              </p>
-            </td>
-          </tr>
-          
-        </table>
-        <!-- End Email Container -->
-        
-        <!-- Extra Footer Space -->
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="650" class="email-container" style="max-width: 650px;">
-          <tr>
-            <td style="padding: 20px; text-align: center;">
-              <p style="margin: 0; font-size: 11px; color: #9ca3af; line-height: 16px;" class="mobile-small fallback-text">
-                © ${new Date().getFullYear()} Gift Cards. All rights reserved.
+            <td style="padding: 24px 40px; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+              <p style="margin: 0; font-size: 12px; color: #6c757d; text-align: center; line-height: 1.6;">
+                Thank you for using our gift card platform.<br>
+                If you have any questions, please contact our support team.
               </p>
             </td>
           </tr>
         </table>
-        
       </td>
     </tr>
   </table>
@@ -2619,6 +2472,7 @@ export async function getOrderStatus(orderId) {
       currency: order.currency,
       quantity: order.quantity,
       paymentStatus: order.paymentStatus,
+      paymentIntentId: order.paymentIntentId,
       deliveryMethod: order.deliveryMethod,
       createdAt: order.createdAt,
       brand: order.brand,
@@ -2828,8 +2682,13 @@ export async function getOrders(params = {}) {
 
 export async function getOrderById(orderId) {
   try {
-    const order = await prisma.order.findUnique({
-      where: { orderNumber: orderId },
+    const order = await prisma.order.findFirst({
+      where: {
+        OR: [
+          { orderNumber: orderId },
+          { id: orderId },
+        ],
+      },
       include: {
         brand: {
           select: {
@@ -2897,7 +2756,10 @@ export async function getOrderById(orderId) {
       return { success: false, message: "Order not found", status: 404 };
     }
 
-    // Compute redeemedAt for the order based on its voucher codes
+    // -----------------------------
+    // REST OF YOUR LOGIC IS PERFECT
+    // -----------------------------
+
     const redeemedDates = order.voucherCodes
       .map((vc) => vc.redeemedAt)
       .filter(Boolean);
@@ -2907,70 +2769,43 @@ export async function getOrderById(orderId) {
         ? new Date(Math.max(...redeemedDates.map((d) => d.getTime())))
         : null;
 
-    // Transform voucher codes to match VoucherDetails component structure
     const transformedVoucherCodes = order.voucherCodes.map((vc) => {
-      // Calculate totals from redemptions
       const totalRedeemed = vc.redemptions.reduce(
         (sum, r) => sum + (r.amountRedeemed || 0),
-        0,
+        0
       );
 
-      const redemptionCount = vc.redemptions.length;
-
-      const lastRedemptionDate =
-        vc.redemptions.length > 0 ? vc.redemptions[0].redeemedAt : null;
-
-      // Determine voucher status - CHECK ORDER REDEMPTION STATUS FIRST
       let status = "Active";
 
-      // Priority 1: Check if order is cancelled
-      if (order.redemptionStatus === "Cancelled") {
-        status = "Cancelled";
-      }
-      // Priority 2: Check if voucher is fully redeemed
-      else if (vc.isRedeemed || vc.remainingValue === 0) {
-        status = "Redeemed";
-      }
-      // Priority 3: Check if voucher is expired
-      else if (vc.expiresAt && new Date(vc.expiresAt) < new Date()) {
+      if (order.redemptionStatus === "Cancelled") status = "Cancelled";
+      else if (vc.isRedeemed || vc.remainingValue === 0) status = "Redeemed";
+      else if (vc.expiresAt && new Date(vc.expiresAt) < new Date())
         status = "Expired";
-      }
-      // Priority 4: Check if order is inactive
-      else if (!order.isActive) {
-        status = "Inactive";
-      }
-
-      // Transform redemption history to match VoucherDetails format
-      const redemptionHistory = vc.redemptions.map((r) => ({
-        redeemedAt: r.redeemedAt,
-        amountRedeemed: r.amountRedeemed,
-        balanceAfter: r.balanceAfter,
-        transactionId: r.transactionId,
-        storeUrl: r.storeUrl,
-      }));
+      else if (!order.isActive) status = "Inactive";
 
       return {
         id: vc.id,
         code: vc.code,
         orderNumber: order.orderNumber,
-        user: {
-          firstName: order.user.firstName,
-          lastName: order.user.lastName,
-          email: order.user.email,
-        },
+        user: order.user,
         voucherType: vc.voucher?.denominationType || "fixed",
         totalAmount: vc.originalValue,
         remainingAmount: vc.remainingValue,
         partialRedemption: vc.voucher?.partialRedemption || false,
-        totalRedeemed: totalRedeemed,
+        totalRedeemed,
         pendingAmount: vc.remainingValue,
-        redemptionCount: redemptionCount,
-        lastRedemptionDate: lastRedemptionDate,
+        redemptionCount: vc.redemptions.length,
+        lastRedemptionDate: vc.redemptions[0]?.redeemedAt || null,
         expiresAt: vc.expiresAt,
-        status: status,
+        status,
         currency: order.currency,
-        redemptionHistory: redemptionHistory,
-        // Additional fields that might be useful
+        redemptionHistory: vc.redemptions.map((r) => ({
+          redeemedAt: r.redeemedAt,
+          amountRedeemed: r.amountRedeemed,
+          balanceAfter: r.balanceAfter,
+          transactionId: r.transactionId,
+          storeUrl: r.storeUrl,
+        })),
         pin: vc.pin,
         qrCode: vc.qrCode,
         tokenizedLink: vc.tokenizedLink,
@@ -2980,76 +2815,17 @@ export async function getOrderById(orderId) {
       };
     });
 
-    // Transform bulk recipients if they exist
-    const transformedBulkRecipients = order.bulkRecipients.map((br) => {
-      const voucherCode = br.voucherCode;
-
-      // Calculate voucher status if voucher code exists
-      let voucherStatus = "Pending";
-      if (voucherCode) {
-        const totalRedeemed =
-          voucherCode.redemptions?.reduce(
-            (sum, r) => sum + (r.amountRedeemed || 0),
-            0,
-          ) || 0;
-
-        if (order.redemptionStatus === "Cancelled") {
-          voucherStatus = "Cancelled";
-        } else if (voucherCode.isRedeemed || voucherCode.remainingValue === 0) {
-          voucherStatus = "Redeemed";
-        } else if (
-          voucherCode.expiresAt &&
-          new Date(voucherCode.expiresAt) < new Date()
-        ) {
-          voucherStatus = "Expired";
-        } else if (!order.isActive) {
-          voucherStatus = "Inactive";
-        } else {
-          voucherStatus = "Active";
-        }
-      }
-
-      return {
-        id: br.id,
-        recipientName: br.recipientName,
-        recipientEmail: br.recipientEmail,
-        recipientPhone: br.recipientPhone,
-        personalMessage: br.personalMessage,
-        emailSent: br.emailSent,
-        emailSentAt: br.emailSentAt,
-        emailDelivered: br.emailDelivered,
-        emailDeliveredAt: br.emailDeliveredAt,
-        emailError: br.emailError,
-        rowNumber: br.rowNumber,
-        voucherCodeId: br.voucherCodeId,
-        voucherCode: voucherCode
-          ? {
-              id: voucherCode.id,
-              code: voucherCode.code,
-              originalValue: voucherCode.originalValue,
-              remainingValue: voucherCode.remainingValue,
-              isRedeemed: voucherCode.isRedeemed,
-              redeemedAt: voucherCode.redeemedAt,
-              expiresAt: voucherCode.expiresAt,
-              status: voucherStatus,
-              redemptionCount: voucherCode.redemptions?.length || 0,
-            }
-          : null,
-      };
-    });
-
-    // Attach computed fields to the order object
-    const enrichedOrder = {
-      ...order,
-      redeemedAt: orderRedeemedAt,
-      voucherCodes: transformedVoucherCodes,
-      bulkRecipients: transformedBulkRecipients,
-      isBulkOrder: order.bulkRecipients.length > 0,
+    return {
+      success: true,
+      data: {
+        ...order,
+        redeemedAt: orderRedeemedAt,
+        voucherCodes: transformedVoucherCodes,
+        isBulkOrder: order.bulkRecipients.length > 0,
+      },
     };
-
-    return { success: true, data: enrichedOrder };
   } catch (error) {
-    console.error(`Error fetching order with ID ${orderId}:`, error);
+    console.error(`Error fetching order ${orderId}:`, error);
     return {
       success: false,
       message: "Failed to fetch order",
@@ -3058,6 +2834,7 @@ export async function getOrderById(orderId) {
     };
   }
 }
+
 
 export async function getOrdersByUserId(userId) {
   try {
@@ -3175,15 +2952,23 @@ export async function modifyRecipientAndResend(data) {
       };
     }
 
-    // Determine if this is a bulk order
-    const isBulkOrder =
-      isBulk || (order.bulkRecipients && order.bulkRecipients.length > 0);
+    // Determine order type based on bulkOrderNumber and deliveryMethod
+    const isBulkOrderWithMultipleRecipients =
+      order.bulkOrderNumber &&
+      order.bulkRecipients &&
+      order.bulkRecipients.length > 0 &&
+      order.deliveryMethod === "multiple";
+
+    const isBulkOrderWithSingleEmail =
+      order.bulkOrderNumber &&
+      order.deliveryMethod === "email" &&
+      (!order.bulkRecipients || order.bulkRecipients.length === 0);
 
     let deliveryResults = [];
     let auditChanges = [];
 
-    if (isBulkOrder) {
-      // ============= BULK ORDER PROCESSING =============
+    if (isBulkOrderWithMultipleRecipients) {
+      // ============= BULK ORDER WITH CSV RECIPIENTS (MULTIPLE EMAILS) =============
 
       // Start transaction for bulk updates
       const txResult = await prisma.$transaction(async (tx) => {
@@ -3298,8 +3083,6 @@ export async function modifyRecipientAndResend(data) {
           });
           continue;
         }
-
-        console.log("deliveryMethod", deliveryMethod);
 
         // Reconstruct orderData for delivery
         const deliveryOrderData = {
@@ -3416,6 +3199,163 @@ export async function modifyRecipientAndResend(data) {
           results: deliveryResults,
         },
       };
+    } else if (isBulkOrderWithSingleEmail) {
+      // ============= BULK ORDER WITH SINGLE EMAIL (MULTIPLE VOUCHERS TO ONE RECIPIENT) =============
+
+      const recipientUpdate = recipients[0];
+
+      if (!receiverDetailId || order.receiverDetailId !== receiverDetailId) {
+        return {
+          success: false,
+          message: "Receiver detail ID does not match the order.",
+          status: 400,
+        };
+      }
+
+      const oldReceiverDetails = {
+        name: order.receiverDetail.name,
+        email: order.receiverDetail.email,
+        phone: order.receiverDetail.phone,
+      };
+
+      // Get all voucher codes for this bulk order
+      const voucherCodes = order.voucherCodes;
+
+      if (!voucherCodes || voucherCodes.length === 0) {
+        return {
+          success: false,
+          message: "No voucher codes found for this bulk order",
+          status: 404,
+        };
+      }
+
+      // Start transaction for write operations only
+      const txResult = await prisma.$transaction(async (tx) => {
+        // 1. Update ReceiverDetail
+        const updatedReceiver = await tx.receiverDetail.update({
+          where: { id: receiverDetailId },
+          data: {
+            name: recipientUpdate.name,
+            email:
+              deliveryMethod === "email" || deliveryMethod === "multiple"
+                ? recipientUpdate.email
+                : null,
+            phone:
+              deliveryMethod === "whatsapp" || deliveryMethod === "multiple"
+                ? recipientUpdate.phone
+                : null,
+            updatedAt: new Date(),
+          },
+        });
+
+        // 2. Create delivery log for resend (one log for the bulk email)
+        const deliveryLog = await tx.deliveryLog.create({
+          data: {
+            orderId: order.id,
+            voucherCodeId: null, // No specific voucher for bulk email
+            method: deliveryMethod,
+            recipient:
+              deliveryMethod === "whatsapp"
+                ? recipientUpdate.phone
+                : recipientUpdate.email,
+            status: "PENDING",
+            attemptCount: 0,
+          },
+        });
+
+        // 3. Create audit log
+        await tx.auditLog.create({
+          data: {
+            action: "MODIFY_BULK_EMAIL_RECIPIENT",
+            entity: "ReceiverDetail",
+            entityId: receiverDetailId,
+            changes: {
+              orderNumber,
+              oldDetails: oldReceiverDetails,
+              newDetails: recipientUpdate,
+              deliveryMethod,
+              voucherCount: voucherCodes.length,
+            },
+          },
+        });
+
+        return { deliveryLog, updatedReceiver };
+      });
+
+      // Prepare all voucher codes for the bulk email
+      const voucherCodesData = voucherCodes.map((vc) => ({
+        ...vc,
+        code: vc.giftCard?.code || vc.code,
+        tokenizedLink: vc.tokenizedLink,
+      }));
+
+      // Reconstruct orderData for bulk email delivery
+      const orderData = {
+        selectedBrand: order.brand,
+        selectedSubCategory: order.isCustom
+          ? order.customCard
+          : order.subCategory,
+        selectedAmount: {
+          value: order.amount,
+          currency: order.currency,
+        },
+        quantity: order.quantity,
+        isBulkOrder: true,
+        companyInfo: {
+          companyName: order.senderName || "Gift Sender",
+          contactEmail: recipientUpdate.email,
+          contactNumber: recipientUpdate.phone,
+        },
+        deliveryOption: "email",
+        deliveryMethod: "email",
+        personalMessage: order.message,
+        customImageUrl: order.customImageUrl,
+        customVideoUrl: order.customVideoUrl,
+      };
+
+      try {
+        // Send bulk summary email with all vouchers
+        await sendRegularBulkSummaryEmail(order, orderData, voucherCodesData);
+
+        // Update delivery log as successful
+        await prisma.deliveryLog.update({
+          where: { id: txResult.deliveryLog.id },
+          data: {
+            status: "SENT",
+            sentAt: new Date(),
+            deliveredAt: new Date(),
+            attemptCount: 1,
+          },
+        });
+
+        return {
+          success: true,
+          message: `Recipient updated and bulk gift email with ${voucherCodes.length} voucher(s) sent successfully.`,
+          data: {
+            orderId: order.id,
+            deliveryLogId: txResult.deliveryLog.id,
+            voucherCount: voucherCodes.length,
+          },
+        };
+      } catch (error) {
+        console.error("Error sending bulk email:", error);
+
+        // Update delivery log as failed
+        await prisma.deliveryLog.update({
+          where: { id: txResult.deliveryLog.id },
+          data: {
+            status: "FAILED",
+            errorMessage: error.message,
+            attemptCount: 1,
+          },
+        });
+
+        return {
+          success: false,
+          message: `Failed to send bulk email: ${error.message}`,
+          status: 500,
+        };
+      }
     } else {
       // ============= SINGLE ORDER PROCESSING =============
 

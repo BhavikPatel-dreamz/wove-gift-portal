@@ -1,28 +1,27 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
+// import { Elements } from "@stripe/react-stripe-js";
+// import { loadStripe } from "@stripe/stripe-js";
 import toast, { Toaster } from 'react-hot-toast';
-import { createPendingOrder, getOrderStatus } from '../../../lib/action/orderAction';
+import { createPendingOrder, getOrderStatus, completeOrderAfterPayment } from '../../../lib/action/orderAction';
 import { AlertCircle, Package, ShoppingBag, CheckCircle2, Clock, Mail, Phone, MapPin, Users, Calendar, Loader2 } from 'lucide-react';
 import Header from '../../../components/client/home/Header';
 import { useSession } from '@/contexts/SessionContext';
-import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
+// import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
 import PaymentMethodSelector from "../giftflow/payment/PaymentMethodSelector";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
-import BillingAddressForm from "../giftflow/payment/BillingAddressForm";
 import SuccessScreen from "../giftflow/payment/SuccessScreen";
 import { currencyList } from '../../brandsPartner/currency';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCart, clearBulkCart } from '@/redux/cartSlice';
 import { resetFlow } from '../../../redux/giftFlowSlice';
 
-if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
-  throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
-}
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+// ✅ STRIPE CODE COMMENTED OUT
+// if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
+//   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
+// }
+// const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 const CheckoutPage = () => {
   const dispatch = useDispatch();
@@ -38,7 +37,7 @@ const CheckoutPage = () => {
   // State
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
-  const [order, setOrder] = useState(null); // Changed from completedOrders array to single order
+  const [order, setOrder] = useState(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
   const [showThankYou, setShowThankYou] = useState(false);
@@ -49,16 +48,6 @@ const CheckoutPage = () => {
 
   // Track individual order processing
   const [orderStatuses, setOrderStatuses] = useState({});
-
-  // Billing address state
-  const [billingAddress, setBillingAddress] = useState({
-    line1: '',
-    line2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'US',
-  });
   const [addressErrors, setAddressErrors] = useState({});
 
   const getCurrencySymbol = (code) =>
@@ -121,200 +110,89 @@ const CheckoutPage = () => {
     return calculateCombinedSubtotal() + calculateCombinedServiceFee();
   };
 
-  // Validate billing address
-  const validateBillingAddress = () => {
-    const errors = {};
-
-    if (!billingAddress.line1 || billingAddress.line1.trim() === '') {
-      errors.line1 = 'Address is required';
-    }
-    if (!billingAddress.city || billingAddress.city.trim() === '') {
-      errors.city = 'City is required';
-    }
-    if (!billingAddress.state || billingAddress.state.trim() === '') {
-      errors.state = 'State is required';
-    }
-    if (!billingAddress.postalCode || billingAddress.postalCode.trim() === '') {
-      errors.postalCode = 'Postal code is required';
-    }
-    if (!billingAddress.country || billingAddress.country.trim() === '') {
-      errors.country = 'Country is required';
-    }
-
-    setAddressErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   // Create separate pending orders for ALL cart items
   const handleInitiatePayment = async () => {
-    if (!validateBillingAddress()) {
-      toast.error('Please fill in all required billing address fields');
-      return null;
-    }
-
-    if (clientSecret && pendingOrderIds.length > 0) {
-      return { clientSecret, orderIds: pendingOrderIds };
-    }
-
     setIsProcessing(true);
     setError(null);
     const toastId = toast.loading('Preparing your orders...');
 
     try {
-      const allOrderIds = [];
-      const orderMetadata = [];
-
-      // Collect all items (bulk + regular)
-      const allItems = [
-        ...bulkItems.map((item, i) => ({ ...item, type: 'bulk', index: i })),
-        ...cartItems.map((item, i) => ({ ...item, type: 'regular', index: i }))
+      // ✅ Prepare all cart items as separate order data
+      const allCartOrders = [
+        ...bulkItems.map((item) => ({
+          selectedBrand: item.selectedBrand,
+          selectedAmount: item.selectedAmount,
+          personalMessage: item.personalMessage,
+          quantity: item.quantity,
+          companyInfo: item.companyInfo,
+          deliveryOption: item.deliveryOption,
+          selectedOccasion: item.selectedOccasion,
+          selectedSubCategory: item.selectedSubCategory,
+          totalAmount: getAmountValue(item.selectedAmount) * item.quantity,
+          isBulkOrder: true,
+          totalSpend: item.totalSpend,
+          deliveryMethod: item.deliveryOption,
+          csvRecipients: item.csvRecipients || [],
+          userId: session?.user?.id,
+          selectedTiming: item.selectedTiming,
+        })),
+        ...cartItems.map((item) => ({
+          selectedBrand: item.selectedBrand,
+          selectedAmount: item.selectedAmount,
+          personalMessage: item.personalMessage,
+          deliveryMethod: item.deliveryMethod,
+          deliveryDetails: item.deliveryDetails,
+          selectedOccasion: item.selectedOccasion,
+          selectedSubCategory: item.selectedSubCategory,
+          selectedTiming: item.selectedTiming,
+          totalAmount: getAmountValue(item.selectedAmount),
+          isBulkOrder: false,
+          userId: session?.user?.id,
+        })),
       ];
 
-      console.log(`📦 Creating ${allItems.length} orders...`);
+      // ✅ Send as multi-cart order
+      const result = await createPendingOrder({
+        isMultiCart: true,
+        cartOrders: allCartOrders,
+        userId: session?.user?.id
+      });
 
-      let sharedPaymentIntentId = null;
-      let sharedClientSecret = null;
-      let sharedCustomerId = null;
-
-      // Process each item sequentially
-      for (let idx = 0; idx < allItems.length; idx++) {
-        const item = allItems[idx];
-        const isBulkItem = item.type === 'bulk';
-
-        // Build order data
-        let orderData;
-        if (isBulkItem) {
-          orderData = {
-            selectedBrand: item.selectedBrand,
-            selectedAmount: item.selectedAmount,
-            personalMessage: item.personalMessage,
-            quantity: item.quantity,
-            companyInfo: item.companyInfo,
-            deliveryOption: item.deliveryOption,
-            selectedOccasion: item.selectedOccasion,
-            selectedSubCategory: item.selectedSubCategory,
-            totalAmount: getAmountValue(item.selectedAmount) * item.quantity,
-            isBulkOrder: true,
-            totalSpend: item.totalSpend,
-            billingAddress,
-            deliveryMethod: item.deliveryOption,
-            csvRecipients: item.csvRecipients || [],
-            userId: session?.user?.id,
-            sharedPaymentIntentId: sharedPaymentIntentId,
-            customerId: sharedCustomerId,
-          };
-        } else {
-          orderData = {
-            selectedBrand: item.selectedBrand,
-            selectedAmount: item.selectedAmount,
-            personalMessage: item.personalMessage,
-            deliveryMethod: item.deliveryMethod,
-            deliveryDetails: item.deliveryDetails,
-            selectedOccasion: item.selectedOccasion,
-            selectedSubCategory: item.selectedSubCategory,
-            selectedTiming: item.selectedTiming,
-            totalAmount: getAmountValue(item.selectedAmount),
-            isBulkOrder: false,
-            billingAddress,
-            userId: session?.user?.id,
-            sharedPaymentIntentId: sharedPaymentIntentId,
-            customerId: sharedCustomerId,
-          };
-        }
-
-        console.log(`Creating order ${idx + 1}/${allItems.length}...`);
-
-        const result = await createPendingOrder(orderData);
-
-        if (!result.success) {
-          throw new Error(`Failed to create order ${idx + 1}: ${result.error}`);
-        }
-
-        allOrderIds.push(result.data.orderId);
-
-        if (idx === 0) {
-          sharedPaymentIntentId = result.data.paymentIntentId;
-          sharedClientSecret = result.data.clientSecret;
-          sharedCustomerId = result.data.customerId;
-          console.log(`✅ First order created - Payment Intent: ${sharedPaymentIntentId}`);
-        }
-
-        // Store metadata with full item details
-        orderMetadata.push({
-          type: item.type,
-          brand: item.selectedBrand?.brandName,
-          brandLogo: item.selectedBrand?.logo,
-          amount: isBulkItem
-            ? getAmountValue(item.selectedAmount) * item.quantity
-            : getAmountValue(item.selectedAmount),
-          quantity: item.quantity || 1,
-          orderNumber: result.data.orderNumber,
-          deliveryMethod: isBulkItem ? item.deliveryOption : item.deliveryMethod,
-          deliveryDetails: item.deliveryDetails,
-          csvRecipients: item.csvRecipients,
-          personalMessage: item.personalMessage,
-          occasion: item.selectedOccasion,
-          timing: item.selectedTiming,
-        });
+      if (!result.success) {
+        throw new Error(`Failed to create orders: ${result.error}`);
       }
 
-      console.log(`✅ Created ${allOrderIds.length} orders successfully`);
+      setPendingOrderIds(result.data.orderIds);
+      const redirectUrl = result?.data?.payfastUrl;
+      if (!redirectUrl) {
+        setError("Payment link was not received.");
+        toast.error("Failed to get payment link.", { id: toastId });
+        setIsProcessing(false);
+        return null;
+      }
 
-      setPendingOrderIds(allOrderIds);
-      setClientSecret(sharedClientSecret);
+      toast.loading('Redirecting to PayFast...', { id: toastId });
 
-      // Initialize order status tracking with full details
-      const initialStatuses = {};
-      allOrderIds.forEach((orderId, idx) => {
-        initialStatuses[orderId] = {
-          status: 'PENDING',
-          orderNumber: orderMetadata[idx].orderNumber,
-          type: orderMetadata[idx].type,
-          index: idx,
-          metadata: orderMetadata[idx],
-        };
-      });
-      setOrderStatuses(initialStatuses);
-
-      toast.success(`${allOrderIds.length} order(s) ready for payment`, { id: toastId });
+      // Keep button/loading state visible until browser leaves this page.
+      setTimeout(() => {
+        window.location.assign(redirectUrl);
+      }, 100);
 
       return {
-        clientSecret: sharedClientSecret,
-        orderIds: allOrderIds
+        orderIds: result.data.orderIds,
+        payfastUrl: redirectUrl,
       };
 
     } catch (error) {
       console.error('Error creating orders:', error);
       setError(error.message || "Failed to prepare orders.");
       toast.error(error.message || 'Failed to prepare orders.', { id: toastId });
-      return null;
-    } finally {
       setIsProcessing(false);
+      return null;
     }
   };
 
-  console.log("cartItems",cartItems,bulkItems)
-
-  // ✅ ENHANCED: Payment success handler with better feedback
-  const handlePaymentSuccess = (paymentIntent) => {
-    console.log('💳 Payment intent succeeded:', paymentIntent.id);
-    setSharedPaymentIntentId(paymentIntent.id);
-
-    toast.dismiss();
-    toast.success('Payment received! Processing your orders...', {
-      id: 'payment-success',
-      duration: 3000
-    });
-
-    setPaymentSubmitted(true);
-    setIsProcessing(true);
-    setProcessingStatus('PAYMENT_CONFIRMED');
-
-    // Start polling with shorter delay
-    setTimeout(() => {
-      pollAllOrders(pendingOrderIds);
-    }, 2000);
-  };
+  console.log("cartItems", cartItems, bulkItems);
 
   // ✅ ENHANCED: Smarter polling with better status detection
   const pollAllOrders = async (orderIds, attempts = 0) => {
@@ -380,7 +258,7 @@ const CheckoutPage = () => {
           ...firstOrderData,
           processingInBackground: anyInProgress,
           processingStatus: confirmedOrders[0]?.processingStatus || 'IN_PROGRESS',
-          allOrders: responses.map(r => r?.order || r), // Keep all orders for reference
+          allOrders: responses.map(r => r?.order || r),
           totalOrderCount: orderIds.length
         });
         setIsProcessing(false);
@@ -565,8 +443,8 @@ const CheckoutPage = () => {
             className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-base text-[#4A4A4A] bg-white border border-transparent transition-all duration-300 overflow-hidden group cursor-pointer"
             onClick={() => window.history.back()}
           >
-            <span className="absolute inset-0 rounded-full p-[1.5px] bg-linear-to-r from-[#ED457D] to-[#FA8F42]"></span>
-            <span className="absolute inset-[1.5px] rounded-full bg-white transition-all duration-300 group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
+            <span className="absolute inset-0 rounded-full p-[1.5px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42]"></span>
+            <span className="absolute inset-[1.5px] rounded-full bg-white transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
               <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
                 <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
@@ -596,19 +474,14 @@ const CheckoutPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Left Column - Payment */}
           <div className="space-y-5 sm:space-y-6">
-            <BillingAddressForm
-              address={billingAddress}
-              onChange={setBillingAddress}
-              errors={addressErrors}
-            />
-
             <PaymentMethodSelector
               selectedTab={selectedPaymentTab}
               onTabChange={setSelectedPaymentTab}
               isBulkMode={bulkItems.length > 0}
             />
 
-            {selectedPaymentTab === 'card' && clientSecret && (
+            {/* ✅ STRIPE CARD PAYMENT COMMENTED OUT */}
+            {/* {selectedPaymentTab === 'card' && clientSecret && (
               <Elements
                 stripe={stripePromise}
                 options={{
@@ -623,9 +496,38 @@ const CheckoutPage = () => {
                   onPaymentSuccess={handlePaymentSuccess}
                 />
               </Elements>
+            )} */}
+
+            {/* ✅ TEST MODE: Simple payment button */}
+            {/* PayFast Payment Button */}
+            {selectedPaymentTab === 'payfast' && (
+              <button
+                onClick={handleInitiatePayment}
+                disabled={isProcessing || !isPaymentConfirmed}
+                className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 
+                       hover:from-blue-600 hover:to-blue-700
+                       disabled:from-gray-300 disabled:to-gray-400
+                       text-white py-3 sm:py-4 px-6 rounded-xl
+                       font-semibold text-sm sm:text-base
+                       transition-all duration-200
+                       flex items-center justify-center gap-2
+                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                    {pendingOrderIds.length > 0 ? 'Redirecting to PayFast...' : `Preparing ${cartItems.length + bulkItems.length} order${cartItems.length + bulkItems.length > 1 ? 's' : ''}...`}
+                  </>
+                ) : (
+                  <>
+                    Pay with PayFast <span>→</span>
+                  </>
+                )}
+              </button>
             )}
 
-            {selectedPaymentTab === 'card' && !clientSecret && (
+
+            {selectedPaymentTab === 'card' && (
               <button
                 onClick={handleInitiatePayment}
                 disabled={isProcessing || !isPaymentConfirmed}
@@ -641,11 +543,11 @@ const CheckoutPage = () => {
                 {isProcessing ? (
                   <>
                     <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    Preparing {cartItems.length + bulkItems.length} order{cartItems.length + bulkItems.length > 1 ? 's' : ''}...
+                    {pendingOrderIds.length > 0 ? 'Processing Payment...' : `Preparing ${cartItems.length + bulkItems.length} order${cartItems.length + bulkItems.length > 1 ? 's' : ''}...`}
                   </>
                 ) : (
                   <>
-                    Proceed to Payment <span>→</span>
+                    {pendingOrderIds.length > 0 ? 'Complete Payment' : 'Proceed to Payment'} <span>→</span>
                   </>
                 )}
               </button>

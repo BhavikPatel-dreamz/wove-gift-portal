@@ -9,6 +9,7 @@ export function proxy(request) {
     '/api/shopify/auth',
     '/api/shopify/auth/callback',
     '/api/webhooks',
+    '/api/cron',
     '/shopify/install',
     '/shopify/auth-required',
     '/_next',
@@ -18,8 +19,6 @@ export function proxy(request) {
 
   // API routes that don't need Shopify auth
   const publicApiRoutes = [
-    '/api/dashboard',
-    '/api/analytics',
     '/api/reports/custom',
     '/api/reports/schedule',
   ];
@@ -72,6 +71,8 @@ export function proxy(request) {
       
       // Not embedded - check for session cookie
       const token = request.cookies.get('shopify_session')?.value;
+
+      console.log("token",token)
       
       if (token) {
         try {
@@ -112,20 +113,26 @@ export function proxy(request) {
     pathname.startsWith('/api/auth/signup') ||
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/logout') ||
-    pathname.startsWith('/api/brand') ||
-    pathname.startsWith('/api/occasion') ||
     pathname.startsWith('/api/giftcard') ||
     pathname.startsWith('/api/shopify/products') ||
     pathname.startsWith('/api/shopify/gift-cards') ||
     pathname.startsWith('/api/shopify/shop') ||
     pathname.startsWith('/api/sync-shopify') ||
     pathname.startsWith('/api/payment/process-card') ||
-    pathname.startsWith('/api/dashboard') || 
-    pathname.startsWith('/api/analytics')  ||
     pathname.startsWith(`/api/reports/custom`) ||
     pathname.startsWith(`/api/reports/schedule`) ||
     pathname.startsWith('/api/save-card') ||
-    pathname.startsWith('/api/voucher/generate-pdf')    
+    pathname.startsWith('/api/voucher/generate-pdf') ||
+    pathname.startsWith('/api/auth/[...nextauth]') ||
+    pathname.startsWith('/api/auth/providers') ||
+    pathname.startsWith('/api/auth/csrf') || 
+    pathname.startsWith('/api/auth/signin/google') ||
+    pathname.startsWith('/api/auth/callback/google') ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/orders')  ||
+    pathname.startsWith('/api/newsletter') ||
+    pathname.startsWith('/api/contact') ||
+    pathname.startsWith('/api/cron')
   ) {
     return NextResponse.next()
   }
@@ -133,6 +140,8 @@ export function proxy(request) {
   // Require token for other API routes
   if (pathname.startsWith('/api/')) {
     const token = request.cookies.get('auth-token')?.value
+
+    console.log("token",token)
 
     if (!token) {
       return NextResponse.json(

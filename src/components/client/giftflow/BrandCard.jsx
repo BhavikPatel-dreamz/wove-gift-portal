@@ -25,7 +25,7 @@ const BrandCard = ({
       onClick={handleCardClick}
     >
       {/* Favorite Button */}
-      <button
+      {/* <button
         onClick={handleFavoriteClick}
         className="absolute top-4 right-4 p-1.5 hover:bg-gray-50 rounded-lg transition-all duration-200 z-10"
         aria-label={isFavorited ? `Remove ${brand.brandName} from favorites` : `Add ${brand.brandName} to favorites`}
@@ -37,7 +37,7 @@ const BrandCard = ({
             : "text-gray-400 hover:text-red-500"
             }`}
         />
-      </button>
+      </button> */}
 
       {/* Brand Logo */}
       <div className="flex justify-center mb-6 mt-2">

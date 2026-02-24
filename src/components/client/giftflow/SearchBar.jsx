@@ -164,7 +164,7 @@ const SearchBar = ({
 
         {/* Filter Dropdown */}
         <div 
-          className="relative w-full sm:w-auto sm:min-w-50" 
+          className="relative w-full sm:w-auto sm:min-w-60" 
           ref={dropdownRef}
           onKeyDown={handleKeyDown}
         >
@@ -192,7 +192,7 @@ const SearchBar = ({
             <ul
               className="absolute top-full mt-2 right-0 left-0 sm:left-auto sm:right-0 
                     bg-white rounded-xl shadow-lg border border-gray-100 
-                    w-full sm:w-auto sm:min-w-50 max-h-60 overflow-y-auto
+                    min-w-60 sm:w-auto sm:min-w-60 max-h-60 overflow-y-auto
                     z-50"
               role="listbox"
               aria-label="Category filter options"

@@ -7,7 +7,7 @@ import GiftCardIcon from '@/icons/GiftCardIcon';
 import BoxIcon from '@/icons/BoxIcon';
 import RightArrow from '@/icons/RightArrow';
 import { useDispatch } from 'react-redux';
-import { setCurrentStep, resetFlow } from '@/redux/giftFlowSlice';
+import { setCurrentStep, resetFlow,clearCsvFileData } from '@/redux/giftFlowSlice';
 
 const ActionSelectionCards = (props) => {
   const router = useRouter();
@@ -54,6 +54,7 @@ const ActionSelectionCards = (props) => {
     if (card.path.startsWith('/gift')) {
       dispatch(resetFlow());
       dispatch(setCurrentStep(1));
+      dispatch(clearCsvFileData());
     }
     router.push(card.path);
   };
@@ -75,7 +76,7 @@ const ActionSelectionCards = (props) => {
         {actionCards.map((card, index) => (
           <div
             key={index}
-            className={`relative bg-white rounded-2xl p-6 sm:p-7 lg:p-8 ${card.borderColor} text-center hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer`}
+            className={`relative bg-white cursor-pointer rounded-2xl p-6 sm:p-7 lg:p-8 ${card.borderColor} text-center hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer`}
             onClick={() => handleCardClick(card)}
           >
             {/* Icon */}
@@ -95,7 +96,7 @@ const ActionSelectionCards = (props) => {
 
             {/* Button */}
             <button 
-              className={`${card.buttonColor} text-white text-sm sm:text-[15px] lg:text-[16px] font-semibold py-2.5 sm:py-3 px-5 sm:px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto w-full sm:w-auto`}
+              className={`${card.buttonColor} text-white cursor-pointer text-sm sm:text-[15px] lg:text-[16px] font-semibold py-2.5 sm:py-3 px-5 sm:px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto w-full sm:w-auto`}
               onClick={(e) => {
                 e.stopPropagation();
                 handleCardClick(card);

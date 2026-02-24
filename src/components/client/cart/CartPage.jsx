@@ -15,6 +15,7 @@ import {
 import { removeFromCart, removeFromBulk } from '@/redux/cartSlice';
 import { currencyList } from '../../brandsPartner/currency';
 import toast from 'react-hot-toast';
+import { resetFlow, clearCsvFileData } from '../../../redux/giftFlowSlice';
 
 const CartPage = () => {
   const cartItems = useSelector((state) => state.cart.items);
@@ -57,14 +58,30 @@ const CartPage = () => {
     toast.success('Bulk order removed from cart');
   };
 
-  const handleEditItem = (item, index) => {
+  const handleEditItem = (item, index, type) => {
     dispatch(updateState({
       ...item,
       editingIndex: index,
       isEditMode: true,
+      editFlowType: type,
+      editingBulkOrderId: type === 'bulk' ? item?.id ?? null : null,
+      deliveryFormEditReturn: {
+        enabled: false,
+        method: null,
+        returnStep: null,
+      },
     }));
-    dispatch(setCurrentStep(0));
-    router.push('/gift');
+    dispatch(setCurrentStep(1));
+    if (type === 'regular') {
+      router.push('/gift');
+    } else if (type === 'bulk') {
+      const query = new URLSearchParams({ mode: 'bulk' });
+      if (item?.id !== undefined && item?.id !== null) {
+        query.set('editBulkId', String(item.id));
+      }
+      query.set('editBulkIndex', String(index));
+      router.push(`/gift?${query.toString()}`);
+    }
   };
 
   // ✅ Fixed: Only proceed with items from active tab
@@ -80,6 +97,12 @@ const CartPage = () => {
       router.push('/login?redirect=/cart');
     }
   };
+
+  const handleRedirect = () => {
+    dispatch(resetFlow());
+    dispatch(clearCsvFileData());
+    router.push('/gift');
+  }
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "$";
@@ -273,16 +296,16 @@ const CartPage = () => {
             <p className="mt-2 text-center font-['Inter'] font-medium text-[#4A4A4A] text-sm sm:text-[15px] md:text-[16px] leading-5 sm:leading-5.5 md:leading-6 max-w-md">
               Looks like you haven't added any gifts to your cart yet.
             </p>
-            <Link href="/gift" className="mt-6 sm:mt-7 md:mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-6 sm:px-7 md:px-8 py-2.5 sm:py-2.75 md:py-3 text-sm sm:text-[15px] md:text-base text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
+            <button onClick={() => handleRedirect()} className="mt-6 sm:mt-7 md:mt-8 inline-flex items-center justify-center rounded-[50px] bg-[linear-gradient(114deg,#ED457D_11.36%,#FA8F42_90.28%)] px-6 sm:px-7 md:px-8 py-2.5 sm:py-2.75 md:py-3 text-sm sm:text-[15px] md:text-base text-center font-semibold text-white transition-all duration-200 hover:opacity-90">
               Start Gifting Now
-            </Link>
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10 lg:gap-12">
             <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
               {/* Regular Cart Items */}
               {activeTab === 'regular' && cartItems.map((item, index) => (
-                <div key={index} onClick={() => handleEditItem(item, index)} className="flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+                <div key={index} onClick={() => handleEditItem(item, index, "regular")} className="flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
                   <div className="flex cursor-pointer items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
                       <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
@@ -332,8 +355,8 @@ const CartPage = () => {
 
               {/* Bulk Cart Items */}
               {activeTab === 'bulk' && bulkItems.map((item, index) => (
-                <div key={index} className="flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
-                  <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
+                <div key={index} onClick={() => handleEditItem(item, index, "bulk")} className="flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+                  <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0 cursor-pointer">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
                       <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
                     </div>
@@ -390,6 +413,7 @@ const CartPage = () => {
                   </button>
                 </div>
               ))}
+
             </div>
 
             {/* Payment Summary - ✅ NOW SHOWS COMBINED TOTALS */}
@@ -398,7 +422,7 @@ const CartPage = () => {
                 <h2 className="mb-4 sm:mb-5 pb-3 sm:pb-4 font-['Poppins'] text-base sm:text-[17px] md:text-[18px] font-semibold leading-4.5 sm:leading-4.75 md:leading-5 tracking-[0.25px] text-[#1A1A1A]">
                   Payment Summary
                 </h2>
-                
+
                 {/* Show breakdown if both carts have items */}
                 {hasRegularItems && hasBulkItems && (
                   <div className="space-y-2 mb-3 pb-3 border-b border-gray-100">
@@ -438,7 +462,13 @@ const CartPage = () => {
                     {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedTotal().toFixed(2)}
                   </span>
                 </div>
-                <Button onClick={handleProceedToPayment} className="w-full mt-6 sm:mt-7 md:mt-8 text-base sm:text-[17px] md:text-lg py-2.5 sm:py-2.75 md:py-3">
+                <Button onClick={handleProceedToPayment}  className={`w-full mt-10 bg-gradient-to-r from-pink-500 to-orange-500 
+                       hover:from-pink-600 hover:to-orange-600
+                       disabled:from-gray-300 disabled:to-gray-400
+                       text-white py-3 sm:py-4 px-6 rounded-xl
+                       font-semibold text-sm sm:text-base
+                       transition-all duration-200
+                       flex items-center justify-center gap-2 cursor-pointer`}>
                   {session ? 'Proceed to Payment' : 'Login to Continue'}
                 </Button>
               </div>

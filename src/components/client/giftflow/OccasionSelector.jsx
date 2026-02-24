@@ -192,59 +192,76 @@ export default function OccasionSelector() {
 
         {/* Occasions Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {occasions.map((occasion, index) => {
-            return (
-              <div
-                key={`${occasion.id}-${index}`}
-                className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${selectedOccasion === occasion.id ? 'border-2 border-blue-500' : 'border-2 border-transparent'
-                  }`}
-                onClick={() => handleOccasionSelect(occasion)}
-              >
-                {/* Image Container with rounded corners */}
-                <div className="w-full px-4 pt-4">
-                  <div className="w-full h-56 overflow-hidden rounded-2xl bg-gray-200">
-                    <img
-                      src={occasion.image}
-                      alt={occasion.name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      onError={(e) => {
-                        e.target.src = 'https://via.placeholder.com/400x300?text=' + encodeURIComponent(occasion.name);
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Card Content */}
-                <div className="px-6 pt-5 pb-6 text-center">
-                  {/* Title */}
-                  <h3 className="font-bold text-xl text-gray-900 mb-2">
-                    {occasion.name}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-gray-600 text-sm mb-6 leading-relaxed line-clamp-2">
-                    {occasion.description}
-                  </p>
-
-                  {/* CTA Button */}
-                  <button
-                    className="w-full py-3.5 px-4 bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-xl hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 transform hover:scale-105"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOccasionSelect(occasion);
-                    }}
-                  >
-                    Choose this Occasion
-                    <span className="text-lg font-bold"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
-                    </svg>
-                    </span>
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+  {occasions.map((occasion, index) => {
+    return (
+      <div
+        key={`${occasion.id}-${index}`}
+        className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group 
+        flex flex-col h-full
+        ${selectedOccasion === occasion.id
+            ? 'border-2 border-blue-500'
+            : 'border-2 border-transparent'
+          }`}
+        onClick={() => handleOccasionSelect(occasion)}
+      >
+        {/* Image Container */}
+        <div className="w-full px-4 pt-4">
+          <div className="w-full h-56 overflow-hidden rounded-2xl bg-gray-200">
+            <img
+              src={occasion.image}
+              alt={occasion.name}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => {
+                e.target.src =
+                  "https://via.placeholder.com/400x300?text=" +
+                  encodeURIComponent(occasion.name);
+              }}
+            />
+          </div>
         </div>
+
+        {/* Card Content */}
+        <div className="px-6 pt-5 pb-6 text-center flex flex-col flex-1">
+          {/* Title */}
+          <h3 className="font-bold text-xl text-gray-900 mb-2">
+            {occasion.name}
+          </h3>
+
+          {/* Description */}
+          <p className="text-gray-600 text-sm mb-6 leading-relaxed line-clamp-2">
+            {occasion.description}
+          </p>
+
+          {/* CTA Button */}
+          <button
+            className="mt-auto w-full py-3.5 px-4 bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-xl hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 transform hover:scale-105 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOccasionSelect(occasion);
+            }}
+          >
+            Choose this Occasion
+            <span className="text-lg font-bold">
+              <svg
+                width="8"
+                height="9"
+                viewBox="0 0 8 9"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                  fill="white"
+                />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+    );
+  })}
+</div>
+
 
         {/* Load More Section */}
         <div className="text-center">
