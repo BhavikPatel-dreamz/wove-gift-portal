@@ -19,10 +19,13 @@
  * ✅ Atomic updates with transaction
  */
 
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { processVouchersQueue } from "../../../../lib/action/cronProcessor";
 import { processNotificationsQueue } from "../../../../lib/action/Notificationprocessorcron";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -85,12 +88,22 @@ function schedulePostPaymentProcessing({ paymentId, orderNumbers }) {
     }`
   );
 
-  setTimeout(() => {
-    void runPostPaymentProcessingSequence({
-      sequenceId,
-      orderNumbers: safeOrderNumbers,
-    });
-  }, 2000);
+  // Use Next.js after() instead of setTimeout fire-and-forget.
+  // In serverless environments (e.g. Vercel), this keeps post-response work alive.
+  after(async () => {
+    try {
+      await delay(2000);
+      await runPostPaymentProcessingSequence({
+        sequenceId,
+        orderNumbers: safeOrderNumbers,
+      });
+    } catch (error) {
+      console.error(
+        `❌ [${sequenceId}] Failed to run post-payment sequence in after():`,
+        error?.message || error
+      );
+    }
+  });
 
   return sequenceId;
 }
@@ -349,9 +362,9 @@ export async function POST(request) {
         },
         results: updateResults,
         nextSteps: {
-          step1: "Voucher Processor scheduled at +5 seconds",
+          step1: "Voucher Processor scheduled at +2 seconds",
           step2: "Notification Processor runs after voucher processing completes",
-          step3: "Notification Processor retries 5 seconds later",
+          step3: "Notification Processor retries 2 seconds later",
         },
         backgroundSequenceId,
       },
