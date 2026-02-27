@@ -3,6 +3,23 @@
 import React from "react";
 import { Heart, Star, Sparkles, Crown } from "lucide-react";
 
+const CATEGORY_COLORS = [
+  { bg: '#FFF0ED', text: '#FF6B35' },
+  { bg: '#EDF5FF', text: '#3B82F6' },
+  { bg: '#EDFFF4', text: '#16A34A' },
+  { bg: '#F5EDFF', text: '#9333EA' },
+  { bg: '#FFFBED', text: '#D97706' },
+  { bg: '#FFEDF6', text: '#EC4899' },
+  { bg: '#EDFFFD', text: '#0D9488' },
+  { bg: '#FFF0F0', text: '#EF4444' },
+];
+
+const getCategoryColor = (categoryName) => {
+  const str = String(categoryName || '');
+  const hash = str.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return CATEGORY_COLORS[hash % CATEGORY_COLORS.length];
+};
+
 const BrandCard = ({
   brand,
   isFavorited = false,
@@ -19,16 +36,20 @@ const BrandCard = ({
     onToggleFavorite?.(brand.id);
   };
 
+  const { bg, text } = getCategoryColor(brand.categoryName);
+
   return (
-    <div className="relative rounded-2xl group cursor-pointer" onClick={handleCardClick}>
-
+    <div
+      className="relative rounded-2xl group cursor-pointer"
+      onClick={handleCardClick}
+      style={{ padding: "1.5px" }}
+    >
       {/* Gradient border — hidden by default, shown on hover */}
-      <span className="absolute inset-0 rounded-2xl p-[1.5px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-      {/* Original card — untouched, just sits 1.5px inside the border ring */}
+      {/* Original card */}
       <div
-        className={`bg-white rounded-2xl p-6 hover:shadow-lg transition-all duration-300 relative border border-[#1A1A1A1A] ${selectedBrand?.id === brand.id ? 'border border-blue-500' : 'border border-[rgba(26,26,26,0.10)]'}`}
-        style={{ margin: "1.5px" }}
+        className={`bg-white rounded-[14px] p-6 hover:shadow-lg transition-all duration-300 relative border ${selectedBrand?.id === brand.id ? 'border-blue-500' : 'border-[rgba(26,26,26,0.10)]'}`}
       >
         {/* Favorite Button */}
         {/* <button
@@ -66,10 +87,13 @@ const BrandCard = ({
         {/* Brand Info */}
         <div className="text-center space-y-3">
           <div className="flex justify-center">
-            <span className="text-[14px] px-3 py-1 rounded-full font-bold" style={{
-              color: brand.categoryColor || '#FF6B35',
-              backgroundColor: brand.categoryBgColor || '#FFF0ED'
-            }}>
+            <span
+              className="text-[14px] px-3 py-1 rounded-full font-bold"
+              style={{
+                color: text,
+                backgroundColor: bg,
+              }}
+            >
               {brand.categoryName}
             </span>
           </div>
