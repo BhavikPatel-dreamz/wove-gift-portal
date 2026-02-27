@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react";
-import { Heart, Star, Sparkles, Crown } from "lucide-react";
+import { Heart, Star } from "lucide-react";
 
 const CATEGORY_COLORS = [
   { bg: '#FFF0ED', text: '#FF6B35' },
@@ -38,6 +38,12 @@ const BrandCard = ({
 
   const { bg, text } = getCategoryColor(brand.categoryName);
   const isSelected = selectedBrand?.id === brand.id;
+  const isFeatured = Boolean(
+    brand?.isFeature ||
+    brand?.isFeatured ||
+    brand?.featured === 1 ||
+    brand?.featured === true
+  );
 
   return (
     <div
@@ -61,10 +67,18 @@ const BrandCard = ({
             : 'inset 0 0 0 1.5px rgba(26,26,26,0.10)',
         }}
       >
+        {/* Featured Badge */}
+        {isFeatured && (
+          <div className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-[#FFF4E5] px-3 py-1 text-[#F59E0B]">
+            <Star size={13} className="fill-current" />
+            <span className="text-[14px] leading-4 font-semibold">Featured</span>
+          </div>
+        )}
+
         {/* Favorite Button */}
         <button
           onClick={handleFavoriteClick}
-          className="absolute top-4 right-4 p-1.5 hover:bg-gray-50 rounded-lg transition-all duration-200 z-10"
+          className="absolute top-4 right-4 p-1.5 hover:bg-gray-50 transition-all duration-200 z-10 border border-gray-200 rounded-full"
           aria-label={isFavorited ? `Remove ${brand.brandName} from favorites` : `Add ${brand.brandName} to favorites`}
         >
           <Heart
