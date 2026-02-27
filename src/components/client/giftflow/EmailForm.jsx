@@ -3,6 +3,7 @@ import { Mail } from 'lucide-react';
 import Image from 'next/image';
 import { setCurrentStep, setDeliveryFormEditReturn } from "../../../redux/giftFlowSlice";
 import { useDispatch, useSelector } from 'react-redux';
+import { COUNTRY_CODES } from "./deliveryValidation";
 
 const EmailForm = ({ formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage }) => {
 
@@ -64,6 +65,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         type="text"
                                         value={formData.yourFullName}
                                         onChange={(e) => handleInputChange('yourFullName', e.target.value)}
+                                        autoComplete="name"
                                         placeholder="Your Full Name*"
                                         className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                             }`}
@@ -76,6 +78,8 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         type="email"
                                         value={formData.yourEmailAddress}
                                         onChange={(e) => handleInputChange('yourEmailAddress', e.target.value)}
+                                        autoComplete="email"
+                                        inputMode="email"
                                         placeholder="Your Email Address*"
                                         className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                             }`}
@@ -84,22 +88,28 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                 </div>
 
                                 <div>
-                                    {/* <label className="text-xs font-semibold text-gray-600 block mb-2">Your Phone Number (Optional)</label> */}
+                                    <label className="text-xs font-semibold text-gray-600 block mb-2">Your Phone Number (Optional)</label>
                                     <div className="flex gap-2">
-                                        {/* <select
-                    value={formData.yourPhoneCountryCode}
-                    onChange={(e) => handleInputChange('yourPhoneCountryCode', e.target.value)}
-                    className="w-28 p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all bg-white text-sm"
-                  >
-                    {countryCodes.map(({ code, country }) => (
-                      <option key={code} value={code}>{code} {country}</option>
-                    ))}
-                  </select> */}
+                                        <select
+                                            value={formData.yourPhoneCountryCode}
+                                            onChange={(e) => handleInputChange('yourPhoneCountryCode', e.target.value)}
+                                            className="w-[170px] p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all bg-white text-sm"
+                                            aria-label="Your phone country code"
+                                        >
+                                            {COUNTRY_CODES.map(({ code, country }) => (
+                                                <option key={`${code}-${country}`} value={code}>
+                                                    {code} {country}
+                                                </option>
+                                            ))}
+                                        </select>
                                         <div className="flex-1">
                                             <input
                                                 type="tel"
                                                 value={formData.yourPhoneNumber}
                                                 onChange={(e) => handleInputChange('yourPhoneNumber', e.target.value)}
+                                                inputMode="numeric"
+                                                autoComplete="tel-national"
+                                                maxLength={15}
                                                 placeholder="Your Phone Number"
                                                 className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourPhoneNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                                     }`}
@@ -129,6 +139,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         type="text"
                                         value={formData.recipientFullName}
                                         onChange={(e) => handleInputChange('recipientFullName', e.target.value)}
+                                        autoComplete="name"
                                         placeholder="Recipient's Name*"
                                         className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.recipientFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                             }`}
@@ -141,6 +152,8 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         type="email"
                                         value={formData.recipientEmailAddress}
                                         onChange={(e) => handleInputChange('recipientEmailAddress', e.target.value)}
+                                        autoComplete="email"
+                                        inputMode="email"
                                         placeholder="Email Address*"
                                         className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.recipientEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                             }`}

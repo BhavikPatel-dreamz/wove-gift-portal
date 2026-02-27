@@ -126,6 +126,20 @@ const ReviewConfirmStep = () => {
     startReviewEditFlow(7);
   }
 
+  const formatRecipientContact = () => {
+    if (deliveryMethod === "email") {
+      return deliveryDetails?.recipientEmailAddress;
+    }
+
+    if (deliveryMethod === "whatsapp") {
+      const countryCode = deliveryDetails?.recipientCountryCode || "";
+      const number = String(deliveryDetails?.recipientWhatsAppNumber || "").trim();
+      return number ? `${countryCode}${number}` : "";
+    }
+
+    return "";
+  };
+
 
   return (
     <div className="max-w-7xl m-auto min-h-screen bg-gray-50 px-4 py-30 md:px-4 md:py-30">
@@ -277,7 +291,7 @@ const ReviewConfirmStep = () => {
                   </div>
                 </div>
                 {deliveryMethod !== "print" && (
-                  <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{deliveryMethod == "email" ? deliveryDetails?.recipientEmailAddress : deliveryDetails?.recipientWhatsAppNumber}</div>
+                  <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{formatRecipientContact()}</div>
                 )}
               </div>
             </div>

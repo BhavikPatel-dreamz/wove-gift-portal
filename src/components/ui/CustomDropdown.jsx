@@ -42,10 +42,10 @@ const CustomDropdown = ({
       {isOpen && (
         <>
           <div 
-            className="fixed inset-0 z-10" 
+           className="fixed inset-0 z-[9998]"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+          <div className="absolute z-[9999] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-60 overflow-auto">
             <div
              className="px-4 py-2 cursor-pointer font-inter text-sm font-normal text-[#4A4A4A] hover:bg-blue-50"
               onClick={() => handleSelect("")}
