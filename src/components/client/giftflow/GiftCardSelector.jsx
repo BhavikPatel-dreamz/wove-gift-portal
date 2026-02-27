@@ -199,9 +199,8 @@ const GiftCardSelector = () => {
             {presetAmounts.map((amount) => (
               <div
                 key={amount.id}
-                className="relative rounded-xl group cursor-pointer inline-flex"
+                className="relative rounded-xl group cursor-pointer inline-flex p-[2px]"
                 onClick={() => handleAmountClick(amount)}
-                style={{ padding: "1.5px" }}
               >
                 {/* Gradient border — hidden by default, shown on hover */}
                 <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />

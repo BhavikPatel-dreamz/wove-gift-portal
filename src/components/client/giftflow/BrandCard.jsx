@@ -47,17 +47,15 @@ const BrandCard = ({
 
   return (
     <div
-      className="relative rounded-2xl group cursor-pointer"
+      className="relative rounded-2xl group cursor-pointer p-[2px]"
       onClick={handleCardClick}
-      style={{ padding: "1.5px" }}
     >
       {/* Gradient border — hidden by default, shown on hover */}
       <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
       {/*
-        KEY FIX: No `border` class here — CSS border adds to box dimensions,
-        pushing right/bottom into the 1.5px gradient padding and making those
-        sides look thinner. Inset box-shadow draws inside without affecting size.
+        Use a full 2px ring (not fractional pixels) so gradient thickness
+        stays visually even on all sides across displays.
       */}
       <div
         className="bg-white rounded-[14px] p-6 hover:shadow-lg transition-all duration-300 relative"
