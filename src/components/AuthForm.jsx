@@ -2,44 +2,74 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { signIn } from 'next-auth/react'
 
-export default function AuthForm({ type = 'login' }) {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    firstName: '',
-    lastName: '',
-    confirmPassword: '',
-  })
+export default function AuthForm({
+  type = 'login',
+  mode = 'page',
+  onClose,
+  onAuthSuccess,
+  onPayAsGuest,
+  showGuestOption = false,
+  initialEmail = '',
+  initialName=''
+}) {
+const getNameParts = (name = "") => {
+  const parts = name.trim().split(/\s+/);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.length > 1 ? parts.slice(1).join(" ") : "",
+  };
+};
+
+const { firstName, lastName } = getNameParts(initialName);
+
+const [formData, setFormData] = useState(() => ({
+  email: initialEmail ?? "",
+  password: "",
+  firstName,
+  lastName,
+  confirmPassword: "",
+}));
   const [error, setError] = useState([])
   const [loading, setLoading] = useState(false)
   const [currentType, setCurrentType] = useState(type)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const router = useRouter()
+  const isModal = mode === 'modal'
+
+  useEffect(() => {
+    setCurrentType(type)
+  }, [type])
+
+  useEffect(() => {
+    if (!initialEmail) return
+    setFormData((prev) => ({ ...prev, email: initialEmail, firstName: initialName }))
+  }, [initialEmail])
 
   const handleChange = (e) => {
     const { id, value } = e.target
     setFormData((prev) => ({ ...prev, [id]: value }))
   }
 
+  const switchType = (nextType) => {
+    setCurrentType(nextType)
+    setError([])
+  }
+
   const handleSubmit = async () => {
     setError([])
 
-    // Client-side validation for signup
-    if (currentType === 'signup') {
-      if (formData.password !== formData.confirmPassword) {
-        setError([{ path: ['confirmPassword'], message: 'Passwords do not match' }])
-        return
-      }
+    if (currentType === 'signup' && formData.password !== formData.confirmPassword) {
+      setError([{ path: ['confirmPassword'], message: 'Passwords do not match' }])
+      return
     }
 
     setLoading(true)
 
     try {
-      // Prepare data to send to API (exclude confirmPassword)
       const dataToSend = {
         email: formData.email,
         password: formData.password,
@@ -58,14 +88,11 @@ export default function AuthForm({ type = 'login' }) {
       const data = await response.json()
 
       if (!response.ok) {
-        // Handle the error response
         if (data.error) {
           try {
-            // Parse the error string to array
             const parsedErrors = JSON.parse(data.error)
             setError(Array.isArray(parsedErrors) ? parsedErrors : [])
           } catch {
-            // If parsing fails, treat as general error
             setError([{ path: ['form'], message: data.error }])
           }
         } else {
@@ -74,12 +101,18 @@ export default function AuthForm({ type = 'login' }) {
         return
       }
 
+      router.refresh()
+
+      if (isModal && typeof onAuthSuccess === 'function') {
+        await onAuthSuccess(data?.user || null)
+        return
+      }
+
       if (data?.user?.role === 'ADMIN') {
         router.push('/dashboard')
       } else {
         router.push('/')
       }
-      router.refresh()
     } catch (err) {
       setError([{ path: ['form'], message: err.message || 'Something went wrong' }])
     } finally {
@@ -91,24 +124,60 @@ export default function AuthForm({ type = 'login' }) {
     signIn(provider, { callbackUrl: '/' })
   }
 
-  const getError = (field) =>
-    error?.find((e) => e.path?.[0] === field)?.message
+  const onBack = () =>{
+    router.push("/")
+  }
 
-  const getGeneralError = () =>
-    error?.find((e) => e.path?.[0] === 'form')?.message
+  const getError = (field) => error?.find((e) => e.path?.[0] === field)?.message
+
+  const getGeneralError = () => error?.find((e) => e.path?.[0] === 'form')?.message
+
+  const renderGuestButton = () => {
+    if (!showGuestOption || typeof onPayAsGuest !== 'function') return null
+
+    return (
+      <button
+        type="button"
+        onClick={onPayAsGuest}
+        className="w-full py-3.5 border-2 border-pink-500 text-pink-500 rounded-full font-semibold hover:bg-pink-50 transition cursor-pointer mt-6"
+      >
+        Pay as Guest ▸
+      </button>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8">
+    <div className={isModal ? 'w-full' : 'min-h-screen bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4'}>
+      <div className={`${isModal ? 'mx-auto max-w-md w-full bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative' : 'mx-auto max-w-md w-full bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative'}`}>
+        {isModal && typeof onClose === 'function' ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-5 right-2 h-8 w-8 rounded-full border border-gray-300 bg-white text-gray-600 hover:text-gray-900 hover:border-gray-400 transition flex items-center justify-center"
+            aria-label="Close"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onBack}
+            className="absolute top-5 right-2 h-8 w-8 rounded-full border border-gray-300 bg-white text-gray-600 hover:text-gray-900 hover:border-gray-400 transition flex items-center justify-center"
+            aria-label="Close"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        )}
+
         {currentType === 'login' ? (
           <>
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome to Wove Gifts
-              </h2>
-              <p className="text-gray-600 text-sm">
-                Sign in to access your Wove Gifts account
-              </p>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Wove Gifts</h2>
+              <p className="text-gray-600 text-sm">Sign in to access your Wove Gifts account</p>
             </div>
 
             <div className="space-y-2">
@@ -129,9 +198,7 @@ export default function AuthForm({ type = 'login' }) {
                 />
               </div>
               {getError('email') && (
-                <span className="text-red-500 text-xs mb-3 block">
-                  {getError('email')}
-                </span>
+                <span className="text-red-500 text-xs mb-3 block">{getError('email')}</span>
               )}
 
               <div className="relative">
@@ -141,7 +208,7 @@ export default function AuthForm({ type = 'login' }) {
                   </svg>
                 </div>
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   required
                   value={formData.password}
@@ -159,7 +226,6 @@ export default function AuthForm({ type = 'login' }) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-
                   ) : (
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
@@ -168,9 +234,7 @@ export default function AuthForm({ type = 'login' }) {
                 </button>
               </div>
               {getError('password') && (
-                <span className="text-red-500 text-xs mb-3 block">
-                  {getError('password')}
-                </span>
+                <span className="text-red-500 text-xs mb-3 block">{getError('password')}</span>
               )}
 
               {getGeneralError() && (
@@ -178,6 +242,7 @@ export default function AuthForm({ type = 'login' }) {
               )}
 
               <button
+                type="button"
                 onClick={handleSubmit}
                 disabled={loading}
                 className="w-full py-3.5 bg-linear-to-r from-pink-500 to-orange-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -212,25 +277,36 @@ export default function AuthForm({ type = 'login' }) {
               </div>
             </div>
 
-            <p className="text-center text-sm text-gray-600 mt-6">
-              Don't have an account?{' '}
-              <Link
-                href="/signup"
-                className="text-pink-500 font-semibold hover:text-pink-600 transition"
-              >
-                Sign Up
-              </Link>
-            </p>
+            {isModal ? (
+              <p className="text-center text-sm text-gray-600 mt-6">
+                Don&apos;t have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchType('signup')}
+                  className="text-pink-500 font-semibold hover:text-pink-600 transition"
+                >
+                  Sign Up
+                </button>
+              </p>
+            ) : (
+              <p className="text-center text-sm text-gray-600 mt-6">
+                Don&apos;t have an account?{' '}
+                <Link
+                  href="/signup"
+                  className="text-pink-500 font-semibold hover:text-pink-600 transition"
+                >
+                  Sign Up
+                </Link>
+              </p>
+            )}
+
+            {renderGuestButton()}
           </>
         ) : (
           <>
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Create an Account
-              </h2>
-              <p className="text-gray-600 text-sm">
-                Create an account to make gifting faster and easier.
-              </p>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Create an Account</h2>
+              <p className="text-gray-600 text-sm">Create an account to make gifting faster and easier.</p>
             </div>
 
             <div className="space-y-2">
@@ -251,9 +327,7 @@ export default function AuthForm({ type = 'login' }) {
                 />
               </div>
               {getError('firstName') && (
-                <span className="text-red-500 text-xs mb-3 block">
-                  {getError('firstName')}
-                </span>
+                <span className="text-red-500 text-xs mb-3 block">{getError('firstName')}</span>
               )}
 
               <div className="relative">
@@ -273,9 +347,7 @@ export default function AuthForm({ type = 'login' }) {
                 />
               </div>
               {getError('lastName') && (
-                <span className="text-red-500 text-xs mb-3 block">
-                  {getError('lastName')}
-                </span>
+                <span className="text-red-500 text-xs mb-3 block">{getError('lastName')}</span>
               )}
 
               <div className="relative">
@@ -295,9 +367,7 @@ export default function AuthForm({ type = 'login' }) {
                 />
               </div>
               {getError('email') && (
-                <span className="text-red-500 text-xs mb-3 block">
-                  {getError('email')}
-                </span>
+                <span className="text-red-500 text-xs mb-3 block">{getError('email')}</span>
               )}
 
               <div className="relative">
@@ -307,7 +377,7 @@ export default function AuthForm({ type = 'login' }) {
                   </svg>
                 </div>
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   required
                   value={formData.password}
@@ -325,7 +395,6 @@ export default function AuthForm({ type = 'login' }) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-
                   ) : (
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
@@ -334,9 +403,7 @@ export default function AuthForm({ type = 'login' }) {
                 </button>
               </div>
               {getError('password') && (
-                <span className="text-red-500 text-xs mb-3 block">
-                  {getError('password')}
-                </span>
+                <span className="text-red-500 text-xs mb-3 block">{getError('password')}</span>
               )}
 
               <div className="relative">
@@ -346,7 +413,7 @@ export default function AuthForm({ type = 'login' }) {
                   </svg>
                 </div>
                 <input
-                  type={showConfirmPassword ? "text" : "password"}
+                  type={showConfirmPassword ? 'text' : 'password'}
                   id="confirmPassword"
                   required
                   value={formData.confirmPassword}
@@ -364,7 +431,6 @@ export default function AuthForm({ type = 'login' }) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-
                   ) : (
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
@@ -373,9 +439,7 @@ export default function AuthForm({ type = 'login' }) {
                 </button>
               </div>
               {getError('confirmPassword') && (
-                <span className="text-red-500 text-xs mb-3 block">
-                  {getError('confirmPassword')}
-                </span>
+                <span className="text-red-500 text-xs mb-3 block">{getError('confirmPassword')}</span>
               )}
 
               {getGeneralError() && (
@@ -383,6 +447,7 @@ export default function AuthForm({ type = 'login' }) {
               )}
 
               <button
+                type="button"
                 onClick={handleSubmit}
                 disabled={loading}
                 className="w-full py-3.5 bg-linear-to-r from-pink-500 to-orange-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -391,15 +456,30 @@ export default function AuthForm({ type = 'login' }) {
               </button>
             </div>
 
-            <p className="text-center text-sm text-gray-600 mt-6">
-              Already have an account?{' '}
-              <Link
-                href="/login"
-                className="text-pink-500 font-semibold hover:text-pink-600 transition"
-              >
-                Sign In
-              </Link>
-            </p>
+            {isModal ? (
+              <p className="text-center text-sm text-gray-600 mt-6">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => switchType('login')}
+                  className="text-pink-500 font-semibold hover:text-pink-600 transition"
+                >
+                  Sign In
+                </button>
+              </p>
+            ) : (
+              <p className="text-center text-sm text-gray-600 mt-6">
+                Already have an account?{' '}
+                <Link
+                  href="/login"
+                  className="text-pink-500 font-semibold hover:text-pink-600 transition"
+                >
+                  Sign In
+                </Link>
+              </p>
+            )}
+
+            {renderGuestButton()}
           </>
         )}
       </div>

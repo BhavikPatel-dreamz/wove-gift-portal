@@ -86,16 +86,16 @@ const CartPage = () => {
 
   // ✅ Fixed: Only proceed with items from active tab
   const handleProceedToPayment = () => {
-    if (session) {
-      // Check if there are any items in either cart
-      if (cartItems.length === 0 && bulkItems.length === 0) {
-        toast.error('Your cart is empty');
-        return;
-      }
+    // if (session) {
+    //   // Check if there are any items in either cart
+    //   if (cartItems.length === 0 && bulkItems.length === 0) {
+    //     toast.error('Your cart is empty');
+    //     return;
+    //   }
       router.push('/checkout');
-    } else {
-      router.push('/login?redirect=/cart');
-    }
+    // } else {
+    //   router.push('/login?redirect=/cart');
+    // }
   };
 
   const handleRedirect = () => {
@@ -469,7 +469,7 @@ const CartPage = () => {
                        font-semibold text-sm sm:text-base
                        transition-all duration-200
                        flex items-center justify-center gap-2 cursor-pointer`}>
-                  {session ? 'Proceed to Payment' : 'Login to Continue'}
+                  Proceed to Payment
                 </Button>
               </div>
             </div>

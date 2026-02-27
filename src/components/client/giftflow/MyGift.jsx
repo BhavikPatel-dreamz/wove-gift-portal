@@ -534,24 +534,28 @@ function MyGift() {
         </div>
 
         {/* Receiver/Sender Info */}
+          {card.deliveryMethod !== "print" && (
         <div className="flex items-center gap-2 mb-4 text-sm bg-[#FEF8F6] p-2 rounded-lg">
-          <div className="w-5 h-5 flex items-center justify-center shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M8.59135 2.45459C9.45933 2.45459 10.2918 2.79939 10.9055 3.41315C11.5193 4.0269 11.8641 4.85934 11.8641 5.72732C11.8641 6.5953 11.5193 7.42773 10.9055 8.04149C10.2918 8.65524 9.45933 9.00004 8.59135 9.00004C7.72337 9.00004 6.89094 8.65524 6.27718 8.04149C5.66343 7.42773 5.31863 6.5953 5.31863 5.72732C5.31863 4.85934 5.66343 4.0269 6.27718 3.41315C6.89094 2.79939 7.72337 2.45459 8.59135 2.45459ZM8.59135 15.5455C8.59135 15.5455 15.1368 15.5455 15.1368 13.9091C15.1368 11.9455 11.9459 9.81823 8.59135 9.81823C5.23681 9.81823 2.0459 11.9455 2.0459 13.9091C2.0459 15.5455 8.59135 15.5455 8.59135 15.5455Z" fill="#ED457D" />
-            </svg>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] text-gray-500 mb-0.5">
-              {card.isSent ? 'Receiver' : 'Sender'}
-            </p>
-            <p className="font-semibold text-[#2F2E38] text-[12px] leading-4.5 font-poppins truncate">
-              {card.receiverName || 'N/A'}
-            </p>
-            <p className="font-normal text-[#75738C] text-[10px] leading-[16.5px] font-poppins truncate">
-              {card.receiverEmail || 'N/A'}
-            </p>
-          </div>
+            <>
+              <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M8.59135 2.45459C9.45933 2.45459 10.2918 2.79939 10.9055 3.41315C11.5193 4.0269 11.8641 4.85934 11.8641 5.72732C11.8641 6.5953 11.5193 7.42773 10.9055 8.04149C10.2918 8.65524 9.45933 9.00004 8.59135 9.00004C7.72337 9.00004 6.89094 8.65524 6.27718 8.04149C5.66343 7.42773 5.31863 6.5953 5.31863 5.72732C5.31863 4.85934 5.66343 4.0269 6.27718 3.41315C6.89094 2.79939 7.72337 2.45459 8.59135 2.45459ZM8.59135 15.5455C8.59135 15.5455 15.1368 15.5455 15.1368 13.9091C15.1368 11.9455 11.9459 9.81823 8.59135 9.81823C5.23681 9.81823 2.0459 11.9455 2.0459 13.9091C2.0459 15.5455 8.59135 15.5455 8.59135 15.5455Z" fill="#ED457D" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] text-gray-500 mb-0.5">
+                  {card.isSent ? 'Receiver' : 'Sender'}
+                </p>
+                <p className="font-semibold text-[#2F2E38] text-[12px] leading-4.5 font-poppins truncate">
+                  {card.receiverName || 'N/A'}
+                </p>
+                <p className="font-normal text-[#75738C] text-[10px] leading-[16.5px] font-poppins truncate">
+                  {card.receiverEmail || 'N/A'}
+                </p>
+              </div>
+            </>
         </div>
+          )}
 
         <div className="flex justify-between items-center mb-3">
           <div>
