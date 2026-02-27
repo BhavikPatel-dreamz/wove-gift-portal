@@ -33,10 +33,11 @@ const BrandCard = ({
 
   const handleFavoriteClick = (e) => {
     e.stopPropagation();
-    onToggleFavorite?.(brand.id);
+    onToggleFavorite?.(brand);
   };
 
   const { bg, text } = getCategoryColor(brand.categoryName);
+  const isSelected = selectedBrand?.id === brand.id;
 
   return (
     <div
@@ -47,12 +48,21 @@ const BrandCard = ({
       {/* Gradient border — hidden by default, shown on hover */}
       <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-      {/* Original card */}
+      {/*
+        KEY FIX: No `border` class here — CSS border adds to box dimensions,
+        pushing right/bottom into the 1.5px gradient padding and making those
+        sides look thinner. Inset box-shadow draws inside without affecting size.
+      */}
       <div
-        className={`bg-white rounded-[14px] p-6 hover:shadow-lg transition-all duration-300 relative border ${selectedBrand?.id === brand.id ? 'border-blue-500' : 'border-[rgba(26,26,26,0.10)]'}`}
+        className="bg-white rounded-[14px] p-6 hover:shadow-lg transition-all duration-300 relative"
+        style={{
+          boxShadow: isSelected
+            ? 'inset 0 0 0 1.5px #3b82f6'
+            : 'inset 0 0 0 1.5px rgba(26,26,26,0.10)',
+        }}
       >
         {/* Favorite Button */}
-        {/* <button
+        <button
           onClick={handleFavoriteClick}
           className="absolute top-4 right-4 p-1.5 hover:bg-gray-50 rounded-lg transition-all duration-200 z-10"
           aria-label={isFavorited ? `Remove ${brand.brandName} from favorites` : `Add ${brand.brandName} to favorites`}
@@ -64,7 +74,7 @@ const BrandCard = ({
               : "text-gray-400 hover:text-red-500"
               }`}
           />
-        </button> */}
+        </button>
 
         {/* Brand Logo */}
         <div className="flex justify-center mb-6 mt-2">

@@ -3,7 +3,6 @@
 import {
   Gift,
   User,
-  ChevronDown,
   ShoppingBasket,
   Heart,
   Menu,
@@ -17,6 +16,10 @@ import { destroySession } from '../../../lib/action/userAction/session';
 import { usePathname, useRouter } from 'next/navigation';
 import { resetFlow,clearCsvFileData } from '../../../redux/giftFlowSlice';
 import { initializeCart, initializeBulkCart } from '../../../redux/cartSlice';
+import {
+  initializeWishlist,
+  removeFromWishlist,
+} from '../../../redux/wishlistSlice';
 
 
 // Desktop navigation links (without the three items)
@@ -38,16 +41,6 @@ const mobileNavLinks = {
   'Track Request Status': '/track-request'
 };
 
-
-
-const countries = [
-  { name: "South Africa", code: "za" },
-  { name: "India", code: "in" },
-  { name: "United States", code: "us" },
-  { name: "United Kingdom", code: "gb" },
-  { name: "Australia", code: "au" },
-];
-
 const Header = () => {
   const session = useSession();
   const dispatch = useDispatch();
@@ -56,22 +49,17 @@ const Header = () => {
   // ✅ Get both regular and bulk cart items
   const cartItems = useSelector((state) => state.cart.items);
   const bulkItems = useSelector((state) => state.cart.cartItems);
+  const wishlistItems = useSelector((state) => state.wishlist.items);
 
   const [mounted, setMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState(countries[0]);
   const [openDropdown, setOpenDropdown] = useState(false);
-
-
-  const handleSelect = (country) => {
-    setSelected(country);
-    setOpen(false);
-  };
+  const [wishlistOpen, setWishlistOpen] = useState(false);
 
   // ✅ Calculate combined cart count
   const cartCount = cartItems.length + bulkItems.length;
+  const wishlistCount = wishlistItems.length;
 
   // ✅ Initialize cart from localStorage on mount
   useEffect(() => {
@@ -80,6 +68,7 @@ const Header = () => {
     // Initialize both carts from localStorage
     dispatch(initializeCart());
     dispatch(initializeBulkCart());
+    dispatch(initializeWishlist());
 
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
@@ -111,6 +100,7 @@ const Header = () => {
     (key) => desktopNavLinks[key] === pathname
   );
   const dropdownRef = useRef(null);
+  const wishlistDropdownRef = useRef(null);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -118,12 +108,37 @@ const Header = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setOpenDropdown(false);
       }
+      if (
+        wishlistDropdownRef.current &&
+        !wishlistDropdownRef.current.contains(event.target)
+      ) {
+        setWishlistOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const formatWishlistPrice = (item) => {
+    if (item?.sourceType === 'brand') {
+      return 'Brand wishlist';
+    }
+
+    const currency = item?.amountCurrency || 'ZAR';
+    const amount = (Number(item?.amountValue) || 0) * (Number(item?.quantity) || 1);
+
+    try {
+      return new Intl.NumberFormat('en-ZA', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 0,
+      }).format(amount);
+    } catch (error) {
+      return `${currency} ${amount}`;
+    }
+  };
   const linkClass = (path) =>
     `block px-6 py-2 text-sm rounded-md transition
      ${pathname === path
@@ -199,7 +214,10 @@ const Header = () => {
                     ) : (
                       <div className="relative inline-block text-left" ref={dropdownRef}>
                         <button
-                          onClick={() => setOpenDropdown(!openDropdown)}
+                          onClick={() => {
+                            setOpenDropdown(!openDropdown);
+                            setWishlistOpen(false);
+                          }}
                           className="
                 inline-flex items-center gap-1.5 sm:gap-2 
                 cursor-pointer
@@ -303,6 +321,83 @@ const Header = () => {
                       <span className="hidden lg:inline">Login</span>
                     </button>
                   </Link>
+                )}
+              </div>
+
+              <div className="relative" ref={wishlistDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWishlistOpen((prev) => !prev);
+                    setOpenDropdown(false);
+                  }}
+                  className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 rounded-full border border-[#ED457D]/50 bg-white hover:bg-[#ED457D]/10 transition-all duration-200 cursor-pointer"
+                  aria-label="Wishlist"
+                  aria-expanded={wishlistOpen}
+                >
+                  <Heart
+                    className={`w-5 h-5 sm:w-6 sm:h-6 ${mounted && wishlistCount > 0 ? 'fill-[#ED457D]' : ''}`}
+                    color="#ED457D"
+                  />
+
+                  {mounted && wishlistCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-[#ED457D] text-white w-4 h-4 sm:w-5 sm:h-5 text-[9px] sm:text-[11px] flex items-center justify-center rounded-full shadow-md font-medium">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </button>
+
+                {wishlistOpen && (
+                  <div className="absolute right-0 mt-2 w-[290px] max-w-[90vw] rounded-2xl border border-gray-200 bg-white shadow-xl z-50 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                      <p className="text-sm font-semibold text-gray-800">Wishlist</p>
+                      <p className="text-xs font-medium text-[#ED457D]">{wishlistCount} item{wishlistCount === 1 ? '' : 's'}</p>
+                    </div>
+
+                    {!mounted || wishlistCount === 0 ? (
+                      <div className="px-4 py-6 text-sm text-gray-500 text-center">
+                        No wishlist items yet.
+                      </div>
+                    ) : (
+                      <div className="max-h-72 overflow-y-auto">
+                        {wishlistItems.map((item) => (
+                          <div
+                            key={item.key}
+                            className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-lg border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
+                                {item.logo ? (
+                                  <img
+                                    src={item.logo}
+                                    alt={item.brandName}
+                                    className="w-full h-full object-contain p-1 rounded-lg"
+                                  />
+                                ) : (
+                                  <Heart className="w-4 h-4 text-[#ED457D]" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-800 truncate">
+                                  {item.brandName}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {formatWishlistPrice(item)}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => dispatch(removeFromWishlist(item.key))}
+                              className="text-xs text-[#ED457D] hover:text-[#D93B6E] font-medium"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 

@@ -1,17 +1,17 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useMemo } from "react"
 import SearchBar from './SearchBar'
 import CardGrid from './CardGrid'
 import { useDispatch, useSelector } from "react-redux"
 import {
   goNext,
   setCurrentStep,
-  setSelectedBrand,
-  toggleFavorite
+  setSelectedBrand
 } from "../../../redux/giftFlowSlice"
 import Pagination from "./Pagination"
 import { useSearchParams } from "next/navigation"
+import { toggleWishlist } from "../../../redux/wishlistSlice"
 
 const BrandSelectionStep = ({
   brands,
@@ -30,10 +30,31 @@ const BrandSelectionStep = ({
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
 
-  const { favorites, selectedBrand } = useSelector((state) => state.giftFlowReducer)
+  const { selectedBrand } = useSelector((state) => state.giftFlowReducer)
+  const wishlistItems = useSelector((state) => state.wishlist.items)
+  const favorites = useMemo(
+    () =>
+      wishlistItems
+        .filter((item) => item.sourceType === "brand")
+        .map((item) =>
+          item.brandId ?? String(item.key || "").replace(/^brand:/, "")
+        ),
+    [wishlistItems]
+  );
 
-  const handleToggleFavorite = useCallback((brandId) => {
-    dispatch(toggleFavorite(brandId))
+  const handleToggleFavorite = useCallback((brand) => {
+    const brandId = brand?.id ?? brand?.brandName ?? brand?.name;
+    if (!brandId) {
+      return;
+    }
+
+    dispatch(toggleWishlist({
+      key: `brand:${brandId}`,
+      sourceType: "brand",
+      brandId,
+      brandName: brand.brandName || brand.name || "Brand",
+      logo: brand.logo || null,
+    }))
   }, [dispatch])
 
   const handleBrandClick = useCallback((brand) => {
