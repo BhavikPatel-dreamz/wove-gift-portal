@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { goBack, goNext , setQuantity, setSelectedAmount } from '../../../redux/giftFlowSlice';
+import { goBack, goNext, setQuantity, setSelectedAmount } from '../../../redux/giftFlowSlice';
 import { addToBulk, updateBulkItem } from '../../../redux/cartSlice';
 
 const BulkOrderSetup = () => {
@@ -134,18 +134,18 @@ const BulkOrderSetup = () => {
   const handleCustomAmountChange = (e) => {
     const value = e.target.value;
     if (value === '' || /^\d+$/.test(value)) {
-        const numValue = value === '' ? null : parseInt(value, 10);
-        const currency = selectedBrand?.vouchers?.[0]?.denominationCurrency || 'R';
+      const numValue = value === '' ? null : parseInt(value, 10);
+      const currency = selectedBrand?.vouchers?.[0]?.denominationCurrency || 'R';
 
-        if (numValue !== null && numValue > maxAmount) {
-            setError(`Maximum amount is ${maxAmount}`);
-        } else if (numValue !== null && numValue < minAmount && numValue !== 0) {
-            setError(`Minimum amount is ${minAmount}`);
-        }
-        else {
-            setError('');
-        }
-        dispatch(setSelectedAmount({ value: numValue, currency: currency }));
+      if (numValue !== null && numValue > maxAmount) {
+        setError(`Maximum amount is ${maxAmount}`);
+      } else if (numValue !== null && numValue < minAmount && numValue !== 0) {
+        setError(`Minimum amount is ${minAmount}`);
+      }
+      else {
+        setError('');
+      }
+      dispatch(setSelectedAmount({ value: numValue, currency: currency }));
     }
   };
 
@@ -161,7 +161,7 @@ const BulkOrderSetup = () => {
         setShowCustomInput(true);
       }
     } else if (selectedAmount && selectedAmount.value === null) {
-        setShowCustomInput(true);
+      setShowCustomInput(true);
     }
   }, [selectedAmount, denominations, dispatch]);
 
@@ -177,7 +177,7 @@ const BulkOrderSetup = () => {
       setError(`Minimum custom amount is ${minAmount}`);
       return;
     }
-    
+
     if (showCustomInput && selectedAmount.value > maxAmount) {
       setError(`Maximum custom amount is ${maxAmount}`);
       return;
@@ -289,6 +289,7 @@ const BulkOrderSetup = () => {
 
             {/* Button content */}
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+               <span className="transition-transform duration-300 group-hover:-translate-x-1">
               <svg
                 width="8"
                 height="9"
@@ -315,6 +316,7 @@ const BulkOrderSetup = () => {
                   </linearGradient>
                 </defs>
               </svg>
+              </span>
               Previous
             </div>
           </button>
@@ -482,19 +484,19 @@ const BulkOrderSetup = () => {
 
             {showCustomInput && (
               <div className="mt-4">
-                  <label className="block text-base font-semibold text-[#1A1A1A] mb-3">
-                      Custom Amount
-                  </label>
-                  <input
-                      type="text"
-                      value={selectedAmount?.value || ''}
-                      onChange={handleCustomAmountChange}
-                      placeholder={`e.g., ${minAmount}`}
-                      className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                      Enter an amount between {minAmount} and {maxAmount}.
-                  </p>
+                <label className="block text-base font-semibold text-[#1A1A1A] mb-3">
+                  Custom Amount
+                </label>
+                <input
+                  type="text"
+                  value={selectedAmount?.value || ''}
+                  onChange={handleCustomAmountChange}
+                  placeholder={`e.g., ${minAmount}`}
+                  className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Enter an amount between {minAmount} and {maxAmount}.
+                </p>
               </div>
             )}
 
@@ -506,7 +508,7 @@ const BulkOrderSetup = () => {
 
               <input
                 type="text"
-                  value={quantity || ''} // Change this line - use empty string as fallback
+                value={quantity || ''} // Change this line - use empty string as fallback
                 onChange={handleQuantityChange}
                 placeholder="e.g., 50 Vouchers"
                 className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
@@ -549,13 +551,38 @@ const BulkOrderSetup = () => {
             {/* Add to Bulk Order Button */}
             <button
               onClick={handleAddToBulkOrder}
-              disabled={(!selectedAmount || !quantity || parseInt(quantity) === 0) || parseInt(totalSpend) > 25000}
-              className="w-full cursor-pointer bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              disabled={
+                (!selectedAmount || !quantity || parseInt(quantity) === 0) ||
+                parseInt(totalSpend) > 25000
+              }
+              className={`
+    group w-full 
+    bg-gradient-to-r from-pink-500 to-orange-500
+    text-white py-4 px-6 rounded-full 
+    font-semibold text-lg 
+    transition-all duration-300 
+    flex items-center justify-center gap-2
+    ${(!selectedAmount || !quantity || parseInt(quantity) === 0) ||
+                  parseInt(totalSpend) > 25000
+                  ? 'bg-gray-300 cursor-not-allowed opacity-50 shadow-none'
+                  : 'hover:from-pink-600 hover:to-orange-600 hover:shadow-xl shadow-lg cursor-pointer'
+                }
+  `}
             >
               Add to Bulk Order {totalSpend}
-              <span className="text-xl">
-                <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+
+              <span className="text-xl transition-transform duration-300 group-hover:translate-x-1">
+                <svg
+                  width="8"
+                  height="9"
+                  viewBox="0 0 8 9"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                    fill="white"
+                  />
                 </svg>
               </span>
             </button>

@@ -5,16 +5,30 @@ import StepRenderer from "../../../components/client/giftflow/StepRenderer";
 import Header from "../../../components/client/home/Header";
 import Footer from "../../../components/client/home/Footer";
 import { useEffect, Suspense, useState, useCallback, useTransition, useMemo } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setCurrentStep } from "../../../redux/giftFlowSlice";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { getBrandsForClient } from "../../../lib/action/brandFetch";
 
+const MIN_GIFT_STEP = 1;
+const MAX_GIFT_STEP = 9;
+
+const normalizeStep = (stepValue) => {
+  const parsedStep = Number.parseInt(stepValue ?? "", 10);
+  if (Number.isNaN(parsedStep)) {
+    return MIN_GIFT_STEP;
+  }
+
+  return Math.min(MAX_GIFT_STEP, Math.max(MIN_GIFT_STEP, parsedStep));
+};
+
 const PageContent = () => {
   const dispatch = useDispatch();
+  const { currentStep } = useSelector((state) => state.giftFlowReducer);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const stepFromUrl = useMemo(() => normalizeStep(searchParams.get("step")), [searchParams]);
 
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -173,10 +187,28 @@ const PageContent = () => {
     }
   }, [loading, brands, urlParams, prefetchAdjacentPages]);
 
-  // Set current step on mount
+  // Keep Redux step in sync with URL (supports direct links and browser back/forward)
   useEffect(() => {
-    dispatch(setCurrentStep(1));
-  }, [dispatch]);
+    dispatch(setCurrentStep(stepFromUrl));
+  }, [stepFromUrl, dispatch]);
+
+  // Keep URL in sync with Redux step (creates browser history entries per step)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (currentStep > MIN_GIFT_STEP) {
+      params.set("step", String(currentStep));
+    } else {
+      params.delete("step");
+    }
+
+    const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+
+    if (nextUrl !== currentUrl) {
+      router.push(nextUrl, { scroll: false });
+    }
+  }, [currentStep, pathname, router]);
 
   // Update URL parameters with transition
   const updateUrlParams = useCallback((updates) => {
@@ -225,10 +257,13 @@ const PageContent = () => {
       if (urlParams.editBulkIndex) {
         params.set("editBulkIndex", urlParams.editBulkIndex);
       }
+      if (currentStep > MIN_GIFT_STEP) {
+        params.set("step", String(currentStep));
+      }
       const newUrl = params.toString() ? `?${params.toString()}` : "";
       router.replace(`${pathname}${newUrl}`, { scroll: false });
     });
-  }, [urlParams.mode, urlParams.editBulkId, urlParams.editBulkIndex, router, pathname]);
+  }, [urlParams.mode, urlParams.editBulkId, urlParams.editBulkIndex, currentStep, router, pathname]);
 
   return (
     <div className="min-h-screen bg-gray-50">

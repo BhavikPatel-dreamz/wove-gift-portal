@@ -51,9 +51,8 @@ const DraggableLayer = ({ layer, isSelected, onMouseDown }) => {
 
   return (
     <div
-      className={`absolute touch-none ${
-        layer.locked ? 'cursor-not-allowed' : 'cursor-move'
-      } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+      className={`absolute touch-none ${layer.locked ? 'cursor-not-allowed' : 'cursor-move'
+        } ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
       style={{
         left: `${layer.x}%`,
         top: `${layer.y}%`,
@@ -668,23 +667,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
             <p className="text-xs text-gray-500 hidden sm:block">Design your perfect card</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={exportCard}
-              disabled={isGenerating}
-              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-600 disabled:opacity-50 flex items-center gap-1.5"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span className="hidden sm:inline">Exporting...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={14} className="sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Export</span>
-                </>
-              )}
-            </button>
+
             <button
               onClick={onCancel}
               className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -1385,32 +1368,34 @@ export default function SubCategorySelector() {
 
             {/* Button content */}
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-              <svg
-                width="8"
-                height="9"
-                viewBox="0 0 8 9"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="transition-all duration-300 group-hover:[&>path]:fill-white"
-              >
-                <path
-                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
-                  fill="url(#paint0_linear_584_1923)"
-                />
-                <defs>
-                  <linearGradient
-                    id="paint0_linear_584_1923"
-                    x1="7.5"
-                    y1="3.01721"
-                    x2="-9.17006"
-                    y2="13.1895"
-                    gradientUnits="userSpaceOnUse"
-                  >
-                    <stop stopColor="#ED457D" />
-                    <stop offset="1" stopColor="#FA8F42" />
-                  </linearGradient>
-                </defs>
-              </svg>
+              <span className="transition-transform duration-300 group-hover:-translate-x-1">
+                <svg
+                  width="8"
+                  height="9"
+                  viewBox="0 0 8 9"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                >
+                  <path
+                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                    fill="url(#paint0_linear_584_1923)"
+                  />
+                  <defs>
+                    <linearGradient
+                      id="paint0_linear_584_1923"
+                      x1="7.5"
+                      y1="3.01721"
+                      x2="-9.17006"
+                      y2="13.1895"
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop stopColor="#ED457D" />
+                      <stop offset="1" stopColor="#FA8F42" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </span>
               Previous
             </div>
           </button>
@@ -1474,66 +1459,68 @@ export default function SubCategorySelector() {
 
           {/* Category Cards */}
           {subCategories.map((subCategory, index) => (
-  <div
-    key={`${subCategory.id}-${index}`}
-    onClick={() => handleSubCategorySelect(subCategory)}
-    className="group cursor-pointer h-full"
-  >
-    <div
-      className={`h-full bg-white rounded-2xl p-2 overflow-hidden transition-all duration-300 hover:shadow-xl 
+            <div
+              key={`${subCategory.id}-${index}`}
+              onClick={() => handleSubCategorySelect(subCategory)}
+              className="group cursor-pointer h-full"
+            >
+              <div
+                className={`h-full bg-white rounded-2xl p-2 overflow-hidden transition-all duration-300 hover:shadow-xl 
       border flex flex-col
       ${selectedSubCategory?.id === subCategory.id
-          ? "border-2 border-blue-500"
-          : "border-gray-200 hover:border-pink-200"
-        }`}
-    >
-      {/* Image */}
-      <div className="w-full h-64 overflow-hidden rounded-2xl bg-gray-100">
-        {subCategory.image ? (
-          <img
-            src={subCategory.image}
-            alt={subCategory.name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-          />
-        ) : (
-          <div className="w-full h-full bg-linear-to-br from-pink-100 to-orange-100 flex items-center justify-center">
-            <span className="text-6xl opacity-80">
-              {subCategory.emoji || "🎁"}
-            </span>
-          </div>
-        )}
-      </div>
+                    ? "border-2 border-blue-500"
+                    : "border-gray-200 hover:border-pink-200"
+                  }`}
+              >
+                {/* Image */}
+                <div className="w-full h-64 overflow-hidden rounded-2xl bg-gray-100">
+                  {subCategory.image ? (
+                    <img
+                      src={subCategory.image}
+                      alt={subCategory.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-linear-to-br from-pink-100 to-orange-100 flex items-center justify-center">
+                      <span className="text-6xl opacity-80">
+                        {subCategory.emoji || "🎁"}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-      {/* Content */}
-      <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-bold text-lg text-gray-900 mb-2 ">
-          {subCategory.name}
-        </h3>
+                {/* Content */}
+                <div className="p-5 flex flex-col flex-1">
+                  <h3 className="font-bold text-lg text-gray-900 mb-2 ">
+                    {subCategory.name}
+                  </h3>
 
-        <p className="text-gray-600 text-sm leading-relaxed mb-4">
-          {subCategory.description}
-        </p>
+                  <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                    {subCategory.description}
+                  </p>
 
-        {/* Button pinned to bottom */}
-        <button className="mt-auto w-full py-3 px-4 bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-lg hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 cursor-pointer">
-          Choose this Design
-          <svg
-            width="8"
-            height="9"
-            viewBox="0 0 8 9"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-              fill="white"
-            />
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
-))}
+                  {/* Button pinned to bottom */}
+                  <button className="mt-auto w-full py-3 px-4 bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-lg hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 cursor-pointer">
+                    Choose this Design
+                    <span className="mt-1 transition-transform duration-300 group-hover:translate-x-1">
+                      <svg
+                        width="8"
+                        height="9"
+                        viewBox="0 0 8 9"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
 
         </div>
 

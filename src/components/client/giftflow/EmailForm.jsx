@@ -3,6 +3,7 @@ import { Mail } from 'lucide-react';
 import Image from 'next/image';
 import { setCurrentStep, setDeliveryFormEditReturn } from "../../../redux/giftFlowSlice";
 import { useDispatch, useSelector } from 'react-redux';
+import { COUNTRY_CODES } from "./deliveryValidation";
 
 const EmailForm = ({ formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage }) => {
 
@@ -64,6 +65,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         type="text"
                                         value={formData.yourFullName}
                                         onChange={(e) => handleInputChange('yourFullName', e.target.value)}
+                                        autoComplete="name"
                                         placeholder="Your Full Name*"
                                         className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                             }`}
@@ -76,6 +78,8 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         type="email"
                                         value={formData.yourEmailAddress}
                                         onChange={(e) => handleInputChange('yourEmailAddress', e.target.value)}
+                                        autoComplete="email"
+                                        inputMode="email"
                                         placeholder="Your Email Address*"
                                         className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                             }`}
@@ -84,22 +88,28 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                 </div>
 
                                 <div>
-                                    {/* <label className="text-xs font-semibold text-gray-600 block mb-2">Your Phone Number (Optional)</label> */}
+                                    <label className="text-xs font-semibold text-gray-600 block mb-2">Your Phone Number (Optional)</label>
                                     <div className="flex gap-2">
-                                        {/* <select
-                    value={formData.yourPhoneCountryCode}
-                    onChange={(e) => handleInputChange('yourPhoneCountryCode', e.target.value)}
-                    className="w-28 p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all bg-white text-sm"
-                  >
-                    {countryCodes.map(({ code, country }) => (
-                      <option key={code} value={code}>{code} {country}</option>
-                    ))}
-                  </select> */}
+                                        <select
+                                            value={formData.yourPhoneCountryCode}
+                                            onChange={(e) => handleInputChange('yourPhoneCountryCode', e.target.value)}
+                                            className="w-[170px] p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all bg-white text-sm"
+                                            aria-label="Your phone country code"
+                                        >
+                                            {COUNTRY_CODES.map(({ code, country }) => (
+                                                <option key={`${code}-${country}`} value={code}>
+                                                    {code} {country}
+                                                </option>
+                                            ))}
+                                        </select>
                                         <div className="flex-1">
                                             <input
                                                 type="tel"
                                                 value={formData.yourPhoneNumber}
                                                 onChange={(e) => handleInputChange('yourPhoneNumber', e.target.value)}
+                                                inputMode="numeric"
+                                                autoComplete="tel-national"
+                                                maxLength={15}
                                                 placeholder="Your Phone Number"
                                                 className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourPhoneNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                                     }`}
@@ -129,6 +139,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         type="text"
                                         value={formData.recipientFullName}
                                         onChange={(e) => handleInputChange('recipientFullName', e.target.value)}
+                                        autoComplete="name"
                                         placeholder="Recipient's Name*"
                                         className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.recipientFullName ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                             }`}
@@ -141,6 +152,8 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         type="email"
                                         value={formData.recipientEmailAddress}
                                         onChange={(e) => handleInputChange('recipientEmailAddress', e.target.value)}
+                                        autoComplete="email"
+                                        inputMode="email"
                                         placeholder="Email Address*"
                                         className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.recipientEmailAddress ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'
                                             }`}
@@ -203,7 +216,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                     </div>
 
                                     {/* Greeting */}
-                                    <div className="bg-white px-4 sm:px-10 pb-4">
+                                    <div className="bg-white px-4 sm:px-10 pb-[4.5rem]">
                                         <div className="text-left p-4">
                                             <p className="text-xs text-gray-700 mb-1">
                                                 Hi {formData.recipientFullName || "Jane"},
@@ -314,20 +327,56 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
 
                                         {/* Redeem Button */}
                                         <button
-                                            className="cursor-pointer w-full bg-linear-to-r from-pink-500 to-orange-400 text-white py-3 rounded-full font-semibold text-sm transition-all hover:shadow-lg flex items-center justify-center gap-2"
+                                            className="group cursor-pointer w-full 
+  bg-linear-to-r from-pink-500 to-orange-400 
+  hover:from-pink-600 hover:to-orange-500 
+  text-white py-3 rounded-full font-semibold text-sm 
+  transition-all hover:shadow-lg 
+  flex items-center justify-center gap-2"
                                             onClick={() => {
                                                 const url =
                                                     selectedBrand?.website ||
                                                     selectedBrand?.domain ||
                                                     `https://${selectedBrand?.slug}.myshopify.com`;
 
-                                                window.open(url.startsWith("http") ? url : `https://${url}`, "_blank");
+                                                window.open(
+                                                    url.startsWith("http") ? url : `https://${url}`,
+                                                    "_blank"
+                                                );
                                             }}
                                         >
                                             Redeem Now
-                                            <span>↗</span>
-                                        </button>
 
+                                            <span className="transition-transform duration-300 group-hover:translate-x-1">
+                                                <svg
+                                                    width="16"
+                                                    height="16"
+                                                    viewBox="0 0 20 20"
+                                                    fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="transition-colors duration-300"
+                                                >
+                                                    <path
+                                                        fillRule="evenodd"
+                                                        clipRule="evenodd"
+                                                        d="M7.35412 5.90263C7.40412 5.35261 7.89053 4.94727 8.44054 4.99727L13.626 5.46868C14.176 5.51868 14.5814 6.00509 14.5314 6.5551C14.4814 7.10512 13.9949 7.51046 13.4449 7.46046L8.25947 6.98906C7.70946 6.93906 7.30411 6.45264 7.35412 5.90263Z"
+                                                        fill="currentColor"
+                                                    />
+                                                    <path
+                                                        fillRule="evenodd"
+                                                        clipRule="evenodd"
+                                                        d="M14.0974 12.6459C13.5474 12.6959 13.061 12.2905 13.011 11.7405L12.5396 6.55505C12.4896 6.00503 12.8949 5.51862 13.4449 5.46862C13.9949 5.41862 14.4814 5.82396 14.5314 6.37397L15.0028 11.5594C15.0528 12.1094 14.6474 12.5959 14.0974 12.6459Z"
+                                                        fill="currentColor"
+                                                    />
+                                                    <path
+                                                        fillRule="evenodd"
+                                                        clipRule="evenodd"
+                                                        d="M12.8284 7.17156C13.2189 7.56208 13.2189 8.19524 12.8284 8.58577L7.17153 14.2426C6.78101 14.6331 6.14784 14.6331 5.75732 14.2426C5.36679 13.8521 5.36679 13.2189 5.75732 12.8284L11.4142 7.17156C11.8047 6.78103 12.4379 6.78103 12.8284 7.17156Z"
+                                                        fill="currentColor"
+                                                    />
+                                                </svg>
+                                            </span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>

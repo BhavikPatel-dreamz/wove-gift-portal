@@ -65,6 +65,7 @@ const adapter = {
         lastName: lastNameParts.join(" ") || "User",
         password: OAUTH_PLACEHOLDER_PASSWORD_HASH,
         avatar: data.image || null,
+        isGuest: false,
         role: "CUSTOMER",
         isActive: true,
         isVerified: true,

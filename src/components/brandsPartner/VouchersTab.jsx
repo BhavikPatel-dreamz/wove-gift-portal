@@ -9,11 +9,32 @@ const VouchersTab = ({ formData, updateFormData }) => {
   const [isActive, setIsActive] = useState(true);
   const [currencies] = useState(currencyList);
   const [logoPreview, setLogoPreview] = useState(null);
+  const normalizeLogoPreviewSrc = (value) => {
+    if (typeof value !== "string") return null;
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return null;
+
+    if (
+      trimmedValue.startsWith("http://") ||
+      trimmedValue.startsWith("https://") ||
+      trimmedValue.startsWith("data:") ||
+      trimmedValue.startsWith("blob:") ||
+      trimmedValue.startsWith("/")
+    ) {
+      return trimmedValue;
+    }
+
+    if (trimmedValue.startsWith("res.cloudinary.com")) {
+      return `https://${trimmedValue}`;
+    }
+
+    return `/uploads/brands/${trimmedValue}`;
+  };
 
   useEffect(() => {
     if (formData.logo) {
       if (typeof formData.logo === 'string') {
-        setLogoPreview(formData.logo);
+        setLogoPreview(normalizeLogoPreviewSrc(formData.logo));
       } else if (formData.logo instanceof File) {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -22,7 +43,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
         reader.readAsDataURL(formData.logo);
       }
     } else {
-      setLogoPreview(null);
+      setLogoPreview(normalizeLogoPreviewSrc(formData.imagePreview));
     }
   }, [formData.logo]);
 
@@ -519,9 +540,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
 
               {/* Image Container */}
               <div className="flex-1 flex items-center justify-center overflow-hidden my-2 ronded-2">
-                {formData.logo || formData.imagePreview ? (
+                {logoPreview ? (
                   <img
-                    src={formData.logo || formData.imagePreview}
+                    src={logoPreview}
                     alt="Brand logo"
                     className="max-w-full max-h-full object-contain"
                   />

@@ -25,6 +25,7 @@ model User {
   lastName       String
   password       String
   avatar         String?
+  isGuest        Boolean          @default(false)
   role           UserRole         @default(CUSTOMER)
   isActive       Boolean          @default(false)
   isVerified     Boolean          @default(false)

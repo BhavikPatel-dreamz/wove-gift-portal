@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { ArrowLeft, X } from "lucide-react";
+import { X } from "lucide-react";
 import { clearDeliveryFormEditReturn, goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
 import MailIcons from "../../../icons/MailIcon";
 import WhatsupIcon from '../../../icons/WhatsupIcon';
@@ -9,6 +9,16 @@ import EmailForm from "./EmailForm";
 import WhatsAppForm from "./WhatsAppForm";
 import PrintForm from "./PrintForm";
 import { useSession } from "@/contexts/SessionContext";
+import {
+  DEFAULT_COUNTRY_CODE,
+  isValidEmail,
+  isValidName,
+  normalizeCountryCode,
+  normalizeEmailInput,
+  normalizeNameInput,
+  normalizePhoneInput,
+  validatePhoneWithCountryCode,
+} from "./deliveryValidation";
 
 
 const DELIVERY_METHODS = [
@@ -38,6 +48,27 @@ const DELIVERY_METHODS = [
   }
 ];
 
+const PHONE_FIELDS = new Set([
+  "yourWhatsAppNumber",
+  "recipientWhatsAppNumber",
+  "yourPhoneNumber",
+]);
+
+const COUNTRY_CODE_FIELDS = new Set([
+  "yourCountryCode",
+  "recipientCountryCode",
+  "yourPhoneCountryCode",
+]);
+
+const EMAIL_FIELDS = new Set(["yourEmailAddress", "recipientEmailAddress"]);
+
+const NAME_FIELDS = new Set([
+  "yourName",
+  "recipientName",
+  "yourFullName",
+  "recipientFullName",
+]);
+
 const DeliveryMethodStep = () => {
   const dispatch = useDispatch();
   const session = useSession();
@@ -59,29 +90,31 @@ const DeliveryMethodStep = () => {
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     yourName: '',
-    yourCountryCode: '+91',
+    yourCountryCode: DEFAULT_COUNTRY_CODE,
     yourWhatsAppNumber: '',
     recipientName: '',
-    recipientCountryCode: '+91',
+    recipientCountryCode: DEFAULT_COUNTRY_CODE,
     recipientWhatsAppNumber: '',
     yourFullName: '',
     yourEmailAddress: '',
     recipientFullName: '',
     recipientEmailAddress: '',
     yourPhoneNumber: '',
-    yourPhoneCountryCode: '+91',
+    yourPhoneCountryCode: DEFAULT_COUNTRY_CODE,
     printDetails: {}
   });
 
   // Initialize form data with session user data on mount
   useEffect(() => {
     if (session?.user) {
-      const fullName = `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim();
+      const fullName = normalizeNameInput(
+        `${session.user.firstName || ''} ${session.user.lastName || ''}`
+      ).trim();
       setFormData(prev => ({
         ...prev,
         yourName: fullName || prev.yourName,
         yourFullName: fullName || prev.yourFullName,
-        yourEmailAddress: session.user.email || prev.yourEmailAddress,
+        yourEmailAddress: normalizeEmailInput(session.user.email) || prev.yourEmailAddress,
       }));
     }
   }, [session?.user]);
@@ -91,18 +124,27 @@ const DeliveryMethodStep = () => {
     if (deliveryMethod && deliveryDetails && Object.keys(deliveryDetails).length > 0) {
       setFormData(prev => ({
         ...prev,
-        yourName: deliveryDetails.yourName || prev.yourName,
-        yourCountryCode: deliveryDetails.yourCountryCode || prev.yourCountryCode,
-        yourWhatsAppNumber: deliveryDetails.yourWhatsAppNumber || prev.yourWhatsAppNumber,
-        recipientName: deliveryDetails.recipientName || prev.recipientName,
-        recipientCountryCode: deliveryDetails.recipientCountryCode || prev.recipientCountryCode,
-        recipientWhatsAppNumber: deliveryDetails.recipientWhatsAppNumber || prev.recipientWhatsAppNumber,
-        yourFullName: deliveryDetails.yourFullName || prev.yourFullName,
-        yourEmailAddress: deliveryDetails.yourEmailAddress || prev.yourEmailAddress,
-        recipientFullName: deliveryDetails.recipientFullName || prev.recipientFullName,
-        recipientEmailAddress: deliveryDetails.recipientEmailAddress || prev.recipientEmailAddress,
-        yourPhoneNumber: deliveryDetails.yourPhoneNumber || prev.yourPhoneNumber,
-        yourPhoneCountryCode: deliveryDetails.yourPhoneCountryCode || prev.yourPhoneCountryCode,
+        yourName: normalizeNameInput(deliveryDetails.yourName || prev.yourName),
+        yourCountryCode: normalizeCountryCode(deliveryDetails.yourCountryCode || prev.yourCountryCode),
+        yourWhatsAppNumber: normalizePhoneInput(
+          deliveryDetails.yourWhatsAppNumber || prev.yourWhatsAppNumber,
+          deliveryDetails.yourCountryCode || prev.yourCountryCode
+        ),
+        recipientName: normalizeNameInput(deliveryDetails.recipientName || prev.recipientName),
+        recipientCountryCode: normalizeCountryCode(deliveryDetails.recipientCountryCode || prev.recipientCountryCode),
+        recipientWhatsAppNumber: normalizePhoneInput(
+          deliveryDetails.recipientWhatsAppNumber || prev.recipientWhatsAppNumber,
+          deliveryDetails.recipientCountryCode || prev.recipientCountryCode
+        ),
+        yourFullName: normalizeNameInput(deliveryDetails.yourFullName || prev.yourFullName),
+        yourEmailAddress: normalizeEmailInput(deliveryDetails.yourEmailAddress || prev.yourEmailAddress),
+        recipientFullName: normalizeNameInput(deliveryDetails.recipientFullName || prev.recipientFullName),
+        recipientEmailAddress: normalizeEmailInput(deliveryDetails.recipientEmailAddress || prev.recipientEmailAddress),
+        yourPhoneNumber: normalizePhoneInput(
+          deliveryDetails.yourPhoneNumber || prev.yourPhoneNumber,
+          deliveryDetails.yourPhoneCountryCode || prev.yourPhoneCountryCode
+        ),
+        yourPhoneCountryCode: normalizeCountryCode(deliveryDetails.yourPhoneCountryCode || prev.yourPhoneCountryCode),
         printDetails: deliveryDetails.printDetails || prev.printDetails
       }));
     }
@@ -156,59 +198,82 @@ const DeliveryMethodStep = () => {
   }, [deliveryMethod, deliveryDetails]);
 
   // Validation functions
-  const validateEmail = useCallback((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), []);
-  const validatePhoneNumber = useCallback((phone) => /^\+?[0-9]{10,}$/.test(phone.replace(/[\s()-]+/g, '')), []);
-
   const validateWhatsAppForm = useCallback(() => {
     const newErrors = {};
 
     if (!formData.yourName?.trim()) {
-      newErrors.yourName = 'Your name is required';
+      newErrors.yourName = "Your name is required";
+    } else if (!isValidName(formData.yourName)) {
+      newErrors.yourName = "Please enter a valid name";
     }
-    if (!formData.yourWhatsAppNumber?.trim()) {
-      newErrors.yourWhatsAppNumber = 'Your WhatsApp number is required';
-    } else if (!validatePhoneNumber(formData.yourWhatsAppNumber)) {
-      newErrors.yourWhatsAppNumber = 'Please enter a valid phone number (minimum 10 digits)';
+
+    const yourWhatsAppError = validatePhoneWithCountryCode(
+      formData.yourWhatsAppNumber,
+      formData.yourCountryCode,
+      { required: true, label: "your WhatsApp number" }
+    );
+    if (yourWhatsAppError) {
+      newErrors.yourWhatsAppNumber = yourWhatsAppError;
     }
+
     if (!formData.recipientName?.trim()) {
-      newErrors.recipientName = 'Recipient name is required';
+      newErrors.recipientName = "Recipient name is required";
+    } else if (!isValidName(formData.recipientName)) {
+      newErrors.recipientName = "Please enter a valid recipient name";
     }
-    if (!formData.recipientWhatsAppNumber?.trim()) {
-      newErrors.recipientWhatsAppNumber = 'Recipient WhatsApp number is required';
-    } else if (!validatePhoneNumber(formData.recipientWhatsAppNumber)) {
-      newErrors.recipientWhatsAppNumber = 'Please enter a valid phone number (minimum 10 digits)';
+
+    const recipientWhatsAppError = validatePhoneWithCountryCode(
+      formData.recipientWhatsAppNumber,
+      formData.recipientCountryCode,
+      { required: true, label: "recipient WhatsApp number" }
+    );
+    if (recipientWhatsAppError) {
+      newErrors.recipientWhatsAppNumber = recipientWhatsAppError;
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, validatePhoneNumber]);
+  }, [formData]);
 
   const validateEmailForm = useCallback(() => {
     const newErrors = {};
 
     if (!formData.yourFullName?.trim()) {
-      newErrors.yourFullName = 'Your full name is required';
+      newErrors.yourFullName = "Your full name is required";
+    } else if (!isValidName(formData.yourFullName)) {
+      newErrors.yourFullName = "Please enter a valid full name";
     }
+
     if (!formData.yourEmailAddress?.trim()) {
-      newErrors.yourEmailAddress = 'Your email is required';
-    } else if (!validateEmail(formData.yourEmailAddress)) {
-      newErrors.yourEmailAddress = 'Please enter a valid email address';
+      newErrors.yourEmailAddress = "Your email is required";
+    } else if (!isValidEmail(formData.yourEmailAddress)) {
+      newErrors.yourEmailAddress = "Please enter a valid email address";
     }
-    if (formData.yourPhoneNumber?.trim() && !validatePhoneNumber(formData.yourPhoneNumber)) {
-      newErrors.yourPhoneNumber = 'Please enter a valid phone number (minimum 10 digits)';
+
+    const yourPhoneError = validatePhoneWithCountryCode(
+      formData.yourPhoneNumber,
+      formData.yourPhoneCountryCode,
+      { required: false, label: "phone number" }
+    );
+    if (yourPhoneError) {
+      newErrors.yourPhoneNumber = yourPhoneError;
     }
+
     if (!formData.recipientFullName?.trim()) {
-      newErrors.recipientFullName = 'Recipient name is required';
+      newErrors.recipientFullName = "Recipient name is required";
+    } else if (!isValidName(formData.recipientFullName)) {
+      newErrors.recipientFullName = "Please enter a valid recipient name";
     }
+
     if (!formData.recipientEmailAddress?.trim()) {
-      newErrors.recipientEmailAddress = 'Recipient email is required';
-    } else if (!validateEmail(formData.recipientEmailAddress)) {
-      newErrors.recipientEmailAddress = 'Please enter a valid email address';
+      newErrors.recipientEmailAddress = "Recipient email is required";
+    } else if (!isValidEmail(formData.recipientEmailAddress)) {
+      newErrors.recipientEmailAddress = "Please enter a valid email address";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, validateEmail, validatePhoneNumber]);
+  }, [formData]);
 
   const handleMethodChange = useCallback((method) => {
     setSelectedMethod(method);
@@ -220,54 +285,147 @@ const DeliveryMethodStep = () => {
     if (deliveryMethod === method && deliveryDetails && Object.keys(deliveryDetails).length > 0) {
       setFormData(prev => ({
         ...prev,
-        yourName: deliveryDetails.yourName || prev.yourName,
-        yourCountryCode: deliveryDetails.yourCountryCode || prev.yourCountryCode,
-        yourWhatsAppNumber: deliveryDetails.yourWhatsAppNumber || prev.yourWhatsAppNumber,
-        recipientName: deliveryDetails.recipientName || prev.recipientName,
-        recipientCountryCode: deliveryDetails.recipientCountryCode || prev.recipientCountryCode,
-        recipientWhatsAppNumber: deliveryDetails.recipientWhatsAppNumber || prev.recipientWhatsAppNumber,
-        yourFullName: deliveryDetails.yourFullName || prev.yourFullName,
-        yourEmailAddress: deliveryDetails.yourEmailAddress || prev.yourEmailAddress,
-        recipientFullName: deliveryDetails.recipientFullName || prev.recipientFullName,
-        recipientEmailAddress: deliveryDetails.recipientEmailAddress || prev.recipientEmailAddress,
-        yourPhoneNumber: deliveryDetails.yourPhoneNumber || prev.yourPhoneNumber,
-        yourPhoneCountryCode: deliveryDetails.yourPhoneCountryCode || prev.yourPhoneCountryCode,
+        yourName: normalizeNameInput(deliveryDetails.yourName || prev.yourName),
+        yourCountryCode: normalizeCountryCode(deliveryDetails.yourCountryCode || prev.yourCountryCode),
+        yourWhatsAppNumber: normalizePhoneInput(
+          deliveryDetails.yourWhatsAppNumber || prev.yourWhatsAppNumber,
+          deliveryDetails.yourCountryCode || prev.yourCountryCode
+        ),
+        recipientName: normalizeNameInput(deliveryDetails.recipientName || prev.recipientName),
+        recipientCountryCode: normalizeCountryCode(deliveryDetails.recipientCountryCode || prev.recipientCountryCode),
+        recipientWhatsAppNumber: normalizePhoneInput(
+          deliveryDetails.recipientWhatsAppNumber || prev.recipientWhatsAppNumber,
+          deliveryDetails.recipientCountryCode || prev.recipientCountryCode
+        ),
+        yourFullName: normalizeNameInput(deliveryDetails.yourFullName || prev.yourFullName),
+        yourEmailAddress: normalizeEmailInput(deliveryDetails.yourEmailAddress || prev.yourEmailAddress),
+        recipientFullName: normalizeNameInput(deliveryDetails.recipientFullName || prev.recipientFullName),
+        recipientEmailAddress: normalizeEmailInput(deliveryDetails.recipientEmailAddress || prev.recipientEmailAddress),
+        yourPhoneNumber: normalizePhoneInput(
+          deliveryDetails.yourPhoneNumber || prev.yourPhoneNumber,
+          deliveryDetails.yourPhoneCountryCode || prev.yourPhoneCountryCode
+        ),
+        yourPhoneCountryCode: normalizeCountryCode(deliveryDetails.yourPhoneCountryCode || prev.yourPhoneCountryCode),
         printDetails: deliveryDetails.printDetails || prev.printDetails
       }));
     } else {
       // New method selection - reset recipient fields but keep user fields from session
-      const fullName = session?.user ? `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim() : '';
+      const fullName = session?.user
+        ? normalizeNameInput(`${session.user.firstName || ''} ${session.user.lastName || ''}`).trim()
+        : '';
       setFormData(prev => ({
         yourName: fullName || prev.yourName,
-        yourCountryCode: '+91',
-        yourWhatsAppNumber: prev.yourWhatsAppNumber || '',
+        yourCountryCode: DEFAULT_COUNTRY_CODE,
+        yourWhatsAppNumber: normalizePhoneInput(prev.yourWhatsAppNumber, prev.yourCountryCode),
         recipientName: '',
-        recipientCountryCode: '+91',
+        recipientCountryCode: DEFAULT_COUNTRY_CODE,
         recipientWhatsAppNumber: '',
         yourFullName: fullName || prev.yourFullName,
-        yourEmailAddress: session?.user?.email || prev.yourEmailAddress,
+        yourEmailAddress: normalizeEmailInput(session?.user?.email) || prev.yourEmailAddress,
         recipientFullName: '',
         recipientEmailAddress: '',
-        yourPhoneNumber: prev.yourPhoneNumber || '',
-        yourPhoneCountryCode: '+91',
+        yourPhoneNumber: normalizePhoneInput(prev.yourPhoneNumber, prev.yourPhoneCountryCode),
+        yourPhoneCountryCode: DEFAULT_COUNTRY_CODE,
         printDetails: {}
       }));
     }
   }, [dispatch, session, deliveryMethod, deliveryDetails]);
 
-  const handleInputChange = useCallback((field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    dispatch(updateDeliveryDetail({ field, value }));
+  const normalizeFieldValue = useCallback((field, value, currentValues) => {
+    if (PHONE_FIELDS.has(field)) {
+      const countryField =
+        field === "yourWhatsAppNumber"
+          ? "yourCountryCode"
+          : field === "recipientWhatsAppNumber"
+            ? "recipientCountryCode"
+            : "yourPhoneCountryCode";
 
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors(prev => {
+      return normalizePhoneInput(value, currentValues[countryField]);
+    }
+
+    if (COUNTRY_CODE_FIELDS.has(field)) {
+      return normalizeCountryCode(value);
+    }
+
+    if (EMAIL_FIELDS.has(field)) {
+      return normalizeEmailInput(value);
+    }
+
+    if (NAME_FIELDS.has(field)) {
+      return normalizeNameInput(value);
+    }
+
+    return value;
+  }, []);
+
+  const handleInputChange = useCallback((field, value) => {
+    const nextFormData = { ...formData };
+    const normalizedValue = normalizeFieldValue(field, value, nextFormData);
+    nextFormData[field] = normalizedValue;
+
+    // Re-normalize related phone fields when country code changes.
+    if (field === "yourCountryCode") {
+      nextFormData.yourWhatsAppNumber = normalizePhoneInput(
+        nextFormData.yourWhatsAppNumber,
+        normalizedValue
+      );
+    }
+    if (field === "recipientCountryCode") {
+      nextFormData.recipientWhatsAppNumber = normalizePhoneInput(
+        nextFormData.recipientWhatsAppNumber,
+        normalizedValue
+      );
+    }
+    if (field === "yourPhoneCountryCode") {
+      nextFormData.yourPhoneNumber = normalizePhoneInput(
+        nextFormData.yourPhoneNumber,
+        normalizedValue
+      );
+    }
+
+    setFormData(nextFormData);
+
+    dispatch(updateDeliveryDetail({ field, value: normalizedValue }));
+    if (field === "yourCountryCode") {
+      dispatch(
+        updateDeliveryDetail({
+          field: "yourWhatsAppNumber",
+          value: nextFormData.yourWhatsAppNumber,
+        })
+      );
+    }
+    if (field === "recipientCountryCode") {
+      dispatch(
+        updateDeliveryDetail({
+          field: "recipientWhatsAppNumber",
+          value: nextFormData.recipientWhatsAppNumber,
+        })
+      );
+    }
+    if (field === "yourPhoneCountryCode") {
+      dispatch(
+        updateDeliveryDetail({
+          field: "yourPhoneNumber",
+          value: nextFormData.yourPhoneNumber,
+        })
+      );
+    }
+
+    const fieldsToClear = [field];
+    if (field === "yourCountryCode") fieldsToClear.push("yourWhatsAppNumber");
+    if (field === "recipientCountryCode") fieldsToClear.push("recipientWhatsAppNumber");
+    if (field === "yourPhoneCountryCode") fieldsToClear.push("yourPhoneNumber");
+
+    if (fieldsToClear.some((fieldName) => errors[fieldName])) {
+      setErrors((prev) => {
         const newErrors = { ...prev };
-        delete newErrors[field];
+        fieldsToClear.forEach((fieldName) => {
+          delete newErrors[fieldName];
+        });
         return newErrors;
       });
     }
-  }, [dispatch, errors]);
+  }, [dispatch, errors, formData, normalizeFieldValue]);
 
   const handleContinue = useCallback(() => {
     let isValid = false;
@@ -340,89 +498,115 @@ const DeliveryMethodStep = () => {
     }
   }, [selectedMethod, formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage, selectedBrand]);
 
-const renderMethodCard = useCallback((method) => {
-  const isCompleted = deliveryMethod === method.id && isMethodCompleted;
-  const isSelected = selectedMethod === method.id;
-  const isDeliveryActive = deliveryMethod === method.id;
+  const renderMethodCard = useCallback((method) => {
+    const isCompleted = deliveryMethod === method.id && isMethodCompleted;
+    const isSelected = selectedMethod === method.id;
+    const isDeliveryActive = deliveryMethod === method.id;
 
-  return (
-    <div
-      key={method.id}
-      onClick={() => handleMethodChange(method.id)}
-      className={`
+    return (
+      <div
+        key={method.id}
+        onClick={() => handleMethodChange(method.id)}
+        className={`
         relative p-8 rounded-2xl cursor-pointer transition-all duration-200
         ${method.bgColor}
 
         ${isDeliveryActive
-          ? "border-2 border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.3)]"
-          : "border-2 border-[#1A1A1A1A] hover:border-gray-300 hover:shadow-md"
-        }
+            ? "border-2 border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.3)]"
+            : "border-2 border-[#1A1A1A1A] hover:border-gray-300 hover:shadow-md"
+          }
       `}
-    >
-      {/* Completed Badge */}
-      {isCompleted && (
-        <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Completed
-        </div>
-      )}
-
-      <div className="flex flex-col items-center text-center">
-        <div className={`w-18.5 h-18.5 ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
-          <method.icon className="w-8 h-8 text-white" />
-        </div>
-
-        <h3 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">
-          {method.name}
-        </h3>
-
-        <p className="text-[16px] text-[#4A4A4A]">
-          {method.description}
-        </p>
-
+      >
+        {/* Completed Badge */}
         {isCompleted && (
-          <button
-            className="mt-4 text-sm text-blue-600 font-medium hover:text-blue-700 hover:underline"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMethodChange(method.id);
-            }}
-          >
-            Edit Details
-          </button>
+          <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Completed
+          </div>
         )}
+
+        <div className="flex flex-col items-center text-center">
+          <div className={`w-18.5 h-18.5 ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
+            <method.icon className="w-8 h-8 text-white" />
+          </div>
+
+          <h3 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">
+            {method.name}
+          </h3>
+
+          <p className="text-[16px] text-[#4A4A4A]">
+            {method.description}
+          </p>
+
+          {isCompleted && (
+            <button
+              className="mt-4 text-sm text-blue-600 font-medium hover:text-blue-700 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMethodChange(method.id);
+              }}
+            >
+              Edit Details
+            </button>
+          )}
+        </div>
       </div>
-    </div>
-  );
-}, [deliveryMethod, isMethodCompleted, selectedMethod, handleMethodChange]);
+    );
+  }, [deliveryMethod, isMethodCompleted, selectedMethod, handleMethodChange]);
 
 
   return (
     <div className="min-h-screen bg-white px-8 py-30">
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
-        <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block mb-6">
+        <div className="p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 inline-block mb-6">
           <button
             onClick={() => dispatch(goBack())}
-            className="cursor-pointer flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-full bg-white hover:bg-rose-50 
-                       transition-all duration-200 shadow-sm hover:shadow-md"
+            className="group cursor-pointer flex items-center gap-2 
+               px-4 py-2.5 sm:px-5 sm:py-3 
+               rounded-full bg-white 
+               text-gray-800 hover:text-white
+               hover:bg-gradient-to-r 
+               hover:from-pink-500 hover:to-orange-400
+               transition-all duration-300 
+               shadow-sm hover:shadow-md"
           >
-            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
-              <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path>
-              <defs>
-                <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#ED457D"></stop>
-                  <stop offset="1" stopColor="#FA8F42"></stop>
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="text-sm sm:text-base font-semibold text-gray-800">
+            <span className="transition-transform duration-300 group-hover:-translate-x-1">
+             <svg
+                  width="8"
+                  height="9"
+                  viewBox="0 0 8 9"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                >
+                  <path
+                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                    fill="url(#paint0_linear_584_1923)"
+                  />
+                  <defs>
+                    <linearGradient
+                      id="paint0_linear_584_1923"
+                      x1="7.5"
+                      y1="3.01721"
+                      x2="-9.17006"
+                      y2="13.1895"
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop stopColor="#ED457D" />
+                      <stop offset="1" stopColor="#FA8F42" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+            </span>
+
+            <span className="text-sm sm:text-base font-semibold">
               Previous
             </span>
           </button>
@@ -466,12 +650,30 @@ const renderMethodCard = useCallback((method) => {
                 <div className="flex items-center justify-center mt-6 sm:mt-8 pb-4">
                   <button
                     onClick={handleContinue}
-                    className="cursor-pointer bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-3 px-8 sm:py-4 sm:px-12 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 transform hover:scale-105 shadow-lg flex gap-2 sm:gap-3 items-center"
+                    className="group cursor-pointer 
+  bg-linear-to-r from-pink-500 to-orange-500 
+  hover:from-pink-600 hover:to-orange-600 
+  text-white py-3 px-8 sm:py-4 sm:px-12 
+  rounded-full font-semibold text-sm sm:text-base 
+  transition-all duration-200 
+  shadow-lg flex gap-2 sm:gap-3 items-center"
                   >
                     Continue to Payment
-                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
-                    </svg>
+
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      <svg
+                        width="8"
+                        height="9"
+                        viewBox="0 0 8 9"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </span>
                   </button>
                 </div>
               </div>

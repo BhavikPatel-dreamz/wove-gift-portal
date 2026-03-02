@@ -8,6 +8,7 @@ import { createPendingOrder, getOrderStatus, completeOrderAfterPayment } from '.
 import { AlertCircle, Package, ShoppingBag, CheckCircle2, Clock, Mail, Phone, MapPin, Users, Calendar, Loader2 } from 'lucide-react';
 import Header from '../../../components/client/home/Header';
 import { useSession } from '@/contexts/SessionContext';
+import AuthForm from '@/components/AuthForm';
 // import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
 import PaymentMethodSelector from "../giftflow/payment/PaymentMethodSelector";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
@@ -22,6 +23,8 @@ import { resetFlow } from '../../../redux/giftFlowSlice';
 //   throw new Error("NEXT_PUBLIC_STRIPE_PUBLIC_KEY is not defined");
 // }
 // const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const CheckoutPage = () => {
   const dispatch = useDispatch();
@@ -45,6 +48,12 @@ const CheckoutPage = () => {
   const [pendingOrderIds, setPendingOrderIds] = useState([]);
   const [processingStatus, setProcessingStatus] = useState(null);
   const [sharedPaymentIntentId, setSharedPaymentIntentId] = useState(null);
+  const [checkoutUserId, setCheckoutUserId] = useState(session?.user?.id || null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [guestCheckout, setGuestCheckout] = useState(null);
+  const [guestFormData, setGuestFormData] = useState({ fullName: "", email: "" });
+  const [guestFormError, setGuestFormError] = useState("");
 
   // Track individual order processing
   const [orderStatuses, setOrderStatuses] = useState({});
@@ -110,52 +119,160 @@ const CheckoutPage = () => {
     return calculateCombinedSubtotal() + calculateCombinedServiceFee();
   };
 
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    setCheckoutUserId(session.user.id);
+    setGuestCheckout(null);
+    setShowAuthModal(false);
+    setShowGuestModal(false);
+    setGuestFormError("");
+  }, [session?.user?.id]);
+
+  const closeIdentityModals = () => {
+    setShowAuthModal(false);
+    setShowGuestModal(false);
+    setGuestFormError("");
+  };
+
+  const openGuestModal = () => {
+    const firstRegularDeliveryDetails = cartItems[0]?.deliveryDetails || {};
+    const firstBulkCompanyInfo = bulkItems[0]?.companyInfo || {};
+
+    setGuestFormData({
+      fullName:
+        guestCheckout?.fullName ||
+        firstRegularDeliveryDetails?.yourFullName ||
+        firstBulkCompanyInfo?.companyName ||
+        "",
+      email:
+        guestCheckout?.email ||
+        firstRegularDeliveryDetails?.yourEmailAddress ||
+        firstBulkCompanyInfo?.contactEmail ||
+        "",
+    });
+    setGuestFormError("");
+    setShowAuthModal(false);
+    setShowGuestModal(true);
+  };
+
+  const handleAuthSuccess = async (user) => {
+    const authenticatedId = user?.id || null;
+    if (!authenticatedId) {
+      toast.error("Authentication succeeded but user identity is missing.");
+      return;
+    }
+
+    setCheckoutUserId(authenticatedId);
+    setGuestCheckout(null);
+    closeIdentityModals();
+    await handleInitiatePayment({
+      userIdOverride: authenticatedId,
+      guestCheckoutOverride: null,
+    });
+  };
+
+  const handleGuestCheckoutSubmit = async (event) => {
+    event.preventDefault();
+    const fullName = guestFormData.fullName.trim();
+    const email = guestFormData.email.trim().toLowerCase();
+
+    if (!fullName) {
+      setGuestFormError("Please enter your full name.");
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      setGuestFormError("Please enter a valid email address.");
+      return;
+    }
+
+    const guestData = { fullName, email };
+    setGuestCheckout(guestData);
+    closeIdentityModals();
+    await handleInitiatePayment({ guestCheckoutOverride: guestData });
+  };
+
   // Create separate pending orders for ALL cart items
-  const handleInitiatePayment = async () => {
+  const handleInitiatePayment = async ({
+    userIdOverride,
+    guestCheckoutOverride,
+  } = {}) => {
+    const resolvedUserId = userIdOverride || checkoutUserId || session?.user?.id || null;
+    const resolvedGuestCheckout = resolvedUserId
+      ? null
+      : (guestCheckoutOverride || guestCheckout);
+
+    if (!resolvedUserId && !resolvedGuestCheckout?.email) {
+      setShowAuthModal(true);
+      return null;
+    }
+
     setIsProcessing(true);
     setError(null);
     const toastId = toast.loading('Preparing your orders...');
 
     try {
-      // ✅ Prepare all cart items as separate order data
       const allCartOrders = [
-        ...bulkItems.map((item) => ({
-          selectedBrand: item.selectedBrand,
-          selectedAmount: item.selectedAmount,
-          personalMessage: item.personalMessage,
-          quantity: item.quantity,
-          companyInfo: item.companyInfo,
-          deliveryOption: item.deliveryOption,
-          selectedOccasion: item.selectedOccasion,
-          selectedSubCategory: item.selectedSubCategory,
-          totalAmount: getAmountValue(item.selectedAmount) * item.quantity,
-          isBulkOrder: true,
-          totalSpend: item.totalSpend,
-          deliveryMethod: item.deliveryOption,
-          csvRecipients: item.csvRecipients || [],
-          userId: session?.user?.id,
-          selectedTiming: item.selectedTiming,
-        })),
-        ...cartItems.map((item) => ({
-          selectedBrand: item.selectedBrand,
-          selectedAmount: item.selectedAmount,
-          personalMessage: item.personalMessage,
-          deliveryMethod: item.deliveryMethod,
-          deliveryDetails: item.deliveryDetails,
-          selectedOccasion: item.selectedOccasion,
-          selectedSubCategory: item.selectedSubCategory,
-          selectedTiming: item.selectedTiming,
-          totalAmount: getAmountValue(item.selectedAmount),
-          isBulkOrder: false,
-          userId: session?.user?.id,
-        })),
+        ...bulkItems.map((item) => {
+          const baseCompanyInfo = item.companyInfo || {};
+          const companyInfo = resolvedGuestCheckout
+            ? {
+              ...baseCompanyInfo,
+              contactEmail: baseCompanyInfo.contactEmail || resolvedGuestCheckout.email,
+              companyName: baseCompanyInfo.companyName || resolvedGuestCheckout.fullName,
+            }
+            : baseCompanyInfo;
+
+          return {
+            selectedBrand: item.selectedBrand,
+            selectedAmount: item.selectedAmount,
+            personalMessage: item.personalMessage,
+            quantity: item.quantity,
+            companyInfo,
+            deliveryOption: item.deliveryOption,
+            selectedOccasion: item.selectedOccasion,
+            selectedSubCategory: item.selectedSubCategory,
+            totalAmount: getAmountValue(item.selectedAmount) * item.quantity,
+            isBulkOrder: true,
+            totalSpend: item.totalSpend,
+            deliveryMethod: item.deliveryOption,
+            csvRecipients: item.csvRecipients || [],
+            userId: resolvedUserId,
+            selectedTiming: item.selectedTiming,
+          };
+        }),
+        ...cartItems.map((item) => {
+          const baseDeliveryDetails = item.deliveryDetails || {};
+          const deliveryDetails = resolvedGuestCheckout
+            ? {
+              ...baseDeliveryDetails,
+              yourEmailAddress: baseDeliveryDetails.yourEmailAddress || resolvedGuestCheckout.email,
+              yourFullName: baseDeliveryDetails.yourFullName || resolvedGuestCheckout.fullName,
+            }
+            : baseDeliveryDetails;
+
+          return {
+            selectedBrand: item.selectedBrand,
+            selectedAmount: item.selectedAmount,
+            personalMessage: item.personalMessage,
+            deliveryMethod: item.deliveryMethod,
+            deliveryDetails,
+            selectedOccasion: item.selectedOccasion,
+            selectedSubCategory: item.selectedSubCategory,
+            selectedTiming: item.selectedTiming,
+            totalAmount: getAmountValue(item.selectedAmount),
+            isBulkOrder: false,
+            userId: resolvedUserId,
+          };
+        }),
       ];
 
       // ✅ Send as multi-cart order
       const result = await createPendingOrder({
         isMultiCart: true,
         cartOrders: allCartOrders,
-        userId: session?.user?.id
+        userId: resolvedUserId,
+        guestCheckout: resolvedGuestCheckout,
       });
 
       if (!result.success) {
@@ -190,6 +307,16 @@ const CheckoutPage = () => {
       setIsProcessing(false);
       return null;
     }
+  };
+
+  const handlePaymentButtonClick = async () => {
+    const hasIdentity = checkoutUserId || session?.user?.id || guestCheckout?.email;
+    if (!hasIdentity) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    await handleInitiatePayment();
   };
 
   console.log("cartItems", cartItems, bulkItems);
@@ -440,12 +567,13 @@ const CheckoutPage = () => {
         {/* Back Button */}
         <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
           <button
-            className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-base text-[#4A4A4A] bg-white border border-transparent transition-all duration-300 overflow-hidden group cursor-pointer"
+            className="group relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-base text-[#4A4A4A] bg-white border border-transparent transition-all duration-300 overflow-hidden group cursor-pointer"
             onClick={() => window.history.back()}
           >
             <span className="absolute inset-0 rounded-full p-[1.5px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42]"></span>
             <span className="absolute inset-[1.5px] rounded-full bg-white transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+              <span className="transition-transform duration-300 group-hover:-translate-x-1">
               <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
                 <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
                 <defs>
@@ -455,6 +583,7 @@ const CheckoutPage = () => {
                   </linearGradient>
                 </defs>
               </svg>
+              </span>
               Previous
             </div>
           </button>
@@ -502,7 +631,7 @@ const CheckoutPage = () => {
             {/* PayFast Payment Button */}
             {selectedPaymentTab === 'payfast' && (
               <button
-                onClick={handleInitiatePayment}
+                onClick={handlePaymentButtonClick}
                 disabled={isProcessing || !isPaymentConfirmed}
                 className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 
                        hover:from-blue-600 hover:to-blue-700
@@ -520,7 +649,12 @@ const CheckoutPage = () => {
                   </>
                 ) : (
                   <>
-                    Pay with PayFast <span>→</span>
+                    Pay with PayFast   <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
+                      <path
+                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                        fill="white"
+                      />
+                    </svg>
                   </>
                 )}
               </button>
@@ -529,9 +663,9 @@ const CheckoutPage = () => {
 
             {selectedPaymentTab === 'card' && (
               <button
-                onClick={handleInitiatePayment}
+                onClick={handlePaymentButtonClick}
                 disabled={isProcessing || !isPaymentConfirmed}
-                className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
+                className={`group w-full bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
                        disabled:from-gray-300 disabled:to-gray-400
                        text-white py-3 sm:py-4 px-6 rounded-xl
@@ -547,10 +681,34 @@ const CheckoutPage = () => {
                   </>
                 ) : (
                   <>
-                    {pendingOrderIds.length > 0 ? 'Complete Payment' : 'Proceed to Payment'} <span>→</span>
+                    {pendingOrderIds.length > 0 ? 'Complete Payment' : 'Proceed to Payment'}
+                    <span
+                    className={"transition-transform duration-300 group-hover:translate-x-1"}
+                  >
+                    <svg
+                      width="8"
+                      height="9"
+                      viewBox="0 0 8 9"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </span>
                   </>
                 )}
               </button>
+            )}
+
+            {!checkoutUserId && guestCheckout?.email && (
+              <div className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3">
+                <p className="text-sm text-pink-700">
+                  Paying as guest: <span className="font-semibold">{guestCheckout.email}</span>
+                </p>
+              </div>
             )}
           </div>
 
@@ -647,6 +805,117 @@ const CheckoutPage = () => {
           </div>
         )}
       </div>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[70] bg-black/60 p-4 flex items-center justify-center">
+          <AuthForm
+            type="login"
+            mode="modal"
+            onClose={closeIdentityModals}
+            onAuthSuccess={handleAuthSuccess}
+            showGuestOption
+            onPayAsGuest={openGuestModal}
+            initialEmail={
+              guestCheckout?.email ||
+              cartItems[0]?.deliveryDetails?.yourEmailAddress ||
+              bulkItems[0]?.companyInfo?.contactEmail ||
+              ""
+            }
+          />
+        </div>
+      )}
+
+      {showGuestModal && (
+        <div className="fixed inset-0 z-[80] bg-black/60 p-4 flex items-center justify-center">
+          <div className="w-full max-w-md bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative">
+            <button
+              type="button"
+              onClick={closeIdentityModals}
+              className="absolute top-5 right-5 h-10 w-10 rounded-full border border-gray-300 bg-white text-gray-600 hover:text-gray-900 hover:border-gray-400 transition flex items-center justify-center"
+              aria-label="Close"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            <div className="text-center mb-7">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Pay as Guest</h2>
+              <p className="text-gray-600 text-sm">
+                Enter your name and email to continue checkout without creating an account.
+              </p>
+            </div>
+
+            <form className="space-y-3" onSubmit={handleGuestCheckoutSubmit}>
+              <input
+                type="text"
+                value={guestFormData.fullName}
+                onChange={(event) => {
+                  setGuestFormData((prev) => ({ ...prev, fullName: event.target.value }));
+                  setGuestFormError("");
+                }}
+                placeholder="Enter full name"
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                required
+              />
+              <input
+                type="email"
+                value={guestFormData.email}
+                onChange={(event) => {
+                  setGuestFormData((prev) => ({ ...prev, email: event.target.value }));
+                  setGuestFormError("");
+                }}
+                placeholder="Enter email address"
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                required
+              />
+
+              {guestFormError && (
+                <p className="text-red-600 text-sm">{guestFormError}</p>
+              )}
+
+              <button
+                type="submit"
+                className="group w-full py-3.5 
+  bg-linear-to-r from-pink-500 to-orange-500 
+  text-white rounded-xl font-semibold 
+  shadow-lg hover:shadow-xl 
+  hover:from-pink-600 hover:to-orange-600 
+  focus:outline-none focus:ring-2 focus:ring-pink-500 
+  transition-all flex items-center justify-center gap-2"
+              >
+                Continue to Payment
+
+                <span className="transition-transform duration-300 group-hover:translate-x-2">
+                  <svg
+                    width="8"
+                    height="9"
+                    viewBox="0 0 8 9"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                      fill="white"
+                    />
+                  </svg>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGuestModal(false);
+                  setShowAuthModal(true);
+                }}
+                className="w-full py-3.5 border-2 border-pink-500 text-pink-500 rounded-full font-semibold hover:bg-pink-50 transition"
+              >
+                Back to Login
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

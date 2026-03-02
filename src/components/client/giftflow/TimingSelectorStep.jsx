@@ -128,19 +128,43 @@ const TimingSelectorStep = () => {
         <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
           <button
             onClick={() => dispatch(goBack())}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
-                       transition-all duration-200 shadow-sm hover:shadow-md"
+            className="group flex items-center gap-2 px-5 py-3 rounded-full 
+               bg-white hover:bg-gradient-to-r 
+               hover:from-pink-500 hover:to-orange-400
+               text-gray-800 hover:text-white
+               transition-all duration-300 
+               shadow-sm hover:shadow-md"
           >
-            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
-              <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path>
-              <defs>
-                <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#ED457D"></stop>
-                  <stop offset="1" stopColor="#FA8F42"></stop>
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="text-base font-semibold text-gray-800">
+            <span className="transition-transform duration-300 group-hover:-translate-x-1">
+              <svg
+                width="8"
+                height="9"
+                viewBox="0 0 8 9"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300 group-hover:[&>path]:fill-white"
+              >
+                <path
+                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                  fill="url(#paint0_linear_584_1923)"
+                />
+                <defs>
+                  <linearGradient
+                    id="paint0_linear_584_1923"
+                    x1="7.5"
+                    y1="3.01721"
+                    x2="-9.17006"
+                    y2="13.1895"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stopColor="#ED457D" />
+                    <stop offset="1" stopColor="#FA8F42" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </span>
+
+            <span className="text-base font-semibold">
               Previous
             </span>
           </button>
@@ -160,12 +184,12 @@ const TimingSelectorStep = () => {
         <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto mb-16">
           {/* Send Immediately */}
           <div
-           onClick={() => {
-            setSelectedOption('immediate');
-            dispatch(setSelectedTiming({ type: 'immediate' }));
-            dispatch(goNext());
-          }}
-          
+            onClick={() => {
+              setSelectedOption('immediate');
+              dispatch(setSelectedTiming({ type: 'immediate' }));
+              dispatch(goNext());
+            }}
+
             className={`relative p-8 border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${selectedOption === 'immediate'
               ? 'border-blue-400 bg-blue-50 shadow-lg rounded-[20px] '
               : 'border-[#1A1A1A33] rounded-[20px] bg-[#E9F3FF] hover:border-blue-300'
@@ -355,15 +379,16 @@ const TimingSelectorStep = () => {
                     handleContinue();
                   }}
                   disabled={!selectedDate || !selectedTime}
-                  className="cursor-pointer mt-6 mx-auto flex items-center justify-center gap-2 py-3 sm:py-4 px-8 sm:px-10 rounded-full text-white text-sm sm:text-base font-medium shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  style={{
-                    background: "linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)",
-                  }}
+                  className="group w-full items-center mx-auto justify-center flex gap-2 sm:w-auto px-10 py-4 rounded-full font-semibold text-base transition-all shadow-lg bg-linear-to-r from-pink-500 to-orange-400 hover:shadow-xl text-white mt-6 " 
+
+    
                 >
                   Continue to Delivery Method
-                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
-                  </svg>
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">
+                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                    </svg>
+                  </span>
 
                 </button>
               </div>

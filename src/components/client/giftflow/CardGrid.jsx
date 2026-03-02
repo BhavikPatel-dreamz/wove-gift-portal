@@ -9,6 +9,7 @@ const CardGrid = ({
   isLoading = true,
   selectedBrand = null
 }) => {
+  const favoriteSet = new Set(favorites.map((id) => String(id)));
 
   // 1️⃣ SHOW SKELETON FIRST - Only show when actually loading
   if (isLoading) {
@@ -56,7 +57,7 @@ const CardGrid = ({
         <BrandCard
           key={brand.id}
           brand={brand}
-          isFavorited={favorites.includes(brand.id)}
+          isFavorited={favoriteSet.has(String(brand.id))}
           onToggleFavorite={onToggleFavorite}
           onClick={onBrandClick}
           selectedBrand={selectedBrand}
