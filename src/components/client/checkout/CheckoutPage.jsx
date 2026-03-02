@@ -567,12 +567,13 @@ const CheckoutPage = () => {
         {/* Back Button */}
         <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
           <button
-            className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-base text-[#4A4A4A] bg-white border border-transparent transition-all duration-300 overflow-hidden group cursor-pointer"
+            className="group relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-base text-[#4A4A4A] bg-white border border-transparent transition-all duration-300 overflow-hidden group cursor-pointer"
             onClick={() => window.history.back()}
           >
             <span className="absolute inset-0 rounded-full p-[1.5px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42]"></span>
             <span className="absolute inset-[1.5px] rounded-full bg-white transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+              <span className="transition-transform duration-300 group-hover:-translate-x-1">
               <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
                 <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
                 <defs>
@@ -582,6 +583,7 @@ const CheckoutPage = () => {
                   </linearGradient>
                 </defs>
               </svg>
+              </span>
               Previous
             </div>
           </button>
@@ -663,7 +665,7 @@ const CheckoutPage = () => {
               <button
                 onClick={handlePaymentButtonClick}
                 disabled={isProcessing || !isPaymentConfirmed}
-                className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
+                className={`group w-full bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
                        disabled:from-gray-300 disabled:to-gray-400
                        text-white py-3 sm:py-4 px-6 rounded-xl
@@ -679,7 +681,23 @@ const CheckoutPage = () => {
                   </>
                 ) : (
                   <>
-                    {pendingOrderIds.length > 0 ? 'Complete Payment' : 'Proceed to Payment'} <span>→</span>
+                    {pendingOrderIds.length > 0 ? 'Complete Payment' : 'Proceed to Payment'}
+                    <span
+                    className={"transition-transform duration-300 group-hover:translate-x-1"}
+                  >
+                    <svg
+                      width="8"
+                      height="9"
+                      viewBox="0 0 8 9"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </span>
                   </>
                 )}
               </button>

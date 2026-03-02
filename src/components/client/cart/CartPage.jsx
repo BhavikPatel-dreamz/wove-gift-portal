@@ -174,7 +174,9 @@ const CartPage = () => {
           <div className="flex items-center mb-6 sm:mb-8 md:mb-10">
             <Link href="/" className="group inline-flex items-center">
               <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400">
-                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+                <div className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white 
+                transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+                  <span className="transition-transform duration-300 group-hover:-translate-x-1">
                   <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
                     <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
                     <defs>
@@ -184,6 +186,7 @@ const CartPage = () => {
                       </linearGradient>
                     </defs>
                   </svg>
+                  </span>
                   <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
                 </div>
               </div>
@@ -207,7 +210,8 @@ const CartPage = () => {
         <div className="flex items-center mb-6 sm:mb-8 md:mb-10">
           <Link href="/" className="group inline-flex items-center">
             <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400">
-              <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+              <div className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+                  <span className="transition-transform duration-300 group-hover:-translate-x-1">
                 <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
                   <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
                   <defs>
@@ -217,6 +221,7 @@ const CartPage = () => {
                     </linearGradient>
                   </defs>
                 </svg>
+                </span>
                 <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
               </div>
             </div>
@@ -474,7 +479,7 @@ const CartPage = () => {
                     {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedTotal().toFixed(2)}
                   </span>
                 </div>
-                <Button onClick={handleProceedToPayment}  className={`w-full mt-10 bg-gradient-to-r from-pink-500 to-orange-500 
+                <Button onClick={handleProceedToPayment}  className={`group w-full mt-10 bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
                        disabled:from-gray-300 disabled:to-gray-400
                        text-white py-3 sm:py-4 px-6 rounded-xl
@@ -482,6 +487,22 @@ const CartPage = () => {
                        transition-all duration-200
                        flex items-center justify-center gap-2 cursor-pointer`}>
                   Proceed to Payment
+                  <span
+                    className={"transition-transform duration-300 group-hover:translate-x-1"}
+                  >
+                    <svg
+                      width="8"
+                      height="9"
+                      viewBox="0 0 8 9"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </span>
                 </Button>
               </div>
             </div>

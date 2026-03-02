@@ -379,15 +379,16 @@ const TimingSelectorStep = () => {
                     handleContinue();
                   }}
                   disabled={!selectedDate || !selectedTime}
-                  className="cursor-pointer mt-6 mx-auto flex items-center justify-center gap-2 py-3 sm:py-4 px-8 sm:px-10 rounded-full text-white text-sm sm:text-base font-medium shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  style={{
-                    background: "linear-gradient(114deg, #ED457D 11.36%, #FA8F42 90.28%)",
-                  }}
+                  className="group w-full items-center mx-auto justify-center flex gap-2 sm:w-auto px-10 py-4 rounded-full font-semibold text-base transition-all shadow-lg bg-linear-to-r from-pink-500 to-orange-400 hover:shadow-xl text-white mt-6 " 
+
+    
                 >
                   Continue to Delivery Method
-                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
-                  </svg>
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">
+                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                    </svg>
+                  </span>
 
                 </button>
               </div>
