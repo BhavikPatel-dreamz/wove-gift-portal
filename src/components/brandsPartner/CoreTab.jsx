@@ -1,36 +1,61 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { AlertTriangle, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { currencyList } from './currency';
+
 
 const CoreTab = ({ formData, updateFormData }) => {
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
   // const [imagePreview, setImagePreview] = useState(null);
   const [currencies] = useState(currencyList);
+  const normalizeLogoPreviewSrc = (value) => {
+    if (typeof value !== 'string') return null;
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return null;
 
-  console.log('formData', formData);
+    if (
+      trimmedValue.startsWith('http://') ||
+      trimmedValue.startsWith('https://') ||
+      trimmedValue.startsWith('data:') ||
+      trimmedValue.startsWith('blob:') ||
+      trimmedValue.startsWith('/')
+    ) {
+      return trimmedValue;
+    }
+
+    if (trimmedValue.startsWith('res.cloudinary.com')) {
+      return `https://${trimmedValue}`;
+    }
+
+    // Legacy values may be just a filename from local uploads.
+    return `/uploads/brands/${trimmedValue}`;
+  };
 
   // Handle existing logo when component mounts or formData changes
   useEffect(() => {
     if (formData.logo) {
       if (typeof formData.logo === 'string') {
-        // If logo is a Cloudinary URL or local path, set it as preview directly
-        // setImagePreview(formData.logo);
-        updateFormData('imagePreview', formData.logo);
+        const normalizedLogoSrc = normalizeLogoPreviewSrc(formData.logo);
+        if (normalizedLogoSrc !== formData.imagePreview) {
+          updateFormData('imagePreview', normalizedLogoSrc);
+        }
       } else if (formData.logo instanceof File) {
         // If logo is a File object, create preview
         const reader = new FileReader();
         reader.onload = (e) => {
-          // setImagePreview(e.target.result);
-          updateFormData('imagePreview', e.target.result);
+          const preview = typeof e.target?.result === 'string' ? e.target.result : null;
+          if (preview) {
+            updateFormData('imagePreview', preview);
+          }
         };
         reader.readAsDataURL(formData.logo);
       }
     } else {
-      // setImagePreview(null);
-      updateFormData('imagePreview', null);
+      if (formData.imagePreview) {
+        updateFormData('imagePreview', null);
+      }
 
     }
   }, [formData.logo]);
@@ -116,8 +141,13 @@ const CoreTab = ({ formData, updateFormData }) => {
 
   // Check if the image is a Cloudinary URL
   const isCloudinaryUrl = (url) => {
-    return typeof url === 'string' && url.includes('cloudinary.com');
+    return typeof url === 'string' && (url.includes('cloudinary.com') || url.includes('res.cloudinary.com'));
   };
+
+  const logoPreviewSrc = normalizeLogoPreviewSrc(
+    typeof formData.logo === 'string' ? formData.logo : formData.imagePreview
+  );
+  const hasLogo = Boolean(formData.logo || logoPreviewSrc);
 
   return (
     <div className="space-y-8">
@@ -255,21 +285,21 @@ const CoreTab = ({ formData, updateFormData }) => {
                 onClick={() => fileInputRef.current?.click()}
                 style={{ cursor: 'pointer' }}
               >
-                {formData.logo || formData.imagePreview ? (
+                {hasLogo ? (
                   <div className="relative">
                     {/* Use Next.js Image component for Cloudinary URLs, regular img for local previews */}
-                    {isCloudinaryUrl(formData.logo || formData.imagePreview) ? (
+                    {logoPreviewSrc && isCloudinaryUrl(logoPreviewSrc) ? (
                       <div className="relative w-full h-24 mb-2">
                         <Image
-                          src={formData.logo || formData.imagePreview}
+                          src={logoPreviewSrc}
                           alt="Logo preview"
                           fill
                           className="object-contain rounded"
                         />
                       </div>
-                    ) : (
+                    ) : logoPreviewSrc ? (
                       <img
-                        src={formData.logo || formData.imagePreview}
+                        src={logoPreviewSrc}
                         alt="Logo preview"
                         className="mx-auto mb-2 max-h-24 w-auto rounded"
                         onError={(e) => {
@@ -279,7 +309,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                           if (errorDiv) errorDiv.style.display = 'block';
                         }}
                       />
-                    )}
+                    ) : null}
                     <div style={{ display: 'none' }} className="text-red-500 text-sm mb-2">
                       <ImageIcon className="mx-auto mb-1 text-red-400" size={24} />
                       Failed to load image
@@ -305,7 +335,7 @@ const CoreTab = ({ formData, updateFormData }) => {
                 )}
               </div>
 
-              {(formData.logo || formData.imagePreview) && (
+              {hasLogo && (
                 <button
                   type="button"
                   onClick={removeFile}
