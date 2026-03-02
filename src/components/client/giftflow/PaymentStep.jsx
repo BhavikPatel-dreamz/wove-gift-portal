@@ -52,7 +52,7 @@ const PaymentStep = () => {
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
-  const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
+  const [selectedPaymentTab, setSelectedPaymentTab] = useState('payfast');
   const [showThankYou, setShowThankYou] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState(null);
   const [checkoutUserId, setCheckoutUserId] = useState(session?.user?.id || null);
@@ -494,9 +494,9 @@ const PaymentStep = () => {
               <button
                 onClick={handlePaymentButtonClick}
                 disabled={isProcessing || !isPaymentConfirmed}
-                className={`
+                  className={`
       group w-full
-      bg-gradient-to-r from-blue-500 to-blue-600
+      bg-gradient-to-r from-pink-500 to-orange-500
       text-white py-3 sm:py-4 px-6 rounded-xl
       font-semibold text-sm sm:text-base
       transition-all duration-300
@@ -504,7 +504,7 @@ const PaymentStep = () => {
       shadow-lg
       ${(isProcessing || !isPaymentConfirmed)
                     ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:from-blue-600 hover:to-blue-700 hover:shadow-xl cursor-pointer'
+                    : 'hover:from-pink-600 hover:to-orange-600 hover:shadow-xl cursor-pointer'
                   }
     `}
               >
