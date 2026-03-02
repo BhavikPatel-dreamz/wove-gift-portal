@@ -1,18 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useSession } from '@/contexts/SessionContext';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trash2, ShoppingBag, ArrowLeft, Package } from 'lucide-react';
+import { ShoppingBag, Package, Heart } from 'lucide-react';
 import Link from 'next/link';
 import Button from '@/components/forms/Button';
-import Header from '../../../components/client/home/Header';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   updateState,
   setCurrentStep,
 } from '@/redux/giftFlowSlice';
 import { removeFromCart, removeFromBulk } from '@/redux/cartSlice';
+import { toggleWishlist, buildWishlistKey } from '@/redux/wishlistSlice';
 import { currencyList } from '../../brandsPartner/currency';
 import toast from 'react-hot-toast';
 import { resetFlow, clearCsvFileData } from '../../../redux/giftFlowSlice';
@@ -20,9 +19,13 @@ import { resetFlow, clearCsvFileData } from '../../../redux/giftFlowSlice';
 const CartPage = () => {
   const cartItems = useSelector((state) => state.cart.items);
   const bulkItems = useSelector((state) => state.cart.bulkItems);
-  const session = useSession();
+  const wishlistItems = useSelector((state) => state.wishlist.items);
   const router = useRouter();
   const dispatch = useDispatch();
+  const wishlistKeySet = useMemo(
+    () => new Set(wishlistItems.map((wishlistItem) => wishlistItem.key)),
+    [wishlistItems]
+  );
 
   const [isMounted, setIsMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('regular'); // 'regular' or 'bulk'
@@ -58,6 +61,14 @@ const CartPage = () => {
     toast.success('Bulk order removed from cart');
   };
 
+  const handleToggleWishlist = (item, sourceType = 'regular') => {
+    const wishlistKey = buildWishlistKey(item, sourceType);
+    const wasWishlisted = wishlistKeySet.has(wishlistKey);
+
+    dispatch(toggleWishlist({ item, sourceType, key: wishlistKey }));
+    toast.success(wasWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
+  };
+
   const handleEditItem = (item, index, type) => {
     dispatch(updateState({
       ...item,
@@ -86,16 +97,16 @@ const CartPage = () => {
 
   // ✅ Fixed: Only proceed with items from active tab
   const handleProceedToPayment = () => {
-    if (session) {
-      // Check if there are any items in either cart
-      if (cartItems.length === 0 && bulkItems.length === 0) {
-        toast.error('Your cart is empty');
-        return;
-      }
+    // if (session) {
+    //   // Check if there are any items in either cart
+    //   if (cartItems.length === 0 && bulkItems.length === 0) {
+    //     toast.error('Your cart is empty');
+    //     return;
+    //   }
       router.push('/checkout');
-    } else {
-      router.push('/login?redirect=/cart');
-    }
+    // } else {
+    //   router.push('/login?redirect=/cart');
+    // }
   };
 
   const handleRedirect = () => {
@@ -114,11 +125,6 @@ const CartPage = () => {
     return `R${amount || 0}`;
   };
 
-  const calculateServiceFee = (items, isBulk = false) => {
-    const baseAmount = calculateSubtotal(items, isBulk);
-    return Math.round(baseAmount * 0.05);
-  };
-
   const calculateSubtotal = (items, isBulk = false) => {
     if (isBulk) {
       return items.reduce((total, item) => {
@@ -131,10 +137,6 @@ const CartPage = () => {
         return total + (Number(value) || 0);
       }, 0);
     }
-  };
-
-  const calculateTotal = (items, isBulk = false) => {
-    return calculateSubtotal(items, isBulk) + calculateServiceFee(items, isBulk);
   };
 
   // ✅ NEW: Calculate combined totals from both carts
@@ -172,7 +174,9 @@ const CartPage = () => {
           <div className="flex items-center mb-6 sm:mb-8 md:mb-10">
             <Link href="/" className="group inline-flex items-center">
               <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400">
-                <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+                <div className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white 
+                transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+                  <span className="transition-transform duration-300 group-hover:-translate-x-1">
                   <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
                     <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
                     <defs>
@@ -182,6 +186,7 @@ const CartPage = () => {
                       </linearGradient>
                     </defs>
                   </svg>
+                  </span>
                   <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
                 </div>
               </div>
@@ -195,8 +200,6 @@ const CartPage = () => {
     );
   }
 
-  const currentItems = activeTab === 'regular' ? cartItems : bulkItems;
-  const isBulkTab = activeTab === 'bulk';
   const hasRegularItems = cartItems.length > 0;
   const hasBulkItems = bulkItems.length > 0;
   const hasAnyItems = hasRegularItems || hasBulkItems;
@@ -207,7 +210,8 @@ const CartPage = () => {
         <div className="flex items-center mb-6 sm:mb-8 md:mb-10">
           <Link href="/" className="group inline-flex items-center">
             <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400">
-              <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+              <div className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
+                  <span className="transition-transform duration-300 group-hover:-translate-x-1">
                 <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
                   <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
                   <defs>
@@ -217,6 +221,7 @@ const CartPage = () => {
                     </linearGradient>
                   </defs>
                 </svg>
+                </span>
                 <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
               </div>
             </div>
@@ -304,8 +309,13 @@ const CartPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10 lg:gap-12">
             <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
               {/* Regular Cart Items */}
-              {activeTab === 'regular' && cartItems.map((item, index) => (
-                <div key={index} onClick={() => handleEditItem(item, index, "regular")} className="flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+              {activeTab === 'regular' && cartItems.map((item, index) => {
+                const wishlistKey = buildWishlistKey(item, 'regular');
+                const isWishlisted = wishlistKeySet.has(wishlistKey);
+
+                return (
+                <div key={index} onClick={() => handleEditItem(item, index, "regular")} className="relative flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+                
                   <div className="flex cursor-pointer items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
                       <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
@@ -351,11 +361,17 @@ const CartPage = () => {
                     </svg>
                   </button>
                 </div>
-              ))}
+                );
+              })}
 
               {/* Bulk Cart Items */}
-              {activeTab === 'bulk' && bulkItems.map((item, index) => (
-                <div key={index} onClick={() => handleEditItem(item, index, "bulk")} className="flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+              {activeTab === 'bulk' && bulkItems.map((item, index) => {
+                const wishlistKey = buildWishlistKey(item, 'bulk');
+                const isWishlisted = wishlistKeySet.has(wishlistKey);
+
+                return (
+                <div key={index} onClick={() => handleEditItem(item, index, "bulk")} className="relative flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+                 
                   <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0 cursor-pointer">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
                       <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
@@ -412,7 +428,8 @@ const CartPage = () => {
                     </svg>
                   </button>
                 </div>
-              ))}
+                );
+              })}
 
             </div>
 
@@ -462,14 +479,30 @@ const CartPage = () => {
                     {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedTotal().toFixed(2)}
                   </span>
                 </div>
-                <Button onClick={handleProceedToPayment}  className={`w-full mt-10 bg-gradient-to-r from-pink-500 to-orange-500 
+                <Button onClick={handleProceedToPayment}  className={`group w-full mt-10 bg-gradient-to-r from-pink-500 to-orange-500 
                        hover:from-pink-600 hover:to-orange-600
                        disabled:from-gray-300 disabled:to-gray-400
                        text-white py-3 sm:py-4 px-6 rounded-xl
                        font-semibold text-sm sm:text-base
                        transition-all duration-200
                        flex items-center justify-center gap-2 cursor-pointer`}>
-                  {session ? 'Proceed to Payment' : 'Login to Continue'}
+                  Proceed to Payment
+                  <span
+                    className={"transition-transform duration-300 group-hover:translate-x-1"}
+                  >
+                    <svg
+                      width="8"
+                      height="9"
+                      viewBox="0 0 8 9"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </span>
                 </Button>
               </div>
             </div>

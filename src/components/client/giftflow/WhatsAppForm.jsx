@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentStep, setDeliveryFormEditReturn } from "../../../redux/giftFlowSlice";
+import { COUNTRY_CODES } from "./deliveryValidation";
 
 const WhatsAppForm = ({
   formData,
@@ -98,6 +99,7 @@ const WhatsAppForm = ({
                   onChange={(e) =>
                     handleInputChange("yourName", e.target.value)
                   }
+                  autoComplete="name"
                   placeholder="Your Full Name*"
                   className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
                     errors.yourName
@@ -113,6 +115,20 @@ const WhatsAppForm = ({
                   Your WhatsApp Number*
                 </label>
                 <div className="flex gap-2">
+                  <select
+                    value={formData.yourCountryCode}
+                    onChange={(e) =>
+                      handleInputChange("yourCountryCode", e.target.value)
+                    }
+                    className="w-[170px] p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition-all bg-white text-sm"
+                    aria-label="Your country code"
+                  >
+                    {COUNTRY_CODES.map(({ code, country }) => (
+                      <option key={`${code}-${country}`} value={code}>
+                        {code} {country}
+                      </option>
+                    ))}
+                  </select>
                   <div className="flex-1">
                     <input
                       type="tel"
@@ -120,7 +136,10 @@ const WhatsAppForm = ({
                       onChange={(e) =>
                         handleInputChange("yourWhatsAppNumber", e.target.value)
                       }
-                      placeholder="Your WhatsApp No*"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      maxLength={15}
+                      placeholder="WhatsApp Number*"
                       className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
                         errors.yourWhatsAppNumber
                           ? "border-red-500 focus:ring-red-200 focus:border-red-500"
@@ -173,6 +192,7 @@ const WhatsAppForm = ({
                   onChange={(e) =>
                     handleInputChange("recipientName", e.target.value)
                   }
+                  autoComplete="name"
                   placeholder="Recipient's Name*"
                   className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
                     errors.recipientName
@@ -188,6 +208,20 @@ const WhatsAppForm = ({
                   Recipient's WhatsApp Number*
                 </label>
                 <div className="flex gap-2">
+                  <select
+                    value={formData.recipientCountryCode}
+                    onChange={(e) =>
+                      handleInputChange("recipientCountryCode", e.target.value)
+                    }
+                    className="w-[170px] p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 outline-none transition-all bg-white text-sm"
+                    aria-label="Recipient country code"
+                  >
+                    {COUNTRY_CODES.map(({ code, country }) => (
+                      <option key={`${code}-${country}`} value={code}>
+                        {code} {country}
+                      </option>
+                    ))}
+                  </select>
                   <div className="flex-1">
                     <input
                       type="tel"
@@ -198,7 +232,10 @@ const WhatsAppForm = ({
                           e.target.value
                         )
                       }
-                      placeholder="Your WhatsApp No.*"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      maxLength={15}
+                      placeholder="Recipient WhatsApp No.*"
                       className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${
                         errors.recipientWhatsAppNumber
                           ? "border-red-500 focus:ring-red-200 focus:border-red-500"

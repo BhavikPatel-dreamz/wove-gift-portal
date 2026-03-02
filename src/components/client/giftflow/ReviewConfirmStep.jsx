@@ -126,17 +126,62 @@ const ReviewConfirmStep = () => {
     startReviewEditFlow(7);
   }
 
+  const formatRecipientContact = () => {
+    if (deliveryMethod === "email") {
+      return deliveryDetails?.recipientEmailAddress;
+    }
+
+    if (deliveryMethod === "whatsapp") {
+      const countryCode = deliveryDetails?.recipientCountryCode || "";
+      const number = String(deliveryDetails?.recipientWhatsAppNumber || "").trim();
+      return number ? `${countryCode}${number}` : "";
+    }
+
+    return "";
+  };
+
 
   return (
     <div className="max-w-7xl m-auto min-h-screen bg-gray-50 px-4 py-30 md:px-4 md:py-30">
       <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
         <button
           onClick={() => dispatch(goBack())}
-          className="flex items-center gap-2 px-5 py-3 rounded-full bg-white hover:bg-rose-50 
-                       transition-all duration-200 hover:shadow-md"
+          className="group flex items-center gap-2 px-5 py-3 
+             rounded-full bg-white 
+             text-gray-800 hover:text-white
+             hover:bg-gradient-to-r hover:from-pink-500 hover:to-orange-400
+             transition-all duration-300 hover:shadow-md"
         >
-          <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&amp;&gt;path]:fill-white"><path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path><defs><linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse"><stop stopColor="#ED457D"></stop><stop offset="1" stopColor="#FA8F42"></stop></linearGradient></defs></svg>
-          <span className="text-base font-semibold text-gray-800">
+          <span className="transition-transform duration-300 group-hover:-translate-x-1">
+            <svg
+              width="8"
+              height="9"
+              viewBox="0 0 8 9"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="transition-all duration-300 group-hover:[&>path]:fill-white"
+            >
+              <path
+                d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                fill="url(#paint0_linear_584_1923)"
+              />
+              <defs>
+                <linearGradient
+                  id="paint0_linear_584_1923"
+                  x1="7.5"
+                  y1="3.01721"
+                  x2="-9.17006"
+                  y2="13.1895"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop stopColor="#ED457D" />
+                  <stop offset="1" stopColor="#FA8F42" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </span>
+
+          <span className="text-base font-semibold">
             Previous
           </span>
         </button>
@@ -277,7 +322,7 @@ const ReviewConfirmStep = () => {
                   </div>
                 </div>
                 {deliveryMethod !== "print" && (
-                  <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{deliveryMethod == "email" ? deliveryDetails?.recipientEmailAddress : deliveryDetails?.recipientWhatsAppNumber}</div>
+                  <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{formatRecipientContact()}</div>
                 )}
               </div>
             </div>
@@ -411,29 +456,78 @@ const ReviewConfirmStep = () => {
 
               {/* Buttons */}
               <div className="space-y-4">
+
+                {/* Proceed Button */}
+                <button
+                  onClick={handleBuyNow}
+                  disabled={!isConfirmed}
+                  className={`
+      group w-full h-14 
+      bg-gradient-to-r from-pink-500 to-orange-400 
+      text-white rounded-full font-semibold text-lg 
+      transition-all duration-300 shadow-lg 
+      flex items-center justify-center gap-2
+      ${isConfirmed
+                      ? 'hover:shadow-xl hover:opacity-95 cursor-pointer'
+                      : 'opacity-50 cursor-not-allowed'
+                    }
+    `}
+                >
+                  Proceed to Payment
+
+                  <span
+                    className={`
+        transition-transform duration-300
+        ${isConfirmed ? 'group-hover:translate-x-1' : ''}
+      `}
+                  >
+                    <svg
+                      width="8"
+                      height="9"
+                      viewBox="0 0 8 9"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                        fill="white"
+                      />
+                    </svg>
+                  </span>
+                </button>
+
+
+                {/* Edit Mode Button */}
                 {isEditMode ? (
                   <button
                     onClick={handleAddToCart}
                     disabled={!isConfirmed}
                     className={`
-                      w-full h-14 bg-white text-pink-500 border-2 border-pink-500 rounded-full 
-                      font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2
-                      ${isConfirmed
-                        ? 'hover:bg-pink-50 hover:shadow-md cursor-pointer'
+        group w-full h-14 
+        bg-white text-pink-500 border-2 border-pink-500 
+        rounded-full font-semibold text-lg 
+        transition-all duration-300 
+        flex items-center justify-center gap-2
+        ${isConfirmed
+                        ? 'hover:bg-pink-500 hover:text-white hover:shadow-md cursor-pointer'
                         : 'opacity-50 cursor-not-allowed'
                       }
-                    `}
+      `}
                   >
-                    <Edit className="w-5 h-5" />
+                    <Edit className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
                     Update Gift in Cart
                   </button>
                 ) : (
-                  <div className={`p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block w-full ${isConfirmed
-                    ? 'hover:bg-rose-50 hover:shadow-md cursor-pointer'
-                    : 'opacity-50 cursor-not-allowed'
-                    }
-                      `}>
-                    <button
+
+                  /* Add to Cart Button (Fixed Properly) */
+                  <div
+                    className={`
+        w-full p-[2px] rounded-full 
+        bg-gradient-to-r from-pink-500 to-orange-400
+        ${!isConfirmed ? 'opacity-50' : ''}
+      `}
+                  >
+                   <button
                       onClick={handleAddToCart}
                       disabled={!isConfirmed}
                       className={`
@@ -445,41 +539,6 @@ const ReviewConfirmStep = () => {
                       Add to Cart
                       <ShoppingBasket className="w-5 h-5" />
                     </button>
-                  </div>
-                )}
-                {session?.user?.email ? (
-                  <button
-                    onClick={handleBuyNow}
-                    disabled={!isConfirmed}
-                    className={`
-      w-full h-14 bg-linear-to-r from-pink-500 to-orange-400 text-white 
-      rounded-full font-semibold text-lg transition-all duration-200 shadow-lg 
-      flex items-center justify-center gap-2
-      ${isConfirmed
-                        ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
-                        : 'opacity-50 cursor-not-allowed'
-                      }
-    `}
-                  >
-                    Proceed to Payment
-                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
-                      <path
-                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-                        fill="white"
-                      />
-                    </svg>
-                  </button>
-                ) : (
-                  <div className="flex flex-col items-center gap-2 text-center">
-                    <p className="text-[#1A1A1A] text-[14px] font-medium font-poppins">
-                      Please log in to continue with your purchase
-                    </p>
-                    <Link
-                      href="/login"
-                      className="text-pink-500 font-semibold hover:underline transition"
-                    >
-                      Login to your account →
-                    </Link>
                   </div>
                 )}
 

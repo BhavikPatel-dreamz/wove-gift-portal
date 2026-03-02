@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import toast, { Toaster } from 'react-hot-toast';
 import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
-import { createPendingOrder, getOrderStatus } from "../../../lib/action/orderAction";
+import { createPendingOrder } from "../../../lib/action/orderAction";
 import { useSession } from "@/contexts/SessionContext";
+import AuthForm from "@/components/AuthForm";
 
 // Import components
 import PaymentMethodSelector from "./payment/PaymentMethodSelector";
@@ -35,10 +36,11 @@ const normalizeBulkDeliveryOption = (value, csvRecipients = []) => {
   return "email";
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const PaymentStep = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const session = useSession();
   const mode = searchParams.get('mode');
   const editBulkIdFromUrl = searchParams.get('editBulkId');
@@ -50,11 +52,15 @@ const PaymentStep = () => {
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
-  const [selectedPaymentTab, setSelectedPaymentTab] = useState('card');
+  const [selectedPaymentTab, setSelectedPaymentTab] = useState('payfast');
   const [showThankYou, setShowThankYou] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState(null);
-
-  const [addressErrors, setAddressErrors] = useState({});
+  const [checkoutUserId, setCheckoutUserId] = useState(session?.user?.id || null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [guestCheckout, setGuestCheckout] = useState(null);
+  const [guestFormData, setGuestFormData] = useState({ fullName: "", email: "" });
+  const [guestFormError, setGuestFormError] = useState("");
 
   // Redux selectors
   const {
@@ -156,11 +162,86 @@ const PaymentStep = () => {
     return Number(totalAmount) + Number(serviceFee);
   };
 
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    setCheckoutUserId(session.user.id);
+    setGuestCheckout(null);
+    setShowAuthModal(false);
+    setShowGuestModal(false);
+    setGuestFormError("");
+  }, [session?.user?.id]);
+
+  const closeIdentityModals = () => {
+    setShowAuthModal(false);
+    setShowGuestModal(false);
+    setGuestFormError("");
+  };
+
+  const openGuestModal = () => {
+    setGuestFormData({
+      fullName: guestCheckout?.fullName || deliveryDetails?.yourFullName || "",
+      email: guestCheckout?.email || deliveryDetails?.yourEmailAddress || "",
+    });
+    setGuestFormError("");
+    setShowAuthModal(false);
+    setShowGuestModal(true);
+  };
+
+  const handleAuthSuccess = async (user) => {
+    const authenticatedId = user?.id || null;
+    if (!authenticatedId) {
+      toast.error("Authentication succeeded but user identity is missing.");
+      return;
+    }
+
+    setCheckoutUserId(authenticatedId);
+    setGuestCheckout(null);
+    closeIdentityModals();
+    await handleInitiatePayment({
+      userIdOverride: authenticatedId,
+      guestCheckoutOverride: null,
+    });
+  };
+
+  const handleGuestCheckoutSubmit = async (event) => {
+    event.preventDefault();
+    const fullName = guestFormData.fullName.trim();
+    const email = guestFormData.email.trim().toLowerCase();
+
+    if (!fullName) {
+      setGuestFormError("Please enter your full name.");
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      setGuestFormError("Please enter a valid email address.");
+      return;
+    }
+
+    const guestData = { fullName, email };
+    setGuestCheckout(guestData);
+    closeIdentityModals();
+    await handleInitiatePayment({ guestCheckoutOverride: guestData });
+  };
+
   // Initiate payment with direct redirect
-  const handleInitiatePayment = async () => {
+  const handleInitiatePayment = async ({
+    userIdOverride,
+    guestCheckoutOverride,
+  } = {}) => {
 
     if (!isPaymentConfirmed) {
       toast.error('Please confirm that all details are correct');
+      return null;
+    }
+
+    const resolvedUserId = userIdOverride || checkoutUserId || session?.user?.id || null;
+    const resolvedGuestCheckout = resolvedUserId
+      ? null
+      : (guestCheckoutOverride || guestCheckout);
+
+    if (!resolvedUserId && !resolvedGuestCheckout?.email) {
+      setShowAuthModal(true);
       return null;
     }
 
@@ -169,12 +250,28 @@ const PaymentStep = () => {
     const toastId = toast.loading('Preparing your order...');
 
     try {
+      const guestCompanyInfo = resolvedGuestCheckout
+        ? {
+          ...companyInfo,
+          contactEmail: resolvedGuestCheckout.email,
+          companyName: companyInfo?.companyName || resolvedGuestCheckout.fullName,
+        }
+        : companyInfo;
+
+      const guestDeliveryDetails = resolvedGuestCheckout
+        ? {
+          ...deliveryDetails,
+          yourFullName: resolvedGuestCheckout.fullName,
+          yourEmailAddress: resolvedGuestCheckout.email,
+        }
+        : deliveryDetails;
+
       const orderData = isBulkMode ? {
         selectedBrand: effectiveBulkBrand,
         selectedAmount,
         personalMessage: currentBulkOrder?.personalMessage || personalMessage,
         quantity,
-        companyInfo,
+        companyInfo: guestCompanyInfo,
         deliveryOption: bulkDeliveryOption,
         selectedOccasion: currentBulkOrder?.selectedOccasion || selectedOccasion,
         selectedSubCategory: currentBulkOrder?.selectedSubCategory || selectedSubCategory,
@@ -183,20 +280,22 @@ const PaymentStep = () => {
         totalSpend: currentBulkOrder.totalSpend,
         deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
         csvRecipients,
-        userId: session?.user?.id,
+        userId: resolvedUserId,
+        guestCheckout: resolvedGuestCheckout,
         selectedTiming: currentBulkOrder?.selectedTiming || selectedTiming,
       } : {
         selectedBrand,
         selectedAmount,
         personalMessage,
         deliveryMethod,
-        deliveryDetails,
+        deliveryDetails: guestDeliveryDetails,
         selectedOccasion,
         selectedSubCategory,
         selectedTiming,
         totalAmount: calculateTotal(),
         isBulkOrder: false,
-        userId: session?.user?.id,
+        userId: resolvedUserId,
+        guestCheckout: resolvedGuestCheckout,
       };
 
       const result = await createPendingOrder(orderData);
@@ -254,6 +353,16 @@ const PaymentStep = () => {
     setShowThankYou(true);
   };
 
+  const handlePaymentButtonClick = async () => {
+    const hasIdentity = checkoutUserId || session?.user?.id || guestCheckout?.email;
+    if (!hasIdentity) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    await handleInitiatePayment();
+  };
+
   // Success screen
   if (order) {
     if (showThankYou) {
@@ -284,24 +393,63 @@ const PaymentStep = () => {
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
           <button
-            className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-base text-[#4A4A4A] bg-white border border-transparent transition-all duration-300 overflow-hidden group cursor-pointer"
-            onClick={() => { isBulkMode ? dispatch(setCurrentStep(7)) : dispatch(goBack()) }}
+            className="relative inline-flex items-center justify-center gap-2 
+             px-5 py-3 rounded-full font-semibold text-base 
+             text-[#4A4A4A] bg-white border border-transparent 
+             transition-all duration-300 overflow-hidden 
+             group cursor-pointer"
+            onClick={() => {
+              isBulkMode ? dispatch(setCurrentStep(7)) : dispatch(goBack())
+            }}
           >
+            {/* Gradient Border */}
             <span className="absolute inset-0 rounded-full p-[1.5px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42]"></span>
-            <span className="absolute inset-[2px] rounded-full bg-white transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
-            <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
-                <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
-                <defs>
-                  <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#ED457D" />
-                    <stop offset="1" stopColor="#FA8F42" />
-                  </linearGradient>
-                </defs>
-              </svg>
+
+            {/* Background Layer */}
+            <span className="absolute inset-[2px] rounded-full bg-white 
+                   transition-all duration-300 
+                   group-hover:bg-gradient-to-r 
+                   group-hover:from-[#ED457D] 
+                   group-hover:to-[#FA8F42]"></span>
+
+            {/* Content */}
+            <div className="relative z-10 flex items-center gap-2 
+                  transition-all duration-300 
+                  group-hover:text-white">
+
+              <span className="transition-transform duration-300 group-hover:-translate-x-1">
+                <svg
+                  width="8"
+                  height="9"
+                  viewBox="0 0 8 9"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                >
+                  <path
+                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                    fill="url(#paint0_linear_584_1923)"
+                  />
+                  <defs>
+                    <linearGradient
+                      id="paint0_linear_584_1923"
+                      x1="7.5"
+                      y1="3.01721"
+                      x2="-9.17006"
+                      y2="13.1895"
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop stopColor="#ED457D" />
+                      <stop offset="1" stopColor="#FA8F42" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </span>
+
               Previous
             </div>
           </button>
+
 
           {isBulkMode && (
             <div className="flex items-center gap-3 justify-center w-full md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2">
@@ -344,16 +492,21 @@ const PaymentStep = () => {
             {/* PayFast Payment Button */}
             {selectedPaymentTab === 'payfast' && (
               <button
-                onClick={handleInitiatePayment}
+                onClick={handlePaymentButtonClick}
                 disabled={isProcessing || !isPaymentConfirmed}
-                className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 
-                       hover:from-blue-600 hover:to-blue-700
-                       disabled:from-gray-300 disabled:to-gray-400
-                       text-white py-3 sm:py-4 px-6 rounded-xl
-                       font-semibold text-sm sm:text-base
-                       transition-all duration-200
-                       flex items-center justify-center gap-2
-                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  className={`
+      group w-full
+      bg-gradient-to-r from-pink-500 to-orange-500
+      text-white py-3 sm:py-4 px-6 rounded-xl
+      font-semibold text-sm sm:text-base
+      transition-all duration-300
+      flex items-center justify-center gap-2
+      shadow-lg
+      ${(isProcessing || !isPaymentConfirmed)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:from-pink-600 hover:to-orange-600 hover:shadow-xl cursor-pointer'
+                  }
+    `}
               >
                 {isProcessing ? (
                   <>
@@ -362,25 +515,45 @@ const PaymentStep = () => {
                   </>
                 ) : (
                   <>
-                    Pay with PayFast <span>→</span>
+                    Pay with PayFast
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      <svg
+                        width="8"
+                        height="9"
+                        viewBox="0 0 8 9"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </span>
                   </>
                 )}
               </button>
             )}
 
+
             {/* Card Payment Button */}
             {selectedPaymentTab === 'card' && (
               <button
-                onClick={handleInitiatePayment}
+                onClick={handlePaymentButtonClick}
                 disabled={isProcessing || !isPaymentConfirmed}
-                className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
-                       hover:from-pink-600 hover:to-orange-600
-                       disabled:from-gray-300 disabled:to-gray-400
-                       text-white py-3 sm:py-4 px-6 rounded-xl
-                       font-semibold text-sm sm:text-base
-                       transition-all duration-200
-                       flex items-center justify-center gap-2
-                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                className={`
+      group w-full
+      bg-gradient-to-r from-pink-500 to-orange-500
+      text-white py-3 sm:py-4 px-6 rounded-xl
+      font-semibold text-sm sm:text-base
+      transition-all duration-300
+      flex items-center justify-center gap-2
+      shadow-lg
+      ${(isProcessing || !isPaymentConfirmed)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:from-pink-600 hover:to-orange-600 hover:shadow-xl cursor-pointer'
+                  }
+    `}
               >
                 {isProcessing ? (
                   <>
@@ -389,10 +562,32 @@ const PaymentStep = () => {
                   </>
                 ) : (
                   <>
-                    Pay with PayFast <span>→</span>
+                    Pay with Card
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      <svg
+                        width="8"
+                        height="9"
+                        viewBox="0 0 8 9"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </span>
                   </>
                 )}
               </button>
+            )}
+
+            {!checkoutUserId && guestCheckout?.email && (
+              <div className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3">
+                <p className="text-sm text-pink-700">
+                  Paying as guest: <span className="font-semibold">{guestCheckout.email}</span>
+                </p>
+              </div>
             )}
           </div>
 
@@ -446,6 +641,112 @@ const PaymentStep = () => {
           </div>
         )}
       </div>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[70] bg-black/60 p-4 flex items-center justify-center">
+          <AuthForm
+            type="login"
+            mode="modal"
+            onClose={closeIdentityModals}
+            onAuthSuccess={handleAuthSuccess}
+            showGuestOption
+            onPayAsGuest={openGuestModal}
+            initialEmail={guestCheckout?.email || deliveryDetails?.yourEmailAddress || ""}
+            initialName={guestCheckout?.fullName || deliveryDetails?.yourFullName || ""}
+          />
+        </div>
+      )}
+
+      {showGuestModal && (
+        <div className="fixed inset-0 z-[80] bg-black/60 p-4 flex items-center justify-center">
+          <div className="w-full max-w-md bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative">
+            <button
+              type="button"
+              onClick={closeIdentityModals}
+              className="absolute top-5 right-5 h-10 w-10 rounded-full border border-gray-300 bg-white text-gray-600 hover:text-gray-900 hover:border-gray-400 transition flex items-center justify-center"
+              aria-label="Close"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            <div className="text-center mb-7">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Pay as Guest</h2>
+              <p className="text-gray-600 text-sm">
+                Enter your name and email to continue checkout without creating an account.
+              </p>
+            </div>
+
+            <form className="space-y-3" onSubmit={handleGuestCheckoutSubmit}>
+              <input
+                type="text"
+                value={guestFormData.fullName}
+                onChange={(event) => {
+                  setGuestFormData((prev) => ({ ...prev, fullName: event.target.value }));
+                  setGuestFormError("");
+                }}
+                placeholder="Enter full name"
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                required
+              />
+              <input
+                type="email"
+                value={guestFormData.email}
+                onChange={(event) => {
+                  setGuestFormData((prev) => ({ ...prev, email: event.target.value }));
+                  setGuestFormError("");
+                }}
+                placeholder="Enter email address"
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                required
+              />
+
+              {guestFormError && (
+                <p className="text-red-600 text-sm">{guestFormError}</p>
+              )}
+
+              <button
+                type="submit"
+                className="group w-full py-3.5 
+  bg-linear-to-r from-pink-500 to-orange-500 
+  text-white rounded-xl font-semibold 
+  shadow-lg hover:shadow-xl 
+  hover:from-pink-600 hover:to-orange-600 
+  focus:outline-none focus:ring-2 focus:ring-pink-500 
+  transition-all flex items-center justify-center gap-2"
+              >
+                Continue to Payment
+
+                <span className="transition-transform duration-300 group-hover:translate-x-2">
+                  <svg
+                    width="8"
+                    height="9"
+                    viewBox="0 0 8 9"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                      fill="white"
+                    />
+                  </svg>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGuestModal(false);
+                  setShowAuthModal(true);
+                }}
+                className="w-full py-3.5 border-2 border-pink-500 text-pink-500 rounded-full font-semibold hover:bg-pink-50 transition"
+              >
+                Back to Login
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -4,13 +4,48 @@ import { hashPassword, verifyPassword } from "./password";
 export async function createUser(data) {
   const existingUser = await prisma.user.findUnique({
     where: { email: data.email },
+    select: {
+      id: true,
+      phone: true,
+      firstName: true,
+      lastName: true,
+      isGuest: true,
+    },
   });
 
-  if (existingUser) {
-    throw new Error("User already exists with this email");
-  }
-
   const hashedPassword = await hashPassword(data.password);
+
+  if (existingUser) {
+    if (!existingUser.isGuest) {
+      throw new Error("User already exists with this email");
+    }
+
+    const upgradedGuestUser = await prisma.user.update({
+      where: { id: existingUser.id },
+      data: {
+        password: hashedPassword,
+        firstName: data.firstName || existingUser.firstName || "Guest",
+        lastName: data.lastName || existingUser.lastName || "User",
+        phone: data.phone || existingUser.phone || null,
+        isGuest: false,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return upgradedGuestUser;
+  }
 
   const user = await prisma.user.create({
     data: {
@@ -20,6 +55,7 @@ export async function createUser(data) {
       lastName: data.lastName || null,
       phone: data.phone || null,
       role: "CUSTOMER",
+      isGuest: false,
       isActive: true, // Set default value
       isVerified: false, // Set default value
     },

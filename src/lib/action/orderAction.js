@@ -12,6 +12,8 @@ import {
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
 import { v2 as cloudinary } from "cloudinary";
+import { randomUUID } from "crypto";
+import { hashPassword } from "./userAction/password.js";
 
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
@@ -63,6 +65,129 @@ function getClaimUrl(selectedBrand) {
   }
 
   return claimUrl.startsWith("http") ? claimUrl : `https://${claimUrl}`;
+}
+
+const CHECKOUT_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeGuestCheckout(guestCheckout) {
+  if (!guestCheckout) return null;
+
+  const email =
+    typeof guestCheckout.email === "string"
+      ? guestCheckout.email.trim().toLowerCase()
+      : "";
+  const fullName =
+    typeof guestCheckout.fullName === "string"
+      ? guestCheckout.fullName.trim()
+      : "Guest Customer";
+
+  if (!email) {
+    throw new ValidationError("Guest email is required");
+  }
+
+  if (!CHECKOUT_EMAIL_REGEX.test(email)) {
+    throw new ValidationError("Please provide a valid guest email address");
+  }
+
+  return {
+    email,
+    fullName: fullName || "Guest Customer",
+  };
+}
+
+function splitName(fullName) {
+  const parts = String(fullName || "Guest Customer")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const firstName = parts[0] || "Guest";
+  const lastName = parts.slice(1).join(" ") || "Customer";
+  return { firstName, lastName };
+}
+
+function applyGuestCheckoutToOrder(singleOrderData, guestCheckout) {
+  if (!guestCheckout) return singleOrderData;
+
+  const isBulkOrder = singleOrderData?.isBulkOrder === true;
+
+  if (isBulkOrder) {
+    return {
+      ...singleOrderData,
+      companyInfo: {
+        ...(singleOrderData.companyInfo || {}),
+        contactEmail: guestCheckout.email,
+        companyName:
+          singleOrderData.companyInfo?.companyName || guestCheckout.fullName,
+      },
+      guestCheckout,
+    };
+  }
+
+  return {
+    ...singleOrderData,
+    deliveryDetails: {
+      ...(singleOrderData.deliveryDetails || {}),
+      yourEmailAddress: guestCheckout.email,
+      yourFullName:
+        singleOrderData.deliveryDetails?.yourFullName || guestCheckout.fullName,
+    },
+    guestCheckout,
+  };
+}
+
+async function resolveCheckoutUserId(userId, guestCheckout) {
+  if (userId) {
+    return String(userId);
+  }
+
+  if (!guestCheckout?.email) {
+    throw new AuthenticationError(
+      "Please log in or continue as guest before payment",
+    );
+  }
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email: guestCheckout.email },
+    select: { id: true },
+  });
+
+  if (existingUser?.id) {
+    return existingUser.id;
+  }
+
+  const { firstName, lastName } = splitName(guestCheckout.fullName);
+  const generatedPassword = `Guest-${randomUUID()}-Aa1!`;
+  const hashedPassword = await hashPassword(generatedPassword);
+
+  try {
+    const guestUser = await prisma.user.create({
+      data: {
+        email: guestCheckout.email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        phone: null,
+        isGuest: true,
+        role: "CUSTOMER",
+        isActive: true,
+        isVerified: false,
+      },
+      select: { id: true },
+    });
+
+    return guestUser.id;
+  } catch (error) {
+    if (error?.code === "P2002") {
+      const racedExistingUser = await prisma.user.findUnique({
+        where: { email: guestCheckout.email },
+        select: { id: true },
+      });
+      if (racedExistingUser?.id) {
+        return racedExistingUser.id;
+      }
+    }
+    throw error;
+  }
 }
 
 // ==================== VALIDATION FUNCTIONS ====================
@@ -227,14 +352,22 @@ function generateExportDescription(orderData, orderNumber) {
 // ==================== STEP 1: CREATE PENDING ORDER + PAYMENT INTENT ====================
 export const createPendingOrder = async (orderData) => {
   try {
-    const userId = orderData?.userId;
-    if (!userId) {
-      throw new AuthenticationError("User not authenticated");
-    }
+    const guestCheckout = normalizeGuestCheckout(orderData?.guestCheckout);
+    const userId = await resolveCheckoutUserId(orderData?.userId, guestCheckout);
 
     // Check if multi-cart order
     const isMultiCart = orderData.isMultiCart === true;
-    const cartOrders = orderData.cartOrders || [orderData];
+    const incomingCartOrders = isMultiCart
+      ? orderData.cartOrders || []
+      : [orderData];
+
+    if (!Array.isArray(incomingCartOrders) || incomingCartOrders.length === 0) {
+      throw new ValidationError("No orders provided for checkout");
+    }
+
+    const cartOrders = incomingCartOrders.map((singleOrderData) =>
+      applyGuestCheckoutToOrder(singleOrderData, guestCheckout),
+    );
     
     const createdOrders = [];
     let totalPaymentAmount = 0;
@@ -351,16 +484,21 @@ export const createPendingOrder = async (orderData) => {
     const paymentSource = isMultiCart ? "cart" : "direct";
     const payfastConfig = getPayFastConfig(createdOrders[0].id, paymentSource);
     
-    const customerName = isMultiCart 
-      ? (cartOrders[0].deliveryDetails?.yourFullName || cartOrders[0].companyInfo?.companyName || "Customer")
-      : (orderData.deliveryDetails?.yourFullName || orderData.companyInfo?.companyName || "Customer");
+    const primaryOrder = cartOrders[0] || {};
+    const customerName =
+      primaryOrder.deliveryDetails?.yourFullName ||
+      primaryOrder.companyInfo?.companyName ||
+      guestCheckout?.fullName ||
+      "Customer";
 
     const [firstName, ...lastNameParts] = customerName.split(" ");
     const lastName = lastNameParts.join(" ") || "";
 
-    const customerEmail = isMultiCart
-      ? (cartOrders[0].deliveryDetails?.yourEmailAddress || cartOrders[0].companyInfo?.contactEmail)
-      : (orderData.deliveryDetails?.yourEmailAddress || orderData.companyInfo?.contactEmail);
+    const customerEmail =
+      primaryOrder.deliveryDetails?.yourEmailAddress ||
+      primaryOrder.companyInfo?.contactEmail ||
+      guestCheckout?.email ||
+      null;
 
     const itemNames = createdOrders.map(o => {
       const orderDataForBrand = cartOrders.find(co => co.selectedBrand.id === o.brandId);
