@@ -668,23 +668,7 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
             <p className="text-xs text-gray-500 hidden sm:block">Design your perfect card</p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={exportCard}
-              disabled={isGenerating}
-              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-600 disabled:opacity-50 flex items-center gap-1.5"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span className="hidden sm:inline">Exporting...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={14} className="sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Export</span>
-                </>
-              )}
-            </button>
+           
             <button
               onClick={onCancel}
               className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
