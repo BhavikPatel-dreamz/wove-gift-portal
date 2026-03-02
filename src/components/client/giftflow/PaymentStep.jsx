@@ -393,24 +393,63 @@ const PaymentStep = () => {
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
           <button
-            className="relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full font-semibold text-base text-[#4A4A4A] bg-white border border-transparent transition-all duration-300 overflow-hidden group cursor-pointer"
-            onClick={() => { isBulkMode ? dispatch(setCurrentStep(7)) : dispatch(goBack()) }}
+            className="relative inline-flex items-center justify-center gap-2 
+             px-5 py-3 rounded-full font-semibold text-base 
+             text-[#4A4A4A] bg-white border border-transparent 
+             transition-all duration-300 overflow-hidden 
+             group cursor-pointer"
+            onClick={() => {
+              isBulkMode ? dispatch(setCurrentStep(7)) : dispatch(goBack())
+            }}
           >
+            {/* Gradient Border */}
             <span className="absolute inset-0 rounded-full p-[1.5px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42]"></span>
-            <span className="absolute inset-[2px] rounded-full bg-white transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
-            <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
-                <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
-                <defs>
-                  <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#ED457D" />
-                    <stop offset="1" stopColor="#FA8F42" />
-                  </linearGradient>
-                </defs>
-              </svg>
+
+            {/* Background Layer */}
+            <span className="absolute inset-[2px] rounded-full bg-white 
+                   transition-all duration-300 
+                   group-hover:bg-gradient-to-r 
+                   group-hover:from-[#ED457D] 
+                   group-hover:to-[#FA8F42]"></span>
+
+            {/* Content */}
+            <div className="relative z-10 flex items-center gap-2 
+                  transition-all duration-300 
+                  group-hover:text-white">
+
+              <span className="transition-transform duration-300 group-hover:-translate-x-1">
+                <svg
+                  width="8"
+                  height="9"
+                  viewBox="0 0 8 9"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                >
+                  <path
+                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                    fill="url(#paint0_linear_584_1923)"
+                  />
+                  <defs>
+                    <linearGradient
+                      id="paint0_linear_584_1923"
+                      x1="7.5"
+                      y1="3.01721"
+                      x2="-9.17006"
+                      y2="13.1895"
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop stopColor="#ED457D" />
+                      <stop offset="1" stopColor="#FA8F42" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </span>
+
               Previous
             </div>
           </button>
+
 
           {isBulkMode && (
             <div className="flex items-center gap-3 justify-center w-full md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2">
@@ -455,14 +494,19 @@ const PaymentStep = () => {
               <button
                 onClick={handlePaymentButtonClick}
                 disabled={isProcessing || !isPaymentConfirmed}
-                className={`w-full bg-gradient-to-r from-blue-500 to-blue-600 
-                       hover:from-blue-600 hover:to-blue-700
-                       disabled:from-gray-300 disabled:to-gray-400
-                       text-white py-3 sm:py-4 px-6 rounded-xl
-                       font-semibold text-sm sm:text-base
-                       transition-all duration-200
-                       flex items-center justify-center gap-2
-                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                className={`
+      group w-full
+      bg-gradient-to-r from-blue-500 to-blue-600
+      text-white py-3 sm:py-4 px-6 rounded-xl
+      font-semibold text-sm sm:text-base
+      transition-all duration-300
+      flex items-center justify-center gap-2
+      shadow-lg
+      ${(isProcessing || !isPaymentConfirmed)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:from-blue-600 hover:to-blue-700 hover:shadow-xl cursor-pointer'
+                  }
+    `}
               >
                 {isProcessing ? (
                   <>
@@ -471,30 +515,45 @@ const PaymentStep = () => {
                   </>
                 ) : (
                   <>
-                    Pay with PayFast   <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
-                      <path
-                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-                        fill="white"
-                      />
-                    </svg>
+                    Pay with PayFast
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      <svg
+                        width="8"
+                        height="9"
+                        viewBox="0 0 8 9"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </span>
                   </>
                 )}
               </button>
             )}
+
 
             {/* Card Payment Button */}
             {selectedPaymentTab === 'card' && (
               <button
                 onClick={handlePaymentButtonClick}
                 disabled={isProcessing || !isPaymentConfirmed}
-                className={`w-full bg-gradient-to-r from-pink-500 to-orange-500 
-                       hover:from-pink-600 hover:to-orange-600
-                       disabled:from-gray-300 disabled:to-gray-400
-                       text-white py-3 sm:py-4 px-6 rounded-xl
-                       font-semibold text-sm sm:text-base
-                       transition-all duration-200
-                       flex items-center justify-center gap-2
-                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                className={`
+      group w-full
+      bg-gradient-to-r from-pink-500 to-orange-500
+      text-white py-3 sm:py-4 px-6 rounded-xl
+      font-semibold text-sm sm:text-base
+      transition-all duration-300
+      flex items-center justify-center gap-2
+      shadow-lg
+      ${(isProcessing || !isPaymentConfirmed)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:from-pink-600 hover:to-orange-600 hover:shadow-xl cursor-pointer'
+                  }
+    `}
               >
                 {isProcessing ? (
                   <>
@@ -503,12 +562,21 @@ const PaymentStep = () => {
                   </>
                 ) : (
                   <>
-                    Pay with PayFast   <svg width="8" height="9" viewBox="0 0 8 9" fill="none">
-                      <path
-                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-                        fill="white"
-                      />
-                    </svg>
+                    Pay with Card
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      <svg
+                        width="8"
+                        height="9"
+                        viewBox="0 0 8 9"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </span>
                   </>
                 )}
               </button>
@@ -584,7 +652,7 @@ const PaymentStep = () => {
             showGuestOption
             onPayAsGuest={openGuestModal}
             initialEmail={guestCheckout?.email || deliveryDetails?.yourEmailAddress || ""}
-            initialName={guestCheckout?.fullName ||  deliveryDetails?.yourFullName  || ""}
+            initialName={guestCheckout?.fullName || deliveryDetails?.yourFullName || ""}
           />
         </div>
       )}
@@ -640,11 +708,31 @@ const PaymentStep = () => {
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-linear-to-r from-pink-500 to-orange-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all"
+                className="group w-full py-3.5 
+  bg-linear-to-r from-pink-500 to-orange-500 
+  text-white rounded-xl font-semibold 
+  shadow-lg hover:shadow-xl 
+  hover:from-pink-600 hover:to-orange-600 
+  focus:outline-none focus:ring-2 focus:ring-pink-500 
+  transition-all flex items-center justify-center gap-2"
               >
-                Continue to Payment ▸
-              </button>
+                Continue to Payment
 
+                <span className="transition-transform duration-300 group-hover:translate-x-2">
+                  <svg
+                    width="8"
+                    height="9"
+                    viewBox="0 0 8 9"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                      fill="white"
+                    />
+                  </svg>
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={() => {

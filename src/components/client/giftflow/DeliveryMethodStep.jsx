@@ -498,89 +498,115 @@ const DeliveryMethodStep = () => {
     }
   }, [selectedMethod, formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage, selectedBrand]);
 
-const renderMethodCard = useCallback((method) => {
-  const isCompleted = deliveryMethod === method.id && isMethodCompleted;
-  const isSelected = selectedMethod === method.id;
-  const isDeliveryActive = deliveryMethod === method.id;
+  const renderMethodCard = useCallback((method) => {
+    const isCompleted = deliveryMethod === method.id && isMethodCompleted;
+    const isSelected = selectedMethod === method.id;
+    const isDeliveryActive = deliveryMethod === method.id;
 
-  return (
-    <div
-      key={method.id}
-      onClick={() => handleMethodChange(method.id)}
-      className={`
+    return (
+      <div
+        key={method.id}
+        onClick={() => handleMethodChange(method.id)}
+        className={`
         relative p-8 rounded-2xl cursor-pointer transition-all duration-200
         ${method.bgColor}
 
         ${isDeliveryActive
-          ? "border-2 border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.3)]"
-          : "border-2 border-[#1A1A1A1A] hover:border-gray-300 hover:shadow-md"
-        }
+            ? "border-2 border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.3)]"
+            : "border-2 border-[#1A1A1A1A] hover:border-gray-300 hover:shadow-md"
+          }
       `}
-    >
-      {/* Completed Badge */}
-      {isCompleted && (
-        <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Completed
-        </div>
-      )}
-
-      <div className="flex flex-col items-center text-center">
-        <div className={`w-18.5 h-18.5 ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
-          <method.icon className="w-8 h-8 text-white" />
-        </div>
-
-        <h3 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">
-          {method.name}
-        </h3>
-
-        <p className="text-[16px] text-[#4A4A4A]">
-          {method.description}
-        </p>
-
+      >
+        {/* Completed Badge */}
         {isCompleted && (
-          <button
-            className="mt-4 text-sm text-blue-600 font-medium hover:text-blue-700 hover:underline"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMethodChange(method.id);
-            }}
-          >
-            Edit Details
-          </button>
+          <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Completed
+          </div>
         )}
+
+        <div className="flex flex-col items-center text-center">
+          <div className={`w-18.5 h-18.5 ${method.color} rounded-2xl flex items-center justify-center mb-4`}>
+            <method.icon className="w-8 h-8 text-white" />
+          </div>
+
+          <h3 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">
+            {method.name}
+          </h3>
+
+          <p className="text-[16px] text-[#4A4A4A]">
+            {method.description}
+          </p>
+
+          {isCompleted && (
+            <button
+              className="mt-4 text-sm text-blue-600 font-medium hover:text-blue-700 hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMethodChange(method.id);
+              }}
+            >
+              Edit Details
+            </button>
+          )}
+        </div>
       </div>
-    </div>
-  );
-}, [deliveryMethod, isMethodCompleted, selectedMethod, handleMethodChange]);
+    );
+  }, [deliveryMethod, isMethodCompleted, selectedMethod, handleMethodChange]);
 
 
   return (
     <div className="min-h-screen bg-white px-8 py-30">
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
-        <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block mb-6">
+        <div className="p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 inline-block mb-6">
           <button
             onClick={() => dispatch(goBack())}
-            className="cursor-pointer flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-full bg-white hover:bg-rose-50 
-                       transition-all duration-200 shadow-sm hover:shadow-md"
+            className="group cursor-pointer flex items-center gap-2 
+               px-4 py-2.5 sm:px-5 sm:py-3 
+               rounded-full bg-white 
+               text-gray-800 hover:text-white
+               hover:bg-gradient-to-r 
+               hover:from-pink-500 hover:to-orange-400
+               transition-all duration-300 
+               shadow-sm hover:shadow-md"
           >
-            <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
-              <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)"></path>
-              <defs>
-                <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#ED457D"></stop>
-                  <stop offset="1" stopColor="#FA8F42"></stop>
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="text-sm sm:text-base font-semibold text-gray-800">
+            <span className="transition-transform duration-300 group-hover:-translate-x-1">
+             <svg
+                  width="8"
+                  height="9"
+                  viewBox="0 0 8 9"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                >
+                  <path
+                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                    fill="url(#paint0_linear_584_1923)"
+                  />
+                  <defs>
+                    <linearGradient
+                      id="paint0_linear_584_1923"
+                      x1="7.5"
+                      y1="3.01721"
+                      x2="-9.17006"
+                      y2="13.1895"
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop stopColor="#ED457D" />
+                      <stop offset="1" stopColor="#FA8F42" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+            </span>
+
+            <span className="text-sm sm:text-base font-semibold">
               Previous
             </span>
           </button>
@@ -624,12 +650,30 @@ const renderMethodCard = useCallback((method) => {
                 <div className="flex items-center justify-center mt-6 sm:mt-8 pb-4">
                   <button
                     onClick={handleContinue}
-                    className="cursor-pointer bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white py-3 px-8 sm:py-4 sm:px-12 rounded-full font-semibold text-sm sm:text-base transition-all duration-200 transform hover:scale-105 shadow-lg flex gap-2 sm:gap-3 items-center"
+                    className="group cursor-pointer 
+  bg-linear-to-r from-pink-500 to-orange-500 
+  hover:from-pink-600 hover:to-orange-600 
+  text-white py-3 px-8 sm:py-4 sm:px-12 
+  rounded-full font-semibold text-sm sm:text-base 
+  transition-all duration-200 
+  shadow-lg flex gap-2 sm:gap-3 items-center"
                   >
                     Continue to Payment
-                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
-                    </svg>
+
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      <svg
+                        width="8"
+                        height="9"
+                        viewBox="0 0 8 9"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </span>
                   </button>
                 </div>
               </div>

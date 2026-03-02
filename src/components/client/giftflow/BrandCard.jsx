@@ -171,7 +171,7 @@ const BrandCard = ({
                 Choose Brand
               </span>
 
-              <span className="mt-1">
+             <span className="transition-all duration-300 ease-out group-hover:translate-x-1 group-hover:scale-110">
                 <svg
                   width="8"
                   height="9"

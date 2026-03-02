@@ -24,7 +24,7 @@ export default function OccasionSelector() {
   const fetchOccasions = async (page) => {
     try {
       dispatch(setLoading(true));
-      const response = await getOccasions({ isActive: true, limit: 8, page,sortOrder:"desc" });
+      const response = await getOccasions({ isActive: true, limit: 8, page, sortOrder: "desc" });
       if (response.success) {
         dispatch(setOccasions({
           data: response.data,
@@ -124,32 +124,34 @@ export default function OccasionSelector() {
 
             {/* Button content */}
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-              <svg
-                width="8"
-                height="9"
-                viewBox="0 0 8 9"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="transition-all duration-300 group-hover:[&>path]:fill-white"
-              >
-                <path
-                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
-                  fill="url(#paint0_linear_584_1923)"
-                />
-                <defs>
-                  <linearGradient
-                    id="paint0_linear_584_1923"
-                    x1="7.5"
-                    y1="3.01721"
-                    x2="-9.17006"
-                    y2="13.1895"
-                    gradientUnits="userSpaceOnUse"
-                  >
-                    <stop stopColor="#ED457D" />
-                    <stop offset="1" stopColor="#FA8F42" />
-                  </linearGradient>
-                </defs>
-              </svg>
+              <span className="transition-transform duration-300 group-hover:-translate-x-1">
+                <svg
+                  width="8"
+                  height="9"
+                  viewBox="0 0 8 9"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                >
+                  <path
+                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                    fill="url(#paint0_linear_584_1923)"
+                  />
+                  <defs>
+                    <linearGradient
+                      id="paint0_linear_584_1923"
+                      x1="7.5"
+                      y1="3.01721"
+                      x2="-9.17006"
+                      y2="13.1895"
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop stopColor="#ED457D" />
+                      <stop offset="1" stopColor="#FA8F42" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </span>
               Previous
             </div>
           </button>
@@ -192,75 +194,81 @@ export default function OccasionSelector() {
 
         {/* Occasions Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-  {occasions.map((occasion, index) => {
-    return (
-      <div
-        key={`${occasion.id}-${index}`}
-        className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group 
+          {occasions.map((occasion, index) => {
+            return (
+              <div
+                key={`${occasion.id}-${index}`}
+                className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group 
         flex flex-col h-full
         ${selectedOccasion === occasion.id
-            ? 'border-2 border-blue-500'
-            : 'border-2 border-transparent'
-          }`}
-        onClick={() => handleOccasionSelect(occasion)}
-      >
-        {/* Image Container */}
-        <div className="w-full px-4 pt-4">
-          <div className="w-full h-56 overflow-hidden rounded-2xl bg-gray-200">
-            <img
-              src={occasion.image}
-              alt={occasion.name}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              onError={(e) => {
-                e.target.src =
-                  "https://via.placeholder.com/400x300?text=" +
-                  encodeURIComponent(occasion.name);
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Card Content */}
-        <div className="px-6 pt-5 pb-6 text-center flex flex-col flex-1">
-          {/* Title */}
-          <h3 className="font-bold text-xl text-gray-900 mb-2">
-            {occasion.name}
-          </h3>
-
-          {/* Description */}
-          <p className="text-gray-600 text-sm mb-6 leading-relaxed line-clamp-2">
-            {occasion.description}
-          </p>
-
-          {/* CTA Button */}
-          <button
-            className="mt-auto w-full py-3.5 px-4 bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-xl hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 transform hover:scale-105 cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOccasionSelect(occasion);
-            }}
-          >
-            Choose this Occasion
-            <span className="text-lg font-bold">
-              <svg
-                width="8"
-                height="9"
-                viewBox="0 0 8 9"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+                    ? 'border-2 border-blue-500'
+                    : 'border-2 border-transparent'
+                  }`}
+                onClick={() => handleOccasionSelect(occasion)}
               >
-                <path
-                  d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-                  fill="white"
-                />
-              </svg>
-            </span>
-          </button>
+                {/* Image Container */}
+                <div className="w-full px-4 pt-4">
+                  <div className="w-full h-56 overflow-hidden rounded-2xl bg-gray-200">
+                    <img
+                      src={occasion.image}
+                      alt={occasion.name}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        e.target.src =
+                          "https://via.placeholder.com/400x300?text=" +
+                          encodeURIComponent(occasion.name);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Card Content */}
+                <div className="px-6 pt-5 pb-6 text-center flex flex-col flex-1">
+                  {/* Title */}
+                  <h3 className="font-bold text-xl text-gray-900 mb-2">
+                    {occasion.name}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="text-gray-600 text-sm mb-6 leading-relaxed line-clamp-2">
+                    {occasion.description}
+                  </p>
+
+                  {/* CTA Button */}
+                  <button
+                    className="group mt-auto w-full py-3.5 px-4 
+  bg-linear-to-r from-pink-500 to-orange-400 
+  text-white font-semibold text-sm rounded-full 
+  transition-all duration-200 
+  hover:shadow-xl hover:from-pink-600 hover:to-orange-500 
+  flex items-center justify-center gap-2 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOccasionSelect(occasion);
+                    }}
+                  >
+                    Choose this Occasion
+
+                    <span className="mt-1 transition-transform duration-300 group-hover:translate-x-1">
+                      <svg
+                        width="8"
+                        height="9"
+                        viewBox="0 0 8 9"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                          fill="white"
+                        />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
-    );
-  })}
-</div>
 
 
         {/* Load More Section */}
