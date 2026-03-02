@@ -120,11 +120,11 @@ const BrandCard = ({
             </span>
           </div>
 
-          <h3 className="font-bold text-gray-900 text-xl">
+          <h3 className="font-semibold text-[#1A1A1A] text-[22px]">
             {brand.brandName}
           </h3>
 
-          <p className="text-gray-600 text-[16px] leading-relaxed line-clamp-2 mb-2">
+          <p className="text-[#4A4A4A] text-[16px] font-normal leading-relaxed line-clamp-2 mb-2">
             {brand.description}
           </p>
 
@@ -135,32 +135,42 @@ const BrandCard = ({
               onClick?.(brand);
             }}
             className="
-              relative w-full inline-flex items-center justify-center gap-2
-              px-5 py-3 rounded-full font-semibold text-base
-              text-gray-800 bg-white border border-transparent
-              transition-all duration-300 overflow-hidden group cursor-pointer
-            "
+    relative w-full inline-flex items-center justify-center gap-2
+    px-5 py-3 rounded-full font-semibold text-base
+    border border-transparent
+    transition-all duration-300 overflow-hidden group cursor-pointer
+  "
           >
             {/* Outer gradient border */}
             <span
               className="
-                absolute inset-0 rounded-full p-[1.5px]
-                bg-linear-to-r from-[#ED457D] to-[#FA8F42]
-              "
+      absolute inset-0 rounded-full p-[1.5px]
+      bg-linear-to-r from-[#ED457D] to-[#FA8F42]
+    "
             ></span>
 
             {/* Inner white background layer */}
             <span
               className="
-                absolute inset-0.5 rounded-full bg-white
-                transition-all duration-300
-                group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
-              "
+      absolute inset-0.5 rounded-full bg-white
+      transition-all duration-300
+      group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+    "
             ></span>
 
             {/* Button content */}
-            <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-              Choose Brand
+            <div className="relative z-10 flex items-center gap-2 transition-all duration-300">
+              {/* Gradient text → white on hover */}
+              <span
+                className="
+        bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent
+        group-hover:bg-none group-hover:text-white
+        transition-all duration-300
+      "
+              >
+                Choose Brand
+              </span>
+
               <span className="mt-1">
                 <svg
                   width="8"
