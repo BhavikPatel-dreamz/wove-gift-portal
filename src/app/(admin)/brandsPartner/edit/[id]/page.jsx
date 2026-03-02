@@ -430,27 +430,29 @@ minAmount: brand.vouchers?.[0]?.minAmount || 0,
   const prepareFormDataForSubmission = () => {
     // Create FormData for file upload
     const submitData = new FormData();
+    const logo = formData.logo;
+    const restFormData = (({ logo, imagePreview, ...rest }) => rest)(formData);
 
     // Clean up integrations data - ensure storeUrl is valid or empty
-    const cleanedIntegrations = formData.integrations.map(integration => ({
+    const cleanedIntegrations = restFormData.integrations.map(integration => ({
       ...integration,
       storeUrl: integration.storeUrl && isValidUrl(integration.storeUrl) ? integration.storeUrl : '',
     }));
 
     // Prepare the data object with cleaned data
     const dataToSubmit = {
-      ...formData,
+      ...restFormData,
       integrations: cleanedIntegrations,
-      termsConditionsURL: formData.termsConditionsURL && isValidUrl(formData.termsConditionsURL) ? formData.termsConditionsURL : '',
+      termsConditionsURL: restFormData.termsConditionsURL && isValidUrl(restFormData.termsConditionsURL) ? restFormData.termsConditionsURL : '',
       // Ensure remittance email is valid or empty
-      remittanceEmail: formData.remittanceEmail && isValidEmail(formData.remittanceEmail) ? formData.remittanceEmail : '',
+      remittanceEmail: restFormData.remittanceEmail && isValidEmail(restFormData.remittanceEmail) ? restFormData.remittanceEmail : '',
       // The website URL is passed as-is to prevent it from being cleared during submission.
-      website: formData.website,
+      website: restFormData.website,
     };
 
     // Add logo file if present
-    if (formData.logo && typeof formData.logo !== 'string') {
-      submitData.append('logo', formData.logo);
+    if (logo && typeof logo !== 'string') {
+      submitData.append('logo', logo);
     }
 
     // Add the JSON data
