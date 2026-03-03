@@ -17,7 +17,7 @@ const giftFlowSlice = createSlice({
     editingBulkOrderId: null,
     quantity: 0,
     selectedDenomination: null,
-    deliveryMethod: "email",
+    deliveryMethod: "",
     deliveryDetails: {
       yourName: "",
       yourCountryCode: "+27",

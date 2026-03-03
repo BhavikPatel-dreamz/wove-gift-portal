@@ -502,20 +502,34 @@ const DeliveryMethodStep = () => {
     const isCompleted = deliveryMethod === method.id && isMethodCompleted;
     const isSelected = selectedMethod === method.id;
     const isDeliveryActive = deliveryMethod === method.id;
+    const isActive = isSelected || isDeliveryActive;
+
+    const methodHoverBorderClass =
+      method.id === "whatsapp"
+        ? "hover:border-[#39AE41]"
+        : method.id === "email"
+          ? "hover:border-[#F57A38]"
+          : "hover:border-[#3874F5]";
+
+    const methodActiveBorderClass =
+      method.id === "whatsapp"
+        ? "border-[#39AE41] shadow-[0_0_0_2px_rgba(57,174,65,0.25)]"
+        : method.id === "email"
+          ? "border-[#F57A38] shadow-[0_0_0_2px_rgba(245,122,56,0.25)]"
+          : "border-[#3874F5] shadow-[0_0_0_2px_rgba(56,116,245,0.25)]";
 
     return (
       <div
         key={method.id}
         onClick={() => handleMethodChange(method.id)}
         className={`
-        relative p-8 rounded-2xl cursor-pointer transition-all duration-200
-        ${method.bgColor}
-
-        ${isDeliveryActive
-            ? "border-2 border-blue-500 shadow-[0_0_0_2px_rgba(59,130,246,0.3)]"
-            : "border-2 border-[#1A1A1A1A] hover:border-gray-300 hover:shadow-md"
+          relative p-8 rounded-2xl cursor-pointer border-2 transition-all duration-200
+          ${method.bgColor}
+          ${isActive
+            ? methodActiveBorderClass
+            : `border-[#1A1A1A1A] ${methodHoverBorderClass} hover:shadow-md`
           }
-      `}
+        `}
       >
         {/* Completed Badge */}
         {isCompleted && (
@@ -578,32 +592,32 @@ const DeliveryMethodStep = () => {
                shadow-sm hover:shadow-md"
           >
             <span className="transition-transform duration-300 group-hover:-translate-x-1">
-             <svg
-                  width="8"
-                  height="9"
-                  viewBox="0 0 8 9"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
-                >
-                  <path
-                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
-                    fill="url(#paint0_linear_584_1923)"
-                  />
-                  <defs>
-                    <linearGradient
-                      id="paint0_linear_584_1923"
-                      x1="7.5"
-                      y1="3.01721"
-                      x2="-9.17006"
-                      y2="13.1895"
-                      gradientUnits="userSpaceOnUse"
-                    >
-                      <stop stopColor="#ED457D" />
-                      <stop offset="1" stopColor="#FA8F42" />
-                    </linearGradient>
-                  </defs>
-                </svg>
+              <svg
+                width="8"
+                height="9"
+                viewBox="0 0 8 9"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300 group-hover:[&>path]:fill-white"
+              >
+                <path
+                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                  fill="url(#paint0_linear_584_1923)"
+                />
+                <defs>
+                  <linearGradient
+                    id="paint0_linear_584_1923"
+                    x1="7.5"
+                    y1="3.01721"
+                    x2="-9.17006"
+                    y2="13.1895"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop stopColor="#ED457D" />
+                    <stop offset="1" stopColor="#FA8F42" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </span>
 
             <span className="text-sm sm:text-base font-semibold">
@@ -648,9 +662,9 @@ const DeliveryMethodStep = () => {
 
                 {/* Continue Button */}
                 <div className="flex items-center justify-center mt-6 sm:mt-8 pb-4">
-                <button
-  onClick={handleContinue}
-  className="group cursor-pointer w-full sm:w-auto max-w-fit
+                  <button
+                    onClick={handleContinue}
+                    className="group cursor-pointer w-full sm:w-auto max-w-fit
   bg-gradient-to-r from-pink-500 to-orange-500
   hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500
   text-white
@@ -660,7 +674,7 @@ const DeliveryMethodStep = () => {
   shadow-md hover:shadow-xl hover:scale-105
   flex items-center justify-center gap-2 sm:gap-3
   whitespace-nowrap"
->
+                  >
                     Continue to Payment
 
                     <span className="transition-transform duration-300 group-hover:translate-x-1">
