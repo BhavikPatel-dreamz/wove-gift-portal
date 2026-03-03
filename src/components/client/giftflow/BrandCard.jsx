@@ -47,7 +47,7 @@ const BrandCard = ({
 
   return (
     <div
-      className="relative rounded-2xl group cursor-pointer p-[2px]"
+      className="relative w-full rounded-2xl group cursor-pointer p-[2px]"
       onClick={handleCardClick}
     >
       {/* Gradient border — hidden by default, shown on hover */}
@@ -124,7 +124,10 @@ const BrandCard = ({
             {brand.brandName}
           </h3>
 
-          <p className="text-[#4A4A4A] text-[16px] font-normal leading-relaxed line-clamp-2 mb-2">
+          <p
+            className="text-[#4A4A4A] text-[16px] font-normal leading-relaxed line-clamp-2 mb-2"
+            title={brand.description || ""}
+          >
             {brand.description}
           </p>
 

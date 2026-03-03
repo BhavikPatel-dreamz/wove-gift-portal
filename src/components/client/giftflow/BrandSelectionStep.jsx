@@ -120,7 +120,7 @@ const BrandSelectionStep = ({
         onSortChange={handleSortChange}
       />
 
-      <div className="max-w-[90%] sm:max-w-[85%] lg:max-w-[75%] mx-auto text-black">
+      <div className="max-w-[90%] sm:max-w-[85%] lg:max-w-[85%] xl:max-w-[75%] mx-auto text-black">
         {/* Show active filters */}
         {(searchTerm || selectedCategory && selectedCategory !== "All Categories") && (
           <div className="mb-4 flex flex-wrap gap-2 items-center">
