@@ -111,7 +111,7 @@ const SearchBar = ({
       </div>
 
       {/* Search Input + Dropdown */}
-      <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] sm:w-full max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-2 sm:px-4 z-30">
+      <div className="relative z-30 mx-auto -mt-10 w-[90%] max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-2 sm:absolute sm:left-1/2 sm:mt-0 sm:w-full sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-4">
         {/* Search Input */}
         <div
           className="flex items-center w-full rounded-full p-0.5"

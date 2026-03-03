@@ -2,7 +2,7 @@
 import { useDispatch } from 'react-redux';
 import { usePathname, useRouter } from 'next/navigation';
 import { setSelectedOccasion, setCurrentStep, resetFlow,clearCsvFileData } from '@/redux/giftFlowSlice';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef } from 'react';
 
 const OccasionsSection = ({ occasions = [], isLoading = false }) => {
   const dispatch = useDispatch();
@@ -11,27 +11,10 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
 
   // Slider states
   const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasDragged, setHasDragged] = useState(false);
   const sliderRef = useRef(null);
   const desktopSliderRef = useRef(null);
-  const [isHovering, setIsHovering] = useState(false);
-  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
-  const autoScrollRef = useRef(null);
-  const scrollAnimationRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detect mobile on mount
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024); // lg breakpoint
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const dragStateRef = useRef({ slider: null, startX: 0, scrollLeft: 0 });
 
   // Show skeleton while loading
   if (isLoading) {
@@ -54,295 +37,66 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
     }
   };
 
-  // Smooth scroll function using requestAnimationFrame with Promise return
-  const smoothScrollTo = useCallback((element, target, duration = 300) => {
-    return new Promise((resolve) => {
-      if (!element) {
-        resolve();
-        return;
-      }
+  const beginDrag = (sliderElement, clientX) => {
+    if (!sliderElement) return;
 
-      const start = element.scrollLeft;
-      const change = target - start;
-      const startTime = performance.now();
-
-      if (scrollAnimationRef.current) {
-        cancelAnimationFrame(scrollAnimationRef.current);
-      }
-
-      const animateScroll = (currentTime) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-
-        // Easing function for smoother transition (easeInOutQuad)
-        const easeProgress = progress < 0.5
-          ? 2 * progress * progress
-          : -1 + (4 - 2 * progress) * progress;
-
-        element.scrollLeft = start + change * easeProgress;
-
-        if (progress < 1) {
-          scrollAnimationRef.current = requestAnimationFrame(animateScroll);
-        } else {
-          scrollAnimationRef.current = null;
-          resolve();
-        }
-      };
-
-      scrollAnimationRef.current = requestAnimationFrame(animateScroll);
-    });
-  }, []);
-
-  // Auto-scroll function for both desktop and mobile
-  const startAutoScroll = useCallback(() => {
-    if (!occasions.length || isAutoScrolling) return;
-
-    const scroll = async () => {
-      if (isHovering || isDragging) return;
-
-      if (isMobile) {
-        // Mobile slider
-        const slider = sliderRef.current;
-        if (!slider) return;
-
-        const cardWidth = slider.children[0]?.offsetWidth || 0;
-        const gap = 24;
-        const slideWidth = cardWidth + gap;
-        const maxScroll = slider.scrollWidth - slider.clientWidth;
-        const currentScroll = slider.scrollLeft;
-        const currentIndex = Math.round(currentScroll / slideWidth);
-
-        if (currentIndex >= occasions.length - 1) {
-          // Go back to first slide
-          setIsAutoScrolling(true);
-          await smoothScrollTo(slider, 0, 400);
-          setIsAutoScrolling(false);
-        } else {
-          // Go to next slide
-          const nextScroll = (currentIndex + 1) * slideWidth;
-          await smoothScrollTo(slider, nextScroll, 600);
-        }
-      } else {
-        // Desktop slider
-        const slider = desktopSliderRef.current;
-        if (!slider || isHovering) return;
-
-        const cards = slider.querySelectorAll('.occasion-card');
-        if (cards.length === 0) return;
-
-        const cardWidth = cards[0].offsetWidth;
-        const gap = 24;
-        const scrollAmount = cardWidth + gap;
-        const maxScroll = slider.scrollWidth - slider.clientWidth;
-        const currentScroll = slider.scrollLeft;
-
-        if (currentScroll >= maxScroll - 10) {
-          // Go back to first slide
-          setIsAutoScrolling(true);
-          await smoothScrollTo(slider, 0, 400);
-          setIsAutoScrolling(false);
-        } else {
-          // Go to next slide
-          const nextScroll = currentScroll + scrollAmount;
-          await smoothScrollTo(slider, nextScroll, 600);
-        }
-      }
+    const rect = sliderElement.getBoundingClientRect();
+    dragStateRef.current = {
+      slider: sliderElement,
+      startX: clientX - rect.left,
+      scrollLeft: sliderElement.scrollLeft,
     };
 
-    // Clear any existing interval
-    if (autoScrollRef.current) {
-      clearInterval(autoScrollRef.current);
-    }
-
-    // Start auto-scroll interval
-    autoScrollRef.current = setInterval(() => {
-      if (!isDragging && !isHovering) {
-        scroll();
-      }
-    }, 2500);
-
-  }, [isMobile, isHovering, isDragging, isAutoScrolling, occasions.length, smoothScrollTo]);
-
-  // Start/stop auto-scroll based on conditions
-  useEffect(() => {
-    if (occasions.length === 0) return;
-
-    // Start auto-scroll
-    startAutoScroll();
-
-    // Cleanup
-    return () => {
-      if (autoScrollRef.current) {
-        clearInterval(autoScrollRef.current);
-        autoScrollRef.current = null;
-      }
-      if (scrollAnimationRef.current) {
-        cancelAnimationFrame(scrollAnimationRef.current);
-        scrollAnimationRef.current = null;
-      }
-    };
-  }, [startAutoScroll, occasions.length]);
-
-  // Handle hover for desktop
-  useEffect(() => {
-    if (!isMobile) {
-      if (isHovering) {
-        // Pause auto-scroll on hover
-        if (autoScrollRef.current) {
-          clearInterval(autoScrollRef.current);
-          autoScrollRef.current = null;
-        }
-      } else {
-        // Resume auto-scroll when not hovering
-        startAutoScroll();
-      }
-    }
-  }, [isHovering, isMobile, startAutoScroll]);
-
-  // Dragging handlers for mobile
-  const handleMouseDown = (e) => {
-    if (isAutoScrolling || !sliderRef.current) return;
+    setHasDragged(false);
     setIsDragging(true);
-    setStartX(e.pageX - sliderRef.current.offsetLeft);
-    setScrollLeft(sliderRef.current.scrollLeft);
-    if (scrollAnimationRef.current) {
-      cancelAnimationFrame(scrollAnimationRef.current);
-      scrollAnimationRef.current = null;
-    }
-
-    // Pause auto-scroll during drag
-    if (autoScrollRef.current) {
-      clearInterval(autoScrollRef.current);
-      autoScrollRef.current = null;
-    }
   };
 
-  const handleTouchStart = (e) => {
-    if (isAutoScrolling || !sliderRef.current) return;
-    setIsDragging(true);
-    setStartX(e.touches[0].pageX - sliderRef.current.offsetLeft);
-    setScrollLeft(sliderRef.current.scrollLeft);
-    if (scrollAnimationRef.current) {
-      cancelAnimationFrame(scrollAnimationRef.current);
-      scrollAnimationRef.current = null;
+  const dragSlider = (clientX) => {
+    if (!isDragging) return;
+
+    const { slider, startX, scrollLeft } = dragStateRef.current;
+    if (!slider) return;
+
+    const rect = slider.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const walk = (x - startX) * 1.4;
+
+    if (Math.abs(walk) > 6) {
+      setHasDragged(true);
     }
 
-    // Pause auto-scroll during drag
-    if (autoScrollRef.current) {
-      clearInterval(autoScrollRef.current);
-      autoScrollRef.current = null;
-    }
+    slider.scrollLeft = scrollLeft - walk;
+  };
+
+  const endDrag = () => {
+    if (!isDragging) return;
+
+    setIsDragging(false);
+    dragStateRef.current.slider = null;
+    setTimeout(() => setHasDragged(false), 0);
+  };
+
+  const handleDesktopMouseDown = (e) => {
+    beginDrag(desktopSliderRef.current, e.clientX);
+  };
+
+  const handleMobileMouseDown = (e) => {
+    beginDrag(sliderRef.current, e.clientX);
   };
 
   const handleMouseMove = (e) => {
-    if (!isDragging || isAutoScrolling || !sliderRef.current) return;
+    if (!isDragging) return;
     e.preventDefault();
-    const x = e.pageX - sliderRef.current.offsetLeft;
-    const walk = (x - startX) * 2;
-    sliderRef.current.scrollLeft = scrollLeft - walk;
+    dragSlider(e.clientX);
+  };
+
+  const handleTouchStart = (e) => {
+    beginDrag(sliderRef.current, e.touches[0].clientX);
   };
 
   const handleTouchMove = (e) => {
-    if (!isDragging || isAutoScrolling || !sliderRef.current) return;
-    const x = e.touches[0].pageX - sliderRef.current.offsetLeft;
-    const walk = (x - startX) * 2;
-    sliderRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const handleMouseUp = () => {
     if (!isDragging) return;
-    setIsDragging(false);
-    snapToClosest();
-
-    // Resume auto-scroll after drag ends
-    setTimeout(() => {
-      startAutoScroll();
-    }, 1000); // Wait 1 second before resuming
-  };
-
-  const handleTouchEnd = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    snapToClosest();
-
-    // Resume auto-scroll after drag ends
-    setTimeout(() => {
-      startAutoScroll();
-    }, 1000); // Wait 1 second before resuming
-  };
-
-  const snapToClosest = async () => {
-    if (!sliderRef.current) return;
-    const cardWidth = sliderRef.current.children[0]?.offsetWidth || 0;
-    const gap = 24;
-    const slideWidth = cardWidth + gap;
-    const newIndex = Math.round(sliderRef.current.scrollLeft / slideWidth);
-    const clampedIndex = Math.max(0, Math.min(newIndex, occasions.length - 1));
-    setCurrentIndex(clampedIndex);
-
-    await smoothScrollTo(sliderRef.current, clampedIndex * slideWidth, 200);
-  };
-
-  // Update current index on scroll (for dots indicator)
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-
-    let rafId = null;
-    const handleScroll = () => {
-      if (rafId) return;
-
-      rafId = requestAnimationFrame(() => {
-        const cardWidth = slider.children[0]?.offsetWidth || 0;
-        const gap = 24;
-        const slideWidth = cardWidth + gap;
-        const newIndex = Math.round(slider.scrollLeft / slideWidth);
-        const clampedIndex = Math.max(0, Math.min(newIndex, occasions.length - 1));
-        setCurrentIndex(clampedIndex);
-        rafId = null;
-      });
-    };
-
-    slider.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      slider.removeEventListener('scroll', handleScroll);
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-  }, [occasions.length]);
-
-  // Handle dot navigation click for mobile
-  const handleDotClick = async (index) => {
-    const slider = isMobile ? sliderRef.current : desktopSliderRef.current;
-    if (!slider || isAutoScrolling) return;
-
-    // Pause auto-scroll during manual navigation
-    if (autoScrollRef.current) {
-      clearInterval(autoScrollRef.current);
-      autoScrollRef.current = null;
-    }
-
-    if (isMobile) {
-      const cardWidth = slider.children[0]?.offsetWidth || 0;
-      const gap = 24;
-      const slideWidth = cardWidth + gap;
-      await smoothScrollTo(slider, index * slideWidth, 300);
-    } else {
-      const cards = slider.querySelectorAll('.occasion-card');
-      if (cards.length === 0) return;
-      const cardWidth = cards[0].offsetWidth;
-      const gap = 24;
-      const slideWidth = cardWidth + gap;
-      await smoothScrollTo(slider, index * slideWidth, 300);
-    }
-
-    setCurrentIndex(index);
-
-    // Resume auto-scroll after delay
-    setTimeout(() => {
-      startAutoScroll();
-    }, 1000);
+    dragSlider(e.touches[0].clientX);
   };
 
   return (
@@ -355,33 +109,44 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
         </div>
 
         {/* Desktop Slider */}
-        <div
-          className="hidden lg:block relative"
-          onMouseEnter={() => setIsHovering(true)}
-          onMouseLeave={() => setIsHovering(false)}
-        >
+        <div className="hidden lg:block relative">
           <div
             ref={desktopSliderRef}
-            className="flex gap-6 overflow-x-hidden py-4"
+            className={`flex gap-6 overflow-x-auto overflow-y-hidden py-4 select-none scrollbar-hide ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             style={{
-              scrollBehavior: 'auto',
-              cursor: isHovering ? 'grab' : 'default'
+              scrollBehavior: 'smooth',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
             }}
+            onMouseDown={handleDesktopMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={endDrag}
+            onMouseLeave={endDrag}
           >
             {occasions.map((occasion) => (
               <div
                 key={occasion.id}
-                className="occasion-card cursor-pointer shrink-0 transition-transform duration-300 hover:scale-[1.02]"
-                style={{ width: 'calc(25% - 1.125rem)' }}
-                onClick={() => handleOccasionSelect(occasion)}
+                className="occasion-card cursor-pointer shrink-0 transition-transform duration-300 lg:w-[calc(33.33%-1rem)] xl:w-[calc(25%-1.125rem)]"
+                onClick={(e) => {
+                  if (hasDragged || isDragging) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
+                  handleOccasionSelect(occasion);
+                }}
               >
+                
                 {occasion.image && (
+                  <div className='image-wrapper overflow-hidden rounded-lg'>
                   <img
                     src={occasion.image}
                     alt={occasion.name}
-                    className="occasion-card-image transition-transform duration-300 hover:scale-105"
+                    className="occasion-card-image"                                                                                                                                                                     
+                    draggable="false"
                     loading="lazy"
                   />
+                  </div>
                 )}
                 <div className="occasion-card-content">
                   <h3 className="occasion-card-title fontPoppins">{occasion.name}</h3>
@@ -391,43 +156,27 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
             ))}
           </div>
 
-          {/* Desktop dots indicator */}
-          {/* <div className="flex justify-center gap-2 mt-8">
-            {occasions.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => handleDotClick(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 hover:scale-125 ${
-                  Math.floor((desktopSliderRef.current?.scrollLeft || 0) / 
-                  ((desktopSliderRef.current?.querySelector('.occasion-card')?.offsetWidth || 0) + 24)) === index
-                    ? 'bg-gradient-to-r from-[#ed457d] to-[#fa8f42] w-8'
-                    : 'bg-gray-300'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div> */}
         </div>
 
         {/* Mobile Slider */}
         <div className="lg:hidden relative">
           <div
             ref={sliderRef}
-            className="flex gap-6 overflow-x-hidden cursor-grab active:cursor-grabbing select-none"
+            className={`flex gap-6 overflow-x-auto overflow-y-hidden select-none scrollbar-hide ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             style={{
               scrollSnapType: 'x mandatory',
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
-              scrollBehavior: 'auto'
+              scrollBehavior: 'smooth'
             }}
-            onMouseDown={handleMouseDown}
+            onMouseDown={handleMobileMouseDown}
             onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onMouseUp={endDrag}
+            onMouseLeave={endDrag}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            onTouchEnd={endDrag}
           >
             {occasions.map((occasion) => (
               <div
@@ -435,7 +184,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
                 className="occasion-card shrink-0 cursor-pointer transition-transform duration-300 active:scale-[0.98]"
                 onClick={(e) => {
                   // Prevent click when dragging
-                  if (isDragging) {
+                  if (hasDragged || isDragging) {
                     e.preventDefault();
                     e.stopPropagation();
                     return;
@@ -465,21 +214,6 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
             ))}
           </div>
 
-          {/* Mobile dots indicator */}
-          {/* <div className="flex justify-center gap-2 mt-6">
-            {occasions.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => handleDotClick(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  currentIndex === index
-                    ? 'bg-gradient-to-r from-[#ed457d] to-[#fa8f42] w-8'
-                    : 'bg-gray-300'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div> */}
         </div>
       </div>
     </section>

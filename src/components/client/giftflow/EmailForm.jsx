@@ -329,7 +329,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                         <button
                                             className="group cursor-pointer w-full 
   bg-linear-to-r from-pink-500 to-orange-400 
-  hover:from-pink-600 hover:to-orange-500 
+  hover:from-orange-400  hover:to-pink-500 
   text-white py-3 rounded-full font-semibold text-sm 
   transition-all hover:shadow-lg 
   flex items-center justify-center gap-2"
@@ -348,33 +348,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                             Redeem Now
 
                                             <span className="transition-transform duration-300 group-hover:translate-x-1">
-                                                <svg
-                                                    width="16"
-                                                    height="16"
-                                                    viewBox="0 0 20 20"
-                                                    fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    className="transition-colors duration-300"
-                                                >
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        clipRule="evenodd"
-                                                        d="M7.35412 5.90263C7.40412 5.35261 7.89053 4.94727 8.44054 4.99727L13.626 5.46868C14.176 5.51868 14.5814 6.00509 14.5314 6.5551C14.4814 7.10512 13.9949 7.51046 13.4449 7.46046L8.25947 6.98906C7.70946 6.93906 7.30411 6.45264 7.35412 5.90263Z"
-                                                        fill="currentColor"
-                                                    />
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        clipRule="evenodd"
-                                                        d="M14.0974 12.6459C13.5474 12.6959 13.061 12.2905 13.011 11.7405L12.5396 6.55505C12.4896 6.00503 12.8949 5.51862 13.4449 5.46862C13.9949 5.41862 14.4814 5.82396 14.5314 6.37397L15.0028 11.5594C15.0528 12.1094 14.6474 12.5959 14.0974 12.6459Z"
-                                                        fill="currentColor"
-                                                    />
-                                                    <path
-                                                        fillRule="evenodd"
-                                                        clipRule="evenodd"
-                                                        d="M12.8284 7.17156C13.2189 7.56208 13.2189 8.19524 12.8284 8.58577L7.17153 14.2426C6.78101 14.6331 6.14784 14.6331 5.75732 14.2426C5.36679 13.8521 5.36679 13.2189 5.75732 12.8284L11.4142 7.17156C11.8047 6.78103 12.4379 6.78103 12.8284 7.17156Z"
-                                                        fill="currentColor"
-                                                    />
-                                                </svg>
+                                                <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white"></path></svg>
                                             </span>
                                         </button>
                                     </div>

@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { clearDeliveryFormEditReturn, goBack, goNext, setCurrentStep, setPersonalMessage } from "../../../redux/giftFlowSlice";
-import ProgressIndicator from "./ProgressIndicator";
-import { ArrowLeft } from "lucide-react";
+import { Smile } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import EmojiPicker from "emoji-picker-react";
 
 
 const PersonalMessageStep = () => {
@@ -11,24 +11,86 @@ const PersonalMessageStep = () => {
   const { personalMessage, deliveryFormEditReturn } = useSelector((state) => state.giftFlowReducer);
   const [message, setMessage] = useState(personalMessage || '');
   const [error, setError] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const pickerRef = useRef(null);
+  const emojiButtonRef = useRef(null);
+  const textareaRef = useRef(null);
   const maxChars = 300;
-  const minChars = 1;
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
-  const data = useSelector((state) => state.giftFlowReducer);
 
-
-  const handleMessageChange = (e) => {
-    const newMessage = e.target.value;
+  const updateMessage = (newMessage) => {
     if (newMessage.length <= maxChars) {
       setMessage(newMessage);
       dispatch(setPersonalMessage(newMessage));
-      // Clear error when user starts typing
       if (newMessage.trim().length > 0) {
         setError('');
       }
+      return true;
     }
+    return false;
+  };
+
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+
+    const handleClickOutside = (event) => {
+      const clickedInsidePicker = pickerRef.current?.contains(event.target);
+      const clickedEmojiButton = emojiButtonRef.current?.contains(event.target);
+
+      if (!clickedInsidePicker && !clickedEmojiButton) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showEmojiPicker]);
+
+  const handleMessageChange = (e) => {
+    updateMessage(e.target.value);
+  };
+
+  const handleEmojiClick = (emojiData) => {
+    const emoji = emojiData?.emoji || "";
+    if (!emoji) return;
+
+    const textareaEl = textareaRef.current;
+    if (!textareaEl) {
+      updateMessage(`${message}${emoji}`);
+      setShowEmojiPicker(false);
+      return;
+    }
+
+    const selectionStart = textareaEl.selectionStart ?? message.length;
+    const selectionEnd = textareaEl.selectionEnd ?? message.length;
+
+    const newMessage =
+      message.slice(0, selectionStart) + emoji + message.slice(selectionEnd);
+
+    const isUpdated = updateMessage(newMessage);
+    if (!isUpdated) return;
+
+    const cursorPosition = selectionStart + emoji.length;
+    requestAnimationFrame(() => {
+      textareaEl.focus();
+      textareaEl.setSelectionRange(cursorPosition, cursorPosition);
+    });
+    setShowEmojiPicker(false);
   };
 
   const handleContinue = () => {
@@ -189,6 +251,7 @@ const PersonalMessageStep = () => {
           {/* Textarea */}
           <div className="relative">
             <textarea
+              ref={textareaRef}
               value={message}
               onChange={handleMessageChange}
               rows={5}
@@ -198,13 +261,45 @@ const PersonalMessageStep = () => {
     rounded-[20px] 
     border border-[rgba(26,26,26,0.1)] 
     shadow-[0_4px_20px_rgba(128,128,128,0.1)]
+    pr-20 pb-12
     ${error ? 'border-red-400' : ''}
     focus:outline-none focus:ring-0 focus:border-[rgba(26,26,26,0.2)]`}
             />
 
-            <div className="absolute bottom-3 right-4 text-xs sm:text-sm text-gray-500">
-              {message.length}/{maxChars}
+            <div className="absolute bottom-3 right-3 flex items-center gap-2">
+              <div className="px-2.5 py-1 rounded-full bg-gray-100 text-xs sm:text-sm text-gray-600 font-medium">
+                {message.length}/{maxChars}
+              </div>
+              <button
+                ref={emojiButtonRef}
+                type="button"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                className="w-8 h-8 rounded-full border border-[#ED457D] bg-white text-gray-700 flex items-center justify-center hover:bg-pink-50 transition-colors"
+                aria-label="Open emoji picker"
+              >
+                <Smile size={16} />
+              </button>
             </div>
+
+            {showEmojiPicker && (
+              <div
+                ref={pickerRef}
+                className="absolute right-0 bottom-14 z-30 rounded-xl overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.18)] bg-white"
+                style={{ width: "min(320px, calc(100vw - 2rem))" }}
+              >
+                <EmojiPicker
+                  onEmojiClick={handleEmojiClick}
+                  lazyLoadEmojis
+                  searchDisabled={false}
+                  skinTonesDisabled
+                  previewConfig={{
+                    showPreview: false,
+                  }}
+                  width="100%"
+                  height={360}
+                />
+              </div>
+            )}
           </div>
 
           {/* Error */}
@@ -217,15 +312,22 @@ const PersonalMessageStep = () => {
 
         {/* Continue Button */}
         <div className="text-center">
-          <button
-            onClick={handleContinue}
-            disabled={isMessageEmpty}
-            className={`group w-full items-center mx-auto justify-center flex gap-2 sm:w-auto px-10 py-4 rounded-full font-semibold text-base transition-all shadow-lg
-    ${isMessageEmpty
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-linear-to-r from-pink-500 to-orange-400 hover:shadow-xl"
-              } text-white`}
-          >
+        <button
+  onClick={handleContinue}
+  disabled={isMessageEmpty}
+  className={`group w-full sm:w-auto max-w-fit mx-auto
+  flex items-center justify-center gap-2
+  px-6 md:px-10 py-3 md:py-4
+  rounded-full font-semibold text-sm md:text-base
+  transition-all duration-300
+  shadow-md
+  ${
+    isMessageEmpty
+      ? "bg-gray-400 cursor-not-allowed shadow-none"
+      : "bg-gradient-to-r from-pink-500 to-orange-400 hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500 hover:shadow-xl hover:scale-105"
+  }
+  text-white whitespace-nowrap`}
+>
             Schedule Delivery Date
 
               <span className="transition-transform duration-300 group-hover:translate-x-1">

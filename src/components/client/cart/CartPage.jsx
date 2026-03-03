@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ShoppingBag, Package, Heart } from 'lucide-react';
 import Link from 'next/link';
 import Button from '@/components/forms/Button';
+import { useSession } from '@/contexts/SessionContext';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   updateState,
@@ -17,6 +18,7 @@ import toast from 'react-hot-toast';
 import { resetFlow, clearCsvFileData } from '../../../redux/giftFlowSlice';
 
 const CartPage = () => {
+  const session = useSession();
   const cartItems = useSelector((state) => state.cart.items);
   const bulkItems = useSelector((state) => state.cart.bulkItems);
   const wishlistItems = useSelector((state) => state.wishlist.items);
@@ -70,6 +72,8 @@ const CartPage = () => {
   };
 
   const handleEditItem = (item, index, type) => {
+    const targetStep = type === 'bulk' ? 7 : 8;
+
     dispatch(updateState({
       ...item,
       editingIndex: index,
@@ -82,7 +86,7 @@ const CartPage = () => {
         returnStep: null,
       },
     }));
-    dispatch(setCurrentStep(1));
+    dispatch(setCurrentStep(targetStep));
     if (type === 'regular') {
       router.push('/gift');
     } else if (type === 'bulk') {
@@ -97,16 +101,14 @@ const CartPage = () => {
 
   // ✅ Fixed: Only proceed with items from active tab
   const handleProceedToPayment = () => {
-    // if (session) {
-    //   // Check if there are any items in either cart
-    //   if (cartItems.length === 0 && bulkItems.length === 0) {
-    //     toast.error('Your cart is empty');
-    //     return;
-    //   }
-      router.push('/checkout');
-    // } else {
-    //   router.push('/login?redirect=/cart');
-    // }
+    const hasBulkOrders = bulkItems.length > 0;
+    const isLoggedIn = Boolean(session?.user?.id);
+
+    if (hasBulkOrders && !isLoggedIn) {
+      toast.error('Please login first to process bulk orders.');
+    }
+
+    router.push('/checkout');
   };
 
   const handleRedirect = () => {
@@ -177,15 +179,15 @@ const CartPage = () => {
                 <div className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white 
                 transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
                   <span className="transition-transform duration-300 group-hover:-translate-x-1">
-                  <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
-                    <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
-                    <defs>
-                      <linearGradient id="grad" x1="7.5" y1="3" x2="-9" y2="13">
-                        <stop stopColor="#ED457D" />
-                        <stop offset="1" stopColor="#FA8F42" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
+                    <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
+                      <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
+                      <defs>
+                        <linearGradient id="grad" x1="7.5" y1="3" x2="-9" y2="13">
+                          <stop stopColor="#ED457D" />
+                          <stop offset="1" stopColor="#FA8F42" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
                   </span>
                   <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
                 </div>
@@ -211,16 +213,16 @@ const CartPage = () => {
           <Link href="/" className="group inline-flex items-center">
             <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400">
               <div className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
-                  <span className="transition-transform duration-300 group-hover:-translate-x-1">
-                <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
-                  <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
-                  <defs>
-                    <linearGradient id="grad" x1="7.5" y1="3" x2="-9" y2="13">
-                      <stop stopColor="#ED457D" />
-                      <stop offset="1" stopColor="#FA8F42" />
-                    </linearGradient>
-                  </defs>
-                </svg>
+                <span className="transition-transform duration-300 group-hover:-translate-x-1">
+                  <svg width="8" height="9" viewBox="0 0 8 9" xmlns="http://www.w3.org/2000/svg" className="transition-colors duration-200 w-2 h-2 sm:w-2.5 sm:h-2.5">
+                    <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" className="fill-[url(#grad)] group-hover:fill-white" />
+                    <defs>
+                      <linearGradient id="grad" x1="7.5" y1="3" x2="-9" y2="13">
+                        <stop stopColor="#ED457D" />
+                        <stop offset="1" stopColor="#FA8F42" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
                 </span>
                 <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
               </div>
@@ -314,53 +316,53 @@ const CartPage = () => {
                 const isWishlisted = wishlistKeySet.has(wishlistKey);
 
                 return (
-                <div key={index} onClick={() => handleEditItem(item, index, "regular")} className="relative flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
-                
-                  <div className="flex cursor-pointer items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
-                    <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
-                      <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
-                    </div>
-                    <div className="flex flex-col gap-1 sm:gap-1.5 flex-1 min-w-0">
-                      <h3 className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 font-['Poppins'] text-sm sm:text-[15px] md:text-[16px] font-semibold leading-4.5 sm:leading-5 md:leading-5.5 text-[#1A1A1A]">
-                        <span className="shrink-0">
-                          {item.selectedBrand?.brandName || item.selectedBrand?.name}
-                        </span>
-                        <span className="truncate text-xs sm:text-[13px] md:text-[14px] font-normal text-gray-500">
-                          {item.personalMessage || 'No personal message.'}
-                        </span>
-                      </h3>
-                      <div className="flex w-fit p-1.5 sm:p-2 items-center justify-center gap-0.5 sm:gap-1 rounded-[50px] bg-[#F4F4F4]">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 22 22" fill="none" className="sm:w-5 sm:h-5 md:w-5.5 md:h-5.5">
-                          <path d="M10.9994 11.9834V20.4874L7.42409 18.8483L6.94887 18.6308L5.09936 17.7832L4.99592 17.7356L1.95801 16.3425V7.82666L5.09936 9.27065L7.42409 10.3398L10.9994 11.9834Z" fill="#ED457D" />
-                          <path d="M20.0414 7.82666V16.3425L17.3652 17.5729L16.691 17.883L15.4122 18.4708L14.3663 18.9521L11 20.4999V11.9834L14.3663 10.4356L16.691 9.36718L20.0414 7.82666Z" fill="#FF81AB" />
-                          <path d="M7.42434 10.3399V18.8484L6.94912 18.6309L5.09961 17.7833V9.27075L7.42434 10.3399Z" fill="#FFF380" />
-                          <path d="M16.6929 9.36731V17.8832L15.4141 18.4709L14.3682 18.9523V10.4358L16.6929 9.36731Z" fill="#FFF380" />
-                          <path d="M20.5 5.88745V8.45675L17.1091 10.0158L14.7837 11.0849L11 12.8244L7.00731 10.989L4.68186 9.91992L1.5 8.45675V5.88745L4.68186 7.34996L7.00731 8.41907L11 10.2545L14.7837 8.51494L17.1091 7.44649L20.5 5.88745Z" fill="#FF8A0E" />
-                          <path d="M20.5 5.88685L11 10.2545L1.5 5.88685L11 1.5L20.5 5.88685Z" fill="#FFB465" />
-                          <path d="M7.00807 8.41921V10.9892L4.68262 9.92006V7.3501L7.00807 8.41921Z" fill="#FFEA26" />
-                          <path d="M17.1087 7.44653V10.0158L14.7832 11.0849V8.51498L17.1087 7.44653Z" fill="#FFEA26" />
-                          <path d="M4.68262 7.35008L10.9287 4.85217L13.2303 5.91467L7.00807 8.41919L4.68262 7.35008Z" fill="#FFF8B5" />
-                          <path d="M17.3143 7.34996L11.5682 4.60205L9.2666 5.66455L14.9888 8.41907L17.3143 7.34996Z" fill="#FFF8B5" />
-                          <path d="M11.0001 5.36987C11.0001 5.36987 9.85292 6.38741 9.19687 8.68828L8.61316 7.88231L7.67285 8.67572C7.67285 8.67572 7.67285 6.62609 9.91512 5.36987H11.0001Z" fill="#B3610A" />
-                          <path d="M11.0723 5.36987C11.0723 5.36987 12.2194 6.38741 12.8755 8.68828L13.4592 7.88231L14.3995 8.67572C14.3995 8.67572 14.3995 6.62609 12.1572 5.36987H11.0723Z" fill="#B3610A" />
-                          <path d="M10.6383 4.7086V5.43588C8.46833 6.09705 6.94938 5.83258 6.37073 5.1053C6.21955 4.9162 6.08429 4.66827 5.9946 4.40314C5.74072 3.65007 5.86368 2.75683 7.09404 2.65897C8.75766 2.52674 10.6383 4.7086 10.6383 4.7086Z" fill="#B3610A" />
-                          <path d="M10.6407 5.43393V5.43591C8.4708 6.09708 6.95184 5.83261 6.37319 5.10533C6.22202 4.91623 6.08676 4.66829 5.99707 4.40317C6.17501 4.14399 6.49833 3.95688 7.02418 3.91522C8.1945 3.822 9.79519 4.82896 10.6407 5.43393Z" fill="#7B4001" />
-                          <path d="M11.3623 4.7086V5.43588C13.5322 6.09705 15.0512 5.83258 15.6299 5.1053C15.781 4.9162 15.9163 4.66827 16.006 4.40314C16.2599 3.65007 16.1369 2.75683 14.9065 2.65897C13.2429 2.52674 11.3623 4.7086 11.3623 4.7086Z" fill="#B3610A" />
-                          <path d="M11.3623 5.43393V5.43591C13.5322 6.09708 15.0512 5.83261 15.6299 5.10533C15.781 4.91623 15.9163 4.66829 16.006 4.40317C15.828 4.14399 15.5047 3.95688 14.9789 3.91522C13.8086 3.822 12.2079 4.82896 11.3623 5.43393Z" fill="#7B4001" />
-                          <path d="M10.5659 5.43589C10.5659 5.43589 10.2766 4.51025 10.9999 4.51025C11.7232 4.51025 11.4339 5.43589 11.4339 5.43589C11.4339 5.43589 11.0723 5.76647 10.5659 5.43589Z" fill="#FF8A0E" />
-                        </svg>
-                        <p className="my-0.5 sm:my-1 font-['Poppins'] text-xs sm:text-[13px] md:text-[14px] font-semibold leading-4 sm:leading-4.25 md:leading-4.5 text-[#1A1A1A]">
-                          {formatAmount(item.selectedAmount)}
-                        </p>
+                  <div key={index} onClick={() => handleEditItem(item, index, "regular")} className="relative flex justify-between cursor-pointer items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+
+                    <div className="flex cursor-pointer items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0">
+                      <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
+                        <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
+                      </div>
+                      <div className="flex flex-col gap-1 sm:gap-1.5 flex-1 min-w-0">
+                        <h3 className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 font-['Poppins'] text-sm sm:text-[15px] md:text-[16px] font-semibold leading-4.5 sm:leading-5 md:leading-5.5 text-[#1A1A1A]">
+                          <span className="shrink-0">
+                            {item.selectedBrand?.brandName || item.selectedBrand?.name}
+                          </span>
+                          <span className="truncate text-xs sm:text-[13px] md:text-[14px] font-normal text-gray-500">
+                            {item.personalMessage || 'No personal message.'}
+                          </span>
+                        </h3>
+                        <div className="flex w-fit p-1.5 sm:p-2 items-center justify-center gap-0.5 sm:gap-1 rounded-[50px] bg-[#F4F4F4]">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 22 22" fill="none" className="sm:w-5 sm:h-5 md:w-5.5 md:h-5.5">
+                            <path d="M10.9994 11.9834V20.4874L7.42409 18.8483L6.94887 18.6308L5.09936 17.7832L4.99592 17.7356L1.95801 16.3425V7.82666L5.09936 9.27065L7.42409 10.3398L10.9994 11.9834Z" fill="#ED457D" />
+                            <path d="M20.0414 7.82666V16.3425L17.3652 17.5729L16.691 17.883L15.4122 18.4708L14.3663 18.9521L11 20.4999V11.9834L14.3663 10.4356L16.691 9.36718L20.0414 7.82666Z" fill="#FF81AB" />
+                            <path d="M7.42434 10.3399V18.8484L6.94912 18.6309L5.09961 17.7833V9.27075L7.42434 10.3399Z" fill="#FFF380" />
+                            <path d="M16.6929 9.36731V17.8832L15.4141 18.4709L14.3682 18.9523V10.4358L16.6929 9.36731Z" fill="#FFF380" />
+                            <path d="M20.5 5.88745V8.45675L17.1091 10.0158L14.7837 11.0849L11 12.8244L7.00731 10.989L4.68186 9.91992L1.5 8.45675V5.88745L4.68186 7.34996L7.00731 8.41907L11 10.2545L14.7837 8.51494L17.1091 7.44649L20.5 5.88745Z" fill="#FF8A0E" />
+                            <path d="M20.5 5.88685L11 10.2545L1.5 5.88685L11 1.5L20.5 5.88685Z" fill="#FFB465" />
+                            <path d="M7.00807 8.41921V10.9892L4.68262 9.92006V7.3501L7.00807 8.41921Z" fill="#FFEA26" />
+                            <path d="M17.1087 7.44653V10.0158L14.7832 11.0849V8.51498L17.1087 7.44653Z" fill="#FFEA26" />
+                            <path d="M4.68262 7.35008L10.9287 4.85217L13.2303 5.91467L7.00807 8.41919L4.68262 7.35008Z" fill="#FFF8B5" />
+                            <path d="M17.3143 7.34996L11.5682 4.60205L9.2666 5.66455L14.9888 8.41907L17.3143 7.34996Z" fill="#FFF8B5" />
+                            <path d="M11.0001 5.36987C11.0001 5.36987 9.85292 6.38741 9.19687 8.68828L8.61316 7.88231L7.67285 8.67572C7.67285 8.67572 7.67285 6.62609 9.91512 5.36987H11.0001Z" fill="#B3610A" />
+                            <path d="M11.0723 5.36987C11.0723 5.36987 12.2194 6.38741 12.8755 8.68828L13.4592 7.88231L14.3995 8.67572C14.3995 8.67572 14.3995 6.62609 12.1572 5.36987H11.0723Z" fill="#B3610A" />
+                            <path d="M10.6383 4.7086V5.43588C8.46833 6.09705 6.94938 5.83258 6.37073 5.1053C6.21955 4.9162 6.08429 4.66827 5.9946 4.40314C5.74072 3.65007 5.86368 2.75683 7.09404 2.65897C8.75766 2.52674 10.6383 4.7086 10.6383 4.7086Z" fill="#B3610A" />
+                            <path d="M10.6407 5.43393V5.43591C8.4708 6.09708 6.95184 5.83261 6.37319 5.10533C6.22202 4.91623 6.08676 4.66829 5.99707 4.40317C6.17501 4.14399 6.49833 3.95688 7.02418 3.91522C8.1945 3.822 9.79519 4.82896 10.6407 5.43393Z" fill="#7B4001" />
+                            <path d="M11.3623 4.7086V5.43588C13.5322 6.09705 15.0512 5.83258 15.6299 5.1053C15.781 4.9162 15.9163 4.66827 16.006 4.40314C16.2599 3.65007 16.1369 2.75683 14.9065 2.65897C13.2429 2.52674 11.3623 4.7086 11.3623 4.7086Z" fill="#B3610A" />
+                            <path d="M11.3623 5.43393V5.43591C13.5322 6.09708 15.0512 5.83261 15.6299 5.10533C15.781 4.91623 15.9163 4.66829 16.006 4.40317C15.828 4.14399 15.5047 3.95688 14.9789 3.91522C13.8086 3.822 12.2079 4.82896 11.3623 5.43393Z" fill="#7B4001" />
+                            <path d="M10.5659 5.43589C10.5659 5.43589 10.2766 4.51025 10.9999 4.51025C11.7232 4.51025 11.4339 5.43589 11.4339 5.43589C11.4339 5.43589 11.0723 5.76647 10.5659 5.43589Z" fill="#FF8A0E" />
+                          </svg>
+                          <p className="my-0.5 sm:my-1 font-['Poppins'] text-xs sm:text-[13px] md:text-[14px] font-semibold leading-4 sm:leading-4.25 md:leading-4.5 text-[#1A1A1A]">
+                            {formatAmount(item.selectedAmount)}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <button onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }} className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-colors shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" className="sm:w-5 sm:h-5">
+                        <path d="M6.347 16.6667C5.97644 16.6667 5.6595 16.5347 5.39616 16.2709C5.13283 16.007 5.00089 15.6906 5.00033 15.3217V5.00002H4.58366C4.46533 5.00002 4.36644 4.96002 4.287 4.88002C4.20755 4.80002 4.16755 4.70086 4.167 4.58252C4.16644 4.46419 4.20644 4.3653 4.287 4.28586C4.36755 4.20641 4.46644 4.16669 4.58366 4.16669H7.50033C7.50033 3.99447 7.56422 3.84447 7.692 3.71669C7.81978 3.58891 7.96978 3.52502 8.142 3.52502H11.8587C12.0309 3.52502 12.1809 3.58891 12.3087 3.71669C12.4364 3.84447 12.5003 3.99447 12.5003 4.16669H15.417C15.5353 4.16669 15.6342 4.20669 15.7137 4.28669C15.7931 4.36669 15.8331 4.46586 15.8337 4.58419C15.8342 4.70252 15.7942 4.80141 15.7137 4.88086C15.6331 4.9603 15.5342 5.00002 15.417 5.00002H15.0003V15.3209C15.0003 15.6909 14.8684 16.0075 14.6045 16.2709C14.3406 16.5342 14.0239 16.6661 13.6545 16.6667H6.347ZM8.59033 14.1667C8.70866 14.1667 8.80783 14.1267 8.88783 14.0467C8.96783 13.9667 9.00755 13.8678 9.007 13.75V7.08336C9.007 6.96502 8.967 6.86614 8.887 6.78669C8.807 6.70725 8.70783 6.66725 8.5895 6.66669C8.47116 6.66614 8.37228 6.70614 8.29283 6.78669C8.21339 6.86725 8.17366 6.96614 8.17366 7.08336V13.75C8.17366 13.8684 8.21366 13.9672 8.29366 14.0467C8.37366 14.1267 8.47255 14.1667 8.59033 14.1667ZM11.4112 14.1667C11.5295 14.1667 11.6284 14.1267 11.7078 14.0467C11.7873 13.9667 11.827 13.8678 11.827 13.75V7.08336C11.827 6.96502 11.787 6.86614 11.707 6.78669C11.627 6.70669 11.5281 6.66669 11.4103 6.66669C11.292 6.66669 11.1928 6.70669 11.1128 6.78669C11.0328 6.86669 10.9931 6.96558 10.9937 7.08336V13.75C10.9937 13.8684 11.0337 13.9672 11.1137 14.0467C11.1937 14.1261 11.2928 14.1661 11.4112 14.1667Z" fill="black" />
+                      </svg>
+                    </button>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }} className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-colors shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" className="sm:w-5 sm:h-5">
-                      <path d="M6.347 16.6667C5.97644 16.6667 5.6595 16.5347 5.39616 16.2709C5.13283 16.007 5.00089 15.6906 5.00033 15.3217V5.00002H4.58366C4.46533 5.00002 4.36644 4.96002 4.287 4.88002C4.20755 4.80002 4.16755 4.70086 4.167 4.58252C4.16644 4.46419 4.20644 4.3653 4.287 4.28586C4.36755 4.20641 4.46644 4.16669 4.58366 4.16669H7.50033C7.50033 3.99447 7.56422 3.84447 7.692 3.71669C7.81978 3.58891 7.96978 3.52502 8.142 3.52502H11.8587C12.0309 3.52502 12.1809 3.58891 12.3087 3.71669C12.4364 3.84447 12.5003 3.99447 12.5003 4.16669H15.417C15.5353 4.16669 15.6342 4.20669 15.7137 4.28669C15.7931 4.36669 15.8331 4.46586 15.8337 4.58419C15.8342 4.70252 15.7942 4.80141 15.7137 4.88086C15.6331 4.9603 15.5342 5.00002 15.417 5.00002H15.0003V15.3209C15.0003 15.6909 14.8684 16.0075 14.6045 16.2709C14.3406 16.5342 14.0239 16.6661 13.6545 16.6667H6.347ZM8.59033 14.1667C8.70866 14.1667 8.80783 14.1267 8.88783 14.0467C8.96783 13.9667 9.00755 13.8678 9.007 13.75V7.08336C9.007 6.96502 8.967 6.86614 8.887 6.78669C8.807 6.70725 8.70783 6.66725 8.5895 6.66669C8.47116 6.66614 8.37228 6.70614 8.29283 6.78669C8.21339 6.86725 8.17366 6.96614 8.17366 7.08336V13.75C8.17366 13.8684 8.21366 13.9672 8.29366 14.0467C8.37366 14.1267 8.47255 14.1667 8.59033 14.1667ZM11.4112 14.1667C11.5295 14.1667 11.6284 14.1267 11.7078 14.0467C11.7873 13.9667 11.827 13.8678 11.827 13.75V7.08336C11.827 6.96502 11.787 6.86614 11.707 6.78669C11.627 6.70669 11.5281 6.66669 11.4103 6.66669C11.292 6.66669 11.1928 6.70669 11.1128 6.78669C11.0328 6.86669 10.9931 6.96558 10.9937 7.08336V13.75C10.9937 13.8684 11.0337 13.9672 11.1137 14.0467C11.1937 14.1261 11.2928 14.1661 11.4112 14.1667Z" fill="black" />
-                    </svg>
-                  </button>
-                </div>
                 );
               })}
 
@@ -370,64 +372,64 @@ const CartPage = () => {
                 const isWishlisted = wishlistKeySet.has(wishlistKey);
 
                 return (
-                <div key={index} onClick={() => handleEditItem(item, index, "bulk")} className="relative flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
-                 
-                  <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0 cursor-pointer">
-                    <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
-                      <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
+                  <div key={index} onClick={() => handleEditItem(item, index, "bulk")} className="relative flex justify-between items-start gap-3 sm:gap-4 md:gap-6 p-4 sm:p-5 md:p-6 rounded-[20px] border border-[rgba(26,26,26,0.10)] bg-white transition-all hover:shadow-lg hover:border-pink-200">
+
+                    <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-1 min-w-0 cursor-pointer">
+                      <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 border">
+                        <img src={item.selectedBrand?.logo} alt={item.selectedBrand?.brandName} className="w-full h-full object-contain p-2 sm:p-2.5 md:p-3 rounded-lg" />
+                      </div>
+                      <div className="flex flex-col gap-1 sm:gap-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-pink-500" />
+                          <span className="text-xs font-semibold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full">
+                            BULK ORDER
+                          </span>
+                        </div>
+                        <h3 className="font-['Poppins'] text-sm sm:text-[15px] md:text-[16px] font-semibold leading-4.5 sm:leading-5 md:leading-5.5 text-[#1A1A1A]">
+                          {item.selectedBrand?.brandName || item.selectedBrand?.name}
+                        </h3>
+                        <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                          <span>Quantity: <strong>{item.quantity}</strong></span>
+                          <span>•</span>
+                          <span>Amount: <strong>{formatAmount(item.selectedAmount)}</strong></span>
+                        </div>
+                        {item.companyInfo?.companyName && (
+                          <p className="text-xs text-gray-500 truncate">
+                            Company: {item.companyInfo.companyName}
+                          </p>
+                        )}
+                        <div className="flex w-fit p-1.5 sm:p-2 items-center justify-center gap-0.5 sm:gap-1 rounded-[50px] bg-[#F4F4F4] mt-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 22 22" fill="none" className="sm:w-5 sm:h-5 md:w-5.5 md:h-5.5">
+                            <path d="M10.9994 11.9834V20.4874L7.42409 18.8483L6.94887 18.6308L5.09936 17.7832L4.99592 17.7356L1.95801 16.3425V7.82666L5.09936 9.27065L7.42409 10.3398L10.9994 11.9834Z" fill="#ED457D" />
+                            <path d="M20.0414 7.82666V16.3425L17.3652 17.5729L16.691 17.883L15.4122 18.4708L14.3663 18.9521L11 20.4999V11.9834L14.3663 10.4356L16.691 9.36718L20.0414 7.82666Z" fill="#FF81AB" />
+                            <path d="M7.42434 10.3399V18.8484L6.94912 18.6309L5.09961 17.7833V9.27075L7.42434 10.3399Z" fill="#FFF380" />
+                            <path d="M16.6929 9.36731V17.8832L15.4141 18.4709L14.3682 18.9523V10.4358L16.6929 9.36731Z" fill="#FFF380" />
+                            <path d="M20.5 5.88745V8.45675L17.1091 10.0158L14.7837 11.0849L11 12.8244L7.00731 10.989L4.68186 9.91992L1.5 8.45675V5.88745L4.68186 7.34996L7.00731 8.41907L11 10.2545L14.7837 8.51494L17.1091 7.44649L20.5 5.88745Z" fill="#FF8A0E" />
+                            <path d="M20.5 5.88685L11 10.2545L1.5 5.88685L11 1.5L20.5 5.88685Z" fill="#FFB465" />
+                            <path d="M7.00807 8.41921V10.9892L4.68262 9.92006V7.3501L7.00807 8.41921Z" fill="#FFEA26" />
+                            <path d="M17.1087 7.44653V10.0158L14.7832 11.0849V8.51498L17.1087 7.44653Z" fill="#FFEA26" />
+                            <path d="M4.68262 7.35008L10.9287 4.85217L13.2303 5.91467L7.00807 8.41919L4.68262 7.35008Z" fill="#FFF8B5" />
+                            <path d="M17.3143 7.34996L11.5682 4.60205L9.2666 5.66455L14.9888 8.41907L17.3143 7.34996Z" fill="#FFF8B5" />
+                            <path d="M11.0001 5.36987C11.0001 5.36987 9.85292 6.38741 9.19687 8.68828L8.61316 7.88231L7.67285 8.67572C7.67285 8.67572 7.67285 6.62609 9.91512 5.36987H11.0001Z" fill="#B3610A" />
+                            <path d="M11.0723 5.36987C11.0723 5.36987 12.2194 6.38741 12.8755 8.68828L13.4592 7.88231L14.3995 8.67572C14.3995 8.67572 14.3995 6.62609 12.1572 5.36987H11.0723Z" fill="#B3610A" />
+                            <path d="M10.6383 4.7086V5.43588C8.46833 6.09705 6.94938 5.83258 6.37073 5.1053C6.21955 4.9162 6.08429 4.66827 5.9946 4.40314C5.74072 3.65007 5.86368 2.75683 7.09404 2.65897C8.75766 2.52674 10.6383 4.7086 10.6383 4.7086Z" fill="#B3610A" />
+                            <path d="M10.6407 5.43393V5.43591C8.4708 6.09708 6.95184 5.83261 6.37319 5.10533C6.22202 4.91623 6.08676 4.66829 5.99707 4.40317C6.17501 4.14399 6.49833 3.95688 7.02418 3.91522C8.1945 3.822 9.79519 4.82896 10.6407 5.43393Z" fill="#7B4001" />
+                            <path d="M11.3623 4.7086V5.43588C13.5322 6.09705 15.0512 5.83258 15.6299 5.1053C15.781 4.9162 15.9163 4.66827 16.006 4.40314C16.2599 3.65007 16.1369 2.75683 14.9065 2.65897C13.2429 2.52674 11.3623 4.7086 11.3623 4.7086Z" fill="#B3610A" />
+                            <path d="M11.3623 5.43393V5.43591C13.5322 6.09708 15.0512 5.83261 15.6299 5.10533C15.781 4.91623 15.9163 4.66829 16.006 4.40317C15.828 4.14399 15.5047 3.95688 14.9789 3.91522C13.8086 3.822 12.2079 4.82896 11.3623 5.43393Z" fill="#7B4001" />
+                            <path d="M10.5659 5.43589C10.5659 5.43589 10.2766 4.51025 10.9999 4.51025C11.7232 4.51025 11.4339 5.43589 11.4339 5.43589C11.4339 5.43589 11.0723 5.76647 10.5659 5.43589Z" fill="#FF8A0E" />
+                          </svg>
+                          <p className="my-0.5 sm:my-1 font-['Poppins'] text-xs sm:text-[13px] md:text-[14px] font-semibold leading-4 sm:leading-4.25 md:leading-4.5 text-[#1A1A1A]">
+                            Total: {formatAmount({ value: (item.selectedAmount.value * item.quantity), currency: item.selectedAmount.currency })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1 sm:gap-1.5 flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-pink-500" />
-                        <span className="text-xs font-semibold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full">
-                          BULK ORDER
-                        </span>
-                      </div>
-                      <h3 className="font-['Poppins'] text-sm sm:text-[15px] md:text-[16px] font-semibold leading-4.5 sm:leading-5 md:leading-5.5 text-[#1A1A1A]">
-                        {item.selectedBrand?.brandName || item.selectedBrand?.name}
-                      </h3>
-                      <div className="flex flex-wrap gap-2 text-xs text-gray-600">
-                        <span>Quantity: <strong>{item.quantity}</strong></span>
-                        <span>•</span>
-                        <span>Amount: <strong>{formatAmount(item.selectedAmount)}</strong></span>
-                      </div>
-                      {item.companyInfo?.companyName && (
-                        <p className="text-xs text-gray-500 truncate">
-                          Company: {item.companyInfo.companyName}
-                        </p>
-                      )}
-                      <div className="flex w-fit p-1.5 sm:p-2 items-center justify-center gap-0.5 sm:gap-1 rounded-[50px] bg-[#F4F4F4] mt-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 22 22" fill="none" className="sm:w-5 sm:h-5 md:w-5.5 md:h-5.5">
-                          <path d="M10.9994 11.9834V20.4874L7.42409 18.8483L6.94887 18.6308L5.09936 17.7832L4.99592 17.7356L1.95801 16.3425V7.82666L5.09936 9.27065L7.42409 10.3398L10.9994 11.9834Z" fill="#ED457D" />
-                          <path d="M20.0414 7.82666V16.3425L17.3652 17.5729L16.691 17.883L15.4122 18.4708L14.3663 18.9521L11 20.4999V11.9834L14.3663 10.4356L16.691 9.36718L20.0414 7.82666Z" fill="#FF81AB" />
-                          <path d="M7.42434 10.3399V18.8484L6.94912 18.6309L5.09961 17.7833V9.27075L7.42434 10.3399Z" fill="#FFF380" />
-                          <path d="M16.6929 9.36731V17.8832L15.4141 18.4709L14.3682 18.9523V10.4358L16.6929 9.36731Z" fill="#FFF380" />
-                          <path d="M20.5 5.88745V8.45675L17.1091 10.0158L14.7837 11.0849L11 12.8244L7.00731 10.989L4.68186 9.91992L1.5 8.45675V5.88745L4.68186 7.34996L7.00731 8.41907L11 10.2545L14.7837 8.51494L17.1091 7.44649L20.5 5.88745Z" fill="#FF8A0E" />
-                          <path d="M20.5 5.88685L11 10.2545L1.5 5.88685L11 1.5L20.5 5.88685Z" fill="#FFB465" />
-                          <path d="M7.00807 8.41921V10.9892L4.68262 9.92006V7.3501L7.00807 8.41921Z" fill="#FFEA26" />
-                          <path d="M17.1087 7.44653V10.0158L14.7832 11.0849V8.51498L17.1087 7.44653Z" fill="#FFEA26" />
-                          <path d="M4.68262 7.35008L10.9287 4.85217L13.2303 5.91467L7.00807 8.41919L4.68262 7.35008Z" fill="#FFF8B5" />
-                          <path d="M17.3143 7.34996L11.5682 4.60205L9.2666 5.66455L14.9888 8.41907L17.3143 7.34996Z" fill="#FFF8B5" />
-                          <path d="M11.0001 5.36987C11.0001 5.36987 9.85292 6.38741 9.19687 8.68828L8.61316 7.88231L7.67285 8.67572C7.67285 8.67572 7.67285 6.62609 9.91512 5.36987H11.0001Z" fill="#B3610A" />
-                          <path d="M11.0723 5.36987C11.0723 5.36987 12.2194 6.38741 12.8755 8.68828L13.4592 7.88231L14.3995 8.67572C14.3995 8.67572 14.3995 6.62609 12.1572 5.36987H11.0723Z" fill="#B3610A" />
-                          <path d="M10.6383 4.7086V5.43588C8.46833 6.09705 6.94938 5.83258 6.37073 5.1053C6.21955 4.9162 6.08429 4.66827 5.9946 4.40314C5.74072 3.65007 5.86368 2.75683 7.09404 2.65897C8.75766 2.52674 10.6383 4.7086 10.6383 4.7086Z" fill="#B3610A" />
-                          <path d="M10.6407 5.43393V5.43591C8.4708 6.09708 6.95184 5.83261 6.37319 5.10533C6.22202 4.91623 6.08676 4.66829 5.99707 4.40317C6.17501 4.14399 6.49833 3.95688 7.02418 3.91522C8.1945 3.822 9.79519 4.82896 10.6407 5.43393Z" fill="#7B4001" />
-                          <path d="M11.3623 4.7086V5.43588C13.5322 6.09705 15.0512 5.83258 15.6299 5.1053C15.781 4.9162 15.9163 4.66827 16.006 4.40314C16.2599 3.65007 16.1369 2.75683 14.9065 2.65897C13.2429 2.52674 11.3623 4.7086 11.3623 4.7086Z" fill="#B3610A" />
-                          <path d="M11.3623 5.43393V5.43591C13.5322 6.09708 15.0512 5.83261 15.6299 5.10533C15.781 4.91623 15.9163 4.66829 16.006 4.40317C15.828 4.14399 15.5047 3.95688 14.9789 3.91522C13.8086 3.822 12.2079 4.82896 11.3623 5.43393Z" fill="#7B4001" />
-                          <path d="M10.5659 5.43589C10.5659 5.43589 10.2766 4.51025 10.9999 4.51025C11.7232 4.51025 11.4339 5.43589 11.4339 5.43589C11.4339 5.43589 11.0723 5.76647 10.5659 5.43589Z" fill="#FF8A0E" />
-                        </svg>
-                        <p className="my-0.5 sm:my-1 font-['Poppins'] text-xs sm:text-[13px] md:text-[14px] font-semibold leading-4 sm:leading-4.25 md:leading-4.5 text-[#1A1A1A]">
-                          Total: {formatAmount({ value: (item.selectedAmount.value * item.quantity), currency: item.selectedAmount.currency })}
-                        </p>
-                      </div>
-                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); handleRemoveBulkItem(index); }} className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-colors shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" className="sm:w-5 sm:h-5">
+                        <path d="M6.347 16.6667C5.97644 16.6667 5.6595 16.5347 5.39616 16.2709C5.13283 16.007 5.00089 15.6906 5.00033 15.3217V5.00002H4.58366C4.46533 5.00002 4.36644 4.96002 4.287 4.88002C4.20755 4.80002 4.16755 4.70086 4.167 4.58252C4.16644 4.46419 4.20644 4.3653 4.287 4.28586C4.36755 4.20641 4.46644 4.16669 4.58366 4.16669H7.50033C7.50033 3.99447 7.56422 3.84447 7.692 3.71669C7.81978 3.58891 7.96978 3.52502 8.142 3.52502H11.8587C12.0309 3.52502 12.1809 3.58891 12.3087 3.71669C12.4364 3.84447 12.5003 3.99447 12.5003 4.16669H15.417C15.5353 4.16669 15.6342 4.20669 15.7137 4.28669C15.7931 4.36669 15.8331 4.46586 15.8337 4.58419C15.8342 4.70252 15.7942 4.80141 15.7137 4.88086C15.6331 4.9603 15.5342 5.00002 15.417 5.00002H15.0003V15.3209C15.0003 15.6909 14.8684 16.0075 14.6045 16.2709C14.3406 16.5342 14.0239 16.6661 13.6545 16.6667H6.347ZM8.59033 14.1667C8.70866 14.1667 8.80783 14.1267 8.88783 14.0467C8.96783 13.9667 9.00755 13.8678 9.007 13.75V7.08336C9.007 6.96502 8.967 6.86614 8.887 6.78669C8.807 6.70725 8.70783 6.66725 8.5895 6.66669C8.47116 6.66614 8.37228 6.70614 8.29283 6.78669C8.21339 6.86725 8.17366 6.96614 8.17366 7.08336V13.75C8.17366 13.8684 8.21366 13.9672 8.29366 14.0467C8.37366 14.1267 8.47255 14.1667 8.59033 14.1667ZM11.4112 14.1667C11.5295 14.1667 11.6284 14.1267 11.7078 14.0467C11.7873 13.9667 11.827 13.8678 11.827 13.75V7.08336C11.827 6.96502 11.787 6.86614 11.707 6.78669C11.627 6.70669 11.5281 6.66669 11.4103 6.66669C11.292 6.66669 11.1928 6.70669 11.1128 6.78669C11.0328 6.86669 10.9931 6.96558 10.9937 7.08336V13.75C10.9937 13.8684 11.0337 13.9672 11.1137 14.0467C11.1937 14.1261 11.2928 14.1661 11.4112 14.1667Z" fill="black" />
+                      </svg>
+                    </button>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); handleRemoveBulkItem(index); }} className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-colors shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" className="sm:w-5 sm:h-5">
-                      <path d="M6.347 16.6667C5.97644 16.6667 5.6595 16.5347 5.39616 16.2709C5.13283 16.007 5.00089 15.6906 5.00033 15.3217V5.00002H4.58366C4.46533 5.00002 4.36644 4.96002 4.287 4.88002C4.20755 4.80002 4.16755 4.70086 4.167 4.58252C4.16644 4.46419 4.20644 4.3653 4.287 4.28586C4.36755 4.20641 4.46644 4.16669 4.58366 4.16669H7.50033C7.50033 3.99447 7.56422 3.84447 7.692 3.71669C7.81978 3.58891 7.96978 3.52502 8.142 3.52502H11.8587C12.0309 3.52502 12.1809 3.58891 12.3087 3.71669C12.4364 3.84447 12.5003 3.99447 12.5003 4.16669H15.417C15.5353 4.16669 15.6342 4.20669 15.7137 4.28669C15.7931 4.36669 15.8331 4.46586 15.8337 4.58419C15.8342 4.70252 15.7942 4.80141 15.7137 4.88086C15.6331 4.9603 15.5342 5.00002 15.417 5.00002H15.0003V15.3209C15.0003 15.6909 14.8684 16.0075 14.6045 16.2709C14.3406 16.5342 14.0239 16.6661 13.6545 16.6667H6.347ZM8.59033 14.1667C8.70866 14.1667 8.80783 14.1267 8.88783 14.0467C8.96783 13.9667 9.00755 13.8678 9.007 13.75V7.08336C9.007 6.96502 8.967 6.86614 8.887 6.78669C8.807 6.70725 8.70783 6.66725 8.5895 6.66669C8.47116 6.66614 8.37228 6.70614 8.29283 6.78669C8.21339 6.86725 8.17366 6.96614 8.17366 7.08336V13.75C8.17366 13.8684 8.21366 13.9672 8.29366 14.0467C8.37366 14.1267 8.47255 14.1667 8.59033 14.1667ZM11.4112 14.1667C11.5295 14.1667 11.6284 14.1267 11.7078 14.0467C11.7873 13.9667 11.827 13.8678 11.827 13.75V7.08336C11.827 6.96502 11.787 6.86614 11.707 6.78669C11.627 6.70669 11.5281 6.66669 11.4103 6.66669C11.292 6.66669 11.1928 6.70669 11.1128 6.78669C11.0328 6.86669 10.9931 6.96558 10.9937 7.08336V13.75C10.9937 13.8684 11.0337 13.9672 11.1137 14.0467C11.1937 14.1261 11.2928 14.1661 11.4112 14.1667Z" fill="black" />
-                    </svg>
-                  </button>
-                </div>
                 );
               })}
 
@@ -479,13 +481,22 @@ const CartPage = () => {
                     {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedTotal().toFixed(2)}
                   </span>
                 </div>
-                <Button onClick={handleProceedToPayment}  className={`group w-full mt-10 bg-gradient-to-r from-pink-500 to-orange-500 
-                       hover:from-pink-600 hover:to-orange-600
-                       disabled:from-gray-300 disabled:to-gray-400
-                       text-white py-3 sm:py-4 px-6 rounded-xl
-                       font-semibold text-sm sm:text-base
-                       transition-all duration-200
-                       flex items-center justify-center gap-2 cursor-pointer`}>
+                <div className='w-full items-center flex justify-center'>
+                <Button
+                  onClick={handleProceedToPayment}
+                  className="group w-full sm:w-auto max-w-fit mt-10 mx-auto
+  bg-gradient-to-r from-pink-500 to-orange-500
+  hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500
+  disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed
+  text-white
+  px-6 md:px-8 py-3 md:py-4
+  rounded-full
+  font-semibold text-sm md:text-base
+  transition-all duration-300
+  shadow-md hover:shadow-xl hover:scale-105
+  flex items-center justify-center gap-2
+  whitespace-nowrap"
+                >
                   Proceed to Payment
                   <span
                     className={"transition-transform duration-300 group-hover:translate-x-1"}
@@ -504,6 +515,7 @@ const CartPage = () => {
                     </svg>
                   </span>
                 </Button>
+                </div>
               </div>
             </div>
           </div>

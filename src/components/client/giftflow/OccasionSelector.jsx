@@ -198,7 +198,7 @@ export default function OccasionSelector() {
             return (
               <div
                 key={`${occasion.id}-${index}`}
-                className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group 
+                className={`occasion-selector-card bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group 
         flex flex-col h-full
         ${selectedOccasion === occasion.id
                     ? 'border-2 border-blue-500'
@@ -212,7 +212,7 @@ export default function OccasionSelector() {
                     <img
                       src={occasion.image}
                       alt={occasion.name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="occasion-selector-image w-full h-full object-cover"
                       onError={(e) => {
                         e.target.src =
                           "https://via.placeholder.com/400x300?text=" +
@@ -236,17 +236,21 @@ export default function OccasionSelector() {
 
                   {/* CTA Button */}
                   <button
-                    className="group mt-auto w-full py-3.5 px-4 
-  bg-linear-to-r from-pink-500 to-orange-400 
-  text-white font-semibold text-sm rounded-full 
-  transition-all duration-200 
-  hover:shadow-xl hover:from-pink-600 hover:to-orange-500 
-  flex items-center justify-center gap-2 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOccasionSelect(occasion);
-                    }}
-                  >
+  className="group mt-auto w-full sm:w-auto max-w-fit
+  bg-gradient-to-r from-pink-500 to-orange-400
+  hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500
+  text-white font-semibold text-sm md:text-base
+  px-6 py-3 md:px-8 md:py-4
+  rounded-full
+  transition-all duration-300
+  shadow-md hover:shadow-xl hover:scale-105
+  flex items-center justify-center gap-2
+  cursor-pointer whitespace-nowrap"
+  onClick={(e) => {
+    e.stopPropagation();
+    handleOccasionSelect(occasion);
+  }}
+>
                     Choose this Occasion
 
                     <span className="mt-1 transition-transform duration-300 group-hover:translate-x-1">

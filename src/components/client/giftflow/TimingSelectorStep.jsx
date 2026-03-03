@@ -192,7 +192,7 @@ const TimingSelectorStep = () => {
 
             className={`relative p-8 border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${selectedOption === 'immediate'
               ? 'border-blue-400 bg-blue-50 shadow-lg rounded-[20px] '
-              : 'border-[#1A1A1A33] rounded-[20px] bg-[#E9F3FF] hover:border-blue-300'
+              : 'border-[#1A1A1A33] rounded-[20px] bg-[#E9F3FF] hover:border-blue-500 border-2'
               }`}
           >
             <div className="p-[12.5px] w-16 h-16 bg-[#206CC2] rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -212,7 +212,7 @@ const TimingSelectorStep = () => {
             onClick={() => handleTimingSelect('schedule')}
             className={`relative p-8 rounded-3xl border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${selectedOption === 'schedule'
               ? 'border-purple-400 bg-purple-50 shadow-lg'
-              : 'border-[#1A1A1A33] rounded-[20px] bg-[#FAF6FF] hover:border-purple-300'
+              : 'border-[#1A1A1A33] rounded-[20px] bg-[#FAF6FF] hover:border-blue-500 border-2'
               }`}
           >
             <div className="w-16 h-16 p-3 bg-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">

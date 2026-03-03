@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Gift,
   User,
   ShoppingBasket,
   Heart,
@@ -31,14 +30,17 @@ const desktopNavLinks = {
 };
 
 // All navigation links for mobile (includes all items)
-const mobileNavLinks = {
+const mobilePublicNavLinks = {
   Home: '/',
   About: '/about',
   FAQs: '/faq',
   'Send Gift Card': '/gift',
+};
+
+const mobileMemberNavLinks = {
   'Vouchers & Gift Cards': '/my-gift',
-  'Support & Requests' : '/support',
-  'Track Request Status': '/track-request'
+  'Support & Requests': '/support',
+  'Track Request Status': '/track-request',
 };
 
 const Header = () => {
@@ -60,6 +62,9 @@ const Header = () => {
   // ✅ Calculate combined cart count
   const cartCount = cartItems.length + bulkItems.length;
   const wishlistCount = wishlistItems.length;
+  const mobileNavLinks = session
+    ? { ...mobilePublicNavLinks, ...mobileMemberNavLinks }
+    : mobilePublicNavLinks;
 
   // ✅ Initialize cart from localStorage on mount
   useEffect(() => {
@@ -75,6 +80,32 @@ const Header = () => {
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const isMobileViewport = window.matchMedia('(max-width: 1023px)').matches;
+    if (!mobileMenuOpen || !isMobileViewport) return;
+
+    const scrollY = window.scrollY;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalBodyPosition = document.body.style.position;
+    const originalBodyTop = document.body.style.top;
+    const originalBodyWidth = document.body.style.width;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.body.style.position = originalBodyPosition;
+      document.body.style.top = originalBodyTop;
+      document.body.style.width = originalBodyWidth;
+      window.scrollTo(0, scrollY);
+    };
+  }, [mobileMenuOpen, mounted]);
 
   const handleLogout = async () => {
     try {
@@ -159,10 +190,10 @@ const Header = () => {
             {/* Mobile/Tablet Menu Toggle (hidden on desktop) */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="lg:hidden p-2 text-[#000000] hover:text-[#000000] hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {mobileMenuOpen ? <X size={24} color="#000000" /> : <Menu size={24} color="#000000" />}
             </button>
 
             {/* Desktop Navigation (hidden on mobile/tablet) - Using desktopNavLinks */}
@@ -331,7 +362,7 @@ const Header = () => {
                     setWishlistOpen((prev) => !prev);
                     setOpenDropdown(false);
                   }}
-                  className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 rounded-full border border-[#ED457D]/50 bg-white hover:bg-[#ED457D]/10 transition-all duration-200 cursor-pointer"
+                  className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 rounded-full border border-[#ED457D]/50 bg-transparent hover:bg-[#ED457D]/10 transition-all duration-200 cursor-pointer"
                   aria-label="Wishlist"
                   aria-expanded={wishlistOpen}
                 >
@@ -405,7 +436,7 @@ const Header = () => {
               <Link
                 href="/cart"
                 className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 
-      rounded-full border border-[#ED457D]/50 bg-white 
+      rounded-full border border-[#ED457D]/50 bg-transparent
       hover:bg-[#ED457D]/10 transition-all duration-200"
                 aria-label="Shopping cart"
               >
@@ -434,19 +465,26 @@ const Header = () => {
           <div className="fixed inset-0 bg-white z-9999 lg:hidden overflow-y-auto">
             {/* Header Row */}
             <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] rounded-xl flex items-center justify-center">
-                  <Gift size={18} className="sm:w-5 sm:h-5" color="white" strokeWidth={2.5} />
-                </div>
-                <span className="logo-text text-base sm:text-lg">Wove Gifts</span>
+              <div className="logo-container">
+                <Link
+                  href="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center cursor-pointer h-8 sm:h-9 lg:h-10"
+                >
+                  <img
+                    src="/wovelogo.png"
+                    alt="Wove Gift"
+                    className="h-full w-auto max-w-[120px] sm:max-w-[150px] object-contain"
+                  />
+                </Link>
               </div>
 
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 text-[#000000] hover:text-[#000000] rounded-lg hover:bg-gray-100 transition-colors"
                 aria-label="Close menu"
               >
-                <X size={22} className="sm:w-6 sm:h-6" />
+                <X size={22} color="#000000" className="sm:w-6 sm:h-6" />
               </button>
             </div>
 

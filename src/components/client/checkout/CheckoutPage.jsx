@@ -36,6 +36,7 @@ const CheckoutPage = () => {
   const {
     isPaymentConfirmed,
   } = useSelector((state) => state.giftFlowReducer);
+  const requiresLoginForBulkCheckout = bulkItems.length > 0;
 
   // State
   const [isProcessing, setIsProcessing] = useState(false);
@@ -135,6 +136,13 @@ const CheckoutPage = () => {
   };
 
   const openGuestModal = () => {
+    if (requiresLoginForBulkCheckout) {
+      toast.error("Bulk orders require login before payment.");
+      setShowAuthModal(true);
+      setShowGuestModal(false);
+      return;
+    }
+
     const firstRegularDeliveryDetails = cartItems[0]?.deliveryDetails || {};
     const firstBulkCompanyInfo = bulkItems[0]?.companyInfo || {};
 
@@ -173,6 +181,14 @@ const CheckoutPage = () => {
 
   const handleGuestCheckoutSubmit = async (event) => {
     event.preventDefault();
+
+    if (requiresLoginForBulkCheckout) {
+      toast.error("Bulk orders require login before payment.");
+      setShowGuestModal(false);
+      setShowAuthModal(true);
+      return;
+    }
+
     const fullName = guestFormData.fullName.trim();
     const email = guestFormData.email.trim().toLowerCase();
 
@@ -201,6 +217,13 @@ const CheckoutPage = () => {
     const resolvedGuestCheckout = resolvedUserId
       ? null
       : (guestCheckoutOverride || guestCheckout);
+
+    if (requiresLoginForBulkCheckout && !resolvedUserId) {
+      toast.error("Please login first to process bulk orders.");
+      setShowGuestModal(false);
+      setShowAuthModal(true);
+      return null;
+    }
 
     if (!resolvedUserId && !resolvedGuestCheckout?.email) {
       setShowAuthModal(true);
@@ -310,7 +333,16 @@ const CheckoutPage = () => {
   };
 
   const handlePaymentButtonClick = async () => {
-    const hasIdentity = checkoutUserId || session?.user?.id || guestCheckout?.email;
+    const resolvedUserId = checkoutUserId || session?.user?.id || null;
+
+    if (requiresLoginForBulkCheckout && !resolvedUserId) {
+      toast.error("Please login first to process bulk orders.");
+      setShowGuestModal(false);
+      setShowAuthModal(true);
+      return;
+    }
+
+    const hasIdentity = resolvedUserId || guestCheckout?.email;
     if (!hasIdentity) {
       setShowAuthModal(true);
       return;
@@ -609,6 +641,14 @@ const CheckoutPage = () => {
               isBulkMode={bulkItems.length > 0}
             />
 
+            {requiresLoginForBulkCheckout && !checkoutUserId && !session?.user?.id && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm text-amber-800">
+                  Bulk orders require account login before payment. Guest checkout is only available for single orders.
+                </p>
+              </div>
+            )}
+
             {/* ✅ STRIPE CARD PAYMENT COMMENTED OUT */}
             {/* {selectedPaymentTab === 'card' && clientSecret && (
               <Elements
@@ -813,8 +853,8 @@ const CheckoutPage = () => {
             mode="modal"
             onClose={closeIdentityModals}
             onAuthSuccess={handleAuthSuccess}
-            showGuestOption
-            onPayAsGuest={openGuestModal}
+            showGuestOption={!requiresLoginForBulkCheckout}
+            onPayAsGuest={!requiresLoginForBulkCheckout ? openGuestModal : undefined}
             initialEmail={
               guestCheckout?.email ||
               cartItems[0]?.deliveryDetails?.yourEmailAddress ||
@@ -825,7 +865,7 @@ const CheckoutPage = () => {
         </div>
       )}
 
-      {showGuestModal && (
+      {showGuestModal && !requiresLoginForBulkCheckout && (
         <div className="fixed inset-0 z-[80] bg-black/60 p-4 flex items-center justify-center">
           <div className="w-full max-w-md bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative">
             <button
@@ -874,16 +914,19 @@ const CheckoutPage = () => {
                 <p className="text-red-600 text-sm">{guestFormError}</p>
               )}
 
-              <button
-                type="submit"
-                className="group w-full py-3.5 
-  bg-linear-to-r from-pink-500 to-orange-500 
-  text-white rounded-xl font-semibold 
-  shadow-lg hover:shadow-xl 
-  hover:from-pink-600 hover:to-orange-600 
-  focus:outline-none focus:ring-2 focus:ring-pink-500 
-  transition-all flex items-center justify-center gap-2"
-              >
+<button
+  type="submit"
+  className="group w-full sm:w-auto max-w-fit
+  px-6 md:px-8 py-3 md:py-4
+  bg-gradient-to-r from-pink-500 to-orange-500
+  hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500
+  text-white font-semibold text-sm md:text-base
+  rounded-full
+  shadow-md hover:shadow-xl hover:scale-105
+  focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2
+  transition-all duration-300
+  flex items-center justify-center gap-2 whitespace-nowrap"
+>
                 Continue to Payment
 
                 <span className="transition-transform duration-300 group-hover:translate-x-2">

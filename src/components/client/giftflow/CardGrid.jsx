@@ -14,7 +14,7 @@ const CardGrid = ({
   // 1️⃣ SHOW SKELETON FIRST - Only show when actually loading
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 p-6">
         {Array.from({ length: 12 }).map((_, index) => (
           <div
             key={`skeleton-${index}`}
@@ -52,7 +52,7 @@ const CardGrid = ({
 
   // 3️⃣ SHOW DATA
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:p-10 mt-10">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 md:p-10 mt-10">
       {brands.map((brand) => (
         <BrandCard
           key={brand.id}
