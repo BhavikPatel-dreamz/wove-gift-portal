@@ -287,6 +287,22 @@ h6,
   margin: auto;
 }
 
+@media (max-width: 1024px) {
+  .hero-effect .emoji-float {
+    padding: 6px !important;
+    border-radius: 18px !important;
+  }
+
+  .hero-effect .emoji-float > div {
+    display: flex !important;
+  }
+
+  .hero-effect .emoji-float > div > svg {
+    width: 50px !important;
+    height: 50px !important;
+  }
+}
+
 @media (max-width: 640px) {
   .hero-effect .emoji-float {
     padding: 4px !important;

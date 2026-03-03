@@ -33,48 +33,48 @@ const HeroSection = () => {
 
       {/* Decorative Emoji Icons matching the design */}
       <div className="hero-effect">
-        {/* Mobile decorative icons (4) */}
+        {/* Tablet + Mobile decorative icons */}
         <div
-          className="emoji-float animate-float-1 sm:hidden"
-          style={{ top: '13%', left: '3%', transform: 'rotate(-18deg)' }}
+          className="emoji-float animate-float-1 lg:hidden"
+          style={{ top: '14%', left: '3%', transform: 'rotate(-18deg)' }}
         >
           <DashboardWishlistIcon />
         </div>
         <div
-          className="emoji-float animate-float-2 sm:hidden"
-          style={{ top: '13%', right: '4%', transform: 'rotate(16deg)' }}
+          className="emoji-float animate-float-2 lg:hidden"
+          style={{ top: '14%', right: '4%', transform: 'rotate(14deg)' }}
         >
           <DashboardRingIcon />
         </div>
         <div
-          className="emoji-float animate-float-3 sm:hidden"
-          style={{ bottom: '18%', left: '4%', transform: 'rotate(-16deg)' }}
+          className="emoji-float animate-float-3 lg:hidden"
+          style={{ bottom: '16%', left: '10%', transform: 'rotate(-16deg)' }}
         >
           <DashboardGiftIcon />
         </div>
         <div
-          className="emoji-float animate-float-4 sm:hidden"
-          style={{ bottom: '18%', right: '4%', transform: 'rotate(14deg)' }}
+          className="emoji-float animate-float-4 lg:hidden"
+          style={{ bottom: '16%', right: '7%', transform: 'rotate(15deg)' }}
         >
-          <DashboardConfettiBall />
-        </div>
-
-        <div className="emoji-float animate-float-1 rotate-[-21.48deg] hidden sm:block" style={{ top: '20%', left: '12%', fontSize: '3.5rem', rotate: '21.48 deg' }}>
-          <DashboardWishlistIcon />
-        </div>
-        <div className="emoji-float animate-float-2 rotate-[19.52deg] hidden sm:block" style={{ top: '45%', left: '6%', fontSize: '3.5rem' }}>
-          <DashboardRingIcon />
-        </div>
-        <div className="emoji-float animate-float-3 rotate-[-19.52deg] hidden sm:block" style={{ top: '20%', right: '25%', fontSize: '3.5rem' }}>
-          <DashboardPartyPopper />
-        </div>
-        <div className="emoji-float animate-float-4 rotate-[-19.52deg] hidden sm:block" style={{ top: '45%', right: '15%', fontSize: '3.5rem' }}>
-          <DashboardConfettiBall />
-        </div>
-        <div className="emoji-float animate-float-5 rotate-[19.52deg] hidden sm:block" style={{ bottom: '15%', left: '20%', fontSize: '3.5rem' }}>
           <DashboardEmojiIcon />
         </div>
-        <div className="emoji-float animate-float-6 rotate-[-26.31deg] hidden sm:block" style={{ bottom: '15%', right: '25%', fontSize: '3.5rem' }}>
+
+        <div className="emoji-float animate-float-1 rotate-[-21.48deg] hidden lg:block" style={{ top: '20%', left: '12%', fontSize: '3.5rem', rotate: '21.48 deg' }}>
+          <DashboardWishlistIcon />
+        </div>
+        <div className="emoji-float animate-float-2 rotate-[19.52deg] hidden lg:block" style={{ top: '45%', left: '6%', fontSize: '3.5rem' }}>
+          <DashboardRingIcon />
+        </div>
+        <div className="emoji-float animate-float-3 rotate-[-19.52deg] hidden lg:block" style={{ top: '20%', right: '25%', fontSize: '3.5rem' }}>
+          <DashboardPartyPopper />
+        </div>
+        <div className="emoji-float animate-float-4 rotate-[-19.52deg] hidden lg:block" style={{ top: '45%', right: '15%', fontSize: '3.5rem' }}>
+          <DashboardConfettiBall />
+        </div>
+        <div className="emoji-float animate-float-5 rotate-[19.52deg] hidden lg:block" style={{ bottom: '15%', left: '20%', fontSize: '3.5rem' }}>
+          <DashboardEmojiIcon />
+        </div>
+        <div className="emoji-float animate-float-6 rotate-[-26.31deg] hidden lg:block" style={{ bottom: '15%', right: '25%', fontSize: '3.5rem' }}>
           <DashboardGiftIcon />
         </div>
 
