@@ -257,69 +257,69 @@ const GiftCardSelector = () => {
         {/* Custom Amount Input */}
         {denominationType !== 'fixed' && (
           <div className="max-w-4xl mx-auto mt-8 px-4 sm:px-0">
-            <div className="bg-white rounded-2xl p-5 sm:p-6 border-2 border-gray-200 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="rounded-2xl p-[2px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42] shadow-sm">
+              <div className="bg-white rounded-[14px] p-5 sm:p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
 
-                {/* Left side - Text */}
-                <div className="shrink-0">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    Set Custom Amount
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Choose your own amount (max {formatAmount(maxAmount)})
-                  </p>
-                </div>
-
-                {/* Right side - Input and Button */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
-
-                  {/* Input */}
-                  <div className="relative w-full sm:w-72">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-base font-medium">
-                      {getCurrencySymbol(currency)}
-                    </div>
-                    <input
-                      type="text"
-                      value={customAmount}
-                      onChange={(e) => setCustomAmount(e.target.value)}
-                      className="w-full pl-8 pr-4 py-3 border border-[#1A1A1A33] rounded-3xl text-base font-medium transition-all bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400"
-                      placeholder="Enter Your Amount"
-                    />
+                  {/* Left side - Text */}
+                  <div className="shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      Set Custom Amount
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Choose your own amount (max {formatAmount(maxAmount)})
+                    </p>
                   </div>
 
-                  {/* Button */}
-                  <button
-                    onClick={handleCustomAmountSelect}
-                    className="group cursor-pointer w-full sm:w-auto max-w-fit
-  bg-gradient-to-r from-pink-500 to-orange-400
-  hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500
+                  {/* Right side - Input and Button */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+
+                    {/* Input */}
+                    <div className="relative w-full sm:w-72">
+                      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-base font-medium">
+                        {getCurrencySymbol(currency)}
+                      </div>
+                      <input
+                        type="text"
+                        value={customAmount}
+                        onChange={(e) => setCustomAmount(e.target.value)}
+                        className="w-full pl-8 pr-4 py-2.5 rounded-3xl border border-[#1A1A1A33] text-base font-medium transition-all bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ED457D]/20"
+                        placeholder="Enter Your Amount"
+                      />
+                    </div>
+
+                    {/* Button */}
+                    <button
+                      onClick={handleCustomAmountSelect}
+                      className="group cursor-pointer w-full sm:w-auto
+  bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
   text-white font-semibold text-sm md:text-base
-  px-6 py-3 md:px-8 md:py-4
+  px-5 py-2.5 md:px-6 md:py-3
   rounded-full
   transition-all duration-300
-  shadow-md hover:shadow-lg hover:scale-105
+  shadow-sm hover:shadow-md
   flex items-center justify-center gap-2
-  whitespace-nowrap mb-4 md:mb-6 mx-auto md:mx-0"
-                  >
-                    Select
+  whitespace-nowrap mx-auto md:mx-0"
+                    >
+                      Select
 
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">
-                      <svg
-                        width="8"
-                        height="9"
-                        viewBox="0 0 8 9"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-                          fill="white"
-                        />
-                      </svg>
-                    </span>
-                  </button>
+                      <span className="transition-transform duration-300 group-hover:translate-x-1">
+                        <svg
+                          width="8"
+                          height="9"
+                          viewBox="0 0 8 9"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
+                            fill="white"
+                          />
+                        </svg>
+                      </span>
+                    </button>
+                  </div>
                 </div>
-
               </div>
             </div>
           </div>
