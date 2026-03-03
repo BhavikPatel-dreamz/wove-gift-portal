@@ -921,6 +921,20 @@ h6,
   line-height: 1.5 !important;
 }
 
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .occasion-card-image {
+    height: 300px !important;
+  }
+
+  .occasion-card-title {
+    font-size: 20px !important;
+  }
+
+  .occasion-card-description {
+    font-size: 15px !important;
+  }
+}
+
 .occasion-card-button {
   background: linear-gradient(
     114.06deg,

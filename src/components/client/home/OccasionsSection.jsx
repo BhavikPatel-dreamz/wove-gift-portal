@@ -112,7 +112,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
         <div className="hidden lg:block relative">
           <div
             ref={desktopSliderRef}
-            className={`flex gap-6 overflow-x-auto py-4 select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            className={`flex gap-6 overflow-x-auto overflow-y-hidden py-4 select-none scrollbar-hide ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             style={{
               scrollBehavior: 'smooth',
               scrollbarWidth: 'none',
@@ -126,8 +126,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
             {occasions.map((occasion) => (
               <div
                 key={occasion.id}
-                className="occasion-card cursor-pointer shrink-0 transition-transform duration-300"
-                style={{ width: 'calc(25% - 1.125rem)' }}
+                className="occasion-card cursor-pointer shrink-0 transition-transform duration-300 lg:w-[calc(33.33%-1rem)] xl:w-[calc(25%-1.125rem)]"
                 onClick={(e) => {
                   if (hasDragged || isDragging) {
                     e.preventDefault();
@@ -163,7 +162,7 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
         <div className="lg:hidden relative">
           <div
             ref={sliderRef}
-            className={`flex gap-6 overflow-x-auto select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            className={`flex gap-6 overflow-x-auto overflow-y-hidden select-none scrollbar-hide ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             style={{
               scrollSnapType: 'x mandatory',
               WebkitOverflowScrolling: 'touch',
