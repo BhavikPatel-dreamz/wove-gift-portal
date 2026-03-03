@@ -898,7 +898,16 @@ h6,
 }
 
 .occasion-card:hover .occasion-card-image {
-  transform: translateX(-10px) rotate(-1deg) scale(1.08) !important;
+  transform: translateX(-10px) rotate(-2deg) scale(1.08) !important;
+}
+
+.occasion-selector-image {
+  transform-origin: center center !important;
+  transition: transform 0.45s ease !important;
+}
+
+.occasion-selector-card:hover .occasion-selector-image {
+  transform: translateX(-10px) rotate(-2deg) scale(1.08) !important;
 }
 
 .occasion-card-content {

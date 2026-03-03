@@ -101,7 +101,7 @@ const GiftCardSelector = () => {
             className="
     relative inline-flex items-center justify-center gap-2
     px-5 py-3 rounded-full font-semibold text-base
-    text-[#4A4A4A] bg-white border border-transparent
+    text-[#4A4A4A] bg-transparent border border-transparent
     transition-all duration-300 overflow-hidden group cursor-pointer
   "
             onClick={() => dispatch(goBack())}
@@ -116,7 +116,7 @@ const GiftCardSelector = () => {
 
             <span
               className="
-      absolute inset-0.5 rounded-full bg-white
+      absolute inset-0.5 rounded-full bg-[#fdf1f3]
       transition-all duration-300
       group-hover:bg-linear-to-r 
       group-hover:from-[#ED457D] 

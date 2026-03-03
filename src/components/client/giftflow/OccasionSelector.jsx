@@ -198,7 +198,7 @@ export default function OccasionSelector() {
             return (
               <div
                 key={`${occasion.id}-${index}`}
-                className={`bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group 
+                className={`occasion-selector-card bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group 
         flex flex-col h-full
         ${selectedOccasion === occasion.id
                     ? 'border-2 border-blue-500'
@@ -212,7 +212,7 @@ export default function OccasionSelector() {
                     <img
                       src={occasion.image}
                       alt={occasion.name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="occasion-selector-image w-full h-full object-cover"
                       onError={(e) => {
                         e.target.src =
                           "https://via.placeholder.com/400x300?text=" +
