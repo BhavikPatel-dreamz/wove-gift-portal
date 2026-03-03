@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ShoppingBag, Package, Heart } from 'lucide-react';
 import Link from 'next/link';
 import Button from '@/components/forms/Button';
+import { useSession } from '@/contexts/SessionContext';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   updateState,
@@ -17,6 +18,7 @@ import toast from 'react-hot-toast';
 import { resetFlow, clearCsvFileData } from '../../../redux/giftFlowSlice';
 
 const CartPage = () => {
+  const session = useSession();
   const cartItems = useSelector((state) => state.cart.items);
   const bulkItems = useSelector((state) => state.cart.bulkItems);
   const wishlistItems = useSelector((state) => state.wishlist.items);
@@ -99,16 +101,14 @@ const CartPage = () => {
 
   // ✅ Fixed: Only proceed with items from active tab
   const handleProceedToPayment = () => {
-    // if (session) {
-    //   // Check if there are any items in either cart
-    //   if (cartItems.length === 0 && bulkItems.length === 0) {
-    //     toast.error('Your cart is empty');
-    //     return;
-    //   }
+    const hasBulkOrders = bulkItems.length > 0;
+    const isLoggedIn = Boolean(session?.user?.id);
+
+    if (hasBulkOrders && !isLoggedIn) {
+      toast.error('Please login first to process bulk orders.');
+    }
+
     router.push('/checkout');
-    // } else {
-    //   router.push('/login?redirect=/cart');
-    // }
   };
 
   const handleRedirect = () => {

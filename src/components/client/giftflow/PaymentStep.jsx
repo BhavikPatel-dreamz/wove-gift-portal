@@ -710,7 +710,7 @@ const PaymentStep = () => {
 
 <button
   type="submit"
-  className="group w-full sm:w-auto max-w-fit
+  className="group min-w-full sm:w-auto 
   px-6 md:px-8 py-3 md:py-4
   bg-gradient-to-r from-pink-500 to-orange-500
   hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500
