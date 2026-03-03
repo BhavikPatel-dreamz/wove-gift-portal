@@ -677,6 +677,9 @@ h6,
   text-align: center !important;
   background: #fff !important;
   border-radius: 20px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
   flex-direction: column !important;
   justify-content: center !important;
   align-items: center !important;
@@ -690,10 +693,11 @@ h6,
 
 .process-step-content {
   background: #fff !important;
-  width: 98.5% !important;       /* was 99% — caused 1px gap on sides */
-  height: 98.5% !important;      /* was 98% — caused gap on top/bottom */
+  width: calc(100% - 2px) !important;
+  height: calc(100% - 2px) !important;
+  margin: 1px !important;
   padding: 2rem 1.5rem !important;
-  border-radius: 20px !important;
+  border-radius: 19px !important;
   box-sizing: border-box !important; /* ensures padding doesn't overflow */
 }
 
@@ -850,6 +854,12 @@ h6,
   height: 338px !important;
   object-fit: cover !important;
   border-radius: 8px;
+  transform-origin: center center !important;
+  transition: transform 0.45s ease !important;
+}
+
+.occasion-card:hover .occasion-card-image {
+  transform: translateX(-10px) rotate(-1deg) scale(1.08) !important;
 }
 
 .occasion-card-content {
@@ -999,6 +1009,10 @@ h6,
 
   .process-step-card {
     min-height: 200px !important;
+    padding: 0 !important;
+  }
+
+  .process-step-content {
     padding: 1.5rem 1rem !important;
   }
 
