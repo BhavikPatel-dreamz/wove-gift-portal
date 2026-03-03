@@ -1500,7 +1500,18 @@ export default function SubCategorySelector() {
                   </p>
 
                   {/* Button pinned to bottom */}
-                  <button className="mt-auto w-full py-3 px-4 bg-linear-to-r from-pink-500 to-orange-400 text-white font-semibold text-sm rounded-full transition-all duration-200 hover:shadow-lg hover:from-pink-600 hover:to-orange-500 flex items-center justify-center gap-2 cursor-pointer">
+                  <button
+  className="group mt-auto w-full sm:w-auto max-w-fit
+  bg-gradient-to-r from-pink-500 to-orange-400
+  hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500
+  text-white font-semibold text-sm md:text-base
+  px-6 py-3 md:px-8 md:py-4
+  rounded-full
+  transition-all duration-300
+  shadow-md hover:shadow-lg hover:scale-105
+  flex items-center justify-center gap-2
+  cursor-pointer whitespace-nowrap"
+>
                     Choose this Design
                     <span className="mt-1 transition-transform duration-300 group-hover:translate-x-1">
                       <svg

@@ -648,16 +648,19 @@ const DeliveryMethodStep = () => {
 
                 {/* Continue Button */}
                 <div className="flex items-center justify-center mt-6 sm:mt-8 pb-4">
-                  <button
-                    onClick={handleContinue}
-                    className="group cursor-pointer 
-  bg-linear-to-r from-pink-500 to-orange-500 
-  hover:from-pink-600 hover:to-orange-600 
-  text-white py-3 px-8 sm:py-4 sm:px-12 
-  rounded-full font-semibold text-sm sm:text-base 
-  transition-all duration-200 
-  shadow-lg flex gap-2 sm:gap-3 items-center"
-                  >
+                <button
+  onClick={handleContinue}
+  className="group cursor-pointer w-full sm:w-auto max-w-fit
+  bg-gradient-to-r from-pink-500 to-orange-500
+  hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500
+  text-white
+  px-6 sm:px-12 py-3 sm:py-4
+  rounded-full font-semibold text-sm sm:text-base
+  transition-all duration-300
+  shadow-md hover:shadow-xl hover:scale-105
+  flex items-center justify-center gap-2 sm:gap-3
+  whitespace-nowrap"
+>
                     Continue to Payment
 
                     <span className="transition-transform duration-300 group-hover:translate-x-1">

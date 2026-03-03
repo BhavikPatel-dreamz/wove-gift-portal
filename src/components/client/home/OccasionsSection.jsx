@@ -371,17 +371,20 @@ const OccasionsSection = ({ occasions = [], isLoading = false }) => {
             {occasions.map((occasion) => (
               <div
                 key={occasion.id}
-                className="occasion-card cursor-pointer shrink-0 transition-transform duration-300 hover:scale-[1.02]"
+                className="occasion-card cursor-pointer shrink-0 transition-transform duration-300"
                 style={{ width: 'calc(25% - 1.125rem)' }}
                 onClick={() => handleOccasionSelect(occasion)}
               >
+                
                 {occasion.image && (
+                  <div className='image-wrapper overflow-hidden rounded-lg'>
                   <img
                     src={occasion.image}
                     alt={occasion.name}
-                    className="occasion-card-image transition-transform duration-300 hover:scale-105"
+                    className="occasion-card-image transition-transform duration-300 hover:scale-105"                                                                                                                                                                     
                     loading="lazy"
                   />
+                  </div>
                 )}
                 <div className="occasion-card-content">
                   <h3 className="occasion-card-title fontPoppins">{occasion.name}</h3>

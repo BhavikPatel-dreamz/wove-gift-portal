@@ -361,6 +361,12 @@ h6,
 .hero-cta:hover {
   transform: translateY(-2px) !important;
   box-shadow: 0 8px 24px rgba(237, 69, 125, 0.4) !important;
+  background: linear-gradient(
+    114.06deg,
+    #fa8f42 11.36%,
+    #ed457d 90.28%
+    
+  ) !important;
 }
 
 .hero-cta:active {
@@ -651,7 +657,7 @@ h6,
 .process-section-title {
   font-size: 44px !important;
   font-weight: 600 !important;
-  color: #1a1a1a !important;
+  color: #1a1a1a !important; 
   text-align: center !important;
   margin-bottom: 0.75rem !important;
   letter-spacing: -0.02em !important;
@@ -672,29 +678,54 @@ h6,
   background: #fff !important;
   border-radius: 20px !important;
   flex-direction: column !important;
-  justify-content: flex-start !important;
+  justify-content: center !important;
   align-items: center !important;
   min-height: 240px !important;
-  padding: 2rem 1.5rem !important;
   transition: all .3s !important;
   display: flex !important;
   position: relative !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .04) !important;
-  transform: translate(1px, 10px);
+  /* Removed transform: translate(1px, 10px) — was causing uneven border appearance */
 }
 
+.process-step-content {
+  background: #fff !important;
+  width: 98.5% !important;       /* was 99% — caused 1px gap on sides */
+  height: 98.5% !important;      /* was 98% — caused gap on top/bottom */
+  padding: 2rem 1.5rem !important;
+  border-radius: 20px !important;
+  box-sizing: border-box !important; /* ensures padding doesn't overflow */
+}
+
+/* Base hover — applies to card-1 and card-3 */
 .process-step-card:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
-  transform: translateY(-4px) rotate(0deg) !important;
+  background: linear-gradient(114.06deg, #ed457d 11.36%, #fa8f42 90.28%) !important;
+  transform: translateY(-9px) !important;
 }
 
-/* Card Rotation Effects */
+/* ─── Card Rotation Effects ─── */
+
 .process-card-2 {
-  transform: rotate(14.45deg) !important
+  transform: rotate(14.45deg) !important;
+}
+
+/* Override: reset rotation + lift on hover */
+.process-card-2:hover {
+  transform: rotate(14.45deg) translateY(-9px) !important;
+  background: linear-gradient(114.06deg, #ed457d 11.36%, #fa8f42 90.28%) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
 }
 
 .process-card-4 {
   transform: rotate(-14.51deg) !important;
+}
+
+/* Override: reset rotation + lift on hover */
+.process-card-4:hover {
+  transform: rotate(-14.51deg) translateY(-9px) !important;
+  background: linear-gradient(114.06deg, #ed457d 11.36%, #fa8f42 90.28%) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08) !important;
 }
 
 .process-step-icon-wrapper {
@@ -811,7 +842,7 @@ h6,
 
 .occasion-card:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(-4px) !important;
+  /* transform: translateY(-4px) !important; */
 }
 
 .occasion-card-image {

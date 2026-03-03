@@ -9,7 +9,7 @@ import DashboardPartyPopper from '@/icons/DashboardPartyPopper';
 import DashboardGiftIcon from '@/icons/DashboardGiftIcon';
 import DashboardConfettiBall from '@/icons/DashboardConfettiBall';
 import { useDispatch } from 'react-redux';
-import { resetFlow, setCurrentStep,clearCsvFileData } from '@/redux/giftFlowSlice';
+import { resetFlow, setCurrentStep, clearCsvFileData } from '@/redux/giftFlowSlice';
 
 const HeroSection = () => {
   const dispatch = useDispatch();
@@ -71,17 +71,29 @@ const HeroSection = () => {
 
           {/* CTA Button */}
           <Link href="/gift">
-            <button className="hero-cta font-inter w-full sm:w-auto max-w-xs sm:max-w-none mx-auto mt-6 sm:mt-8" onClick={handleClick}>
-              Send Gift
+            <button className="group flex justify-center items-center hero-cta font-inter w-full sm:w-auto max-w-xs sm:max-w-none mx-auto mt-6 sm:mt-8" onClick={handleClick}>
+              Start Gifting
+              <span className="ml-2 transition-all duration-300 ease-out group-hover:translate-x-1 group-hover:scale-110"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white"></path></svg>
+              </span>
             </button>
           </Link>
 
           {/* Trust Badge */}
           <div className="trust-badge flex flex-wrap items-center justify-center gap-2 mt-6 sm:mt-8">
             <div className="trust-icon shrink-0">
-              <Shield size={12} color="white" />
+              <svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="11" cy="11" r="11" fill="#497D54" />
+                <path
+                  d="M7 11.2L9.5 13.7L15 8.2"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  fill="none"
+                />
+              </svg>
             </div>
-            <span className="font-inter text-xs sm:text-sm md:text-base">Trusted by 1M+ customers worldwide</span>
+            <span className="font-inter text-xs sm:text-sm md:text-base">Trusted by 500+ Companies</span>
           </div>
         </div>
       </div>

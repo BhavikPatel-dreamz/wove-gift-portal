@@ -290,12 +290,16 @@ const GiftCardSelector = () => {
                   {/* Button */}
                   <button
                     onClick={handleCustomAmountSelect}
-                    className="group cursor-pointer w-full sm:w-auto 
-  bg-linear-to-r from-pink-500 to-orange-500 
-  hover:from-pink-600 hover:to-orange-600 
-  text-white px-6 py-3 rounded-3xl font-bold 
-  transition-all duration-200 shadow-md hover:shadow-lg 
-  flex items-center justify-center gap-2 whitespace-nowrap"
+                    className="group cursor-pointer w-full sm:w-auto max-w-fit
+  bg-gradient-to-r from-pink-500 to-orange-400
+  hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500
+  text-white font-semibold text-sm md:text-base
+  px-6 py-3 md:px-8 md:py-4
+  rounded-full
+  transition-all duration-300
+  shadow-md hover:shadow-lg hover:scale-105
+  flex items-center justify-center gap-2
+  whitespace-nowrap mb-4 md:mb-6 mx-auto md:mx-0"
                   >
                     Select
 

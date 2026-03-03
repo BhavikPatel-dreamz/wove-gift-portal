@@ -146,6 +146,7 @@ const BrandCard = ({
               className="
       absolute inset-0 rounded-full p-[1.5px]
       bg-linear-to-r from-[#ED457D] to-[#FA8F42]
+      group-hover:bg-linear-to-r group-hover:from-[#FA8F42] group-hover:to-[#ED457D]
     "
             ></span>
 
@@ -154,7 +155,7 @@ const BrandCard = ({
               className="
       absolute inset-0.5 rounded-full bg-white
       transition-all duration-300
-      group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
+      group-hover:bg-linear-to-r group-hover:from-[#FA8F42] group-hover:to-[#ED457D]
     "
             ></span>
 

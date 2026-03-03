@@ -96,14 +96,14 @@ const ActionSelectionCards = (props) => {
 
             {/* Button */}
             <button 
-              className={`${card.buttonColor} text-white cursor-pointer text-sm sm:text-[15px] lg:text-[16px] font-semibold py-2.5 sm:py-3 px-5 sm:px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto w-full sm:w-auto`}
+              className={`${card.buttonColor} group text-white cursor-pointer text-sm sm:text-[15px] lg:text-[16px] font-semibold py-2.5 sm:py-3 px-5 sm:px-6 rounded-full transition-colors duration-200 flex items-center justify-center mx-auto w-full sm:w-auto`}
               onClick={(e) => {
                 e.stopPropagation();
                 handleCardClick(card);
               }}
             >
               {card.buttonText}
-              <span className="ml-2"><RightArrow/></span>
+              <span className="ml-2 transition-all duration-300 ease-out group-hover:translate-x-1 group-hover:scale-110"><RightArrow/></span>
             </button>
 
             {/* Bottom Fade */}

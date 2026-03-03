@@ -37,11 +37,11 @@ const ProcessSection = () => {
       cardClass: "process-card-4",
     },
   ];
-  
+
   return (
     <section className="process-section">
       <div className="max-w-360 mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="mb-12">
           <h2 className="process-section-title fontPoppins ">Gifting Made Simple</h2>
@@ -54,21 +54,22 @@ const ProcessSection = () => {
             const IconComponent = step.icon;
             return (
               <div key={index} className={`process-step-card ${step.cardClass}`}>
-                
-                {/* Icon */}
-                <div className={`process-step-icon-wrapper ${step.gradient}`}>
-                  <IconComponent size={32} color="white" strokeWidth={2.5} />
+                <div className={"process-step-content"}>
+                  {/* Icon */}
+                  <div className={`process-step-icon-wrapper ${step.gradient}`}>
+                    <IconComponent size={32} color="white" strokeWidth={2.5} />
+                  </div>
+
+                  {/* Title */}
+                  <h3 className={`process-step-title fontPoppins ${step.titleClass}`}>
+                    {step.title}
+                  </h3>
+
+                  {/* Description */}
+                  <p className={`process-step-description ${step.descClass}`}>
+                    {step.description}
+                  </p>
                 </div>
-
-                {/* Title */}
-                <h3 className={`process-step-title fontPoppins ${step.titleClass}`}>
-                  {step.title}
-                </h3>
-
-                {/* Description */}
-                <p className={`process-step-description ${step.descClass}`}>
-                  {step.description}
-                </p>
               </div>
             );
           })}

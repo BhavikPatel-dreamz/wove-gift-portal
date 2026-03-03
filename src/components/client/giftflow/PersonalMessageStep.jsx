@@ -217,15 +217,22 @@ const PersonalMessageStep = () => {
 
         {/* Continue Button */}
         <div className="text-center">
-          <button
-            onClick={handleContinue}
-            disabled={isMessageEmpty}
-            className={`group w-full items-center mx-auto justify-center flex gap-2 sm:w-auto px-10 py-4 rounded-full font-semibold text-base transition-all shadow-lg
-    ${isMessageEmpty
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-linear-to-r from-pink-500 to-orange-400 hover:shadow-xl"
-              } text-white`}
-          >
+        <button
+  onClick={handleContinue}
+  disabled={isMessageEmpty}
+  className={`group w-full sm:w-auto max-w-fit mx-auto
+  flex items-center justify-center gap-2
+  px-6 md:px-10 py-3 md:py-4
+  rounded-full font-semibold text-sm md:text-base
+  transition-all duration-300
+  shadow-md
+  ${
+    isMessageEmpty
+      ? "bg-gray-400 cursor-not-allowed shadow-none"
+      : "bg-gradient-to-r from-pink-500 to-orange-400 hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500 hover:shadow-xl hover:scale-105"
+  }
+  text-white whitespace-nowrap`}
+>
             Schedule Delivery Date
 
               <span className="transition-transform duration-300 group-hover:translate-x-1">

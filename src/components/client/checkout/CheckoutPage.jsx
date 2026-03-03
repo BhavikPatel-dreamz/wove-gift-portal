@@ -874,16 +874,19 @@ const CheckoutPage = () => {
                 <p className="text-red-600 text-sm">{guestFormError}</p>
               )}
 
-              <button
-                type="submit"
-                className="group w-full py-3.5 
-  bg-linear-to-r from-pink-500 to-orange-500 
-  text-white rounded-xl font-semibold 
-  shadow-lg hover:shadow-xl 
-  hover:from-pink-600 hover:to-orange-600 
-  focus:outline-none focus:ring-2 focus:ring-pink-500 
-  transition-all flex items-center justify-center gap-2"
-              >
+<button
+  type="submit"
+  className="group w-full sm:w-auto max-w-fit
+  px-6 md:px-8 py-3 md:py-4
+  bg-gradient-to-r from-pink-500 to-orange-500
+  hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500
+  text-white font-semibold text-sm md:text-base
+  rounded-full
+  shadow-md hover:shadow-xl hover:scale-105
+  focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2
+  transition-all duration-300
+  flex items-center justify-center gap-2 whitespace-nowrap"
+>
                 Continue to Payment
 
                 <span className="transition-transform duration-300 group-hover:translate-x-2">
