@@ -1049,11 +1049,10 @@ const BulkReviewStep = () => {
                             <button
                                 disabled={csvError !== "" || !isConfirmed || isProcessingFile}
                                 onClick={handleProceedToCheckout}
-                                className={`w-full bg-linear-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600
-                         text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 
+                                className={`w-full text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2 
                          ${csvError === "" && isConfirmed && !isProcessingFile
-                                        ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
-                                        : 'opacity-50 cursor-not-allowed'
+                                        ? 'bg-linear-to-r from-pink-500 to-orange-500 shadow-lg hover:from-pink-600 hover:to-orange-600 hover:shadow-xl cursor-pointer hover:opacity-95'
+                                        : 'bg-gray-400 shadow-none cursor-not-allowed'
                                     }`}
                             >
                                 {isProcessingFile ? 'Processing file...' : 'Proceed to Checkout'}

@@ -70,6 +70,8 @@ const CartPage = () => {
   };
 
   const handleEditItem = (item, index, type) => {
+    const targetStep = type === 'bulk' ? 7 : 8;
+
     dispatch(updateState({
       ...item,
       editingIndex: index,
@@ -82,7 +84,7 @@ const CartPage = () => {
         returnStep: null,
       },
     }));
-    dispatch(setCurrentStep(1));
+    dispatch(setCurrentStep(targetStep));
     if (type === 'regular') {
       router.push('/gift');
     } else if (type === 'bulk') {
@@ -479,9 +481,10 @@ const CartPage = () => {
                     {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedTotal().toFixed(2)}
                   </span>
                 </div>
+                <div className='w-full items-center flex justify-center'>
                 <Button
                   onClick={handleProceedToPayment}
-                  className="group w-full sm:w-auto max-w-fit mt-10
+                  className="group w-full sm:w-auto max-w-fit mt-10 mx-auto
   bg-gradient-to-r from-pink-500 to-orange-500
   hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500
   disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed
@@ -512,6 +515,7 @@ const CartPage = () => {
                     </svg>
                   </span>
                 </Button>
+                </div>
               </div>
             </div>
           </div>

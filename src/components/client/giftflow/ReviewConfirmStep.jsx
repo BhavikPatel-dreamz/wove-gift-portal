@@ -459,23 +459,20 @@ const ReviewConfirmStep = () => {
 
                 {/* Proceed Button */}
                 <button
-  onClick={handleBuyNow}
-  disabled={!isConfirmed}
-  className={`
+                  onClick={handleBuyNow}
+                  disabled={!isConfirmed}
+                  className={`
     group w-full  h-14
-    bg-gradient-to-r from-pink-500 to-orange-400
     text-white rounded-full font-semibold text-base sm:text-lg
     transition-all duration-300 
-    shadow-md
     flex items-center justify-center gap-2
     whitespace-nowrap
-    ${
-      isConfirmed
-        ? 'hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500 hover:shadow-xl hover:scale-105 cursor-pointer'
-        : 'bg-gray-400 shadow-none cursor-not-allowed'
-    }
+    ${isConfirmed
+                      ? 'bg-gradient-to-r from-pink-500 to-orange-400 shadow-md hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500 hover:shadow-xl hover:scale-105 cursor-pointer'
+                      : 'bg-gray-400 shadow-none cursor-not-allowed'
+                    }
   `}
->
+                >
                   Proceed to Payment
 
                   <span
@@ -530,7 +527,7 @@ const ReviewConfirmStep = () => {
         ${!isConfirmed ? 'opacity-50' : ''}
       `}
                   >
-                   <button
+                    <button
                       onClick={handleAddToCart}
                       disabled={!isConfirmed}
                       className={`

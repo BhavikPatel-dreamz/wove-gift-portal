@@ -496,19 +496,17 @@ const PaymentStep = () => {
             disabled={isProcessing || !isPaymentConfirmed}
             className={`
               group w-full 
-              bg-gradient-to-r from-pink-500 to-orange-500
               text-white
               px-6 md:px-8 py-3 md:py-4
               rounded-full
               font-semibold text-sm md:text-base
               transition-all duration-300
               flex items-center justify-center gap-2
-              shadow-md
               whitespace-nowrap
               ${
                 (isProcessing || !isPaymentConfirmed)
                   ? 'bg-gray-400 shadow-none cursor-not-allowed'
-                  : 'hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500 hover:shadow-xl hover:scale-105 cursor-pointer'
+                  : 'bg-gradient-to-r from-pink-500 to-orange-500 shadow-md hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500 hover:shadow-xl hover:scale-105 cursor-pointer'
               }
             `}
           >

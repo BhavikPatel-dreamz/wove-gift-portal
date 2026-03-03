@@ -87,8 +87,8 @@ const HeroSection = () => {
                   d="M7 11.2L9.5 13.7L15 8.2"
                   stroke="#FFFFFF"
                   strokeWidth="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                   fill="none"
                 />
               </svg>
