@@ -7,27 +7,6 @@ import { getGiftCards } from '../../../lib/action/customerDashbordAction';
 import GiftCardDetailModal from './GiftCardDetailModal';
 import { useSession } from '@/contexts/SessionContext';
 
-const getStartOfLocalDayISO = (dateValue) => {
-  if (!dateValue) return null;
-  const date = new Date(dateValue);
-  date.setHours(0, 0, 0, 0);
-  return date.toISOString();
-};
-
-const getEndOfLocalDayISO = (dateValue) => {
-  if (!dateValue) return null;
-  const date = new Date(dateValue);
-  date.setHours(23, 59, 59, 999);
-  return date.toISOString();
-};
-
-const formatRangeDate = (dateValue) =>
-  dateValue.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-
 function MyGift() {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,16 +96,13 @@ function MyGift() {
     setError(null);
 
     try {
-      const normalizedStartDate = getStartOfLocalDayISO(startDate);
-      const normalizedEndDate = getEndOfLocalDayISO(endDate);
-
       const filters = {
         status: activeTab,
         searchQuery: debouncedSearch,
         page: currentPage,
         pageSize: 6,
-        startDate: normalizedStartDate,
-        endDate: normalizedEndDate,
+        startDate: startDate ? startDate.toISOString() : null,
+        endDate: endDate ? endDate.toISOString() : null,
         userEmail: session?.user?.email
       };
 
@@ -191,9 +167,6 @@ function MyGift() {
 
   const handleExport = async () => {
     try {
-      const normalizedStartDate = getStartOfLocalDayISO(startDate);
-      const normalizedEndDate = getEndOfLocalDayISO(endDate);
-
       const response = await fetch('/api/gift-cards/export', {
         method: 'POST',
         headers: {
@@ -202,8 +175,8 @@ function MyGift() {
         body: JSON.stringify({
           status: activeTab,
           searchQuery: debouncedSearch,
-          startDate: normalizedStartDate,
-          endDate: normalizedEndDate
+          startDate: startDate ? startDate.toISOString() : null,
+          endDate: endDate ? endDate.toISOString() : null
         })
       });
 
@@ -700,12 +673,12 @@ function MyGift() {
     <div className="min-h-screen py-8 sm:py-30 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Tabs */}
-        <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-4 mb-8 bg-[#FEF8F7] p-2 mt-5 sm:mt-0 sm:p-3 rounded-lg">
+        <div className="flex flex-wrap md:flex-nowrap gap-2 sm:gap-3 md:gap-4 mb-8 bg-[#FEF8F7] p-2 mt-5 sm:mt-0 sm:p-3 rounded-lg">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`flex-1 min-w-[calc(50%-4px)] sm:min-w-0 sm:w-37.5 lg:w-75 h-10 sm:h-12.5 px-3 sm:px-8 py-2 sm:py-3 rounded-lg text-xs sm:text-base font-medium transition-all ${activeTab === tab.id
+              className={`flex-1 min-w-[calc(50%-4px)] md:min-w-0 h-10 sm:h-11 md:h-12.5 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg text-xs sm:text-sm md:text-base font-medium whitespace-nowrap transition-all ${activeTab === tab.id
                 ? 'bg-linear-to-r from-pink-400 to-orange-400 text-[#FFFFFF] shadow-lg'
                 : 'bg-white border  border-[#1A1A1A1A] rounded-[10px] text-[#000000] hover:bg-gray-100'
                 }`}
@@ -735,8 +708,8 @@ function MyGift() {
         )}
 
         {/* Search and Actions */}
-        <div className="w-full flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 mb-8">
-          <div className="relative w-full sm:w-154.75 h-10 border border-[#E5E7EB] rounded-lg flex items-center px-4">
+        <div className="w-full flex flex-col md:flex-row items-stretch md:items-center gap-3 mb-8">
+          <div className="relative w-full md:flex-1 h-10 border border-[#E5E7EB] rounded-lg flex items-center px-4">
             <Search className="w-5 h-5 text-[#9CA3AF] shrink-0" />
             <input
               type="text"
@@ -755,49 +728,38 @@ function MyGift() {
             )}
           </div>
 
-          <div className="hidden sm:block flex-1"></div>
-
-          <div className="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 md:shrink-0">
             {/* Custom Date Range Picker */}
             <div className="relative" ref={datePickerRef}>
               <div className="relative">
                 <button
                   onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                  className="w-full sm:min-w-[280px] h-10 px-4 bg-white border border-[#D1D5DB] rounded-xl flex items-center justify-between text-[#1F2937] text-sm font-medium hover:border-[#ED457D] hover:bg-[#FFF9FA] transition-all"
+                  className="w-full sm:w-auto sm:min-w-[220px] md:min-w-[230px] h-10 px-4 bg-white border border-[#4A4A4A] rounded-lg flex items-center justify-between text-[#4A4A4A] text-sm font-medium hover:bg-gray-50 transition-colors"
                 >
                   <span className="truncate">
                     {startDate && endDate
-                      ? `${formatRangeDate(startDate)} - ${formatRangeDate(endDate)}`
+                      ? `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                       : 'Select Date Range'
                     }
                   </span>
                   <div className="flex items-center gap-2 ml-2">
                     {startDate && endDate && (
-                      <span
-                        role="button"
-                        tabIndex={0}
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           clearDateRange();
                         }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            clearDateRange();
-                          }
-                        }}
-                        className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                        className="text-gray-400 hover:text-gray-600"
                       >
                         ✕
-                      </span>
+                      </button>
                     )}
                     <Calendar className="w-4 h-4 shrink-0" />
                   </div>
                 </button>
 
                 {isDatePickerOpen && (
-                  <div className="absolute top-full left-0 z-50 mt-2 bg-white rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.16)] border border-[#F4CDD7] overflow-hidden">
+                  <div className="absolute top-full left-0 z-50 mt-1 shadow-lg rounded-md bg-white">
                     <ReactDatePicker
                       selected={startDate}
                       onChange={handleDateChange}
@@ -805,42 +767,6 @@ function MyGift() {
                       endDate={endDate}
                       selectsRange
                       inline
-                      maxDate={new Date()}
-                      fixedHeight
-                      shouldCloseOnSelect={false}
-                      calendarClassName="mygift-calendar"
-                      renderCustomHeader={({
-                        date,
-                        decreaseMonth,
-                        increaseMonth,
-                        prevMonthButtonDisabled,
-                        nextMonthButtonDisabled,
-                      }) => (
-                        <div className="flex items-center justify-between px-2 py-1">
-                          <button
-                            type="button"
-                            onClick={decreaseMonth}
-                            disabled={prevMonthButtonDisabled}
-                            className="w-7 h-7 rounded-full bg-white/20 text-white hover:bg-white/30 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <span className="text-sm font-semibold text-white">
-                            {date.toLocaleDateString('en-US', {
-                              month: 'long',
-                              year: 'numeric',
-                            })}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={increaseMonth}
-                            disabled={nextMonthButtonDisabled}
-                            className="w-7 h-7 rounded-full bg-white/20 text-white hover:bg-white/30 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
                       dateFormat="MM/dd/yyyy"
                       className="border-0"
                     />
@@ -1128,77 +1054,6 @@ function MyGift() {
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        .mygift-calendar.react-datepicker {
-          border: 0;
-          border-radius: 16px;
-          overflow: hidden;
-          font-family: inherit;
-          box-shadow: none;
-        }
-
-        .mygift-calendar .react-datepicker__header {
-          border-bottom: 0;
-          padding-top: 10px;
-          background: linear-gradient(114.06deg, #ed457d 11.36%, #fa8f42 90.28%);
-        }
-
-        .mygift-calendar .react-datepicker__day-names {
-          margin-top: 8px;
-        }
-
-        .mygift-calendar .react-datepicker__day-name {
-          color: rgba(255, 255, 255, 0.92);
-          width: 2rem;
-          line-height: 2rem;
-          margin: 0.2rem;
-          font-size: 0.78rem;
-          font-weight: 600;
-        }
-
-        .mygift-calendar .react-datepicker__month {
-          margin: 0.75rem;
-        }
-
-        .mygift-calendar .react-datepicker__day {
-          width: 2rem;
-          line-height: 2rem;
-          margin: 0.2rem;
-          border-radius: 9999px;
-          font-size: 0.82rem;
-          font-weight: 500;
-          color: #1f2937;
-        }
-
-        .mygift-calendar .react-datepicker__day:hover {
-          background: #ffe4ec;
-          color: #be185d;
-        }
-
-        .mygift-calendar .react-datepicker__day--outside-month {
-          color: #9ca3af;
-        }
-
-        .mygift-calendar .react-datepicker__day--in-range,
-        .mygift-calendar .react-datepicker__day--in-selecting-range {
-          background: #ffe9ee;
-          color: #be185d;
-        }
-
-        .mygift-calendar .react-datepicker__day--selected,
-        .mygift-calendar .react-datepicker__day--range-start,
-        .mygift-calendar .react-datepicker__day--range-end {
-          background: linear-gradient(114.06deg, #ed457d 11.36%, #fa8f42 90.28%);
-          color: #ffffff;
-          font-weight: 600;
-        }
-
-        .mygift-calendar .react-datepicker__day--keyboard-selected {
-          background: #fbcfe8;
-          color: #9d174d;
-        }
-      `}</style>
     </div>
   );
 }
