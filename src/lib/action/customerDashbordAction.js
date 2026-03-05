@@ -36,6 +36,27 @@ function calculateStatus(voucherCode) {
   return "ACTIVE";
 }
 
+function parseDateFilterValue(value, options = {}) {
+  if (!value) return null;
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  const { isEnd = false } = options;
+  const isDateOnlyString =
+    typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+  if (isDateOnlyString) {
+    if (isEnd) {
+      parsedDate.setUTCHours(23, 59, 59, 999);
+    } else {
+      parsedDate.setUTCHours(0, 0, 0, 0);
+    }
+  }
+
+  return parsedDate;
+}
+
 // Main function to fetch gift cards with smart pagination
 export async function getGiftCards(filters) {
   try {
@@ -197,14 +218,17 @@ export async function getGiftCards(filters) {
     }
 
     // Date range filter
-    if (startDate || endDate) {
+    const parsedStartDate = parseDateFilterValue(startDate);
+    const parsedEndDate = parseDateFilterValue(endDate, { isEnd: true });
+
+    if (parsedStartDate || parsedEndDate) {
       whereClause.createdAt = {};
-      if (startDate) whereClause.createdAt.gte = new Date(startDate);
-      if (endDate) whereClause.createdAt.lte = new Date(endDate);
+      if (parsedStartDate) whereClause.createdAt.gte = parsedStartDate;
+      if (parsedEndDate) whereClause.createdAt.lte = parsedEndDate;
 
       pendingOrderWhereClause.createdAt = {};
-      if (startDate) pendingOrderWhereClause.createdAt.gte = new Date(startDate);
-      if (endDate) pendingOrderWhereClause.createdAt.lte = new Date(endDate);
+      if (parsedStartDate) pendingOrderWhereClause.createdAt.gte = parsedStartDate;
+      if (parsedEndDate) pendingOrderWhereClause.createdAt.lte = parsedEndDate;
     }
 
     // ============================================
