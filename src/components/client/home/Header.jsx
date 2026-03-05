@@ -38,6 +38,7 @@ const mobilePublicNavLinks = {
 };
 
 const mobileMemberNavLinks = {
+  'My Profile': '/profile',
   'Vouchers & Gift Cards': '/my-gift',
   'Support & Requests': '/support',
   'Track Request Status': '/track-request',
@@ -290,25 +291,32 @@ const Header = () => {
                         {openDropdown && (
                           <div className="origin-top-right absolute right-0 mt-2 w-48 sm:w-56 rounded-[20px] shadow-lg bg-white ring-opacity-5 z-50">
                             <div className="pt-2.5">
-                              <button className="w-full text-left px-4 sm:px-6 py-2 text-sm sm:text-base font-semibold text-black hover:text-gray-900 focus:outline-none">
+                              <Link
+                                href="/profile"
+                                onClick={() => setOpenDropdown(false)}
+                                className={linkClass("/profile")}
+                              >
                                 My Profile
-                              </button>
+                              </Link>
                             </div>
                             <div className="">
                               <Link
                                 href="/my-gift"
+                                onClick={() => setOpenDropdown(false)}
                                 className={linkClass("/my-gift")}
                               >
                                 Vouchers & Gift Cards
                               </Link>
                               <Link
                                 href="/support"
+                                onClick={() => setOpenDropdown(false)}
                                 className={linkClass("/support")}
                               >
                                 Support & Requests
                               </Link>
                               <Link
                                 href="/track-request"
+                                onClick={() => setOpenDropdown(false)}
                                 className={linkClass("/track-request")}
                               >
                                 Track Request Status
