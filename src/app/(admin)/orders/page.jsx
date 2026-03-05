@@ -196,7 +196,7 @@ export default function GiftOrdersManagement() {
           filters={[
             {
               name: "status",
-              placeholder: "All Statuses",
+              placeholder: "All Status",
               options: [
                 { value: "Issued", label: "Issued" },
                 { value: "Redeemed", label: "Redeemed" },

@@ -386,7 +386,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
         filters={[
           {
             name: "status",
-            placeholder: "All Statuses",
+            placeholder: "All Status",
             value: searchParams.get('status') || '',
             options: [
               { value: "Active", label: "Issued" },

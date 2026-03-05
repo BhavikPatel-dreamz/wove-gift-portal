@@ -658,8 +658,8 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 text-black">
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-7xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col z-999">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[1200] flex items-center justify-center p-2 sm:p-4 text-black">
+      <div className="relative bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-7xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col z-[1201]">
         {/* Header */}
         <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
           <div>
@@ -1118,8 +1118,8 @@ const AdvancedCardCreator = ({ onSave, onCancel, selectedOccasionName = 'Birthda
       </div>
 
       {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1300]">
+          <div className="bg-white p-6 rounded-lg max-w-md w-[90%]">
             <h3 className="text-lg font-medium mb-4">Confirm Save</h3>
             <p className="mb-6">Once saved, the design cannot be changed. Are you sure you want to continue?</p>
             <div className="flex justify-end gap-3">

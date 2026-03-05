@@ -118,7 +118,7 @@ const SuccessScreen = ({
     mb-6
   "
               >
-                <strong className="font-bold">Need help?</strong>
+                <strong className="font-bold">Need help? </strong>
                 Have questions or want to cancel or modify your gift?{" "}
                 <Link
                   href="/support"
@@ -132,28 +132,33 @@ const SuccessScreen = ({
           )}
 
           {/* Bulk Mode Order Details */}
-          {(isBulkMode || order?.allOrders && order?.allOrders.length > 1) && (
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 text-left">Order details</h2>
+          {(isBulkMode || (order?.allOrders && order?.allOrders.length > 1)) && (
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6 w-fit mx-auto px-20 text-left">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">Order Details</h2>
               <div className="h-px bg-gray-200 mb-6"></div>
-              <div className="space-y-4">
-                <div className="flex justify-between text-gray-700">
-                  <span>Order ID:</span>
-                  <span className="font-semibold text-gray-900">{order.bulkOrderNumber || order.orderNumber}</span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Brand:</span>
-                  <span className="font-semibold text-gray-900">{selectedBrand?.brandName || order?.brand?.brandName}</span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Vouchers Generated:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalVouchers}</span>
-                </div>
 
-                <div className="flex justify-between text-gray-700">
-                  <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount}</span>
-                </div>
+              <div className="grid grid-cols-[200px_1fr] gap-y-4 text-gray-700">
+
+                <span>Order ID</span>
+                <span className="font-semibold text-gray-900">
+                  : {order.bulkOrderNumber || order.orderNumber}
+                </span>
+
+                <span>Brand</span>
+                <span className="font-semibold text-gray-900">
+                  : {selectedBrand?.brandName || order?.brand?.brandName}
+                </span>
+
+                <span>Vouchers Generated</span>
+                <span className="font-semibold text-gray-900">
+                 : {calculateTotals([order]).totalVouchers}
+                </span>
+
+                <span>Total Value</span>
+                <span className="font-semibold text-gray-900">
+                  : {calculateTotals([order]).totalAmount}
+                </span>
+
               </div>
             </div>
           )}
@@ -286,7 +291,7 @@ const SuccessScreen = ({
           <div className="w-full flex justify-center">
             <button
               onClick={onNext}
-              className="w-fit cursor-pointer rounded-[50px] flex gap-3 items-center justify-center text-white py-3 px-6 font-semibold transition-all duration-200 bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)]"
+              className="w-fit min-w-28 cursor-pointer rounded-[50px] flex gap-3 items-center justify-center text-white py-3 px-6 font-semibold transition-all duration-200 bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)]"
             >
               Next
             </button>

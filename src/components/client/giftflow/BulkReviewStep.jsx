@@ -849,7 +849,9 @@ const BulkReviewStep = () => {
                             Order Summary
                         </h3>
 
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-2 bg-gray-50 rounded-xl">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-gray-50 rounded-xl">
+
+                            {/* Brand Logo */}
                             <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0">
                                 {displayBrand?.logo ? (
                                     <img
@@ -860,7 +862,7 @@ const BulkReviewStep = () => {
                                 ) : (
                                     <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
                                         <span className="text-white font-bold text-xl sm:text-2xl">
-                                            {(displayBrand?.brandName || displayBrand?.name || 'B')
+                                            {(displayBrand?.brandName || displayBrand?.name || "B")
                                                 .substring(0, 1)
                                                 .toUpperCase()}
                                         </span>
@@ -868,44 +870,51 @@ const BulkReviewStep = () => {
                                 )}
                             </div>
 
-                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
-                                <div className="md:border-r border-[#1a1a1a28] pr-0 md:pr-4">
-                                    <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
+                            {/* Details */}
+                            <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-2 lg:gap-4 w-full">
+
+                                {/* Brand */}
+                                <div className="min-w-0 md:border-r border-[#1a1a1a28] md:pr-2 lg:pr-4">
+                                    <p className="text-[#1A1A1A] font-poppins text-xs sm:text-sm md:text-sm lg:text-base font-semibold mb-1">
                                         Brand
                                     </p>
-                                    <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
+                                    <p className="text-[#4A4A4A] font-inter text-xs sm:text-sm md:text-sm lg:text-base break-words">
                                         {displayBrand?.brandName || displayBrand?.name}
                                     </p>
                                 </div>
 
-                                <div className="md:border-r border-[#1a1a1a28] pr-0 md:pr-4">
-                                    <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
+                                {/* Denomination */}
+                                <div className="min-w-0 md:border-r border-[#1a1a1a28] md:pr-2 lg:pr-4">
+                                    <p className="text-[#1A1A1A] font-poppins text-xs sm:text-sm md:text-sm lg:text-base font-semibold mb-1">
                                         Denomination
                                     </p>
-                                    <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
+                                    <p className="text-[#4A4A4A] font-inter text-xs sm:text-sm md:text-sm lg:text-base">
                                         {currentBulkOrder.selectedAmount.currency}
                                         {currentBulkOrder.selectedAmount.value}
                                     </p>
                                 </div>
 
-                                <div className="md:border-r border-[#1a1a1a28] pr-0 md:pr-4">
-                                    <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
+                                {/* Quantity */}
+                                <div className="min-w-0 md:border-r border-[#1a1a1a28] md:pr-2 lg:pr-4">
+                                    <p className="text-[#1A1A1A] font-poppins text-xs sm:text-sm md:text-sm lg:text-base font-semibold mb-1">
                                         Quantity
                                     </p>
-                                    <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
+                                    <p className="text-[#4A4A4A] font-inter text-xs sm:text-sm md:text-sm lg:text-base">
                                         {currentBulkOrder.quantity}
                                     </p>
                                 </div>
 
-                                <div>
-                                    <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
+                                {/* Total Amount */}
+                                <div className="min-w-0">
+                                    <p className="text-[#1A1A1A] font-poppins text-xs sm:text-sm md:text-sm lg:text-base font-semibold mb-1">
                                         Total Amount
                                     </p>
-                                    <p className="font-inter text-lg sm:text-xl font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
+                                    <p className="font-inter min-w-fit text-sm sm:text-base md:text-lg lg:text-xl font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
                                         {currentBulkOrder.selectedAmount.currency}
                                         {currentBulkOrder.totalSpend?.toFixed(2)}
                                     </p>
                                 </div>
+
                             </div>
                         </div>
                     </div>

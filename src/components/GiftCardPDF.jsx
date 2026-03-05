@@ -363,7 +363,7 @@ const GiftCardPDF = ({
               Terms & Conditions | Privacy Policy
             </Text>
             <Text style={styles.footerCopyright}>
-              © 2024 WoveGifts (a MyPerks company)
+              © 2026 WoveGifts (a MyPerks company)
             </Text>
           </View>
         </View>

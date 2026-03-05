@@ -362,7 +362,7 @@ export default function VouchersManagement() {
                         filters={[
                             {
                                 name: "status",
-                                placeholder: "All Statuses",
+                                placeholder: "All Status",
                                 options: [
                                     { value: "Active", label: "Issued" },
                                     { value: "Redeemed", label: "Redeemed" },
