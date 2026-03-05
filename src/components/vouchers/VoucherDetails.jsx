@@ -2,10 +2,10 @@ import React from 'react';
 import { currencyList } from "../brandsPartner/currency";
 
 const DetailItem = ({ label, value, isBadge, badgeColor }) => (
-  <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-200">
+  <div className="grid grid-cols-2 gap-4 py-3 border-b border-gray-200 ">
     <dt className="text-sm font-medium text-gray-600">{label}</dt>
     {isBadge ? (
-      <dd className={`text-sm font-semibold inline-flex items-center px-2.5 py-0.5 rounded-full ${badgeColor}`}>
+      <dd className={`text-sm font-semibold inline-flex items-center px-3 py-1 rounded-full ${badgeColor} max-w-fit`}>
         {value}
       </dd>
     ) : (

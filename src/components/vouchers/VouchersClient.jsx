@@ -276,7 +276,8 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
   const isAdmin = user?.role === 'ADMIN';
 
   const customColumns = [
-    columnHelper.accessor("Brand", {
+    columnHelper.accessor((row) => row.brandName || "", {
+      id: "brandName",
       header: "Brands",
       cell: (info) => (
         <div>
@@ -309,10 +310,13 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
       ),
     }),
     ...(isAdmin ? [
-      columnHelper.accessor("user", {
+      columnHelper.accessor(
+        (row) => `${row.user?.firstName || ""} ${row.user?.lastName || ""} ${row.user?.email || ""}`.trim(),
+        {
+          id: "user",
         header: "Customer",
         cell: (info) => {
-          const user = info.getValue();
+          const user = info.row.original.user;
           return (
             <div>
               <div className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</div>
@@ -320,7 +324,8 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
             </div>
           );
         },
-      })
+        }
+      )
     ] : []),
     columnHelper.accessor("totalAmount", {
       header: "Total Amount",
