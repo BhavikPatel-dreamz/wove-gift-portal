@@ -525,48 +525,6 @@ export async function POST(req) {
       customerAssociated: false,
     });
 
-    // ============ STEP 5b: OPTIONAL - Associate customer later (no email sent) ============
-    // Uncomment this section if you want to associate the customer AFTER creation
-    // This won't trigger any emails because the gift card already exists
-    /*
-    if (customerIdNumeric && giftCard.id) {
-      console.log("📋 [STEP 5b] Updating gift card with customer association (no email)");
-      
-      try {
-        const updateResponse = await fetch(
-          `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/gift_cards/${giftCard.id}.json`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": session.accessToken,
-            },
-            body: JSON.stringify({
-              gift_card: {
-                customer_id: parseInt(customerIdNumeric),
-              },
-            }),
-          }
-        );
-        
-        const updateData = await updateResponse.json();
-        
-        if (updateData.gift_card) {
-          console.log("✅ [STEP 5b] Customer associated via update (no email sent)", {
-            customerId: customerIdNumeric,
-          });
-        } else {
-          console.warn("⚠️ [STEP 5b] Failed to associate customer", {
-            errors: updateData.errors,
-          });
-        }
-      } catch (updateError) {
-        console.error("❌ [STEP 5b] Error associating customer", {
-          error: updateError.message,
-        });
-      }
-    }
-    */
 
     // ============ STEP 6: Save to Local Database ============
     console.log("📋 [STEP 6] Saving gift card to local database", {

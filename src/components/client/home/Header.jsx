@@ -181,7 +181,7 @@ const Header = () => {
   return (
     <>
       <header
-        className={`fixed top-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-transparent'
+        className={`fixed top-0 z-9999 w-full transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-transparent'
           }`}
       >
         {/* Main Header - Hide when mobile menu is open */}

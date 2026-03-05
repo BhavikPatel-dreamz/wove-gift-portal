@@ -383,11 +383,11 @@ function MyGift() {
             </div>
           </div>
 
-          {(firstCard.isPendingVoucher || firstCard?.receiverEmail == session?.user?.email) && (
+          {/* {(firstCard.isPendingVoucher || firstCard?.receiverEmail == session?.user?.email) && (
             <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(overallStatus)} whitespace-nowrap`}>
               {overallStatus}
             </span>
-          )}
+          )} */}
         </div>
 
         {/* Multiple Recipients Info */}
@@ -526,11 +526,11 @@ function MyGift() {
             </div>
           </div>
 
-          {(card.isPendingVoucher || card?.receiverEmail == session?.user?.email) && (
+          {/* {(card.isPendingVoucher || card?.receiverEmail == session?.user?.email) && (
             <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(card.status)} whitespace-nowrap`}>
               {card.status}
             </span>
-          )}
+          )} */}
         </div>
 
         {/* Receiver/Sender Info */}
@@ -591,7 +591,7 @@ function MyGift() {
               ) : (
                 <>
                   <Download className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
-                  <span className="text-xs sm:text-sm font-medium text-[#4A5565]">Print</span>
+                  <span className="text-xs sm:text-sm font-medium text-[#4A5565]">Download PDF</span>
                 </>
               )}
             </button>
