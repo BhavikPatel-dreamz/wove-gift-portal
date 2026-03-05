@@ -389,7 +389,7 @@ const PaymentStep = () => {
     <div className="min-h-screen bg-gray-50 py-30 md:px-8 md:py-30">
       <Toaster />
 
-      <div className="max-w-7xl mx-auto sm:px-6">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
           <button

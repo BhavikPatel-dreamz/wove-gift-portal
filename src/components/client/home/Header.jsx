@@ -182,7 +182,7 @@ const Header = () => {
   return (
     <>
       <header
-        className={`fixed top-0 z-9999 w-full transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-transparent'
+        className={`fixed top-0 z-99 w-full transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-transparent'
           }`}
       >
         {/* Main Header - Hide when mobile menu is open */}
@@ -470,7 +470,7 @@ const Header = () => {
 
         {/* Mobile/Tablet Fullscreen Menu */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 bg-white z-9999 lg:hidden overflow-y-auto">
+          <div className="fixed inset-0 bg-white z-99 lg:hidden overflow-y-auto">
             {/* Header Row */}
             <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
               <div className="logo-container">
