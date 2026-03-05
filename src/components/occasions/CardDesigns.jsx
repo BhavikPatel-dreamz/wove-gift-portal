@@ -8,7 +8,14 @@ import { ArrowLeft, Edit3, Plus, MoreVertical, Trash2, Copy, Loader2, Search, Fi
 import CreateNewCard from "./CreateNewCard";
 import { getOccasionCategories, updateOccasionCategory, deleteOccasionCategory, getOccasionCategoryById } from "../../lib/action/occasionAction";
 
-const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpen, onCardCountChange }) => {
+const CardDesigns = ({
+  occasion: initialOccasion,
+  onBack,
+  modalOpen,
+  setModalOpen,
+  onCardCountChange,
+  requireFirstCategory = false,
+}) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -21,8 +28,15 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
   const itemsPerPage = Number(searchParams.get('cardLimit')) || 12;
 
   const [occasion] = useState(initialOccasion); // Remove setOccasion as it's not used
+  const initialRequireFirstCategory =
+    requireFirstCategory && (initialOccasion?.cardCount || 0) === 0;
   const [cards, setCards] = useState([]);
-  const [isCreatingCard, setIsCreatingCard] = useState(modalOpen || false);
+  const [isCreatingCard, setIsCreatingCard] = useState(
+    modalOpen || initialRequireFirstCategory
+  );
+  const [mustCreateFirstCard, setMustCreateFirstCard] = useState(
+    initialRequireFirstCategory
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -45,6 +59,12 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
   // Ref to track if we're currently fetching to prevent duplicate calls
   const fetchingRef = useRef(false);
   const lastFetchParamsRef = useRef('');
+
+  useEffect(() => {
+    if (modalOpen || mustCreateFirstCard) {
+      setIsCreatingCard(true);
+    }
+  }, [modalOpen, mustCreateFirstCard]);
 
   // Debounce search term and update URL
   useEffect(() => {
@@ -125,6 +145,10 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
         setCards(transformedCards);
         setTotalPages(result.meta.pagination.totalPages);
         setTotalCards(result.meta.pagination.totalItems);
+
+        if (result.meta.pagination.totalItems > 0 && mustCreateFirstCard) {
+          setMustCreateFirstCard(false);
+        }
       } else {
         setError(result.message || 'Failed to fetch card designs');
         setCards([]);
@@ -137,7 +161,7 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [occasion.id, occasion.name, currentPage, searchTermFromUrl, filterStatus, sortBy, itemsPerPage]);
+  }, [occasion.id, occasion.name, currentPage, searchTermFromUrl, filterStatus, sortBy, itemsPerPage, mustCreateFirstCard]);
 
   // Fetch cards when dependencies change
   useEffect(() => {
@@ -171,7 +195,9 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
   const handleSaveNewCard = useCallback((newCardData) => {
     // Reset fetch tracking to allow new fetch
     lastFetchParamsRef.current = '';
+    setMustCreateFirstCard(false);
     setIsCreatingCard(false);
+    setModalOpen(false);
 
     // Notify parent and refetch
     if (onCardCountChange) {
@@ -180,9 +206,10 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
 
     // Go to first page to see the new card
     const params = new URLSearchParams(searchParams.toString());
+    params.delete('requireFirstCategory');
     params.set('cardPage', '1');
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [onCardCountChange, searchParams, pathname, router]);
+  }, [onCardCountChange, searchParams, pathname, router, setModalOpen]);
 
   const handleUpdateCard = useCallback((updatedCardData) => {
     // Reset fetch tracking to allow new fetch
@@ -292,10 +319,14 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
   }, []);
 
   const handleBackFromCreateEdit = useCallback(() => {
+    if (mustCreateFirstCard && !editingCardId) {
+      return;
+    }
     setIsCreatingCard(false);
     setEditingCardId(null);
     setCardToEdit(null);
-  }, []);
+    setModalOpen(false);
+  }, [mustCreateFirstCard, editingCardId, setModalOpen]);
 
   const getPageNumbers = useMemo(() => {
     const pages = [];
@@ -347,7 +378,15 @@ const CardDesigns = ({ occasion: initialOccasion, onBack, modalOpen, setModalOpe
 
   // Show create/edit views
   if (isCreatingCard) {
-    return <CreateNewCard occasion={occasion} onBack={handleBackFromCreateEdit} onSave={handleSaveNewCard} setModalOpen={setModalOpen} />;
+    return (
+      <CreateNewCard
+        occasion={occasion}
+        onBack={handleBackFromCreateEdit}
+        onSave={handleSaveNewCard}
+        setModalOpen={setModalOpen}
+        lockClose={mustCreateFirstCard}
+      />
+    );
   }
 
   if (editingCardId && cardToEdit) {

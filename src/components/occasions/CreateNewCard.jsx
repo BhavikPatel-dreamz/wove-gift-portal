@@ -11,10 +11,16 @@ import toast from 'react-hot-toast';
 import Modal from '../Modal';
 import { Loader } from 'lucide-react';
 
-export default function CreateNewCard({ occasion, onBack, onSave, initialCardData = null, setModalOpen }) {
+export default function CreateNewCard({
+  occasion,
+  onBack,
+  onSave,
+  initialCardData = null,
+  setModalOpen,
+  lockClose = false,
+}) {
   const isEditing = Boolean(initialCardData);
   const [isSaving, setIsSaving] = useState(false);
-  const [isOpen, setIsOpen] = useState(!isEditing ? true : false);
 
 
   const [formData, setFormData] = useState({
@@ -77,7 +83,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
         toast.success(`Occasion category ${isEditing ? 'updated' : 'created'} successfully!`);
         onSave(result.data);
         onBack();
-        setModalOpen(false);
+        setModalOpen?.(false);
       } else {
         toast.error(`Failed to ${isEditing ? 'update' : 'create'} occasion category: ${result.message}`);
       }
@@ -101,6 +107,15 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCloseRequest = () => {
+    if (lockClose || isSaving) {
+      return;
+    }
+
+    onBack();
+    setModalOpen?.(false);
   };
 
   if (isEditing) {
@@ -307,12 +322,17 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
+    <Modal isOpen={true} onClose={handleCloseRequest}>
       <div className="flex flex-col h-full max-h-[90vh] max-w-4xl mx-auto text-[#4A4A4A]">
         {/* Header */}
         <div className="bg-[#1F59EE] text-white px-8 py-6 rounded-t-2xl shrink-0">
           <h2 className="text-2xl font-semibold mb-1">Create a New Card for {occasion.name}</h2>
           <p className="text-blue-50 text-sm font-light">Make a new card design for this occasion.</p>
+          {lockClose && (
+            <p className="text-blue-100 text-xs mt-2">
+              At least one sub-category is required before continuing.
+            </p>
+          )}
         </div>
 
         {/* Content */}
@@ -322,7 +342,13 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-800">Card Details</h3>
               <div className="flex gap-3">
-                <Button variant="outline" onClick={onBack} disabled={isSaving}>Cancel</Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCloseRequest}
+                  disabled={isSaving || lockClose}
+                >
+                  Cancel
+                </Button>
                 <Button
                   onClick={handleSaveCard}
                   icon={Save}
