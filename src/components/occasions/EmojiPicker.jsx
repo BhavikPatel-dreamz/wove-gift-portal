@@ -201,7 +201,7 @@ const CustomEmojiPicker = ({
           {/* Mobile Header */}
           {isMobile && (
             <div className="flex items-center justify-between p-4 border-b">
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-xs font-medium text-gray-700">
                 Select Emoji
               </span>
               <button onClick={() => setIsOpen(false)}>

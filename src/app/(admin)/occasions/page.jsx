@@ -155,11 +155,18 @@ const OccasionsManager = () => {
         router.push(`/occasions/${result.data.id}/cards?requireFirstCategory=1`);
 
       } else {
-        toast.error(result.message || "Failed to add occasion");
+        if (!result?.errors) {
+          toast.error(result.message || "Failed to add occasion");
+        }
       }
+      return result;
     } catch (error) {
       console.error("Error adding occasion:", error);
       toast.error("Failed to add occasion");
+      return {
+        success: false,
+        message: "Failed to add occasion",
+      };
     } finally {
       setActionLoading(false);
     }
@@ -191,11 +198,18 @@ const OccasionsManager = () => {
         setEditingOccasion(null);
         await fetchOccasions();
       } else {
-        toast.error(result.message || "Failed to update occasion");
+        if (!result?.errors) {
+          toast.error(result.message || "Failed to update occasion");
+        }
       }
+      return result;
     } catch (error) {
       console.error("Error updating occasion:", error);
       toast.error("Failed to update occasion");
+      return {
+        success: false,
+        message: "Failed to update occasion",
+      };
     } finally {
       setActionLoading(false);
     }
