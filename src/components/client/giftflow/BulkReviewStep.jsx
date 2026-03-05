@@ -224,8 +224,117 @@ const BulkReviewStep = () => {
     const previewData = useMemo(() => csvData.slice(0, 5), [csvData]);
     const remainingCount = useMemo(() => Math.max(0, csvData.length - 5), [csvData.length]);
 
-    // Email validation regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+    const companyNameRegex = /^[A-Za-z0-9&'().,/\-\s]+$/;
+    const contactNumberRegex = /^\+?[0-9()\-\s]+$/;
+    const vatNumberRegex = /^4\d{9}$/;
+
+    const normalizeSpaces = (value = '') => value.replace(/\s+/g, ' ').trim();
+
+    const sanitizeCompanyInfoValue = useCallback((field, value) => {
+        const raw = typeof value === 'string' ? value : String(value ?? '');
+
+        if (field === 'companyName') {
+            return raw
+                .replace(/[^A-Za-z0-9&'().,/\-\s]/g, '')
+                .replace(/\s{2,}/g, ' ')
+                .slice(0, 100);
+        }
+
+        if (field === 'vatNumber') {
+            return raw.replace(/[^\d]/g, '').slice(0, 10);
+        }
+
+        if (field === 'contactNumber') {
+            const filtered = raw.replace(/[^\d+\s()-]/g, '').replace(/\s{2,}/g, ' ');
+            const hasLeadingPlus = filtered.trim().startsWith('+');
+            const withoutPlus = filtered.replace(/\+/g, '');
+            const normalized = hasLeadingPlus ? `+${withoutPlus}` : withoutPlus;
+            return normalized.slice(0, 20);
+        }
+
+        if (field === 'contactEmail') {
+            return raw.replace(/\s+/g, '').toLowerCase().slice(0, 254);
+        }
+
+        return raw;
+    }, []);
+
+    const looksLikePlaceholderText = useCallback((value) => {
+        const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!normalized) return false;
+
+        const blockedValues = new Set([
+            'test',
+            'testing',
+            'asdf',
+            'qwerty',
+            'abc',
+            'abcd',
+            'xyz',
+            'dummy',
+            'sample',
+            'na',
+            'none',
+            'null',
+            'unknown'
+        ]);
+
+        if (blockedValues.has(normalized)) return true;
+        if (/^([a-z0-9])\1{2,}$/.test(normalized)) return true;
+        if (['12345678', '123456789', '1234567890', '0123456789'].includes(normalized)) return true;
+
+        return false;
+    }, []);
+
+    const validateCompanyField = useCallback((field, value) => {
+        const sanitized = sanitizeCompanyInfoValue(field, value);
+        const normalized = normalizeSpaces(sanitized);
+
+        if (field === 'companyName') {
+            if (!normalized) return 'Company name is required';
+            if (normalized.length < 2) return 'Company name must be at least 2 characters';
+            if (!companyNameRegex.test(normalized)) return 'Company name contains invalid characters';
+
+            const alphaChars = normalized.replace(/[^A-Za-z]/g, '');
+            if (alphaChars.length < 2) return 'Company name must include at least 2 letters';
+            if (looksLikePlaceholderText(normalized)) return 'Please enter a valid company name';
+            return '';
+        }
+
+        if (field === 'vatNumber') {
+            if (!sanitized) return '';
+            if (!vatNumberRegex.test(sanitized)) {
+                return 'VAT number must be 10 digits and start with 4';
+            }
+            return '';
+        }
+
+        if (field === 'contactNumber') {
+            if (!normalized) return 'Contact number is required';
+            if (!contactNumberRegex.test(normalized)) return 'Contact number contains invalid characters';
+
+            const digitsOnly = normalized.replace(/\D/g, '');
+            if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+                return 'Contact number must be between 8 and 15 digits';
+            }
+            if (/^(\d)\1+$/.test(digitsOnly)) return 'Please enter a valid contact number';
+            if (['12345678', '123456789', '1234567890', '0123456789'].includes(digitsOnly)) {
+                return 'Please enter a valid contact number';
+            }
+            return '';
+        }
+
+        if (field === 'contactEmail') {
+            if (!normalized) return 'Contact email is required';
+            if (!emailRegex.test(normalized)) return 'Invalid email format';
+            if (normalized.includes('..')) return 'Invalid email format';
+            if (normalized.startsWith('.') || normalized.endsWith('.')) return 'Invalid email format';
+            return '';
+        }
+
+        return '';
+    }, [companyNameRegex, contactNumberRegex, emailRegex, looksLikePlaceholderText, normalizeSpaces, sanitizeCompanyInfoValue, vatNumberRegex]);
 
     const readFileAsync = (file, fileExtension) => {
         return new Promise((resolve, reject) => {
@@ -457,19 +566,31 @@ const BulkReviewStep = () => {
 
     const validateForm = () => {
         const newErrors = {};
+        const normalizedCompanyInfo = {
+            companyName: sanitizeCompanyInfoValue('companyName', companyInfo.companyName),
+            vatNumber: sanitizeCompanyInfoValue('vatNumber', companyInfo.vatNumber),
+            contactNumber: sanitizeCompanyInfoValue('contactNumber', companyInfo.contactNumber),
+            contactEmail: sanitizeCompanyInfoValue('contactEmail', companyInfo.contactEmail)
+        };
 
-        if (!companyInfo.companyName?.trim()) {
-            newErrors.companyName = 'Company name is required';
-        }
+        const fieldsToValidate = ['companyName', 'vatNumber', 'contactNumber', 'contactEmail'];
+        fieldsToValidate.forEach((field) => {
+            const fieldError = validateCompanyField(field, normalizedCompanyInfo[field]);
+            if (fieldError) {
+                newErrors[field] = fieldError;
+            }
+        });
 
-        if (!companyInfo.contactNumber?.trim()) {
-            newErrors.contactNumber = 'Contact number is required';
-        }
+        const hasCompanyInfoUpdates = fieldsToValidate.some(
+            (field) => (companyInfo[field] || '') !== normalizedCompanyInfo[field]
+        );
 
-        if (!companyInfo.contactEmail?.trim()) {
-            newErrors.contactEmail = 'Contact email is required';
-        } else if (!emailRegex.test(companyInfo.contactEmail)) {
-            newErrors.contactEmail = 'Invalid email format';
+        if (hasCompanyInfoUpdates) {
+            dispatch(setCompanyInfo(normalizedCompanyInfo));
+            syncCurrentBulkOrder({
+                companyInfo: normalizedCompanyInfo,
+                deliveryOption
+            });
         }
 
         if (deliveryOption === 'multiple') {
@@ -487,7 +608,8 @@ const BulkReviewStep = () => {
     };
 
     const handleInputChange = useCallback((field, value) => {
-        const newCompanyInfo = { ...companyInfo, [field]: value };
+        const sanitizedValue = sanitizeCompanyInfoValue(field, value);
+        const newCompanyInfo = { ...companyInfo, [field]: sanitizedValue };
 
         dispatch(setCompanyInfo(newCompanyInfo));
         syncCurrentBulkOrder({
@@ -495,13 +617,36 @@ const BulkReviewStep = () => {
             deliveryOption,
         });
 
-        if (errors[field]) {
-            setErrors(prev => ({
+        setErrors((prev) => {
+            if (!prev[field]) return prev;
+            return {
                 ...prev,
-                [field]: ''
-            }));
+                [field]: validateCompanyField(field, sanitizedValue)
+            };
+        });
+    }, [companyInfo, deliveryOption, dispatch, sanitizeCompanyInfoValue, syncCurrentBulkOrder, validateCompanyField]);
+
+    const handleInputBlur = useCallback((field, value) => {
+        const sanitizedValue = sanitizeCompanyInfoValue(field, value);
+        const currentValue = companyInfo[field] || '';
+        const nextCompanyInfo = currentValue === sanitizedValue
+            ? companyInfo
+            : { ...companyInfo, [field]: sanitizedValue };
+
+        if (nextCompanyInfo !== companyInfo) {
+            dispatch(setCompanyInfo(nextCompanyInfo));
+            syncCurrentBulkOrder({
+                companyInfo: nextCompanyInfo,
+                deliveryOption
+            });
         }
-    }, [companyInfo, deliveryOption, errors, dispatch, syncCurrentBulkOrder]);
+
+        const fieldError = validateCompanyField(field, sanitizedValue);
+        setErrors((prev) => ({
+            ...prev,
+            [field]: fieldError
+        }));
+    }, [companyInfo, deliveryOption, dispatch, sanitizeCompanyInfoValue, syncCurrentBulkOrder, validateCompanyField]);
 
     const handleDeliveryOptionChange = useCallback((value) => {
         syncCurrentBulkOrder({
@@ -524,7 +669,7 @@ const BulkReviewStep = () => {
     // Add to Cart Handler
     const handleAddToCart = () => {
         if (!validateForm()) {
-            toast.error('Please fill in all required fields');
+            toast.error('Please correct the highlighted fields');
             return;
         }
 
@@ -546,7 +691,7 @@ const BulkReviewStep = () => {
 
     const handleProceedToCheckout = () => {
         if (!validateForm()) {
-            toast.error('Please fill in all required fields');
+            toast.error('Please correct the highlighted fields');
             return;
         }
         dispatch(goNext(2));
@@ -779,6 +924,9 @@ const BulkReviewStep = () => {
                                         placeholder="Your Company Name*"
                                         value={companyInfo.companyName || ''}
                                         onChange={(e) => handleInputChange('companyName', e.target.value)}
+                                        onBlur={(e) => handleInputBlur('companyName', e.target.value)}
+                                        maxLength={100}
+                                        autoComplete="organization"
                                         className={`w-full px-4 py-3 border bg-white ${errors.companyName ? 'border-red-500' : 'border-[#1A1A1A33]'} text-black rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                     />
                                     {errors.companyName && (
@@ -792,8 +940,14 @@ const BulkReviewStep = () => {
                                         placeholder="Vat Number (e.g., 4001234567)"
                                         value={companyInfo.vatNumber || ''}
                                         onChange={(e) => handleInputChange('vatNumber', e.target.value)}
-                                        className="w-full px-4 py-3 border bg-white border-[#1A1A1A33] rounded-[15px]  focus:outline-none text-black focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                        onBlur={(e) => handleInputBlur('vatNumber', e.target.value)}
+                                        inputMode="numeric"
+                                        maxLength={10}
+                                        className={`w-full px-4 py-3 border bg-white ${errors.vatNumber ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] focus:outline-none text-black focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                     />
+                                    {errors.vatNumber && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.vatNumber}</p>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -803,6 +957,10 @@ const BulkReviewStep = () => {
                                             placeholder="Your Contact No.*"
                                             value={companyInfo.contactNumber || ''}
                                             onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                                            onBlur={(e) => handleInputBlur('contactNumber', e.target.value)}
+                                            inputMode="tel"
+                                            maxLength={20}
+                                            autoComplete="tel"
                                             className={`w-full px-4 py-3 bg-white border ${errors.contactNumber ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                         />
                                         {errors.contactNumber && (
@@ -815,6 +973,9 @@ const BulkReviewStep = () => {
                                             placeholder="Your Contact Email*"
                                             value={companyInfo.contactEmail || ''}
                                             onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                                            onBlur={(e) => handleInputBlur('contactEmail', e.target.value)}
+                                            maxLength={254}
+                                            autoComplete="email"
                                             className={`w-full px-4 py-3 bg-white border ${errors.contactEmail ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                         />
                                         {errors.contactEmail && (

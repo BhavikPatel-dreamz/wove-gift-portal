@@ -224,7 +224,7 @@ const CartPage = () => {
                     </defs>
                   </svg>
                 </span>
-                <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Previous</span>
+                <span className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-white">Continue Shopping</span>
               </div>
             </div>
           </Link>

@@ -1336,7 +1336,7 @@ export default function SubCategorySelector() {
 
   return (
     <div className="min-h-screen bg-[#FFF] py-30">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
                 md:flex-row md:items-center md:justify-between md:gap-0">
@@ -1440,7 +1440,7 @@ export default function SubCategorySelector() {
 
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           {/* Custom Card Option */}
           <div onClick={() => setIsCustomizing(true)} className="group cursor-pointer">
             <div className="h-full rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl bg-linear-to-b from-[#FFF5F5] to-white p-2 border-2 border-dashed border-[#FFB4B4] hover:border-pink-400">

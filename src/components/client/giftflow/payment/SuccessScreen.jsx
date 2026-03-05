@@ -57,14 +57,14 @@ const SuccessScreen = ({
       orderList.forEach((o) => {
         const quantity = o.quantity || 0;
         const amount = o.amount || 0;
-        
+
         // Add to total vouchers
         totalVouchers += quantity;
-        
+
         // Calculate this order's total (amount × quantity) and add to running total
         const orderTotal = amount * quantity;
         totalAmount += orderTotal;
-        
+
         console.log(`Order: amount=${amount}, quantity=${quantity}, orderTotal=${orderTotal}`);
       });
     });
@@ -118,7 +118,14 @@ const SuccessScreen = ({
     mb-6
   "
               >
-                <strong className="font-bold">Need help?</strong> Have questions or want to cancel or modify your gift? <Link href="/support">Contact Support</Link>
+                <strong className="font-bold">Need help?</strong>
+                Have questions or want to cancel or modify your gift?{" "}
+                <Link
+                  href="/support"
+                  className="text-blue-600 font-semibold underline hover:text-blue-800"
+                >
+                  Contact Support
+                </Link>
               </p>
 
             </div>

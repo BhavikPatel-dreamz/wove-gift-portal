@@ -20,7 +20,6 @@ const GiftCardSelector = () => {
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
 
-  // Set max amount based on mode: 5000 for individual, 25000 for bulk
   const maxAmount = isBulkMode ? 25000 : 5000;
 
   const [customAmount, setCustomAmount] = useState(
@@ -56,9 +55,7 @@ const GiftCardSelector = () => {
   const handleCustomAmountSelect = () => {
     if (customAmount < minAmount || customAmount > maxAmount) {
       alert(
-        `Amount must be between ${getCurrencySymbol(
-          currency
-        )} ${minAmount} and ${getCurrencySymbol(currency)} ${maxAmount}`
+        `Amount must be between ${getCurrencySymbol(currency)} ${minAmount} and ${getCurrencySymbol(currency)} ${maxAmount}`
       );
       return;
     }
@@ -92,6 +89,7 @@ const GiftCardSelector = () => {
   return (
     <div className="min-h-screen bg-white bg-[linear-gradient(126deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)] py-30 px-4">
       <div className="max-w-7xl mx-auto sm:px-6">
+
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
                 md:flex-row md:items-center md:justify-between md:gap-0">
@@ -99,94 +97,50 @@ const GiftCardSelector = () => {
           {/* Previous Button */}
           <button
             className="
-    relative inline-flex items-center justify-center gap-2
-    px-5 py-3 rounded-full font-semibold text-base
-    text-[#4A4A4A] bg-transparent border border-transparent
-    transition-all duration-300 overflow-hidden group cursor-pointer
-  "
+              relative inline-flex items-center justify-center gap-2
+              px-5 py-3 rounded-full font-semibold text-base
+              text-[#4A4A4A] bg-transparent border border-transparent
+              transition-all duration-300 overflow-hidden group cursor-pointer
+            "
             onClick={() => dispatch(goBack())}
           >
-            {/* Outer gradient border */}
-            <span
-              className="
-      absolute inset-0 rounded-full p-[1.5px]
-      bg-linear-to-r from-[#ED457D] to-[#FA8F42]
-    "
-            ></span>
-
-            <span
-              className="
-      absolute inset-0.5 rounded-full bg-[#fdf1f3]
-      transition-all duration-300
-      group-hover:bg-linear-to-r 
-      group-hover:from-[#ED457D] 
-      group-hover:to-[#FA8F42]
-    "
-            ></span>
-
-            {/* Button content */}
+            <span className="absolute inset-0 rounded-full p-[1.5px] bg-linear-to-r from-[#ED457D] to-[#FA8F42]" />
+            <span className="absolute inset-0.5 rounded-full bg-[#fdf1f3] transition-all duration-300 group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]" />
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-
-              {/* 👇 Wrap SVG */}
               <span className="transition-transform duration-300 group-hover:-translate-x-1">
-                <svg
-                  width="8"
-                  height="9"
-                  viewBox="0 0 8 9"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
-                >
-                  <path
-                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
-                    fill="currentColor"
-                  />
+                <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
+                  <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="currentColor" />
                 </svg>
               </span>
-
               Previous
             </div>
           </button>
 
           {/* Bulk Gifting Indicator */}
           {isBulkMode && (
-            <div
-              className="
-        flex items-center gap-3 justify-center w-full
-        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
-      "
-            >
+            <div className="flex items-center gap-3 justify-center w-full md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2">
               <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
-
               <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
-                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
-                    Bulk Gifting
-                  </span>
+                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">Bulk Gifting</span>
                 </div>
               </div>
-
               <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
-          {/* Desktop spacer only */}
           <div className="md:block w-35" />
         </div>
 
         {/* Header */}
         <div className="text-center mb-8 sm:mb-10 md:mb-12 px-4">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-5 mt-1 sm:mt-2">
-            {isBulkMode
-              ? 'Choose Gift Amount (Max 25,000)'
-              : 'Choose Gift Amount (Max 5,000)'}
+            {isBulkMode ? 'Choose Gift Amount (Max 25,000)' : 'Choose Gift Amount (Max 5,000)'}
           </h1>
-
           <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto">
             Select the perfect amount for your {selectedBrand?.brandName || 'Kecks'} gift card
           </p>
         </div>
-
 
         {/* Amount Cards */}
         {denominationType !== 'amount' && presetAmounts.length > 0 && (
@@ -197,17 +151,12 @@ const GiftCardSelector = () => {
                 className="relative rounded-xl group cursor-pointer inline-flex p-[2px]"
                 onClick={() => handleAmountClick(amount)}
               >
-                {/* Gradient border — hidden by default, shown on hover */}
                 <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
-                {/* Original button — only border-radius adjusted to nest inside the ring */}
                 <button
-                  className={`relative cursor-pointer bg-white rounded-[10px] border-2 p-8 w-45 transition-all duration-200 hover:shadow-md ${localSelectedAmount?.id === amount.id
-                    ? 'border-purple-400 shadow-lg scale-105'
-                    : 'border-gray-200'
-                    }`}
+                  className={`relative cursor-pointer bg-white rounded-[10px] border-2 p-8 w-45 transition-all duration-200 hover:shadow-md ${
+                    localSelectedAmount?.id === amount.id ? 'border-purple-400 shadow-lg scale-105' : 'border-gray-200'
+                  }`}
                 >
-                  {/* Gift Box Emoji */}
                   <div className="flex justify-center mb-5">
                     <div className="text-5xl">
                       <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -238,11 +187,7 @@ const GiftCardSelector = () => {
                       </svg>
                     </div>
                   </div>
-
-                  {/* Dotted Line */}
-                  <div className="border-t border-dashed border-gray-300 mb-5"></div>
-
-                  {/* Amount */}
+                  <div className="border-t border-dashed border-gray-300 mb-5" />
                   <div className="text-center">
                     <div className="text-lg font-semibold text-gray-800">
                       {getCurrencySymbol(amount.currency)}{amount.value}
@@ -254,76 +199,91 @@ const GiftCardSelector = () => {
           </div>
         )}
 
-        {/* Custom Amount Input */}
+        {/* Custom Amount Input — fixed for 768px+ */}
         {denominationType !== 'fixed' && (
           <div className="max-w-4xl mx-auto mt-8 px-4 sm:px-0">
             <div className="rounded-2xl p-[2px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42] shadow-sm">
               <div className="bg-white rounded-[14px] p-5 sm:p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
 
-                  {/* Left side - Text */}
+                {/*
+                  ✅ KEY FIX:
+                  - Mobile (<640px):     full column stack
+                  - Tablet (640–767px):  row: label left, input+button right
+                  - md+ (768px+):        row: label left, input+button right — properly spaced
+                  Changed from `lg:flex-row` → `sm:flex-row` so the row layout kicks in at 640px
+                  and remains solid through md/lg/xl breakpoints.
+                */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
+
+                  {/* Left: Label */}
                   <div className="shrink-0">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1">
                       Set Custom Amount
                     </h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-500">
                       Choose your own amount (max {formatAmount(maxAmount)})
                     </p>
                   </div>
 
-                  {/* Right side - Input and Button */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+                  {/* Right: Input + Button */}
+                  <div className="flex flex-wrap flex-col xs:flex-row sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
 
-                    {/* Input */}
-                    <div className="relative w-full sm:w-72">
-                      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-base font-medium">
+                    {/* Currency Input */}
+                    <div className="relative flex-1 sm:flex-none sm:w-50 md:w-50">
+                      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-base font-medium select-none">
                         {getCurrencySymbol(currency)}
                       </div>
                       <input
-                        type="text"
+                        type="number"
                         value={customAmount}
-                        onChange={(e) => setCustomAmount(e.target.value)}
-                        className="w-full pl-8 pr-4 py-2.5 rounded-3xl border border-[#1A1A1A33] text-base font-medium transition-all bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#ED457D]/20"
-                        placeholder="Enter Your Amount"
+                        onChange={(e) => setCustomAmount(Number(e.target.value))}
+                        min={minAmount}
+                        max={maxAmount}
+                        className="
+                          w-full pl-8 pr-4 py-2.5
+                          rounded-3xl border border-[#1A1A1A33]
+                          text-base font-medium bg-white text-gray-900
+                          placeholder-gray-400
+                          transition-all duration-200
+                          focus:outline-none focus:ring-2 focus:ring-[#ED457D]/20 focus:border-[#ED457D]/50
+                        "
+                        placeholder="Enter amount"
                       />
                     </div>
 
-                    {/* Button */}
+                    {/* Select Button */}
                     <button
                       onClick={handleCustomAmountSelect}
-                      className="group cursor-pointer w-full sm:w-auto
-  bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
-  text-white font-semibold text-sm md:text-base
-  px-5 py-2.5 md:px-6 md:py-3
-  rounded-full
-  transition-all duration-300
-  shadow-sm hover:shadow-md
-  flex items-center justify-center gap-2
-  whitespace-nowrap mx-auto md:mx-0"
+                      className="
+                        group cursor-pointer
+                        shrink-0
+                        bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                        text-white font-semibold text-sm md:text-base
+                        px-6 py-2.5
+                        rounded-full
+                        transition-all duration-300
+                        shadow-sm hover:shadow-md hover:opacity-90
+                        flex items-center justify-center gap-2
+                        whitespace-nowrap
+                        w-full sm:w-auto md:w-auto
+                      "
                     >
                       Select
-
                       <span className="transition-transform duration-300 group-hover:translate-x-1">
-                        <svg
-                          width="8"
-                          height="9"
-                          viewBox="0 0 8 9"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-                            fill="white"
-                          />
+                        <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
                         </svg>
                       </span>
                     </button>
+
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

@@ -181,9 +181,9 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                             {/* Email Subject */}
                             <div className="px-4 py-3 border-b border-gray-200">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-lg">🎉</span>
+                                    <span className="text-lg">🎁</span>
                                     <p className="text-sm font-semibold text-gray-900 truncate">
-                                        Wishing you Happy Birthday!!!
+                                       {`${selectedSubCategory?.name} - You've received a gift from ${formData?.yourFullName}`}
                                     </p>
                                 </div>
                             </div>
