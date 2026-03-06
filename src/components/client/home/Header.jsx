@@ -370,7 +370,7 @@ const Header = () => {
                     setWishlistOpen((prev) => !prev);
                     setOpenDropdown(false);
                   }}
-                  className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 rounded-full border border-[#ED457D]/50 bg-transparent hover:bg-[#ED457D]/10 transition-all duration-200 cursor-pointer"
+                  className="relative flex items-center justify-center p-1 sm:p-1.5 lg:p-2 rounded-full border border-[#ED457D]/50 bg-transparent hover:bg-[#ED457D]/10 transition-all duration-200 cursor-pointer"
                   aria-label="Wishlist"
                   aria-expanded={wishlistOpen}
                 >
@@ -443,7 +443,7 @@ const Header = () => {
               {/* Cart - Always visible with combined count */}
               <Link
                 href="/cart"
-                className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 
+                className="relative flex items-center justify-center p-1 sm:p-1.5 lg:p-2 
       rounded-full border border-[#ED457D]/50 bg-transparent
       hover:bg-[#ED457D]/10 transition-all duration-200"
                 aria-label="Shopping cart"
