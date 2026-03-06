@@ -30,7 +30,7 @@ export async function getDashboardData(options = {}) {
       weeklyPerformance,
       occasionMetrics,
     ] = await Promise.all([
-      getCoreMetrics(dateRange, brandId),
+      getCoreMetrics(dateRange, brandId, period),
       getTopPerformingBrands(dateRange, brandId),
       getActiveBrandPartners(brandId),
       getMonthlyTrends(dateRange, brandId),
@@ -69,8 +69,9 @@ export async function getDashboardData(options = {}) {
 }
 
 // ✅ OPTIMIZATION 1: Combine all core metrics into single parallel execution
-async function getCoreMetrics(dateRange, brandId = null) {
+async function getCoreMetrics(dateRange, brandId = null, period = "all") {
   const dateFilter = buildDateFilter(dateRange);
+  const previousDateRange = getPreviousDateRange(dateRange, period);
   const orderWhere = {
     ...dateFilter,
     paymentStatus: "COMPLETED",
@@ -89,6 +90,7 @@ async function getCoreMetrics(dateRange, brandId = null) {
     paymentMethods,
     customers,
     previousPeriodCount,
+    previousPendingSettlements,
   ] = await Promise.all([
     // Voucher codes with redemption count
     prisma.voucherCode.findMany({
@@ -166,6 +168,21 @@ async function getCoreMetrics(dateRange, brandId = null) {
           },
         })
       : Promise.resolve(0),
+
+    // Previous period pending settlements (for gain/loss indicator)
+    previousDateRange
+      ? prisma.settlements.findMany({
+          where: {
+            status: "Pending",
+            createdAt: {
+              gte: previousDateRange.start,
+              lte: previousDateRange.end,
+            },
+            ...(brandId && { brandId }),
+          },
+          select: { netPayable: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   // Process voucher metrics
@@ -175,7 +192,10 @@ async function getCoreMetrics(dateRange, brandId = null) {
   );
 
   // Process settlement metrics
-  const settlementMetrics = processSettlementMetrics(settlements);
+  const settlementMetrics = processSettlementMetrics(
+    settlements,
+    previousPendingSettlements
+  );
 
   // Process revenue metrics
   const revenueMetrics = {
@@ -285,7 +305,7 @@ function processVoucherMetrics(voucherCodes, previousPeriodCount) {
 }
 
 // ✅ OPTIMIZATION 3: Process settlement data in memory
-function processSettlementMetrics(settlements) {
+function processSettlementMetrics(settlements, previousPendingSettlements = []) {
   let pendingCount = 0,
     pendingAmount = 0;
   let paidCount = 0,
@@ -337,8 +357,29 @@ function processSettlementMetrics(settlements) {
     .sort((a, b) => b._sum.netPayable - a._sum.netPayable)
     .slice(0, 10);
 
+  const previousPendingAmount = previousPendingSettlements.reduce(
+    (sum, settlement) => sum + settlement.netPayable,
+    0
+  );
+  const previousPendingCount = previousPendingSettlements.length;
+  const pendingChangeRate = calculateGrowthRateNumber(
+    pendingAmount,
+    previousPendingAmount
+  );
+  const pendingCountChangeRate = calculateGrowthRateNumber(
+    pendingCount,
+    previousPendingCount
+  );
+
   return {
-    pending: { count: pendingCount, amount: pendingAmount },
+    pending: {
+      count: pendingCount,
+      amount: pendingAmount,
+      previousCount: previousPendingCount,
+      previousAmount: previousPendingAmount,
+      changeRate: pendingChangeRate,
+      countChangeRate: pendingCountChangeRate,
+    },
     paid: { count: paidCount, amount: paidAmount },
     inReview: { count: inReviewCount, amount: inReviewAmount },
     totals: {
@@ -840,8 +881,69 @@ function buildDateFilter(dateRange) {
   };
 }
 
+function getPreviousDateRange(dateRange, period = "all") {
+  if (!dateRange.start || !dateRange.end) return null;
+
+  const toDateWithSafeDay = (date, { months = 0, years = 0 } = {}) => {
+    const targetYear = date.getFullYear() + years;
+    const targetMonth = date.getMonth() + months;
+    const targetLastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const targetDay = Math.min(date.getDate(), targetLastDay);
+
+    return new Date(
+      targetYear,
+      targetMonth,
+      targetDay,
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds()
+    );
+  };
+
+  switch (period) {
+    case "day": {
+      const offset = 24 * 60 * 60 * 1000;
+      return {
+        start: new Date(dateRange.start.getTime() - offset),
+        end: new Date(dateRange.end.getTime() - offset),
+      };
+    }
+    case "week": {
+      const offset = 7 * 24 * 60 * 60 * 1000;
+      return {
+        start: new Date(dateRange.start.getTime() - offset),
+        end: new Date(dateRange.end.getTime() - offset),
+      };
+    }
+    case "month":
+      return {
+        start: toDateWithSafeDay(dateRange.start, { months: -1 }),
+        end: toDateWithSafeDay(dateRange.end, { months: -1 }),
+      };
+    case "year":
+      return {
+        start: toDateWithSafeDay(dateRange.start, { years: -1 }),
+        end: toDateWithSafeDay(dateRange.end, { years: -1 }),
+      };
+    default: {
+      const currentPeriodDurationMs = dateRange.end.getTime() - dateRange.start.getTime();
+
+      return {
+        start: new Date(dateRange.start.getTime() - currentPeriodDurationMs - 1),
+        end: new Date(dateRange.start.getTime() - 1),
+      };
+    }
+  }
+}
+
 function calculateGrowthRate(current, previous) {
   if (!previous || previous === 0) return null;
+  return parseFloat((((current - previous) / previous) * 100).toFixed(2));
+}
+
+function calculateGrowthRateNumber(current, previous) {
+  if (!previous || previous === 0) return 0;
   return parseFloat((((current - previous) / previous) * 100).toFixed(2));
 }
 
@@ -870,7 +972,14 @@ function getEmptyDashboardResponse(period, dateRange) {
         dailyTrend: [],
       },
       settlements: {
-        pending: { count: 0, amount: 0 },
+        pending: {
+          count: 0,
+          amount: 0,
+          previousCount: 0,
+          previousAmount: 0,
+          changeRate: 0,
+          countChangeRate: 0,
+        },
         paid: { count: 0, amount: 0 },
         inReview: { count: 0, amount: 0 },
         totals: { netPayable: 0, commission: 0, vat: 0 },

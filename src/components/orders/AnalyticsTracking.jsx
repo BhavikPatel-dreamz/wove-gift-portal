@@ -132,7 +132,7 @@ const AnalyticsTracking = ({
   }, []);
 
   // Get current month label for display
-  const currentMonthLabel = currentMonth 
+  const currentMonthLabel = currentMonth
     ? monthOptions.find(m => m.value === currentMonth)?.label || 'Select Month'
     : 'Select Month';
 
@@ -145,78 +145,10 @@ const AnalyticsTracking = ({
           <h1 className="text-xl font-bold text-gray-900">
             Analytics & Performance Tracking
           </h1>
-          <div className="h-px bg-gray-300 mt-6"></div>
+          {/* <div className="h-px bg-gray-300 mt-6"></div> */}
         </div>
 
-        {/* Filters Section */}
-        <div className="mb-6 bg-linear-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Filter Analytics
-          </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Brand Filter */}
-            <div className="relative">
-              <label className="block text-xs font-medium text-gray-600 mb-2">
-                Brand
-              </label>
-              <CustomDropdown
-                options={brandOptions}
-                placeholder="All Brands"
-                value={currentBrandId}
-                onChange={handleBrandFilter}
-                className="w-full"
-              />
-            </div>
-
-            {/* Period Filter */}
-            <div className="relative">
-              <label className="block text-xs font-medium text-gray-600 mb-2">
-                Quick Period
-              </label>
-              <CustomDropdown
-                options={periodOptions}
-                placeholder="Select Period"
-                value={currentPeriod}
-                onChange={handlePeriodFilter}
-                className="w-full"
-              />
-            </div>
-
-            {/* Month Filter */}
-            <div className="relative">
-              <label className="block text-xs font-medium text-gray-600 mb-2">
-                Specific Month
-              </label>
-              <CustomDropdown
-                value={currentMonthLabel}
-                onChange={handleMonthChange}
-                options={monthOptions}
-                placeholder="Select Month"
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          {/* Clear Filters Button */}
-          {(currentBrandId || currentDateFrom || currentDateTo || currentMonth || (currentPeriod && currentPeriod !== 'lastMonth')) && (
-            <div className="mt-4">
-              <button
-                onClick={() => handleUpdateParams({
-                  brandId: '',
-                  dateFrom: '',
-                  dateTo: '',
-                  period: 'lastMonth',
-                  filterMonth: ''
-                })}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Clear All Filters
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* Loading Overlay */}
         {isPending && (
@@ -229,14 +161,80 @@ const AnalyticsTracking = ({
         )}
 
         {/* Main Content - White Card */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+        <div className="mb-6 bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
 
+          <div className=" mb-6">
+
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+
+              {/* Title */}
+              <h2 className="text-lg font-semibold text-gray-900 whitespace-nowrap">
+                Redemption Rate by Brand
+              </h2>
+
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-3">
+
+                {/* Brand Filter */}
+                <div className="w-[180px]">
+                  <CustomDropdown
+                    options={brandOptions}
+                    placeholder="All Brands"
+                    value={currentBrandId}
+                    onChange={handleBrandFilter}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Period Filter */}
+                {/* <div className="w-[160px]">
+                  <CustomDropdown
+                    options={periodOptions}
+                    placeholder="Select Period"
+                    value={currentPeriod}
+                    onChange={handlePeriodFilter}
+                    className="w-full"
+                  />
+                </div> */}
+
+                {/* Month Filter */}
+                <div className="w-[180px]">
+                  <CustomDropdown
+                    value={currentMonthLabel}
+                    onChange={handleMonthChange}
+                    options={monthOptions}
+                    placeholder="Select Month"
+                    className="min-w-30"
+                  />
+                </div>
+
+                {/* Clear Filters */}
+                {(currentBrandId ||
+                  currentDateFrom ||
+                  currentDateTo ||
+                  currentMonth ||
+                  (currentPeriod && currentPeriod !== "lastMonth")) && (
+                    <button
+                      onClick={() =>
+                        handleUpdateParams({
+                          brandId: "",
+                          dateFrom: "",
+                          dateTo: "",
+                          period: "lastMonth",
+                          filterMonth: "",
+                        })
+                      }
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+
+              </div>
+            </div>
+          </div>
           {/* Redemption Rate by Brand */}
           <div className="mb-10">
-            <h2 className="text-base font-semibold text-gray-900 mb-5">
-              Redemption Rate by Brand
-            </h2>
-
             {brandRedemptions.length > 0 ? (
               <>
                 {/* First Row - 4 columns */}
@@ -287,11 +285,16 @@ const AnalyticsTracking = ({
                       >
                         {/* Brand Info Row */}
                         <div className="flex items-center gap-3 mb-3">
+
                           {/* Logo */}
-                          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+                          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm shrink-0 overflow-hidden p-1">
                             {brand.logo ? (
-                              brand.logo.startsWith('http') ? (
-                                <img src={brand.logo} alt={brand.name} className="w-8 h-8 object-contain" />
+                              brand.logo.startsWith("http") ? (
+                                <img
+                                  src={brand.logo}
+                                  alt={brand.name}
+                                  className="w-full h-full object-contain"
+                                />
                               ) : (
                                 <span className="text-xl">{brand.logo}</span>
                               )
@@ -299,20 +302,22 @@ const AnalyticsTracking = ({
                               <span className="text-xl">🎁</span>
                             )}
                           </div>
+
                           {/* Brand Name */}
-                          <h3 className="font-semibold text-gray-900 text-sm">
+                          <h3 className="text-[14px] font-semibold text-[#1A1A1A] leading-[14px]">
                             {brand.name}
                           </h3>
+
                         </div>
 
                         {/* Stats Row */}
                         <div className="flex items-center justify-between">
                           {/* Percentage */}
-                          <span className="text-xl font-semibold text-gray-900">
+                          <span className="text-[14px] font-semibold text-[#4A4A4A] leading-[14px]">
                             {brand.redemptionRate}%
                           </span>
                           {/* Badge */}
-                          <span className="px-3 py-1 bg-white text-gray-600 rounded-full text-xs font-normal border border-gray-300">
+                          <span className="px-3 py-1 bg-white text-[#64748B] rounded-full text-[12px] font-medium leading-[20px] border border-gray-300 font-inter">
                             {brand.redeemed}/{brand.total} Redeemed
                           </span>
                         </div>
@@ -330,9 +335,9 @@ const AnalyticsTracking = ({
             )}
           </div>
 
-          {/* Settlement Overview */}
+          {/* ── Settlement Overview ── */}
           <div>
-            <h2 className="text-base font-semibold text-gray-900 mb-5">
+            <h2 className="text-base font-bold text-gray-900 mb-5">
               Settlement Overview
             </h2>
 
@@ -341,44 +346,27 @@ const AnalyticsTracking = ({
                 {settlements.map((settlement, index) => (
                   <div
                     key={index}
-                    className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow"
+                    className="border border-gray-200 rounded-xl p-4 bg-white hover:shadow-sm transition"
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      {/* Left Side */}
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 text-sm mb-1">
-                          {settlement.brand}
-                        </h3>
-                        <p className="text-xl font-semibold text-green-600">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-gray-900 text-sm">{settlement.brand}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-base font-bold text-green-600">
                           {settlement.currency === 'ZAR' ? 'R' : settlement.currency === 'USD' ? '$' : '₹'}
-                          {settlement.amount.toLocaleString()}
-                        </p>
+                          {settlement.amount?.toLocaleString()}
+                        </span>
+                        <span className={`px-3 py-1 rounded-md text-xs font-semibold ${settlement.status === 'Paid'
+                          ? 'bg-green-50 text-green-600'
+                          : settlement.status === 'Partial'
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'bg-orange-50 text-orange-500'
+                          }`}>
+                          {settlement.status}
+                        </span>
                       </div>
-                      {/* Status Badge */}
-                      <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${settlement.status === 'Paid'
-                        ? 'bg-green-50 text-green-600 border-green-300'
-                        : settlement.status === 'Partial'
-                          ? 'bg-blue-50 text-blue-600 border-blue-300'
-                          : 'bg-orange-50 text-orange-600 border-orange-300'
-                        }`}>
-                        {settlement.status}
-                      </span>
                     </div>
 
-                    {/* Additional Details */}
-                    <div className="text-xs text-gray-500 space-y-1">
-                      {settlement.settlementPeriod && (
-                        <p>Period: {settlement.settlementPeriod}</p>
-                      )}
-                      {settlement.totalPaid > 0 && (
-                        <p>Paid: {settlement.currency === 'ZAR' ? 'R' : settlement.currency === 'USD' ? '$' : '₹'}{settlement.totalPaid.toLocaleString()}</p>
-                      )}
-                      {settlement.remainingAmount > 0 && (
-                        <p className="text-orange-600 font-medium">
-                          Remaining: {settlement.currency === 'ZAR' ? 'R' : settlement.currency === 'USD' ? '$' : '₹'}{settlement.remainingAmount.toLocaleString()}
-                        </p>
-                      )}
-                    </div>
+
                   </div>
                 ))}
               </div>

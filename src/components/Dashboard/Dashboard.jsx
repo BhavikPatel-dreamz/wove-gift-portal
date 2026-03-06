@@ -169,13 +169,25 @@ const Dashboard = ({ dashboardData, shopParam }) => {
   };
 
 
-  const MetricCard = ({ title, value, subtitle, icon, trend, color = "blue", currency = false }) => {
+  const MetricCard = ({
+    title,
+    value,
+    subtitle,
+    icon,
+    trend,
+    trendLabel,
+    showTrend = false,
+    color = "blue",
+    currency = false
+  }) => {
     const colorClasses = {
       blue: "bg-blue-50 border-blue-200 text-blue-600",
       green: "bg-green-50 border-green-200 text-green-600",
       purple: "bg-purple-50 border-purple-200 text-purple-600",
       orange: "bg-orange-50 border-orange-200 text-orange-600"
     };
+    const hasTrend = showTrend && typeof trend === 'number' && !Number.isNaN(trend);
+    const isPositiveTrend = hasTrend && trend >= 0;
 
     return (
       <div className={`p-6 rounded-xl border-2 ${colorClasses[color]} transition-all hover:scale-105 hover:shadow-lg`}>
@@ -183,6 +195,16 @@ const Dashboard = ({ dashboardData, shopParam }) => {
           <div className="w-8 h-8">
             {icon}
           </div>
+          {hasTrend && (
+            <span
+              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${isPositiveTrend
+                ? 'border-green-200 bg-green-50 text-green-700'
+                : 'border-red-200 bg-red-50 text-red-700'
+                }`}
+            >
+              {isPositiveTrend ? '+' : ''}{trend.toFixed(1)}%
+            </span>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -193,6 +215,9 @@ const Dashboard = ({ dashboardData, shopParam }) => {
           </p>
 
           <p className="text-sm text-gray-600">{subtitle}</p>
+          {hasTrend && trendLabel && (
+            <p className="text-xs text-gray-500">{trendLabel}</p>
+          )}
         </div>
       </div>
     );
@@ -227,6 +252,24 @@ const Dashboard = ({ dashboardData, shopParam }) => {
     value: Number(item.totalAmount),
     orders: Number(item.orderCount),
   })) || [];
+  const selectedPeriod = searchParams.get('period') || 'month';
+  const hasCustomRange = selectedPeriod === 'custom' && Boolean(searchParams.get('startDate') && searchParams.get('endDate'));
+  const pendingComparisonText = (() => {
+    switch (selectedPeriod) {
+      case 'day':
+        return 'vs previous day';
+      case 'week':
+        return 'vs last week';
+      case 'month':
+        return 'vs last month';
+      case 'year':
+        return 'vs last year';
+      default:
+        return hasCustomRange ? 'vs previous range' : 'vs previous period';
+    }
+  })();
+
+  console.log("------",dashboardData?.metrics)
 
   return (
     <div className="min-h-screen bg-gray-50 px-1 py-6 md:py-6 md:px-6">
@@ -284,6 +327,9 @@ const Dashboard = ({ dashboardData, shopParam }) => {
             title="Pending Settlements"
             value={dashboardData?.metrics?.settlements?.pending?.amount?.toLocaleString() || '0'}
             subtitle={`${dashboardData?.metrics?.settlements?.pending?.count || 0} settlements pending`}
+            trend={dashboardData?.metrics?.settlements?.pending?.changeRate}
+            trendLabel={pendingComparisonText}
+            showTrend={true}
             icon={<>
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g clipPath="url(#clip0_1736_871)">
