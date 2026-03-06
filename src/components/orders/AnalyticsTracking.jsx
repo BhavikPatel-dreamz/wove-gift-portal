@@ -138,7 +138,7 @@ const AnalyticsTracking = ({
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-350 mx-auto px-6 py-8">
+      <div className="max-w-350 mx-auto px-6 py-8 pt-0">
 
         {/* Header */}
         <div className="mb-8">

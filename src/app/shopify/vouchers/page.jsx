@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getVouchers, getBulkOrderDetails } from "@/lib/action/voucherAction";
 import { Eye, Download, RefreshCw, Package, X, Search } from "lucide-react";
 import toast from "react-hot-toast";
@@ -55,6 +55,9 @@ export default function VouchersManagement() {
         status: "",
     });
 
+    // Debounce ref for bulk search
+    const bulkSearchTimerRef = useRef(null);
+
     const fetchVouchers = async () => {
         setLoading(true);
         try {
@@ -66,8 +69,6 @@ export default function VouchersManagement() {
                 pageSize: 10,
                 shop: shop
             });
-
-
 
             if (response.success) {
                 setVouchers(response.data);
@@ -87,9 +88,6 @@ export default function VouchersManagement() {
             setLoading(false);
         }
     };
-
-    console.log("vouchers", vouchers);
-
 
     const fetchBulkOrderDetails = async (bulkOrderNumber, orderNumber) => {
         setBulkLoading(true);
@@ -170,11 +168,26 @@ export default function VouchersManagement() {
         setBulkData(null);
         setBulkPagination({ currentPage: 1, totalPages: 1, totalCount: 0, from: 0, to: 0, total: 0 });
         setBulkFilters({ search: "", status: "" });
+        // Clear any pending debounce timer
+        if (bulkSearchTimerRef.current) {
+            clearTimeout(bulkSearchTimerRef.current);
+        }
     };
 
+    // FIX: Debounced bulk search — updates input instantly, delays API call by 500ms
     const handleBulkSearch = (search) => {
+        // Update input value immediately so the UI stays responsive
         setBulkFilters((prev) => ({ ...prev, search }));
-        setBulkPagination((prev) => ({ ...prev, currentPage: 1 }));
+
+        // Clear any existing timer
+        if (bulkSearchTimerRef.current) {
+            clearTimeout(bulkSearchTimerRef.current);
+        }
+
+        // Only reset pagination (which triggers the API call via useEffect) after 500ms pause
+        bulkSearchTimerRef.current = setTimeout(() => {
+            setBulkPagination((prev) => ({ ...prev, currentPage: 1 }));
+        }, 500);
     };
 
     const handleBulkFilter = (status) => {
@@ -256,7 +269,7 @@ export default function VouchersManagement() {
 
     const isAdmin = session?.user?.role === 'ADMIN';
 
-     const getCurrencySymbol = (code) =>
+    const getCurrencySymbol = (code) =>
         currencyList.find((c) => c.code === code)?.symbol || "";
 
     const customColumns = [
@@ -482,7 +495,7 @@ export default function VouchersManagement() {
                                             value={bulkFilters.status}
                                             onChange={(e) => handleBulkFilter(e.target.value)}
                                         >
-                                            <option value="">All Statuses</option>
+                                            <option value="">All Status</option>
                                             <option value="Active">Active</option>
                                             <option value="Redeemed">Redeemed</option>
                                             <option value="Expired">Expired</option>
@@ -551,13 +564,14 @@ export default function VouchersManagement() {
                                                     </div>
                                                 ))
                                             ) : (
+                                                // FIX: Single "no data" message — only shown once when not loading
                                                 <div className="text-center text-gray-500 py-10">No vouchers found matching your filters.</div>
                                             )}
                                         </div>
                                     )}
 
-                                    {/* Pagination */}
-                                    {!bulkLoading && bulkPagination.totalPages > 1 && (
+                                    {/* FIX: Pagination only shows when there IS data AND multiple pages */}
+                                    {!bulkLoading && bulkData?.children?.length > 0 && bulkPagination.totalPages > 1 && (
                                         <div className="flex justify-between items-center mt-6 pt-4 border-t">
                                             <div className="text-sm text-gray-600">
                                                 Page {bulkPagination.currentPage} of {bulkPagination.totalPages}

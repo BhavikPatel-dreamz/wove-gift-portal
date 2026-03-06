@@ -511,7 +511,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
                   value={bulkFilters.status}
                   onChange={(e) => handleBulkFilter(e.target.value)}
                 >
-                  <option value="">All Statuses</option>
+                  <option value="">All Status</option>
                   <option value="Active">Active</option>
                   <option value="Redeemed">Redeemed</option>
                   <option value="Expired">Expired</option>
