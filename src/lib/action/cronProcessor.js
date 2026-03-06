@@ -532,109 +532,136 @@ async function updateOrCreateSettlement(selectedBrand, order) {
     const periodEnd = new Date(orderDate.getFullYear(), orderDate.getMonth() + 1, 0, 23, 59, 59, 999);
     const settlementPeriod = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, "0")}`;
 
-    const brandTerms = selectedBrand.brandTerms;
-    const grossAmount = order.totalAmount;
-    const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
+    const [brandTermsFromDb, existingSettlement, orderTotals] = await Promise.all([
+      prisma.brandTerms.findUnique({
+        where: { brandId: selectedBrand.id },
+        select: {
+          settlementTrigger: true,
+          commissionType: true,
+          commissionValue: true,
+          vatRate: true,
+        },
+      }),
+      prisma.settlements.findFirst({
+        where: {
+          brandId: selectedBrand.id,
+          settlementPeriod,
+        },
+      }),
+      prisma.order.aggregate({
+        where: {
+          brandId: selectedBrand.id,
+          isPaid: true,
+          paymentStatus: "COMPLETED",
+          isActive: true,
+          allVouchersGenerated: true,
+          createdAt: {
+            gte: periodStart,
+            lte: periodEnd,
+          },
+        },
+        _sum: {
+          quantity: true,
+          totalAmount: true,
+        },
+      }),
+    ]);
 
-    const existingSettlement = await prisma.settlements.findFirst({
-      where: {
-        brandId: selectedBrand.id,
-        settlementPeriod,
-      },
-    });
+    const brandTerms = brandTermsFromDb || selectedBrand.brandTerms || null;
+    const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
+    const totalSold = orderTotals._sum.quantity || 0;
+    const totalSoldAmount = orderTotals._sum.totalAmount || 0;
+
+    const redeemedCount = existingSettlement?.totalRedeemed || 0;
+    const redeemedAmount = existingSettlement?.redeemedAmount || 0;
+    const outstanding = Math.max(0, totalSold - redeemedCount);
+    const outstandingAmount = Math.max(0, totalSoldAmount - redeemedAmount);
+
+    let commissionAmount = 0;
+    if (brandTerms?.commissionType === "Percentage") {
+      commissionAmount = Math.round((totalSoldAmount * (brandTerms.commissionValue || 0)) / 100);
+    } else if (brandTerms?.commissionType === "Fixed") {
+      commissionAmount = Math.round((brandTerms.commissionValue || 0) * totalSold);
+    }
+
+    const vatRate = brandTerms?.vatRate || 0;
+    const vatAmount = ((commissionAmount * vatRate) / 100).toFixed(2);
+    const netPayable = totalSoldAmount - commissionAmount;
 
     if (settlementTrigger === "onPurchase") {
-      // ✅ onPurchase: Commission, VAT, and netPayable are calculated NOW at purchase time.
-      // The redemption webhook will only update redeemedAmount/outstanding counts,
-      // NOT touch commissionAmount/vatAmount/netPayable.
-
-      let commissionAmount = 0;
-      if (brandTerms?.commissionType === "Percentage") {
-        commissionAmount = Math.round((grossAmount * brandTerms.commissionValue) / 100);
-      } else if (brandTerms?.commissionType === "Fixed") {
-        commissionAmount = Math.round(brandTerms.commissionValue * order.quantity);
-      }
-
-      const vatRate = brandTerms?.vatRate || 0;
-      const vatAmount = Math.round((commissionAmount * vatRate) / 100);
-      const netPayable = grossAmount - commissionAmount;
-
+      // onPurchase: always recompute and set final values from table totals + term percentages.
       if (existingSettlement) {
         await prisma.settlements.update({
           where: { id: existingSettlement.id },
           data: {
-            totalSold:         { increment: order.quantity },
-            totalSoldAmount:   { increment: grossAmount },
-            outstanding:       { increment: order.quantity },
-            outstandingAmount: { increment: grossAmount },
-            commissionAmount:  { increment: commissionAmount },
-            vatAmount:         { increment: vatAmount },
-            netPayable:        { increment: netPayable },
+            totalSold,
+            totalSoldAmount,
+            outstanding,
+            outstandingAmount,
+            commissionAmount,
+            vatAmount,
+            netPayable,
             updatedAt: new Date(),
           },
         });
-        console.log(`✅ [onPurchase] Settlement updated: ${settlementPeriod}`);
+        console.log(`✅ [onPurchase] Settlement recalculated: ${settlementPeriod}`);
       } else {
         await prisma.settlements.create({
           data: {
-            brandId:          selectedBrand.id,
+            brandId: selectedBrand.id,
             settlementPeriod,
             periodStart,
             periodEnd,
-            totalSold:        order.quantity,
-            totalSoldAmount:  grossAmount,
-            totalRedeemed:    0,
-            redeemedAmount:   0,
-            outstanding:      order.quantity,
-            outstandingAmount: grossAmount,
+            totalSold,
+            totalSoldAmount,
+            totalRedeemed: 0,
+            redeemedAmount: 0,
+            outstanding,
+            outstandingAmount,
             commissionAmount,
             vatAmount,
-            breakageAmount:   0,
+            breakageAmount: 0,
             netPayable,
             status: "Pending",
           },
         });
-        console.log(`✅ [onPurchase] Settlement created: ${settlementPeriod}`);
+        console.log(`✅ [onPurchase] Settlement created with recalculated totals: ${settlementPeriod}`);
       }
-
     } else {
-      // ✅ onRedemption: Commission, VAT, and netPayable are NOT calculated here.
-      // They are fully managed by the redemption webhook per actual redemption event.
-      // Purchase only seeds the row with sales volume and outstanding balances.
-
+      // onRedemption: commission/VAT/netPayable are managed by redemption processing only.
       if (existingSettlement) {
         await prisma.settlements.update({
           where: { id: existingSettlement.id },
           data: {
-            totalSold:         { increment: order.quantity },
-            totalSoldAmount:   { increment: grossAmount },
-            outstanding:       { increment: order.quantity },
-            outstandingAmount: { increment: grossAmount },
+            totalSold,
+            totalSoldAmount,
+            outstanding,
+            outstandingAmount,
             updatedAt: new Date(),
           },
         });
-        console.log(`✅ [onRedemption] Settlement updated: ${settlementPeriod}`);
+        console.log(`✅ [onRedemption] Settlement sales totals recalculated: ${settlementPeriod}`);
       } else {
         await prisma.settlements.create({
           data: {
-            brandId:          selectedBrand.id,
+            brandId: selectedBrand.id,
             settlementPeriod,
             periodStart,
             periodEnd,
-            totalSold:        order.quantity,
-            totalSoldAmount:  grossAmount,
-            totalRedeemed:    0,
-            redeemedAmount:   0,
-            outstanding:      order.quantity,
-            outstandingAmount: grossAmount,
-            commissionAmount: 0,   // ← redemption webhook owns this
-            vatAmount:        0,   // ← redemption webhook owns this
-            breakageAmount:   0,
-            netPayable:       0,   // ← redemption webhook owns this
+            totalSold,
+            totalSoldAmount,
+            totalRedeemed: 0,
+            redeemedAmount: 0,
+            outstanding,
+            outstandingAmount,
+            commissionAmount: 0, // redemption webhook owns this
+            vatAmount: 0, // redemption webhook owns this
+            breakageAmount: 0,
+            netPayable: 0, // redemption webhook owns this
             status: "Pending",
           },
         });
-        console.log(`✅ [onRedemption] Settlement created: ${settlementPeriod}`);
+        console.log(`✅ [onRedemption] Settlement created with recalculated sales totals: ${settlementPeriod}`);
       }
     }
 

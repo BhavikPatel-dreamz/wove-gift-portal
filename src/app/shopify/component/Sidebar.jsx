@@ -112,7 +112,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h1 className="text-sm font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-xs text-gray-500 mb-2">Gift Card Management</p>
+              <p className="text-xs text-gray-500 mb-2">Gift Card Management & Analytics</p>
             </div>
           </div>
           <button

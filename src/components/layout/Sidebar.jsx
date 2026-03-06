@@ -114,7 +114,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h1 className="text-md font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-xs text-gray-500">Gift Card Management</p>
+              <p className="text-xs text-gray-500">Gift Card Management & Analytics</p>
             </div>
           </div>
           {/* Close button - only show on screens smaller than md */}
