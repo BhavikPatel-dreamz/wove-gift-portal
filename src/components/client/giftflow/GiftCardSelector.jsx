@@ -8,7 +8,7 @@ import { currencyList } from "../../../components/brandsPartner/currency";
 
 const GiftCardSelector = () => {
   const dispatch = useDispatch();
-  const { selectedBrand, selectedAmount, deliveryFormEditReturn } = useSelector((state) => state.giftFlowReducer);
+  const { selectedBrand, selectedAmount, selectedOccasion, deliveryFormEditReturn } = useSelector((state) => state.giftFlowReducer);
 
   const voucherData = selectedBrand?.vouchers[0];
   const denominationType = voucherData?.denominationType;
@@ -41,6 +41,12 @@ const GiftCardSelector = () => {
       }
       return;
     }
+
+    if (selectedOccasion) {
+      dispatch(setCurrentStep(4));
+      return;
+    }
+
     dispatch(goNext());
   };
 
