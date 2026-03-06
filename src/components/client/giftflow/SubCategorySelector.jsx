@@ -1256,7 +1256,7 @@ export default function SubCategorySelector() {
     if (!selectedOccasion) return;
     try {
       dispatch(setLoading(true));
-      const response = await getOccasionCategories({ occasionId: selectedOccasion, limit: 11, page });
+      const response = await getOccasionCategories({ occasionId: selectedOccasion, limit: 11, page,isActive:true });
 
       if (response.success) {
         dispatch(setSubCategories({

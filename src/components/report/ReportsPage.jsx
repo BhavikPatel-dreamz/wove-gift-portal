@@ -140,7 +140,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
         {
             id: 'yearly-report',
             title: 'yearly Report',
-            description: 'Current month overview',
+            description: 'Current year overview',
             icon: '📋',
             color: 'bg-orange-50 border-orange-200',
             iconBg: 'bg-orange-100',

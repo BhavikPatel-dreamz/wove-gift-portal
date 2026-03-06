@@ -251,10 +251,11 @@ export default function SettlementsClient({
         );
       },
     }),
-    columnHelper.accessor("commission", {
+    columnHelper.accessor((row) => Number(row.commissionAmount) || 0, {
+      id: "commission",
       header: "COMMISSION",
       cell: (info) => {
-        const commissionValue = info.row.original?.commissionAmount || 0;
+        const commissionValue = info.getValue();
         
         return (
           <div className="space-y-0.5">
