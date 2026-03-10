@@ -12,10 +12,11 @@ import {
   setCurrentStep,
 } from '@/redux/giftFlowSlice';
 import { removeFromCart, removeFromBulk, removeCartItemAsync } from '@/redux/cartSlice';
-import { toggleWishlist, buildWishlistKey } from '@/redux/wishlistSlice';
+import { toggleWishlistAsync, buildWishlistKey } from '@/redux/wishlistSlice';
 import { currencyList } from '../../brandsPartner/currency';
 import toast from 'react-hot-toast';
 import { resetFlow, clearCsvFileData } from '../../../redux/giftFlowSlice';
+import AuthForm from '@/components/AuthForm';
 
 const CartPage = () => {
   const session = useSession();
@@ -31,6 +32,8 @@ const CartPage = () => {
 
   const [isMounted, setIsMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('regular'); // 'regular' or 'bulk'
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingWishlist, setPendingWishlist] = useState(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -52,6 +55,31 @@ const CartPage = () => {
       }
     }
   }, [cartItems.length, bulkItems.length, activeTab, isMounted]);
+
+  const closeAuthModal = () => {
+    setShowAuthModal(false);
+    setPendingWishlist(null);
+  };
+
+  const handleAuthSuccess = async (user) => {
+    const userId = user?.id;
+    if (!userId || !pendingWishlist) {
+      closeAuthModal();
+      return;
+    }
+
+    try {
+      await dispatch(toggleWishlistAsync({ userId, item: pendingWishlist.payload })).unwrap();
+      toast.success(pendingWishlist.wasWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
+    } catch (error) {
+      const message = typeof error === 'string'
+        ? error
+        : error?.message || 'Failed to update wishlist.';
+      toast.error(message);
+    } finally {
+      closeAuthModal();
+    }
+  };
 
   const handleRemoveItem = (item, index) => {
     if (session?.user?.id && item?.cartItemId) {
@@ -75,7 +103,14 @@ const CartPage = () => {
     const wishlistKey = buildWishlistKey(item, sourceType);
     const wasWishlisted = wishlistKeySet.has(wishlistKey);
 
-    dispatch(toggleWishlist({ item, sourceType, key: wishlistKey }));
+    const payload = { item, sourceType, key: wishlistKey };
+    if (!session?.user?.id) {
+      setPendingWishlist({ payload, wasWishlisted });
+      setShowAuthModal(true);
+      return;
+    }
+
+    dispatch(toggleWishlistAsync({ userId: session.user.id, item: payload }));
     toast.success(wasWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
   };
 
@@ -528,6 +563,17 @@ const CartPage = () => {
           </div>
         )}
       </main>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[70] bg-black/60 p-4 flex items-center justify-center">
+          <AuthForm
+            type="login"
+            mode="modal"
+            onClose={closeAuthModal}
+            onAuthSuccess={handleAuthSuccess}
+          />
+        </div>
+      )}
     </div>
   );
 };

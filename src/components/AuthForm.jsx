@@ -150,7 +150,7 @@ const [formData, setFormData] = useState(() => ({
   }
 
   return (
-    <div className={isModal ? 'w-full' : 'min-h-screen bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4'}>
+    <div className={isModal ? 'w-full z-[1200]' : 'min-h-screen bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4'}>
       <div className={`${isModal ? 'mx-auto max-w-md w-full bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative' : 'mx-auto max-w-md w-full bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative'}`}>
         {isModal && typeof onClose === 'function' ? (
           <button

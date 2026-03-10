@@ -1,26 +1,10 @@
-import { createSlice } from '@reduxjs/toolkit';
-
-const STORAGE_KEY = 'wishlist';
-
-const getInitialWishlist = () => {
-  if (typeof window === 'undefined') {
-    return [];
-  }
-
-  try {
-    const savedWishlist = localStorage.getItem(STORAGE_KEY);
-    return savedWishlist ? JSON.parse(savedWishlist) : [];
-  } catch (error) {
-    console.error('Failed to parse wishlist from localStorage:', error);
-    return [];
-  }
-};
-
-const persistWishlist = (items) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }
-};
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+  getWishlistByUserId,
+  toggleWishlistItem,
+  removeWishlistItem,
+  clearWishlistByUserId,
+} from '../lib/action/wishlistAction';
 
 const toSafeKeyPart = (value) => String(value ?? '').trim().toLowerCase();
 
@@ -99,10 +83,111 @@ const normalizeWishlistItem = (payload = {}) => {
   };
 };
 
+const applyToggleWishlistState = (state, payload) => {
+  const normalizedItem = normalizeWishlistItem(payload);
+  const existingIndex = state.items.findIndex((item) => item.key === normalizedItem.key);
+
+  if (existingIndex !== -1) {
+    state.items.splice(existingIndex, 1);
+  } else {
+    state.items.push(normalizedItem);
+  }
+};
+
+const applyServerWishlist = (state, items = []) => {
+  const normalized = Array.isArray(items)
+    ? items.map((item) => normalizeWishlistItem(item))
+    : [];
+  state.items = normalized;
+};
+
+export const fetchWishlistByUser = createAsyncThunk(
+  'wishlist/fetchWishlistByUser',
+  async (userId, { rejectWithValue }) => {
+    if (!userId) {
+      return [];
+    }
+
+    try {
+      const result = await getWishlistByUserId(userId);
+      if (!result?.success) {
+        return rejectWithValue(result?.message || 'Failed to load wishlist.');
+      }
+      return result.data || [];
+    } catch (error) {
+      return rejectWithValue(error?.message || 'Failed to load wishlist.');
+    }
+  }
+);
+
+export const toggleWishlistAsync = createAsyncThunk(
+  'wishlist/toggleWishlistAsync',
+  async ({ userId, item }, { rejectWithValue }) => {
+    if (!userId) {
+      return rejectWithValue('User ID is required.');
+    }
+
+    const normalizedItem = normalizeWishlistItem(item);
+
+    try {
+      const result = await toggleWishlistItem({
+        userId,
+        item: normalizedItem,
+      });
+      if (!result?.success) {
+        return rejectWithValue(result?.message || 'Failed to update wishlist.');
+      }
+      return result.data || [];
+    } catch (error) {
+      return rejectWithValue(error?.message || 'Failed to update wishlist.');
+    }
+  }
+);
+
+export const removeWishlistAsync = createAsyncThunk(
+  'wishlist/removeWishlistAsync',
+  async ({ userId, key }, { rejectWithValue }) => {
+    if (!userId || !key) {
+      return rejectWithValue('User ID and key are required.');
+    }
+
+    try {
+      const result = await removeWishlistItem({ userId, key });
+      if (!result?.success) {
+        return rejectWithValue(result?.message || 'Failed to remove wishlist item.');
+      }
+      return result.data || [];
+    } catch (error) {
+      return rejectWithValue(error?.message || 'Failed to remove wishlist item.');
+    }
+  }
+);
+
+export const clearWishlistAsync = createAsyncThunk(
+  'wishlist/clearWishlistAsync',
+  async ({ userId }, { rejectWithValue }) => {
+    if (!userId) {
+      return rejectWithValue('User ID is required.');
+    }
+
+    try {
+      const result = await clearWishlistByUserId(userId);
+      if (!result?.success) {
+        return rejectWithValue(result?.message || 'Failed to clear wishlist.');
+      }
+      return result.data || [];
+    } catch (error) {
+      return rejectWithValue(error?.message || 'Failed to clear wishlist.');
+    }
+  }
+);
+
 const wishlistSlice = createSlice({
   name: 'wishlist',
   initialState: {
     items: [],
+    status: 'idle',
+    error: null,
   },
   reducers: {
     addToWishlist: (state, action) => {
@@ -111,7 +196,6 @@ const wishlistSlice = createSlice({
 
       if (!alreadyExists) {
         state.items.push(normalizedItem);
-        persistWishlist(state.items);
       }
     },
     removeFromWishlist: (state, action) => {
@@ -123,31 +207,64 @@ const wishlistSlice = createSlice({
       }
 
       state.items = state.items.filter((item) => item.key !== keyToRemove);
-      persistWishlist(state.items);
     },
     toggleWishlist: (state, action) => {
-      const normalizedItem = normalizeWishlistItem(action.payload);
-      const existingIndex = state.items.findIndex(
-        (item) => item.key === normalizedItem.key
-      );
-
-      if (existingIndex !== -1) {
-        state.items.splice(existingIndex, 1);
-      } else {
-        state.items.push(normalizedItem);
-      }
-
-      persistWishlist(state.items);
-    },
-    initializeWishlist: (state) => {
-      state.items = getInitialWishlist();
+      applyToggleWishlistState(state, action.payload);
     },
     clearWishlist: (state) => {
       state.items = [];
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(STORAGE_KEY);
-      }
+      state.status = 'idle';
+      state.error = null;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchWishlistByUser.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(fetchWishlistByUser.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        applyServerWishlist(state, action.payload);
+      })
+      .addCase(fetchWishlistByUser.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error?.message || 'Failed to load wishlist.';
+      })
+      .addCase(toggleWishlistAsync.pending, (state, action) => {
+        state.status = 'loading';
+        state.error = null;
+        applyToggleWishlistState(state, action.meta.arg.item);
+      })
+      .addCase(toggleWishlistAsync.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        applyServerWishlist(state, action.payload);
+      })
+      .addCase(toggleWishlistAsync.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error?.message || 'Failed to update wishlist.';
+        applyToggleWishlistState(state, action.meta.arg.item);
+      })
+      .addCase(removeWishlistAsync.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        applyServerWishlist(state, action.payload);
+      })
+      .addCase(removeWishlistAsync.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error?.message || 'Failed to remove wishlist item.';
+      })
+      .addCase(clearWishlistAsync.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        applyServerWishlist(state, action.payload);
+      })
+      .addCase(clearWishlistAsync.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error?.message || 'Failed to clear wishlist.';
+      });
   },
 });
 
@@ -155,7 +272,6 @@ export const {
   addToWishlist,
   removeFromWishlist,
   toggleWishlist,
-  initializeWishlist,
   clearWishlist,
 } = wishlistSlice.actions;
 

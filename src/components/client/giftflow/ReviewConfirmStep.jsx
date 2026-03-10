@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
 import { goBack, goNext, resetFlow, setCurrentStep, setDeliveryFormEditReturn, setIsConfirmed } from "../../../redux/giftFlowSlice";
-import { addToCart, updateCartItem, saveCartItemAsync } from "../../../redux/cartSlice";
+import { saveCartItemAsync } from "../../../redux/cartSlice";
 import { useSession } from '@/contexts/SessionContext'
 import { useRouter } from "next/navigation";
+import AuthForm from "@/components/AuthForm";
 import SecurityIcon from "../../../icons/SecurityIcon"
 import HeartColorIcon from "../../../icons/HeartColorIcon"
 import EditIcon from "../../../icons/EditIcon"
@@ -16,6 +17,8 @@ const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
   const [error, setError] = useState('');
   const [isSavingCart, setIsSavingCart] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingCartItem, setPendingCartItem] = useState(null);
   const session = useSession();
   const router = useRouter();
 
@@ -37,6 +40,46 @@ const ReviewConfirmStep = () => {
   const cartItems = useSelector((state) => state.cart.items);
 
   console.log(deliveryMethod, deliveryDetails, selectedTiming);
+
+  const closeAuthModal = useCallback(() => {
+    setShowAuthModal(false);
+    setPendingCartItem(null);
+  }, []);
+
+  const saveCartItemForUser = useCallback(async (userId, cartItem) => {
+    const existingItem = isEditMode && editingIndex !== null ? cartItems[editingIndex] : null;
+    const cartItemId = typeof existingItem?.cartItemId === 'string'
+      ? existingItem.cartItemId
+      : null;
+    await dispatch(saveCartItemAsync({
+      userId,
+      type: 'regular',
+      item: cartItem,
+      cartItemId,
+    })).unwrap();
+  }, [dispatch, isEditMode, editingIndex, cartItems]);
+
+  const handleAuthSuccess = useCallback(async (user) => {
+    const userId = user?.id;
+    if (!userId || !pendingCartItem) {
+      closeAuthModal();
+      return;
+    }
+
+    setIsSavingCart(true);
+    setError('');
+    try {
+      await saveCartItemForUser(userId, pendingCartItem);
+      router.push('/cart');
+    } catch (err) {
+      const message = typeof err === 'string' ? err : err?.message || 'Failed to add item to cart.';
+      setError(message);
+    } finally {
+      setIsSavingCart(false);
+      setPendingCartItem(null);
+      setShowAuthModal(false);
+    }
+  }, [pendingCartItem, saveCartItemForUser, router, closeAuthModal]);
 
   const validateGift = () => {
 
@@ -101,25 +144,16 @@ const ReviewConfirmStep = () => {
       selectedOccasion
     };
 
+    if (!session?.user?.id) {
+      setPendingCartItem(cartItem);
+      setShowAuthModal(true);
+      return;
+    }
+
     setIsSavingCart(true);
     setError('');
     try {
-      if (session?.user?.id) {
-        const existingItem = isEditMode && editingIndex !== null ? cartItems[editingIndex] : null;
-        const cartItemId = typeof existingItem?.cartItemId === 'string'
-          ? existingItem.cartItemId
-          : null;
-        await dispatch(saveCartItemAsync({
-          userId: session.user.id,
-          type: 'regular',
-          item: cartItem,
-          cartItemId,
-        })).unwrap();
-      } else if (isEditMode && editingIndex !== null) {
-        dispatch(updateCartItem({ index: editingIndex, item: cartItem }));
-      } else {
-        dispatch(addToCart(cartItem));
-      }
+      await saveCartItemForUser(session.user.id, cartItem);
       router.push('/cart');
     } catch (err) {
       const message = typeof err === 'string' ? err : err?.message || 'Failed to add item to cart.';
@@ -570,6 +604,17 @@ const ReviewConfirmStep = () => {
           </div>
         </div>
       </div>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[70] bg-black/60 p-4 flex items-center justify-center">
+          <AuthForm
+            type="login"
+            mode="modal"
+            onClose={closeAuthModal}
+            onAuthSuccess={handleAuthSuccess}
+          />
+        </div>
+      )}
     </div >
   );
 };

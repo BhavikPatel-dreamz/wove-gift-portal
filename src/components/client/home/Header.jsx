@@ -15,8 +15,8 @@ import { destroySession } from '../../../lib/action/userAction/session';
 import { usePathname, useRouter } from 'next/navigation';
 import { resetFlow,clearCsvFileData } from '../../../redux/giftFlowSlice';
 import {
-  initializeWishlist,
   removeFromWishlist,
+  toggleWishlistAsync,
 } from '../../../redux/wishlistSlice';
 
 
@@ -66,17 +66,22 @@ const Header = () => {
     ? { ...mobilePublicNavLinks, ...mobileMemberNavLinks }
     : mobilePublicNavLinks;
 
-  // ✅ Initialize wishlist on mount
   useEffect(() => {
     setMounted(true);
-    
-    dispatch(initializeWishlist());
 
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, [dispatch]);
+
+  const handleRemoveWishlist = (item) => {
+    if (session?.user?.id) {
+      dispatch(toggleWishlistAsync({ userId: session.user.id, item }));
+      return;
+    }
+    dispatch(removeFromWishlist(item.key));
+  };
 
   useEffect(() => {
     if (!mounted) return;
@@ -423,7 +428,7 @@ const Header = () => {
                             </div>
                             <button
                               type="button"
-                              onClick={() => dispatch(removeFromWishlist(item.key))}
+                              onClick={() => handleRemoveWishlist(item)}
                               className="text-xs text-[#ED457D] hover:text-[#D93B6E] font-medium"
                             >
                               Remove

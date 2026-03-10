@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useState } from "react"
 import SearchBar from './SearchBar'
 import CardGrid from './CardGrid'
 import { useDispatch, useSelector } from "react-redux"
@@ -11,7 +11,10 @@ import {
 } from "../../../redux/giftFlowSlice"
 import Pagination from "./Pagination"
 import { useSearchParams } from "next/navigation"
-import { toggleWishlist } from "../../../redux/wishlistSlice"
+import { toggleWishlistAsync } from "../../../redux/wishlistSlice"
+import { useSession } from "@/contexts/SessionContext"
+import toast from "react-hot-toast"
+import AuthForm from "@/components/AuthForm"
 
 const BrandSelectionStep = ({
   brands,
@@ -26,9 +29,12 @@ const BrandSelectionStep = ({
   clearFilters
 }) => {
   const dispatch = useDispatch()
+  const session = useSession()
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode');
   const isBulkMode = mode === 'bulk';
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingFavorite, setPendingFavorite] = useState(null);
 
   const { selectedBrand } = useSelector((state) => state.giftFlowReducer)
   const wishlistItems = useSelector((state) => state.wishlist.items)
@@ -42,20 +48,60 @@ const BrandSelectionStep = ({
     [wishlistItems]
   );
 
+  const closeAuthModal = useCallback(() => {
+    setShowAuthModal(false);
+    setPendingFavorite(null);
+  }, []);
+
+  const handleAuthSuccess = useCallback(async (user) => {
+    const userId = user?.id;
+    if (!userId || !pendingFavorite) {
+      closeAuthModal();
+      return;
+    }
+
+    try {
+      await dispatch(toggleWishlistAsync({ userId, item: pendingFavorite })).unwrap();
+    } catch (error) {
+      const message = typeof error === 'string'
+        ? error
+        : error?.message || 'Failed to update wishlist.';
+      toast.error(message);
+    } finally {
+      setPendingFavorite(null);
+      setShowAuthModal(false);
+    }
+  }, [dispatch, pendingFavorite, closeAuthModal]);
+
   const handleToggleFavorite = useCallback((brand) => {
     const brandId = brand?.id ?? brand?.brandName ?? brand?.name;
     if (!brandId) {
       return;
     }
 
-    dispatch(toggleWishlist({
+    if (!session?.user?.id) {
+      const payload = {
+        key: `brand:${brandId}`,
+        sourceType: "brand",
+        brandId,
+        brandName: brand.brandName || brand.name || "Brand",
+        logo: brand.logo || null,
+      };
+      setPendingFavorite(payload);
+      setShowAuthModal(true);
+      return;
+    }
+
+    const payload = {
       key: `brand:${brandId}`,
       sourceType: "brand",
       brandId,
       brandName: brand.brandName || brand.name || "Brand",
       logo: brand.logo || null,
-    }))
-  }, [dispatch])
+    };
+
+    dispatch(toggleWishlistAsync({ userId: session.user.id, item: payload }));
+  }, [dispatch, session?.user?.id])
 
   const handleBrandClick = useCallback((brand) => {
     dispatch(setSelectedBrand(brand))
@@ -164,6 +210,17 @@ const BrandSelectionStep = ({
           />
         )}
       </div>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 z-[70] bg-black/60 p-4 flex items-center justify-center">
+          <AuthForm
+            type="login"
+            mode="modal"
+            onClose={closeAuthModal}
+            onAuthSuccess={handleAuthSuccess}
+          />
+        </div>
+      )}
     </div>
   )
 }

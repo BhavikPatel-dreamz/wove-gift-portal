@@ -3,13 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext, setIsConfirmed, setCompanyInfo, setCsvFileData } from '../../../redux/giftFlowSlice';
-import { updateBulkCompanyInfo, updateBulkItem, addToBulkInCart, saveCartItemAsync } from '../../../redux/cartSlice';
+import { updateBulkCompanyInfo, updateBulkItem, saveCartItemAsync } from '../../../redux/cartSlice';
+import AuthForm from '@/components/AuthForm';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
 import { ShoppingBasket } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext'
-import Link from 'next/link';
 
 const normalizeBulkDeliveryOption = (value, csvRecipients = []) => {
     const option = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -109,6 +109,8 @@ const BulkReviewStep = () => {
     const [errors, setErrors] = useState({});
     const [isProcessingFile, setIsProcessingFile] = useState(false);
     const [isSavingCart, setIsSavingCart] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [pendingBulkOrder, setPendingBulkOrder] = useState(null);
 
     // Initialize local state from Redux
     const [csvFile, setCsvFile] = useState(null);
@@ -182,6 +184,47 @@ const BulkReviewStep = () => {
             (editingBulkOrderId !== null && editingBulkOrderId !== undefined) ||
             (editingIndex !== null && editingIndex !== undefined)
         );
+
+    const closeAuthModal = useCallback(() => {
+        setShowAuthModal(false);
+        setPendingBulkOrder(null);
+    }, []);
+
+    const saveBulkOrderForUser = useCallback(async (userId, bulkOrder) => {
+        const cartItemId = typeof bulkOrder?.cartItemId === 'string'
+            ? bulkOrder.cartItemId
+            : null;
+        await dispatch(saveCartItemAsync({
+            userId,
+            type: 'bulk',
+            item: bulkOrder,
+            cartItemId,
+        })).unwrap();
+    }, [dispatch]);
+
+    const handleAuthSuccess = useCallback(async (user) => {
+        const userId = user?.id;
+        if (!userId || !pendingBulkOrder) {
+            closeAuthModal();
+            return;
+        }
+
+        setIsSavingCart(true);
+        try {
+            await saveBulkOrderForUser(userId, pendingBulkOrder);
+            toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
+            router.push('/cart');
+        } catch (error) {
+            const message = typeof error === 'string'
+                ? error
+                : error?.message || 'Failed to add bulk order to cart.';
+            toast.error(message);
+        } finally {
+            setIsSavingCart(false);
+            setPendingBulkOrder(null);
+            setShowAuthModal(false);
+        }
+    }, [pendingBulkOrder, saveBulkOrderForUser, router, isBulkCartEdit, closeAuthModal]);
 
     const syncCurrentBulkOrder = useCallback((updates) => {
         if (!currentBulkOrder) return;
@@ -681,6 +724,11 @@ const BulkReviewStep = () => {
         if (isSavingCart) {
             return;
         }
+        if (!session?.user?.id) {
+            setPendingBulkOrder(currentBulkOrder);
+            setShowAuthModal(true);
+            return;
+        }
 
         // // ✅ Check if a bulk order already exists in cart
         // if (bulkItems.length > 1) {
@@ -690,19 +738,7 @@ const BulkReviewStep = () => {
 
         setIsSavingCart(true);
         try {
-            if (session?.user?.id) {
-                const cartItemId = typeof currentBulkOrder?.cartItemId === 'string'
-                    ? currentBulkOrder.cartItemId
-                    : null;
-                await dispatch(saveCartItemAsync({
-                    userId: session.user.id,
-                    type: 'bulk',
-                    item: currentBulkOrder,
-                    cartItemId,
-                })).unwrap();
-            } else {
-                dispatch(addToBulkInCart(currentBulkOrder));
-            }
+            await saveBulkOrderForUser(session.user.id, currentBulkOrder);
             toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
             router.push('/cart');
         } catch (error) {
@@ -769,10 +805,11 @@ const BulkReviewStep = () => {
     }
 
     return (
-        <div>
-            <Toaster position="top-right" />
-            <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
-                <div className="max-w-7xl mx-auto sm:px-6">
+        <>
+            <div>
+                <Toaster position="top-right" />
+                <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
+                    <div className="max-w-7xl mx-auto sm:px-6">
                     {/* Back Button and Bulk Mode Indicator */}
                     <div className="relative flex flex-col items-start gap-4 mb-6
                                 md:flex-row md:items-center md:justify-between md:gap-0">
@@ -1266,18 +1303,31 @@ const BulkReviewStep = () => {
                                 <p className="text-[#1A1A1A] text-[14px] font-medium font-poppins">
                                     Please log in to continue with your purchase
                                 </p>
-                                <Link
-                                    href="/login"
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAuthModal(true)}
                                     className="text-pink-500 font-semibold hover:underline transition"
                                 >
                                     Login to your account →
-                                </Link>
+                                </button>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
         </div>
+
+        {showAuthModal && (
+            <div className="fixed inset-0 z-[70] bg-black/60 p-4 flex items-center justify-center">
+                <AuthForm
+                    type="login"
+                    mode="modal"
+                    onClose={closeAuthModal}
+                    onAuthSuccess={handleAuthSuccess}
+                />
+            </div>
+        )}
+        </>
     );
 };
 
