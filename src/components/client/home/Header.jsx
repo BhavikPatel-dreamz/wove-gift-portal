@@ -503,7 +503,10 @@ const Header = () => {
                   key={item}
                   href={mobileNavLinks[item]}
                   onClick={() => handleNavClick(item)}
-                  className="py-3 sm:py-4 text-[#1A1A1A] text-[15px] sm:text-[16px] md:text-[18px] border-b border-b-[rgba(0,0,0,0.10)] hover:text-[#ED457D] transition-colors"
+                  className={`py-3 sm:py-4 ${activeTab === item
+                    ? "text-[#ed457d]"
+                    : "text-gray-800"
+                    } text-[15px] sm:text-[16px] md:text-[18px] border-b border-b-[rgba(0,0,0,0.10)] hover:text-[#ED457D] transition-colors`}
                 >
                   {item}
                 </Link>

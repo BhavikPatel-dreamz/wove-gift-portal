@@ -314,7 +314,6 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
                 className=""
                 value={formData.emoji}
                 onChange={handleEmojiChange}
-                required
                 error={fieldErrors.emoji}
               />
             </div>

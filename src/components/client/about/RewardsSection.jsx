@@ -26,17 +26,17 @@ const BulkGifting = () => {
         <div className="w-full md:w-1/2 mb-10 md:mb-0 md:pr-10">
           <h2
             className="
-              font-semibold fontPoppins text-[#1A1A1A]
-              text-[28px]
-              sm:text-[32px]
-              md:text-[36px]
-              lg:text-[40px]
-              leading-tight mb-4
-            "
+    font-semibold fontPoppins text-[#1A1A1A]
+    text-[28px]
+    sm:text-[32px]
+    md:text-[34px]
+    lg:text-[40px]
+    leading-[1.15]
+    mb-4
+  "
           >
             Rewards at scale,
-            <br className="hidden sm:block" />
-            made simple.
+            <span className="block">made simple.</span>
           </h2>
 
           <p className="text-gray-700 text-sm sm:text-base mb-6 max-w-md">
@@ -81,14 +81,15 @@ const BulkGifting = () => {
       {/* Features */}
       <div
         className="
-          mt-8
-          flex flex-wrap
-          justify-center md:justify-between
-          gap-y-4 gap-x-6
-          text-gray-700
-          text-sm sm:text-base
-          font-medium
-        "
+    mt-8 mx-3
+    flex flex-wrap
+    justify-center
+    lg:justify-between
+    gap-y-4 gap-x-6
+    text-gray-700
+    text-sm sm:text-base
+    font-medium
+  "
       >
         <Feature icon="payment" text="Secure payments" />
         <Separator />
@@ -149,20 +150,20 @@ const icons = {
   ),
   support: (
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" fill="none">
-  <g clipPath="url(#clip0_3235_4834)">
-    <path d="M22.0001 14.8888C22.0001 12.1587 20.4339 9.72227 18.0882 8.53711C18.0154 13.7716 13.7716 18.0154 8.53711 18.0882C9.72227 20.4339 12.1587 22.0001 14.8888 22.0001C16.1688 22.0001 17.4135 21.6592 18.5071 21.0115L21.969 21.969L21.0115 18.5072C21.6592 17.4135 22.0001 16.1687 22.0001 14.8888Z" fill="url(#paint0_linear_3235_4834)"/>
-    <path d="M16.8008 8.40039C16.8008 3.76836 13.0324 0 8.40039 0C3.76836 0 0 3.76836 0 8.40039C0 9.91001 0.401844 11.3798 1.16488 12.6702L0.0308516 16.7697L4.1305 15.6359C5.42094 16.3989 6.89077 16.8008 8.40039 16.8008C13.0324 16.8008 16.8008 13.0324 16.8008 8.40039ZM7.11133 6.44531H5.82227C5.82227 5.02365 6.97873 3.86719 8.40039 3.86719C9.82205 3.86719 10.9785 5.02365 10.9785 6.44531C10.9785 7.16689 10.673 7.86045 10.1401 8.34784L9.04492 9.35021V10.3555H7.75586V8.7826L9.26982 7.39686C9.54039 7.14927 9.68945 6.81141 9.68945 6.44531C9.68945 5.73448 9.11122 5.15625 8.40039 5.15625C7.68956 5.15625 7.11133 5.73448 7.11133 6.44531ZM7.75586 11.6445H9.04492V12.9336H7.75586V11.6445Z" fill="#002402"/>
-  </g>
-  <defs>
-    <linearGradient id="paint0_linear_3235_4834" x1="8.53711" y1="13.4905" x2="21.3523" y2="19.2121" gradientUnits="userSpaceOnUse">
-      <stop stopColor="#ED457D"/>
-      <stop offset="1" stopColor="#FA8F42"/>
-    </linearGradient>
-    <clipPath id="clip0_3235_4834">
-      <rect width="22" height="22" fill="white"/>
-    </clipPath>
-  </defs>
-</svg>
+      <g clipPath="url(#clip0_3235_4834)">
+        <path d="M22.0001 14.8888C22.0001 12.1587 20.4339 9.72227 18.0882 8.53711C18.0154 13.7716 13.7716 18.0154 8.53711 18.0882C9.72227 20.4339 12.1587 22.0001 14.8888 22.0001C16.1688 22.0001 17.4135 21.6592 18.5071 21.0115L21.969 21.969L21.0115 18.5072C21.6592 17.4135 22.0001 16.1687 22.0001 14.8888Z" fill="url(#paint0_linear_3235_4834)" />
+        <path d="M16.8008 8.40039C16.8008 3.76836 13.0324 0 8.40039 0C3.76836 0 0 3.76836 0 8.40039C0 9.91001 0.401844 11.3798 1.16488 12.6702L0.0308516 16.7697L4.1305 15.6359C5.42094 16.3989 6.89077 16.8008 8.40039 16.8008C13.0324 16.8008 16.8008 13.0324 16.8008 8.40039ZM7.11133 6.44531H5.82227C5.82227 5.02365 6.97873 3.86719 8.40039 3.86719C9.82205 3.86719 10.9785 5.02365 10.9785 6.44531C10.9785 7.16689 10.673 7.86045 10.1401 8.34784L9.04492 9.35021V10.3555H7.75586V8.7826L9.26982 7.39686C9.54039 7.14927 9.68945 6.81141 9.68945 6.44531C9.68945 5.73448 9.11122 5.15625 8.40039 5.15625C7.68956 5.15625 7.11133 5.73448 7.11133 6.44531ZM7.75586 11.6445H9.04492V12.9336H7.75586V11.6445Z" fill="#002402" />
+      </g>
+      <defs>
+        <linearGradient id="paint0_linear_3235_4834" x1="8.53711" y1="13.4905" x2="21.3523" y2="19.2121" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ED457D" />
+          <stop offset="1" stopColor="#FA8F42" />
+        </linearGradient>
+        <clipPath id="clip0_3235_4834">
+          <rect width="22" height="22" fill="white" />
+        </clipPath>
+      </defs>
+    </svg>
   ),
 };
 

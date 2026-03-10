@@ -53,7 +53,7 @@ const WhyWoveExists = () => {
               className="w-151.25 h-151.25 block object-cover"
             />
 
-            <div className="absolute bg-white p-5 bottom-5 rounded-[20px] left-5 right-5 text-center text-[#1A1A1A] font-bold">
+            <div className="absolute bg-white p-5 bottom-5 rounded-[20px] left-5 right-5 text-center text-[#1A1A1A] font-bold italic">
             “Give freedom to choose, and the gift always fits.”
             </div>
           </div>

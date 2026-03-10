@@ -8,31 +8,31 @@ const steps = [
     icon: StartIcon,
     title: "Choose brand & amount",
     desc: "Start by selecting a brand, then choose the gift card amount.",
-    leftClassMd: "md:left-[25%]",
-    rotateClassMd: "md:-rotate-[6deg]",
-    zClassMd: "md:z-10",
+    leftClass: "md:left-[20%] lg:left-[25%]",
+    rotateClass: "md:-rotate-3 lg:-rotate-[6deg]",
+    zClass: "md:z-10",
   },
   {
     icon: SparklesIcon,
     title: "Personalize the gift",
     desc: "Set occasion and category, then add your personal message.",
-    leftClassMd: "md:left-[52%]",
-    rotateClassMd: "md:rotate-[8deg]",
-    zClassMd: "md:z-30",
+    leftClass: "md:left-[50%] lg:left-[52%]",
+    rotateClass: "md:rotate-3 lg:rotate-[8deg]",
+    zClass: "md:z-30",
   },
   {
     icon: SendIcon,
     title: "Deliver, review & pay",
     desc: "Choose timing/delivery (or bulk setup), review details, and pay securely.",
-    leftClassMd: "md:left-[80%]",
-    rotateClassMd: "md:-rotate-[6deg]",
-    zClassMd: "md:z-10",
+    leftClass: "md:left-[80%] lg:left-[80%]",
+    rotateClass: "md:-rotate-3 lg:-rotate-[6deg]",
+    zClass: "md:z-10",
   },
 ];
- 
+
 export default function HowItWorksOverlap() {
   return (
-    <section className="max-w-5xl mx-auto px-4 "> 
+    <section className="max-w-5xl mx-auto px-4 ">
       <h2 className="text-center font-bold text-3xl md:text-4xl mb-14 text-gray-900">
         How It Works
       </h2>
@@ -40,23 +40,23 @@ export default function HowItWorksOverlap() {
       {/* Main container */}
       <div className="relative w-full h-auto md:h-96">
         {/* Mobile: scrollable row | Desktop: positioned overlaps */}
-        <div className="flex md:block gap-6 overflow-x-auto md:overflow-visible px-2 md:px-0 items-stretch md:items-center justify-start md:justify-center snap-x snap-mandatory scroll-smooth">
+        <div className="flex lg:block gap-6 overflow-x-auto lg:overflow-visible px-2 lg:px-0 items-stretch lg:items-center justify-start lg:justify-center">
           {steps.map(
             (
-              { icon: Icon, title, desc, leftClassMd, rotateClassMd, zClassMd },
+              { icon: Icon, title, desc, leftClass, rotateClass, zClass },
               idx
-              
+
             ) => (
               <article
                 key={idx}
                 className={
                   "bg-white border border-gray-200 rounded-2xl shadow-md md:shadow-xl p-6 sm:p-8 w-64 shrink-0 text-center snap-center " +
-                  "md:w-72 md:absolute md:top-1/2 md:-translate-y-1/2 md:-translate-x-1/2 " +
-                  leftClassMd +
+                  "md:w-64 lg:w-72 md:absolute md:top-1/2 md:-translate-y-1/2 md:-translate-x-1/2 " +
+                  leftClass +
                   " " +
-                  rotateClassMd +
+                  rotateClass +
                   " " +
-                  zClassMd +
+                  zClass +
                   " transition-all duration-300 hover:md:scale-110 hover:md:shadow-2xl hover:md:z-50"
                 }
               >
