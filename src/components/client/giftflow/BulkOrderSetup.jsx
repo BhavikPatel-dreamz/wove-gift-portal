@@ -4,6 +4,8 @@ import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext, setQuantity, setSelectedAmount } from '../../../redux/giftFlowSlice';
 import { addToBulk, updateBulkItem } from '../../../redux/cartSlice';
+import { useCallback } from 'react';
+import { currencyList } from '../../brandsPartner/currency';
 
 const BulkOrderSetup = () => {
   const dispatch = useDispatch();
@@ -35,6 +37,16 @@ const BulkOrderSetup = () => {
   const editBulkIdFromUrl = searchParams.get('editBulkId');
   const editBulkIndexFromUrl = searchParams.get('editBulkIndex');
   const isBulkMode = mode === 'bulk';
+
+  const formatNumber = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return String(value ?? '');
+    try {
+      return new Intl.NumberFormat('en-ZA').format(numeric);
+    } catch (error) {
+      return String(numeric);
+    }
+  };
 
   const editingBulkItemIndex = useMemo(() => {
     if (!bulkItems?.length) return -1;
@@ -90,6 +102,10 @@ const BulkOrderSetup = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const getCurrencySymbol = useCallback((code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "R",
+    []);
+
   console.log(selectedBrand, selectedAmount);
 
   // Get available denominations from selected brand
@@ -120,9 +136,11 @@ const BulkOrderSetup = () => {
     if (value === '' || /^\d+$/.test(value)) {
       const numValue = parseInt(value || 0);
 
+      console.log("numValue", numValue)
+
       // Check maximum limit - Updated to 25000
-      if (numValue > 25000) {
-        setError('Maximum 25,000 vouchers per order');
+      if (numValue * selectedAmount.value > 25000) {
+        setError('Maximum R25,000 vouchers per order');
         dispatch(setQuantity(value)); // Keep the entered value to show error
       } else {
         dispatch(setQuantity(value));
@@ -289,33 +307,33 @@ const BulkOrderSetup = () => {
 
             {/* Button content */}
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-               <span className="transition-transform duration-300 group-hover:-translate-x-1">
-              <svg
-                width="8"
-                height="9"
-                viewBox="0 0 8 9"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="transition-all duration-300 group-hover:[&>path]:fill-white"
-              >
-                <path
-                  d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
-                  fill="url(#paint0_linear_584_1923)"
-                />
-                <defs>
-                  <linearGradient
-                    id="paint0_linear_584_1923"
-                    x1="7.5"
-                    y1="3.01721"
-                    x2="-9.17006"
-                    y2="13.1895"
-                    gradientUnits="userSpaceOnUse"
-                  >
-                    <stop stopColor="#ED457D" />
-                    <stop offset="1" stopColor="#FA8F42" />
-                  </linearGradient>
-                </defs>
-              </svg>
+              <span className="transition-transform duration-300 group-hover:-translate-x-1">
+                <svg
+                  width="8"
+                  height="9"
+                  viewBox="0 0 8 9"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                >
+                  <path
+                    d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                    fill="url(#paint0_linear_584_1923)"
+                  />
+                  <defs>
+                    <linearGradient
+                      id="paint0_linear_584_1923"
+                      x1="7.5"
+                      y1="3.01721"
+                      x2="-9.17006"
+                      y2="13.1895"
+                      gradientUnits="userSpaceOnUse"
+                    >
+                      <stop stopColor="#ED457D" />
+                      <stop offset="1" stopColor="#FA8F42" />
+                    </linearGradient>
+                  </defs>
+                </svg>
               </span>
               Previous
             </div>
@@ -394,21 +412,17 @@ const BulkOrderSetup = () => {
               <div className="border-b border-[#D0CECE] h-px w-full my-4"></div>
 
               {/* Tagline */}
-              <div className="py-1.25 px-2.75 bg-[#AA42FA1A] rounded-[50px] mb-4.5">
-                <div className="text-[#AA42FA] text-[14px] font-bold">{selectedBrand.tagline}</div>
-              </div>
+              {selectedBrand.category || selectedBrand?.categoryName && (
+                <div className="py-1.25 px-2.75 bg-[#AA42FA1A] rounded-[50px] mb-4.5">
+                  <div className="text-[#AA42FA] text-[14px] font-bold"> {selectedBrand.category || selectedBrand?.categoryName}</div>
+                </div>
+              )}
+
 
               {/* Brand Name */}
               <h2 className="text-[22px] font-semibold font-['Poppins'] text-[#1A1A1A] mb-3.5">
                 {selectedBrand.brandName || selectedBrand.name}
               </h2>
-
-              {/* Category Badge */}
-              {selectedBrand.category && (
-                <div className="inline-block px-3 py-1 bg-pink-100 text-pink-600 rounded-full text-sm font-medium mb-3">
-                  {selectedBrand.category}
-                </div>
-              )}
 
               {/* Description */}
               <p className="text-base text-[#4A4A4A] leading-relaxed line-clamp-3">
@@ -435,7 +449,7 @@ const BulkOrderSetup = () => {
                 >
                   <span className="font-semibold leading-4 text-black">
                     {selectedAmount?.value
-                      ? `${selectedAmount.currency} ${selectedAmount.value.toLocaleString()}`
+                      ? `${getCurrencySymbol(selectedAmount.currency)} ${formatNumber(selectedAmount.value)}`
                       : "Select Denomination"}
                   </span>
 
@@ -461,7 +475,7 @@ const BulkOrderSetup = () => {
                   ${isSelected ? "bg-[#FFECEC] text-red-500 font-semibold" : ""} 
                   hover:bg-gray-100`}
                         >
-                          {denom.currency} {denom.value.toLocaleString()}
+                          {getCurrencySymbol(denom.currency)} {formatNumber(denom.value)}
                         </div>
                       );
                     })}
@@ -514,9 +528,16 @@ const BulkOrderSetup = () => {
                 className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
               />
 
-              <p className="text-xs text-gray-500 mt-2">
-                Maximum 25,000 vouchers per order
-              </p>
+              {error ? (
+                <p className="text-xs mt-2 text-red-700">
+                  {error}
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-2">
+                  Maximum R25,000 vouchers per order
+                </p>
+              )}
+
             </div>
 
             {/* Total Spend */}
@@ -528,25 +549,17 @@ const BulkOrderSetup = () => {
 
                 {quantity && selectedAmount && (
                   <span className="font-['Inter'] text-sm sm:text-base font-medium leading-tight text-[#8C8C8C] mt-1 sm:mt-2">
-                    {quantity} × {selectedAmount.currency || 'R'}
+                    {quantity} × {getCurrencySymbol(selectedAmount.currency) || 'R'}
                     {selectedAmount.value}
                   </span>
                 )}
               </div>
 
               <p className="font-['Inter'] text-lg sm:text-xl font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent text-right sm:text-left">
-                {selectedAmount?.currency || 'R'}
+                {getCurrencySymbol(selectedAmount?.currency) || 'R'}
                 {totalSpend}
               </p>
             </div>
-
-
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
 
             {/* Add to Bulk Order Button */}
             <button

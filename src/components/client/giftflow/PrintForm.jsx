@@ -128,7 +128,7 @@ const PrintForm = () => {
               {selectedBrand?.vouchers?.[0]?.expiresAt
                 ? `Valid until ${new Date(
                     selectedBrand.vouchers[0].expiresAt
-                  ).toLocaleDateString()}`
+                  ).toLocaleDateString('en-ZA')}`
                 : selectedBrand?.vouchers?.[0]?.expiryValue
                 ? `Valid for ${selectedBrand.vouchers[0].expiryValue} days`
                 : "No expiration date"}
