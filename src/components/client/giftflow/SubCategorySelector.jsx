@@ -1335,7 +1335,7 @@ export default function SubCategorySelector() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF] py-30">
+    <div className="min-h-screen bg-[#FFF] py-30 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
@@ -1510,7 +1510,7 @@ export default function SubCategorySelector() {
   transition-all duration-300
   shadow-md hover:shadow-lg hover:scale-105
   flex items-center justify-center gap-2
-  cursor-pointer whitespace-nowrap"
+  cursor-pointer whitespace-nowrap mx-auto"
 >
                     Choose this Design
                     <span className="mt-1 transition-transform duration-300 group-hover:translate-x-1">

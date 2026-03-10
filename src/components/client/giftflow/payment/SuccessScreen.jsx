@@ -13,19 +13,18 @@ const SuccessScreen = ({
   deliveryDetails
 }) => {
 
-  // Check if this is a print delivery order
   const isPrintDelivery = order?.deliveryMethod === 'print';
 
   const getDeliveryMethodIcon = () => {
     switch (order?.deliveryMethod) {
       case 'email':
-        return <Mail className="w-6 h-6 text-purple-600" />;
+        return <Mail className="ss-delivery-icon ss-delivery-icon--email" />;
       case 'whatsapp':
-        return <MessageSquare className="w-6 h-6 text-green-600" />;
+        return <MessageSquare className="ss-delivery-icon ss-delivery-icon--whatsapp" />;
       case 'print':
-        return <Printer className="w-6 h-6 text-blue-600" />;
+        return <Printer className="ss-delivery-icon ss-delivery-icon--print" />;
       default:
-        return <Mail className="w-6 h-6 text-purple-600" />;
+        return <Mail className="ss-delivery-icon ss-delivery-icon--email" />;
     }
   };
 
@@ -47,258 +46,604 @@ const SuccessScreen = ({
     let totalAmount = 0;
 
     orders.forEach((order) => {
-      // Check if there's an allOrders array with multiple orders
       const orderList = Array.isArray(order.allOrders) && order.allOrders.length > 0
         ? order.allOrders
-        : [order]; // direct purchase fallback
-
-      console.log("Processing orderList:", orderList);
+        : [order];
 
       orderList.forEach((o) => {
         const quantity = o.quantity || 0;
         const amount = o.amount || 0;
-
-        // Add to total vouchers
         totalVouchers += quantity;
-
-        // Calculate this order's total (amount × quantity) and add to running total
-        const orderTotal = amount * quantity;
-        totalAmount += orderTotal;
-
-        console.log(`Order: amount=${amount}, quantity=${quantity}, orderTotal=${orderTotal}`);
+        totalAmount += amount * quantity;
       });
     });
 
-    console.log("Final totals:", { totalVouchers, totalAmount });
-
-    return {
-      totalVouchers,
-      totalAmount,
-    };
+    return { totalVouchers, totalAmount };
   }
 
   return (
-    <div className="min-h-screen px-4 py-30 md:px-6 md:py-40">
-      <div className="max-w-[1440px] flex items-center justify-center m-auto mb-6">
-        <div className="max-w-[800px] m-auto rounded-2xl p-8 text-center">
-          {isBulkMode ? (
-            <div>
-              <h1 className="text-[40px] font-bold text-[#1A1A1A] mb-4 fontPoppins">
-                Your bulk order is complete!
-              </h1>
-              <p className="font-normal text-[16px] text-[#4A4A4A] mb-6">
-                We've emailed you a CSV file with all voucher codes to your email address.You can share these codes directly with your team or clients.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-0">
-              <img
-                src={isPrintDelivery ? "/Success.gif" : "/Success.gif"}
-                alt={"Success"}
-                className="w-26 h-26 m-auto mb-4"
-              />
-              <h1 className="text-[40px] font-bold text-[#1A1A1A] mb-4 fontPoppins">
-                {isPrintDelivery ? 'Order Complete!' : 'Gift Sent Successfully'}
-              </h1>
-              <p className="font-normal text-[16px] text-[#4A4A4A] mb-4">
-                {isPrintDelivery
-                  ? `Your ${selectedBrand?.brandName || order?.brand?.brandName} gift card is ready to print!`
-                  : `Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way to Friend!`
-                }
-              </p>
+    <>
+      <style>{`
+        /* ── Page wrapper ── */
+        .ss-page {
+          min-height: 100vh;
+          padding: 7.5rem 1rem 2.5rem;
+          box-sizing: border-box;
+        }
 
-              <p
-                className="
-    text-[#4A4A4A]
-    text-center
-    font-inter
-    text-[16px]
-    font-normal
-    leading-[24px]
-    mb-6
-  "
-              >
-                <strong className="font-bold">Need help? </strong>
-                Have questions or want to cancel or modify your gift?{" "}
-                <Link
-                  href="/support"
-                  className="text-blue-600 font-semibold underline hover:text-blue-800"
-                >
-                  Contact Support
-                </Link>
-              </p>
+        @media (min-width: 768px) {
+          .ss-page {
+            padding: 10rem 1.5rem 3rem;
+          }
+        }
 
-            </div>
-          )}
+        /* ── Outer centering shell ── */
+        .ss-outer {
+          max-width: 1440px;
+          margin: 0 auto 1.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
 
-          {/* Bulk Mode Order Details */}
-          {(isBulkMode || (order?.allOrders && order?.allOrders.length > 1)) && (
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6 w-fit mx-auto px-20 text-left">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Order Details</h2>
-              <div className="h-px bg-gray-200 mb-6"></div>
+        /* ── Card ── */
+        .ss-card {
+          width: 100%;
+          max-width: 800px;
+          border-radius: 1rem;
+          padding: 1.5rem;
+          text-align: center;
+          box-sizing: border-box;
+        }
 
-              <div className="grid grid-cols-[200px_1fr] gap-y-4 text-gray-700">
+        @media (min-width: 640px) {
+          .ss-card {
+            padding: 2rem;
+          }
+        }
 
-                <span>Order ID</span>
-                <span className="font-semibold text-gray-900">
-                  : {order.bulkOrderNumber || order.orderNumber}
-                </span>
+        /* ── Success GIF ── */
+        .ss-gif {
+          width: 6.5rem;
+          height: 6.5rem;
+          margin: 0 auto 1rem;
+          display: block;
+        }
 
-                <span>Brand</span>
-                <span className="font-semibold text-gray-900">
-                  : {selectedBrand?.brandName || order?.brand?.brandName}
-                </span>
+        /* ── Headings ── */
+        .ss-title {
+          font-size: clamp(1.75rem, 5vw, 2.5rem);
+          font-weight: 700;
+          color: #1A1A1A;
+          margin: 0 0 1rem;
+          font-family: 'Poppins', sans-serif;
+          line-height: 1.2;
+        }
 
-                <span>Vouchers Generated</span>
-                <span className="font-semibold text-gray-900">
-                 : {calculateTotals([order]).totalVouchers}
-                </span>
+        .ss-subtitle {
+          font-size: 1rem;
+          font-weight: 400;
+          color: #4A4A4A;
+          margin: 0 0 1rem;
+          line-height: 1.6;
+        }
 
-                <span>Total Value</span>
-                <span className="font-semibold text-gray-900">
-                  : {calculateTotals([order]).totalAmount}
-                </span>
+        /* ── Support text ── */
+        .ss-support-text {
+          color: #4A4A4A;
+          font-size: 1rem;
+          font-weight: 400;
+          line-height: 1.5;
+          margin: 0 0 1.5rem;
+        }
 
-              </div>
-            </div>
-          )}
+        .ss-support-link {
+          color: #2563EB;
+          font-weight: 600;
+          text-decoration: underline;
+        }
 
-          {/* Print Delivery - Voucher Codes Display */}
-          {!isBulkMode && isPrintDelivery && order?.voucherCodes && order.voucherCodes.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 mb-6">
-              <div className="flex items-start gap-3 mb-4">
-                <Printer className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div className="text-left flex-1">
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">
-                    Print-at-Home Gift Card
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    Your gift card is ready! Download the PDF below and print it on any printer.
-                    Perfect for hand delivery or surprise presentations.
-                  </p>
-                </div>
-              </div>
+        .ss-support-link:hover {
+          color: #1D4ED8;
+        }
 
-              <div className="h-px bg-gray-200 my-4"></div>
+        /* ── Shared panel base ── */
+        .ss-panel {
+          background: #ffffff;
+          border-radius: 1rem;
+          border: 1px solid #E5E7EB;
+          margin-bottom: 1.5rem;
+          overflow: hidden;
+        }
 
-              {/* Order Details */}
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between text-gray-700">
-                  <span>Order ID:</span>
-                  <span className="font-semibold text-gray-900">{order.orderNumber}</span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Brand:</span>
-                  <span className="font-semibold text-gray-900">{selectedBrand?.brandName || order?.brand?.brandName}</span>
-                </div>
+        /* ── Bulk / Order Details panel ── */
+        .ss-panel--order {
+          padding: 1.25rem;
+          width: fit-content;
+          max-width: 100%;
+          margin-left: auto;
+          margin-right: auto;
+          text-align: left;
+        }
 
-                <div className="flex justify-between text-gray-700">
-                  <span>Vouchers Generated:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalVouchers}</span>
-                </div>
+        @media (min-width: 640px) {
+          .ss-panel--order {
+            padding: 1.5rem 5rem;
+          }
+        }
 
-                <div className="flex justify-between text-gray-700">
-                  <span>Total Value:</span>
-                  <span className="font-semibold text-gray-900">{calculateTotals([order]).totalAmount}</span>
-                </div>
-              </div>
+        .ss-panel-title {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: #111827;
+          margin: 0 0 1rem;
+        }
 
-              <div className="h-px bg-gray-200 my-4"></div>
+        .ss-divider {
+          height: 1px;
+          background: #E5E7EB;
+          margin-bottom: 1.5rem;
+        }
 
-              {/* Voucher Codes */}
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-gray-700 text-left">
-                  Your Voucher Code{order.voucherCodes.length > 1 ? 's' : ''}:
+        .ss-divider--sm {
+          height: 1px;
+          background: #E5E7EB;
+          margin: 1rem 0;
+        }
+
+        /* ── Order detail grid ── */
+        .ss-detail-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 0.5rem 0;
+        }
+
+        @media (min-width: 480px) {
+          .ss-detail-grid {
+            grid-template-columns: 180px 1fr;
+            gap: 1rem 0;
+          }
+        }
+
+        .ss-detail-label {
+          color: #374151;
+          font-size: 0.9rem;
+        }
+
+        .ss-detail-value {
+          font-weight: 600;
+          color: #111827;
+          font-size: 0.9rem;
+          word-break: break-all;
+        }
+
+        @media (min-width: 480px) {
+          .ss-detail-value::before {
+            content: ': ';
+          }
+        }
+
+        /* ── Print delivery panel ── */
+        .ss-panel--print {
+          padding: 1.25rem;
+          text-align: left;
+        }
+
+        @media (min-width: 640px) {
+          .ss-panel--print {
+            padding: 1.5rem;
+          }
+        }
+
+        /* ── Print header row ── */
+        .ss-print-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          margin-bottom: 1rem;
+        }
+
+        .ss-print-icon {
+          width: 1.5rem;
+          height: 1.5rem;
+          color: #2563EB;
+          flex-shrink: 0;
+          margin-top: 0.125rem;
+        }
+
+        .ss-print-header-title {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: #111827;
+          margin: 0 0 0.5rem;
+        }
+
+        .ss-print-header-desc {
+          font-size: 0.875rem;
+          color: #4B5563;
+          margin: 0;
+          line-height: 1.5;
+        }
+
+        /* ── Print dl rows ── */
+        .ss-dl {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+
+        .ss-dl-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .ss-dl-label {
+          font-size: 0.875rem;
+          color: #6B7280;
+          flex-shrink: 0;
+        }
+
+        .ss-dl-value {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #111827;
+          text-align: right;
+          word-break: break-all;
+        }
+
+        /* ── Voucher codes section ── */
+        .ss-voucher-section-title {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #374151;
+          margin: 0 0 0.75rem;
+        }
+
+        .ss-voucher-codes {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .ss-voucher-item {
+          background: linear-gradient(to right, #F5F3FF, #FDF2F8);
+          border-radius: 0.5rem;
+          padding: 1rem;
+        }
+
+        .ss-voucher-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .ss-voucher-label {
+          font-size: 0.75rem;
+          color: #6B7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin: 0 0 0.25rem;
+        }
+
+        .ss-voucher-code {
+          font-family: monospace;
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: #111827;
+          margin: 0;
+          word-break: break-all;
+        }
+
+        .ss-voucher-pin {
+          font-size: 0.875rem;
+          color: #4B5563;
+          margin: 0.25rem 0 0;
+        }
+
+        .ss-voucher-value-label {
+          font-size: 0.75rem;
+          color: #6B7280;
+          margin: 0 0 0.25rem;
+          text-align: right;
+        }
+
+        .ss-voucher-value {
+          font-weight: 700;
+          color: #111827;
+          text-align: right;
+          margin: 0;
+        }
+
+        /* ── Personal message ── */
+        .ss-message-box {
+          background: #F9FAFB;
+          border-radius: 0.5rem;
+          padding: 1rem;
+          text-align: left;
+        }
+
+        .ss-message-label {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #6B7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin: 0 0 0.5rem;
+        }
+
+        .ss-message-text {
+          font-size: 0.875rem;
+          color: #374151;
+          font-style: italic;
+          margin: 0;
+          line-height: 1.5;
+        }
+
+        /* ── Delivery info banner ── */
+        .ss-panel--delivery {
+          background: linear-gradient(to right, #F5F3FF, #FDF2F8);
+          border-radius: 1rem;
+          padding: 1.25rem;
+          border: 1px solid #E5E7EB;
+          margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 640px) {
+          .ss-panel--delivery {
+            padding: 1.5rem;
+          }
+        }
+
+        .ss-delivery-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          text-align: left;
+        }
+
+        .ss-delivery-icon {
+          width: 1.5rem;
+          height: 1.5rem;
+          flex-shrink: 0;
+        }
+
+        .ss-delivery-icon--email  { color: #9333EA; }
+        .ss-delivery-icon--whatsapp { color: #16A34A; }
+        .ss-delivery-icon--print  { color: #2563EB; }
+
+        .ss-delivery-title {
+          font-weight: 600;
+          color: #111827;
+          margin: 0 0 0.25rem;
+        }
+
+        .ss-delivery-desc {
+          font-size: 0.875rem;
+          color: #4B5563;
+          margin: 0;
+        }
+
+        /* ── Print download button wrapper ── */
+        .ss-print-btn-wrap {
+          margin-bottom: 1.5rem;
+        }
+
+        /* ── CTA button ── */
+        .ss-cta-wrap {
+          width: 100%;
+          display: flex;
+          justify-content: center;
+        }
+
+        .ss-cta-btn {
+          min-width: 7rem;
+          cursor: pointer;
+          border: none;
+          border-radius: 50px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          color: #ffffff;
+          padding: 0.75rem 1.5rem;
+          font-size: 1rem;
+          font-weight: 600;
+          transition: opacity 0.2s ease, transform 0.15s ease;
+          background: linear-gradient(114.06deg, #ED457D 11.36%, #FA8F42 90.28%);
+        }
+
+        .ss-cta-btn:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+        }
+
+        .ss-cta-btn:active {
+          transform: translateY(0);
+        }
+      `}</style>
+
+      <div className="ss-page">
+        <div className="ss-outer">
+          <div className="ss-card">
+
+            {/* ── Bulk Header ── */}
+            {isBulkMode ? (
+              <div>
+                <h1 className="ss-title">Your bulk order is complete!</h1>
+                <p className="ss-subtitle">
+                  We've emailed you a CSV file with all voucher codes to your email address.
+                  You can share these codes directly with your team or clients.
                 </p>
-                {order.voucherCodes.map((voucherCode, index) => {
-                  // Get the actual code from giftCard or fallback to voucherCode.code
-                  const actualCode = voucherCode.giftCard?.code || voucherCode.code;
-
-                  return (
-                    <div key={voucherCode.id} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4">
-                      <div className="flex justify-between items-center">
-                        <div className="text-left">
-                          <p className="text-xs text-gray-500 uppercase mb-1">
-                            Voucher Code {order.voucherCodes.length > 1 ? `#${index + 1}` : ''}
-                          </p>
-                          <p className="font-mono text-lg font-bold text-gray-900">
-                            {actualCode}
-                          </p>
-                          {voucherCode.pin && (
-                            <p className="text-sm text-gray-600 mt-1">
-                              PIN: <span className="font-mono font-semibold">{voucherCode.pin}</span>
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500 mb-1">Value</p>
-                          <p className="font-bold text-gray-900">
-                            R{voucherCode.originalValue}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
+            ) : (
+              <div>
+                <img
+                  src="/Success.gif"
+                  alt="Success"
+                  className="ss-gif"
+                />
+                <h1 className="ss-title">
+                  {isPrintDelivery ? 'Order Complete!' : 'Gift Sent Successfully'}
+                </h1>
+                <p className="ss-subtitle">
+                  {isPrintDelivery
+                    ? `Your ${selectedBrand?.brandName || order?.brand?.brandName} gift card is ready to print!`
+                    : `Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way to Friend!`
+                  }
+                </p>
+                <p className="ss-support-text">
+                  <strong>Need help? </strong>
+                  Have questions or want to cancel or modify your gift?{" "}
+                  <Link href="/support" className="ss-support-link">
+                    Contact Support
+                  </Link>
+                </p>
+              </div>
+            )}
 
-              {/* Message preview if exists */}
-              {order.message && (
-                <>
-                  <div className="h-px bg-gray-200 my-4"></div>
-                  <div className="bg-gray-50 rounded-lg p-4 text-left">
-                    <p className="text-xs font-semibold text-gray-500 uppercase mb-2">
-                      Personal Message
-                    </p>
-                    <p className="text-sm text-gray-700 italic">
-                      "{order.message}"
+            {/* ── Bulk / Multi-order Details Panel ── */}
+            {(isBulkMode || (order?.allOrders && order?.allOrders.length > 1)) && (
+              <div className="ss-panel ss-panel--order">
+                <h2 className="ss-panel-title">Order Details</h2>
+                <div className="ss-divider" />
+                <div className="ss-detail-grid">
+                  <span className="ss-detail-label">Order ID</span>
+                  <span className="ss-detail-value">{order.bulkOrderNumber || order.orderNumber}</span>
+
+                  <span className="ss-detail-label">Brand</span>
+                  <span className="ss-detail-value">{selectedBrand?.brandName || order?.brand?.brandName}</span>
+
+                  <span className="ss-detail-label">Vouchers Generated</span>
+                  <span className="ss-detail-value">{calculateTotals([order]).totalVouchers}</span>
+
+                  <span className="ss-detail-label">Total Value</span>
+                  <span className="ss-detail-value">{calculateTotals([order]).totalAmount}</span>
+                </div>
+              </div>
+            )}
+
+            {/* ── Print Delivery Panel ── */}
+            {!isBulkMode && isPrintDelivery && order?.voucherCodes && order.voucherCodes.length > 0 && (
+              <div className="ss-panel ss-panel--print">
+                {/* Header */}
+                <div className="ss-print-header">
+                  <Printer className="ss-print-icon" />
+                  <div>
+                    <h2 className="ss-print-header-title">Print-at-Home Gift Card</h2>
+                    <p className="ss-print-header-desc">
+                      Your gift card is ready! Download the PDF below and print it on any printer.
+                      Perfect for hand delivery or surprise presentations.
                     </p>
                   </div>
-                </>
-              )}
-            </div>
-          )}
+                </div>
 
-          {/* Non-Print Delivery Info */}
-          {!isBulkMode && !isPrintDelivery && !order?.allOrders && (
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-gray-200 mb-6">
-              <div className="flex items-start gap-3">
-                {getDeliveryMethodIcon()}
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900 mb-1">
-                    Delivery Method
+                {/* Order summary */}
+                <div className="ss-divider--sm" />
+                <dl className="ss-dl">
+                  {[
+                    { label: "Order ID",           value: order?.bulkOrderNumber || order?.orderNumber },
+                    { label: "Brand",              value: selectedBrand?.brandName || order?.brand?.brandName },
+                    { label: "Vouchers Generated", value: calculateTotals([order]).totalVouchers },
+                    { label: "Total Value",        value: `R${calculateTotals([order]).totalAmount}` },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="ss-dl-row">
+                      <dt className="ss-dl-label">{label}</dt>
+                      <dd className="ss-dl-value">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+
+                {/* Voucher codes */}
+                <div className="ss-divider--sm" />
+                <div className="ss-voucher-codes">
+                  <p className="ss-voucher-section-title">
+                    Your Voucher Code{order.voucherCodes.length > 1 ? 's' : ''}:
                   </p>
-                  <p className="text-sm text-gray-600">
-                    Your gift card will be sent to <span className="font-medium">{getDeliveryMethodText()}</span>
-                  </p>
+                  {order.voucherCodes.map((voucherCode, index) => {
+                    const actualCode = voucherCode.giftCard?.code || voucherCode.code;
+                    return (
+                      <div key={voucherCode.id} className="ss-voucher-item">
+                        <div className="ss-voucher-row">
+                          <div>
+                            <p className="ss-voucher-label">
+                              Voucher Code {order.voucherCodes.length > 1 ? `#${index + 1}` : ''}
+                            </p>
+                            <p className="ss-voucher-code">{actualCode}</p>
+                            {voucherCode.pin && (
+                              <p className="ss-voucher-pin">
+                                PIN: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{voucherCode.pin}</span>
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="ss-voucher-value-label">Value</p>
+                            <p className="ss-voucher-value">R{voucherCode.originalValue}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Personal message */}
+                {order.message && (
+                  <>
+                    <div className="ss-divider--sm" />
+                    <div className="ss-message-box">
+                      <p className="ss-message-label">Personal Message</p>
+                      <p className="ss-message-text">"{order.message}"</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── Non-Print Delivery Banner ── */}
+            {!isBulkMode && !isPrintDelivery && !order?.allOrders && (
+              <div className="ss-panel--delivery">
+                <div className="ss-delivery-row">
+                  {getDeliveryMethodIcon()}
+                  <div>
+                    <p className="ss-delivery-title">Delivery Method</p>
+                    <p className="ss-delivery-desc">
+                      Your gift card will be sent to{" "}
+                      <strong>{getDeliveryMethodText()}</strong>
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Print Download Button */}
-          {!isBulkMode && isPrintDelivery && (
-            <div className="mb-6">
-              <PrintVoucherButton
-                order={order}
-                selectedBrand={selectedBrand}
-                selectedAmount={selectedAmount}
-              />
-            </div>
-          )}
+            {/* ── Print Download Button ── */}
+            {!isBulkMode && isPrintDelivery && (
+              <div className="ss-print-btn-wrap">
+                <PrintVoucherButton
+                  order={order}
+                  selectedBrand={selectedBrand}
+                  selectedAmount={selectedAmount}
+                />
+              </div>
+            )}
 
-          {/* Continue Button */}
-          <div className="w-full flex justify-center">
-            <button
-              onClick={onNext}
-              className="w-fit min-w-28 cursor-pointer rounded-[50px] flex gap-3 items-center justify-center text-white py-3 px-6 font-semibold transition-all duration-200 bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)]"
-            >
-              Next
-            </button>
+            {/* ── CTA ── */}
+            <div className="ss-cta-wrap">
+              <button onClick={onNext} className="ss-cta-btn">
+                Next
+              </button>
+            </div>
+
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -245,7 +245,7 @@ export default function OccasionSelector() {
   transition-all duration-300
   shadow-md hover:shadow-xl hover:scale-105
   flex items-center justify-center gap-2
-  cursor-pointer whitespace-nowrap"
+  cursor-pointer whitespace-nowrap mx-auto"
   onClick={(e) => {
     e.stopPropagation();
     handleOccasionSelect(occasion);
