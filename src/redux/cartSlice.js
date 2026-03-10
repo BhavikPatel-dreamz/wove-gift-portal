@@ -1,4 +1,11 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+  getCartByUserId,
+  addCartItem as addCartItemServer,
+  updateCartItem as updateCartItemServer,
+  removeCartItem as removeCartItemServer,
+  clearCartByUserId,
+} from '../lib/action/cartAction';
 
 const defaultBulkCompanyInfo = {
   companyName: '',
@@ -44,21 +51,103 @@ const normalizeBulkItem = (item, fallbackId) => {
   };
 };
 
-const getInitialCart = () => {
-  if (typeof window !== 'undefined') {
-    const cart = localStorage.getItem('cart');
-    return cart ? JSON.parse(cart) : [];
-  }
-  return [];
+const applyServerCartPayload = (state, payload = {}) => {
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  const bulkItems = Array.isArray(payload.bulkItems) ? payload.bulkItems : [];
+  const normalizedBulkItems = bulkItems.map((item) => {
+    const fallbackId = item?.cartItemId ?? item?.id;
+    return normalizeBulkItem({ ...item, id: fallbackId }, fallbackId);
+  });
+
+  state.items = items;
+  state.bulkItems = normalizedBulkItems;
+  state.cartItems = normalizedBulkItems;
 };
 
-const getInitialBulkCart = () => {
-  if (typeof window !== 'undefined') {
-    const bulkCart = localStorage.getItem('bulkCart');
-    return bulkCart ? JSON.parse(bulkCart) : [];
+export const fetchCartByUser = createAsyncThunk(
+  'cart/fetchCartByUser',
+  async (userId, { rejectWithValue }) => {
+    if (!userId) {
+      return { items: [], bulkItems: [] };
+    }
+
+    try {
+      const result = await getCartByUserId(userId);
+      if (!result?.success) {
+        return rejectWithValue(result?.message || 'Failed to load cart.');
+      }
+      return result.data;
+    } catch (error) {
+      return rejectWithValue(error?.message || 'Failed to load cart.');
+    }
   }
-  return [];
-};
+);
+
+export const saveCartItemAsync = createAsyncThunk(
+  'cart/saveCartItem',
+  async ({ userId, type = 'regular', item, cartItemId }, { rejectWithValue }) => {
+    if (!userId) {
+      return rejectWithValue('User ID is required.');
+    }
+
+    try {
+      const safeCartItemId =
+        typeof cartItemId === 'string' && cartItemId.trim().length > 0
+          ? cartItemId
+          : null;
+
+      const result = safeCartItemId
+        ? await updateCartItemServer({ userId, cartItemId: safeCartItemId, item })
+        : await addCartItemServer({ userId, type, item });
+
+      if (!result?.success) {
+        return rejectWithValue(result?.message || 'Failed to save cart item.');
+      }
+
+      return result.data;
+    } catch (error) {
+      return rejectWithValue(error?.message || 'Failed to save cart item.');
+    }
+  }
+);
+
+export const removeCartItemAsync = createAsyncThunk(
+  'cart/removeCartItem',
+  async ({ userId, cartItemId }, { rejectWithValue }) => {
+    if (!userId || !cartItemId) {
+      return rejectWithValue('User ID and cart item ID are required.');
+    }
+
+    try {
+      const result = await removeCartItemServer({ userId, cartItemId });
+      if (!result?.success) {
+        return rejectWithValue(result?.message || 'Failed to remove cart item.');
+      }
+      return result.data;
+    } catch (error) {
+      return rejectWithValue(error?.message || 'Failed to remove cart item.');
+    }
+  }
+);
+
+export const clearCartAsync = createAsyncThunk(
+  'cart/clearCart',
+  async ({ userId, type } = {}, { rejectWithValue }) => {
+    if (!userId) {
+      return rejectWithValue('User ID is required.');
+    }
+
+    try {
+      const result = await clearCartByUserId({ userId, type });
+      if (!result?.success) {
+        return rejectWithValue(result?.message || 'Failed to clear cart.');
+      }
+      return result.data;
+    } catch (error) {
+      return rejectWithValue(error?.message || 'Failed to clear cart.');
+    }
+  }
+);
 
 const cartSlice = createSlice({
   name: 'cart',
@@ -66,70 +155,49 @@ const cartSlice = createSlice({
     items: [],
     bulkItems: [],
     cartItems: [],
+    status: 'idle',
+    error: null,
   },
   reducers: {
-    // Regular single gift cart actions
+    // Regular single gift cart actions (local-only for guests)
     addToCart: (state, action) => {
       const newItem = action.payload;
       const existingItem = state.items.find(item => JSON.stringify(item) === JSON.stringify(newItem));
       if (!existingItem) {
         state.items.push(newItem);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('cart', JSON.stringify(state.items));
-        }
       }
     },
     updateCartItem: (state, action) => {
       const { index, item } = action.payload;
       if (state.items[index]) {
         state.items[index] = item;
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('cart', JSON.stringify(state.items));
-        }
       }
     },
     removeFromCart: (state, action) => {
       const indexToRemove = action.payload;
       state.items.splice(indexToRemove, 1);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('cart', JSON.stringify(state.items));
-      }
-    },
-    initializeCart: (state) => {
-      state.items = getInitialCart();
     },
     clearCart: (state) => {
       state.items = [];
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('cart');
-      }
     },
 
-    // Bulk order cart actions
-    // Bulk order cart actions
-addToBulk: (state, action) => {
-  // ✅ Check if a bulk order already exists
-  // if (state.bulkItems.length > 1) {
-  //   // Don't add if bulk order already exists
-  //   return;
-  // }
-  
-  const newBulkItem = normalizeBulkItem({
-    ...action.payload,
-    addedAt: new Date().toISOString(),
-  }, Date.now());
-  
-  state.bulkItems.push(newBulkItem);
-},
-    
-    addToBulkInCart: (state, action) => {
-      // Sync bulkItems to cartItems and save to localStorage
-      state.cartItems = state.bulkItems.map((item, index) => normalizeBulkItem(item, Date.now() + index));
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
-      }
+    // Bulk order cart actions (local-only/draft updates)
+    addToBulk: (state, action) => {
+      const newBulkItem = normalizeBulkItem({
+        ...action.payload,
+        addedAt: new Date().toISOString(),
+      }, Date.now());
+
+      state.bulkItems.push(newBulkItem);
     },
-    
+
+    addToBulkInCart: (state) => {
+      // Sync bulkItems to cartItems for local usage
+      state.cartItems = state.bulkItems.map((item, index) =>
+        normalizeBulkItem(item, Date.now() + index)
+      );
+    },
+
     updateBulkItem: (state, action) => {
       const { index, item } = action.payload;
       if (state.bulkItems[index]) {
@@ -140,12 +208,9 @@ addToBulk: (state, action) => {
         }, state.bulkItems[index].id);
         // Also update cartItems
         state.cartItems = [...state.bulkItems];
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
-        }
       }
     },
-    
+
     updateBulkItemById: (state, action) => {
       const { id, updates } = action.payload;
       const itemIndex = state.bulkItems.findIndex(item => item.id === id);
@@ -157,12 +222,9 @@ addToBulk: (state, action) => {
         }, state.bulkItems[itemIndex].id);
         // Also update cartItems
         state.cartItems = [...state.bulkItems];
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
-        }
       }
     },
-    
+
     // Update company info for the most recent bulk order
     updateBulkCompanyInfo: (state, action) => {
       const { companyInfo, deliveryOption, quantity, csvRecipients } = action.payload;
@@ -180,11 +242,9 @@ addToBulk: (state, action) => {
           csvRecipients: csvRecipients ?? currentItem.csvRecipients,
           updatedAt: new Date().toISOString()
         }, currentItem.id);
-        // Also update cartItems
-        // state.cartItems = [...state.bulkItems];
       }
     },
-    
+
     // Update company info for a specific bulk order by ID
     updateBulkCompanyInfoById: (state, action) => {
       const { id, companyInfo, deliveryOption } = action.payload;
@@ -200,72 +260,86 @@ addToBulk: (state, action) => {
         }, state.bulkItems[itemIndex].id);
         // Also update cartItems
         state.cartItems = [...state.bulkItems];
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
-        }
       }
     },
-    
+
     removeFromBulk: (state, action) => {
       const indexToRemove = action.payload;
       state.bulkItems.splice(indexToRemove, 1);
       // Also update cartItems
       state.cartItems = [...state.bulkItems];
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
-      }
     },
-    
+
     removeBulkItemById: (state, action) => {
       const idToRemove = action.payload;
       state.bulkItems = state.bulkItems.filter(item => item.id !== idToRemove);
       // Also update cartItems
       state.cartItems = [...state.bulkItems];
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('bulkCart', JSON.stringify(state.cartItems));
-      }
     },
-    
-    initializeBulkCart: (state) => {
-      const bulkCart = getInitialBulkCart();
-      const normalizedBulkCart = bulkCart.map((item, index) => normalizeBulkItem(item, Date.now() + index));
-      state.cartItems = normalizedBulkCart;
-      state.bulkItems = normalizedBulkCart;
 
-      if (typeof window !== 'undefined') {
-        const needsRewrite = JSON.stringify(bulkCart) !== JSON.stringify(normalizedBulkCart);
-        if (needsRewrite) {
-          localStorage.setItem('bulkCart', JSON.stringify(normalizedBulkCart));
-        }
-      }
-    },
-    
     clearBulkCart: (state) => {
       state.bulkItems = [];
       state.cartItems = [];
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('bulkCart');
-      }
     },
-    
-    // Clear both carts
+
+    // Clear both carts (local only)
     clearAllCarts: (state) => {
       state.items = [];
       state.bulkItems = [];
       state.cartItems = [];
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('cart');
-        localStorage.removeItem('bulkCart');
-      }
+      state.status = 'idle';
+      state.error = null;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchCartByUser.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(fetchCartByUser.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        applyServerCartPayload(state, action.payload);
+      })
+      .addCase(fetchCartByUser.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error?.message || 'Failed to load cart.';
+      })
+      .addCase(saveCartItemAsync.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        applyServerCartPayload(state, action.payload);
+      })
+      .addCase(saveCartItemAsync.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error?.message || 'Failed to save cart item.';
+      })
+      .addCase(removeCartItemAsync.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        applyServerCartPayload(state, action.payload);
+      })
+      .addCase(removeCartItemAsync.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error?.message || 'Failed to remove cart item.';
+      })
+      .addCase(clearCartAsync.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        applyServerCartPayload(state, action.payload);
+      })
+      .addCase(clearCartAsync.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error?.message || 'Failed to clear cart.';
+      });
   },
 });
 
-export const { 
-  addToCart, 
-  updateCartItem, 
-  removeFromCart, 
-  initializeCart, 
+export const {
+  addToCart,
+  updateCartItem,
+  removeFromCart,
   clearCart,
   addToBulk,
   updateBulkItem,
@@ -274,10 +348,9 @@ export const {
   updateBulkCompanyInfoById,
   removeFromBulk,
   removeBulkItemById,
-  initializeBulkCart,
   clearBulkCart,
   clearAllCarts,
-  addToBulkInCart
+  addToBulkInCart,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

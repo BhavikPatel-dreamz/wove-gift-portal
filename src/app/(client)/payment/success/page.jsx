@@ -3,23 +3,36 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
-import { clearCart, clearBulkCart } from '@/redux/cartSlice';
+import { clearCart, clearBulkCart, clearCartAsync } from '@/redux/cartSlice';
 import { resetFlow,clearCsvFileData } from '@/redux/giftFlowSlice';
 import { getOrderStatus } from '@/lib/action/orderAction';
 import SuccessScreen from '@/components/client/giftflow/payment/SuccessScreen';
 import ThankYouScreen from '@/components/client/giftflow/payment/ThankYouScreen';
 import Header from '@/components/client/home/Header';
 import Footer from '@/components/client/home/Footer';
+import { useSession } from '@/contexts/SessionContext';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const dispatch = useDispatch();
+  const session = useSession();
   
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showThankYou, setShowThankYou] = useState(false);
+
+  const clearCarts = () => {
+    if (session?.user?.id) {
+      dispatch(clearCartAsync({ userId: session.user.id, type: 'regular' }));
+      dispatch(clearCartAsync({ userId: session.user.id, type: 'bulk' }));
+      return;
+    }
+
+    dispatch(clearCart());
+    dispatch(clearBulkCart());
+  };
 
   useEffect(() => {
     const orderId = searchParams.get('orderId');
@@ -70,8 +83,7 @@ function SuccessContent() {
 
       // ✅ Only clear cart when payment originated from /checkout (cart flow)
       if (source === 'cart') {
-        dispatch(clearCart());
-        dispatch(clearBulkCart());
+        clearCarts();
       }
       dispatch(resetFlow());
       dispatch(clearCsvFileData());

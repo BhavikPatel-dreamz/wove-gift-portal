@@ -11,7 +11,7 @@ import {
   updateState,
   setCurrentStep,
 } from '@/redux/giftFlowSlice';
-import { removeFromCart, removeFromBulk } from '@/redux/cartSlice';
+import { removeFromCart, removeFromBulk, removeCartItemAsync } from '@/redux/cartSlice';
 import { toggleWishlist, buildWishlistKey } from '@/redux/wishlistSlice';
 import { currencyList } from '../../brandsPartner/currency';
 import toast from 'react-hot-toast';
@@ -53,13 +53,21 @@ const CartPage = () => {
     }
   }, [cartItems.length, bulkItems.length, activeTab, isMounted]);
 
-  const handleRemoveItem = (index) => {
-    dispatch(removeFromCart(index));
+  const handleRemoveItem = (item, index) => {
+    if (session?.user?.id && item?.cartItemId) {
+      dispatch(removeCartItemAsync({ userId: session.user.id, cartItemId: item.cartItemId }));
+    } else {
+      dispatch(removeFromCart(index));
+    }
     toast.success('Item removed from cart');
   };
 
-  const handleRemoveBulkItem = (index) => {
-    dispatch(removeFromBulk(index));
+  const handleRemoveBulkItem = (item, index) => {
+    if (session?.user?.id && item?.cartItemId) {
+      dispatch(removeCartItemAsync({ userId: session.user.id, cartItemId: item.cartItemId }));
+    } else {
+      dispatch(removeFromBulk(index));
+    }
     toast.success('Bulk order removed from cart');
   };
 
@@ -357,7 +365,7 @@ const CartPage = () => {
                         </div>
                       </div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); handleRemoveItem(index); }} className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-colors shrink-0">
+                    <button onClick={(e) => { e.stopPropagation(); handleRemoveItem(item, index); }} className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-colors shrink-0">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" className="sm:w-5 sm:h-5">
                         <path d="M6.347 16.6667C5.97644 16.6667 5.6595 16.5347 5.39616 16.2709C5.13283 16.007 5.00089 15.6906 5.00033 15.3217V5.00002H4.58366C4.46533 5.00002 4.36644 4.96002 4.287 4.88002C4.20755 4.80002 4.16755 4.70086 4.167 4.58252C4.16644 4.46419 4.20644 4.3653 4.287 4.28586C4.36755 4.20641 4.46644 4.16669 4.58366 4.16669H7.50033C7.50033 3.99447 7.56422 3.84447 7.692 3.71669C7.81978 3.58891 7.96978 3.52502 8.142 3.52502H11.8587C12.0309 3.52502 12.1809 3.58891 12.3087 3.71669C12.4364 3.84447 12.5003 3.99447 12.5003 4.16669H15.417C15.5353 4.16669 15.6342 4.20669 15.7137 4.28669C15.7931 4.36669 15.8331 4.46586 15.8337 4.58419C15.8342 4.70252 15.7942 4.80141 15.7137 4.88086C15.6331 4.9603 15.5342 5.00002 15.417 5.00002H15.0003V15.3209C15.0003 15.6909 14.8684 16.0075 14.6045 16.2709C14.3406 16.5342 14.0239 16.6661 13.6545 16.6667H6.347ZM8.59033 14.1667C8.70866 14.1667 8.80783 14.1267 8.88783 14.0467C8.96783 13.9667 9.00755 13.8678 9.007 13.75V7.08336C9.007 6.96502 8.967 6.86614 8.887 6.78669C8.807 6.70725 8.70783 6.66725 8.5895 6.66669C8.47116 6.66614 8.37228 6.70614 8.29283 6.78669C8.21339 6.86725 8.17366 6.96614 8.17366 7.08336V13.75C8.17366 13.8684 8.21366 13.9672 8.29366 14.0467C8.37366 14.1267 8.47255 14.1667 8.59033 14.1667ZM11.4112 14.1667C11.5295 14.1667 11.6284 14.1267 11.7078 14.0467C11.7873 13.9667 11.827 13.8678 11.827 13.75V7.08336C11.827 6.96502 11.787 6.86614 11.707 6.78669C11.627 6.70669 11.5281 6.66669 11.4103 6.66669C11.292 6.66669 11.1928 6.70669 11.1128 6.78669C11.0328 6.86669 10.9931 6.96558 10.9937 7.08336V13.75C10.9937 13.8684 11.0337 13.9672 11.1137 14.0467C11.1937 14.1261 11.2928 14.1661 11.4112 14.1667Z" fill="black" />
                       </svg>
@@ -424,7 +432,7 @@ const CartPage = () => {
                         </div>
                       </div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); handleRemoveBulkItem(index); }} className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-colors shrink-0">
+                    <button onClick={(e) => { e.stopPropagation(); handleRemoveBulkItem(item, index); }} className="text-gray-400 hover:text-red-500 p-1.5 sm:p-2 rounded-full hover:bg-red-50 transition-colors shrink-0">
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" className="sm:w-5 sm:h-5">
                         <path d="M6.347 16.6667C5.97644 16.6667 5.6595 16.5347 5.39616 16.2709C5.13283 16.007 5.00089 15.6906 5.00033 15.3217V5.00002H4.58366C4.46533 5.00002 4.36644 4.96002 4.287 4.88002C4.20755 4.80002 4.16755 4.70086 4.167 4.58252C4.16644 4.46419 4.20644 4.3653 4.287 4.28586C4.36755 4.20641 4.46644 4.16669 4.58366 4.16669H7.50033C7.50033 3.99447 7.56422 3.84447 7.692 3.71669C7.81978 3.58891 7.96978 3.52502 8.142 3.52502H11.8587C12.0309 3.52502 12.1809 3.58891 12.3087 3.71669C12.4364 3.84447 12.5003 3.99447 12.5003 4.16669H15.417C15.5353 4.16669 15.6342 4.20669 15.7137 4.28669C15.7931 4.36669 15.8331 4.46586 15.8337 4.58419C15.8342 4.70252 15.7942 4.80141 15.7137 4.88086C15.6331 4.9603 15.5342 5.00002 15.417 5.00002H15.0003V15.3209C15.0003 15.6909 14.8684 16.0075 14.6045 16.2709C14.3406 16.5342 14.0239 16.6661 13.6545 16.6667H6.347ZM8.59033 14.1667C8.70866 14.1667 8.80783 14.1267 8.88783 14.0467C8.96783 13.9667 9.00755 13.8678 9.007 13.75V7.08336C9.007 6.96502 8.967 6.86614 8.887 6.78669C8.807 6.70725 8.70783 6.66725 8.5895 6.66669C8.47116 6.66614 8.37228 6.70614 8.29283 6.78669C8.21339 6.86725 8.17366 6.96614 8.17366 7.08336V13.75C8.17366 13.8684 8.21366 13.9672 8.29366 14.0467C8.37366 14.1267 8.47255 14.1667 8.59033 14.1667ZM11.4112 14.1667C11.5295 14.1667 11.6284 14.1267 11.7078 14.0467C11.7873 13.9667 11.827 13.8678 11.827 13.75V7.08336C11.827 6.96502 11.787 6.86614 11.707 6.78669C11.627 6.70669 11.5281 6.66669 11.4103 6.66669C11.292 6.66669 11.1928 6.70669 11.1128 6.78669C11.0328 6.86669 10.9931 6.96558 10.9937 7.08336V13.75C10.9937 13.8684 11.0337 13.9672 11.1137 14.0467C11.1937 14.1261 11.2928 14.1661 11.4112 14.1667Z" fill="black" />
                       </svg>

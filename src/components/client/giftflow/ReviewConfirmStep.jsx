@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
 import { goBack, goNext, resetFlow, setCurrentStep, setDeliveryFormEditReturn, setIsConfirmed } from "../../../redux/giftFlowSlice";
-import { addToCart, updateCartItem } from "../../../redux/cartSlice";
+import { addToCart, updateCartItem, saveCartItemAsync } from "../../../redux/cartSlice";
 import { useSession } from '@/contexts/SessionContext'
 import { useRouter } from "next/navigation";
 import SecurityIcon from "../../../icons/SecurityIcon"
@@ -15,6 +15,7 @@ import Link from "next/link";
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
   const [error, setError] = useState('');
+  const [isSavingCart, setIsSavingCart] = useState(false);
   const session = useSession();
   const router = useRouter();
 
@@ -33,6 +34,7 @@ const ReviewConfirmStep = () => {
     selectedOccasion,
     isConfirmed
   } = useSelector((state) => state.giftFlowReducer);
+  const cartItems = useSelector((state) => state.cart.items);
 
   console.log(deliveryMethod, deliveryDetails, selectedTiming);
 
@@ -84,8 +86,9 @@ const ReviewConfirmStep = () => {
     startReviewEditFlow(2);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!validateGift()) return;
+    if (isSavingCart) return;
 
     const cartItem = {
       selectedBrand,
@@ -98,12 +101,32 @@ const ReviewConfirmStep = () => {
       selectedOccasion
     };
 
-    if (isEditMode && editingIndex !== null) {
-      dispatch(updateCartItem({ index: editingIndex, item: cartItem }));
-    } else {
-      dispatch(addToCart(cartItem));
+    setIsSavingCart(true);
+    setError('');
+    try {
+      if (session?.user?.id) {
+        const existingItem = isEditMode && editingIndex !== null ? cartItems[editingIndex] : null;
+        const cartItemId = typeof existingItem?.cartItemId === 'string'
+          ? existingItem.cartItemId
+          : null;
+        await dispatch(saveCartItemAsync({
+          userId: session.user.id,
+          type: 'regular',
+          item: cartItem,
+          cartItemId,
+        })).unwrap();
+      } else if (isEditMode && editingIndex !== null) {
+        dispatch(updateCartItem({ index: editingIndex, item: cartItem }));
+      } else {
+        dispatch(addToCart(cartItem));
+      }
+      router.push('/cart');
+    } catch (err) {
+      const message = typeof err === 'string' ? err : err?.message || 'Failed to add item to cart.';
+      setError(message);
+    } finally {
+      setIsSavingCart(false);
     }
-    router.push('/cart');
   };
 
   const handleBuyNow = () => { // Renamed from handleProceedToPayment for clarity
@@ -501,21 +524,21 @@ const ReviewConfirmStep = () => {
                 {isEditMode ? (
                   <button
                     onClick={handleAddToCart}
-                    disabled={!isConfirmed}
+                    disabled={!isConfirmed || isSavingCart}
                     className={`
         group w-full h-14 
         bg-white text-pink-500 border-2 border-pink-500 
         rounded-full font-semibold text-lg 
         transition-all duration-300 
         flex items-center justify-center gap-2
-        ${isConfirmed
+        ${isConfirmed && !isSavingCart
                         ? 'hover:bg-pink-500 hover:text-white hover:shadow-md cursor-pointer'
                         : 'opacity-50 cursor-not-allowed'
                       }
       `}
                   >
                     <Edit className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-                    Update Gift in Cart
+                    {isSavingCart ? 'Saving...' : 'Update Gift in Cart'}
                   </button>
                 ) : (
 
@@ -529,14 +552,14 @@ const ReviewConfirmStep = () => {
                   >
                     <button
                       onClick={handleAddToCart}
-                      disabled={!isConfirmed}
+                      disabled={!isConfirmed || isSavingCart}
                       className={`
                         w-full h-14 flex items-center justify-center gap-3 px-5 rounded-full 
                         bg-white text-pink-500 font-bold transition-all duration-200
-                       
+                        ${isSavingCart ? 'opacity-70 cursor-not-allowed' : ''}
                       `}
                     >
-                      Add to Cart
+                      {isSavingCart ? 'Saving...' : 'Add to Cart'}
                       <ShoppingBasket className="w-5 h-5" />
                     </button>
                   </div>

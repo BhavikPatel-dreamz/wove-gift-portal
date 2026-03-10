@@ -15,7 +15,7 @@ import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
 import SuccessScreen from "../giftflow/payment/SuccessScreen";
 import { currencyList } from '../../brandsPartner/currency';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearCart, clearBulkCart } from '@/redux/cartSlice';
+import { clearCart, clearBulkCart, clearCartAsync } from '@/redux/cartSlice';
 import { resetFlow } from '../../../redux/giftFlowSlice';
 
 // ✅ STRIPE CODE COMMENTED OUT
@@ -59,6 +59,21 @@ const CheckoutPage = () => {
   // Track individual order processing
   const [orderStatuses, setOrderStatuses] = useState({});
   const [addressErrors, setAddressErrors] = useState({});
+
+  const clearCarts = () => {
+    if (session?.user?.id) {
+      if (bulkItems.length > 0) {
+        dispatch(clearCartAsync({ userId: session.user.id, type: 'bulk' }));
+      }
+      if (cartItems.length > 0) {
+        dispatch(clearCartAsync({ userId: session.user.id, type: 'regular' }));
+      }
+      return;
+    }
+
+    if (bulkItems.length > 0) dispatch(clearBulkCart());
+    if (cartItems.length > 0) dispatch(clearCart());
+  };
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "R";
@@ -434,8 +449,7 @@ const CheckoutPage = () => {
           toast.success('All orders completed successfully!', { duration: 3000 });
         }
 
-        if (bulkItems.length > 0) dispatch(clearBulkCart());
-        if (cartItems.length > 0) dispatch(clearCart());
+        clearCarts();
         return;
       }
 
@@ -454,8 +468,7 @@ const CheckoutPage = () => {
 
         toast.success('All orders completed successfully!', { duration: 3000 });
 
-        if (bulkItems.length > 0) dispatch(clearBulkCart());
-        if (cartItems.length > 0) dispatch(clearCart());
+        clearCarts();
         return;
       }
 
@@ -489,8 +502,7 @@ const CheckoutPage = () => {
         }
         setIsProcessing(false);
 
-        if (bulkItems.length > 0) dispatch(clearBulkCart());
-        if (cartItems.length > 0) dispatch(clearCart());
+        clearCarts();
       }
     } catch (error) {
       console.error('Error polling orders:', error);

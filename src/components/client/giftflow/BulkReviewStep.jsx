@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext, setIsConfirmed, setCompanyInfo, setCsvFileData } from '../../../redux/giftFlowSlice';
-import { updateBulkCompanyInfo, updateBulkItem, addToBulkInCart } from '../../../redux/cartSlice';
+import { updateBulkCompanyInfo, updateBulkItem, addToBulkInCart, saveCartItemAsync } from '../../../redux/cartSlice';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
@@ -108,6 +108,7 @@ const BulkReviewStep = () => {
     // Local state only for form validation errors
     const [errors, setErrors] = useState({});
     const [isProcessingFile, setIsProcessingFile] = useState(false);
+    const [isSavingCart, setIsSavingCart] = useState(false);
 
     // Initialize local state from Redux
     const [csvFile, setCsvFile] = useState(null);
@@ -667,7 +668,7 @@ const BulkReviewStep = () => {
     }, [companyInfo, dispatch, syncCurrentBulkOrder]);
 
     // Add to Cart Handler
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         if (!validateForm()) {
             toast.error('Please correct the highlighted fields');
             return;
@@ -677,6 +678,9 @@ const BulkReviewStep = () => {
             toast.error('No bulk order found');
             return;
         }
+        if (isSavingCart) {
+            return;
+        }
 
         // // ✅ Check if a bulk order already exists in cart
         // if (bulkItems.length > 1) {
@@ -684,9 +688,31 @@ const BulkReviewStep = () => {
         //     return;
         // }
 
-        dispatch(addToBulkInCart(currentBulkOrder));
-        toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
-        router.push('/cart');
+        setIsSavingCart(true);
+        try {
+            if (session?.user?.id) {
+                const cartItemId = typeof currentBulkOrder?.cartItemId === 'string'
+                    ? currentBulkOrder.cartItemId
+                    : null;
+                await dispatch(saveCartItemAsync({
+                    userId: session.user.id,
+                    type: 'bulk',
+                    item: currentBulkOrder,
+                    cartItemId,
+                })).unwrap();
+            } else {
+                dispatch(addToBulkInCart(currentBulkOrder));
+            }
+            toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
+            router.push('/cart');
+        } catch (error) {
+            const message = typeof error === 'string'
+                ? error
+                : error?.message || 'Failed to add bulk order to cart.';
+            toast.error(message);
+        } finally {
+            setIsSavingCart(false);
+        }
     };
 
     const handleProceedToCheckout = () => {
@@ -1196,18 +1222,22 @@ const BulkReviewStep = () => {
                             }
                                               `}>
                             <button
-                                disabled={csvError !== "" || !isConfirmed || isProcessingFile}
+                                disabled={csvError !== "" || !isConfirmed || isProcessingFile || isSavingCart}
                                 onClick={handleAddToCart}
                                 className={`
     w-full h-14 flex items-center justify-center gap-3 px-5 rounded-full 
     bg-white text-pink-500 font-bold transition-all duration-200
-    ${csvError === "" && isConfirmed && !isProcessingFile
+    ${csvError === "" && isConfirmed && !isProcessingFile && !isSavingCart
                                         ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
                                         : 'opacity-50 cursor-not-allowed'
                                     }
   `}
                             >
-                                {isProcessingFile ? 'Processing file...' : (isBulkCartEdit ? 'Update Cart Order' : 'Add to Cart')}
+                                {isProcessingFile
+                                    ? 'Processing file...'
+                                    : (isSavingCart
+                                        ? (isBulkCartEdit ? 'Updating...' : 'Saving...')
+                                        : (isBulkCartEdit ? 'Update Cart Order' : 'Add to Cart'))}
                                 <ShoppingBasket className="w-5 h-5" />
                             </button>
 

@@ -14,7 +14,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import { destroySession } from '../../../lib/action/userAction/session';
 import { usePathname, useRouter } from 'next/navigation';
 import { resetFlow,clearCsvFileData } from '../../../redux/giftFlowSlice';
-import { initializeCart, initializeBulkCart } from '../../../redux/cartSlice';
 import {
   initializeWishlist,
   removeFromWishlist,
@@ -67,13 +66,10 @@ const Header = () => {
     ? { ...mobilePublicNavLinks, ...mobileMemberNavLinks }
     : mobilePublicNavLinks;
 
-  // ✅ Initialize cart from localStorage on mount
+  // ✅ Initialize wishlist on mount
   useEffect(() => {
     setMounted(true);
     
-    // Initialize both carts from localStorage
-    dispatch(initializeCart());
-    dispatch(initializeBulkCart());
     dispatch(initializeWishlist());
 
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
