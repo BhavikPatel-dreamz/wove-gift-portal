@@ -60,19 +60,12 @@ const getInitialBulkCart = () => {
   return [];
 };
 
-const getInitialNormalizedBulkCart = () => {
-  const bulkCart = getInitialBulkCart();
-  return bulkCart.map((item, index) => normalizeBulkItem(item, Date.now() + index));
-};
-
-const initialBulkCart = getInitialNormalizedBulkCart();
-
 const cartSlice = createSlice({
   name: 'cart',
   initialState: {
-    items: getInitialCart(),
-    bulkItems: [...initialBulkCart],
-    cartItems: [...initialBulkCart],
+    items: [],
+    bulkItems: [],
+    cartItems: [],
   },
   reducers: {
     // Regular single gift cart actions

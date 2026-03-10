@@ -102,7 +102,7 @@ const normalizeWishlistItem = (payload = {}) => {
 const wishlistSlice = createSlice({
   name: 'wishlist',
   initialState: {
-    items: getInitialWishlist(),
+    items: [],
   },
   reducers: {
     addToWishlist: (state, action) => {

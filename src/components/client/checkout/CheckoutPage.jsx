@@ -606,15 +606,15 @@ const CheckoutPage = () => {
             <span className="absolute inset-[1.5px] rounded-full bg-white transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]"></span>
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
               <span className="transition-transform duration-300 group-hover:-translate-x-1">
-              <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
-                <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
-                <defs>
-                  <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#ED457D" />
-                    <stop offset="1" stopColor="#FA8F42" />
-                  </linearGradient>
-                </defs>
-              </svg>
+                <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-all duration-300 group-hover:[&>path]:fill-white">
+                  <path d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z" fill="url(#paint0_linear_584_1923)" />
+                  <defs>
+                    <linearGradient id="paint0_linear_584_1923" x1="7.5" y1="3.01721" x2="-9.17006" y2="13.1895" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#ED457D" />
+                      <stop offset="1" stopColor="#FA8F42" />
+                    </linearGradient>
+                  </defs>
+                </svg>
               </span>
               Previous
             </div>
@@ -669,7 +669,7 @@ const CheckoutPage = () => {
 
             {/* ✅ TEST MODE: Simple payment button */}
             {/* PayFast Payment Button */}
-            {selectedPaymentTab === 'payfast' && (
+            {/* {selectedPaymentTab === 'payfast' && (
               <button
                 onClick={handlePaymentButtonClick}
                 disabled={isProcessing || !isPaymentConfirmed}
@@ -698,50 +698,39 @@ const CheckoutPage = () => {
                   </>
                 )}
               </button>
-            )}
+            )} */}
 
 
-            {selectedPaymentTab === 'card' && (
-              <button
-                onClick={handlePaymentButtonClick}
-                disabled={isProcessing || !isPaymentConfirmed}
-                className={`group w-full bg-gradient-to-r from-pink-500 to-orange-500 
-                       hover:from-pink-600 hover:to-orange-600
-                       disabled:from-gray-300 disabled:to-gray-400
-                       text-white py-3 sm:py-4 px-6 rounded-xl
-                       font-semibold text-sm sm:text-base
-                       transition-all duration-200
-                       flex items-center justify-center gap-2
-                       shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
-                    {pendingOrderIds.length > 0 ? 'Processing Payment...' : `Preparing ${cartItems.length + bulkItems.length} order${cartItems.length + bulkItems.length > 1 ? 's' : ''}...`}
-                  </>
-                ) : (
-                  <>
-                    {pendingOrderIds.length > 0 ? 'Complete Payment' : 'Proceed to Payment'}
-                    <span
-                    className={"transition-transform duration-300 group-hover:translate-x-1"}
-                  >
-                    <svg
-                      width="8"
-                      height="9"
-                      viewBox="0 0 8 9"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
-                        fill="white"
-                      />
+            {/* {selectedPaymentTab == 'card' && ( */}
+            <button
+              onClick={handlePaymentButtonClick}
+              disabled={isProcessing || !isPaymentConfirmed}
+              className={`group w-full bg-gradient-to-r from-pink-500 to-orange-500 
+         hover:from-pink-600 hover:to-orange-600
+         disabled:from-gray-300 disabled:to-gray-400
+         text-white py-3 sm:py-4 px-6 rounded-full
+         font-semibold text-sm sm:text-base
+         transition-all duration-200
+         flex items-center justify-center gap-2
+         shadow-lg disabled:cursor-not-allowed ${!isPaymentConfirmed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              {isProcessing ? (
+                <>
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                  {pendingOrderIds.length > 0 ? 'Processing Payment...' : `Preparing ${cartItems.length + bulkItems.length} order${cartItems.length + bulkItems.length > 1 ? 's' : ''}...`}
+                </>
+              ) : (
+                <>
+                  {pendingOrderIds.length > 0 ? 'Complete Payment' : 'Proceed to Payment'}
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">
+                    <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
                     </svg>
                   </span>
-                  </>
-                )}
-              </button>
-            )}
+                </>
+              )}
+            </button>
+            {/* )} */}
 
             {!checkoutUserId && guestCheckout?.email && (
               <div className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3">
@@ -914,9 +903,9 @@ const CheckoutPage = () => {
                 <p className="text-red-600 text-sm">{guestFormError}</p>
               )}
 
-<button
-  type="submit"
-  className="group w-full sm:w-auto max-w-fit
+              <button
+                type="submit"
+                className="group w-full sm:w-auto max-w-fit
   px-6 md:px-8 py-3 md:py-4
   bg-gradient-to-r from-pink-500 to-orange-500
   hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500
@@ -926,7 +915,7 @@ const CheckoutPage = () => {
   focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2
   transition-all duration-300
   flex items-center justify-center gap-2 whitespace-nowrap"
->
+              >
                 Continue to Payment
 
                 <span className="transition-transform duration-300 group-hover:translate-x-2">
