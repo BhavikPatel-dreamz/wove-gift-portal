@@ -848,7 +848,7 @@ const CheckoutPage = () => {
       </div>
 
       {showAuthModal && (
-        <div className="fixed inset-0 z-[70] bg-black/60 p-4 flex items-center justify-center">
+        <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
           <AuthForm
             type="login"
             mode="modal"
@@ -867,7 +867,7 @@ const CheckoutPage = () => {
       )}
 
       {showGuestModal && !requiresLoginForBulkCheckout && (
-        <div className="fixed inset-0 z-[80] bg-black/60 p-4 flex items-center justify-center">
+        <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
           <div className="w-full max-w-md bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative">
             <button
               type="button"

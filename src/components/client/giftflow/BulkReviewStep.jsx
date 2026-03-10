@@ -1318,7 +1318,7 @@ const BulkReviewStep = () => {
             </div>
 
             {showAuthModal && (
-                <div className="fixed inset-0 z-[70] bg-black/60 p-4 flex items-center justify-center">
+                <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
                     <AuthForm
                         type="login"
                         mode="modal"
