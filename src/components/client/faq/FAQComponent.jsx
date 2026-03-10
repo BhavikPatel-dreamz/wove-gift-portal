@@ -1,6 +1,6 @@
 "use client"
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 const FAQComponent = () => {
   const [activeCategory, setActiveCategory] = useState('Getting Started');
@@ -277,42 +277,32 @@ const FAQComponent = () => {
       </div>
 
       {/* Search Bar */}
-      <div className="absolute left-1/2 -translate-x-1/2 -mt-4
-                w-[90%] sm:w-[80%] md:w-130
-                h-auto px-2 sm:px-4">
-        <div className="relative">
-          {/* Search icon */}
-          <div
-            className="absolute left-3 top-1/2 -translate-y-1/2
-                 w-9 h-9 sm:w-10 sm:h-10
-                 bg-[rgba(217,217,217,0.2)]
-                 rounded-full flex items-center justify-center z-10"
-          >
-            <Search
-              className="w-4 h-4 sm:w-5 sm:h-5 text-black"
-              strokeWidth={2}
-            />
+      {/* ── Search bar — overlaps the hero bottom edge, centered ── */}
+      <div className="flex justify-center px-4 -mt-6 sm:-mt-7 relative z-10">
+        <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl">
+          {/* Search icon circle */}
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 rounded-full flex items-center justify-center z-10 pointer-events-none">
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" strokeWidth={2} />
           </div>
 
-          {/* Input */}
           <input
             type="text"
             placeholder="Search FAQs (e.g., refund, WhatsApp, bulk CSV)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="
-        w-full
-        pl-12 sm:pl-14
-        pr-4
-        py-2.5 sm:py-3.5
-        rounded-full
-        text-sm sm:text-[15px]
-        shadow-sm
-        focus:outline-none
-        border-2 border-[#FFB4B4]
-        bg-white text-black
-      "
+            className="w-full pl-12 sm:pl-14 pr-12 sm:pr-14 py-3 sm:py-3.5 rounded-full text-sm sm:text-base focus:outline-none border-2 border-[#FFB4B4] bg-white text-gray-800 placeholder-gray-400"
+            style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
           />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -356,43 +346,65 @@ const FAQComponent = () => {
                 return (
                   <div
                     key={faq._key}
-                    className="bg-white rounded-xl sm:rounded-2xl border border-gray-200 transition-colors duration-200 overflow-hidden"
+                    className={`rounded-2xl transition-all duration-300 overflow-hidden
+          ${isExpanded
+                        ? "p-[1px] bg-gradient-to-r from-pink-500 to-orange-400"
+                        : "border border-gray-200"
+                      }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(faq._key)}
-                      className="w-full cursor-pointer p-4 sm:p-6 flex justify-between items-start gap-3 hover:bg-gray-50 transition-colors duration-200"
-                    >
-                      <div className="text-left pr-2 sm:pr-4">
-                        {normalizedSearch && (
-                          <span className="inline-flex items-center mb-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#FFF3ED] text-[#E65A3A]">
-                            {faq._category}
+                    <div className="bg-white rounded-[15px] hover:bg-gray-50 transition-colors duration-200">
+
+                      {/* Question */}
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(faq._key)}
+                        className="w-full cursor-pointer p-4 sm:p-6 flex justify-between items-start gap-3"
+                      >
+                        <div className="text-left pr-2 sm:pr-4">
+                          {normalizedSearch && (
+                            <span className="inline-flex items-center mb-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#FFF3ED] text-[#E65A3A]">
+                              {faq._category}
+                            </span>
+                          )}
+
+                          <span className="block font-semibold text-gray-900 text-base sm:text-lg">
+                            {faq.question}
                           </span>
-                        )}
-                        <span className="block font-semibold text-gray-900 text-base sm:text-lg">
-                          {faq.question}
-                        </span>
+                        </div>
+
+                        {/* Icon */}
+                        <div
+                          className={`shrink-0 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center relative transition-transform duration-300 ${isExpanded ? "rotate-180" : ""
+                            }`}
+                        >
+                          {isExpanded ? (
+                            <div className="w-4 sm:w-5 h-0.5 bg-[#FFB4B4]" />
+                          ) : (
+                            <>
+                              <div className="absolute w-4 sm:w-5 h-0.5 bg-[#FFB4B4]" />
+                              <div className="absolute w-0.5 h-4 sm:h-5 bg-[#FFB4B4]" />
+                            </>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Answer with animation */}
+                      <div
+                        className={`grid transition-all duration-300 ease-in-out ${isExpanded
+                            ? "grid-rows-[1fr] opacity-100"
+                            : "grid-rows-[0fr] opacity-0"
+                          }`}
+                      >
+                        <div className="overflow-hidden">
+                          <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                            <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
+                              {faq.answer}
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="shrink-0 w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center relative transition-transform duration-200 cursor-pointer">
-                        {isExpanded ? (
-                          <div className="cursor-pointer w-4 sm:w-5 h-0.5 bg-[#FFB4B4]" />
-                        ) : (
-                          <>
-                            <div className="absolute w-4 sm:w-5 h-0.5 bg-[#FFB4B4]" />
-                            <div className="absolute w-0.5 h-4 sm:h-5 bg-[#FFB4B4]" />
-                          </>
-                        )}
-                      </div>
-                    </button>
-
-                    {isExpanded && (
-                      <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-                        <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
-                          {faq.answer}
-                        </p>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 );
               })
