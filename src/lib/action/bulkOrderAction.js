@@ -4,6 +4,8 @@ import { prisma } from "../db";
 import { getSession } from "./userAction/session";
 import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage";
 
+const DEFAULT_EXPIRY_YEARS = 3;
+
 
 
 // ==================== CUSTOM ERROR CLASSES ====================
@@ -217,7 +219,7 @@ async function createOrderRecord(
 }
 
 // ==================== SHOPIFY GIFT CARD OPERATIONS ====================
-async function createShopifyGiftCard(selectedBrand, orderData) {
+async function createShopifyGiftCard(selectedBrand, orderData, purchaseDate = null) {
   if (!selectedBrand.domain) {
     throw new ValidationError("Brand domain is required for gift card creation");
   }
@@ -243,6 +245,9 @@ async function createShopifyGiftCard(selectedBrand, orderData) {
       voucherConfig.denominationType === "fixed"
         ? orderData.selectedAmount.value
         : orderData.selectedAmount.value,
+    purchaseDate: purchaseDate
+      ? new Date(purchaseDate).toISOString()
+      : null,
   };
 
   const apiUrl = `${
@@ -335,6 +340,10 @@ async function createVoucherCode(
       expireDate = matchedDenomination?.expiresAt || voucherConfig?.expiresAt || null;
     }
 
+    if (!expireDate) {
+      expireDate = getDefaultExpiryDate(order?.paidAt || order?.createdAt || new Date());
+    }
+
     const voucherCode = await prisma.voucherCode.create({
       data: {
         code: shopifyGiftCard.maskedCode,
@@ -363,6 +372,15 @@ async function createVoucherCode(
   } catch (error) {
     throw new Error(`Failed to create voucher code: ${error.message}`);
   }
+}
+
+function getDefaultExpiryDate(baseDate) {
+  const normalizedBase = baseDate ? new Date(baseDate) : new Date();
+  const date = Number.isNaN(normalizedBase.getTime())
+    ? new Date()
+    : normalizedBase;
+  date.setFullYear(date.getFullYear() + DEFAULT_EXPIRY_YEARS);
+  return date;
 }
 
 // ==================== SETTLEMENT OPERATIONS ====================
@@ -527,7 +545,11 @@ export const createOrder = async (orderData) => {
 
 
     const { giftCard: shopifyGiftCard, voucherConfig } =
-      await createShopifyGiftCard(orderData.selectedBrand, orderData);
+      await createShopifyGiftCard(
+        orderData.selectedBrand,
+        orderData,
+        order.paidAt || order.createdAt || new Date(),
+      );
 
   
     const giftCardInDb = await saveGiftCardToDb(
@@ -669,7 +691,11 @@ export const createBulkOrder = async (cartItems, paymentData) => {
 
         // Create Shopify gift card
         const { giftCard: shopifyGiftCard, voucherConfig } =
-          await createShopifyGiftCard(item.selectedBrand, item);
+          await createShopifyGiftCard(
+            item.selectedBrand,
+            item,
+            order.paidAt || order.createdAt || new Date(),
+          );
 
         // Save gift card to database
         const giftCardInDb = await saveGiftCardToDb(

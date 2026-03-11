@@ -318,7 +318,7 @@ const GiftCardPDF = ({
             <View style={styles.amountContainer}>
               <View style={styles.amountRow}>
                 <Text style={styles.amount}>{amount}</Text>
-                <Text style={styles.currencyCode}>{currency}</Text>
+                <Text style={styles.currencyCode}>{getCurrencySymbol(currency)}</Text>
               </View>
             </View>
 

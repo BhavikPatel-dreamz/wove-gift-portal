@@ -19,6 +19,7 @@ import { makeSouthAfricaDate } from "../timezone.js";
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
+const DEFAULT_EXPIRY_YEARS = 3;
 
 // ==================== CUSTOM ERROR CLASSES ====================
 class ValidationError extends Error {
@@ -952,6 +953,7 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
       orderData,
       voucherConfig,
       null,
+      order.paidAt || order.createdAt || new Date(),
     );
 
     const giftCardCreationTime = Date.now() - giftCardStartTime;
@@ -989,7 +991,11 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
     });
 
     // ==================== STEP 3: CREATE VOUCHER CODE ====================
-    let expireDate = calculateExpiryDate(voucherConfig, order.amount);
+    let expireDate = calculateExpiryDate(
+      voucherConfig,
+      order.amount,
+      order.paidAt || order.createdAt || new Date(),
+    );
 
     const voucherCode = await prisma.voucherCode.create({
       data: {
@@ -1132,6 +1138,7 @@ async function processRegularBulkOrder(order, orderData, voucherConfig) {
       orderData,
       voucherConfig,
       null,
+      order.paidAt || order.createdAt || new Date(),
     );
 
     const giftCardInDb = await prisma.giftCard.upsert({
@@ -1154,7 +1161,11 @@ async function processRegularBulkOrder(order, orderData, voucherConfig) {
       },
     });
 
-    let expireDate = calculateExpiryDate(voucherConfig, order.amount);
+    let expireDate = calculateExpiryDate(
+      voucherConfig,
+      order.amount,
+      order.paidAt || order.createdAt || new Date(),
+    );
 
     const voucherCode = await prisma.voucherCode.create({
       data: {
@@ -1326,11 +1337,12 @@ async function processBulkItemQueue(
 
     // ==================== CREATE GIFT CARD ====================
     const shopifyGiftCard = await createShopifyGiftCard(
-      orderData.selectedBrand,
-      orderData,
-      voucherConfig,
-      recipientData,
-    );
+        orderData.selectedBrand,
+        orderData,
+        voucherConfig,
+        recipientData,
+        order.paidAt || order.createdAt || new Date(),
+      );
 
     await prisma.deliveryLog.update({
       where: { id: deliveryLog.id },
@@ -1361,7 +1373,11 @@ async function processBulkItemQueue(
       },
     });
 
-    let expireDate = calculateExpiryDate(voucherConfig, order.amount);
+    let expireDate = calculateExpiryDate(
+      voucherConfig,
+      order.amount,
+      order.paidAt || order.createdAt || new Date(),
+    );
 
     const voucherCode = await prisma.voucherCode.create({
       data: {
@@ -1488,7 +1504,7 @@ async function processBulkItemQueue(
 }
 
 // ==================== HELPER FUNCTIONS ====================
-function calculateExpiryDate(voucherConfig, amount) {
+function calculateExpiryDate(voucherConfig, amount, baseDate) {
   let expireDate = null;
 
   if (voucherConfig?.denominationType === "fixed") {
@@ -1516,7 +1532,20 @@ function calculateExpiryDate(voucherConfig, amount) {
           : null;
   }
 
+  if (!expireDate) {
+    expireDate = getDefaultExpiryDate(baseDate);
+  }
+
   return expireDate;
+}
+
+function getDefaultExpiryDate(baseDate) {
+  const normalizedBase = baseDate ? new Date(baseDate) : new Date();
+  const date = Number.isNaN(normalizedBase.getTime())
+    ? new Date()
+    : normalizedBase;
+  date.setFullYear(date.getFullYear() + DEFAULT_EXPIRY_YEARS);
+  return date;
 }
 
 // ==================== SHOPIFY GIFT CARD OPERATIONS ====================
@@ -1525,6 +1554,7 @@ async function createShopifyGiftCard(
   orderData,
   voucherConfig,
   recipientData = null,
+  purchaseDate = null,
 ) {
   if (!selectedBrand.domain) {
     throw new ValidationError(
@@ -1563,6 +1593,9 @@ async function createShopifyGiftCard(
       voucherConfig.denominationType === "fixed"
         ? orderData.selectedAmount.value
         : orderData.selectedAmount.value,
+    purchaseDate: purchaseDate
+      ? new Date(purchaseDate).toISOString()
+      : null,
   };
 
   const apiUrl = `${

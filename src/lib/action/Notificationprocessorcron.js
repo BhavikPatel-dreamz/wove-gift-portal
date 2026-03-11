@@ -16,8 +16,11 @@ import { SendWhatsappMessages } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
 import { v2 as cloudinary } from "cloudinary";
 import { prisma } from "../db.js";
+import { currencyList } from "../../components/brandsPartner/currency";
 
 const MAX_RETRIES = 3;
+const DEFAULT_EXPIRY_TEXT =
+  "The gift card is valid for 3 years from date of purchase.";
 
 // ─── Brevo Template IDs ────────────────────────────────────────────────────
 // Set these in your .env or replace with actual numeric IDs from Brevo dashboard
@@ -232,14 +235,13 @@ async function sendSingleOrderNotification(order) {
 
     const giftCode   = voucherCode.giftCard?.code || voucherCode.code;
     const redeemLink = voucherCode.tokenizedLink || getClaimUrl(order.brand);
-    const expiryDate = voucherCode.expiresAt
-      ? new Date(voucherCode.expiresAt).toLocaleDateString("en-IN")
-      : "No Expiry";
+    const expiryDate = getExpiryDateText(voucherCode);
 
     const senderName   = process.env.NEXT_BREVO_SENDER_NAME || "WoveGifts";
     const senderEmail  = process.env.NEXT_BREVO_SENDER_EMAIL;
     const companyName  = order.senderName || "A special sender";
     const brandName    = order.brand?.brandName || "Gift Card";
+    const currencySymbol = getCurrencySymbol(order.currency);
 
     // ── Notification log ──
     const notification = await prisma.notificationDetail.create({
@@ -290,7 +292,7 @@ async function sendSingleOrderNotification(order) {
 
             // Voucher details
             giftCode:         giftCode,
-            currency:         order.currency,
+            currency:         currencySymbol,
             amount:           order.amount,
             expiryDate:       expiryDate,
             redeemLink:       redeemLink,
@@ -316,7 +318,7 @@ async function sendSingleOrderNotification(order) {
         };
         const orderData = {
           selectedBrand:    order.brand,
-          selectedAmount:   { value: order.amount, currency: order.currency },
+          selectedAmount:   { value: order.amount, currency: currencySymbol },
           selectedSubCategory,
           deliveryDetails: {
             recipientFullName:      order.receiverDetail.name,
@@ -408,6 +410,7 @@ async function sendIndividualBulkEmails(order, selectedSubCategory) {
   const senderName   = process.env.NEXT_BREVO_SENDER_NAME || "WoveGifts";
   const companyName  = order.senderName || "A special sender";
   const brandName    = order.brand?.brandName || "Gift Card";
+  const currencySymbol = getCurrencySymbol(order.currency);
 
   let occasionTitle = selectedSubCategory?.name || order.occasion?.name || null;
 
@@ -450,9 +453,7 @@ async function sendIndividualBulkEmails(order, selectedSubCategory) {
       const voucherCode = recipient.voucherCode;
       const giftCode    = voucherCode.giftCard?.code || voucherCode.code;
       const redeemLink  = voucherCode.tokenizedLink || getClaimUrl(order.brand);
-      const expiryDate  = voucherCode.expiresAt
-        ? new Date(voucherCode.expiresAt).toLocaleDateString("en-IN")
-        : "No Expiry";
+      const expiryDate  = getExpiryDateText(voucherCode);
 
       const emailSubject = occasionTitle
         ? `🎁 ${occasionTitle} – You've received a gift from ${companyName}`
@@ -474,7 +475,7 @@ async function sendIndividualBulkEmails(order, selectedSubCategory) {
           giftCardImageUrl: selectedSubCategory?.image || "",
 
           giftCode:         giftCode,
-          currency:         order.currency,
+          currency:         currencySymbol,
           amount:           order.amount,
           expiryDate:       expiryDate,
           redeemLink:       redeemLink,
@@ -567,11 +568,12 @@ async function sendBulkSummaryEmail(order, selectedSubCategory) {
       data: { status: "SENDING", attemptCount: { increment: 1 } },
     });
 
-    const senderEmail  = process.env.NEXT_BREVO_SENDER_EMAIL;
-    const senderName   = process.env.NEXT_BREVO_SENDER_NAME || "WoveGifts";
-    const brandName    = order.brand?.brandName || "Gift Card";
-    const totalVouchers = voucherCodes.length;
-    const totalValue    = order.amount * totalVouchers;
+  const senderEmail  = process.env.NEXT_BREVO_SENDER_EMAIL;
+  const senderName   = process.env.NEXT_BREVO_SENDER_NAME || "WoveGifts";
+  const brandName    = order.brand?.brandName || "Gift Card";
+  const currencySymbol = getCurrencySymbol(order.currency);
+  const totalVouchers = voucherCodes.length;
+  const totalValue    = order.amount * totalVouchers;
 
     const brandUrl = getClaimUrl(order.brand);
 
@@ -579,10 +581,10 @@ async function sendBulkSummaryEmail(order, selectedSubCategory) {
     const csvHeader = "S.No,Gift Card Code,Amount,Currency,Expiry Date,Redeem URL\n";
     const csvRows = voucherCodes
       .map((vc, i) => {
-        const vcExpiry   = vc.expiresAt ? new Date(vc.expiresAt).toLocaleDateString("en-IN") : "No Expiry";
+        const vcExpiry   = getExpiryDateText(vc);
         const code       = vc.giftCard?.code || vc.code;
         const redeemUrl  = vc.tokenizedLink || brandUrl;
-        return `${i + 1},${code},${vc.originalValue},${order.currency},${vcExpiry},${redeemUrl}`;
+        return `${i + 1},${code},${vc.originalValue},${currencySymbol},${vcExpiry},${redeemUrl}`;
       })
       .join("\n");
 
@@ -617,7 +619,7 @@ async function sendBulkSummaryEmail(order, selectedSubCategory) {
 
         // Voucher stats
         totalVouchers:    totalVouchers,
-        currency:         order.currency,
+        currency:         currencySymbol,
         amount:           order.amount,
         totalValue:       totalValue.toLocaleString("en-IN"),
 
@@ -698,5 +700,15 @@ function getClaimUrl(selectedBrand) {
   if (!claimUrl) throw new Error("Brand website or domain not configured");
   return claimUrl.startsWith("http") ? claimUrl : `https://${claimUrl}`;
 }
+
+function getExpiryDateText(voucherCode) {
+  if (voucherCode?.expiresAt) {
+    return new Date(voucherCode.expiresAt).toLocaleDateString("en-IN");
+  }
+  return DEFAULT_EXPIRY_TEXT;
+}
+
+const getCurrencySymbol = (code) =>
+  currencyList.find((c) => c.code === code)?.symbol || "R";
 
 export default notificationProcessorCron;

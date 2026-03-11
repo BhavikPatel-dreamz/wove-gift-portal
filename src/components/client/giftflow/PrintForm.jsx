@@ -1,10 +1,15 @@
 import React from "react";
 import { Printer, Gift, Edit, Calendar, DollarSign } from "lucide-react";
 import { useSelector } from "react-redux";
+import { currencyList } from "../../brandsPartner/currency";
 
 const PrintForm = () => {
   const data = useSelector((state) => state.giftFlowReducer);
   const { selectedBrand, selectedAmount, selectedSubCategory, personalMessage } = data;
+
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "R";
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 px-4 sm:px-6 lg:px-12 py-6">
@@ -90,11 +95,11 @@ const PrintForm = () => {
             {/* Amount */}
             <div className="text-center py-3">
               <div className="inline-flex items-center gap-2 bg-linear-to-r from-purple-50 to-pink-50 px-5 py-3 rounded-2xl">
+                <span className="text-base sm:text-lg text-gray-600">
+                  {getCurrencySymbol(selectedAmount?.currency)}
+                </span>
                 <span className="text-3xl sm:text-4xl font-bold text-gray-900">
                   {selectedAmount?.value}
-                </span>
-                <span className="text-base sm:text-lg text-gray-600">
-                  {selectedAmount?.currency}
                 </span>
               </div>
             </div>
@@ -106,7 +111,7 @@ const PrintForm = () => {
                   Personal Message
                 </p>
                 <p className="text-sm text-gray-700 italic">
-                  “{personalMessage}”
+                  {personalMessage}
                 </p>
               </div>
             )}
@@ -127,11 +132,11 @@ const PrintForm = () => {
             <p className="text-xs text-gray-500">
               {selectedBrand?.vouchers?.[0]?.expiresAt
                 ? `Valid until ${new Date(
-                    selectedBrand.vouchers[0].expiresAt
-                  ).toLocaleDateString('en-ZA')}`
+                  selectedBrand.vouchers[0].expiresAt
+                ).toLocaleDateString('en-ZA')}`
                 : selectedBrand?.vouchers?.[0]?.expiryValue
-                ? `Valid for ${selectedBrand.vouchers[0].expiryValue} days`
-                : "No expiration date"}
+                  ? `Valid for ${selectedBrand.vouchers[0].expiryValue} days`
+                  : "No expiration date"}
             </p>
           </div>
         </div>

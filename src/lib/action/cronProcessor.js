@@ -14,6 +14,7 @@ import { prisma } from "../db.js";
 const MAX_RETRIES = 3;
 const PROCESSING_TIMEOUT_MINUTES = 15;
 const BATCH_SIZE = 5; // Create 5 vouchers per iteration
+const DEFAULT_EXPIRY_YEARS = 3;
 
 export const voucherProcessorCron = () => {
   cron.schedule("*/10 * * * * *", async () => {
@@ -324,6 +325,7 @@ async function createVouchersInBatches(
           orderData,
           voucherConfig,
           null,
+          order.paidAt || order.createdAt || new Date(),
         );
 
         if (!shopifyGiftCard?.id) {
@@ -396,6 +398,7 @@ async function createBulkVouchersForCSV(order, orderData, voucherConfig) {
         orderData,
         voucherConfig,
         recipientData,
+        order.paidAt || order.createdAt || new Date(),
       );
 
       if (!shopifyGiftCard?.id) {
@@ -516,7 +519,11 @@ async function saveVoucherAtomic(
           });
 
           // Create voucher code
-          const expiryDate = calculateExpiryDate(voucherConfig, order.amount);
+          const expiryDate = calculateExpiryDate(
+            voucherConfig,
+            order.amount,
+            order.paidAt || order.createdAt || new Date(),
+          );
           const tokenizedLink = getClaimUrl(orderData.selectedBrand);
           const linkExpiresAt = new Date();
           linkExpiresAt.setDate(linkExpiresAt.getDate() + 7);
@@ -798,7 +805,7 @@ function buildOrderData(order, occasionDetails) {
   };
 }
 
-function calculateExpiryDate(voucherConfig, amount) {
+function calculateExpiryDate(voucherConfig, amount, baseDate) {
   let expireDate = null;
   if (voucherConfig?.denominationType === "fixed") {
     const matchedDenomination = voucherConfig?.denominations?.find(
@@ -824,7 +831,21 @@ function calculateExpiryDate(voucherConfig, amount) {
           ? voucherConfig?.expiresAt || null
           : null;
   }
+
+  if (!expireDate) {
+    expireDate = getDefaultExpiryDate(baseDate);
+  }
+
   return expireDate;
+}
+
+function getDefaultExpiryDate(baseDate) {
+  const normalizedBase = baseDate ? new Date(baseDate) : new Date();
+  const date = Number.isNaN(normalizedBase.getTime())
+    ? new Date()
+    : normalizedBase;
+  date.setFullYear(date.getFullYear() + DEFAULT_EXPIRY_YEARS);
+  return date;
 }
 
 function getClaimUrl(selectedBrand) {
@@ -843,6 +864,7 @@ async function createShopifyGiftCard(
   orderData,
   voucherConfig,
   recipientData = null,
+  purchaseDate = null,
 ) {
   if (!selectedBrand.domain) throw new Error("Brand domain is required");
 
@@ -873,6 +895,9 @@ async function createShopifyGiftCard(
         ? `Bulk Order`
         : `Order`,
     denominationValue: orderData.selectedAmount.value,
+    purchaseDate: purchaseDate
+      ? new Date(purchaseDate).toISOString()
+      : null,
   };
 
   const apiUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/giftcard?shop=${

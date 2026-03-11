@@ -6,6 +6,7 @@ import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setCurrentStep, setDeliveryFormEditReturn } from "../../../redux/giftFlowSlice";
 import { COUNTRY_CODES } from "./deliveryValidation";
+import { currencyList } from "../../brandsPartner/currency";
 
 const WhatsAppForm = ({
   formData,
@@ -42,6 +43,9 @@ const WhatsAppForm = ({
   const goToOccationCategoryStep = () => {
     startEditFlow(4);
   };
+
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "R";
 
   return (
     <div className="text-black">
@@ -313,11 +317,11 @@ const WhatsAppForm = ({
                           Friend Sent you a gift card
                         </p>
                         <p className="text-base sm:text-lg font-bold text-red-500">
-                          {selectedAmount.currency}
+                          {getCurrencySymbol(selectedAmount.currency)}
                           {selectedAmount.value}
                         </p>
                         <p className="text-[10px] sm:text-xs text-gray-600 leading-relaxed italic">
-                          "{personalMessage}"
+                          {personalMessage}
                         </p>
                       </div>
 

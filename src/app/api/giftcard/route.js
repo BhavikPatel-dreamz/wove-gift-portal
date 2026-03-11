@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 import { prisma } from "../../../lib/db";
 
 const SHOPIFY_API_VERSION = "2025-07";
+const DEFAULT_EXPIRY_YEARS = 3;
 
 export async function POST(req) {
   const startTime = Date.now();
@@ -19,6 +20,14 @@ export async function POST(req) {
     const shop = url.searchParams.get("shop");
     const denominationType = url.searchParams.get("denominationType");
     const input = await req.json();
+    const purchaseDateRaw = input?.purchaseDate || null;
+    const purchaseDateParsed = purchaseDateRaw
+      ? new Date(purchaseDateRaw)
+      : null;
+    const purchaseDate =
+      purchaseDateParsed && !Number.isNaN(purchaseDateParsed.getTime())
+        ? purchaseDateParsed
+        : null;
 
     console.log("url", url);
 
@@ -300,6 +309,15 @@ export async function POST(req) {
         shouldSetExpiry,
         expiresAt,
         matchedFixed: !!selectedDenom,
+      });
+    }
+
+    if (!expiresAt) {
+      expiresAt = getDefaultExpiryDate(purchaseDate);
+      shouldSetExpiry = true;
+      console.log("ℹ️ [STEP 3d] Default expiry applied", {
+        expiresAt,
+        purchaseDate: purchaseDate || "now",
       });
     }
 
@@ -652,4 +670,13 @@ export async function GET(req) {
       { status: 500 }
     );
   }
+}
+
+function getDefaultExpiryDate(baseDate) {
+  const normalizedBase = baseDate ? new Date(baseDate) : new Date();
+  const date = Number.isNaN(normalizedBase.getTime())
+    ? new Date()
+    : normalizedBase;
+  date.setFullYear(date.getFullYear() + DEFAULT_EXPIRY_YEARS);
+  return date;
 }
