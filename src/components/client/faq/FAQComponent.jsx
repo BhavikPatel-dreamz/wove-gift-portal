@@ -464,7 +464,7 @@ const FAQComponent = () => {
       </div>
 
       {isEmailSupportOpen && (
-        <div className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-999 bg-black/45 flex items-center justify-center p-4">
           <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-100 p-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-gray-900">Email Support</h3>

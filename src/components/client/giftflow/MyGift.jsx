@@ -841,7 +841,7 @@ function MyGift() {
                 </button>
 
                 {isDatePickerOpen && (
-                  <div className="absolute top-full left-0 z-50 mt-2 bg-white rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.16)] border border-[#F4CDD7] overflow-hidden">
+                  <div className="absolute top-full left-0 z-999 mt-2 bg-white rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.16)] border border-[#F4CDD7] overflow-hidden">
                     <ReactDatePicker
                       selected={startDate}
                       onChange={handleDateChange}
