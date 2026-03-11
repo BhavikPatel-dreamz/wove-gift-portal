@@ -28,6 +28,25 @@ const formatRangeDate = (dateValue) =>
     year: 'numeric',
   });
 
+const formatScheduledForSAST = (dateValue) => {
+  if (!dateValue) return null;
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return null;
+
+  try {
+    return new Intl.DateTimeFormat('en-ZA', {
+      timeZone: 'Africa/Johannesburg',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  } catch {
+    return date.toLocaleString();
+  }
+};
+
 function MyGift() {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,6 +78,7 @@ function MyGift() {
 
   const tabs = [
     { id: 'all', label: 'All Gifts' },
+    { id: 'scheduled', label: 'Scheduled Gifts' },
     { id: 'sent', label: 'Sent Gifts' },
     { id: 'received', label: 'Received Gifts' },
     { id: 'expired', label: 'Expired Gifts' }
@@ -459,10 +479,12 @@ function MyGift() {
 
           <div>
             <p className="font-[Arial] text-[10px] leading-[15px] tracking-[0.25px] uppercase text-[#75738C] font-normal mb-1">
-              Purchase Date
+              {activeTab === 'scheduled' ? 'Scheduled For' : 'Purchase Date'}
             </p>
             <p className="font-[Poppins] text-[18px] leading-[27px] font-semibold text-[#1A1A1A]">
-              {firstCard.purchaseDate || "N/A"}
+              {activeTab === 'scheduled'
+                ? (formatScheduledForSAST(firstCard.scheduledFor) || "N/A")
+                : (firstCard.purchaseDate || "N/A")}
             </p>
           </div>
         </div>
@@ -602,9 +624,13 @@ function MyGift() {
             </p>
           </div>
           <div>
-            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">Purchase Date</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">
+              {activeTab === 'scheduled' ? 'Scheduled For' : 'Purchase Date'}
+            </p>
             <p className="text-base sm:text-lg font-bold text-gray-900">
-              {card.purchaseDate || "N/A"}
+              {activeTab === 'scheduled'
+                ? (formatScheduledForSAST(card.scheduledFor) || "N/A")
+                : (card.purchaseDate || "N/A")}
             </p>
           </div>
         </div>
@@ -733,7 +759,15 @@ function MyGift() {
           <p className="text-sm sm:text-base text-[#4A4A4A]">
             {userRole === 'ADMIN'
               ? 'Track and manage all user-purchased vouchers and gift cards.'
-              : `View and manage your ${activeTab === 'sent' ? 'sent' : activeTab === 'received' ? 'received' : ''} vouchers and gift cards.`}
+              : `View and manage your ${
+                  activeTab === 'sent'
+                    ? 'sent'
+                    : activeTab === 'received'
+                      ? 'received'
+                      : activeTab === 'scheduled'
+                        ? 'scheduled'
+                        : ''
+                } vouchers and gift cards.`}
           </p>
         </div>
 
@@ -911,6 +945,8 @@ function MyGift() {
                   ? 'You haven\'t sent any gift cards yet'
                   : activeTab === 'received'
                     ? 'You haven\'t received any gift cards yet'
+                    : activeTab === 'scheduled'
+                      ? 'You don\'t have any scheduled gifts yet'
                     : 'You don\'t have any gift cards yet'}
             </p>
           </div>

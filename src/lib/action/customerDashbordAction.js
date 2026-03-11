@@ -92,6 +92,21 @@ export async function getGiftCards(filters) {
         pendingOrderWhereClause.receiverDetail = {
           email: session.user.email,
         };
+      } else if (status === "scheduled") {
+        whereClause.order = {
+          userId: session.user.id,
+          sendType: "scheduleLater",
+          scheduledFor: {
+            not: null,
+          },
+          notificationsSent: false,
+        };
+        pendingOrderWhereClause.userId = session.user.id;
+        pendingOrderWhereClause.sendType = "scheduleLater";
+        pendingOrderWhereClause.scheduledFor = {
+          not: null,
+        };
+        pendingOrderWhereClause.notificationsSent = false;
       } else if (status === "all") {
         whereClause.OR = [
           {
@@ -136,6 +151,19 @@ export async function getGiftCards(filters) {
           },
         ];
       }
+    } else if (status === "scheduled") {
+      whereClause.order = {
+        sendType: "scheduleLater",
+        scheduledFor: {
+          not: null,
+        },
+        notificationsSent: false,
+      };
+      pendingOrderWhereClause.sendType = "scheduleLater";
+      pendingOrderWhereClause.scheduledFor = {
+        not: null,
+      };
+      pendingOrderWhereClause.notificationsSent = false;
     }
 
     // Search filter
@@ -462,6 +490,10 @@ export async function getGiftCards(filters) {
         isReceived: isReceived,
         isBulk: !!vc.order.bulkOrderNumber,
         deliveryMethod: deliveryMethod,
+        sendType: vc.order.sendType || null,
+        scheduledFor: vc.order.scheduledFor || null,
+        isScheduled:
+          vc.order.sendType === "scheduleLater" && Boolean(vc.order.scheduledFor),
         redemptions: vc.redemptions.map((redemption) => ({
           id: redemption.id,
           amountRedeemed: redemption.amountRedeemed,
@@ -514,6 +546,9 @@ export async function getGiftCards(filters) {
         isReceived,
         isBulk: !!order.bulkOrderNumber,
         deliveryMethod: order.deliveryMethod,
+        sendType: order.sendType || null,
+        scheduledFor: order.scheduledFor || null,
+        isScheduled: order.sendType === "scheduleLater" && Boolean(order.scheduledFor),
         redemptions: [],
         isPendingVoucher: true,
         processingStatus: order.processingStatus,

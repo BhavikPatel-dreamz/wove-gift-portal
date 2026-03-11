@@ -14,6 +14,7 @@ import * as brevo from "@getbrevo/brevo";
 import { v2 as cloudinary } from "cloudinary";
 import { randomUUID } from "crypto";
 import { hashPassword } from "./userAction/password.js";
+import { makeSouthAfricaDate } from "../timezone.js";
 
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
@@ -324,13 +325,35 @@ function calculateScheduledTime(selectedTiming) {
     return null;
   }
 
-  return new Date(
-    selectedTiming.year,
-    selectedTiming.month,
-    selectedTiming.date,
-    Number(selectedTiming.time.split(":")[0]),
-    Number(selectedTiming.time.split(":")[1])
-  );
+  const year = Number(selectedTiming.year);
+  const monthIndex = Number(selectedTiming.month);
+  const day = Number(selectedTiming.date);
+
+  const [hourStr, minuteStr] = String(selectedTiming.time || "").split(":");
+  const hour = Number(hourStr);
+  const minute = Number(minuteStr);
+
+  const isValid =
+    Number.isInteger(year) &&
+    Number.isInteger(monthIndex) &&
+    monthIndex >= 0 &&
+    monthIndex <= 11 &&
+    Number.isInteger(day) &&
+    day >= 1 &&
+    day <= 31 &&
+    Number.isInteger(hour) &&
+    hour >= 0 &&
+    hour <= 23 &&
+    Number.isInteger(minute) &&
+    minute >= 0 &&
+    minute <= 59;
+
+  if (!isValid) {
+    throw new ValidationError("Invalid scheduled send time");
+  }
+
+  // Interpret the selected date/time in South Africa time (SAST) regardless of server timezone.
+  return makeSouthAfricaDate({ year, monthIndex, day, hour, minute });
 }
 
 

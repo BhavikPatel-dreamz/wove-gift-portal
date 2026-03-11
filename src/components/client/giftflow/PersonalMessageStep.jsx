@@ -95,10 +95,10 @@ const PersonalMessageStep = () => {
 
   const handleContinue = () => {
     // Validate message is not empty
-    if (!message.trim() || message.trim().length === 0) {
-      setError('Please write a message before continuing');
-      return;
-    }
+    // if (!message.trim() || message.trim().length === 0) {
+    //   setError('Please write a message before continuing');
+    //   return;
+    // }
 
     // Clear error and proceed
     setError('');
@@ -314,18 +314,13 @@ const PersonalMessageStep = () => {
         <div className="text-center">
         <button
   onClick={handleContinue}
-  disabled={isMessageEmpty}
+  // disabled={isMessageEmpty}
   className={`group w-full sm:w-auto max-w-fit mx-auto
   flex items-center justify-center gap-2
   px-6 md:px-10 py-3 md:py-4
   rounded-full font-semibold text-sm md:text-base
   transition-all duration-300
-  shadow-md
-  ${
-    isMessageEmpty
-      ? "bg-gray-400 cursor-not-allowed shadow-none"
-      : "bg-gradient-to-r from-pink-500 to-orange-400 hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500 hover:shadow-xl hover:scale-105"
-  }
+  shadow-md bg-gradient-to-r from-pink-500 to-orange-400 hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500 hover:shadow-xl hover:scale-105
   text-white whitespace-nowrap`}
 >
             Schedule Delivery Date
