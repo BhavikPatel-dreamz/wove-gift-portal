@@ -679,7 +679,7 @@ async function updateOrCreateSettlement(selectedBrand, order) {
     }
 
     const vatRate = brandTerms?.vatRate || 0;
-    const vatAmount = ((commissionAmount * vatRate) / 100).toFixed(2);
+    const vatAmount = Number(((commissionAmount * vatRate) / 100).toFixed(2));
     const netPayable = totalSoldAmount - commissionAmount;
 
     if (settlementTrigger === "onPurchase") {
