@@ -53,7 +53,7 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
     : null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-999 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
@@ -171,7 +171,7 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
                     <h4 className="text-sm font-medium text-gray-500 mb-1">Total Amount</h4>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <span className="text-xl font-bold text-gray-900">
-                        ${card.totalAmount?.toFixed(2) || '0.00'}
+                        R{card.totalAmount?.toFixed(2) || '0.00'}
                       </span>
                     </div>
                   </div>
@@ -179,7 +179,7 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
                     <h4 className="text-sm font-medium text-gray-500 mb-1">Remaining Amount</h4>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <span className="text-xl font-bold text-red-500">
-                        ${card.remaining?.toFixed(2) || '0.00'}
+                        R{card.remaining?.toFixed(2) || '0.00'}
                       </span>
                     </div>
                   </div>
@@ -187,7 +187,7 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
                     <h4 className="text-sm font-medium text-gray-500 mb-1">Total Redeemed</h4>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <span className="text-xl font-bold text-green-600">
-                        ${totalRedeemed.toFixed(2)}
+                        R{totalRedeemed.toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -195,7 +195,7 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
                     <h4 className="text-sm font-medium text-gray-500 mb-1">Pending Amount</h4>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <span className="text-xl font-bold text-yellow-600">
-                        ${(card.status === 'ACTIVE' ? card.remaining : 0).toFixed(2)}
+                        R{(card.status === 'ACTIVE' ? card.remaining : 0).toFixed(2)}
                       </span>
                     </div>
                   </div>

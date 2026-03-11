@@ -40,9 +40,97 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
     );
 };
 
+const EmailTagInput = ({ value, onChange }) => {
+    const [inputVal, setInputVal] = useState('');
+    const inputRef = React.useRef(null);
+
+    const emails = value
+        ? value.split(',').map(e => e.trim()).filter(Boolean)
+        : [];
+
+    const isValidEmail = (email) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+    const addEmail = (raw) => {
+        const newEmails = raw
+            .split(/[,;\s]+/)
+            .map(e => e.trim())
+            .filter(Boolean);
+
+        const merged = [...new Set([...emails, ...newEmails])];
+        onChange(merged.join(', '));
+        setInputVal('');
+    };
+
+    const removeEmail = (index) => {
+        const updated = emails.filter((_, i) => i !== index);
+        onChange(updated.join(', '));
+    };
+
+    const handleKeyDown = (e) => {
+        if (['Enter', ',', ';', 'Tab'].includes(e.key)) {
+            e.preventDefault();
+            if (inputVal.trim()) addEmail(inputVal);
+        }
+        if (e.key === 'Backspace' && !inputVal && emails.length > 0) {
+            removeEmail(emails.length - 1);
+        }
+    };
+
+    const handleBlur = () => {
+        if (inputVal.trim()) addEmail(inputVal);
+    };
+
+    const handlePaste = (e) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text');
+        addEmail(pasted);
+    };
+
+    return (
+        <div
+            className="min-h-[42px] w-full px-3 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent bg-white flex flex-wrap gap-1.5 cursor-text"
+            onClick={() => inputRef.current?.focus()}
+        >
+            {emails.map((email, index) => (
+                <span
+                    key={index}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isValidEmail(email)
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-red-100 text-red-700'
+                        }`}
+                >
+                    {email}
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeEmail(index); }}
+                        className={`ml-0.5 rounded-full hover:bg-blue-200 w-3.5 h-3.5 flex items-center justify-center leading-none ${isValidEmail(email) ? 'text-blue-600' : 'text-red-500'
+                            }`}
+                    >
+                        ×
+                    </button>
+                </span>
+            ))}
+            <input
+                ref={inputRef}
+                type="text"
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={handleBlur}
+                onPaste={handlePaste}
+                placeholder={emails.length === 0 ? 'email@example.com' : ''}
+                className="flex-1 min-w-[140px] outline-none text-sm text-gray-700 bg-transparent placeholder-gray-400"
+            />
+        </div>
+    );
+};
+
 export default function ReportsPage({ shop, notAllowSchedule }) {
     const [brands, setBrands] = useState([]);
     const [brandLoading, setBrandLoading] = useState(false);
+    const [emailInput, setEmailInput] = useState('');
+
     const [scheduleToDelete, setScheduleToDelete] = useState(null);
     const [customReport, setCustomReport] = useState({
         startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
@@ -139,8 +227,8 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
         },
         {
             id: 'yearly-report',
-            title: 'yearly Report',
-            description: 'Current month overview',
+            title: 'Yearly Report',
+            description: 'Current year overview',
             icon: '📋',
             color: 'bg-orange-50 border-orange-200',
             iconBg: 'bg-orange-100',
@@ -220,7 +308,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                     reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
                     break;
                 case 'weekly-summary':
-                  reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
+                    reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
                     break;
                 case 'monthly-report':
                     reports = ['salesSummary', 'settlementReports', 'redemptionDetails', 'brandPerformance'];
@@ -510,7 +598,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                 }
             }
 
-             // LIABILITY SNAPSHOT
+            // LIABILITY SNAPSHOT
             if (data.data?.liabilitySnapshot) {
                 const ls = data.data.liabilitySnapshot;
                 checkAddPage(50);
@@ -1620,14 +1708,15 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
                                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                                         Email Recipient(s) <span className="text-red-500">*</span>
                                     </label>
-                                    <input
-                                        type="text"
-                                        placeholder="email@example.com, another@example.com"
+                                    <EmailTagInput
                                         value={scheduledReport.emailRecipients}
-                                        onChange={(e) => setScheduledReport({ ...scheduledReport, emailRecipients: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        onChange={(val) => setScheduledReport({ ...scheduledReport, emailRecipients: val })}
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">Separate multiple emails with commas</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Enter</kbd>,{' '}
+                                        <kbd className="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">,</kbd> or{' '}
+                                        <kbd className="px-1 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Tab</kbd> to add • Backspace to remove last
+                                    </p>
                                 </div>
 
                                 <div className="md:col-span-2 lg:col-span-3">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { goBack, goNext, setSelectedTiming } from "../../../redux/giftFlowSlice";
 import { ArrowLeft, Calendar, Clock, Check, X, SendIcon } from "lucide-react";
@@ -16,11 +16,53 @@ const TimingSelectorStep = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
+  // Restore scheduled date/time when navigating back to this step
+  useEffect(() => {
+    if (!selectedTiming) return;
+
+    if (selectedTiming?.type === "schedule") {
+      setSelectedOption("schedule");
+
+      const restoredDate = Number(selectedTiming?.date);
+      const restoredMonth = Number(selectedTiming?.month);
+      const restoredYear = Number(selectedTiming?.year);
+      const restoredTime =
+        typeof selectedTiming?.time === "string" ? selectedTiming.time : null;
+
+      if (
+        Number.isInteger(restoredMonth) &&
+        restoredMonth >= 0 &&
+        restoredMonth <= 11
+      ) {
+        setCurrentMonth(restoredMonth);
+      }
+
+      if (Number.isInteger(restoredYear)) {
+        setCurrentYear(restoredYear);
+      }
+
+      if (Number.isInteger(restoredDate) && restoredDate >= 1 && restoredDate <= 31) {
+        setSelectedDate(restoredDate);
+      }
+
+      if (restoredTime) {
+        setSelectedTime(restoredTime);
+      }
+
+      return;
+    }
+
+    if (selectedTiming?.type === "immediate") {
+      setSelectedOption("immediate");
+      setShowScheduleModal(false);
+    }
+  }, [selectedTiming]);
+
   // Generate time slots with 5-minute intervals
   const generateTimeSlots = () => {
     const slots = [];
     for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 2) {
+      for (let minute = 0; minute < 60; minute += 30) {
         const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         slots.push(time24);
       }
@@ -230,7 +272,7 @@ const TimingSelectorStep = () => {
 
         {/* Schedule Modal */}
         {showScheduleModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-999 p-2 sm:p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl relative max-h-[95vh] overflow-y-auto">
               {/* Close Button */}
               <button

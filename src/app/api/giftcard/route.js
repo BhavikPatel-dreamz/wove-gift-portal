@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 import { prisma } from "../../../lib/db";
 
 const SHOPIFY_API_VERSION = "2025-07";
+const DEFAULT_EXPIRY_YEARS = 3;
 
 export async function POST(req) {
   const startTime = Date.now();
@@ -19,6 +20,14 @@ export async function POST(req) {
     const shop = url.searchParams.get("shop");
     const denominationType = url.searchParams.get("denominationType");
     const input = await req.json();
+    const purchaseDateRaw = input?.purchaseDate || null;
+    const purchaseDateParsed = purchaseDateRaw
+      ? new Date(purchaseDateRaw)
+      : null;
+    const purchaseDate =
+      purchaseDateParsed && !Number.isNaN(purchaseDateParsed.getTime())
+        ? purchaseDateParsed
+        : null;
 
     console.log("url", url);
 
@@ -303,6 +312,15 @@ export async function POST(req) {
       });
     }
 
+    if (!expiresAt) {
+      expiresAt = getDefaultExpiryDate(purchaseDate);
+      shouldSetExpiry = true;
+      console.log("ℹ️ [STEP 3d] Default expiry applied", {
+        expiresAt,
+        purchaseDate: purchaseDate || "now",
+      });
+    }
+
     // ============ STEP 4: Fetch or Create Customer (OPTIONAL - for future use) ============
     let customerId = null;
     let customerIdNumeric = null;
@@ -525,48 +543,6 @@ export async function POST(req) {
       customerAssociated: false,
     });
 
-    // ============ STEP 5b: OPTIONAL - Associate customer later (no email sent) ============
-    // Uncomment this section if you want to associate the customer AFTER creation
-    // This won't trigger any emails because the gift card already exists
-    /*
-    if (customerIdNumeric && giftCard.id) {
-      console.log("📋 [STEP 5b] Updating gift card with customer association (no email)");
-      
-      try {
-        const updateResponse = await fetch(
-          `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/gift_cards/${giftCard.id}.json`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Shopify-Access-Token": session.accessToken,
-            },
-            body: JSON.stringify({
-              gift_card: {
-                customer_id: parseInt(customerIdNumeric),
-              },
-            }),
-          }
-        );
-        
-        const updateData = await updateResponse.json();
-        
-        if (updateData.gift_card) {
-          console.log("✅ [STEP 5b] Customer associated via update (no email sent)", {
-            customerId: customerIdNumeric,
-          });
-        } else {
-          console.warn("⚠️ [STEP 5b] Failed to associate customer", {
-            errors: updateData.errors,
-          });
-        }
-      } catch (updateError) {
-        console.error("❌ [STEP 5b] Error associating customer", {
-          error: updateError.message,
-        });
-      }
-    }
-    */
 
     // ============ STEP 6: Save to Local Database ============
     console.log("📋 [STEP 6] Saving gift card to local database", {
@@ -694,4 +670,13 @@ export async function GET(req) {
       { status: 500 }
     );
   }
+}
+
+function getDefaultExpiryDate(baseDate) {
+  const normalizedBase = baseDate ? new Date(baseDate) : new Date();
+  const date = Number.isNaN(normalizedBase.getTime())
+    ? new Date()
+    : normalizedBase;
+  date.setFullYear(date.getFullYear() + DEFAULT_EXPIRY_YEARS);
+  return date;
 }

@@ -1,6 +1,6 @@
 /**
  * VOUCHER PROCESSOR - BULLETPROOF FOR CONCURRENT ORDERS
- * 
+ *
  * CRITICAL FIXES:
  * 1. Process ONE order at a time (no concurrent processing)
  * 2. Proper order locking to prevent interference
@@ -14,6 +14,7 @@ import { prisma } from "../db.js";
 const MAX_RETRIES = 3;
 const PROCESSING_TIMEOUT_MINUTES = 15;
 const BATCH_SIZE = 5; // Create 5 vouchers per iteration
+const DEFAULT_EXPIRY_YEARS = 3;
 
 export const voucherProcessorCron = () => {
   cron.schedule("*/10 * * * * *", async () => {
@@ -27,7 +28,9 @@ export const voucherProcessorCron = () => {
     }
   });
 
-  console.log("🎟️ [VOUCHER CRON] Voucher processor scheduled (every 10 seconds)");
+  console.log(
+    "🎟️ [VOUCHER CRON] Voucher processor scheduled (every 10 seconds)",
+  );
 };
 
 export async function processVouchersQueue() {
@@ -36,18 +39,24 @@ export async function processVouchersQueue() {
     const ordersToProcess = await findOrdersNeedingVouchers();
 
     if (ordersToProcess.length === 0) {
-      return { success: true, processed: 0, message: "No orders needing vouchers" };
+      return {
+        success: true,
+        processed: 0,
+        message: "No orders needing vouchers",
+      };
     }
 
     // ✅ CRITICAL: Only process the FIRST order (prevents concurrent processing)
     const order = ordersToProcess[0];
-    
-    console.log(`📋 Processing order: ${order.orderNumber} (${order.quantity} vouchers needed)`);
+
+    console.log(
+      `📋 Processing order: ${order.orderNumber} (${order.quantity} vouchers needed)`,
+    );
 
     try {
       await processOrderVouchers(order);
       console.log(`✅ Order ${order.orderNumber} completed`);
-      
+
       return {
         success: true,
         processed: 1,
@@ -55,9 +64,12 @@ export async function processVouchersQueue() {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error(`❌ Failed to process order ${order.orderNumber}:`, error.message);
+      console.error(
+        `❌ Failed to process order ${order.orderNumber}:`,
+        error.message,
+      );
       await markOrderAsFailed(order.id, error);
-      
+
       return {
         success: false,
         processed: 0,
@@ -72,7 +84,9 @@ export async function processVouchersQueue() {
 }
 
 async function findOrdersNeedingVouchers() {
-  const stuckThreshold = new Date(Date.now() - PROCESSING_TIMEOUT_MINUTES * 60 * 1000);
+  const stuckThreshold = new Date(
+    Date.now() - PROCESSING_TIMEOUT_MINUTES * 60 * 1000,
+  );
 
   // ✅ CRITICAL: Use FOR UPDATE to lock the row
   const orders = await prisma.$queryRaw`
@@ -170,7 +184,9 @@ async function processOrderVouchers(order) {
         where: { orderId: order.id },
       });
 
-      console.log(`📊 [${order.orderNumber}] Existing: ${existingCount}/${order.quantity}`);
+      console.log(
+        `📊 [${order.orderNumber}] Existing: ${existingCount}/${order.quantity}`,
+      );
 
       // If already complete, mark and return
       if (existingCount >= order.quantity) {
@@ -201,7 +217,7 @@ async function processOrderVouchers(order) {
 
       return { isComplete: false, existingCount };
     },
-    { isolationLevel: "Serializable", timeout: 30000 }
+    { isolationLevel: "Serializable", timeout: 30000 },
   );
 
   // If complete, update settlement and exit
@@ -213,7 +229,9 @@ async function processOrderVouchers(order) {
   // ✅ STEP 2: Get voucher configuration
   const voucherConfig = order.brand.vouchers[0];
   if (!voucherConfig) {
-    throw new Error(`No voucher configuration for brand ${order.brand.brandName}`);
+    throw new Error(
+      `No voucher configuration for brand ${order.brand.brandName}`,
+    );
   }
 
   // Get occasion details
@@ -232,14 +250,21 @@ async function processOrderVouchers(order) {
 
   // ✅ STEP 3: Create vouchers based on order type
   const vouchersNeeded = order.quantity - currentState.existingCount;
-  console.log(`🔄 [${order.orderNumber}] Creating ${vouchersNeeded} more vouchers`);
+  console.log(
+    `🔄 [${order.orderNumber}] Creating ${vouchersNeeded} more vouchers`,
+  );
 
   if (order.bulkOrderNumber && order.bulkRecipients?.length > 0) {
     // CSV bulk order
     await createBulkVouchersForCSV(order, orderData, voucherConfig);
   } else {
     // Regular order or bulk email order
-    await createVouchersInBatches(order, orderData, voucherConfig, vouchersNeeded);
+    await createVouchersInBatches(
+      order,
+      orderData,
+      voucherConfig,
+      vouchersNeeded,
+    );
   }
 
   // ✅ STEP 4: Verify final count
@@ -247,7 +272,9 @@ async function processOrderVouchers(order) {
     where: { orderId: order.id },
   });
 
-  console.log(`📊 [${order.orderNumber}] Final count: ${finalCount}/${order.quantity}`);
+  console.log(
+    `📊 [${order.orderNumber}] Final count: ${finalCount}/${order.quantity}`,
+  );
 
   if (finalCount >= order.quantity) {
     await prisma.order.update({
@@ -264,7 +291,9 @@ async function processOrderVouchers(order) {
     await updateOrCreateSettlement(order.brand, order);
     console.log(`✅ [${order.orderNumber}] Complete!`);
   } else {
-    console.warn(`⚠️ [${order.orderNumber}] Incomplete: ${finalCount}/${order.quantity}`);
+    console.warn(
+      `⚠️ [${order.orderNumber}] Incomplete: ${finalCount}/${order.quantity}`,
+    );
     throw new Error(`Voucher count mismatch: ${finalCount}/${order.quantity}`);
   }
 }
@@ -272,14 +301,21 @@ async function processOrderVouchers(order) {
 /**
  * ✅ CRITICAL: Create vouchers in batches with atomic count check
  */
-async function createVouchersInBatches(order, orderData, voucherConfig, vouchersNeeded) {
+async function createVouchersInBatches(
+  order,
+  orderData,
+  voucherConfig,
+  vouchersNeeded,
+) {
   let totalCreated = 0;
   const targetCount = order.quantity;
 
   while (totalCreated < vouchersNeeded) {
     const batchSize = Math.min(BATCH_SIZE, vouchersNeeded - totalCreated);
-    
-    console.log(`🔄 [${order.orderNumber}] Creating batch of ${batchSize} (${totalCreated}/${vouchersNeeded} done)`);
+
+    console.log(
+      `🔄 [${order.orderNumber}] Creating batch of ${batchSize} (${totalCreated}/${vouchersNeeded} done)`,
+    );
 
     for (let i = 0; i < batchSize; i++) {
       try {
@@ -288,7 +324,8 @@ async function createVouchersInBatches(order, orderData, voucherConfig, vouchers
           orderData.selectedBrand,
           orderData,
           voucherConfig,
-          null
+          null,
+          order.paidAt || order.createdAt || new Date(),
         );
 
         if (!shopifyGiftCard?.id) {
@@ -303,25 +340,30 @@ async function createVouchersInBatches(order, orderData, voucherConfig, vouchers
           orderData,
           voucherConfig,
           null,
-          targetCount
+          targetCount,
         );
 
         if (saved) {
           totalCreated++;
-          console.log(`✅ [${order.orderNumber}] Progress: ${totalCreated}/${vouchersNeeded}`);
+          console.log(
+            `✅ [${order.orderNumber}] Progress: ${totalCreated}/${vouchersNeeded}`,
+          );
         } else {
           console.log(`⚠️ [${order.orderNumber}] Limit reached or duplicate`);
           return; // Stop if limit reached
         }
       } catch (error) {
-        console.error(`❌ [${order.orderNumber}] Voucher ${i + 1} failed:`, error.message);
+        console.error(
+          `❌ [${order.orderNumber}] Voucher ${i + 1} failed:`,
+          error.message,
+        );
         // Continue to next voucher
       }
     }
 
     // Small delay between batches
     if (totalCreated < vouchersNeeded) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
   }
 
@@ -335,7 +377,9 @@ async function createBulkVouchersForCSV(order, orderData, voucherConfig) {
   const recipients = order.bulkRecipients || [];
   const recipientsNeedingVouchers = recipients.filter((r) => !r.voucherCodeId);
 
-  console.log(`📊 [${order.orderNumber}] CSV bulk: ${recipientsNeedingVouchers.length} recipients`);
+  console.log(
+    `📊 [${order.orderNumber}] CSV bulk: ${recipientsNeedingVouchers.length} recipients`,
+  );
 
   let createdCount = 0;
 
@@ -353,11 +397,14 @@ async function createBulkVouchersForCSV(order, orderData, voucherConfig) {
         orderData.selectedBrand,
         orderData,
         voucherConfig,
-        recipientData
+        recipientData,
+        order.paidAt || order.createdAt || new Date(),
       );
 
       if (!shopifyGiftCard?.id) {
-        console.warn(`⚠️ [${order.orderNumber}] Failed for ${recipient.recipientEmail}`);
+        console.warn(
+          `⚠️ [${order.orderNumber}] Failed for ${recipient.recipientEmail}`,
+        );
         continue;
       }
 
@@ -368,32 +415,48 @@ async function createBulkVouchersForCSV(order, orderData, voucherConfig) {
         orderData,
         voucherConfig,
         recipient,
-        order.quantity
+        order.quantity,
       );
 
       if (saved) {
         createdCount++;
-        console.log(`✅ [${order.orderNumber}] CSV: ${createdCount}/${recipientsNeedingVouchers.length} - ${recipient.recipientEmail}`);
+        console.log(
+          `✅ [${order.orderNumber}] CSV: ${createdCount}/${recipientsNeedingVouchers.length} - ${recipient.recipientEmail}`,
+        );
       } else {
-        console.log(`⚠️ [${order.orderNumber}] Limit reached at ${createdCount}`);
+        console.log(
+          `⚠️ [${order.orderNumber}] Limit reached at ${createdCount}`,
+        );
         break;
       }
     } catch (error) {
-      console.error(`❌ [${order.orderNumber}] Failed for ${recipient.recipientEmail}:`, error.message);
+      console.error(
+        `❌ [${order.orderNumber}] Failed for ${recipient.recipientEmail}:`,
+        error.message,
+      );
       // Continue to next recipient
     }
   }
 
-  console.log(`✅ [${order.orderNumber}] CSV bulk complete: ${createdCount} vouchers`);
+  console.log(
+    `✅ [${order.orderNumber}] CSV bulk complete: ${createdCount} vouchers`,
+  );
 }
 
 /**
  * ✅ CRITICAL: Save voucher with ATOMIC count check
  * This is the KEY function that prevents race conditions
  */
-async function saveVoucherAtomic(order, shopifyGiftCard, orderData, voucherConfig, recipient, targetCount) {
+async function saveVoucherAtomic(
+  order,
+  shopifyGiftCard,
+  orderData,
+  voucherConfig,
+  recipient,
+  targetCount,
+) {
   let retries = 3;
-  
+
   while (retries > 0) {
     try {
       return await prisma.$transaction(
@@ -405,7 +468,9 @@ async function saveVoucherAtomic(order, shopifyGiftCard, orderData, voucherConfi
 
           // ✅ CRITICAL: Check limit BEFORE creating
           if (currentCount >= targetCount) {
-            console.log(`⚠️ [${order.orderNumber}] At limit: ${currentCount}/${targetCount}`);
+            console.log(
+              `⚠️ [${order.orderNumber}] At limit: ${currentCount}/${targetCount}`,
+            );
             return false;
           }
 
@@ -418,7 +483,9 @@ async function saveVoucherAtomic(order, shopifyGiftCard, orderData, voucherConfi
           });
 
           if (existing) {
-            console.log(`⚠️ [${order.orderNumber}] Duplicate code: ${shopifyGiftCard.maskedCode}`);
+            console.log(
+              `⚠️ [${order.orderNumber}] Duplicate code: ${shopifyGiftCard.maskedCode}`,
+            );
             return false;
           }
 
@@ -427,7 +494,10 @@ async function saveVoucherAtomic(order, shopifyGiftCard, orderData, voucherConfi
             where: { shopifyId: shopifyGiftCard.id },
             update: {
               balance: parseFloat(shopifyGiftCard.balance?.amount || 0),
-              customerEmail: recipient?.recipientEmail || orderData.companyInfo?.contactEmail || order.receiverDetail?.email,
+              customerEmail:
+                recipient?.recipientEmail ||
+                orderData.companyInfo?.contactEmail ||
+                order.receiverDetail?.email,
               updatedAt: new Date(),
             },
             create: {
@@ -436,8 +506,11 @@ async function saveVoucherAtomic(order, shopifyGiftCard, orderData, voucherConfi
               code: shopifyGiftCard.code,
               initialValue: parseFloat(shopifyGiftCard.balance?.amount || 0),
               balance: parseFloat(shopifyGiftCard.balance?.amount || 0),
-              customerEmail: recipient?.recipientEmail || orderData.companyInfo?.contactEmail || order.receiverDetail?.email,
-              note: recipient 
+              customerEmail:
+                recipient?.recipientEmail ||
+                orderData.companyInfo?.contactEmail ||
+                order.receiverDetail?.email,
+              note: recipient
                 ? `Gift for ${recipient.recipientName} - Order ${order.orderNumber}`
                 : `Order ${order.orderNumber} - Voucher ${currentCount + 1}/${targetCount}`,
               isActive: true,
@@ -446,7 +519,11 @@ async function saveVoucherAtomic(order, shopifyGiftCard, orderData, voucherConfi
           });
 
           // Create voucher code
-          const expiryDate = calculateExpiryDate(voucherConfig, order.amount);
+          const expiryDate = calculateExpiryDate(
+            voucherConfig,
+            order.amount,
+            order.paidAt || order.createdAt || new Date(),
+          );
           const tokenizedLink = getClaimUrl(orderData.selectedBrand);
           const linkExpiresAt = new Date();
           linkExpiresAt.setDate(linkExpiresAt.getDate() + 7);
@@ -478,23 +555,23 @@ async function saveVoucherAtomic(order, shopifyGiftCard, orderData, voucherConfi
 
           return true;
         },
-        { 
+        {
           isolationLevel: "Serializable",
           timeout: 30000,
-        }
+        },
       );
     } catch (error) {
       retries--;
-      if (error.code === 'P2034' || error.message.includes('timeout')) {
+      if (error.code === "P2034" || error.message.includes("timeout")) {
         console.log(`⚠️ Transaction timeout, retrying... (${3 - retries}/3)`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       } else {
         throw error;
       }
     }
   }
-  
-  throw new Error('Failed after 3 retries');
+
+  throw new Error("Failed after 3 retries");
 }
 
 async function markOrderAsFailed(orderId, error) {
@@ -517,7 +594,9 @@ async function markOrderAsFailed(orderId, error) {
       },
     });
 
-    console.log(`⚠️ [${order?.orderNumber}] ${shouldFail ? "FAILED" : "RETRYING"} (${newRetryCount}/${MAX_RETRIES})`);
+    console.log(
+      `⚠️ [${order?.orderNumber}] ${shouldFail ? "FAILED" : "RETRYING"} (${newRetryCount}/${MAX_RETRIES})`,
+    );
   } catch (err) {
     console.error("❌ Failed to mark as failed:", err.message);
   }
@@ -525,121 +604,180 @@ async function markOrderAsFailed(orderId, error) {
 
 async function updateOrCreateSettlement(selectedBrand, order) {
   try {
-    console.log(`💰 [${order.orderNumber}] Updating settlement for ${selectedBrand.brandName}`);
+    console.log(
+      `💰 [${order.orderNumber}] Updating settlement for ${selectedBrand.brandName}`,
+    );
 
     const orderDate = new Date(order.createdAt);
-    const periodStart = new Date(orderDate.getFullYear(), orderDate.getMonth(), 1);
-    const periodEnd = new Date(orderDate.getFullYear(), orderDate.getMonth() + 1, 0, 23, 59, 59, 999);
+    const periodStart = new Date(
+      orderDate.getFullYear(),
+      orderDate.getMonth(),
+      1,
+    );
+    const periodEnd = new Date(
+      orderDate.getFullYear(),
+      orderDate.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
     const settlementPeriod = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, "0")}`;
 
-    const brandTerms = selectedBrand.brandTerms;
-    const grossAmount = order.totalAmount;
-    const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
+    const [brandTermsFromDb, existingSettlement, orderTotals] =
+      await Promise.all([
+        prisma.brandTerms.findUnique({
+          where: { brandId: selectedBrand.id },
+          select: {
+            settlementTrigger: true,
+            commissionType: true,
+            commissionValue: true,
+            vatRate: true,
+          },
+        }),
+        prisma.settlements.findFirst({
+          where: {
+            brandId: selectedBrand.id,
+            settlementPeriod,
+          },
+        }),
+        prisma.order.aggregate({
+          where: {
+            brandId: selectedBrand.id,
+            isPaid: true,
+            paymentStatus: "COMPLETED",
+            isActive: true,
+            allVouchersGenerated: true,
+            createdAt: {
+              gte: periodStart,
+              lte: periodEnd,
+            },
+          },
+          _sum: {
+            quantity: true,
+            totalAmount: true,
+          },
+        }),
+      ]);
 
-    const existingSettlement = await prisma.settlements.findFirst({
-      where: {
-        brandId: selectedBrand.id,
-        settlementPeriod,
-      },
-    });
+    const brandTerms = brandTermsFromDb || selectedBrand.brandTerms || null;
+    const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
+    const totalSold = orderTotals._sum.quantity || 0;
+    const totalSoldAmount = orderTotals._sum.totalAmount || 0;
+
+    const redeemedCount = existingSettlement?.totalRedeemed || 0;
+    const redeemedAmount = existingSettlement?.redeemedAmount || 0;
+    const outstanding = Math.max(0, totalSold - redeemedCount);
+    const outstandingAmount = Math.max(0, totalSoldAmount - redeemedAmount);
+
+    let commissionAmount = 0;
+
+    if (brandTerms?.commissionType === "Percentage") {
+      commissionAmount = Number(
+        ((totalSoldAmount * (brandTerms.commissionValue || 0)) / 100).toFixed(
+          2,
+        ),
+      );
+    } else if (brandTerms?.commissionType === "Fixed") {
+      commissionAmount = Number(
+        ((brandTerms.commissionValue || 0) * totalSold).toFixed(2),
+      );
+    }
+
+    const vatRate = brandTerms?.vatRate || 0;
+    const vatAmount = Number(((commissionAmount * vatRate) / 100).toFixed(2));
+    const netPayable = totalSoldAmount - commissionAmount;
 
     if (settlementTrigger === "onPurchase") {
-      // ✅ onPurchase: Commission, VAT, and netPayable are calculated NOW at purchase time.
-      // The redemption webhook will only update redeemedAmount/outstanding counts,
-      // NOT touch commissionAmount/vatAmount/netPayable.
-
-      let commissionAmount = 0;
-      if (brandTerms?.commissionType === "Percentage") {
-        commissionAmount = Math.round((grossAmount * brandTerms.commissionValue) / 100);
-      } else if (brandTerms?.commissionType === "Fixed") {
-        commissionAmount = Math.round(brandTerms.commissionValue * order.quantity);
-      }
-
-      const vatRate = brandTerms?.vatRate || 0;
-      const vatAmount = Math.round((commissionAmount * vatRate) / 100);
-      const netPayable = grossAmount - commissionAmount;
-
+      // onPurchase: always recompute and set final values from table totals + term percentages.
       if (existingSettlement) {
         await prisma.settlements.update({
           where: { id: existingSettlement.id },
           data: {
-            totalSold:         { increment: order.quantity },
-            totalSoldAmount:   { increment: grossAmount },
-            outstanding:       { increment: order.quantity },
-            outstandingAmount: { increment: grossAmount },
-            commissionAmount:  { increment: commissionAmount },
-            vatAmount:         { increment: vatAmount },
-            netPayable:        { increment: netPayable },
+            totalSold,
+            totalSoldAmount,
+            outstanding,
+            outstandingAmount,
+            commissionAmount,
+            vatAmount,
+            netPayable,
             updatedAt: new Date(),
           },
         });
-        console.log(`✅ [onPurchase] Settlement updated: ${settlementPeriod}`);
+        console.log(
+          `✅ [onPurchase] Settlement recalculated: ${settlementPeriod}`,
+        );
       } else {
         await prisma.settlements.create({
           data: {
-            brandId:          selectedBrand.id,
+            brandId: selectedBrand.id,
             settlementPeriod,
             periodStart,
             periodEnd,
-            totalSold:        order.quantity,
-            totalSoldAmount:  grossAmount,
-            totalRedeemed:    0,
-            redeemedAmount:   0,
-            outstanding:      order.quantity,
-            outstandingAmount: grossAmount,
+            totalSold,
+            totalSoldAmount,
+            totalRedeemed: 0,
+            redeemedAmount: 0,
+            outstanding,
+            outstandingAmount,
             commissionAmount,
             vatAmount,
-            breakageAmount:   0,
+            breakageAmount: 0,
             netPayable,
             status: "Pending",
           },
         });
-        console.log(`✅ [onPurchase] Settlement created: ${settlementPeriod}`);
+        console.log(
+          `✅ [onPurchase] Settlement created with recalculated totals: ${settlementPeriod}`,
+        );
       }
-
     } else {
-      // ✅ onRedemption: Commission, VAT, and netPayable are NOT calculated here.
-      // They are fully managed by the redemption webhook per actual redemption event.
-      // Purchase only seeds the row with sales volume and outstanding balances.
-
+      // onRedemption: commission/VAT/netPayable are managed by redemption processing only.
       if (existingSettlement) {
         await prisma.settlements.update({
           where: { id: existingSettlement.id },
           data: {
-            totalSold:         { increment: order.quantity },
-            totalSoldAmount:   { increment: grossAmount },
-            outstanding:       { increment: order.quantity },
-            outstandingAmount: { increment: grossAmount },
+            totalSold,
+            totalSoldAmount,
+            outstanding,
+            outstandingAmount,
             updatedAt: new Date(),
           },
         });
-        console.log(`✅ [onRedemption] Settlement updated: ${settlementPeriod}`);
+        console.log(
+          `✅ [onRedemption] Settlement sales totals recalculated: ${settlementPeriod}`,
+        );
       } else {
         await prisma.settlements.create({
           data: {
-            brandId:          selectedBrand.id,
+            brandId: selectedBrand.id,
             settlementPeriod,
             periodStart,
             periodEnd,
-            totalSold:        order.quantity,
-            totalSoldAmount:  grossAmount,
-            totalRedeemed:    0,
-            redeemedAmount:   0,
-            outstanding:      order.quantity,
-            outstandingAmount: grossAmount,
-            commissionAmount: 0,   // ← redemption webhook owns this
-            vatAmount:        0,   // ← redemption webhook owns this
-            breakageAmount:   0,
-            netPayable:       0,   // ← redemption webhook owns this
+            totalSold,
+            totalSoldAmount,
+            totalRedeemed: 0,
+            redeemedAmount: 0,
+            outstanding,
+            outstandingAmount,
+            commissionAmount: 0, // redemption webhook owns this
+            vatAmount: 0, // redemption webhook owns this
+            breakageAmount: 0,
+            netPayable: 0, // redemption webhook owns this
             status: "Pending",
           },
         });
-        console.log(`✅ [onRedemption] Settlement created: ${settlementPeriod}`);
+        console.log(
+          `✅ [onRedemption] Settlement created with recalculated sales totals: ${settlementPeriod}`,
+        );
       }
     }
-
   } catch (error) {
-    console.error(`⚠️ [${order.orderNumber}] Settlement update failed:`, error.message);
+    console.error(
+      `⚠️ [${order.orderNumber}] Settlement update failed:`,
+      error.message,
+    );
   }
 }
 
@@ -667,32 +805,67 @@ function buildOrderData(order, occasionDetails) {
   };
 }
 
-function calculateExpiryDate(voucherConfig, amount) {
+function calculateExpiryDate(voucherConfig, amount, baseDate) {
   let expireDate = null;
   if (voucherConfig?.denominationType === "fixed") {
-    const matchedDenomination = voucherConfig?.denominations?.find((d) => d?.value == amount);
-    expireDate = matchedDenomination?.isExpiry === true ? matchedDenomination?.expiresAt || null : null;
+    const matchedDenomination = voucherConfig?.denominations?.find(
+      (d) => d?.value == amount,
+    );
+    expireDate =
+      matchedDenomination?.isExpiry === true
+        ? matchedDenomination?.expiresAt || null
+        : null;
   } else if (voucherConfig?.denominationType === "amount") {
-    expireDate = voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null;
+    expireDate =
+      voucherConfig?.isExpiry === true
+        ? voucherConfig?.expiresAt || null
+        : null;
   } else if (voucherConfig?.denominationType === "both") {
-    const matchedDenomination = voucherConfig?.denominations?.find((d) => d?.value == amount);
-    expireDate = matchedDenomination?.isExpiry === true
-      ? matchedDenomination?.expiresAt
-      : voucherConfig?.isExpiry === true ? voucherConfig?.expiresAt || null : null;
+    const matchedDenomination = voucherConfig?.denominations?.find(
+      (d) => d?.value == amount,
+    );
+    expireDate =
+      matchedDenomination?.isExpiry === true
+        ? matchedDenomination?.expiresAt
+        : voucherConfig?.isExpiry === true
+          ? voucherConfig?.expiresAt || null
+          : null;
   }
+
+  if (!expireDate) {
+    expireDate = getDefaultExpiryDate(baseDate);
+  }
+
   return expireDate;
+}
+
+function getDefaultExpiryDate(baseDate) {
+  const normalizedBase = baseDate ? new Date(baseDate) : new Date();
+  const date = Number.isNaN(normalizedBase.getTime())
+    ? new Date()
+    : normalizedBase;
+  date.setFullYear(date.getFullYear() + DEFAULT_EXPIRY_YEARS);
+  return date;
 }
 
 function getClaimUrl(selectedBrand) {
   const claimUrl =
     selectedBrand?.website ||
     selectedBrand?.domain ||
-    (selectedBrand?.slug ? `https://${selectedBrand.slug}.myshopify.com` : null);
+    (selectedBrand?.slug
+      ? `https://${selectedBrand.slug}.myshopify.com`
+      : null);
   if (!claimUrl) throw new Error("Brand website or domain not configured");
   return claimUrl.startsWith("http") ? claimUrl : `https://${claimUrl}`;
 }
 
-async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig, recipientData = null) {
+async function createShopifyGiftCard(
+  selectedBrand,
+  orderData,
+  voucherConfig,
+  recipientData = null,
+  purchaseDate = null,
+) {
   if (!selectedBrand.domain) throw new Error("Brand domain is required");
 
   const isBulkOrder = orderData.isBulkOrder === true;
@@ -706,14 +879,25 @@ async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig, re
       recipientData?.name?.split(" ")[0] ||
       (isBulkOrder
         ? orderData.companyInfo.companyName.split(" ")[0]
-        : orderData.deliveryDetails?.recipientFullName?.split(" ")[0] || "Recipient"),
+        : orderData.deliveryDetails?.recipientFullName?.split(" ")[0] ||
+          "Recipient"),
     lastName:
       recipientData?.name?.split(" ").slice(1).join(" ") ||
       (isBulkOrder
         ? orderData.companyInfo.companyName.split(" ").slice(1).join(" ")
-        : orderData.deliveryDetails?.recipientFullName?.split(" ").slice(1).join(" ") || ""),
-    note: recipientData ? `Gift for ${recipientData.name}` : isBulkOrder ? `Bulk Order` : `Order`,
+        : orderData.deliveryDetails?.recipientFullName
+            ?.split(" ")
+            .slice(1)
+            .join(" ") || ""),
+    note: recipientData
+      ? `Gift for ${recipientData.name}`
+      : isBulkOrder
+        ? `Bulk Order`
+        : `Order`,
     denominationValue: orderData.selectedAmount.value,
+    purchaseDate: purchaseDate
+      ? new Date(purchaseDate).toISOString()
+      : null,
   };
 
   const apiUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/giftcard?shop=${
@@ -728,7 +912,9 @@ async function createShopifyGiftCard(selectedBrand, orderData, voucherConfig, re
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(`Shopify API error: ${errorData.error || response.statusText}`);
+    throw new Error(
+      `Shopify API error: ${errorData.error || response.statusText}`,
+    );
   }
 
   const result = await response.json();

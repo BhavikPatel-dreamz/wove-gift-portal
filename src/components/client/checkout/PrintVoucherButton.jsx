@@ -56,7 +56,7 @@ const PrintVoucherButton = ({ order, selectedBrand, selectedAmount }) => {
     <button
       onClick={handlePrintVoucher}
       disabled={isGenerating}
-      className="w-full cursor-pointer rounded-[50px] flex gap-3 items-center justify-center text-white py-4 px-6 font-semibold transition-all duration-200 bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-fit mx-auto cursor-pointer rounded-[50px] flex gap-3 items-center justify-center text-white py-4 px-6 font-semibold transition-all duration-200 bg-[linear-gradient(114.06deg,#ED457D_11.36%,#FA8F42_90.28%)] disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isGenerating ? (
         <>

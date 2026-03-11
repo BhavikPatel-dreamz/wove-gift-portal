@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import CardDesigns from "@/components/occasions/CardDesigns";
 import { Loader } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -12,9 +12,18 @@ const OccasionCardsPage = ({ params }) => {
   const { id } = use(params); // ✅ unwrap params
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requireFirstCategory =
+    searchParams.get("requireFirstCategory") === "1";
   const [occasion, setOccasion] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(requireFirstCategory);
+
+  useEffect(() => {
+    if (requireFirstCategory) {
+      setModalOpen(true);
+    }
+  }, [requireFirstCategory]);
 
   useEffect(() => {
     const fetchOccasion = async () => {
@@ -78,6 +87,7 @@ const OccasionCardsPage = ({ params }) => {
       onCardCountChange={handleCardCountChange}
       modalOpen={modalOpen}
       setModalOpen={setModalOpen}
+      requireFirstCategory={requireFirstCategory}
     />
   );
 };

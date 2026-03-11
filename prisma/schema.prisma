@@ -33,12 +33,26 @@ model User {
   updatedAt      DateTime         @updatedAt
   accounts       Account[]
   auditLogs      AuditLog[]
+  cartItems      CartItem[]
   orders         Order[]
   supportRequest SupportRequest[]
   wishlists      Wishlist[]
   sessions       Session[]
 
   @@map("users")
+}
+
+model CartItem {
+  id        String        @id @default(cuid())
+  userId    String
+  type      CartItemType
+  payload   Json
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("cart_items")
 }
 
 model Account {
@@ -563,14 +577,18 @@ model Settlements {
 }
 
 model Wishlist {
-  id        String   @id @default(cuid())
-  userId    String
-  brandId   String?
-  voucherId String?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  key        String
+  sourceType String?
+  brandId    String?
+  voucherId  String?
+  payload    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, voucherId])
+  @@unique([userId, key])
   @@index([userId])
 }
 
@@ -738,6 +756,11 @@ enum UserRole {
   BRAND_MANAGER
   SUPPORT
   FINANCE
+}
+
+enum CartItemType {
+  REGULAR
+  BULK
 }
 
 enum SettlementStatus {

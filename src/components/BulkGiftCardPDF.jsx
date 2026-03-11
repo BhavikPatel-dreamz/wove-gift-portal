@@ -304,7 +304,7 @@ const GiftCardPage = ({
                 {getCurrencySymbol(currency)}
               </Text>
               <Text style={styles.amount}>{amount}</Text>
-              <Text style={styles.currencyCode}>{currency}</Text>
+              <Text style={styles.currencyCode}>{getCurrencySymbol(currency)}</Text>
             </View>
           </View>
 

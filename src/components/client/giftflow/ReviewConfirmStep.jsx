@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, Heart, Lock, Shield, Edit, CreditCard } from "lucide-react";
 import { goBack, goNext, resetFlow, setCurrentStep, setDeliveryFormEditReturn, setIsConfirmed } from "../../../redux/giftFlowSlice";
-import { addToCart, updateCartItem } from "../../../redux/cartSlice";
+import { saveCartItemAsync } from "../../../redux/cartSlice";
 import { useSession } from '@/contexts/SessionContext'
 import { useRouter } from "next/navigation";
+import AuthForm from "@/components/AuthForm";
 import SecurityIcon from "../../../icons/SecurityIcon"
 import HeartColorIcon from "../../../icons/HeartColorIcon"
 import EditIcon from "../../../icons/EditIcon"
@@ -12,9 +13,62 @@ import { ShoppingBasket } from "lucide-react";
 import { currencyList } from "../../brandsPartner/currency";
 import Link from "next/link";
 
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const formatTo12Hour = (time24) => {
+  if (!time24 || typeof time24 !== "string") return "";
+  const [hoursRaw, minutesRaw] = time24.split(":").map(Number);
+  if (!Number.isFinite(hoursRaw) || !Number.isFinite(minutesRaw)) return time24;
+  const period = hoursRaw >= 12 ? "PM" : "AM";
+  const hours12 = hoursRaw === 0 ? 12 : hoursRaw > 12 ? hoursRaw - 12 : hoursRaw;
+  return `${hours12}:${String(minutesRaw).padStart(2, "0")} ${period}`;
+};
+
+const formatTimingSummary = (timing) => {
+  if (!timing) return "Send Immediately";
+
+  if (timing.type === "immediate") return "Send Immediately";
+
+  if (timing.type === "schedule" || timing.type === "scheduled") {
+    const monthIndex = Number(timing.month);
+    const day = Number(timing.date);
+    const year = Number(timing.year);
+    const monthName = MONTHS[monthIndex];
+    const timeText = formatTo12Hour(timing.time);
+
+    if (monthName && day && year && timeText) {
+      return `Scheduled for ${monthName} ${day}, ${year} at ${timeText}`;
+    }
+
+    if (monthName && day && year) {
+      return `Scheduled for ${monthName} ${day}, ${year}`;
+    }
+
+    return "Scheduled for later";
+  }
+
+  return "Send Immediately";
+};
+
 const ReviewConfirmStep = () => {
   const dispatch = useDispatch();
   const [error, setError] = useState('');
+  const [isSavingCart, setIsSavingCart] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingCartItem, setPendingCartItem] = useState(null);
   const session = useSession();
   const router = useRouter();
 
@@ -33,8 +87,49 @@ const ReviewConfirmStep = () => {
     selectedOccasion,
     isConfirmed
   } = useSelector((state) => state.giftFlowReducer);
+  const cartItems = useSelector((state) => state.cart.items);
 
   console.log(deliveryMethod, deliveryDetails, selectedTiming);
+
+  const closeAuthModal = useCallback(() => {
+    setShowAuthModal(false);
+    setPendingCartItem(null);
+  }, []);
+
+  const saveCartItemForUser = useCallback(async (userId, cartItem) => {
+    const existingItem = isEditMode && editingIndex !== null ? cartItems[editingIndex] : null;
+    const cartItemId = typeof existingItem?.cartItemId === 'string'
+      ? existingItem.cartItemId
+      : null;
+    await dispatch(saveCartItemAsync({
+      userId,
+      type: 'regular',
+      item: cartItem,
+      cartItemId,
+    })).unwrap();
+  }, [dispatch, isEditMode, editingIndex, cartItems]);
+
+  const handleAuthSuccess = useCallback(async (user) => {
+    const userId = user?.id;
+    if (!userId || !pendingCartItem) {
+      closeAuthModal();
+      return;
+    }
+
+    setIsSavingCart(true);
+    setError('');
+    try {
+      await saveCartItemForUser(userId, pendingCartItem);
+      router.push('/cart');
+    } catch (err) {
+      const message = typeof err === 'string' ? err : err?.message || 'Failed to add item to cart.';
+      setError(message);
+    } finally {
+      setIsSavingCart(false);
+      setPendingCartItem(null);
+      setShowAuthModal(false);
+    }
+  }, [pendingCartItem, saveCartItemForUser, router, closeAuthModal]);
 
   const validateGift = () => {
 
@@ -84,8 +179,9 @@ const ReviewConfirmStep = () => {
     startReviewEditFlow(2);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!validateGift()) return;
+    if (isSavingCart) return;
 
     const cartItem = {
       selectedBrand,
@@ -98,12 +194,23 @@ const ReviewConfirmStep = () => {
       selectedOccasion
     };
 
-    if (isEditMode && editingIndex !== null) {
-      dispatch(updateCartItem({ index: editingIndex, item: cartItem }));
-    } else {
-      dispatch(addToCart(cartItem));
+    if (!session?.user?.id) {
+      setPendingCartItem(cartItem);
+      setShowAuthModal(true);
+      return;
     }
-    router.push('/cart');
+
+    setIsSavingCart(true);
+    setError('');
+    try {
+      await saveCartItemForUser(session.user.id, cartItem);
+      router.push('/cart');
+    } catch (err) {
+      const message = typeof err === 'string' ? err : err?.message || 'Failed to add item to cart.';
+      setError(message);
+    } finally {
+      setIsSavingCart(false);
+    }
   };
 
   const handleBuyNow = () => { // Renamed from handleProceedToPayment for clarity
@@ -325,6 +432,30 @@ const ReviewConfirmStep = () => {
                   <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{formatRecipientContact()}</div>
                 )}
               </div>
+
+              <div>
+                <div className="flex items-start gap-2">
+                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">
+                    Delivery Timing
+                  </div>
+                  <div>
+                    <button onClick={() => startReviewEditFlow(6)}>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2.5 14.55V17.0833C2.5 17.3166 2.68333 17.5 2.91667 17.5H5.45C5.55833 17.5 5.66667 17.4583 5.74167 17.375L14.8417 8.28329L11.7167 5.15829L2.625 14.25C2.54167 14.3333 2.5 14.4333 2.5 14.55ZM17.2583 5.86663C17.3356 5.78953 17.3969 5.69796 17.4387 5.59715C17.4805 5.49634 17.502 5.38827 17.502 5.27913C17.502 5.16999 17.4805 5.06192 17.4387 4.96111C17.3969 4.8603 17.3356 4.76872 17.2583 4.69163L15.3083 2.74163C15.2312 2.66438 15.1397 2.60309 15.0389 2.56127C14.938 2.51945 14.83 2.49792 14.7208 2.49792C14.6117 2.49792 14.5036 2.51945 14.4028 2.56127C14.302 2.60309 14.2104 2.66438 14.1333 2.74163L12.6083 4.26663L15.7333 7.39163L17.2583 5.86663Z" fill="url(#paint0_linear_3104_3730)" />
+                        <defs>
+                          <linearGradient id="paint0_linear_3104_3730" x1="2.5" y1="8.01754" x2="16.7802" y2="14.3932" gradientUnits="userSpaceOnUse">
+                            <stop stopColor="#ED457D" />
+                            <stop offset="1" stopColor="#FA8F42" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">
+                  {formatTimingSummary(selectedTiming)}
+                </div>
+              </div>
             </div>
 
             <div className="bg-white rounded-2xl py-4 p-4  border border-gray-200">
@@ -501,21 +632,21 @@ const ReviewConfirmStep = () => {
                 {isEditMode ? (
                   <button
                     onClick={handleAddToCart}
-                    disabled={!isConfirmed}
+                    disabled={!isConfirmed || isSavingCart}
                     className={`
         group w-full h-14 
         bg-white text-pink-500 border-2 border-pink-500 
         rounded-full font-semibold text-lg 
         transition-all duration-300 
         flex items-center justify-center gap-2
-        ${isConfirmed
+        ${isConfirmed && !isSavingCart
                         ? 'hover:bg-pink-500 hover:text-white hover:shadow-md cursor-pointer'
                         : 'opacity-50 cursor-not-allowed'
                       }
       `}
                   >
                     <Edit className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-                    Update Gift in Cart
+                    {isSavingCart ? 'Saving...' : 'Update Gift in Cart'}
                   </button>
                 ) : (
 
@@ -529,14 +660,14 @@ const ReviewConfirmStep = () => {
                   >
                     <button
                       onClick={handleAddToCart}
-                      disabled={!isConfirmed}
+                      disabled={!isConfirmed || isSavingCart}
                       className={`
                         w-full h-14 flex items-center justify-center gap-3 px-5 rounded-full 
                         bg-white text-pink-500 font-bold transition-all duration-200
-                       
+                        ${isSavingCart ? 'opacity-70 cursor-not-allowed' : ''}
                       `}
                     >
-                      Add to Cart
+                      {isSavingCart ? 'Saving...' : 'Add to Cart'}
                       <ShoppingBasket className="w-5 h-5" />
                     </button>
                   </div>
@@ -547,6 +678,17 @@ const ReviewConfirmStep = () => {
           </div>
         </div>
       </div>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
+          <AuthForm
+            type="login"
+            mode="modal"
+            onClose={closeAuthModal}
+            onAuthSuccess={handleAuthSuccess}
+          />
+        </div>
+      )}
     </div >
   );
 };

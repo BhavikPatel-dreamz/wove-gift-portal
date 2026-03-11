@@ -4,10 +4,11 @@ const PrivacyMain = () => {
   return (
     <div className="max-w-360 m-auto pt-18.75">
       <div className="rounded-lg p-8">
-        <div className="text-[35px] font-semibold text-[#1A1A1A] mb-1">
+        <div className="text-[22px] sm:text-[26px] md:text-[30px] lg:text-[35px] font-semibold text-[#1A1A1A] mb-1">
           MY PERKS (PTY) LTD Trading as WoveGifts
         </div>
-        <div className="text-[28px] font-semibold text-[#1A1A1A] mb-3.5">
+
+        <div className="text-[18px] sm:text-[22px] md:text-[25px] lg:text-[28px] font-semibold text-[#1A1A1A] mb-3.5">
           PRIVACY POLICY
         </div>
         <p className="text-sm text-gray-500 mb-8">Last Updated: 20 February 2026</p>

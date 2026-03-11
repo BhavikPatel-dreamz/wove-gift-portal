@@ -13,25 +13,25 @@ export default function AuthForm({
   onPayAsGuest,
   showGuestOption = false,
   initialEmail = '',
-  initialName=''
+  initialName = ''
 }) {
-const getNameParts = (name = "") => {
-  const parts = name.trim().split(/\s+/);
-  return {
-    firstName: parts[0] || "",
-    lastName: parts.length > 1 ? parts.slice(1).join(" ") : "",
+  const getNameParts = (name = "") => {
+    const parts = name.trim().split(/\s+/);
+    return {
+      firstName: parts[0] || "",
+      lastName: parts.length > 1 ? parts.slice(1).join(" ") : "",
+    };
   };
-};
 
-const { firstName, lastName } = getNameParts(initialName);
+  const { firstName, lastName } = getNameParts(initialName);
 
-const [formData, setFormData] = useState(() => ({
-  email: initialEmail ?? "",
-  password: "",
-  firstName,
-  lastName,
-  confirmPassword: "",
-}));
+  const [formData, setFormData] = useState(() => ({
+    email: initialEmail ?? "",
+    password: "",
+    firstName,
+    lastName,
+    confirmPassword: "",
+  }));
   const [error, setError] = useState([])
   const [loading, setLoading] = useState(false)
   const [currentType, setCurrentType] = useState(type)
@@ -124,7 +124,7 @@ const [formData, setFormData] = useState(() => ({
     signIn(provider, { callbackUrl: '/' })
   }
 
-  const onBack = () =>{
+  const onBack = () => {
     router.push("/")
   }
 
@@ -141,7 +141,7 @@ const [formData, setFormData] = useState(() => ({
         onClick={onPayAsGuest}
         className="group flex justify-center items-center gap-2 w-full py-3.5 border-2 border-pink-500 text-pink-500 rounded-full font-semibold hover:bg-pink-50 transition cursor-pointer mt-6"
       >
-        Pay as Guest 
+        Pay as Guest
         <span className="transition-transform duration-300 group-hover:translate-x-1">
           <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="currentColor"></path></svg>
         </span>
@@ -150,7 +150,7 @@ const [formData, setFormData] = useState(() => ({
   }
 
   return (
-    <div className={isModal ? 'w-full' : 'min-h-screen bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4'}>
+    <div className={isModal ? 'w-full z-[1200]' : 'min-h-screen bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4'}>
       <div className={`${isModal ? 'mx-auto max-w-md w-full bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative' : 'mx-auto max-w-md w-full bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative'}`}>
         {isModal && typeof onClose === 'function' ? (
           <button
@@ -244,11 +244,11 @@ const [formData, setFormData] = useState(() => ({
                 <p className="text-red-600 text-sm text-center">{getGeneralError()}</p>
               )}
 
-<button
-  type="button"
-  onClick={handleSubmit}
-  disabled={loading}
-  className={`
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className={`
     group w-full  mt-4
     bg-gradient-to-r from-pink-500 to-orange-500
     text-white
@@ -260,18 +260,21 @@ const [formData, setFormData] = useState(() => ({
     flex items-center justify-center gap-2
     whitespace-nowrap
     focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2
-    ${
-      loading
-        ? 'bg-gray-400 shadow-none cursor-not-allowed'
-        : 'hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500 hover:shadow-xl hover:scale-105 cursor-pointer'
-    }
+    ${loading
+                    ? 'bg-gray-400 shadow-none cursor-not-allowed'
+                    : 'hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500 hover:shadow-xl hover:scale-105 cursor-pointer'
+                  }
   `}
->
-                {loading ? 'Loading...' : 'Login to your account'}
-                <span className="transition-transform duration-300 group-hover:translate-x-1">
-                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white"></path>
-                  </svg>
-                  </span>
+              >
+                {!loading ?
+                  <div className='flex gap-2 items-center'>
+                    <span>Login to your account</span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white"></path>
+                      </svg>
+                    </span>
+                  </div>
+                  : 'Loading...'}
               </button>
             </div>
 
@@ -479,7 +482,7 @@ const [formData, setFormData] = useState(() => ({
                 {loading ? 'Loading...' : 'Create an account '}
                 <span className="transition-transform duration-300 group-hover:translate-x-1">
                   <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white"></path></svg>
-                  </span>
+                </span>
               </button>
             </div>
 

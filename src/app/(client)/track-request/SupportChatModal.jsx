@@ -76,7 +76,7 @@ const SupportChatModal = ({ request, onClose }) => {
     const messageGroups = groupMessagesByDate(messages)
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 text-black">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-999 p-4 text-black">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full h-[85vh] flex flex-col">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-lg flex items-center justify-between">

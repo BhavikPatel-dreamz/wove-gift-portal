@@ -13,11 +13,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { destroySession } from '../../../lib/action/userAction/session';
 import { usePathname, useRouter } from 'next/navigation';
-import { resetFlow,clearCsvFileData } from '../../../redux/giftFlowSlice';
-import { initializeCart, initializeBulkCart } from '../../../redux/cartSlice';
+import { resetFlow, clearCsvFileData } from '../../../redux/giftFlowSlice';
 import {
-  initializeWishlist,
   removeFromWishlist,
+  toggleWishlistAsync,
 } from '../../../redux/wishlistSlice';
 
 
@@ -38,6 +37,7 @@ const mobilePublicNavLinks = {
 };
 
 const mobileMemberNavLinks = {
+  'My Profile': '/profile',
   'Vouchers & Gift Cards': '/my-gift',
   'Support & Requests': '/support',
   'Track Request Status': '/track-request',
@@ -47,7 +47,7 @@ const Header = () => {
   const session = useSession();
   const dispatch = useDispatch();
   const router = useRouter();
-  
+
   // ✅ Get both regular and bulk cart items
   const cartItems = useSelector((state) => state.cart.items);
   const bulkItems = useSelector((state) => state.cart.cartItems);
@@ -66,20 +66,22 @@ const Header = () => {
     ? { ...mobilePublicNavLinks, ...mobileMemberNavLinks }
     : mobilePublicNavLinks;
 
-  // ✅ Initialize cart from localStorage on mount
   useEffect(() => {
     setMounted(true);
-    
-    // Initialize both carts from localStorage
-    dispatch(initializeCart());
-    dispatch(initializeBulkCart());
-    dispatch(initializeWishlist());
 
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, [dispatch]);
+
+  const handleRemoveWishlist = (item) => {
+    if (session?.user?.id) {
+      dispatch(toggleWishlistAsync({ userId: session.user.id, item }));
+      return;
+    }
+    dispatch(removeFromWishlist(item.key));
+  };
 
   useEffect(() => {
     if (!mounted) return;
@@ -181,7 +183,7 @@ const Header = () => {
   return (
     <>
       <header
-        className={`fixed top-0 z-50 w-full transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-transparent'
+        className={`fixed top-0 z-99 w-full transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-transparent'
           }`}
       >
         {/* Main Header - Hide when mobile menu is open */}
@@ -290,25 +292,32 @@ const Header = () => {
                         {openDropdown && (
                           <div className="origin-top-right absolute right-0 mt-2 w-48 sm:w-56 rounded-[20px] shadow-lg bg-white ring-opacity-5 z-50">
                             <div className="pt-2.5">
-                              <button className="w-full text-left px-4 sm:px-6 py-2 text-sm sm:text-base font-semibold text-black hover:text-gray-900 focus:outline-none">
+                              <Link
+                                href="/profile"
+                                onClick={() => setOpenDropdown(false)}
+                                className={linkClass("/profile")}
+                              >
                                 My Profile
-                              </button>
+                              </Link>
                             </div>
                             <div className="">
                               <Link
                                 href="/my-gift"
+                                onClick={() => setOpenDropdown(false)}
                                 className={linkClass("/my-gift")}
                               >
                                 Vouchers & Gift Cards
                               </Link>
                               <Link
                                 href="/support"
+                                onClick={() => setOpenDropdown(false)}
                                 className={linkClass("/support")}
                               >
                                 Support & Requests
                               </Link>
                               <Link
                                 href="/track-request"
+                                onClick={() => setOpenDropdown(false)}
                                 className={linkClass("/track-request")}
                               >
                                 Track Request Status
@@ -362,7 +371,7 @@ const Header = () => {
                     setWishlistOpen((prev) => !prev);
                     setOpenDropdown(false);
                   }}
-                  className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 rounded-full border border-[#ED457D]/50 bg-transparent hover:bg-[#ED457D]/10 transition-all duration-200 cursor-pointer"
+                  className="relative flex items-center justify-center p-1 sm:p-1.5 lg:p-2 rounded-full border border-[#ED457D]/50 bg-transparent hover:bg-[#ED457D]/10 transition-all duration-200 cursor-pointer"
                   aria-label="Wishlist"
                   aria-expanded={wishlistOpen}
                 >
@@ -419,7 +428,7 @@ const Header = () => {
                             </div>
                             <button
                               type="button"
-                              onClick={() => dispatch(removeFromWishlist(item.key))}
+                              onClick={() => handleRemoveWishlist(item)}
                               className="text-xs text-[#ED457D] hover:text-[#D93B6E] font-medium"
                             >
                               Remove
@@ -435,7 +444,7 @@ const Header = () => {
               {/* Cart - Always visible with combined count */}
               <Link
                 href="/cart"
-                className="relative flex items-center justify-center p-1.5 sm:p-2 lg:p-2.5 
+                className="relative flex items-center justify-center p-1 sm:p-1.5 lg:p-2 
       rounded-full border border-[#ED457D]/50 bg-transparent
       hover:bg-[#ED457D]/10 transition-all duration-200"
                 aria-label="Shopping cart"
@@ -462,90 +471,81 @@ const Header = () => {
 
         {/* Mobile/Tablet Fullscreen Menu */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 bg-white z-9999 lg:hidden overflow-y-auto">
-            {/* Header Row */}
-            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
-              <div className="logo-container">
+          <>
+            {/* Overlay */}
+            <div
+              className="fixed inset-0 bg-black/40 z-40 transition-opacity"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+
+            {/* Left Drawer */}
+            <div
+              className={`fixed inset-y-0 left-0 w-full sm:w-[320px] lg:w-[360px] bg-white z-50
+      transform transition-transform duration-300 ease-in-out shadow-xl overflow-y-auto`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
                 <Link
                   href="/"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center cursor-pointer h-8 sm:h-9 lg:h-10"
+                  className="flex items-center h-8 sm:h-9"
                 >
                   <img
                     src="/wovelogo.png"
                     alt="Wove Gift"
-                    className="h-full w-auto max-w-[120px] sm:max-w-[150px] object-contain"
+                    className="h-full w-auto max-w-[140px] object-contain"
                   />
                 </Link>
+
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition"
+                >
+                  <X size={22} className='text-black'/>
+                </button>
               </div>
 
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2 text-[#000000] hover:text-[#000000] rounded-lg hover:bg-gray-100 transition-colors"
-                aria-label="Close menu"
-              >
-                <X size={22} color="#000000" className="sm:w-6 sm:h-6" />
-              </button>
-            </div>
+              {/* Navigation Links */}
+              <div className="flex flex-col px-4 sm:px-6 mt-4 space-y-1">
+                {Object.keys(mobileNavLinks).map((item) => (
+                  <Link
+                    key={item}
+                    href={mobileNavLinks[item]}
+                    onClick={() => handleNavClick(item)}
+                    className={`py-3 text-[15px] sm:text-[16px] border-b border-gray-200 transition-colors
+            ${activeTab === item
+                        ? "text-[#ED457D]"
+                        : "text-gray-800 hover:text-[#ED457D]"
+                      }`}
+                  >
+                    {item}
+                  </Link>
+                ))}
+              </div>
 
-            {/* Nav Links - Using mobileNavLinks */}
-            <div className="flex flex-col px-4 sm:px-6 mt-4 sm:mt-6 space-y-1">
-              {Object.keys(mobileNavLinks).map((item) => (
-                <Link
-                  key={item}
-                  href={mobileNavLinks[item]}
-                  onClick={() => handleNavClick(item)}
-                  className="py-3 sm:py-4 text-[#1A1A1A] text-[15px] sm:text-[16px] md:text-[18px] border-b border-b-[rgba(0,0,0,0.10)] hover:text-[#ED457D] transition-colors"
-                >
-                  {item}
-                </Link>
-              ))}
-            </div>
-
-            {/* Auth Buttons Container */}
-            <div className="px-4 sm:px-6 mt-6 sm:mt-8 space-y-3">
-              {/* Login/Logout Button */}
-              {!mounted ? (
-                <button className="w-full flex items-center justify-center gap-2 sm:gap-3 bg-[#ED457D] text-white py-3 sm:py-3.5 md:py-4 rounded-full text-sm sm:text-base font-medium hover:bg-[#d63d6e] transition-colors">
-                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10.5 3C11.5609 3 12.5783 3.42143 13.3284 4.17157C14.0786 4.92172 14.5 5.93913 14.5 7C14.5 8.06087 14.0786 9.07828 13.3284 9.82843C12.5783 10.5786 11.5609 11 10.5 11C9.43913 11 8.42172 10.5786 7.67157 9.82843C6.92143 9.07828 6.5 8.06087 6.5 7C6.5 5.93913 6.92143 4.92172 7.67157 4.17157C8.42172 3.42143 9.43913 3 10.5 3ZM10.5 19C10.5 19 18.5 19 18.5 17C18.5 14.6 14.6 12 10.5 12C6.4 12 2.5 14.6 2.5 17C2.5 19 10.5 19 10.5 19Z" fill="white" />
-                  </svg>
-
-                  Login / Register
-                </button>
-              )
-                : session ? (
-                  <div className='flex flex-col gap-3'>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center justify-center gap-2 sm:gap-3 bg-[#ED457D] text-white py-3 sm:py-3.5 md:py-4 rounded-full text-sm sm:text-base font-medium hover:bg-[#d63d6e] transition-colors"
-                    >
-                      Logout
+              {/* Auth Buttons */}
+              <div className="px-4 sm:px-6 mt-6 space-y-3 pb-6">
+                {!mounted ? (
+                  <button className="w-full flex items-center justify-center gap-2 bg-[#ED457D] text-white py-3 rounded-full font-medium hover:bg-[#d63d6e] transition">
+                    Login / Register
+                  </button>
+                ) : session ? (
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center bg-[#ED457D] text-white py-3 rounded-full font-medium hover:bg-[#d63d6e] transition"
+                  >
+                    Logout
+                  </button>
+                ) : (
+                  <Link href="/login">
+                    <button className="w-full flex items-center justify-center gap-2 bg-[#ED457D] text-white py-3 rounded-full font-medium hover:bg-[#d63d6e] transition">
+                      Login / Register
                     </button>
-                  </div>
-                )
-                  : (
-                    <Link href="/login">
-                      <button className="w-full flex items-center justify-center gap-2 sm:gap-3 bg-[#ED457D] text-white py-3 sm:py-3.5 md:py-4 rounded-full text-sm sm:text-base font-medium hover:bg-[#d63d6e] transition-colors">
-                        <svg
-                          width="20"
-                          height="20"
-                          className="sm:w-5.5 sm:h-5.5"
-                          viewBox="0 0 22 22"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M10.5 3C11.5609 3 12.5783 3.42143 13.3284 4.17157C14.0786 4.92172 14.5 5.93913 14.5 7C14.5 8.06087 14.0786 9.07828 13.3284 9.82843C12.5783 10.5786 11.5609 11 10.5 11C9.43913 11 8.42172 10.5786 7.67157 9.82843C6.92143 9.07828 6.5 8.06087 6.5 7C6.5 5.93913 6.92143 4.92172 7.67157 4.17157C8.42172 3.42143 9.43913 3 10.5 3ZM10.5 19C10.5 19 18.5 19 18.5 17C18.5 14.6 14.6 12 10.5 12C6.4 12 2.5 14.6 2.5 17C2.5 19 10.5 19 10.5 19Z"
-                            fill="white"
-                          />
-                        </svg>
-                        Login / Register
-                      </button>
-                    </Link>
-                  )}
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </header>
 

@@ -407,25 +407,60 @@ const BrandAnalyticsTable = ({
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => handlePaymentTypeChange(false)}
-                        className={`p-4 border-2 rounded-lg text-center transition-all ${!isPartialPayment
+                        className={`p-4 border-2 rounded-lg text-center transition-all flex flex-col items-center gap-1 ${!isPartialPayment
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                           }`}
                       >
-                        <DollarSign className={`w-6 h-6 mx-auto mb-2 ${!isPartialPayment ? 'text-blue-600' : 'text-gray-400'
-                          }`} />
+                        <svg
+                          width="30"
+                          height="30"
+                          viewBox="0 0 30 30"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className={`block ${!isPartialPayment ? 'text-blue-600' : 'text-gray-400'}`}
+                        >
+                          <rect width="30" height="30" rx="6" fill="currentColor" fillOpacity="0.1" />
+                          <g clip-path="url(#clip0_4204_1064)">
+                            <path d="M16.9972 13.592C16.9972 14.8544 16.602 15.1584 15.1416 15.1584H13.5752V11.9492H15.14C16.602 11.9492 16.9972 12.3448 16.9972 13.592Z" fill="currentColor" />
+                            <path d="M5.5 15.5C5.5 21.0228 9.9772 25.5 15.5 25.5C21.0228 25.5 25.5 21.0228 25.5 15.5C25.5 9.9772 21.0228 5.5 15.5 5.5C9.9772 5.5 5.5 9.9772 5.5 15.5ZM20.0088 21.5H17.636C17.2864 21.5 17.1796 21.3936 17.0276 21.1652L14.5476 17.2564H13.5752V21.2564C13.5752 21.4544 13.5296 21.5 13.3472 21.5H10.9896C10.8072 21.5 10.7616 21.4544 10.7616 21.2564V9.8964C10.7616 9.7444 10.8072 9.6988 10.9896 9.6836C12.48 9.5636 14.0012 9.5012 15.446 9.5012C18.7312 9.5012 19.8564 10.5048 19.8564 13.5012C19.8564 15.7368 19.2636 16.7104 17.6056 17.0752L20.1912 21.1952C20.3128 21.3644 20.2368 21.5 20.0088 21.5Z" fill="currentColor" />
+                          </g>
+                          <defs>
+                            <clipPath id="clip0_4204_1064">
+                              <rect width="20" height="20" fill="white" transform="translate(5.5 5.5)" />
+                            </clipPath>
+                          </defs>
+                        </svg>
                         <div className="font-medium text-gray-900">Full Payment</div>
                         <div className="text-xs text-gray-500 mt-1">Pay entire amount</div>
                       </button>
                       <button
                         onClick={() => handlePaymentTypeChange(true)}
-                        className={`p-4 border-2 rounded-lg text-center transition-all ${isPartialPayment
+                        className={`p-4 border-2 rounded-lg text-center transition-all flex flex-col items-center gap-1 ${isPartialPayment
                           ? 'border-blue-600 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                           }`}
                       >
-                        <DollarSign className={`w-6 h-6 mx-auto mb-2 ${isPartialPayment ? 'text-blue-600' : 'text-gray-400'
-                          }`} />
+                        <svg
+                          width="30"
+                          height="30"
+                          viewBox="0 0 30 30"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          className={`block ${isPartialPayment ? 'text-blue-600' : 'text-gray-400'}`}
+                        >
+                          <rect width="30" height="30" rx="6" fill="currentColor" fillOpacity="0.1" />
+                          <g clip-path="url(#clip0_4204_1077)">
+                            <path d="M19.2276 10.716C19.2276 11.3998 19.0135 11.5645 18.2225 11.5645H17.374V9.82617H18.2216C19.0135 9.82617 19.2276 10.0405 19.2276 10.716Z" fill="currentColor" />
+                            <path d="M13 11.7497C13 14.7412 15.4251 17.1663 18.4167 17.1663C21.4082 17.1663 23.8333 14.7412 23.8333 11.7497C23.8333 8.75816 21.4082 6.33301 18.4167 6.33301C15.4251 6.33301 13 8.75816 13 11.7497ZM20.8589 14.9997H19.5737C19.3843 14.9997 19.3264 14.942 19.2441 14.8183L17.9008 12.7011H17.3741V14.8677C17.3741 14.975 17.3494 14.9997 17.2506 14.9997H15.9735C15.8747 14.9997 15.85 14.975 15.85 14.8677V8.71439C15.85 8.63206 15.8747 8.60736 15.9735 8.59912C16.7808 8.53412 17.6048 8.50032 18.3874 8.50032C20.1669 8.50032 20.7764 9.04394 20.7764 10.667C20.7764 11.8779 20.4553 12.4053 19.5572 12.6029L20.9577 14.8346C21.0236 14.9262 20.9824 14.9997 20.8589 14.9997Z" fill="currentColor" />
+                          </g>
+                          <path d="M19.9434 18.7498L14.7934 20.5404L11.7871 19.5279L12.6434 18.8936C12.8765 18.721 13.066 18.4964 13.1967 18.2376C13.3275 17.9787 13.3959 17.6929 13.3965 17.4029C13.3965 16.3811 12.5652 15.5498 11.5434 15.5498H9.43086C9.34023 15.5498 9.24648 15.5717 9.16211 15.6123L6.53398 16.8654C6.42738 16.9166 6.33739 16.9969 6.27437 17.0969C6.21135 17.197 6.17785 17.3128 6.17773 17.4311V22.9029C6.17767 23.0421 6.22405 23.1773 6.30953 23.2871C6.395 23.3969 6.51469 23.4751 6.64961 23.5092L14.4684 25.4811C14.5184 25.4936 14.5684 25.4998 14.6184 25.4998C14.7309 25.4998 14.8402 25.4717 14.934 25.4154L21.4371 21.6092C21.7865 21.3877 22.0379 21.0409 22.1396 20.6399C22.2413 20.2389 22.1856 19.8142 21.984 19.4529C21.791 19.1041 21.4757 18.8392 21.0988 18.7093C20.7219 18.5794 20.3102 18.5939 19.9434 18.7498Z" fill="currentColor" />
+                          <defs>
+                            <clipPath id="clip0_4204_1077">
+                              <rect width="10.8333" height="10.8333" fill="white" transform="translate(13 6.33301)" />
+                            </clipPath>
+                          </defs>
+                        </svg>
                         <div className="font-medium text-gray-900">Partial Payment</div>
                         <div className="text-xs text-gray-500 mt-1">Pay custom amount</div>
                       </button>

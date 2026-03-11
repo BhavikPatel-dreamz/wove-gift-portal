@@ -221,22 +221,21 @@ export async function POST(req) {
               } else {
                 // ✅ onRedemption brands: Commission/VAT/netPayable are calculated NOW
                 // based on the actual amount redeemed.
-                let commissionOnRedeemed = 0;
-                if (brandTerms?.commissionType === "Percentage") {
-                  commissionOnRedeemed = Math.round(
-                    (actualAmountRedeemed * brandTerms.commissionValue) / 100
-                  );
-                } else if (brandTerms?.commissionType === "Fixed") {
-                  // Fixed commission is per voucher — only charge on full redemption
-                  commissionOnRedeemed = isFullyRedeemed
-                    ? Math.round(brandTerms.commissionValue)
-                    : 0;
-                }
+               let commissionOnRedeemed = 0;
+               
+              if (brandTerms?.commissionType === "Percentage") {
+                commissionOnRedeemed = Number(
+                  ((actualAmountRedeemed * brandTerms.commissionValue) / 100).toFixed(2)
+                );
+              } else if (brandTerms?.commissionType === "Fixed") {
+                // Fixed commission is per voucher — only charge on full redemption
+                commissionOnRedeemed = isFullyRedeemed
+                  ? Number(brandTerms.commissionValue.toFixed(2))
+                  : 0;
+              }
 
                 const vatRate = brandTerms?.vatRate || 0;
-                const vatOnRedeemed = Math.round(
-                  (commissionOnRedeemed * vatRate) / 100
-                );
+              const vatOnRedeemed = Number(((commissionOnRedeemed * vatRate) / 100).toFixed(2));
                 const netPayableOnRedeemed = actualAmountRedeemed - commissionOnRedeemed;
 
                 await tx.settlements.update({

@@ -192,5 +192,5 @@ function getExpiryDateText(voucherCode) {
     return `Valid for ${voucherCode.voucher.expiryValue} days`;
   }
 
-  return 'Valid for 365 days';
+  return 'Valid for 3 Years';
 }

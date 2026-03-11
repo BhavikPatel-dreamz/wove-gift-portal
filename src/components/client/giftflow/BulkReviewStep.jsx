@@ -3,13 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext, setIsConfirmed, setCompanyInfo, setCsvFileData } from '../../../redux/giftFlowSlice';
-import { updateBulkCompanyInfo, updateBulkItem, addToBulkInCart } from '../../../redux/cartSlice';
+import { updateBulkCompanyInfo, updateBulkItem, saveCartItemAsync } from '../../../redux/cartSlice';
+import AuthForm from '@/components/AuthForm';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
 import { ShoppingBasket } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext'
-import Link from 'next/link';
 
 const normalizeBulkDeliveryOption = (value, csvRecipients = []) => {
     const option = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -108,6 +108,9 @@ const BulkReviewStep = () => {
     // Local state only for form validation errors
     const [errors, setErrors] = useState({});
     const [isProcessingFile, setIsProcessingFile] = useState(false);
+    const [isSavingCart, setIsSavingCart] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [pendingBulkOrder, setPendingBulkOrder] = useState(null);
 
     // Initialize local state from Redux
     const [csvFile, setCsvFile] = useState(null);
@@ -182,6 +185,47 @@ const BulkReviewStep = () => {
             (editingIndex !== null && editingIndex !== undefined)
         );
 
+    const closeAuthModal = useCallback(() => {
+        setShowAuthModal(false);
+        setPendingBulkOrder(null);
+    }, []);
+
+    const saveBulkOrderForUser = useCallback(async (userId, bulkOrder) => {
+        const cartItemId = typeof bulkOrder?.cartItemId === 'string'
+            ? bulkOrder.cartItemId
+            : null;
+        await dispatch(saveCartItemAsync({
+            userId,
+            type: 'bulk',
+            item: bulkOrder,
+            cartItemId,
+        })).unwrap();
+    }, [dispatch]);
+
+    const handleAuthSuccess = useCallback(async (user) => {
+        const userId = user?.id;
+        if (!userId || !pendingBulkOrder) {
+            closeAuthModal();
+            return;
+        }
+
+        setIsSavingCart(true);
+        try {
+            await saveBulkOrderForUser(userId, pendingBulkOrder);
+            toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
+            router.push('/cart');
+        } catch (error) {
+            const message = typeof error === 'string'
+                ? error
+                : error?.message || 'Failed to add bulk order to cart.';
+            toast.error(message);
+        } finally {
+            setIsSavingCart(false);
+            setPendingBulkOrder(null);
+            setShowAuthModal(false);
+        }
+    }, [pendingBulkOrder, saveBulkOrderForUser, router, isBulkCartEdit, closeAuthModal]);
+
     const syncCurrentBulkOrder = useCallback((updates) => {
         if (!currentBulkOrder) return;
         const nextDeliveryOption = normalizeBulkDeliveryOption(
@@ -224,8 +268,117 @@ const BulkReviewStep = () => {
     const previewData = useMemo(() => csvData.slice(0, 5), [csvData]);
     const remainingCount = useMemo(() => Math.max(0, csvData.length - 5), [csvData.length]);
 
-    // Email validation regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+    const companyNameRegex = /^[A-Za-z0-9&'().,/\-\s]+$/;
+    const contactNumberRegex = /^\+?[0-9()\-\s]+$/;
+    const vatNumberRegex = /^4\d{9}$/;
+
+    const normalizeSpaces = (value = '') => value.replace(/\s+/g, ' ').trim();
+
+    const sanitizeCompanyInfoValue = useCallback((field, value) => {
+        const raw = typeof value === 'string' ? value : String(value ?? '');
+
+        if (field === 'companyName') {
+            return raw
+                .replace(/[^A-Za-z0-9&'().,/\-\s]/g, '')
+                .replace(/\s{2,}/g, ' ')
+                .slice(0, 100);
+        }
+
+        if (field === 'vatNumber') {
+            return raw.replace(/[^\d]/g, '').slice(0, 10);
+        }
+
+        if (field === 'contactNumber') {
+            const filtered = raw.replace(/[^\d+\s()-]/g, '').replace(/\s{2,}/g, ' ');
+            const hasLeadingPlus = filtered.trim().startsWith('+');
+            const withoutPlus = filtered.replace(/\+/g, '');
+            const normalized = hasLeadingPlus ? `+${withoutPlus}` : withoutPlus;
+            return normalized.slice(0, 20);
+        }
+
+        if (field === 'contactEmail') {
+            return raw.replace(/\s+/g, '').toLowerCase().slice(0, 254);
+        }
+
+        return raw;
+    }, []);
+
+    const looksLikePlaceholderText = useCallback((value) => {
+        const normalized = value.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!normalized) return false;
+
+        const blockedValues = new Set([
+            'test',
+            'testing',
+            'asdf',
+            'qwerty',
+            'abc',
+            'abcd',
+            'xyz',
+            'dummy',
+            'sample',
+            'na',
+            'none',
+            'null',
+            'unknown'
+        ]);
+
+        if (blockedValues.has(normalized)) return true;
+        if (/^([a-z0-9])\1{2,}$/.test(normalized)) return true;
+        if (['12345678', '123456789', '1234567890', '0123456789'].includes(normalized)) return true;
+
+        return false;
+    }, []);
+
+    const validateCompanyField = useCallback((field, value) => {
+        const sanitized = sanitizeCompanyInfoValue(field, value);
+        const normalized = normalizeSpaces(sanitized);
+
+        if (field === 'companyName') {
+            if (!normalized) return 'Company name is required';
+            if (normalized.length < 2) return 'Company name must be at least 2 characters';
+            if (!companyNameRegex.test(normalized)) return 'Company name contains invalid characters';
+
+            const alphaChars = normalized.replace(/[^A-Za-z]/g, '');
+            if (alphaChars.length < 2) return 'Company name must include at least 2 letters';
+            if (looksLikePlaceholderText(normalized)) return 'Please enter a valid company name';
+            return '';
+        }
+
+        if (field === 'vatNumber') {
+            if (!sanitized) return '';
+            if (!vatNumberRegex.test(sanitized)) {
+                return 'VAT number must be 10 digits and start with 4';
+            }
+            return '';
+        }
+
+        if (field === 'contactNumber') {
+            if (!normalized) return 'Contact number is required';
+            if (!contactNumberRegex.test(normalized)) return 'Contact number contains invalid characters';
+
+            const digitsOnly = normalized.replace(/\D/g, '');
+            if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+                return 'Contact number must be between 8 and 15 digits';
+            }
+            if (/^(\d)\1+$/.test(digitsOnly)) return 'Please enter a valid contact number';
+            if (['12345678', '123456789', '1234567890', '0123456789'].includes(digitsOnly)) {
+                return 'Please enter a valid contact number';
+            }
+            return '';
+        }
+
+        if (field === 'contactEmail') {
+            if (!normalized) return 'Contact email is required';
+            if (!emailRegex.test(normalized)) return 'Invalid email format';
+            if (normalized.includes('..')) return 'Invalid email format';
+            if (normalized.startsWith('.') || normalized.endsWith('.')) return 'Invalid email format';
+            return '';
+        }
+
+        return '';
+    }, [companyNameRegex, contactNumberRegex, emailRegex, looksLikePlaceholderText, normalizeSpaces, sanitizeCompanyInfoValue, vatNumberRegex]);
 
     const readFileAsync = (file, fileExtension) => {
         return new Promise((resolve, reject) => {
@@ -457,19 +610,31 @@ const BulkReviewStep = () => {
 
     const validateForm = () => {
         const newErrors = {};
+        const normalizedCompanyInfo = {
+            companyName: sanitizeCompanyInfoValue('companyName', companyInfo.companyName),
+            vatNumber: sanitizeCompanyInfoValue('vatNumber', companyInfo.vatNumber),
+            contactNumber: sanitizeCompanyInfoValue('contactNumber', companyInfo.contactNumber),
+            contactEmail: sanitizeCompanyInfoValue('contactEmail', companyInfo.contactEmail)
+        };
 
-        if (!companyInfo.companyName?.trim()) {
-            newErrors.companyName = 'Company name is required';
-        }
+        const fieldsToValidate = ['companyName', 'vatNumber', 'contactNumber', 'contactEmail'];
+        fieldsToValidate.forEach((field) => {
+            const fieldError = validateCompanyField(field, normalizedCompanyInfo[field]);
+            if (fieldError) {
+                newErrors[field] = fieldError;
+            }
+        });
 
-        if (!companyInfo.contactNumber?.trim()) {
-            newErrors.contactNumber = 'Contact number is required';
-        }
+        const hasCompanyInfoUpdates = fieldsToValidate.some(
+            (field) => (companyInfo[field] || '') !== normalizedCompanyInfo[field]
+        );
 
-        if (!companyInfo.contactEmail?.trim()) {
-            newErrors.contactEmail = 'Contact email is required';
-        } else if (!emailRegex.test(companyInfo.contactEmail)) {
-            newErrors.contactEmail = 'Invalid email format';
+        if (hasCompanyInfoUpdates) {
+            dispatch(setCompanyInfo(normalizedCompanyInfo));
+            syncCurrentBulkOrder({
+                companyInfo: normalizedCompanyInfo,
+                deliveryOption
+            });
         }
 
         if (deliveryOption === 'multiple') {
@@ -487,7 +652,8 @@ const BulkReviewStep = () => {
     };
 
     const handleInputChange = useCallback((field, value) => {
-        const newCompanyInfo = { ...companyInfo, [field]: value };
+        const sanitizedValue = sanitizeCompanyInfoValue(field, value);
+        const newCompanyInfo = { ...companyInfo, [field]: sanitizedValue };
 
         dispatch(setCompanyInfo(newCompanyInfo));
         syncCurrentBulkOrder({
@@ -495,13 +661,36 @@ const BulkReviewStep = () => {
             deliveryOption,
         });
 
-        if (errors[field]) {
-            setErrors(prev => ({
+        setErrors((prev) => {
+            if (!prev[field]) return prev;
+            return {
                 ...prev,
-                [field]: ''
-            }));
+                [field]: validateCompanyField(field, sanitizedValue)
+            };
+        });
+    }, [companyInfo, deliveryOption, dispatch, sanitizeCompanyInfoValue, syncCurrentBulkOrder, validateCompanyField]);
+
+    const handleInputBlur = useCallback((field, value) => {
+        const sanitizedValue = sanitizeCompanyInfoValue(field, value);
+        const currentValue = companyInfo[field] || '';
+        const nextCompanyInfo = currentValue === sanitizedValue
+            ? companyInfo
+            : { ...companyInfo, [field]: sanitizedValue };
+
+        if (nextCompanyInfo !== companyInfo) {
+            dispatch(setCompanyInfo(nextCompanyInfo));
+            syncCurrentBulkOrder({
+                companyInfo: nextCompanyInfo,
+                deliveryOption
+            });
         }
-    }, [companyInfo, deliveryOption, errors, dispatch, syncCurrentBulkOrder]);
+
+        const fieldError = validateCompanyField(field, sanitizedValue);
+        setErrors((prev) => ({
+            ...prev,
+            [field]: fieldError
+        }));
+    }, [companyInfo, deliveryOption, dispatch, sanitizeCompanyInfoValue, syncCurrentBulkOrder, validateCompanyField]);
 
     const handleDeliveryOptionChange = useCallback((value) => {
         syncCurrentBulkOrder({
@@ -522,14 +711,22 @@ const BulkReviewStep = () => {
     }, [companyInfo, dispatch, syncCurrentBulkOrder]);
 
     // Add to Cart Handler
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         if (!validateForm()) {
-            toast.error('Please fill in all required fields');
+            toast.error('Please correct the highlighted fields');
             return;
         }
 
         if (!currentBulkOrder) {
             toast.error('No bulk order found');
+            return;
+        }
+        if (isSavingCart) {
+            return;
+        }
+        if (!session?.user?.id) {
+            setPendingBulkOrder(currentBulkOrder);
+            setShowAuthModal(true);
             return;
         }
 
@@ -539,14 +736,24 @@ const BulkReviewStep = () => {
         //     return;
         // }
 
-        dispatch(addToBulkInCart(currentBulkOrder));
-        toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
-        router.push('/cart');
+        setIsSavingCart(true);
+        try {
+            await saveBulkOrderForUser(session.user.id, currentBulkOrder);
+            toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
+            router.push('/cart');
+        } catch (error) {
+            const message = typeof error === 'string'
+                ? error
+                : error?.message || 'Failed to add bulk order to cart.';
+            toast.error(message);
+        } finally {
+            setIsSavingCart(false);
+        }
     };
 
     const handleProceedToCheckout = () => {
         if (!validateForm()) {
-            toast.error('Please fill in all required fields');
+            toast.error('Please correct the highlighted fields');
             return;
         }
         dispatch(goNext(2));
@@ -598,486 +805,529 @@ const BulkReviewStep = () => {
     }
 
     return (
-        <div>
-            <Toaster position="top-right" />
-            <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
-                <div className="max-w-7xl mx-auto sm:px-6">
-                    {/* Back Button and Bulk Mode Indicator */}
-                    <div className="relative flex flex-col items-start gap-4 mb-6
+        <>
+            <div>
+                <Toaster position="top-right" />
+                <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
+                    <div className="max-w-7xl mx-auto sm:px-6">
+                        {/* Back Button and Bulk Mode Indicator */}
+                        <div className="relative flex flex-col items-start gap-4 mb-6
                                 md:flex-row md:items-center md:justify-between md:gap-0">
 
-                        {/* Previous Button */}
-                        <button
-                            className="
+                            {/* Previous Button */}
+                            <button
+                                className="
                               relative inline-flex items-center justify-center gap-2
                               px-5 py-3 rounded-full font-semibold text-base
                               text-[#4A4A4A] bg-white border border-transparent
                               transition-all duration-300 overflow-hidden group cursor-pointer
                             "
-                            onClick={() => dispatch(goBack())}
-                        >
-                            <span
-                                className="
+                                onClick={() => dispatch(goBack())}
+                            >
+                                <span
+                                    className="
                                 absolute inset-0 rounded-full p-[1.5px]
                                 bg-linear-to-r from-[#ED457D] to-[#FA8F42]
                               "
-                            ></span>
-                            <span
-                                className="
+                                ></span>
+                                <span
+                                    className="
                                 absolute inset-0.5 rounded-full bg-white
                                 transition-all duration-300
                                 group-hover:bg-linear-to-r group-hover:from-[#ED457D] group-hover:to-[#FA8F42]
                               "
-                            ></span>
+                                ></span>
 
-                            <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
-                                <span className="transition-transform duration-300 group-hover:-translate-x-1">
-                                    <svg
-                                        width="8"
-                                        height="9"
-                                        viewBox="0 0 8 9"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="transition-all duration-300 group-hover:[&>path]:fill-white"
-                                    >
-                                        <path
-                                            d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
-                                            fill="url(#paint0_linear_584_1923)"
-                                        />
-                                        <defs>
-                                            <linearGradient
-                                                id="paint0_linear_584_1923"
-                                                x1="7.5"
-                                                y1="3.01721"
-                                                x2="-9.17006"
-                                                y2="13.1895"
-                                                gradientUnits="userSpaceOnUse"
-                                            >
-                                                <stop stopColor="#ED457D" />
-                                                <stop offset="1" stopColor="#FA8F42" />
-                                            </linearGradient>
-                                        </defs>
-                                    </svg>
-                                </span>
-                                Previous
-                            </div>
-                        </button>
+                                <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
+                                    <span className="transition-transform duration-300 group-hover:-translate-x-1">
+                                        <svg
+                                            width="8"
+                                            height="9"
+                                            viewBox="0 0 8 9"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                                        >
+                                            <path
+                                                d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
+                                                fill="url(#paint0_linear_584_1923)"
+                                            />
+                                            <defs>
+                                                <linearGradient
+                                                    id="paint0_linear_584_1923"
+                                                    x1="7.5"
+                                                    y1="3.01721"
+                                                    x2="-9.17006"
+                                                    y2="13.1895"
+                                                    gradientUnits="userSpaceOnUse"
+                                                >
+                                                    <stop stopColor="#ED457D" />
+                                                    <stop offset="1" stopColor="#FA8F42" />
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                    </span>
+                                    Previous
+                                </div>
+                            </button>
 
-                        {/* Bulk Gifting Indicator */}
-                        {isBulkMode && (
-                            <div
-                                className="
+                            {/* Bulk Gifting Indicator */}
+                            {isBulkMode && (
+                                <div
+                                    className="
                         flex items-center gap-3 justify-center w-full
                         md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
                       "
-                            >
-                                <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+                                >
+                                    <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
-                                <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
-                                    <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
-                                        <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
-                                            Bulk Gifting
-                                        </span>
+                                    <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
+                                        <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
+                                            <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                                                Bulk Gifting
+                                            </span>
+                                        </div>
                                     </div>
+
+                                    <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
                                 </div>
+                            )}
 
-                                <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
-                            </div>
-                        )}
-
-                        <div className="md:block w-35" />
-                    </div>
-
-                    {/* Header */}
-                    <div className="text-center mb-12">
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1A1A1A] mb-6 fontPoppins text-center">
-                            Review your bulk gifting order
-                        </h1>
-                        <p className="text-[#4A4A4A] font-medium text-base">
-                            Once confirmed, you'll receive all voucher codes via email in a CSV file within minutes
-                        </p>
-                    </div>
-
-                    {/* Order Summary Card */}
-                    <div className="max-w-180 mx-auto bg-[#F9F9F9] rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm mb-6">
-                        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
-                            Order Summary
-                        </h3>
-
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-2 bg-gray-50 rounded-xl">
-                            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0">
-                                {displayBrand?.logo ? (
-                                    <img
-                                        src={displayBrand?.logo}
-                                        alt={displayBrand?.brandName || displayBrand?.name}
-                                        className="w-full h-full object-contain"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
-                                        <span className="text-white font-bold text-xl sm:text-2xl">
-                                            {(displayBrand?.brandName || displayBrand?.name || 'B')
-                                                .substring(0, 1)
-                                                .toUpperCase()}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
-                                <div className="md:border-r border-[#1a1a1a28] pr-0 md:pr-4">
-                                    <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
-                                        Brand
-                                    </p>
-                                    <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
-                                        {displayBrand?.brandName || displayBrand?.name}
-                                    </p>
-                                </div>
-
-                                <div className="md:border-r border-[#1a1a1a28] pr-0 md:pr-4">
-                                    <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
-                                        Denomination
-                                    </p>
-                                    <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
-                                        {currentBulkOrder.selectedAmount.currency}
-                                        {currentBulkOrder.selectedAmount.value}
-                                    </p>
-                                </div>
-
-                                <div className="md:border-r border-[#1a1a1a28] pr-0 md:pr-4">
-                                    <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
-                                        Quantity
-                                    </p>
-                                    <p className="text-[#4A4A4A] font-inter text-sm sm:text-base">
-                                        {currentBulkOrder.quantity}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[#1A1A1A] font-poppins text-sm sm:text-base font-semibold mb-1">
-                                        Total Amount
-                                    </p>
-                                    <p className="font-inter text-lg sm:text-xl font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
-                                        {currentBulkOrder.selectedAmount.currency}
-                                        {currentBulkOrder.totalSpend?.toFixed(2)}
-                                    </p>
-                                </div>
-                            </div>
+                            <div className="md:block w-35" />
                         </div>
-                    </div>
 
+                        {/* Header */}
+                        <div className="text-center mb-12">
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#1A1A1A] mb-6 fontPoppins text-center">
+                                Review your bulk gifting order
+                            </h1>
+                            <p className="text-[#4A4A4A] font-medium text-base">
+                                Once confirmed, you'll receive all voucher codes via email in a CSV file within minutes
+                            </p>
+                        </div>
 
-                    {/* Company Information Card */}
-                    <div className="max-w-180 m-auto p-px rounded-[20px] shadow-sm mb-6" style={{ background: 'linear-gradient(114.06deg, #ED457D 11.36%, #FA8F42 90.28%)' }}>
+                        {/* Order Summary Card */}
+                        <div className="max-w-180 mx-auto bg-[#F9F9F9] rounded-2xl p-4 sm:p-5 border border-gray-200 shadow-sm mb-6">
+                            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-4">
+                                Order Summary
+                            </h3>
 
-                        <div className="p-6 bg-[linear-gradient(180deg,#FEF8F6_0%,#FDF7F8_100%)] rounded-[20px]">
-                            <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 fontPoppins">Company Information</h3>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-gray-50 rounded-xl">
 
-                            <div className="space-y-4">
-                                <div>
-                                    <input
-                                        type="text"
-                                        placeholder="Your Company Name*"
-                                        value={companyInfo.companyName || ''}
-                                        onChange={(e) => handleInputChange('companyName', e.target.value)}
-                                        className={`w-full px-4 py-3 border bg-white ${errors.companyName ? 'border-red-500' : 'border-[#1A1A1A33]'} text-black rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
-                                    />
-                                    {errors.companyName && (
-                                        <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>
+                                {/* Brand Logo */}
+                                <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0">
+                                    {displayBrand?.logo ? (
+                                        <img
+                                            src={displayBrand?.logo}
+                                            alt={displayBrand?.brandName || displayBrand?.name}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-linear-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
+                                            <span className="text-white font-bold text-xl sm:text-2xl">
+                                                {(displayBrand?.brandName || displayBrand?.name || "B")
+                                                    .substring(0, 1)
+                                                    .toUpperCase()}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
 
-                                <div>
-                                    <input
-                                        type="text"
-                                        placeholder="Vat Number (e.g., 4001234567)"
-                                        value={companyInfo.vatNumber || ''}
-                                        onChange={(e) => handleInputChange('vatNumber', e.target.value)}
-                                        className="w-full px-4 py-3 border bg-white border-[#1A1A1A33] rounded-[15px]  focus:outline-none text-black focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                </div>
+                                {/* Details */}
+                                <div className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-2 lg:gap-4 w-full">
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Brand */}
+                                    <div className="min-w-0 md:border-r border-[#1a1a1a28] md:pr-2 lg:pr-4">
+                                        <p className="text-[#1A1A1A] font-poppins text-xs sm:text-sm md:text-sm lg:text-base font-semibold mb-1">
+                                            Brand
+                                        </p>
+                                        <p className="text-[#4A4A4A] font-inter text-xs sm:text-sm md:text-sm lg:text-base break-words">
+                                            {displayBrand?.brandName || displayBrand?.name}
+                                        </p>
+                                    </div>
+
+                                    {/* Denomination */}
+                                    <div className="min-w-0 md:border-r border-[#1a1a1a28] md:pr-2 lg:pr-4">
+                                        <p className="text-[#1A1A1A] font-poppins text-xs sm:text-sm md:text-sm lg:text-base font-semibold mb-1">
+                                            Denomination
+                                        </p>
+                                        <p className="text-[#4A4A4A] font-inter text-xs sm:text-sm md:text-sm lg:text-base">
+                                            {currentBulkOrder.selectedAmount.currency}
+                                            {currentBulkOrder.selectedAmount.value}
+                                        </p>
+                                    </div>
+
+                                    {/* Quantity */}
+                                    <div className="min-w-0 md:border-r border-[#1a1a1a28] md:pr-2 lg:pr-4">
+                                        <p className="text-[#1A1A1A] font-poppins text-xs sm:text-sm md:text-sm lg:text-base font-semibold mb-1">
+                                            Quantity
+                                        </p>
+                                        <p className="text-[#4A4A4A] font-inter text-xs sm:text-sm md:text-sm lg:text-base">
+                                            {currentBulkOrder.quantity}
+                                        </p>
+                                    </div>
+
+                                    {/* Total Amount */}
+                                    <div className="min-w-0">
+                                        <p className="text-[#1A1A1A] font-poppins text-xs sm:text-sm md:text-sm lg:text-base font-semibold mb-1">
+                                            Total Amount
+                                        </p>
+                                        <p className="font-inter min-w-fit text-sm sm:text-base md:text-lg lg:text-xl font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent">
+                                            {currentBulkOrder.selectedAmount.currency}
+                                            {currentBulkOrder.totalSpend?.toFixed(2)}
+                                        </p>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+
+                        {/* Company Information Card */}
+                        <div className="max-w-180 m-auto p-px rounded-[20px] shadow-sm mb-6" style={{ background: 'linear-gradient(114.06deg, #ED457D 11.36%, #FA8F42 90.28%)' }}>
+
+                            <div className="p-6 bg-[linear-gradient(180deg,#FEF8F6_0%,#FDF7F8_100%)] rounded-[20px]">
+                                <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 fontPoppins">Company Information</h3>
+
+                                <div className="space-y-4">
                                     <div>
                                         <input
-                                            type="tel"
-                                            placeholder="Your Contact No.*"
-                                            value={companyInfo.contactNumber || ''}
-                                            onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                                            className={`w-full px-4 py-3 bg-white border ${errors.contactNumber ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                            type="text"
+                                            placeholder="Your Company Name*"
+                                            value={companyInfo.companyName || ''}
+                                            onChange={(e) => handleInputChange('companyName', e.target.value)}
+                                            onBlur={(e) => handleInputBlur('companyName', e.target.value)}
+                                            maxLength={100}
+                                            autoComplete="organization"
+                                            className={`w-full px-4 py-3 border bg-white ${errors.companyName ? 'border-red-500' : 'border-[#1A1A1A33]'} text-black rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                         />
-                                        {errors.contactNumber && (
-                                            <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>
+                                        {errors.companyName && (
+                                            <p className="text-red-500 text-xs mt-1">{errors.companyName}</p>
                                         )}
                                     </div>
+
                                     <div>
                                         <input
-                                            type="email"
-                                            placeholder="Your Contact Email*"
-                                            value={companyInfo.contactEmail || ''}
-                                            onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                                            className={`w-full px-4 py-3 bg-white border ${errors.contactEmail ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                            type="text"
+                                            placeholder="Vat Number (e.g., 4001234567)"
+                                            value={companyInfo.vatNumber || ''}
+                                            onChange={(e) => handleInputChange('vatNumber', e.target.value)}
+                                            onBlur={(e) => handleInputBlur('vatNumber', e.target.value)}
+                                            inputMode="numeric"
+                                            maxLength={10}
+                                            className={`w-full px-4 py-3 border bg-white ${errors.vatNumber ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] focus:outline-none text-black focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
                                         />
-                                        {errors.contactEmail && (
-                                            <p className="text-red-500 text-xs mt-1">{errors.contactEmail}</p>
+                                        {errors.vatNumber && (
+                                            <p className="text-red-500 text-xs mt-1">{errors.vatNumber}</p>
                                         )}
                                     </div>
-                                </div>
 
-                                <div className='flex gap-2'>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                        <path d="M13.385 4.10536L10.2305 0.660492C9.8465 0.250084 9.308 0.00447932 8.693 0.00447932H4.15325C2.99975 -0.0779223 2 0.988499 2 2.21892V13.7031C1.99951 14.005 2.05489 14.304 2.16297 14.5829C2.27106 14.8619 2.42971 15.1153 2.62984 15.3287C2.82996 15.5421 3.06762 15.7113 3.32917 15.8265C3.59073 15.9417 3.87103 16.0006 4.154 16H11.846C12.129 16.0006 12.4093 15.9417 12.6708 15.8265C12.9324 15.7113 13.17 15.5421 13.3702 15.3287C13.5703 15.1153 13.7289 14.8619 13.837 14.5829C13.9451 14.304 14.0005 14.005 14 13.7031V5.66459C14 5.09018 13.769 4.51577 13.385 4.10536ZM5.69225 6.48461H8C8.3075 6.48461 8.615 6.73101 8.615 7.14062C8.615 7.55103 8.38475 7.79663 8 7.79663H5.69225C5.61118 7.79782 5.53071 7.78166 5.45559 7.74911C5.38048 7.71656 5.31224 7.66828 5.25491 7.60713C5.19758 7.54598 5.15232 7.47319 5.1218 7.39306C5.09129 7.31293 5.07614 7.2271 5.07725 7.14062C5.07725 6.73021 5.38475 6.48461 5.69225 6.48461ZM10.3077 11.0783H5.69225C5.38475 11.0783 5.07725 10.8319 5.07725 10.4223C5.07725 10.0127 5.3075 9.76627 5.69225 9.76627H10.3077C10.6152 9.76627 10.9227 10.0119 10.9227 10.4223C10.9227 10.8327 10.6152 11.0783 10.3077 11.0783Z" fill="#39AE41" />
-                                    </svg>
-                                    <span className="text-[#1A1A1A] font-inter text-xs font-medium leading-4">
-                                        CSV file with voucher codes will be sent to your Contact email</span>
-                                </div>
-
-                                {/* Delivery Options */}
-                                <div className="pt-4 space-y-3">
-                                    <label className="flex items-start gap-3 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="deliveryOption"
-                                            value="email"
-                                            checked={deliveryOption === 'email'}
-                                            onChange={(e) => handleDeliveryOptionChange(e.target.value)}
-                                            className="mt-1 w-4 h-4 focus:ring-pink-500 text-black"
-                                        />
-                                        <div className="flex-1">
-                                            <span className="text-gray-900 font-medium">Send bulk codes to my email.</span>
-                                        </div>
-                                    </label>
-
-                                    <label className="flex items-start gap-3 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="deliveryOption"
-                                            value="multiple"
-                                            checked={deliveryOption === 'multiple'}
-                                            onChange={(e) => handleDeliveryOptionChange(e.target.value)}
-                                            className="mt-1 w-4 h-4"
-                                        />
-                                        <span className="text-gray-900 font-medium">
-                                            Upload CSV/Excel and send individual emails
-                                        </span>
-                                    </label>
-
-                                    {/* CSV Upload Section */}
-                                    {deliveryOption === 'multiple' && (
-                                        <div className="mt-4 p-4 text-black bg-blue-50 rounded-lg border border-blue-200">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className="font-semibold text-gray-900">
-                                                    Upload Recipient List
-                                                </h4>
-                                                <button
-                                                    type="button"
-                                                    onClick={downloadSampleCSV}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 underline cursor-pointer"
-                                                >
-                                                    Download Sample CSV
-                                                </button>
-                                            </div>
-
-                                            {/* Required quantity */}
-                                            <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-                                                <p className="text-sm font-semibold text-yellow-800">
-                                                    ⚠️ Required: Exactly {currentBulkOrder?.quantity || 0} recipients
-                                                </p>
-                                                <p className="text-xs text-yellow-700 mt-1">
-                                                    Please upload a file with exactly {currentBulkOrder?.quantity || 0} recipients.
-                                                </p>
-                                            </div>
-
-                                            <p className="text-sm text-gray-600 mb-3">
-                                                CSV or Excel file with columns: <strong>name</strong>, <strong>email</strong>, phone (optional), message (optional)
-                                            </p>
-
-                                            {/* Show uploaded file name if exists */}
-                                            {csvFileData?.fileName && csvData.length > 0 && !isProcessingFile && (
-                                                <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path fillRule="evenodd"
-                                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                                                    clipRule="evenodd" />
-                                                            </svg>
-                                                            <div>
-                                                                <p className="text-green-800 font-medium text-sm">{csvFileData.fileName}</p>
-                                                                <p className="text-green-600 text-xs">{csvData.length} recipients loaded</p>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setCsvData([]);
-                                                                setCsvFile(null);
-                                                                setCsvError('');
-                                                                dispatch(setCsvFileData({
-                                                                    fileName: null,
-                                                                    csvData: [],
-                                                                    csvError: ''
-                                                                }));
-                                                            }}
-                                                            className="text-red-600 hover:text-red-800 text-sm font-medium"
-                                                        >
-                                                            Remove
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <input
+                                                type="tel"
+                                                placeholder="Your Contact No.*"
+                                                value={companyInfo.contactNumber || ''}
+                                                onChange={(e) => handleInputChange('contactNumber', e.target.value)}
+                                                onBlur={(e) => handleInputBlur('contactNumber', e.target.value)}
+                                                inputMode="tel"
+                                                maxLength={20}
+                                                autoComplete="tel"
+                                                className={`w-full px-4 py-3 bg-white border ${errors.contactNumber ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                            />
+                                            {errors.contactNumber && (
+                                                <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>
                                             )}
+                                        </div>
+                                        <div>
+                                            <input
+                                                type="email"
+                                                placeholder="Your Contact Email*"
+                                                value={companyInfo.contactEmail || ''}
+                                                onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                                                onBlur={(e) => handleInputBlur('contactEmail', e.target.value)}
+                                                maxLength={254}
+                                                autoComplete="email"
+                                                className={`w-full px-4 py-3 bg-white border ${errors.contactEmail ? 'border-red-500' : 'border-[#1A1A1A33]'} rounded-[15px] text-black focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent`}
+                                            />
+                                            {errors.contactEmail && (
+                                                <p className="text-red-500 text-xs mt-1">{errors.contactEmail}</p>
+                                            )}
+                                        </div>
+                                    </div>
 
-                                            {/* Upload Box - only show if no file uploaded */}
-                                            {(!csvFileData?.fileName || csvData.length === 0) && (
-                                                <label className="relative flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer
+                                    <div className='flex gap-2'>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                            <path d="M13.385 4.10536L10.2305 0.660492C9.8465 0.250084 9.308 0.00447932 8.693 0.00447932H4.15325C2.99975 -0.0779223 2 0.988499 2 2.21892V13.7031C1.99951 14.005 2.05489 14.304 2.16297 14.5829C2.27106 14.8619 2.42971 15.1153 2.62984 15.3287C2.82996 15.5421 3.06762 15.7113 3.32917 15.8265C3.59073 15.9417 3.87103 16.0006 4.154 16H11.846C12.129 16.0006 12.4093 15.9417 12.6708 15.8265C12.9324 15.7113 13.17 15.5421 13.3702 15.3287C13.5703 15.1153 13.7289 14.8619 13.837 14.5829C13.9451 14.304 14.0005 14.005 14 13.7031V5.66459C14 5.09018 13.769 4.51577 13.385 4.10536ZM5.69225 6.48461H8C8.3075 6.48461 8.615 6.73101 8.615 7.14062C8.615 7.55103 8.38475 7.79663 8 7.79663H5.69225C5.61118 7.79782 5.53071 7.78166 5.45559 7.74911C5.38048 7.71656 5.31224 7.66828 5.25491 7.60713C5.19758 7.54598 5.15232 7.47319 5.1218 7.39306C5.09129 7.31293 5.07614 7.2271 5.07725 7.14062C5.07725 6.73021 5.38475 6.48461 5.69225 6.48461ZM10.3077 11.0783H5.69225C5.38475 11.0783 5.07725 10.8319 5.07725 10.4223C5.07725 10.0127 5.3075 9.76627 5.69225 9.76627H10.3077C10.6152 9.76627 10.9227 10.0119 10.9227 10.4223C10.9227 10.8327 10.6152 11.0783 10.3077 11.0783Z" fill="#39AE41" />
+                                        </svg>
+                                        <span className="text-[#1A1A1A] font-inter text-xs font-medium leading-4">
+                                            CSV file with voucher codes will be sent to your Contact email</span>
+                                    </div>
+
+                                    {/* Delivery Options */}
+                                    <div className="pt-4 space-y-3">
+                                        <label className="flex items-start gap-3 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="deliveryOption"
+                                                value="email"
+                                                checked={deliveryOption === 'email'}
+                                                onChange={(e) => handleDeliveryOptionChange(e.target.value)}
+                                                className="mt-1 w-4 h-4 focus:ring-pink-500 text-black"
+                                            />
+                                            <div className="flex-1">
+                                                <span className="text-gray-900 font-medium">Send bulk codes to my email.</span>
+                                            </div>
+                                        </label>
+
+                                        <label className="flex items-start gap-3 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="deliveryOption"
+                                                value="multiple"
+                                                checked={deliveryOption === 'multiple'}
+                                                onChange={(e) => handleDeliveryOptionChange(e.target.value)}
+                                                className="mt-1 w-4 h-4"
+                                            />
+                                            <span className="text-gray-900 font-medium">
+                                                Upload CSV/Excel and send individual emails
+                                            </span>
+                                        </label>
+
+                                        {/* CSV Upload Section */}
+                                        {deliveryOption === 'multiple' && (
+                                            <div className="mt-4 p-4 text-black bg-blue-50 rounded-lg border border-blue-200">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <h4 className="font-semibold text-gray-900">
+                                                        Upload Recipient List
+                                                    </h4>
+                                                    <button
+                                                        type="button"
+                                                        onClick={downloadSampleCSV}
+                                                        className="text-xs text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                                                    >
+                                                        Download Sample CSV
+                                                    </button>
+                                                </div>
+
+                                                {/* Required quantity */}
+                                                <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                                                    <p className="text-sm font-semibold text-yellow-800">
+                                                        ⚠️ Required: Exactly {currentBulkOrder?.quantity || 0} recipients
+                                                    </p>
+                                                    <p className="text-xs text-yellow-700 mt-1">
+                                                        Please upload a file with exactly {currentBulkOrder?.quantity || 0} recipients.
+                                                    </p>
+                                                </div>
+
+                                                <p className="text-sm text-gray-600 mb-3">
+                                                    CSV or Excel file with columns: <strong>name</strong>, <strong>email</strong>, phone (optional), message (optional)
+                                                </p>
+
+                                                {/* Show uploaded file name if exists */}
+                                                {csvFileData?.fileName && csvData.length > 0 && !isProcessingFile && (
+                                                    <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path fillRule="evenodd"
+                                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                                        clipRule="evenodd" />
+                                                                </svg>
+                                                                <div>
+                                                                    <p className="text-green-800 font-medium text-sm">{csvFileData.fileName}</p>
+                                                                    <p className="text-green-600 text-xs">{csvData.length} recipients loaded</p>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setCsvData([]);
+                                                                    setCsvFile(null);
+                                                                    setCsvError('');
+                                                                    dispatch(setCsvFileData({
+                                                                        fileName: null,
+                                                                        csvData: [],
+                                                                        csvError: ''
+                                                                    }));
+                                                                }}
+                                                                className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Upload Box - only show if no file uploaded */}
+                                                {(!csvFileData?.fileName || csvData.length === 0) && (
+                                                    <label className="relative flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-lg cursor-pointer
         bg-white border-blue-300 hover:bg-blue-100 transition">
 
-                                                    <input
-                                                        type="file"
-                                                        accept=".csv,.xlsx,.xls"
-                                                        onChange={handleFileUpload}
-                                                        disabled={isProcessingFile}
-                                                        className="hidden"
-                                                    />
+                                                        <input
+                                                            type="file"
+                                                            accept=".csv,.xlsx,.xls"
+                                                            onChange={handleFileUpload}
+                                                            disabled={isProcessingFile}
+                                                            className="hidden"
+                                                        />
 
-                                                    {!isProcessingFile ? (
-                                                        <>
-                                                            <svg className="w-10 h-10 text-blue-500 mb-2" fill="none" stroke="currentColor" strokeWidth="2"
-                                                                viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round"
-                                                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                                            </svg>
+                                                        {!isProcessingFile ? (
+                                                            <>
+                                                                <svg className="w-10 h-10 text-blue-500 mb-2" fill="none" stroke="currentColor" strokeWidth="2"
+                                                                    viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round"
+                                                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                                </svg>
 
-                                                            <p className="text-sm text-gray-700 font-medium">
-                                                                Click to upload or drag & drop
-                                                            </p>
-                                                            <p className="text-xs text-gray-500 mt-1">
-                                                                CSV, XLSX (max 5MB)
-                                                            </p>
-                                                        </>
-                                                    ) : (
-                                                        <div className="flex flex-col items-center">
-                                                            <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mb-2"></div>
-                                                            <p className="text-sm text-blue-600">Processing file…</p>
-                                                        </div>
-                                                    )}
-                                                </label>
-                                            )}
+                                                                <p className="text-sm text-gray-700 font-medium">
+                                                                    Click to upload or drag & drop
+                                                                </p>
+                                                                <p className="text-xs text-gray-500 mt-1">
+                                                                    CSV, XLSX (max 5MB)
+                                                                </p>
+                                                            </>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center">
+                                                                <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+                                                                <p className="text-sm text-blue-600">Processing file…</p>
+                                                            </div>
+                                                        )}
+                                                    </label>
+                                                )}
 
-                                            {/* Error messages */}
-                                            {csvError && (
-                                                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                                    <p className="text-red-700 text-sm whitespace-pre-wrap">{csvError}</p>
-                                                </div>
-                                            )}
+                                                {/* Error messages */}
+                                                {csvError && (
+                                                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                                        <p className="text-red-700 text-sm whitespace-pre-wrap">{csvError}</p>
+                                                    </div>
+                                                )}
 
-                                            {errors.csvFile && (
-                                                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                                    <p className="text-red-700 text-sm">{errors.csvFile}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+                                                {errors.csvFile && (
+                                                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                                        <p className="text-red-700 text-sm">{errors.csvFile}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="flex items-start gap-3 justify-center my-3">
-                        <label className="flex items-start gap-3 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                checked={isConfirmed || false}
-                                onChange={(e) => dispatch(setIsConfirmed(e.target.checked))}
-                                className="sr-only"
-                            />
-                            <div className={`
+                        <div className="flex items-start gap-3 justify-center my-3">
+                            <label className="flex items-start gap-3 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={isConfirmed || false}
+                                    onChange={(e) => dispatch(setIsConfirmed(e.target.checked))}
+                                    className="sr-only"
+                                />
+                                <div className={`
                                     w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
                                     ${isConfirmed
-                                    ? 'bg-linear-to-r from-pink-500 to-orange-400 border-transparent'
-                                    : 'bg-white border-gray-300'
-                                }
-                                  `}>
-                                {isConfirmed && (
-                                    <svg
-                                        className="w-3.5 h-3.5 text-white"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="3"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <polyline points="20 6 9 17 4 12" />
-                                    </svg>
-                                )}
-                            </div>
-                            <span className="text-gray-700 font-inter text-sm font-medium leading-relaxed flex-1">
-                                I have reviewed and confirmed all recipient and gift details are correct.
-                            </span>
-                        </label>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="max-w-172 m-auto space-y-4">
-
-                        <div className={`p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block w-full ${csvError === "" && isConfirmed
-                            ? 'hover:bg-rose-50 hover:shadow-md cursor-pointer'
-                            : 'opacity-50 cursor-not-allowed'
-                            }
-                                              `}>
-                            <button
-                                disabled={csvError !== "" || !isConfirmed || isProcessingFile}
-                                onClick={handleAddToCart}
-                                className={`
-    w-full h-14 flex items-center justify-center gap-3 px-5 rounded-full 
-    bg-white text-pink-500 font-bold transition-all duration-200
-    ${csvError === "" && isConfirmed && !isProcessingFile
-                                        ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
-                                        : 'opacity-50 cursor-not-allowed'
+                                        ? 'bg-linear-to-r from-pink-500 to-orange-400 border-transparent'
+                                        : 'bg-white border-gray-300'
                                     }
-  `}
-                            >
-                                {isProcessingFile ? 'Processing file...' : (isBulkCartEdit ? 'Update Cart Order' : 'Add to Cart')}
-                                <ShoppingBasket className="w-5 h-5" />
-                            </button>
-
+                                  `}>
+                                    {isConfirmed && (
+                                        <svg
+                                            className="w-3.5 h-3.5 text-white"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="3"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                    )}
+                                </div>
+                                <span className="text-gray-700 font-inter text-sm font-medium leading-relaxed flex-1">
+                                    I have reviewed and confirmed all recipient and gift details are correct.
+                                </span>
+                            </label>
                         </div>
 
+                        {/* Action Buttons */}
+                        <div className="max-w-172 m-auto space-y-4">
 
-                        {/* Proceed to Checkout Button */}
-                        {session?.user?.email ? (
-                            <button
-                                disabled={csvError !== "" || !isConfirmed || isProcessingFile}
-                                onClick={handleProceedToCheckout}
-                                className={`w-full text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2 
+                            {/* Proceed to Checkout Button */}
+                            {session?.user?.email ? (
+                                <>
+                                    <div className={`p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block w-full ${csvError === "" && isConfirmed
+                                        ? 'hover:bg-rose-50 hover:shadow-md cursor-pointer'
+                                        : 'opacity-50 cursor-not-allowed'
+                                        }
+                                              `}>
+                                        <button
+                                            disabled={csvError !== "" || !isConfirmed || isProcessingFile || isSavingCart}
+                                            onClick={handleAddToCart}
+                                            className={`
+    w-full h-14 flex items-center justify-center gap-3 px-5 rounded-full 
+    bg-white text-pink-500 font-bold transition-all duration-200
+    ${csvError === "" && isConfirmed && !isProcessingFile && !isSavingCart
+                                                    ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
+                                                    : 'opacity-50 cursor-not-allowed'
+                                                }
+  `}
+                                        >
+                                            {isProcessingFile
+                                                ? 'Processing file...'
+                                                : (isSavingCart
+                                                    ? (isBulkCartEdit ? 'Updating...' : 'Saving...')
+                                                    : (isBulkCartEdit ? 'Update Cart Order' : 'Add to Cart'))}
+                                            <ShoppingBasket className="w-5 h-5" />
+                                        </button>
+
+                                    </div>
+                                    <button
+                                        disabled={csvError !== "" || !isConfirmed || isProcessingFile}
+                                        onClick={handleProceedToCheckout}
+                                        className={`w-full text-white py-4 px-6 rounded-full font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2 
                          ${csvError === "" && isConfirmed && !isProcessingFile
-                                        ? 'bg-linear-to-r from-pink-500 to-orange-500 shadow-lg hover:from-pink-600 hover:to-orange-600 hover:shadow-xl cursor-pointer hover:opacity-95'
-                                        : 'bg-gray-400 shadow-none cursor-not-allowed'
-                                    }`}
-                            >
-                                {isProcessingFile ? 'Processing file...' : 'Proceed to Checkout'}
-                                <span className="text-xl"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
-                                </svg>
-                                </span>
-                            </button>
-                        ) : (
-                            <div className="flex flex-col items-center gap-2 text-center">
-                                <p className="text-[#1A1A1A] text-[14px] font-medium font-poppins">
-                                    Please log in to continue with your purchase
-                                </p>
-                                <Link
-                                    href="/login"
-                                    className="text-pink-500 font-semibold hover:underline transition"
-                                >
-                                    Login to your account →
-                                </Link>
-                            </div>
-                        )}
+                                                ? 'bg-linear-to-r from-pink-500 to-orange-500 shadow-lg hover:from-pink-600 hover:to-orange-600 hover:shadow-xl cursor-pointer hover:opacity-95'
+                                                : 'bg-gray-400 shadow-none cursor-not-allowed'
+                                            }`}
+                                    >
+                                        {isProcessingFile ? 'Processing file...' : 'Proceed to Checkout'}
+                                        <span className="text-xl"><svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                                        </svg>
+                                        </span>
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center gap-2 text-center">
+                                    <p className="text-[#1A1A1A] text-[14px] font-medium font-poppins">
+                                       Please log in first before buying bulk gift cards.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => router.push("/login")}
+                                        className="text-pink-500 font-semibold hover:underline transition"
+                                    >
+                                        Login to your account →
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            {showAuthModal && (
+                <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
+                    <AuthForm
+                        type="login"
+                        mode="modal"
+                        onClose={closeAuthModal}
+                        onAuthSuccess={handleAuthSuccess}
+                    />
+                </div>
+            )}
+        </>
     );
 };
 

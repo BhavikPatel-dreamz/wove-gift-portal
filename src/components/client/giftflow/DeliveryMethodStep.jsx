@@ -646,7 +646,7 @@ const DeliveryMethodStep = () => {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-hidden">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-999 p-4 overflow-hidden">
             <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto relative">
               {/* Close Button */}
               <button

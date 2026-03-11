@@ -11,10 +11,44 @@ import toast from 'react-hot-toast';
 import Modal from '../Modal';
 import { Loader } from 'lucide-react';
 
-export default function CreateNewCard({ occasion, onBack, onSave, initialCardData = null, setModalOpen }) {
+const EMPTY_FIELD_ERRORS = {
+  cardName: '',
+  internalDescription: '',
+  category: '',
+  previewEmoji: '',
+  image: '',
+};
+
+const BACKEND_FIELD_TO_UI_FIELD = {
+  name: 'cardName',
+  description: 'internalDescription',
+  category: 'category',
+  emoji: 'previewEmoji',
+  image: 'image',
+};
+
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  'image/svg+xml',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+]);
+
+export default function CreateNewCard({
+  occasion,
+  onBack,
+  onSave,
+  initialCardData = null,
+  setModalOpen,
+  lockClose = false,
+}) {
   const isEditing = Boolean(initialCardData);
   const [isSaving, setIsSaving] = useState(false);
-  const [isOpen, setIsOpen] = useState(!isEditing ? true : false);
+  const [fieldErrors, setFieldErrors] = useState(EMPTY_FIELD_ERRORS);
+  const [formError, setFormError] = useState('');
 
 
   const [formData, setFormData] = useState({
@@ -42,10 +76,142 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
       };
 
       setFormData(newFormData);
+    } else {
+      setFormData({
+        cardName: '',
+        internalDescription: '',
+        category: '',
+        isActive: true,
+        previewEmoji: '🎁',
+        imageUrl: null,
+        imageFile: null,
+      });
     }
+    setFieldErrors(EMPTY_FIELD_ERRORS);
+    setFormError('');
   }, [initialCardData]);
 
+  const clearFieldError = (field) => {
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const clearFormError = () => {
+    if (formError) {
+      setFormError('');
+    }
+  };
+
+  const validateClient = () => {
+    const errors = { ...EMPTY_FIELD_ERRORS };
+    const trimmedName = formData.cardName.trim();
+    const trimmedDescription = formData.internalDescription.trim();
+    const trimmedCategory = formData.category.trim();
+    const hasImage = Boolean(
+      formData.imageFile ||
+      (typeof formData.imageUrl === 'string' && formData.imageUrl.trim())
+    );
+
+    if (!trimmedName) {
+      errors.cardName = 'Card name is required.';
+    } else if (trimmedName.length > 100) {
+      errors.cardName = 'Card name must be less than 100 characters.';
+    }
+
+    if (!trimmedDescription) {
+      errors.internalDescription = 'Internal description is required.';
+    } else if (trimmedDescription.length > 500) {
+      errors.internalDescription = 'Internal description must be less than 500 characters.';
+    }
+
+    if (!trimmedCategory) {
+      errors.category = 'Category is required.';
+    } else if (trimmedCategory.length > 100) {
+      errors.category = 'Category must be less than 100 characters.';
+    }
+
+    if (!formData.previewEmoji?.trim()) {
+      errors.previewEmoji = 'Please select an emoji.';
+    }
+
+    if (!hasImage) {
+      errors.image = 'Card design image is required.';
+    } else if (formData.imageFile instanceof File) {
+      if (!ALLOWED_IMAGE_TYPES.has(formData.imageFile.type)) {
+        errors.image = 'Please upload a valid image file (SVG, PNG, JPG, GIF, WebP).';
+      } else if (formData.imageFile.size > MAX_IMAGE_SIZE) {
+        errors.image = 'Image size must be 2MB or less.';
+      }
+    }
+
+    setFieldErrors(errors);
+    const hasErrors = Object.values(errors).some(Boolean);
+    if (hasErrors) {
+      setFormError('Please fix the errors below before saving.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const applyServerErrors = (result) => {
+    const errors = { ...EMPTY_FIELD_ERRORS };
+    const responseMessage = result?.message || `Failed to ${isEditing ? 'update' : 'create'} card design.`;
+
+    if (Array.isArray(result?.errors)) {
+      result.errors.forEach((err) => {
+        const backendField = Array.isArray(err?.path) ? err.path[0] : err?.path;
+        const uiField = BACKEND_FIELD_TO_UI_FIELD[backendField];
+
+        if (uiField) {
+          errors[uiField] = err?.message || 'Invalid value.';
+        }
+      });
+    }
+
+    const normalizedMessage = responseMessage.replace(/^Validation error:\s*/i, '');
+    const messageParts = normalizedMessage.split(',').map((part) => part.trim()).filter(Boolean);
+
+    messageParts.forEach((part) => {
+      const [rawField, ...rest] = part.split(':');
+      if (!rawField || rest.length === 0) {
+        return;
+      }
+
+      const fieldName = rawField.trim();
+      const uiField = BACKEND_FIELD_TO_UI_FIELD[fieldName];
+      if (!uiField || errors[uiField]) {
+        return;
+      }
+
+      errors[uiField] = rest.join(':').trim() || 'Invalid value.';
+    });
+
+    if (!errors.cardName && /category with this name already exists/i.test(responseMessage)) {
+      errors.cardName = responseMessage;
+    }
+
+    setFieldErrors(errors);
+    const hasFieldErrors = Object.values(errors).some(Boolean);
+    if (hasFieldErrors) {
+      setFormError('Please correct the highlighted fields and try again.');
+      return;
+    }
+
+    setFormError(responseMessage);
+  };
+
   const handleSaveCard = async () => {
+    if (isSaving) {
+      return;
+    }
+
+    clearFormError();
+    if (!validateClient()) {
+      return;
+    }
+
     setIsSaving(true);
     const data = new FormData();
 
@@ -54,9 +220,9 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
       data.append('id', initialCardData.id);
     }
 
-    data.append('name', formData.cardName);
-    data.append('description', formData.internalDescription);
-    data.append('category', formData.category);
+    data.append('name', formData.cardName.trim());
+    data.append('description', formData.internalDescription.trim());
+    data.append('category', formData.category.trim());
     data.append('emoji', formData.previewEmoji);
     data.append('isActive', formData.isActive);
     data.append('occasionId', occasion.id);
@@ -77,30 +243,55 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
         toast.success(`Occasion category ${isEditing ? 'updated' : 'created'} successfully!`);
         onSave(result.data);
         onBack();
-        setModalOpen(false);
+        setModalOpen?.(false);
       } else {
-        toast.error(`Failed to ${isEditing ? 'update' : 'create'} occasion category: ${result.message}`);
+        applyServerErrors(result);
       }
     } catch (error) {
       console.error('Error saving card:', error);
-      toast.error('An unexpected error occurred while saving the card.');
+      setFormError('An unexpected error occurred while saving the card.');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleFileSelect = (file) => {
+    clearFormError();
+    clearFieldError('image');
+
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({ ...prev, imageUrl: reader.result, imageFile: file }));
       };
       reader.readAsDataURL(file);
+    } else {
+      setFormData(prev => ({ ...prev, imageUrl: null, imageFile: null }));
     }
   };
 
   const updateFormData = (field, value) => {
+    const uiField = {
+      cardName: 'cardName',
+      internalDescription: 'internalDescription',
+      category: 'category',
+      previewEmoji: 'previewEmoji',
+    }[field];
+
+    if (uiField) {
+      clearFieldError(uiField);
+    }
+    clearFormError();
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCloseRequest = () => {
+    if (lockClose || isSaving) {
+      return;
+    }
+
+    onBack();
+    setModalOpen?.(false);
   };
 
   if (isEditing) {
@@ -132,44 +323,63 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
 
 
             <div className="space-y-6">
-              <Input
-                label="Card Name"
-                placeholder="e.g., Elegant Gold"
-                value={formData.cardName}
-                onChange={(e) => updateFormData('cardName', e.target.value)}
-                required
-              />
+              {formError && (
+                <p className="text-sm font-medium text-red-600">{formError}</p>
+              )}
 
-              <Input
-                label="Internal Description"
-                type="textarea"
-                placeholder="Internal notes for admin reference..."
-                value={formData.internalDescription}
-                onChange={(e) => updateFormData('internalDescription', e.target.value)}
-                rows={3}
-              />
+              <div>
+                <Input
+                  label="Card Name"
+                  placeholder="e.g., Elegant Gold"
+                  value={formData.cardName}
+                  onChange={(e) => updateFormData('cardName', e.target.value)}
+                  required
+                />
+                {fieldErrors.cardName && <p className="mt-1 text-sm text-red-600">{fieldErrors.cardName}</p>}
+              </div>
 
-              <Input
-                label="Category"
-                placeholder="e.g., Funny, Romantic"
-                value={formData.category}
-                onChange={(e) => updateFormData('category', e.target.value)}
-                required
-              />
+              <div>
+                <Input
+                  label="Internal Description"
+                  type="textarea"
+                  placeholder="Internal notes for admin reference..."
+                  value={formData.internalDescription}
+                  onChange={(e) => updateFormData('internalDescription', e.target.value)}
+                  rows={3}
+                />
+                {fieldErrors.internalDescription && <p className="mt-1 text-sm text-red-600">{fieldErrors.internalDescription}</p>}
+              </div>
 
-              <ImageUpload
-                label="Card Design Image"
-                onFileChange={handleFileSelect}
-                currentImage={formData.imageUrl instanceof File ? URL.createObjectURL(formData.imageUrl) : formData.imageUrl}
-                placeHolder="Upload Card Design Image"
-              />
+              <div>
+                <Input
+                  label="Category"
+                  placeholder="e.g., Funny, Romantic"
+                  value={formData.category}
+                  onChange={(e) => updateFormData('category', e.target.value)}
+                  required
+                />
+                {fieldErrors.category && <p className="mt-1 text-sm text-red-600">{fieldErrors.category}</p>}
+              </div>
 
-              <EmojiPicker
-                label="Preview Emoji"
-                value={formData.previewEmoji}
-                onChange={(emoji) => updateFormData('previewEmoji', emoji)}
-                required
-              />
+              <div>
+                <ImageUpload
+                  label="Card Design Image"
+                  onFileChange={handleFileSelect}
+                  currentImage={formData.imageUrl instanceof File ? URL.createObjectURL(formData.imageUrl) : formData.imageUrl}
+                  placeHolder="Upload Card Design Image"
+                />
+                {fieldErrors.image && <p className="mt-2 text-sm text-red-600">{fieldErrors.image}</p>}
+              </div>
+
+              <div>
+                <EmojiPicker
+                  label="Preview Emoji"
+                  value={formData.previewEmoji}
+                  onChange={(emoji) => updateFormData('previewEmoji', emoji)}
+                  required
+                  error={fieldErrors.previewEmoji}
+                />
+              </div>
 
               <Toggle
                 label="Active"
@@ -307,12 +517,17 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>
+    <Modal isOpen={true} onClose={handleCloseRequest}>
       <div className="flex flex-col h-full max-h-[90vh] max-w-4xl mx-auto text-[#4A4A4A]">
         {/* Header */}
         <div className="bg-[#1F59EE] text-white px-8 py-6 rounded-t-2xl shrink-0">
           <h2 className="text-2xl font-semibold mb-1">Create a New Card for {occasion.name}</h2>
           <p className="text-blue-50 text-sm font-light">Make a new card design for this occasion.</p>
+          {lockClose && (
+            <p className="text-blue-100 text-xs mt-2">
+              At least one sub-category is required before continuing.
+            </p>
+          )}
         </div>
 
         {/* Content */}
@@ -322,11 +537,17 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-800">Card Details</h3>
               <div className="flex gap-3">
-                <Button variant="outline" onClick={onBack} disabled={isSaving}>Cancel</Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCloseRequest}
+                  disabled={isSaving || lockClose}
+                >
+                  Cancel
+                </Button>
                 <Button
                   onClick={handleSaveCard}
                   icon={Save}
-                  disabled={isSaving || !formData.cardName.trim()}
+                  disabled={isSaving}
                   className="w-42.5 bg-[#1F59EE] text-white flex items-center justify-center gap-2 rounded-md text-xs font-medium"
                 >
                   {isSaving ? <Loader className="animate-spin" size={14} /> : <img src="/material-symbols_save.svg" alt="Save" className="h-5 w-5" />}
@@ -336,21 +557,31 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
             </div>
 
             {/* Form Grid */}
+            {formError && (
+              <p className="mb-4 text-sm font-medium text-red-600">{formError}</p>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <Input
-                label="Card Name"
-                placeholder="e.g., Elegant Gold"
-                value={formData.cardName}
-                onChange={(e) => updateFormData('cardName', e.target.value)}
-                required
-              />
-              <Input
-                label="Category"
-                placeholder="e.g., Funny, Romantic"
-                value={formData.category}
-                onChange={(e) => updateFormData('category', e.target.value)}
-                required
-              />
+              <div>
+                <Input
+                  label="Card Name"
+                  placeholder="e.g., Elegant Gold"
+                  value={formData.cardName}
+                  onChange={(e) => updateFormData('cardName', e.target.value)}
+                  required
+                />
+                {fieldErrors.cardName && <p className="mt-1 text-sm text-red-600">{fieldErrors.cardName}</p>}
+              </div>
+              <div>
+                <Input
+                  label="Category"
+                  placeholder="e.g., Funny, Romantic"
+                  value={formData.category}
+                  onChange={(e) => updateFormData('category', e.target.value)}
+                  required
+                />
+                {fieldErrors.category && <p className="mt-1 text-sm text-red-600">{fieldErrors.category}</p>}
+              </div>
             </div>
 
             <div className="mb-6">
@@ -359,6 +590,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
                 value={formData.previewEmoji}
                 onChange={(emoji) => updateFormData('previewEmoji', emoji)}
                 required
+                error={fieldErrors.previewEmoji}
               />
             </div>
 
@@ -371,6 +603,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
                 onChange={(e) => updateFormData('internalDescription', e.target.value)}
                 rows={3}
               />
+              {fieldErrors.internalDescription && <p className="mt-1 text-sm text-red-600">{fieldErrors.internalDescription}</p>}
             </div>
 
             <div className="border border-gray-300 rounded-lg p-4 mb-6">
@@ -380,6 +613,7 @@ export default function CreateNewCard({ occasion, onBack, onSave, initialCardDat
                 currentImage={formData.imageUrl}
                 placeHolder="Upload Card Design Image"
               />
+              {fieldErrors.image && <p className="mt-2 text-sm text-red-600">{fieldErrors.image}</p>}
             </div>
 
             <div className="space-y-3 pt-4">

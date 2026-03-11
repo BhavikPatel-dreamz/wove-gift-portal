@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Plus, Loader, Search, Edit, ChevronRight, ChevronLeft, SortAsc, SortDesc, Eye } from "lucide-react";
+import { Plus, Loader, Search, ChevronRight, ChevronLeft, SortAsc, SortDesc } from "lucide-react";
 import CardDesigns from "@/components/occasions/CardDesigns";
 import Button from "@/components/forms/Button";
 import { getOccasions, addOccasion, updateOccasion, deleteOccasion } from "../../../lib/action/occasionAction";
@@ -151,18 +151,22 @@ const OccasionsManager = () => {
         toast.success("Occasion added successfully");
         setIsModalOpen(false);
 
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('page', '1');
-
-        // Redirect to the new cards page for the newly created occasion
-        router.push(`/occasions/${result.data.id}/cards`);
+        // Redirect to cards page and force first sub-category creation
+        router.push(`/occasions/${result.data.id}/cards?requireFirstCategory=1`);
 
       } else {
-        toast.error(result.message || "Failed to add occasion");
+        if (!result?.errors) {
+          toast.error(result.message || "Failed to add occasion");
+        }
       }
+      return result;
     } catch (error) {
       console.error("Error adding occasion:", error);
       toast.error("Failed to add occasion");
+      return {
+        success: false,
+        message: "Failed to add occasion",
+      };
     } finally {
       setActionLoading(false);
     }
@@ -194,11 +198,18 @@ const OccasionsManager = () => {
         setEditingOccasion(null);
         await fetchOccasions();
       } else {
-        toast.error(result.message || "Failed to update occasion");
+        if (!result?.errors) {
+          toast.error(result.message || "Failed to update occasion");
+        }
       }
+      return result;
     } catch (error) {
       console.error("Error updating occasion:", error);
       toast.error("Failed to update occasion");
+      return {
+        success: false,
+        message: "Failed to update occasion",
+      };
     } finally {
       setActionLoading(false);
     }
@@ -227,6 +238,42 @@ const OccasionsManager = () => {
     } catch (error) {
       console.error("Error deleting occasion:", error);
       toast.error("Failed to delete occasion");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleToggleActiveOccasion = async (id) => {
+    const selectedOccasionData = occasions.find((occasion) => occasion.id === id);
+    if (!selectedOccasionData) return;
+
+    const nextIsActive = !(selectedOccasionData.isActive ?? selectedOccasionData.active);
+
+    try {
+      setActionLoading(true);
+      const formData = new FormData();
+      formData.append("id", id);
+      formData.append("isActive", String(nextIsActive));
+
+      const result = await updateOccasion(formData);
+
+      if (result.success) {
+        setOccasions((prevOccasions) =>
+          prevOccasions.map((occasion) =>
+            occasion.id === id
+              ? { ...occasion, isActive: nextIsActive, active: nextIsActive }
+              : occasion
+          )
+        );
+        toast.success(
+          `Occasion ${nextIsActive ? "activated" : "deactivated"} successfully`
+        );
+      } else {
+        toast.error(result.message || "Failed to update occasion status");
+      }
+    } catch (error) {
+      console.error("Error toggling occasion status:", error);
+      toast.error("Failed to update occasion status");
     } finally {
       setActionLoading(false);
     }
@@ -444,6 +491,7 @@ const OccasionsManager = () => {
                   occasion={occasion}
                   onEdit={() => handleEditOccasion(occasion)}
                   onDelete={() => handleDeleteOccasion(occasion.id)}
+                  onToggleActive={() => handleToggleActiveOccasion(occasion.id)}
                   disabled={actionLoading}
                 />
               ))}

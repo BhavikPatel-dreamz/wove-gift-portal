@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Image as ImageIcon, X, UploadCloud } from 'lucide-react';
-import Button from './Button';
+import { X } from 'lucide-react';
 
 const ImageUpload = ({
   label,
@@ -66,18 +65,16 @@ const ImageUpload = ({
       )}
 
       {imagePreview ? (
-        <div className="relative group">
-          <img src={imagePreview} alt="Preview" className="w-100 h-100 object-coverrounded-lg" />
-          <div className="absolute top-2 right-2">
-            <Button
-              variant="danger"
-              size="icon"
-              onClick={handleRemoveImage}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+        <div className="inline-flex items-start gap-2">
+          <img src={imagePreview} alt="Preview" className="w-100 h-100 rounded-lg object-cover" />
+          <button
+            type="button"
+            onClick={handleRemoveImage}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
+            aria-label="Remove image"
+          >
+            <X className="h-4 w-4" />
+          </button>
           {/* <div className="text-sm text-gray-600 mt-2 truncate">{fileName}</div> */}
         </div>
       ) : (

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { setCurrentStep, setDeliveryFormEditReturn } from "../../../redux/giftFlowSlice";
 import { useDispatch, useSelector } from 'react-redux';
 import { COUNTRY_CODES } from "./deliveryValidation";
+import { currencyList } from '../../brandsPartner/currency';
 
 const EmailForm = ({ formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage }) => {
 
@@ -31,6 +32,8 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
         startEditFlow(4);
     }
 
+  const getCurrencySymbol = (code) =>
+    currencyList.find((c) => c.code === code)?.symbol || "R";
 
 
     return (
@@ -181,9 +184,9 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                             {/* Email Subject */}
                             <div className="px-4 py-3 border-b border-gray-200">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-lg">🎉</span>
+                                    <span className="text-lg">🎁</span>
                                     <p className="text-sm font-semibold text-gray-900 truncate">
-                                        Wishing you Happy Birthday!!!
+                                       {`${selectedSubCategory?.name} - You've received a gift from ${formData?.yourFullName}`}
                                     </p>
                                 </div>
                             </div>
@@ -250,7 +253,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                                     </div>
                                                 </button>
                                                 <p className="text-xs text-gray-900 font-medium">
-                                                    “{personalMessage}”
+                                                    {personalMessage}
                                                 </p>
                                             </div>
                                         )}
@@ -318,7 +321,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                                     </button>
                                                     <p className="text-xs text-gray-700">Amount</p>
                                                     <p className="text-sm font-semibold text-[#DC3415]">
-                                                        {selectedAmount?.currency}
+                                                      {getCurrencySymbol(selectedAmount.currency)}
                                                         {selectedAmount?.value}
                                                     </p>
                                                 </div>

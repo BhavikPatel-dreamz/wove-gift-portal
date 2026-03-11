@@ -4,7 +4,7 @@ const PiaManual = () => {
   return (
     <div className="max-w-360 m-auto pt-18.75">
       <div className="rounded-lg p-8">
-        <div className="text-[30px] font-semibold text-[#1A1A1A] mb-1">
+        <div className="text-[20px] sm:text-[24px] md:text-[26px] lg:text-[30px] font-semibold text-[#1A1A1A] mb-1">
           MY PERKS (PTY) LTD (Trading as WoveGifts)
         </div>
         <p className="text-base font-medium text-[#4A4A4A] mb-1">

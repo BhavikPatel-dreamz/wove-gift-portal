@@ -1,7 +1,13 @@
-import { Edit, Trash2, Eye } from "lucide-react";
+import { Edit, Trash2, Eye, Power } from "lucide-react";
 import Link from "next/link";
 
-const OccasionCard = ({ occasion, onEdit, onDelete, disabled = false }) => {
+const OccasionCard = ({
+  occasion,
+  onEdit,
+  onDelete,
+  onToggleActive,
+  disabled = false,
+}) => {
   const statusActive = occasion.isActive || occasion.active;
   const statusVariant = statusActive ? "success" : "default";
   const statusText = statusActive ? "Active" : "Inactive";
@@ -9,6 +15,7 @@ const OccasionCard = ({ occasion, onEdit, onDelete, disabled = false }) => {
 
   const handleEdit = () => !disabled && onEdit?.(occasion);
   const handleDelete = () => !disabled && onDelete?.(occasion.id);
+  const handleToggleActive = () => !disabled && onToggleActive?.(occasion.id);
 
   return (
     <div
@@ -87,6 +94,17 @@ const OccasionCard = ({ occasion, onEdit, onDelete, disabled = false }) => {
                 disabled={disabled}
               />
             </Link>
+            <button
+              onClick={handleToggleActive}
+              disabled={disabled}
+              title={statusActive ? "Deactivate Occasion" : "Activate Occasion"}
+              className={`p-2 rounded-lg transition-all duration-200 disabled:opacity-50 ${statusActive
+                ? "text-green-500 bg-green-100 hover:bg-green-200"
+                : "text-gray-400 hover:bg-gray-100 hover:text-green-500"
+                }`}
+            >
+              <Power size={16} />
+            </button>
             <IconButton
               icon={<Edit size={16} />}
               tooltip="Edit Occasion"

@@ -44,7 +44,7 @@ const ThankYouScreen = () => {
     mt-6
   "
         >
-          <strong className="font-bold">Need help?</strong> Have questions or want to cancel or modify your gift? <Link href="/support">Contact Support</Link>
+          <strong className="font-bold">Need help?</strong> Have questions or want to cancel or modify your gift? <Link href="/support"  className="text-blue-600 font-semibold underline hover:text-blue-800" >Contact Support</Link>
         </p>
       </div>
     </div>

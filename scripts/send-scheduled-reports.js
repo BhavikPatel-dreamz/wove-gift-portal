@@ -3,6 +3,7 @@
 import { prisma } from "../src/lib/db.js";
 import { sendEmail } from "../src/lib/email.js";
 import { calculateNextDeliveryDate } from "../src/lib/utils.js";
+import { startOfSouthAfricaDay } from "../src/lib/timezone.js";
 import pkg from "jspdf";
 const { jsPDF } = pkg;
 import autoTable from "jspdf-autotable";
@@ -15,11 +16,9 @@ export async function sendScheduledReports() {
   console.log("Current time:", new Date().toISOString());
   console.log("========================================");
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
+  const today = startOfSouthAfricaDay(new Date());
+  const tomorrow = new Date(today.getTime());
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
   console.log("Date range for query:");
   console.log("  From:", today.toISOString());
