@@ -60,6 +60,14 @@ const normalizeWishlistItem = (payload = {}) => {
     sourceType === 'bulk'
       ? Math.max(1, Number(item?.quantity ?? payload?.quantity ?? 1))
       : 1;
+  const resolvedBrand =
+    item?.selectedBrand ||
+    item?.brand ||
+    item?.voucher?.brand ||
+    payload?.selectedBrand ||
+    payload?.brand ||
+    payload?.voucher?.brand ||
+    null;
 
   return {
     id: key,
@@ -67,15 +75,30 @@ const normalizeWishlistItem = (payload = {}) => {
     sourceType,
     brandId:
       payload?.brandId ||
+      item?.brandId ||
       item?.selectedBrand?.id ||
+      resolvedBrand?.id ||
       item?.id ||
       null,
     brandName:
-      item?.selectedBrand?.brandName ||
-      item?.selectedBrand?.name ||
+      resolvedBrand?.brandName ||
+      resolvedBrand?.name ||
+      item?.brandName ||
       payload?.brandName ||
+      item?.brand?.brandName ||
+      item?.brand?.name ||
+      payload?.brand?.brandName ||
+      payload?.brand?.name ||
+      item?.voucher?.brandName ||
+      payload?.voucher?.brandName ||
       'Gift Card',
-    logo: item?.selectedBrand?.logo || payload?.logo || null,
+    logo:
+      resolvedBrand?.logo ||
+      item?.logo ||
+      payload?.logo ||
+      item?.brand?.logo ||
+      payload?.brand?.logo ||
+      null,
     amountValue,
     amountCurrency,
     quantity,

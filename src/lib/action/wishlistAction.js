@@ -27,6 +27,12 @@ const supportsWishlistField = (fieldName) => {
 };
 
 const normalizeKey = (key) => String(key || "").trim();
+const normalizeText = (value) => String(value || "").trim();
+const isBlank = (value) => normalizeText(value).length === 0;
+const isPlaceholderBrandName = (value) => {
+  const normalized = normalizeText(value).toLowerCase();
+  return normalized.length === 0 || normalized === "gift card";
+};
 
 const toWishlistItem = (row) => {
   const payload = row?.payload && typeof row.payload === "object" ? row.payload : {};
@@ -48,6 +54,119 @@ const toWishlistItem = (row) => {
   };
 };
 
+const enrichWishlistItems = async (rows = []) => {
+  const baseItems = rows.map(toWishlistItem);
+  if (!rows.length) {
+    return baseItems;
+  }
+
+  try {
+    const brandIdCandidates = new Set();
+    const voucherIdCandidates = new Set();
+
+    baseItems.forEach((item, index) => {
+      const row = rows[index];
+      const brandId = item?.brandId || row?.brandId;
+      const voucherId = item?.voucherId || row?.voucherId;
+
+      if (!isBlank(brandId)) {
+        brandIdCandidates.add(String(brandId));
+      }
+      if (!isBlank(voucherId)) {
+        voucherIdCandidates.add(String(voucherId));
+      }
+    });
+
+    const brandIds = Array.from(brandIdCandidates);
+    const voucherIds = Array.from(voucherIdCandidates);
+
+    const [brands, vouchers] = await Promise.all([
+      brandIds.length
+        ? prisma.brand.findMany({
+            where: {
+              OR: [
+                { id: { in: brandIds } },
+                { brandName: { in: brandIds } },
+              ],
+            },
+            select: {
+              id: true,
+              brandName: true,
+              logo: true,
+            },
+          })
+        : Promise.resolve([]),
+      voucherIds.length
+        ? prisma.vouchers.findMany({
+            where: { id: { in: voucherIds } },
+            select: {
+              id: true,
+              brand: {
+                select: {
+                  id: true,
+                  brandName: true,
+                  logo: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const brandById = new Map();
+    const brandByName = new Map();
+
+    brands.forEach((brand) => {
+      if (!brand) return;
+      if (!isBlank(brand.id)) {
+        brandById.set(String(brand.id), brand);
+      }
+      if (!isBlank(brand.brandName)) {
+        brandByName.set(String(brand.brandName).toLowerCase(), brand);
+      }
+    });
+
+    const voucherBrandById = new Map();
+    vouchers.forEach((voucher) => {
+      if (!voucher?.id || !voucher?.brand) return;
+      voucherBrandById.set(String(voucher.id), voucher.brand);
+    });
+
+    return baseItems.map((item, index) => {
+      const row = rows[index];
+      const nextItem = { ...item };
+
+      const resolvedBrand =
+        item?.brand ||
+        item?.selectedBrand ||
+        item?.voucher?.brand ||
+        voucherBrandById.get(String(item?.voucherId || row?.voucherId || "")) ||
+        brandById.get(String(item?.brandId || row?.brandId || "")) ||
+        brandByName.get(String(item?.brandId || row?.brandId || "").toLowerCase()) ||
+        brandByName.get(String(item?.brandName || "").toLowerCase()) ||
+        null;
+
+      if (resolvedBrand) {
+        const resolvedName = resolvedBrand.brandName || resolvedBrand.name;
+        if (resolvedName && isPlaceholderBrandName(nextItem.brandName)) {
+          nextItem.brandName = resolvedName;
+        }
+        if (resolvedBrand.logo) {
+          nextItem.logo = resolvedBrand.logo;
+        }
+        if (!nextItem.brandId && resolvedBrand.id) {
+          nextItem.brandId = resolvedBrand.id;
+        }
+      }
+
+      return nextItem;
+    });
+  } catch (error) {
+    console.error("Error enriching wishlist items:", error);
+    return baseItems;
+  }
+};
+
 export async function getWishlistByUserId(userId) {
   if (!userId) {
     return { success: false, message: "User ID is required." };
@@ -61,7 +180,7 @@ export async function getWishlistByUserId(userId) {
 
     return {
       success: true,
-      data: rows.map(toWishlistItem),
+      data: await enrichWishlistItems(rows),
     };
   } catch (error) {
     console.error("Error fetching wishlist:", error);
@@ -137,7 +256,7 @@ export async function toggleWishlistItem({ userId, item }) {
 
     return {
       success: true,
-      data: rows.map(toWishlistItem),
+      data: await enrichWishlistItems(rows),
     };
   } catch (error) {
     console.error("Error toggling wishlist item:", error);
@@ -180,7 +299,7 @@ export async function removeWishlistItem({ userId, key }) {
 
     return {
       success: true,
-      data: rows.map(toWishlistItem),
+      data: await enrichWishlistItems(rows),
     };
   } catch (error) {
     console.error("Error removing wishlist item:", error);
