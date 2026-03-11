@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { goBack, goNext, setSelectedTiming } from "../../../redux/giftFlowSlice";
 import { ArrowLeft, Calendar, Clock, Check, X, SendIcon } from "lucide-react";
@@ -15,6 +15,48 @@ const TimingSelectorStep = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  // Restore scheduled date/time when navigating back to this step
+  useEffect(() => {
+    if (!selectedTiming) return;
+
+    if (selectedTiming?.type === "schedule") {
+      setSelectedOption("schedule");
+
+      const restoredDate = Number(selectedTiming?.date);
+      const restoredMonth = Number(selectedTiming?.month);
+      const restoredYear = Number(selectedTiming?.year);
+      const restoredTime =
+        typeof selectedTiming?.time === "string" ? selectedTiming.time : null;
+
+      if (
+        Number.isInteger(restoredMonth) &&
+        restoredMonth >= 0 &&
+        restoredMonth <= 11
+      ) {
+        setCurrentMonth(restoredMonth);
+      }
+
+      if (Number.isInteger(restoredYear)) {
+        setCurrentYear(restoredYear);
+      }
+
+      if (Number.isInteger(restoredDate) && restoredDate >= 1 && restoredDate <= 31) {
+        setSelectedDate(restoredDate);
+      }
+
+      if (restoredTime) {
+        setSelectedTime(restoredTime);
+      }
+
+      return;
+    }
+
+    if (selectedTiming?.type === "immediate") {
+      setSelectedOption("immediate");
+      setShowScheduleModal(false);
+    }
+  }, [selectedTiming]);
 
   // Generate time slots with 5-minute intervals
   const generateTimeSlots = () => {
