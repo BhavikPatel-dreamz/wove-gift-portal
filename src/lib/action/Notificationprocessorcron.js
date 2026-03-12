@@ -16,7 +16,7 @@ import { SendWhatsappMessages } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
 import { v2 as cloudinary } from "cloudinary";
 import { prisma } from "../db.js";
-import { currencyList } from "../../components/brandsPartner/currency";
+import { currencyList } from "../../components/brandsPartner/currency.js";
 
 const MAX_RETRIES = 3;
 const DEFAULT_EXPIRY_TEXT =
