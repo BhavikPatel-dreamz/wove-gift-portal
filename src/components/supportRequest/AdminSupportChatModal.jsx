@@ -6,7 +6,7 @@ import { getSupportRequestById, sendMessage, markMessagesAsRead, updateSupportSt
 import { getOrderById } from '@/lib/action/orderAction'
 import ModifyRecipientModal from './ModifyRecipientModal';
 
-const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
+const AdminSupportChatModal = ({ request, onClose, onStatusChange, onMessagesRead, onMessageSent }) => {
     const [messages, setMessages] = useState([])
     const [newMessage, setNewMessage] = useState('')
     const [loading, setLoading] = useState(true)
@@ -69,7 +69,11 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
                     promises.push(fetchOrderDetails(request.orderNumber));
                 }
 
-                await Promise.all(promises);
+                const results = await Promise.all(promises);
+                const readResult = results[1];
+                if (readResult?.success) {
+                    onMessagesRead?.(request.id);
+                }
             } catch (error) {
                 console.error('Error initializing modal:', error);
             } finally {
@@ -147,6 +151,7 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
             if (response.success) {
                 setMessages(prev => [...prev, response.data]);
                 setNewMessage('');
+                onMessageSent?.(request.id, response.data);
             } else {
                 alert('Failed to send message. Please try again.');
             }
@@ -156,7 +161,7 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
         } finally {
             setSending(false);
         }
-    }, [newMessage, sending, request]);
+    }, [newMessage, sending, request, onMessageSent]);
 
     const handleQuickStatusChange = useCallback(async (newStatus) => {
         try {
