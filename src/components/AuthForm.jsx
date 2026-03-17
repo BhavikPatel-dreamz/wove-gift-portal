@@ -240,6 +240,15 @@ export default function AuthForm({
                 <span className="text-red-500 text-xs mb-3 block">{getError('password')}</span>
               )}
 
+              <div className="text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-pink-500 hover:text-pink-600 transition"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
               {getGeneralError() && (
                 <p className="text-red-600 text-sm text-center">{getGeneralError()}</p>
               )}
@@ -479,10 +488,15 @@ export default function AuthForm({
                 disabled={loading}
                 className="group flex justify-center items-center gap-2 w-full py-3.5 bg-linear-to-r from-pink-500 to-orange-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Loading...' : 'Create an account '}
-                <span className="transition-transform duration-300 group-hover:translate-x-1">
-                  <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white"></path></svg>
-                </span>
+                 {!loading ?
+                  <div className='flex gap-2 items-center'>
+                    <span>Create an account</span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white"></path>
+                      </svg>
+                    </span>
+                  </div>
+                  : 'Loading...'}
               </button>
             </div>
 

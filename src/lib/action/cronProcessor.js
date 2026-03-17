@@ -13,8 +13,18 @@ import { prisma } from "../db.js";
 
 const MAX_RETRIES = 3;
 const PROCESSING_TIMEOUT_MINUTES = 15;
-const BATCH_SIZE = 5; // Create 5 vouchers per iteration
 const DEFAULT_EXPIRY_YEARS = 3;
+
+// Shopify gift card creation concurrency
+const SHOPIFY_WORKERS = toPositiveInt(
+  process.env.SHOPIFY_GIFTCARD_WORKERS,
+  3,
+);
+const SHOPIFY_WORKER_BATCH_SIZE = toPositiveInt(
+  process.env.SHOPIFY_GIFTCARD_WORKER_BATCH,
+  5,
+);
+const SHOPIFY_BATCH_DELAY_MS = 200;
 
 export const voucherProcessorCron = () => {
   cron.schedule("*/10 * * * * *", async () => {
@@ -299,7 +309,43 @@ async function processOrderVouchers(order) {
 }
 
 /**
+ * ✅ CRITICAL: Run tasks with limited concurrency
+ */
+async function runWithConcurrency(tasks, concurrency) {
+  if (!tasks.length) return [];
+
+  const results = new Array(tasks.length);
+  let index = 0;
+
+  async function worker() {
+    while (true) {
+      const currentIndex = index;
+      index += 1;
+
+      if (currentIndex >= tasks.length) return;
+
+      try {
+        const value = await tasks[currentIndex]();
+        results[currentIndex] = { ok: true, value };
+      } catch (error) {
+        results[currentIndex] = { ok: false, error };
+      }
+    }
+  }
+
+  const workerCount = Math.min(concurrency, tasks.length);
+  const workers = Array.from({ length: workerCount }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
  * ✅ CRITICAL: Create vouchers in batches with atomic count check
+ * Shopify creation runs in parallel, DB saves remain sequential.
  */
 async function createVouchersInBatches(
   order,
@@ -311,59 +357,75 @@ async function createVouchersInBatches(
   const targetCount = order.quantity;
 
   while (totalCreated < vouchersNeeded) {
-    const batchSize = Math.min(BATCH_SIZE, vouchersNeeded - totalCreated);
-
-    console.log(
-      `🔄 [${order.orderNumber}] Creating batch of ${batchSize} (${totalCreated}/${vouchersNeeded} done)`,
+    const remaining = vouchersNeeded - totalCreated;
+    const roundTarget = Math.min(
+      remaining,
+      SHOPIFY_WORKERS * SHOPIFY_WORKER_BATCH_SIZE,
     );
 
-    for (let i = 0; i < batchSize; i++) {
-      try {
-        // Create Shopify gift card
-        const shopifyGiftCard = await createShopifyGiftCard(
-          orderData.selectedBrand,
-          orderData,
-          voucherConfig,
-          null,
-          order.paidAt || order.createdAt || new Date(),
-        );
+    console.log(
+      `🔄 [${order.orderNumber}] Creating ${roundTarget} gift cards (${totalCreated}/${vouchersNeeded} done) with ${SHOPIFY_WORKERS} workers`,
+    );
 
-        if (!shopifyGiftCard?.id) {
-          console.warn(`⚠️ [${order.orderNumber}] Shopify API failed`);
-          continue;
-        }
+    const tasks = Array.from({ length: roundTarget }, () => async () => {
+      return createShopifyGiftCard(
+        orderData.selectedBrand,
+        orderData,
+        voucherConfig,
+        null,
+        order.paidAt || order.createdAt || new Date(),
+      );
+    });
 
-        // Save with atomic count check
-        const saved = await saveVoucherAtomic(
-          order,
-          shopifyGiftCard,
-          orderData,
-          voucherConfig,
-          null,
-          targetCount,
-        );
+    const results = await runWithConcurrency(tasks, SHOPIFY_WORKERS);
+    let limitReached = false;
 
-        if (saved) {
-          totalCreated++;
-          console.log(
-            `✅ [${order.orderNumber}] Progress: ${totalCreated}/${vouchersNeeded}`,
-          );
-        } else {
-          console.log(`⚠️ [${order.orderNumber}] Limit reached or duplicate`);
-          return; // Stop if limit reached
-        }
-      } catch (error) {
+    for (const result of results) {
+      if (!result?.ok) {
         console.error(
-          `❌ [${order.orderNumber}] Voucher ${i + 1} failed:`,
-          error.message,
+          `❌ [${order.orderNumber}] Shopify creation failed:`,
+          result?.error?.message || result?.error,
         );
-        // Continue to next voucher
+        continue;
+      }
+
+      const shopifyGiftCard = result.value;
+      if (!shopifyGiftCard?.id) {
+        console.warn(`⚠️ [${order.orderNumber}] Shopify API failed`);
+        continue;
+      }
+
+      const saveResult = await saveVoucherAtomic(
+        order,
+        shopifyGiftCard,
+        orderData,
+        voucherConfig,
+        null,
+        targetCount,
+      );
+
+      if (saveResult?.status === "saved") {
+        totalCreated++;
+        console.log(
+          `✅ [${order.orderNumber}] Progress: ${totalCreated}/${vouchersNeeded}`,
+        );
+      } else if (saveResult?.status === "limit") {
+        console.log(`⚠️ [${order.orderNumber}] Limit reached, stopping`);
+        limitReached = true;
+        break;
+      } else if (saveResult?.status === "duplicate") {
+        console.log(
+          `⚠️ [${order.orderNumber}] Duplicate code, retrying in next round`,
+        );
       }
     }
 
     // Small delay between batches
+    if (limitReached) {
+      break;
+    }
     if (totalCreated < vouchersNeeded) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await sleep(SHOPIFY_BATCH_DELAY_MS);
     }
   }
 
@@ -382,9 +444,19 @@ async function createBulkVouchersForCSV(order, orderData, voucherConfig) {
   );
 
   let createdCount = 0;
+  let index = 0;
 
-  for (const recipient of recipientsNeedingVouchers) {
-    try {
+  while (index < recipientsNeedingVouchers.length) {
+    const chunk = recipientsNeedingVouchers.slice(
+      index,
+      index + SHOPIFY_WORKERS * SHOPIFY_WORKER_BATCH_SIZE,
+    );
+
+    console.log(
+      `🔄 [${order.orderNumber}] CSV: creating ${chunk.length} gift cards with ${SHOPIFY_WORKERS} workers`,
+    );
+
+    const tasks = chunk.map((recipient) => async () => {
       const recipientData = {
         name: recipient.recipientName,
         email: recipient.recipientEmail,
@@ -392,7 +464,6 @@ async function createBulkVouchersForCSV(order, orderData, voucherConfig) {
         message: recipient.personalMessage,
       };
 
-      // Create Shopify gift card
       const shopifyGiftCard = await createShopifyGiftCard(
         orderData.selectedBrand,
         orderData,
@@ -401,15 +472,30 @@ async function createBulkVouchersForCSV(order, orderData, voucherConfig) {
         order.paidAt || order.createdAt || new Date(),
       );
 
-      if (!shopifyGiftCard?.id) {
-        console.warn(
-          `⚠️ [${order.orderNumber}] Failed for ${recipient.recipientEmail}`,
+      return { shopifyGiftCard, recipient };
+    });
+
+    const results = await runWithConcurrency(tasks, SHOPIFY_WORKERS);
+    let limitReached = false;
+
+    for (const result of results) {
+      if (!result?.ok) {
+        console.error(
+          `❌ [${order.orderNumber}] Failed for recipient:`,
+          result?.error?.message || result?.error,
         );
         continue;
       }
 
-      // Save with atomic count check AND link to recipient
-      const saved = await saveVoucherAtomic(
+      const { shopifyGiftCard, recipient } = result.value || {};
+      if (!shopifyGiftCard?.id) {
+        console.warn(
+          `⚠️ [${order.orderNumber}] Failed for ${recipient?.recipientEmail}`,
+        );
+        continue;
+      }
+
+      const saveResult = await saveVoucherAtomic(
         order,
         shopifyGiftCard,
         orderData,
@@ -418,23 +504,29 @@ async function createBulkVouchersForCSV(order, orderData, voucherConfig) {
         order.quantity,
       );
 
-      if (saved) {
+      if (saveResult?.status === "saved") {
         createdCount++;
         console.log(
           `✅ [${order.orderNumber}] CSV: ${createdCount}/${recipientsNeedingVouchers.length} - ${recipient.recipientEmail}`,
         );
-      } else {
+      } else if (saveResult?.status === "limit") {
         console.log(
           `⚠️ [${order.orderNumber}] Limit reached at ${createdCount}`,
         );
+        limitReached = true;
         break;
+      } else if (saveResult?.status === "duplicate") {
+        console.log(
+          `⚠️ [${order.orderNumber}] Duplicate code for ${recipient.recipientEmail}`,
+        );
       }
-    } catch (error) {
-      console.error(
-        `❌ [${order.orderNumber}] Failed for ${recipient.recipientEmail}:`,
-        error.message,
-      );
-      // Continue to next recipient
+    }
+
+    if (limitReached) break;
+
+    index += chunk.length;
+    if (index < recipientsNeedingVouchers.length) {
+      await sleep(SHOPIFY_BATCH_DELAY_MS);
     }
   }
 
@@ -471,7 +563,7 @@ async function saveVoucherAtomic(
             console.log(
               `⚠️ [${order.orderNumber}] At limit: ${currentCount}/${targetCount}`,
             );
-            return false;
+            return { status: "limit", currentCount };
           }
 
           // Check for duplicate code
@@ -486,7 +578,7 @@ async function saveVoucherAtomic(
             console.log(
               `⚠️ [${order.orderNumber}] Duplicate code: ${shopifyGiftCard.maskedCode}`,
             );
-            return false;
+            return { status: "duplicate" };
           }
 
           // Create gift card
@@ -553,7 +645,7 @@ async function saveVoucherAtomic(
             });
           }
 
-          return true;
+          return { status: "saved" };
         },
         {
           isolationLevel: "Serializable",
@@ -782,6 +874,11 @@ async function updateOrCreateSettlement(selectedBrand, order) {
 }
 
 // ==================== HELPER FUNCTIONS ====================
+
+function toPositiveInt(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
 
 function buildOrderData(order, occasionDetails) {
   return {

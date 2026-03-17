@@ -1,14 +1,16 @@
 import { z } from 'zod'
 
+const passwordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(100, 'Password must be less than 100 characters')
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+    'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character'
+  )
+
 export const signupSchema = z.object({
   email: z.string().email('Invalid email address').toLowerCase(),
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(100, 'Password must be less than 100 characters')
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-      'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character'
-    ),
+  password: passwordSchema,
   firstName: z.string().min(1, 'FirstName is required').max(100, 'FirstName must be less than 100 characters').optional(),
   lastName: z.string().min(1, 'LastName is required').max(100, 'LastName must be less than 100 characters').optional(),
    phone: z.string().min(10, 'Phone must be at least 10 digits').max(15, 'Phone must be less than 15 digits').optional(),
@@ -23,6 +25,25 @@ export const loginSchema = z.object({
     .transform((val) => val.toLowerCase()),
   password: z.string().min(1, 'Password is required'),
 })
+
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .email('Invalid email address')
+    .transform((val) => val.toLowerCase()),
+})
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Reset token is required'),
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, 'Confirm password is required'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
 
 export const addBrandSchema = z.object({
   brandName: z.string().min(1, 'Brand name is required').max(100, 'Brand name must be less than 100 characters'),

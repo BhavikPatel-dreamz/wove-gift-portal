@@ -106,6 +106,35 @@ const StatusBadge = ({ status, onStatusChange, requestId }) => {
     );
 };
 
+const RequestAttentionBadge = ({ request }) => {
+    const unreadCount = request?.unreadCount || 0;
+    const lastMessage = request?.messages?.[0];
+    const lastSender = lastMessage?.senderType;
+    const hasMessage = Boolean(lastMessage);
+
+    let config;
+    if (!hasMessage || unreadCount > 0) {
+        config = {
+            label: unreadCount > 0 ? `New (${unreadCount})` : "New",
+            color: "bg-red-50 text-red-700 border border-red-200",
+            dotColor: "bg-red-500",
+        };
+    } else {
+        config = {
+            label: "Reply",
+            color: "bg-amber-50 text-amber-700 border border-amber-200",
+            dotColor: "bg-amber-500",
+        };
+    }
+
+    return (
+        <div className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${config.color}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${config.dotColor}`}></span>
+            {config.label}
+        </div>
+    );
+};
+
 const CloseRequestButton = ({ requestId, currentStatus, onClose }) => {
     const [isClosing, setIsClosing] = useState(false)
 
@@ -183,6 +212,34 @@ export default function AdminSupportManagement({ initialData, pagination }) {
     const handleOpenChat = useCallback((request) => {
         setChatRequest(request)
     }, [])
+
+    const handleMessagesRead = useCallback((requestId) => {
+        setData(prev => prev.map(req => {
+            if (req.id !== requestId) return req;
+
+            const lastMessage = req.messages?.[0];
+            const nextMessages = lastMessage && lastMessage.senderType === 'CUSTOMER' && !lastMessage.isRead
+                ? [{ ...lastMessage, isRead: true }]
+                : req.messages;
+
+            return {
+                ...req,
+                unreadCount: 0,
+                messages: nextMessages,
+            };
+        }));
+    }, []);
+
+    const handleMessageSent = useCallback((requestId, message) => {
+        setData(prev => prev.map(req => {
+            if (req.id !== requestId) return req;
+            return {
+                ...req,
+                unreadCount: 0,
+                messages: message ? [message] : req.messages,
+            };
+        }));
+    }, []);
 
     const handleStatusChange = useCallback(async (requestId, newStatus) => {
         try {
@@ -315,6 +372,11 @@ export default function AdminSupportManagement({ initialData, pagination }) {
                 </div>
             ),
         }),
+        columnHelper.display({
+            id: 'attention',
+            header: () => <span className="font-bold text-gray-700">Attention</span>,
+            cell: ({ row }) => <RequestAttentionBadge request={row.original} />,
+        }),
         columnHelper.accessor('status', {
             header: () => <span className="font-bold text-gray-700">Status</span>,
             cell: (info) => (
@@ -420,6 +482,8 @@ export default function AdminSupportManagement({ initialData, pagination }) {
                     request={chatRequest}
                     onClose={() => setChatRequest(null)}
                     onStatusChange={handleStatusChange}
+                    onMessagesRead={handleMessagesRead}
+                    onMessageSent={handleMessageSent}
                 />
             )}
         </div>

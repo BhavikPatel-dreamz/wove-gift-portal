@@ -6,7 +6,7 @@ import { getSupportRequestById, sendMessage, markMessagesAsRead, updateSupportSt
 import { getOrderById } from '@/lib/action/orderAction'
 import ModifyRecipientModal from './ModifyRecipientModal';
 
-const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
+const AdminSupportChatModal = ({ request, onClose, onStatusChange, onMessagesRead, onMessageSent }) => {
     const [messages, setMessages] = useState([])
     const [newMessage, setNewMessage] = useState('')
     const [loading, setLoading] = useState(true)
@@ -21,10 +21,8 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
 
     console.log("orderDetails", orderDetails)
 
-    // Add this handler function
     const handleModifySuccess = useCallback((message) => {
         alert(message);
-        // Refresh order details
         if (request.orderNumber) {
             fetchOrderDetails(request.orderNumber);
         }
@@ -38,19 +36,16 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
         scrollToBottom()
     }, [messages, scrollToBottom])
 
-    // Calculate total redeemed amount
     const totalRedeemed = useMemo(() => {
         if (!orderDetails?.voucherCodes) return 0;
         return orderDetails.voucherCodes.reduce((acc, vc) => acc + (vc.totalRedeemed || 0), 0);
     }, [orderDetails]);
 
-    // Calculate total remaining amount
     const totalRemaining = useMemo(() => {
         if (!orderDetails?.voucherCodes) return 0;
         return orderDetails.voucherCodes.reduce((acc, vc) => acc + (vc.remainingAmount || 0), 0);
     }, [orderDetails]);
 
-    // Check if order can be cancelled
     const canCancelOrder = useMemo(() => {
         if (!orderDetails?.voucherCodes) return true;
         return !orderDetails.voucherCodes.some(vc => vc.redemptionCount > 0);
@@ -69,7 +64,11 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
                     promises.push(fetchOrderDetails(request.orderNumber));
                 }
 
-                await Promise.all(promises);
+                const results = await Promise.all(promises);
+                const readResult = results[1];
+                if (readResult?.success) {
+                    onMessagesRead?.(request.id);
+                }
             } catch (error) {
                 console.error('Error initializing modal:', error);
             } finally {
@@ -147,6 +146,7 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
             if (response.success) {
                 setMessages(prev => [...prev, response.data]);
                 setNewMessage('');
+                onMessageSent?.(request.id, response.data);
             } else {
                 alert('Failed to send message. Please try again.');
             }
@@ -156,7 +156,7 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
         } finally {
             setSending(false);
         }
-    }, [newMessage, sending, request]);
+    }, [newMessage, sending, request, onMessageSent]);
 
     const handleQuickStatusChange = useCallback(async (newStatus) => {
         try {
@@ -206,7 +206,6 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
         }).format(amount);
     }, []);
 
-    // Group messages by date
     const messageGroups = useMemo(() => {
         const groups = {};
         messages.forEach(msg => {
@@ -222,18 +221,21 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full h-[90vh] flex">
+
                 {/* Left Sidebar - Customer & Order Info */}
                 <div className="w-96 bg-gray-50 border-r flex flex-col rounded-l-lg overflow-hidden">
+
                     {/* Sidebar Header */}
-                    <div className="p-4 border-b bg-white">
+                    <div className="p-4 border-b bg-white shrink-0">
                         <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                             <User className="w-4 h-4" />
                             Customer & Order Details
                         </h3>
                     </div>
 
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto">
+                    {/* Scrollable Content — min-h-0 is critical for flex scroll to work */}
+                    <div className="flex-1 overflow-y-auto min-h-0">
+
                         {/* Customer Information Section */}
                         <div className="p-4 bg-white border-b">
                             <div className="space-y-3">
@@ -346,7 +348,6 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
                                         Payment Details
                                     </h4>
                                     <div className="space-y-3">
-
                                         <InfoField
                                             label="Total Amount"
                                             value={formatCurrency(orderDetails.totalAmount, orderDetails.currency)}
@@ -397,10 +398,6 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
                                                 value={formatCurrency(totalRemaining, orderDetails.currency)}
                                                 highlight
                                             />
-                                            {/* <InfoField 
-                                                label="Redemption Count" 
-                                                value={orderDetails.voucherCodes[0].redemptionCount || 0} 
-                                            /> */}
                                         </div>
                                     </div>
                                 )}
@@ -448,57 +445,61 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
                                 No order associated
                             </div>
                         )}
+                    </div>
+                    {/* END Scrollable Content */}
 
-                        {/* Quick Actions */}
-                        <div className="p-4 bg-gray-50">
-                            <label className="text-xs font-medium text-gray-500 uppercase mb-3 block">Quick Actions</label>
-                            <div className="space-y-2">
-                                {/* Modify Recipient Details Button */}
-                                {orderDetails && request.orderNumber && (
-                                    <ActionButton
-                                        onClick={() => setShowModifyModal(true)}
-                                        color="blue"
-                                    >
-                                        Modify Recipient Details
-                                    </ActionButton>
-                                )}
+                    {/* Quick Actions — pinned to bottom, outside scroll area */}
+                    <div className="p-4 bg-gray-50 border-t shrink-0">
+                        <label className="text-xs font-medium text-gray-500 uppercase mb-3 block">Quick Actions</label>
+                        <div className="space-y-2">
+                            {/* Modify Recipient Details Button */}
+                            {orderDetails && request.orderNumber && (
+                                <ActionButton
+                                    onClick={() => setShowModifyModal(true)}
+                                    color="blue"
+                                >
+                                    Modify Recipient Details
+                                </ActionButton>
+                            )}
 
-                              
-                                {currentRequest.status !== 'RESOLVED' && (
-                                    <ActionButton onClick={() => handleQuickStatusChange('RESOLVED')} color="green">
-                                        Mark Resolved
-                                    </ActionButton>
-                                )}
-                                {currentRequest.status !== 'CLOSED' && (
-                                    <ActionButton
-                                        onClick={() => {
-                                            if (confirm('Are you sure you want to close this request?')) {
-                                                handleQuickStatusChange('CLOSED');
-                                            }
-                                        }}
-                                        color="gray"
-                                    >
-                                        Close Request
-                                    </ActionButton>
-                                )}
-                                {orderDetails && request.orderNumber && (
-                                    <ActionButton
-                                        onClick={handleCancelOrder}
-                                        disabled={!canCancelOrder}
-                                        color="red"
-                                    >
-                                        {canCancelOrder ? 'Cancel Order' : 'Cannot Cancel (Redeemed)'}
-                                    </ActionButton>
-                                )}
-                            </div>
+                            {currentRequest.status !== 'RESOLVED' && (
+                                <ActionButton onClick={() => handleQuickStatusChange('RESOLVED')} color="green">
+                                    Mark Resolved
+                                </ActionButton>
+                            )}
+                            {currentRequest.status !== 'CLOSED' && (
+                                <ActionButton
+                                    onClick={() => {
+                                        if (confirm('Are you sure you want to close this request?')) {
+                                            handleQuickStatusChange('CLOSED');
+                                        }
+                                    }}
+                                    color="gray"
+                                >
+                                    Close Request
+                                </ActionButton>
+                            )}
+                            {orderDetails && request.orderNumber && (
+                                <ActionButton
+                                    onClick={handleCancelOrder}
+                                    disabled={!canCancelOrder}
+                                    color="red"
+                                >
+                                    {canCancelOrder ? 'Cancel Order' : 'Cannot Cancel (Redeemed)'}
+                                </ActionButton>
+                            )}
                         </div>
                     </div>
+                    {/* END Quick Actions */}
+
                 </div>
+                {/* END Left Sidebar */}
 
                 {/* Right Side - Chat */}
-                <div className="flex-1 flex flex-col">
+                <div className="flex-1 flex flex-col min-w-0">
+
                     {/* Chat Header */}
-                    <div className="bg-linear-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-tr-lg flex items-center justify-between">
+                    <div className="bg-linear-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-tr-lg flex items-center justify-between shrink-0">
                         <div>
                             <h2 className="text-xl font-bold">Support Chat</h2>
                             <p className="text-sm text-blue-100 mt-1">
@@ -517,7 +518,7 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
                     {/* Messages Container */}
                     <div
                         ref={chatContainerRef}
-                        className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"
+                        className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4 bg-gray-50"
                     >
                         {loading ? (
                             <div className="flex items-center justify-center h-full">
@@ -547,7 +548,7 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
                     </div>
 
                     {/* Input Area */}
-                    <div className="bg-white border-t px-6 py-4">
+                    <div className="bg-white border-t px-6 py-4 shrink-0">
                         <form onSubmit={handleSendMessage} className="flex items-center gap-3">
                             <div className="flex-1">
                                 <textarea
@@ -584,7 +585,10 @@ const AdminSupportChatModal = ({ request, onClose, onStatusChange }) => {
                         </form>
                         <p className="text-xs text-gray-500 mt-2">Press Enter to send, Shift+Enter for new line</p>
                     </div>
+
                 </div>
+                {/* END Right Side */}
+
             </div>
 
             {showModifyModal && orderDetails && (

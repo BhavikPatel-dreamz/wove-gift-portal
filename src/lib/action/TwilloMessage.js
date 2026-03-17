@@ -1,6 +1,5 @@
 "use server";
 
-import twilio from "twilio";
 import * as brevo from "@getbrevo/brevo";
 
 // ==================== CUSTOM ERROR CLASSES ====================
@@ -31,19 +30,6 @@ class ValidationError extends Error {
 }
 
 // ==================== SERVICE INITIALIZATION ====================
-function initializeTwilioClient() {
-  const accountSid = process.env.NEXT_TWILIO_ACCOUNT_SID;
-  const authToken = process.env.NEXT_TWILIO_AUTH_TOKEN;
-
-  if (!accountSid || !authToken) {
-    throw new ConfigurationError(
-      "Missing Twilio credentials: NEXT_TWILIO_ACCOUNT_SID or NEXT_TWILIO_AUTH_TOKEN"
-    );
-  }
-
-  return twilio(accountSid, authToken);
-}
-
 function initializeBrevoClient() {
   const apiKey = process.env.NEXT_BREVO_API_KEY;
 
@@ -55,6 +41,32 @@ function initializeBrevoClient() {
   apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
 
   return apiInstance;
+}
+
+function initializeWatiConfig() {
+  const apiEndpoint =
+    process.env.NEXT_WATI_API_ENDPOINT || process.env.WATI_API_ENDPOINT;
+  const bearerToken =
+    process.env.NEXT_WATI_API_TOKEN || process.env.WATI_BEARER_TOKEN;
+
+  if (!apiEndpoint) {
+    throw new ConfigurationError(
+      "Missing WATI API endpoint: NEXT_WATI_API_ENDPOINT"
+    );
+  }
+
+  if (!bearerToken) {
+    throw new ConfigurationError(
+      "Missing WATI bearer token: NEXT_WATI_API_TOKEN"
+    );
+  }
+
+  return {
+    apiEndpoint: apiEndpoint.replace(/\/+$/, ""),
+    bearerToken: bearerToken.startsWith("Bearer ")
+      ? bearerToken
+      : `Bearer ${bearerToken}`,
+  };
 }
 
 // ==================== VALIDATION FUNCTIONS ====================
@@ -76,6 +88,12 @@ function formatPhoneNumber(number, countryCode = "+91") {
   return cleanedNumber;
 }
 
+function formatWhatsAppNumber(number, countryCode) {
+  const formatted = formatPhoneNumber(number, countryCode);
+  if (!formatted) return null;
+  return formatted.replace(/[^\d]/g, "");
+}
+
 function validateWhatsAppInput(data) {
   if (!data?.deliveryDetails?.recipientWhatsAppNumber) {
     throw new ValidationError("Recipient WhatsApp number is required");
@@ -85,7 +103,7 @@ function validateWhatsAppInput(data) {
     throw new ValidationError("Gift amount is required");
   }
 
-  const recipientNumber = formatPhoneNumber(
+  const recipientNumber = formatWhatsAppNumber(
     data.deliveryDetails.recipientWhatsAppNumber,
     data.deliveryDetails.recipientCountryCode
   );
@@ -94,16 +112,7 @@ function validateWhatsAppInput(data) {
     throw new ValidationError("Invalid recipient WhatsApp number");
   }
 
-  const whatsappNumber = `whatsapp:${recipientNumber}`;
-
-  const senderNumber = process.env.NEXT_TWILIO_WHATSAPP_NUMBER;
-  if (!senderNumber) {
-    throw new ConfigurationError(
-      "Missing Twilio WhatsApp number: NEXT_TWILIO_WHATSAPP_NUMBER"
-    );
-  }
-
-  return { whatsappNumber, senderNumber };
+  return { whatsappNumber: recipientNumber };
 }
 
 function validateEmailInput(data) {
@@ -126,20 +135,6 @@ function validateEmailInput(data) {
 }
 
 // ==================== HELPER FUNCTIONS ====================
-function isValidMediaUrl(url) {
-  if (!url) return false;
-  try {
-    const urlObj = new URL(url);
-    return (
-      urlObj.protocol === "https:" &&
-      urlObj.hostname !== "localhost" &&
-      !urlObj.hostname.startsWith("192.168.")
-    );
-  } catch {
-    return false;
-  }
-}
-
 function getAbsoluteUrl(relativeUrl) {
   if (!relativeUrl) return null;
 
@@ -231,97 +226,77 @@ export const SendWhatsappMessages = async (data, giftCard) => {
     });
 
     /* ----------------------------- Step 1: Validate input ----------------------------- */
-    const { whatsappNumber, senderNumber } = validateWhatsAppInput(data);
+    const { whatsappNumber } = validateWhatsAppInput(data);
 
     console.info(`${LOG_PREFIX} Validation successful`, {
       to: maskPhone(whatsappNumber),
-      from: maskPhone(senderNumber),
     });
 
-    /* --------------------------- Step 2: Initialize Twilio ---------------------------- */
-    const client = initializeTwilioClient();
+    /* --------------------------- Step 2: Initialize WATI ---------------------------- */
+    const watiConfig = initializeWatiConfig();
+    const templateConfig = resolveWatiTemplateConfig();
 
-    if (!client) {
-      throw new ConfigurationError("Twilio client initialization failed");
-    }
+    let watiResponse;
 
-    /* --------------------------- Step 3: Resolve Content SID --------------------------- */
-    const contentSid = process.env.NEXT_TWILIO_CONTENT_SID;
-    let message;
-
-    if (contentSid && contentSid !== "HX...") {
-      console.info(`${LOG_PREFIX} Sending WhatsApp via template`, {
-        contentSid,
+    if (templateConfig.templateName) {
+      console.info(`${LOG_PREFIX} Sending WhatsApp via WATI template`, {
+        templateName: templateConfig.templateName,
       });
 
-      const templateVariables = buildWhatsAppTemplateVariables(data, giftCard);
+      const parameters = buildWatiTemplateParameters(
+        data,
+        giftCard,
+        templateConfig.paramNames
+      );
 
-      console.debug(`${LOG_PREFIX} Template variables`, templateVariables);
-
-      message = await client.messages.create({
-        contentSid,
-        from: senderNumber,
-        to: whatsappNumber,
-        contentVariables: JSON.stringify(templateVariables),
+      watiResponse = await sendWatiTemplateMessage({
+        watiConfig,
+        whatsappNumber,
+        templateName: templateConfig.templateName,
+        broadcastName: templateConfig.broadcastName,
+        channelNumber: templateConfig.channelNumber,
+        parameters,
       });
     } else {
-      console.info(`${LOG_PREFIX} Sending WhatsApp via text/media`);
+      console.info(`${LOG_PREFIX} Sending WhatsApp via WATI session message`);
 
-      const messageBody = buildWhatsAppTextMessage(data, giftCard);
-      const mediaUrl = getAbsoluteUrl(data?.selectedSubCategory?.image);
+      const messageText = buildWhatsAppTextMessage(data, giftCard);
 
-      const messagePayload = {
-        from: senderNumber,
-        to: whatsappNumber,
-        body: messageBody,
-      };
-
-      if (mediaUrl && isValidMediaUrl(mediaUrl)) {
-        messagePayload.mediaUrl = [mediaUrl];
-      } else if (mediaUrl) {
-        console.warn(`${LOG_PREFIX} Invalid media URL skipped`, mediaUrl);
-      }
-
-      console.debug(`${LOG_PREFIX} Message payload`, {
-        ...messagePayload,
-        to: maskPhone(messagePayload.to),
-        from: maskPhone(messagePayload.from),
+      watiResponse = await sendWatiSessionMessage({
+        watiConfig,
+        whatsappNumber,
+        messageText,
+        channelPhoneNumber: templateConfig.channelNumber,
       });
-
-      message = await client.messages.create(messagePayload);
     }
 
     console.info(`${LOG_PREFIX} Message sent successfully`, {
-      sid: message.sid,
-      status: message.status,
+      messageId: watiResponse.messageId,
       to: maskPhone(whatsappNumber),
     });
 
     return {
       success: true,
-      data: {
-        service: "whatsapp",
-        messageSid: message.sid,
-        to: whatsappNumber,
-        from: senderNumber,
-        status: message.status,
-      },
+      messageId: watiResponse.messageId || null,
+      data: watiResponse.data,
     };
   } catch (error) {
     console.error(`${LOG_PREFIX} Message failed`, {
       name: error?.name,
       message: error?.message,
-      code: error?.code,
-      status: error?.status,
-      moreInfo: error?.moreInfo,
+      status: error?.statusCode || error?.status,
+      details: error?.details,
     });
 
     return normalizeWhatsAppError(error);
   }
 };
 
-const maskPhone = (phone = "") =>
-  phone.replace(/(\+\d{2})\d{6}(\d{2})/, "$1******$2");
+const maskPhone = (phone = "") => {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 6) return phone;
+  return digits.replace(/(\d{2})\d+(\d{2})/, "$1******$2");
+};
 
 const normalizeWhatsAppError = (error) => {
   if (error instanceof ValidationError || error instanceof ConfigurationError) {
@@ -334,28 +309,198 @@ const normalizeWhatsAppError = (error) => {
     };
   }
 
-  // Twilio-specific error
-  if (error?.code && error?.moreInfo) {
-    return {
-      success: false,
-      service: "whatsapp",
-      error: error.message,
-      errorType: "TwilioError",
-      statusCode: error.status || 502,
-      twilioCode: error.code,
-      moreInfo: error.moreInfo,
-    };
-  }
-
   return {
     success: false,
     service: "whatsapp",
-    error: "WhatsApp delivery failed",
-    errorType: "MessageServiceError",
-    statusCode: 500,
-    originalError: error?.message,
+    error: error?.message || "WhatsApp delivery failed",
+    errorType: error?.name || "MessageServiceError",
+    statusCode: error?.statusCode || error?.status || 500,
+    details: error?.details,
   };
 };
+
+function resolveWatiTemplateConfig() {
+  const templateName =
+    process.env.NEXT_WATI_TEMPLATE_NAME || process.env.WATI_TEMPLATE_NAME;
+  const broadcastName =
+    process.env.NEXT_WATI_BROADCAST_NAME ||
+    process.env.WATI_BROADCAST_NAME ||
+    "wove_gifts";
+  const channelNumber =
+    process.env.NEXT_WATI_CHANNEL_NUMBER || process.env.WATI_CHANNEL_NUMBER;
+  const paramNamesRaw =
+    process.env.NEXT_WATI_TEMPLATE_PARAM_NAMES ||
+    process.env.WATI_TEMPLATE_PARAM_NAMES ||
+    "";
+
+  const paramNames = paramNamesRaw
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+  return {
+    templateName,
+    broadcastName,
+    channelNumber,
+    paramNames: paramNames.length > 0 ? paramNames : null,
+  };
+}
+
+function buildWatiTemplateParameters(data, giftCard, paramNames) {
+  const templateVariables = buildWhatsAppTemplateVariables(data, giftCard);
+  const orderedValues = Object.keys(templateVariables)
+    .sort((a, b) => Number(a) - Number(b))
+    .map((key) => templateVariables[key]);
+
+  if (paramNames?.length) {
+    return paramNames.map((name, index) => ({
+      name,
+      value: String(orderedValues[index] ?? ""),
+    }));
+  }
+
+  return Object.entries(templateVariables).map(([name, value]) => ({
+    name,
+    value: String(value ?? ""),
+  }));
+}
+
+function extractWatiMessageId(payload) {
+  if (!payload) return null;
+  if (payload?.receivers?.length) {
+    return (
+      payload.receivers[0]?.localMessageId ||
+      payload.receivers[0]?.messageId ||
+      null
+    );
+  }
+  return (
+    payload.localMessageId ||
+    payload.messageId ||
+    payload.id ||
+    null
+  );
+}
+
+async function sendWatiTemplateMessage({
+  watiConfig,
+  whatsappNumber,
+  templateName,
+  broadcastName,
+  channelNumber,
+  parameters,
+}) {
+  if (!templateName) {
+    throw new ConfigurationError(
+      "Missing WATI template name: NEXT_WATI_TEMPLATE_NAME"
+    );
+  }
+
+  const url = new URL(`${watiConfig.apiEndpoint}/api/v2/sendTemplateMessage`);
+  url.searchParams.set("whatsappNumber", whatsappNumber);
+
+  const payload = {
+    template_name: templateName,
+    broadcast_name: broadcastName,
+    parameters,
+  };
+
+  if (channelNumber) {
+    payload.channelNumber = channelNumber;
+  }
+
+  const response = await fetch(url.toString(), {
+    method: "POST",
+    headers: {
+      Authorization: watiConfig.bearerToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await safeParseJson(response);
+
+  if (!response.ok || data?.result === false) {
+    const message =
+      data?.error ||
+      data?.message ||
+      data?.errorMessage ||
+      `WATI template message failed (${response.status})`;
+    throw buildWatiError(message, response.status, data);
+  }
+
+  return {
+    data,
+    messageId: extractWatiMessageId(data),
+  };
+}
+
+async function sendWatiSessionMessage({
+  watiConfig,
+  whatsappNumber,
+  messageText,
+  channelPhoneNumber,
+}) {
+  const url = `${watiConfig.apiEndpoint}/api/v1/sendSessionMessage/${whatsappNumber}`;
+  let body;
+  const headers = {
+    Authorization: watiConfig.bearerToken,
+  };
+
+  const hasFormData = typeof globalThis.FormData !== "undefined";
+  if (hasFormData) {
+    body = new globalThis.FormData();
+    body.set("messageText", messageText);
+    if (channelPhoneNumber) {
+      body.set("channelPhoneNumber", channelPhoneNumber);
+    }
+  } else {
+    body = new URLSearchParams();
+    body.set("messageText", messageText);
+    if (channelPhoneNumber) {
+      body.set("channelPhoneNumber", channelPhoneNumber);
+    }
+    headers["Content-Type"] = "application/x-www-form-urlencoded";
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body,
+  });
+
+  const data = await safeParseJson(response);
+
+  if (!response.ok || data?.result === false) {
+    const message =
+      data?.error ||
+      data?.message ||
+      data?.errorMessage ||
+      `WATI session message failed (${response.status})`;
+    throw buildWatiError(message, response.status, data);
+  }
+
+  return {
+    data,
+    messageId: extractWatiMessageId(data),
+  };
+}
+
+async function safeParseJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function buildWatiError(message, statusCode, details) {
+  const error = new Error(message);
+  error.name = "WatiError";
+  error.statusCode = statusCode;
+  error.details = details;
+  return error;
+}
 
 
 // ==================== EMAIL TEMPLATE BUILDER ====================

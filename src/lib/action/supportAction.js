@@ -131,6 +131,25 @@ export async function getSupportRequests(params = {}) {
       prisma.supportRequest.count({ where: whereClause }),
     ]);
 
+    const unreadSenderType = user?.role === "CUSTOMER" ? "ADMIN" : "CUSTOMER";
+    let unreadCountMap = {};
+    if (requests.length > 0) {
+      const unreadCounts = await prisma.supportMessage.groupBy({
+        by: ["supportRequestId"],
+        where: {
+          supportRequestId: { in: requests.map((req) => req.id) },
+          senderType: unreadSenderType,
+          isRead: false,
+        },
+        _count: { _all: true },
+      });
+
+      unreadCountMap = unreadCounts.reduce((acc, item) => {
+        acc[item.supportRequestId] = item._count._all;
+        return acc;
+      }, {});
+    }
+
     const orderNumbers = requests.map((req) => req.orderNumber).filter(Boolean);
 
     let orders = [];
@@ -159,6 +178,7 @@ export async function getSupportRequests(params = {}) {
       return {
         ...req,
         order: order || null,
+        unreadCount: unreadCountMap[req.id] || 0,
       };
     });
 
