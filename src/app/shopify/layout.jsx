@@ -1,44 +1,49 @@
-"use client";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { getShopSession } from "@/lib/shopify/getSession";
+import ShopifyClientLayout from "./ShopifyClientLayout";
 
-import { Suspense } from "react";
-import AppBridgeProvider from "@/components/shopify/AppBridgeProvider";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
-import AppLayout from "./component/AppLayout";
+/**
+ * Server-side Shopify layout.
+ * Validates the shop session before rendering children.
+ * Redirects to auth/install if no valid session is found.
+ */
+export default async function ShopifyLayout({ children }) {
+  // In App Router, layouts don't receive searchParams directly.
+  // Extract the shop param from the request URL via headers.
+  const headersList = await headers();
+  const fullUrl = headersList.get("x-invoke-path") || headersList.get("x-url") || "";
+  const referer = headersList.get("referer") || "";
 
-function ShopifyLayoutContent({ children }) {
-  const searchParams = useSearchParams();
-  const shop = searchParams.get("shop");
+  // Try to extract shop from the URL or referer
+  let shop = null;
+  try {
+    const urlToParse = fullUrl.includes("?") ? fullUrl : referer;
+    if (urlToParse) {
+      const url = new URL(urlToParse, process.env.SHOPIFY_APP_URL || "http://localhost:3000");
+      shop = url.searchParams.get("shop");
+    }
+  } catch {
+    // URL parsing failed, shop stays null
+  }
 
-  useEffect(() => {
-    // Log Shopify context for debugging
+  // If we have a shop param, validate the session server-side
+  if (shop) {
+    const sessions = await getShopSession(shop);
 
-  }, [shop, searchParams]);
+    if (!sessions?.length) {
+      redirect(`/shopify/auth-required?shop=${shop}`);
+    }
 
-  return (
-    <AppBridgeProvider>
-      <AppLayout>
-        <div className="shopify-app-wrapper">{children}</div>
-      </AppLayout>
-    </AppBridgeProvider>
-  );
-}
+    // Optionally check that at least one session has a valid access token
+    const validSession = sessions.find(
+      (s) => s.accessToken && (!s.expires || new Date(s.expires) > new Date())
+    );
 
-export default function ShopifyLayout({
-  children,
-}) {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading Shopify App...</p>
-          </div>
-        </div>
-      }
-    >
-      <ShopifyLayoutContent>{children}</ShopifyLayoutContent>
-    </Suspense>
-  );
+    if (!validSession) {
+      redirect(`/shopify/auth-required?shop=${shop}`);
+    }
+  }
+
+  return <ShopifyClientLayout>{children}</ShopifyClientLayout>;
 }

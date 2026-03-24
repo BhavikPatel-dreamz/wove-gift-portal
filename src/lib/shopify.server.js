@@ -2,7 +2,8 @@ import "@shopify/shopify-api/adapters/node";
 import {
   shopifyApi,
   ApiVersion,
-  LogSeverity
+  LogSeverity,
+  
 } from "@shopify/shopify-api";
 import { PrismaSessionStorage } from "./session-storage.js";
 import { prisma } from "./db.js";
