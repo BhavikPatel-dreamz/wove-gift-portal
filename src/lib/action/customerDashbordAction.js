@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 import { currencyList } from "../../components/brandsPartner/currency";
 import { prisma } from "../db";
 import { getSession } from "./userAction/session";
@@ -57,6 +58,70 @@ function parseDateFilterValue(value, options = {}) {
   return parsedDate;
 }
 
+function normalizeEmail(value) {
+  if (!value) return "";
+  return String(value).trim().toLowerCase();
+}
+
+function buildEmailEqualsFilter(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return null;
+
+  return {
+    equals: normalizedEmail,
+    mode: "insensitive",
+  };
+}
+
+function buildReceivedVoucherConditions(email) {
+  const emailFilter = buildEmailEqualsFilter(email);
+  if (!emailFilter) return [];
+
+  return [
+    {
+      order: {
+        receiverDetail: {
+          email: emailFilter,
+        },
+      },
+    },
+    {
+      giftCard: {
+        is: {
+          customerEmail: emailFilter,
+        },
+      },
+    },
+  ];
+}
+
+function buildPendingReceivedOrderCondition(email) {
+  const emailFilter = buildEmailEqualsFilter(email);
+  if (!emailFilter) return {};
+
+  return {
+    receiverDetail: {
+      email: emailFilter,
+    },
+  };
+}
+
+function isVoucherReceivedByUser(voucherCode, email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return false;
+
+  return [voucherCode.order?.receiverDetail?.email, voucherCode.giftCard?.customerEmail].some(
+    (candidateEmail) => normalizeEmail(candidateEmail) === normalizedEmail,
+  );
+}
+
+function buildGiftCodeCandidates(rawCode) {
+  const normalizedCode = String(rawCode || "").trim();
+  const compactCode = normalizedCode.replace(/[\s-]+/g, "");
+
+  return Array.from(new Set([normalizedCode, compactCode].filter(Boolean)));
+}
+
 // Main function to fetch gift cards with smart pagination
 export async function getGiftCards(filters) {
   try {
@@ -68,8 +133,13 @@ export async function getGiftCards(filters) {
       pageSize = 6,
       startDate,
       endDate,
-      userEmail,
     } = filters;
+    const receivedVoucherConditions = buildReceivedVoucherConditions(
+      session.user.email,
+    );
+    const pendingReceivedOrderCondition = buildPendingReceivedOrderCondition(
+      session.user.email,
+    );
 
     // Build where clause based on user role and tab selection
     const whereClause = {};
@@ -84,14 +154,8 @@ export async function getGiftCards(filters) {
         };
         pendingOrderWhereClause.userId = session.user.id;
       } else if (status === "received") {
-        whereClause.order = {
-          receiverDetail: {
-            email: session.user.email,
-          },
-        };
-        pendingOrderWhereClause.receiverDetail = {
-          email: session.user.email,
-        };
+        whereClause.OR = receivedVoucherConditions;
+        Object.assign(pendingOrderWhereClause, pendingReceivedOrderCondition);
       } else if (status === "scheduled") {
         whereClause.order = {
           userId: session.user.id,
@@ -114,23 +178,13 @@ export async function getGiftCards(filters) {
               userId: session.user.id,
             },
           },
-          {
-            order: {
-              receiverDetail: {
-                email: session.user.email,
-              },
-            },
-          },
+          ...receivedVoucherConditions,
         ];
         pendingOrderWhereClause.OR = [
           {
             userId: session.user.id,
           },
-          {
-            receiverDetail: {
-              email: session.user.email,
-            },
-          },
+          pendingReceivedOrderCondition,
         ];
       } else if (status === "expired") {
         whereClause.expiresAt = {
@@ -142,13 +196,7 @@ export async function getGiftCards(filters) {
               userId: session.user.id,
             },
           },
-          {
-            order: {
-              receiverDetail: {
-                email: session.user.email,
-              },
-            },
-          },
+          ...receivedVoucherConditions,
         ];
       }
     } else if (status === "scheduled") {
@@ -181,6 +229,13 @@ export async function getGiftCards(filters) {
           order: {
             receiverDetail: {
               email: { contains: searchQuery, mode: "insensitive" },
+            },
+          },
+        },
+        {
+          giftCard: {
+            is: {
+              customerEmail: { contains: searchQuery, mode: "insensitive" },
             },
           },
         },
@@ -296,6 +351,7 @@ export async function getGiftCards(filters) {
           giftCard: {
             select: {
               code: true,
+              customerEmail: true,
             },
           },
           redemptions: {
@@ -428,18 +484,23 @@ export async function getGiftCards(filters) {
           : 0;
 
       const isSent = vc.order.userId === session.user.id;
-      const isReceived = vc.order.receiverDetail?.email === session.user.email;
+      const isReceived = isVoucherReceivedByUser(vc, session.user.email);
 
       const currency = vc.order.currency || "USD";
       const currencySymbol = getCurrencySymbol(currency);
 
-      const fullCode = vc?.giftCard?.code;
-      const displayCode = isReceived
-        ? fullCode
-        : `**** **** **** ${fullCode.slice(-4)}`;
+      const fullCode = vc?.giftCard?.code || vc.code;
+      const maskedCode = vc?.giftCard?.code
+        ? `**** **** **** ${vc.giftCard.code.slice(-4)}`
+        : vc.code;
+      const displayCode = isReceived ? fullCode : maskedCode;
 
       const receiverName = vc.bulkRecipient?.recipientName || vc.order.receiverDetail?.name || "N/A";
-      const receiverEmail = vc.bulkRecipient?.recipientEmail || vc.order.receiverDetail?.email || "N/A";
+      const receiverEmail =
+        vc.bulkRecipient?.recipientEmail ||
+        vc.giftCard?.customerEmail ||
+        vc.order.receiverDetail?.email ||
+        "N/A";
       const receiverPhone = vc.bulkRecipient?.recipientPhone || vc.order.receiverDetail?.phone || "N/A";
       const deliveryMethod = vc.order.deliveryMethod;
 
@@ -507,7 +568,9 @@ export async function getGiftCards(filters) {
 
     const transformPendingOrder = (order) => {
       const isSent = order.userId === session.user.id;
-      const isReceived = order.receiverDetail?.email === session.user.email;
+      const isReceived =
+        normalizeEmail(order.receiverDetail?.email) ===
+        normalizeEmail(session.user.email);
       const currency = order.currency || "USD";
       const currencySymbol = getCurrencySymbol(currency);
 
@@ -610,6 +673,9 @@ export async function getGiftCards(filters) {
 export async function getGiftCardStats() {
   try {
     const session = await getSession();
+    const receivedVoucherConditions = buildReceivedVoucherConditions(
+      session.user.email,
+    );
 
     // Base conditions for sent and received
     const sentCondition = {
@@ -619,15 +685,11 @@ export async function getGiftCardStats() {
     };
 
     const receivedCondition = {
-      order: {
-        receiverDetail: {
-          email: session.user.email,
-        },
-      },
+      OR: receivedVoucherConditions,
     };
 
     const allCondition = {
-      OR: [sentCondition, receivedCondition],
+      OR: [sentCondition, ...receivedVoucherConditions],
     };
 
     if (session.user.role === "ADMIN") {
@@ -725,6 +787,118 @@ export async function getGiftCardStats() {
     return {
       success: false,
       error: "Failed to fetch statistics",
+    };
+  }
+}
+
+
+export async function addGiftCardToAccount(rawCode) {
+  try {
+    const session = await getSession();
+    const codeCandidates = buildGiftCodeCandidates(rawCode);
+
+    if (!codeCandidates.length) {
+      return {
+        success: false,
+        error: "Enter a valid gift card code.",
+      };
+    }
+
+    let giftCard = await prisma.giftCard.findFirst({
+      where: {
+        OR: codeCandidates.map((code) => ({
+          code: {
+            equals: code,
+            mode: "insensitive",
+          },
+        })),
+      },
+      include: {
+        voucherCode: {
+          include: {
+            order: {
+              include: {
+                brand: {
+                  select: {
+                    brandName: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    let voucherCode = giftCard?.voucherCode || null;
+
+    if (!voucherCode) {
+      voucherCode = await prisma.voucherCode.findFirst({
+        where: {
+          OR: codeCandidates.map((code) => ({
+            code: {
+              equals: code,
+              mode: "insensitive",
+            },
+          })),
+        },
+        include: {
+          giftCard: true,
+          order: {
+            include: {
+              brand: {
+                select: {
+                  brandName: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      giftCard = voucherCode?.giftCard || null;
+    }
+
+    if (!voucherCode || !giftCard) {
+      return {
+        success: false,
+        error: "We couldn't find a gift card with that code.",
+      };
+    }
+
+    const sessionEmail = normalizeEmail(session.user.email);
+    const existingOwnerEmail = normalizeEmail(giftCard.customerEmail);
+
+    if (existingOwnerEmail === sessionEmail) {
+      return {
+        success: true,
+        alreadyAdded: true,
+        message: "This gift card is already in your dashboard.",
+      };
+    }
+
+    await prisma.giftCard.update({
+      where: { id: giftCard.id },
+      data: {
+        customerEmail: session.user.email,
+        updatedAt: new Date(),
+      },
+    });
+
+    revalidatePath("/my-gift");
+
+    return {
+      success: true,
+      message: `${voucherCode.order.brand.brandName} gift card added to your Received gifts.`,
+    };
+  } catch (error) {
+    console.error("Error adding gift card to account:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to add the gift card to your account.",
     };
   }
 }

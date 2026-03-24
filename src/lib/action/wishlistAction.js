@@ -23,6 +23,9 @@ const getWishlistFieldSet = () => {
 
 const supportsWishlistField = (fieldName) => {
   const fieldSet = getWishlistFieldSet();
+  if (!fieldSet || fieldSet.size === 0) {
+    return ["key", "payload", "sourceType"].includes(fieldName);
+  }
   return fieldSet.has(fieldName);
 };
 
