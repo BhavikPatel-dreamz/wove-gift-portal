@@ -24,8 +24,12 @@ const DEFAULT_EXPIRY_TEXT =
 
 // ─── Brevo Template IDs ────────────────────────────────────────────────────
 // Set these in your .env or replace with actual numeric IDs from Brevo dashboard
-const TEMPLATE_ID_INDIVIDUAL = parseInt(process.env.BREVO_TEMPLATE_ID_INDIVIDUAL); // Gift card to recipient
-const TEMPLATE_ID_BULK       = parseInt(process.env.BREVO_TEMPLATE_ID_BULK);        // Bulk summary to company
+const TEMPLATE_ID_INDIVIDUAL = Number.parseInt(process.env.BREVO_TEMPLATE_ID_INDIVIDUAL, 10); // Gift card to recipient
+const TEMPLATE_ID_BULK       = Number.parseInt(process.env.BREVO_TEMPLATE_ID_BULK, 10);        // Bulk summary to company
+const TEMPLATE_ID_ORDER_CONFIRMATION = Number.parseInt(
+  process.env.BREVO_TEMPLATE_ID_ORDER_CONFIRMATION,
+  10
+); // Order confirmation to purchaser
 
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
@@ -112,7 +116,21 @@ export async function processNotificationsQueue() {
           },
         });
         console.log(`✅ Order ${order.orderNumber} notifications complete`);
-        return { success: true, processed: 1, failed: 0 };
+
+        const confirmationResult = await sendOrderConfirmationEmail(order);
+        if (!confirmationResult.success && !confirmationResult.skipped) {
+          console.error(
+            `⚠️ [${order.orderNumber}] Order confirmation email failed:`,
+            confirmationResult.error
+          );
+        }
+
+        return {
+          success: true,
+          processed: 1,
+          failed: 0,
+          confirmation: confirmationResult,
+        };
       } else {
         await handleNotificationFailure(order, result.error);
         return { success: false, processed: 0, failed: 1, error: result.error };
@@ -664,6 +682,111 @@ async function sendBulkSummaryEmail(order, selectedSubCategory) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// ORDER CONFIRMATION EMAIL  →  Template 4 (Purchaser Confirmation)
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function sendOrderConfirmationEmail(order) {
+  if (!order.senderEmail) {
+    console.log(`⏭️ [${order.orderNumber}] Skipping order confirmation: no sender email`);
+    return { success: true, skipped: true, reason: "No sender email" };
+  }
+
+  if (!Number.isFinite(TEMPLATE_ID_ORDER_CONFIRMATION)) {
+    return {
+      success: false,
+      error: "Missing BREVO_TEMPLATE_ID_ORDER_CONFIRMATION configuration",
+    };
+  }
+
+  const existingConfirmation = await prisma.notificationDetail.findFirst({
+    where: {
+      orderId: order.id,
+      recipientEmail: order.senderEmail,
+      notificationType: "SUMMARY_EMAIL",
+      status: "DELIVERED",
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (existingConfirmation) {
+    console.log(`⏭️ [${order.orderNumber}] Order confirmation email already sent`);
+    return { success: true, skipped: true, reason: "Already sent" };
+  }
+
+  const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
+  const senderName = process.env.NEXT_BREVO_SENDER_NAME || "WoveGifts";
+
+  if (!senderEmail) {
+    return {
+      success: false,
+      error: "Missing NEXT_BREVO_SENDER_EMAIL configuration",
+    };
+  }
+
+  const notification = await prisma.notificationDetail.create({
+    data: {
+      orderId: order.id,
+      recipientEmail: order.senderEmail,
+      recipientName: order.senderName || "Customer",
+      notificationType: "SUMMARY_EMAIL",
+      status: "PENDING",
+      attemptCount: 0,
+    },
+  });
+
+  try {
+    await prisma.notificationDetail.update({
+      where: { id: notification.id },
+      data: { status: "SENDING", attemptCount: { increment: 1 } },
+    });
+
+    const selectedSubCategory = await resolveSelectedSubCategory(order);
+    const confirmationParams = buildOrderConfirmationParams(
+      order,
+      selectedSubCategory
+    );
+
+    const sendSmtpEmail = {
+      sender: { email: senderEmail, name: senderName },
+      to: [{ email: order.senderEmail, name: order.senderName || "Customer" }],
+      subject: `Order Confirmation - ${order.orderNumber}`,
+      templateId: TEMPLATE_ID_ORDER_CONFIRMATION,
+      params: confirmationParams,
+    };
+
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+    await prisma.notificationDetail.update({
+      where: { id: notification.id },
+      data: {
+        status: "DELIVERED",
+        sentAt: new Date(),
+        deliveredAt: new Date(),
+        messageId: response.messageId,
+        emailServiceStatus: "DELIVERED",
+        emailServiceId: response.messageId,
+      },
+    });
+
+    console.log(`✅ [${order.orderNumber}] Order confirmation sent: ${response.messageId}`);
+    return { success: true, messageId: response.messageId };
+  } catch (error) {
+    await prisma.notificationDetail.update({
+      where: { id: notification.id },
+      data: {
+        status: "FAILED",
+        failedAt: new Date(),
+        errorMessage: error.message,
+        emailServiceStatus: "FAILED",
+        emailServiceError: error.message,
+      },
+    });
+
+    return { success: false, error: error.message };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // FAILURE HANDLER
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -706,6 +829,111 @@ function getExpiryDateText(voucherCode) {
     return new Date(voucherCode.expiresAt).toLocaleDateString("en-IN");
   }
   return DEFAULT_EXPIRY_TEXT;
+}
+
+async function resolveSelectedSubCategory(order) {
+  if (order.isCustom && order.customCardId) {
+    return prisma.customCard.findUnique({ where: { id: order.customCardId } });
+  }
+
+  if (!order.isCustom && order.subCategoryId) {
+    return prisma.occasionCategory.findUnique({
+      where: { id: order.subCategoryId },
+    });
+  }
+
+  return null;
+}
+
+function buildOrderConfirmationParams(order, selectedSubCategory) {
+  const recipientInfo = getConfirmationRecipientInfo(order);
+  const orderDate = formatEmailDate(order.paidAt || order.createdAt);
+  const deliveryDate = formatEmailDate(
+    order.scheduledFor || order.paidAt || order.createdAt
+  );
+  const currencySymbol = getCurrencySymbol(order.currency);
+  const message = order.message || "";
+
+  return {
+    senderName: order.senderName || "Customer",
+    recipientName: recipientInfo.name,
+    orderNumber: order.orderNumber || "",
+    currency: currencySymbol,
+    giftValue: String(order.amount ?? 0),
+    totalAmountPaid: String(order.totalAmount ?? order.amount ?? 0),
+    paymentMethod: formatPaymentMethod(order.paymentMethod),
+    brandName: order.brand?.brandName || "Gift Card",
+    brandLogoUrl: order.brand?.logo || "",
+    giftCardImageUrl: selectedSubCategory?.image || order.occasion?.image || "",
+    orderDate,
+    deliveryMethod: formatDeliveryMethod(order.deliveryMethod),
+    recipientContact: recipientInfo.contact,
+    deliveryDate,
+    personalisedMessage: message,
+    personalizedMessage: message,
+  };
+}
+
+function getConfirmationRecipientInfo(order) {
+  if (order.bulkRecipients?.length > 0) {
+    if (order.bulkRecipients.length === 1) {
+      const recipient = order.bulkRecipients[0];
+      return {
+        name: recipient.recipientName || "Recipient",
+        contact: recipient.recipientEmail || recipient.recipientPhone || "",
+      };
+    }
+
+    return {
+      name: `${order.bulkRecipients.length} recipients`,
+      contact: `${order.bulkRecipients.length} recipients`,
+    };
+  }
+
+  const contact =
+    order.deliveryMethod === "whatsapp"
+      ? order.receiverDetail?.phone || order.receiverDetail?.email || ""
+      : order.receiverDetail?.email || order.receiverDetail?.phone || "";
+
+  return {
+    name: order.receiverDetail?.name || "Recipient",
+    contact,
+  };
+}
+
+function formatEmailDate(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatPaymentMethod(value) {
+  if (!value) return "UNKNOWN";
+  return String(value).replace(/_/g, " ").toUpperCase();
+}
+
+function formatDeliveryMethod(value) {
+  switch (value) {
+    case "whatsapp":
+      return "WhatsApp";
+    case "email":
+      return "Email";
+    case "sms":
+      return "SMS";
+    case "print":
+      return "Print";
+    case "multiple":
+      return "Multiple Email";
+    default:
+      return value ? String(value) : "";
+  }
 }
 
 const getCurrencySymbol = (code) =>
