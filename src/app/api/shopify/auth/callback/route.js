@@ -97,8 +97,10 @@ export async function GET(request) {
 
       let redirectUrl;
       if (brand) {
-        // If brand exists, redirect to the edit page with brand ID
-        redirectUrl = `/brandsPartner/edit/${brand.id}`;
+        // If brand exists, redirect to the Shopify dashboard with brand context
+        // Note: /brandsPartner/edit/ is an admin route that requires a separate login session.
+        // After Shopify OAuth we only have a Shopify session, so we stay within /shopify/ routes.
+        redirectUrl = `/shopify/dashboard?shop=${session.shop}${host ? `&host=${host}` : ''}&brandId=${brand.id}`;
       } else {
         // Otherwise, redirect to the Shopify dashboard
         redirectUrl = `/shopify/dashboard?shop=${session.shop}${host ? `&host=${host}` : ''}`;
