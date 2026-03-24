@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Download, Eye, Gift, Calendar, ChevronLeft, ChevronRight, AlertCircle, Users, X } from 'lucide-react';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { getGiftCards } from '../../../lib/action/customerDashbordAction';
+import { addGiftCardToAccount, getGiftCards } from '../../../lib/action/customerDashbordAction';
 import GiftCardDetailModal from './GiftCardDetailModal';
 import { useSession } from '@/contexts/SessionContext';
 
@@ -62,10 +62,8 @@ function MyGift() {
     totalPages: 0
   });
   const [userRole, setUserRole] = useState('CUSTOMER');
-  const [userId, setUserId] = useState(null);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [copySuccess, setCopySuccess] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -75,6 +73,12 @@ function MyGift() {
   const datePickerRef = useRef(null);
   const session = useSession();
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isAddGiftCardOpen, setIsAddGiftCardOpen] = useState(false);
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [isAddingGiftCard, setIsAddingGiftCard] = useState(false);
+  const [addGiftCardError, setAddGiftCardError] = useState('');
+  const [addGiftCardSuccess, setAddGiftCardSuccess] = useState('');
+  const [refreshGiftCardsKey, setRefreshGiftCardsKey] = useState(0);
 
   const tabs = [
     { id: 'all', label: 'All Gifts' },
@@ -129,7 +133,6 @@ function MyGift() {
     return displayItems;
   }, []);
 
-  console.log("giftCards", giftCards)
 
   // Fetch gift cards data
   const fetchGiftCards = useCallback(async () => {
@@ -166,7 +169,6 @@ function MyGift() {
           totalPages: 0
         });
         setUserRole(result.userRole || 'CUSTOMER');
-        setUserId(result.userId);
       } else {
         setError(result.error || 'Failed to fetch gift cards');
         setGiftCards([]);
@@ -182,7 +184,7 @@ function MyGift() {
 
   useEffect(() => {
     fetchGiftCards();
-  }, [fetchGiftCards]);
+  }, [fetchGiftCards, refreshGiftCardsKey]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -214,56 +216,54 @@ function MyGift() {
     setIsDatePickerOpen(false);
   };
 
-  const handleExport = async () => {
-    try {
-      const hasCompleteDateRange = Boolean(startDate && endDate);
-      const normalizedStartDate = hasCompleteDateRange
-        ? getStartOfLocalDayISO(startDate)
-        : null;
-      const normalizedEndDate = hasCompleteDateRange
-        ? getEndOfLocalDayISO(endDate)
-        : null;
-
-      const response = await fetch('/api/gift-cards/export', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status: activeTab,
-          searchQuery: debouncedSearch,
-          startDate: normalizedStartDate,
-          endDate: normalizedEndDate
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Export failed');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `gift-cards-${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting data:', error);
-      alert('Failed to export data. Please try again.');
-    }
+  const handleToggleAddGiftCard = () => {
+    setIsAddGiftCardOpen((previous) => !previous);
+    setAddGiftCardError('');
+    setAddGiftCardSuccess('');
   };
 
-  const copyToClipboard = async (text) => {
+  const handleAddGiftCardSubmit = async (event) => {
+    event.preventDefault();
+
+    const normalizedCode = giftCardCode.trim();
+    if (!normalizedCode) {
+      setAddGiftCardSuccess('');
+      setAddGiftCardError('Enter the gift card code you received.');
+      return;
+    }
+
+    setIsAddingGiftCard(true);
+    setAddGiftCardError('');
+    setAddGiftCardSuccess('');
+
     try {
-      await navigator.clipboard.writeText(text);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      alert('Failed to copy code');
+      const result = await addGiftCardToAccount(normalizedCode);
+
+      if (!result.success) {
+        setAddGiftCardError(result.error || 'Unable to add this gift card right now.');
+        return;
+      }
+
+      setGiftCardCode('');
+      setSearchQuery('');
+      setDebouncedSearch('');
+      setStartDate(null);
+      setEndDate(null);
+      setCurrentPage(1);
+      setActiveTab('received');
+      setAddGiftCardSuccess(
+        result.message || 'Gift card added to your Received gifts.',
+      );
+      if (activeTab === 'received') {
+        setRefreshGiftCardsKey((previous) => previous + 1);
+      }
+    } catch (claimError) {
+      console.error('Error adding gift card:', claimError);
+      setAddGiftCardError(
+        claimError?.message || 'Unable to add this gift card right now.',
+      );
+    } finally {
+      setIsAddingGiftCard(false);
     }
   };
 
@@ -287,17 +287,6 @@ function MyGift() {
     setIsBulkModalOpen(false);
     setSelectedBulkOrder(null);
     setBulkModalSearch('');
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      'ACTIVE': 'bg-blue-100 text-blue-600 border-[1px] border-[#0F64F633]',
-      'CLAIMED': 'bg-green-100 text-green-600 border-[1px] border-[#22C55E33]',
-      'UNCLAIMED': 'bg-gray-100 text-gray-600 border-[1px] border-[#D1D5DB]',
-      'EXPIRED': 'bg-red-100 text-red-600 border-[1px] border-[#EF444433]',
-      'PROCESSING': 'bg-amber-100 text-amber-700 border-[1px] border-[#F59E0B55]'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-600';
   };
 
   const getGiftIconColor = (status) => {
@@ -524,7 +513,6 @@ function MyGift() {
     };
 
     const handlePrintClick = async (e) => {
-      console.log("card", card)
       e.stopPropagation();
       setIsGeneratingPdf(true);
       try {
@@ -645,7 +633,7 @@ function MyGift() {
 
 
         {card.deliveryMethod === "print" && !card.isPendingVoucher && (
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 mb-3">
             <button
               onClick={handlePrintClick}
               className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors">
@@ -662,7 +650,7 @@ function MyGift() {
         )}
 
 
-        {card?.receiverEmail == session?.user?.email && !card.isPendingVoucher && (
+        {card.isReceived && !card.isPendingVoucher && (
           <div>
             <div className="mb-4">
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -771,10 +759,58 @@ function MyGift() {
           </p>
         </div>
 
-        {/* Copy Success Toast */}
-        {copySuccess && (
-          <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
-            Code copied to clipboard!
+        {session?.user && session.user.role !== 'ADMIN' && (
+          <div className="mb-6 rounded-2xl border border-[#F4CDD7] bg-white p-4 sm:p-5 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-[#1A1A1A]">Add A Gift Card</h2>
+                <p className="mt-1 text-sm text-[#4A4A4A]">
+                  Enter a gift card code you received by email, WhatsApp, or print to attach it to your dashboard.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleAddGiftCard}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-pink-400 to-orange-400 px-4 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
+              >
+                {isAddGiftCardOpen ? 'Close' : 'Add Gift Card'}
+              </button>
+            </div>
+
+            {isAddGiftCardOpen && (
+              <form onSubmit={handleAddGiftCardSubmit} className="mt-4 flex flex-col gap-3 lg:flex-row">
+                <input
+                  type="text"
+                  value={giftCardCode}
+                  onChange={(event) => {
+                    setGiftCardCode(event.target.value);
+                    setAddGiftCardError('');
+                    setAddGiftCardSuccess('');
+                  }}
+                  placeholder="Enter your gift card code"
+                  className="h-11 flex-1 rounded-xl border border-[#D1D5DB] px-4 text-sm text-gray-900 outline-none transition focus:border-[#ED457D] focus:ring-2 focus:ring-[#FBD2DF]"
+                />
+                <button
+                  type="submit"
+                  disabled={isAddingGiftCard}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#ED457D] px-5 text-sm font-medium text-[#ED457D] transition hover:bg-[#FFF3F7] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isAddingGiftCard ? 'Adding...' : 'Add To Received'}
+                </button>
+              </form>
+            )}
+
+            {addGiftCardError && (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {addGiftCardError}
+              </div>
+            )}
+
+            {addGiftCardSuccess && (
+              <div className="mt-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                {addGiftCardSuccess}
+              </div>
+            )}
           </div>
         )}
 
@@ -954,7 +990,7 @@ function MyGift() {
           <>
             {/* Gift Cards Grid - Render in order */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
-              {displayItems.map((item, index) =>
+              {displayItems.map((item) =>
                 item.type === 'bulk'
                   ? renderBulkOrderCard(item.orderNumber, item.cards)
                   : renderSingleOrderCard(item.card)
@@ -1130,7 +1166,7 @@ function MyGift() {
                             <p className="font-bold text-gray-900">{card.currencySymbol}{card.totalAmount.toFixed(2)}</p>
                           </div>
 
-                          {card?.receiverEmail == session?.user?.email && (
+                          {card.isReceived && (
                             <div className="w-32">
                               <div className="flex justify-between text-xs text-gray-500 mb-1">
                                 <span>Spent</span>
