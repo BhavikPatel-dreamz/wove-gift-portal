@@ -7,6 +7,41 @@ import {
 
 const sessionStorage = new PrismaSessionStorage();
 
+function decodeAuthState(state) {
+  if (!state) {
+    return {};
+  }
+
+  try {
+    const decoded = Buffer.from(state, 'base64url').toString('utf8');
+    const parsed = JSON.parse(decoded);
+
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return { shop: state };
+  }
+}
+
+async function findBrandForShop(shopDomain) {
+  if (!shopDomain) {
+    return null;
+  }
+
+  return prisma.brand.findFirst({
+    where: {
+      OR: [
+        { domain: shopDomain },
+        {
+          website: {
+            in: [shopDomain, `https://${shopDomain}`, `http://${shopDomain}`],
+          },
+        },
+      ],
+    },
+    select: { id: true },
+  });
+}
+
 export async function GET(request) {
   try {
     const url = new URL(request.url);
@@ -16,13 +51,17 @@ export async function GET(request) {
     const code = searchParams.get('code');
     const shop = searchParams.get('shop');
     const host = searchParams.get('host');
+    const state = searchParams.get('state');
+    const authState = decodeAuthState(state);
+    const installSource = authState.source === 'admin' ? 'admin' : 'public';
+    const requestedShop = shop || authState.shop;
     
-    if (!code || !shop) {
+    if (!code || !requestedShop) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
     
     // Ensure shop domain is properly formatted
-    const shopDomain = shop.endsWith('.myshopify.com') ? shop : `${shop}.myshopify.com`;
+    const shopDomain = requestedShop.endsWith('.myshopify.com') ? requestedShop : `${requestedShop}.myshopify.com`;
     
     try {
       // Exchange the authorization code for an access token
@@ -43,13 +82,15 @@ export async function GET(request) {
       }
 
       const tokenData = await tokenResponse.json();
+      let brand = null;
 
       // [Wove] Get all vendors on app install
       try {
         const accessToken = tokenData.access_token;
         const shopName = shopDomain;
 
-        await fetchShopInfo(accessToken, shopName);
+        const shopSyncResult = await fetchShopInfo(accessToken, shopName);
+        brand = shopSyncResult?.brand ?? null;
         // await fetchGiftCardProducts(accessToken, shopName);
         // await fetchAllVendors(accessToken, shopName);
         // await fetchGiftCardInventory(accessToken, shopName);
@@ -88,15 +129,14 @@ export async function GET(request) {
         },
       });
 
-      // Find brand by shop domain to redirect to the edit page
-      const brand = await prisma.brand.findFirst({
-        where: {
-          domain: session.shop,
-        },
-      });
+      if (!brand) {
+        brand = await findBrandForShop(session.shop);
+      }
 
       let redirectUrl;
-      if (brand) {
+      if (installSource === 'admin' && brand) {
+        redirectUrl = `/brandsPartner/edit/${brand.id}`;
+      } else if (brand) {
         // If brand exists, redirect to the Shopify dashboard with brand context
         // Note: /brandsPartner/edit/ is an admin route that requires a separate login session.
         // After Shopify OAuth we only have a Shopify session, so we stay within /shopify/ routes.
@@ -106,8 +146,7 @@ export async function GET(request) {
         redirectUrl = `/shopify/dashboard?shop=${session.shop}${host ? `&host=${host}` : ''}`;
       }
 
-      const finalRedirectUrl = new URL(redirectUrl, request.url);
-      finalRedirectUrl.protocol = 'http';
+      const finalRedirectUrl = new URL(redirectUrl, process.env.SHOPIFY_APP_URL || request.url);
       return NextResponse.redirect(finalRedirectUrl);
       
     } catch (tokenError) {

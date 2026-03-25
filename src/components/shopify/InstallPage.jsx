@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { CheckCircle, AlertTriangle, Store } from 'lucide-react';
 
-export default function InstallPage() {
+export default function InstallPage({ authSource = 'public' }) {
   const [shop, setShop] = useState('');
   const [installing, setInstalling] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -48,7 +47,13 @@ export default function InstallPage() {
       : cleanShop;
 
     try {
-      window.location.href = `/api/shopify/auth?shop=${shopDomain}`;
+      const installParams = new URLSearchParams({ shop: shopDomain });
+
+      if (authSource && authSource !== 'public') {
+        installParams.set('source', authSource);
+      }
+
+      window.location.href = `/api/shopify/auth?${installParams.toString()}`;
     } catch (error) {
       console.error('Installation error:', error);
       setInstalling(false);

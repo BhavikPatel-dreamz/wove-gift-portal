@@ -38,29 +38,36 @@ export const fetchShopInfo = async (accessToken, shopName) => {
   }
 
   const shopData = await response.json();
-  await saveBrandFromShopify(shopData.shop);
-  return shopData.shop;
+  const brand = await saveBrandFromShopify(shopData.shop);
+  return {
+    brand,
+    shop: shopData.shop,
+  };
 };
 
 export const saveBrandFromShopify = async (shopData) => {
-  const { myshopify_domain, name, email,domain,currency } = shopData;
+  const { myshopify_domain, name, email, domain, currency } = shopData;
   const slug = name.toLowerCase().replace(/\s+/g, '-');
+  const shopDomain = getShopifyDomain(myshopify_domain || domain || '');
+  const website = myshopify_domain || domain || shopDomain;
 
   try {
     const brand = await prisma.brand.upsert({
       where: { brandName: name },
       update: {
-        website: myshopify_domain,
+        website,
         contact: email,
+        currency,
+        domain: shopDomain,
       },
       create: {
         brandName: name,
         slug: slug,
-        logo:"",
+        logo: "",
         description: 'No description available.', // Placeholder description
-        website: myshopify_domain || domain,
-        domain: domain,
-        currency:currency,
+        website,
+        domain: shopDomain,
+        currency: currency,
         contact: email,
         categoryName: 'Default', // Placeholder category
       },

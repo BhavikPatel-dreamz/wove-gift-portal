@@ -417,7 +417,7 @@ const AddBrandPartner = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'integrations':
-        return <InstallPage />;
+        return <InstallPage authSource="admin" />;
       case 'core':
         return <CoreTab formData={formData} updateFormData={updateFormData} />;
       case 'terms':
