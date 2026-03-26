@@ -41,6 +41,7 @@ const mobileMemberNavLinks = {
   'Vouchers & Gift Cards': '/my-gift',
   'Support & Requests': '/support',
   'Track Request Status': '/track-request',
+  'Add Gift Voucher': '/add-gift-voucher'
 };
 
 const Header = () => {
@@ -321,6 +322,13 @@ const Header = () => {
                                 className={linkClass("/track-request")}
                               >
                                 Track Request Status
+                              </Link>
+                              <Link
+                                href="/add-gift-voucher"
+                                onClick={() => setOpenDropdown(false)}
+                                className={linkClass("/add-gift-voucher")}
+                              >
+                                Add Gift Voucher
                               </Link>
                             </div>
                             <div className="pb-2 border-t border-gray-200">

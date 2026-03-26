@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Download, Eye, Gift, Calendar, ChevronLeft, ChevronRight, AlertCircle, Users, X } from 'lucide-react';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { addGiftCardToAccount, getGiftCards } from '../../../lib/action/customerDashbordAction';
+import { getGiftCards } from '../../../lib/action/customerDashbordAction';
+import { useSearchParams } from 'next/navigation';
 import GiftCardDetailModal from './GiftCardDetailModal';
 import { useSession } from '@/contexts/SessionContext';
 
@@ -47,8 +48,14 @@ const formatScheduledForSAST = (dateValue) => {
   }
 };
 
+const validGiftTabs = ['all', 'scheduled', 'sent', 'received', 'expired'];
+
 function MyGift() {
-  const [activeTab, setActiveTab] = useState('all');
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(
+    validGiftTabs.includes(requestedTab) ? requestedTab : 'all',
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,12 +80,6 @@ function MyGift() {
   const datePickerRef = useRef(null);
   const session = useSession();
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [isAddGiftCardOpen, setIsAddGiftCardOpen] = useState(false);
-  const [giftCardCode, setGiftCardCode] = useState('');
-  const [isAddingGiftCard, setIsAddingGiftCard] = useState(false);
-  const [addGiftCardError, setAddGiftCardError] = useState('');
-  const [addGiftCardSuccess, setAddGiftCardSuccess] = useState('');
-  const [refreshGiftCardsKey, setRefreshGiftCardsKey] = useState(0);
 
   const tabs = [
     { id: 'all', label: 'All Gifts' },
@@ -97,6 +98,16 @@ function MyGift() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (!requestedTab || !validGiftTabs.includes(requestedTab)) return;
+    if (requestedTab === activeTab) return;
+
+    setActiveTab(requestedTab);
+    setCurrentPage(1);
+    setStartDate(null);
+    setEndDate(null);
+  }, [requestedTab, activeTab]);
 
   // Group gift cards by bulk order WHILE PRESERVING ORDER
   const groupGiftCards = useCallback((cards) => {
@@ -184,7 +195,7 @@ function MyGift() {
 
   useEffect(() => {
     fetchGiftCards();
-  }, [fetchGiftCards, refreshGiftCardsKey]);
+  }, [fetchGiftCards]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -214,57 +225,6 @@ function MyGift() {
     setEndDate(null);
     setCurrentPage(1);
     setIsDatePickerOpen(false);
-  };
-
-  const handleToggleAddGiftCard = () => {
-    setIsAddGiftCardOpen((previous) => !previous);
-    setAddGiftCardError('');
-    setAddGiftCardSuccess('');
-  };
-
-  const handleAddGiftCardSubmit = async (event) => {
-    event.preventDefault();
-
-    const normalizedCode = giftCardCode.trim();
-    if (!normalizedCode) {
-      setAddGiftCardSuccess('');
-      setAddGiftCardError('Enter the gift card code you received.');
-      return;
-    }
-
-    setIsAddingGiftCard(true);
-    setAddGiftCardError('');
-    setAddGiftCardSuccess('');
-
-    try {
-      const result = await addGiftCardToAccount(normalizedCode);
-
-      if (!result.success) {
-        setAddGiftCardError(result.error || 'Unable to add this gift card right now.');
-        return;
-      }
-
-      setGiftCardCode('');
-      setSearchQuery('');
-      setDebouncedSearch('');
-      setStartDate(null);
-      setEndDate(null);
-      setCurrentPage(1);
-      setActiveTab('received');
-      setAddGiftCardSuccess(
-        result.message || 'Gift card added to your Received gifts.',
-      );
-      if (activeTab === 'received') {
-        setRefreshGiftCardsKey((previous) => previous + 1);
-      }
-    } catch (claimError) {
-      console.error('Error adding gift card:', claimError);
-      setAddGiftCardError(
-        claimError?.message || 'Unable to add this gift card right now.',
-      );
-    } finally {
-      setIsAddingGiftCard(false);
-    }
   };
 
   const handleViewDetails = (card) => {
@@ -758,61 +718,6 @@ function MyGift() {
                 } vouchers and gift cards.`}
           </p>
         </div>
-
-        {session?.user && session.user.role !== 'ADMIN' && (
-          <div className="mb-6 rounded-2xl border border-[#F4CDD7] bg-white p-4 sm:p-5 shadow-sm">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-[#1A1A1A]">Add A Gift Card</h2>
-                <p className="mt-1 text-sm text-[#4A4A4A]">
-                  Enter a gift card code you received by email, WhatsApp, or print to attach it to your dashboard.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleToggleAddGiftCard}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-pink-400 to-orange-400 px-4 text-sm font-medium text-white shadow-sm transition hover:shadow-md"
-              >
-                {isAddGiftCardOpen ? 'Close' : 'Add Gift Card'}
-              </button>
-            </div>
-
-            {isAddGiftCardOpen && (
-              <form onSubmit={handleAddGiftCardSubmit} className="mt-4 flex flex-col gap-3 lg:flex-row">
-                <input
-                  type="text"
-                  value={giftCardCode}
-                  onChange={(event) => {
-                    setGiftCardCode(event.target.value);
-                    setAddGiftCardError('');
-                    setAddGiftCardSuccess('');
-                  }}
-                  placeholder="Enter your gift card code"
-                  className="h-11 flex-1 rounded-xl border border-[#D1D5DB] px-4 text-sm text-gray-900 outline-none transition focus:border-[#ED457D] focus:ring-2 focus:ring-[#FBD2DF]"
-                />
-                <button
-                  type="submit"
-                  disabled={isAddingGiftCard}
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#ED457D] px-5 text-sm font-medium text-[#ED457D] transition hover:bg-[#FFF3F7] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isAddingGiftCard ? 'Adding...' : 'Add To Received'}
-                </button>
-              </form>
-            )}
-
-            {addGiftCardError && (
-              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {addGiftCardError}
-              </div>
-            )}
-
-            {addGiftCardSuccess && (
-              <div className="mt-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                {addGiftCardSuccess}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Search and Actions */}
         <div className="w-full flex flex-col md:flex-row items-stretch md:items-center gap-3 mb-8">
