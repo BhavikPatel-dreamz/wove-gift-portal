@@ -119,6 +119,7 @@ const LoadingSkeleton = () => (
 const Dashboard = () => {
   const searchParams = useSearchParams();
   const shop = searchParams?.get('shop');
+  const idToken = searchParams?.get('id_token') || searchParams?.get('idToken');
 
   // Local state management - no URL updates
   const [period, setPeriod] = useState('month');
@@ -138,6 +139,7 @@ const Dashboard = () => {
         const data = await getDashboardData({
           period,
           ...(shop && { shop }),
+          ...(idToken && { idToken }),
           ...(startDate && endDate ? { startDate, endDate } : {}),
         });
         setDashboardData(data);
@@ -149,7 +151,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [period, startDate, endDate, shop]);
+  }, [period, startDate, endDate, shop, idToken]);
 
   const handlePeriodChange = (newPeriod) => {
     setPeriod(newPeriod);

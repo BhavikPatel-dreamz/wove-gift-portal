@@ -26,12 +26,7 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://wove-gift-portal.vercel.app/auth/callback",
-  "https://wove-gift-portal.vercel.app/auth/shopify/callback",
-  "https://wove-gift-portal.vercel.app/api/auth/callback",
-  "https://wove-gift-portal.vercel.app/api/shopify/auth/callback",
-  "https://wove-gift-portal.vercel.app/shopify/dashboard",
-  "https://wove-gift-portal.vercel.app/shopify"
+  "https://wove-gift-portal.vercel.app/api/shopify/auth/callback"
 ]
 
 [pos]

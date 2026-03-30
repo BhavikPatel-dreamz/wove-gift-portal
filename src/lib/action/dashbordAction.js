@@ -1,19 +1,42 @@
 "use server";
 
 import { prisma } from "../db";
+import {
+  ensureShopifyInstallData,
+  normalizeShopDomain,
+} from "../shopify/installBootstrap";
 
 export async function getDashboardData(options = {}) {
   try {
     console.log("options",options)
-    const { period = "all", startDate, endDate, shop } = options;
+    const { period = "all", startDate, endDate, shop, idToken } = options;
     const dateRange = getDateRange(period, startDate, endDate);
 
     let brandId = null;
     if (shop) {
-      const brand = await prisma.brand.findUnique({
-        where: { domain: shop },
-        select: { id: true },
+      const shopDomain = normalizeShopDomain(shop);
+      const installState = await ensureShopifyInstallData({
+        shop: shopDomain,
+        idToken,
       });
+
+      const brand = installState?.brand || (await prisma.brand.findFirst({
+        where: {
+          OR: [
+            { domain: shopDomain },
+            {
+              website: {
+                in: [
+                  shopDomain,
+                  `https://${shopDomain}`,
+                  `http://${shopDomain}`,
+                ],
+              },
+            },
+          ],
+        },
+        select: { id: true },
+      }));
 
       if (!brand) {
         return getEmptyDashboardResponse(period, dateRange);

@@ -11,7 +11,6 @@ export default function ShopifyAppRoot() {
     const checkAuthAndRedirect = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const shopParam = urlParams.get('shop');
-      const hostParam = urlParams.get('host');
 
       // If no shop parameter, redirect to install page
       if (!shopParam) {
@@ -24,11 +23,18 @@ export default function ShopifyAppRoot() {
         const response = await fetch(`/api/shopify/shop?shop=${shopParam}`);
         
         if (response.ok) {
+          const preservedParams = new URLSearchParams();
+          preservedParams.set('shop', shopParam);
+
+          ['host', 'embedded', 'id_token', 'session', 'locale', 'brandId'].forEach((key) => {
+            const value = urlParams.get(key);
+            if (value) {
+              preservedParams.set(key, value);
+            }
+          });
+
           // Shop is authenticated, redirect to dashboard
-          const queryString = hostParam 
-            ? `?shop=${shopParam}&host=${hostParam}`
-            : `?shop=${shopParam}`;
-          router.replace(`/shopify/dashboard${queryString}`);
+          router.replace(`/shopify/dashboard?${preservedParams.toString()}`);
         } else {
           // Not authenticated, redirect to install
           router.replace(`/shopify/install?shop=${shopParam}`);
