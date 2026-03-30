@@ -88,6 +88,9 @@ const Sidebar = ({ isOpen, onClose }) => {
   const shopParam = searchParams.get("shop");
   const session = useSession();
   const { navigate } = useShopifyNavigation();
+  const isShopifyRoute = pathname === '/shopify' || pathname.startsWith('/shopify/');
+  const isShopifyMode = Boolean(shopParam || isShopifyRoute);
+  const preservedShopifyQueryKeys = ['shop', 'host', 'embedded', 'id_token', 'session', 'locale', 'brandId'];
 
   const allMenuItems = [
     { name: 'Dashboard', icon: DashboardIcon, href: '/dashboard' },
@@ -98,13 +101,26 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Reports', icon: ReportsIcon, href: '/reports' },
   ];
 
+  const buildShopifyUrl = (href) => {
+    const baseUrl = href.startsWith('/shopify') ? href : `/shopify${href}`;
+    const preservedParams = new URLSearchParams();
+
+    preservedShopifyQueryKeys.forEach((key) => {
+      const value = searchParams.get(key);
+      if (value) preservedParams.set(key, value);
+    });
+
+    const query = preservedParams.toString();
+    return query ? `${baseUrl}?${query}` : baseUrl;
+  };
+
   
   // --------------------------------
   // MODE HANDLING
   // --------------------------------
   let menuItems = [];
 
-  if (shopParam) {
+  if (isShopifyMode) {
     // Shopify Admin Mode
     const shopifyRoutes = ['/dashboard', '/vouchers', '/settlements', '/reports'];
 
@@ -112,18 +128,25 @@ const Sidebar = ({ isOpen, onClose }) => {
       .filter(item => shopifyRoutes.includes(item.href))
       .map(item => ({
         ...item,
-        href: `/shopify${item.href}`
+        href: `/shopify${item.href}`,
+        url: buildShopifyUrl(item.href)
       }));
   }
   else if (session?.user?.role === 'ADMIN') {
     // Full access for Admin
-    menuItems = allMenuItems;
+    menuItems = allMenuItems.map(item => ({
+      ...item,
+      url: item.href
+    }));
   }
   else {
     // Restricted normal user mode
     menuItems = allMenuItems.filter(item =>
       ['/dashboard', '/vouchers'].includes(item.href)
-    );
+    ).map(item => ({
+      ...item,
+      url: item.href
+    }));
   }
 
   // --------------------------------
@@ -200,10 +223,10 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {/* -------------------------
                     Shopify Mode Navigation
                    ------------------------- */}
-                {shopParam ? (
+                {isShopifyMode ? (
                   <button
                     onClick={() => {
-                      navigate(item.href);
+                      navigate(item.url ?? item.href);
                       onClose();
                     }}
                     className={`
@@ -222,7 +245,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                       Normal Navigation
                      ------------------------- */
                   <Link
-                    href={item.href}
+                    href={item.url ?? item.href}
                     onClick={onClose}
                     className={`
                       w-full flex items-center px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors cursor-pointer
