@@ -1,49 +1,61 @@
+// Layout.jsx
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import Script from "next/script";
 import { getShopSession } from "@/lib/shopify/getSession";
 import ShopifyClientLayout from "./ShopifyClientLayout";
 
-/**
- * Server-side Shopify layout.
- * Validates the shop session before rendering children.
- * Redirects to auth/install if no valid session is found.
- */
-export default async function ShopifyLayout({ children }) {
-  // In App Router, layouts don't receive searchParams directly.
-  // Extract the shop param from the request URL via headers.
+const apiKey = process.env.NEXT_PUBLIC_SHOPIFY_API_KEY ?? "";
+
+function normalizeShopDomain(shop) {
+  if (!shop) return null;
+  const cleaned = shop
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/$/, "")
+    .replace(/\.myshopify\.com$/i, "");
+  if (!cleaned) return null;
+  return `${cleaned}.myshopify.com`.toLowerCase();
+}
+
+export const metadata = {
+  title: "Shopify App",
+  ...(apiKey ? { other: { "shopify-api-key": apiKey } } : {}),
+};
+
+export default async function ShopifyLayout({ children, searchParams }) {
   const headersList = await headers();
-  const fullUrl = headersList.get("x-invoke-path") || headersList.get("x-url") || "";
-  const referer = headersList.get("referer") || "";
 
-  // Try to extract shop from the URL or referer
-  let shop = null;
-  try {
-    const urlToParse = fullUrl.includes("?") ? fullUrl : referer;
-    if (urlToParse) {
-      const url = new URL(urlToParse, process.env.SHOPIFY_APP_URL || "http://localhost:3000");
-      shop = url.searchParams.get("shop");
-    }
-  } catch {
-    // URL parsing failed, shop stays null
-  }
+  // ✅ FIX 1: Read shop from BOTH headers AND URL query params
+  const shopFromHeader = headersList.get("x-shopify-shop");
+  const shopFromParams = (await searchParams)?.shop; // Next.js 14 app router
 
-  // If we have a shop param, validate the session server-side
+  const shop =
+    normalizeShopDomain(shopFromHeader) ||
+    normalizeShopDomain(shopFromParams);
+
+  // ✅ FIX 2: Guard properly — redirect if shop present but session invalid
   if (shop) {
     const sessions = await getShopSession(shop);
 
-    if (!sessions?.length) {
-      redirect(`/shopify/auth-required?shop=${shop}`);
-    }
-
-    // Optionally check that at least one session has a valid access token
-    const validSession = sessions.find(
-      (s) => s.accessToken && (!s.expires || new Date(s.expires) > new Date())
+    const validSession = sessions?.find(
+      (s) =>
+        s.accessToken && (!s.expires || new Date(s.expires) > new Date())
     );
 
     if (!validSession) {
       redirect(`/shopify/auth-required?shop=${shop}`);
     }
   }
+  // Note: if shop is null, we're likely on a non-embedded route — let it through
 
-  return <ShopifyClientLayout>{children}</ShopifyClientLayout>;
+  return (
+    <>
+      <Script
+        src="https://cdn.shopify.com/shopifycloud/app-bridge.js"
+        strategy="beforeInteractive"
+      />
+      <ShopifyClientLayout>{children}</ShopifyClientLayout>
+    </>
+  );
 }

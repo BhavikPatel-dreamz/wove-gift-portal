@@ -208,6 +208,10 @@ export async function completeAuth(code, shop) {
   }
 }
 
+function buildAppUrl(path) {
+  return new URL(path, process.env.SHOPIFY_APP_URL).toString();
+}
+
 /**
  * Register webhooks for a shop
  */
@@ -216,12 +220,12 @@ export async function registerWebhooks(session) {
     const webhooks = [
       {
         topic: "ORDERS_CREATE",
-        address: `${process.env.SHOPIFY_APP_URL}api/webhooks/giftcard-redeem`,
+        address: buildAppUrl("/api/webhooks/giftcard-redeem"),
         format: "json",
       },
       {
         topic: "APP_UNINSTALLED",
-        address: `${process.env.SHOPIFY_APP_URL}api/webhooks/app-uninstalled`,
+        address: buildAppUrl("/api/shopify/webhooks/uninstall"),
         format: "json",
       },
     ];
@@ -279,24 +283,32 @@ export async function registerWebhooks(session) {
 /**
  * Verify Shopify webhook
  */
-export function verifyWebhook(request, body) {
-  const hmac = request.headers.get("x-shopify-hmac-sha256");
+export async function verifyWebhook(request, body) {
   const shop = request.headers.get("x-shopify-shop-domain");
 
-  if (!hmac || !shop) {
-    return { valid: false, shop: null };
+  if (!shop || !body) {
+    return { valid: false, shop: shop || null, reason: "missing_required_data" };
   }
 
   try {
-    const valid = shopify.webhooks.validate({
+    const validation = await shopify.webhooks.validate({
       rawBody: body,
-      rawHeader: hmac,
+      rawRequest: {
+        headers: Object.fromEntries(request.headers.entries()),
+        method: request.method,
+        url: request.url,
+        originalUrl: request.url,
+      },
     });
 
-    return { valid, shop };
+    return {
+      valid: Boolean(validation?.valid),
+      shop,
+      reason: validation?.reason ?? null,
+    };
   } catch (error) {
     console.error("Webhook verification error:", error);
-    return { valid: false, shop };
+    return { valid: false, shop, reason: "verification_failed" };
   }
 }
 

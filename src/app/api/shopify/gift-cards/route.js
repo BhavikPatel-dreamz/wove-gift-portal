@@ -1,30 +1,32 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/db';
+import {
+  getValidShopifySession,
+  normalizeShopDomain,
+} from '@/lib/shopify/request-session';
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const shop = searchParams.get('shop');
+    const shopDomain = normalizeShopDomain(shop);
 
-    if (!shop) {
+    if (!shopDomain) {
       return NextResponse.json({ error: 'Shop parameter is required' }, { status: 400 });
     }
 
-    // Get Shopify session
-    const session = await prisma.appInstallation.findUnique({
-      where: { shop }
-    });
+    const session = await getValidShopifySession(shopDomain);
 
-    if (!session) {
+    if (!session?.accessToken) {
       return NextResponse.json({ error: 'Shop not authenticated' }, { status: 401 });
     }
 
     // Fetch gift cards from Shopify
-    const shopifyGiftCards = await fetchShopifyGiftCards(shop, session.accessToken);
+    const shopifyGiftCards = await fetchShopifyGiftCards(shopDomain, session.accessToken);
     
     // Also fetch our internal gift cards for this shop
     const internalGiftCards = await prisma.GiftCard.findMany({
-      where: { shop },
+      where: { shop: shopDomain },
       orderBy: { createdAt: 'desc' }
     });
 

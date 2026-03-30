@@ -14,7 +14,7 @@ const poppins = Poppins({
 
 export const metadata = {
   title: 'Wove Gift Cards',
-  description: 'Production-grade authentication with Next.js, Prisma, and PostgreSQL',
+  description: 'WoveGifts is a trading name of My Perks (Pty) Ltd, a private company duly incorporated in the Republic of South Africa ("My Perks", "WoveGifts", "we", "us", or "our").',
 }
 
 export default function RootLayout({ children }) {

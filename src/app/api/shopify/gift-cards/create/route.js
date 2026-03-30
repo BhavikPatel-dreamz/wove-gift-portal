@@ -1,24 +1,25 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../../lib/db.js';
+import {
+  getValidShopifySession,
+  normalizeShopDomain,
+} from '@/lib/shopify/request-session';
 
 export async function POST(request) {
   try {
     const body = await request.json();
     const { shop, initialValue, customerEmail, note, expiresAt } = body;
+    const shopDomain = normalizeShopDomain(shop);
 
-    if (!shop || !initialValue) {
+    if (!shopDomain || !initialValue) {
       return NextResponse.json({ 
         error: 'Shop and initial value are required' 
       }, { status: 400 });
     }
 
-    // Get Shopify session
-    const session = await prisma.appInstallation.findUnique({
-      where: { shop }
-    });
+    const session = await getValidShopifySession(shopDomain);
 
-
-    if (!session) {
+    if (!session?.accessToken) {
       return NextResponse.json({ 
         error: 'Shop not authenticated' 
       }, { status: 401 });
@@ -26,8 +27,8 @@ export async function POST(request) {
 
     // Create gift card in Shopify using GraphQL
     const shopifyGiftCard = await createShopifyGiftCard(
-      shop, 
-      session.accessToken, 
+      shopDomain,
+      session.accessToken,
       {
         initialValue: parseFloat(initialValue),
         note,
@@ -38,7 +39,7 @@ export async function POST(request) {
     // Save to our database as well
     const giftCard = await prisma.giftCard.create({
       data: {
-        shop,
+        shop: shopDomain,
         shopifyId: shopifyGiftCard.id?.replace('gid://shopify/GiftCard/', ''),
         code: shopifyGiftCard.maskedCode,
         initialValue: parseFloat(initialValue),

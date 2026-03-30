@@ -477,41 +477,51 @@ const Dashboard = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
+          {/* Monthly Chart */}
           <ChartCard
             title="Monthly Transaction Trends"
-            subtitle={monthlyData.length > 0 ? "Transaction volume over recent months" : "Awaiting first transaction data"}
+            subtitle={
+              monthlyData.length > 0
+                ? "Transaction volume over recent months"
+                : "Awaiting first transaction data"
+            }
             className="lg:col-span-1"
           >
-            <div className="h-80 flex items-center justify-center">
+            <div className="h-80">
               {monthlyData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+
                     <XAxis
                       dataKey="month"
                       axisLine={false}
                       tickLine={false}
                       style={{ fontSize: '12px' }}
                     />
+
                     <YAxis
                       axisLine={false}
                       tickLine={false}
                       style={{ fontSize: '12px' }}
                     />
+
                     <Tooltip
                       contentStyle={{
                         backgroundColor: 'white',
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                       }}
                       formatter={(value, name) => {
-                        if (name === 'transactions') return [`R${value.toLocaleString()}`, 'Revenue'];
+                        if (name === 'transactions')
+                          return [`R${value.toLocaleString()}`, 'Revenue'];
                         return [value, name];
                       }}
                     />
+
                     <Area
                       type="monotone"
                       dataKey="transactions"
@@ -519,152 +529,98 @@ const Dashboard = () => {
                       fill="url(#gradient1)"
                       strokeWidth={3}
                     />
+
                     <defs>
                       <linearGradient id="gradient1" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1} />
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="text-center text-gray-400">
-                  <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg mb-2">No transaction data yet</p>
-                  <p className="text-sm">Charts will appear once orders are submitted</p>
-                </div>
-              )}
-            </div>
-          </ChartCard>
-
-          <ChartCard
-            title="Top Performing Brands"
-            subtitle={brandData.length > 0 ? "Based on total revenue" : "Awaiting brand performance data"}
-            className="lg:col-span-1"
-          >
-            <div className="h-80 flex items-center justify-center">
-              {brandData.length > 0 ? (
-                <div className="w-full">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={brandData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={90}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {brandData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value) => `R${value.toLocaleString()}`}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="mt-4 space-y-2">
-                    {brandData.map((brand, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: brand.color }}
-                          />
-                          <span className="text-sm font-medium text-gray-700">{brand.name}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-sm font-medium text-gray-900">R{brand.value.toLocaleString()}</span>
-                          <span className="text-xs text-gray-500 ml-2">({brand.orderCount} orders)</span>
-                        </div>
-                      </div>
-                    ))}
+                <div className="h-full flex items-center justify-center text-gray-400 text-center">
+                  <div>
+                    <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg mb-2">No transaction data yet</p>
+                    <p className="text-sm">
+                      Charts will appear once orders are submitted
+                    </p>
                   </div>
                 </div>
-              ) : (
-                <div className="text-center text-gray-400">
-                  <TrendingUp className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg mb-2">No brand performance data yet</p>
-                  <p className="text-sm">Rankings will appear once orders are submitted</p>
-                </div>
               )}
             </div>
           </ChartCard>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Weekly Chart */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2 flex flex-col">
 
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-xl text-white">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Users className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Active Brand Partners</h3>
-                <p className="text-indigo-100">Brands available for selection</p>
-              </div>
-            </div>
-            <div className="text-4xl font-bold mb-2">
-              {dashboardData?.metrics?.activeBrandPartners?.active || '0'}
-            </div>
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4" />
-              <span className="text-sm">
-                {dashboardData?.metrics?.activeBrandPartners?.featured || 0} featured partnerships
-              </span>
-            </div>
-          </div>
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-gray-800 mb-1">
+                Weekly Performance
+              </h3>
 
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Weekly Performance</h3>
               <p className="text-sm text-gray-500">
                 Transaction volume over the past week
-                {dashboardData?.trends?.weekly?.summary?.weekOverWeekGrowth && (
-                  <span className={`ml-2 font-medium ${dashboardData.trends.weekly.summary.weekOverWeekGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                    ({dashboardData.trends.weekly.summary.weekOverWeekGrowth >= 0 ? '+' : ''}
-                    {dashboardData.trends.weekly.summary.weekOverWeekGrowth}% vs last week)
+
+                {dashboardData?.trends?.weekly?.summary?.weekOverWeekGrowth !== undefined && (
+                  <span
+                    className={`ml-2 font-medium ${dashboardData.trends.weekly.summary.weekOverWeekGrowth >= 0
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                      }`}
+                  >
+                    (
+                    {dashboardData.trends.weekly.summary.weekOverWeekGrowth >= 0
+                      ? '+'
+                      : ''}
+                    {dashboardData.trends.weekly.summary.weekOverWeekGrowth}% vs last week
+                    )
                   </span>
                 )}
               </p>
             </div>
-            <div className="h-40">
+
+            {/* FIXED HEIGHT */}
+            <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={weeklyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+
                   <XAxis
                     dataKey="day"
                     axisLine={false}
                     tickLine={false}
                     style={{ fontSize: '12px' }}
                   />
+
                   <YAxis
                     axisLine={false}
                     tickLine={false}
                     style={{ fontSize: '12px' }}
                   />
+
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'white',
                       border: '1px solid #e5e7eb',
                       borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                     }}
                     formatter={(value, name) => {
-                      if (name === 'value') return [`R${value.toLocaleString()}`, 'Revenue'];
+                      if (name === 'value')
+                        return [`R${value.toLocaleString()}`, 'Revenue'];
                       return [value, name];
                     }}
                   />
+
                   <Line
                     type="monotone"
                     dataKey="value"
                     stroke="#10B981"
                     strokeWidth={3}
-                    dot={{ fill: '#10B981', r: 6 }}
-                    activeDot={{ r: 8, stroke: '#10B981', strokeWidth: 2 }}
+                    dot={{ r: 5 }}
+                    activeDot={{ r: 7 }}
                   />
                 </LineChart>
               </ResponsiveContainer>

@@ -11,9 +11,13 @@ automatically_update_urls_on_dev = true
 [webhooks]
 api_version = "2025-07"
 
-  [[webhooks.subscriptions]]
-  topics = [ "orders/create" ]
-  uri = "https://wove-gift-portal.vercel.app/api/webhooks/giftcard-redeem"
+[[webhooks.subscriptions]]
+topics = [ "orders/create" ]
+uri = "https://wove-gift-portal.vercel.app/api/webhooks/giftcard-redeem"
+
+[[webhooks.subscriptions]]
+topics = [ "app/uninstalled" ]
+uri = "https://wove-gift-portal.vercel.app/api/shopify/webhooks/uninstall"
 
 [access.admin]
 direct_api_mode = "offline"

@@ -1,8 +1,104 @@
-import { NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
+import { NextResponse } from 'next/server';
+import { hasValidSession } from './lib/shopify.server.js';
+import {
+  ensureShopifyInstallData,
+  normalizeShopDomain,
+} from './lib/shopify/installBootstrap.js';
 
-export function proxy(request) {
-  const { pathname } = request.nextUrl
+const SHOPIFY_CONTEXT_HEADERS = {
+  shop: 'x-shopify-shop',
+  host: 'x-shopify-host',
+  embedded: 'x-shopify-embedded',
+  session: 'x-shopify-session',
+  id_token: 'x-shopify-id-token',
+  locale: 'x-shopify-locale',
+  brandId: 'x-shopify-brand-id',
+};
+
+function withShopifyContext(request, context) {
+  const headers = new Headers(request.headers);
+
+  for (const [key, headerName] of Object.entries(SHOPIFY_CONTEXT_HEADERS)) {
+    const value = context[key];
+
+    if (value) {
+      headers.set(headerName, value);
+    }
+  }
+
+  return headers;
+}
+
+async function authorizeShopifyRequest(request, context) {
+  const {
+    normalizedShop,
+    host,
+    embedded,
+    session,
+    idToken,
+    locale,
+    brandId,
+  } = context;
+
+  if (!normalizedShop) {
+    return NextResponse.redirect(new URL('/shopify/auth-required', request.url));
+  }
+
+  const validSession = await hasValidSession(normalizedShop);
+
+  let bootstrapState = null;
+
+  if (!validSession && idToken) {
+    bootstrapState = await ensureShopifyInstallData({
+      shop: normalizedShop,
+      idToken,
+    });
+  }
+
+  const hasAccess = validSession || Boolean(bootstrapState?.session?.accessToken);
+
+  if (!hasAccess) {
+    const authRequiredUrl = new URL('/shopify/auth-required', request.url);
+    authRequiredUrl.searchParams.set('shop', normalizedShop);
+
+    if (host) {
+      authRequiredUrl.searchParams.set('host', host);
+    }
+
+    if (embedded) {
+      authRequiredUrl.searchParams.set('embedded', embedded);
+    }
+
+    if (locale) {
+      authRequiredUrl.searchParams.set('locale', locale);
+    }
+
+    if (brandId) {
+      authRequiredUrl.searchParams.set('brandId', brandId);
+    }
+
+    return NextResponse.redirect(authRequiredUrl);
+  }
+
+  const requestHeaders = withShopifyContext(request, {
+    shop: normalizedShop,
+    host,
+    embedded,
+    session,
+    id_token: idToken,
+    locale,
+    brandId,
+  });
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+}
+
+export async function proxy(request) {
+  const { pathname } = request.nextUrl;
 
   // Public routes - no authentication required
   const publicRoutes = [
@@ -21,6 +117,7 @@ export function proxy(request) {
   const publicApiRoutes = [
     '/api/reports/custom',
     '/api/reports/schedule',
+    '/api/shopify/webhooks',
   ];
 
   // Check if current path matches any public route
@@ -32,80 +129,55 @@ export function proxy(request) {
   // Handle Shopify app routes
   if (pathname.startsWith('/shopify')) {
     const shop = request.nextUrl.searchParams.get('shop');
+    const normalizedShop = shop ? normalizeShopDomain(shop) : '';
     const host = request.nextUrl.searchParams.get('host');
     const embedded = request.nextUrl.searchParams.get('embedded');
     const session = request.nextUrl.searchParams.get('session');
-    const idToken = request.nextUrl.searchParams.get('id_token');
-    
-    // Root /shopify route - redirect to install or dashboard based on shop param
+    const idToken =
+      request.nextUrl.searchParams.get('id_token') ||
+      request.nextUrl.searchParams.get('idToken');
+    const locale = request.nextUrl.searchParams.get('locale');
+    const brandId = request.nextUrl.searchParams.get('brandId');
+
+    // Root /shopify route - redirect to install if no shop is present.
     if (pathname === '/shopify') {
-      if (!shop) {
+      if (!normalizedShop) {
         return NextResponse.redirect(new URL('/shopify/install', request.url));
       }
-      // If shop param exists, continue (will be handled by the page)
-      return NextResponse.next();
+
+      return authorizeShopifyRequest(request, {
+        normalizedShop,
+        host,
+        embedded,
+        session,
+        idToken,
+        locale,
+        brandId,
+      });
     }
-    
-    // Protect all other /shopify/* routes (except install and auth-required)
-    if (pathname.startsWith('/shopify/') && 
-        !pathname.startsWith('/shopify/install') && 
+
+    // Protect all /shopify/* routes except install/auth pages.
+    if (pathname.startsWith('/shopify/') &&
+        !pathname.startsWith('/shopify/install') &&
         !pathname.startsWith('/shopify/auth-required')) {
-      
-      // Must have shop parameter
-      if (!shop) {
-        return NextResponse.redirect(new URL('/shopify/auth-required', request.url));
-      }
-      
-      // Check for embedded app authentication markers
-      const hasEmbeddedAuth = host || session || idToken || embedded === '1';
-      
-      if (hasEmbeddedAuth) {
-        // Embedded app with auth params - allow access
-        const response = NextResponse.next();
-        response.headers.set('x-shopify-shop', shop);
-        if (host) response.headers.set('x-shopify-host', host);
-        if (session) response.headers.set('x-shopify-session', session);
-        if (idToken) response.headers.set('x-shopify-id-token', idToken);
-        return response;
-      }
-      
-      // Not embedded - check for session cookie
-      const token = request.cookies.get('shopify_session')?.value;
+      return authorizeShopifyRequest(request, {
+        normalizedShop,
+        host,
+        embedded,
+        session,
+        idToken,
+        locale,
+        brandId,
+      });
+    }
 
-      console.log("token",token)
-      
-      if (token) {
-        try {
-          const decoded = jwt.verify(token, process.env.SHOPIFY_SECRET_KEY);
-          
-          // Verify token is for the correct shop
-          if (decoded.shop !== shop) {
-            const installUrl = new URL('/shopify/install', request.url);
-            installUrl.searchParams.set('shop', shop);
-            return NextResponse.redirect(installUrl);
-          }
-          
-          // Valid session - allow access
-          const response = NextResponse.next();
-          response.headers.set('x-shopify-shop', decoded.shop);
-          response.headers.set('x-shopify-token', decoded.accessToken);
-          return response;
-          
-        } catch (error) {
-          console.error('Middleware - Token verification failed:', error);
-          // Invalid token - redirect to install
-          const installUrl = new URL('/shopify/install', request.url);
-          installUrl.searchParams.set('shop', shop);
-          return NextResponse.redirect(installUrl);
-        }
-      }
-
-      // No authentication found - redirect to auth required
+    // No authentication found - redirect to auth required
+    if (normalizedShop) {
       const authRequiredUrl = new URL('/shopify/auth-required', request.url);
-      authRequiredUrl.searchParams.set('shop', shop);
+      authRequiredUrl.searchParams.set('shop', normalizedShop);
       return NextResponse.redirect(authRequiredUrl);
     }
-    
+
     return NextResponse.next();
   }
   // Skip auth for public routes (signup & login)

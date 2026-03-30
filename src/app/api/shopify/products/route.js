@@ -4,21 +4,32 @@ import {
   createMultipleShopifyProducts, 
   createGiftCardProduct 
 } from '@/lib/shopify-product-creator';
+import {
+  getValidShopifySession,
+  normalizeShopDomain,
+} from '@/lib/shopify/request-session';
 
 export async function POST(request) {
   try {
     const body = await request.json();
     const { shop, type = 'single', productData, productsData, giftCardData } = body;
+    const shopDomain = normalizeShopDomain(shop);
 
-    if (!shop) {
+    if (!shopDomain) {
       return NextResponse.json(
         { error: 'Shop domain is required' },
         { status: 400 }
       );
     }
 
-    // Ensure shop domain is properly formatted
-    const shopDomain = shop.endsWith('.myshopify.com') ? shop : `${shop}.myshopify.com`;
+    const session = await getValidShopifySession(shopDomain);
+
+    if (!session?.accessToken) {
+      return NextResponse.json(
+        { error: 'Shop not authenticated' },
+        { status: 401 }
+      );
+    }
 
     let result;
 

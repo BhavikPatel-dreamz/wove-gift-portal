@@ -176,7 +176,7 @@ export default function ReportsPage({ shop, notAllowSchedule }) {
             try {
                 setBrandLoading(true);
                 const data = await getBrandsForReports({
-                    activeOnly: true,
+                    // activeOnly: true,
                     ...(shop ? { shop } : {}),
                 });
                 if (data.success) {

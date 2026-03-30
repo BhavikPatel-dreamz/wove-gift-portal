@@ -3,7 +3,7 @@
 import { prisma } from '../db';
 
 export async function getBrandsForReports({
-  activeOnly = true,
+  activeOnly = false,
   limit = 100,
   shop,
 } = {}) {
