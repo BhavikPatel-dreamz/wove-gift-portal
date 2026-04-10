@@ -29,8 +29,7 @@ const TEMPLATE_ID_BULK       = Number.parseInt(process.env.BREVO_TEMPLATE_ID_BUL
 const TEMPLATE_ID_ORDER_CONFIRMATION = Number.parseInt(
   process.env.BREVO_TEMPLATE_ID_ORDER_CONFIRMATION,
   10
-); // Order confirmation to purchaser
-
+) || 4;
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey);
