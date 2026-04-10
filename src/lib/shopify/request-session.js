@@ -1,4 +1,4 @@
-import { sessionStorage } from "./shopify.server.js";
+import { sessionStorage } from "../shopify.server.js";
 
 export function normalizeShopDomain(shop) {
   if (!shop) {
