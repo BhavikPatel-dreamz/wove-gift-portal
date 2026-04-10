@@ -204,7 +204,9 @@ export async function proxy(request) {
     pathname.startsWith('/api/orders')  ||
     pathname.startsWith('/api/newsletter') ||
     pathname.startsWith('/api/contact') ||
-    pathname.startsWith('/api/cron')
+    pathname.startsWith('/api/cron') ||
+    pathname.startsWith('/api/webhooks/payfast') ||
+    pathname.startsWith('/api/webhooks/')
   ) {
     return NextResponse.next()
   }
