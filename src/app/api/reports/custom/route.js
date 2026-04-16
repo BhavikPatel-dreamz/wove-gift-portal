@@ -1,10 +1,29 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { getShopInstallationAccess } from "../../../../lib/shopify-installation";
 
 export async function POST(request) {
   try {
     const body = await request.json();
     const { startDate, endDate, brand, status, reports, format, shop } = body;
+    let approvedShop = shop || null;
+
+    if (shop) {
+      const access = await getShopInstallationAccess(shop);
+
+      if (access.requiresApproval) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Store approval is still pending.",
+            requiresApproval: true,
+          },
+          { status: 403 },
+        );
+      }
+
+      approvedShop = access.shop;
+    }
 
     // Validation
     if (!startDate || !endDate || !reports || reports.length === 0) {
@@ -23,8 +42,8 @@ export async function POST(request) {
       createdAt: { gte: start, lte: end },
     };
 
-    if (shop) {
-      whereClause.brand = { domain: shop };
+    if (approvedShop) {
+      whereClause.brand = { domain: approvedShop };
     }
 
     if (brand && brand !== "all") {
@@ -47,7 +66,7 @@ export async function POST(request) {
           reportPromises.redemptionDetails = generateRedemptionDetails(whereClause);
           break;
         case "settlementReports":
-          reportPromises.settlementReports = generateSettlementReports(start, end, brand, shop, status);
+          reportPromises.settlementReports = generateSettlementReports(start, end, brand, approvedShop, status);
           break;
         case "transactionLog":
           reportPromises.transactionLog = generateTransactionLog(whereClause);
@@ -56,7 +75,7 @@ export async function POST(request) {
           reportPromises.brandPerformance = generateBrandPerformance(whereClause);
           break;
         case "liabilitySnapshot":
-          reportPromises.liabilitySnapshot = generateLiabilitySnapshot(brand, shop);
+          reportPromises.liabilitySnapshot = generateLiabilitySnapshot(brand, approvedShop);
           break;
       }
     }

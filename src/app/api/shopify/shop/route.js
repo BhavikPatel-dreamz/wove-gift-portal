@@ -1,23 +1,9 @@
 import { NextResponse } from 'next/server';
 import { hasValidSession } from '@/lib/shopify.server';
-
-function normalizeShopDomain(shop) {
-  if (!shop) {
-    return '';
-  }
-
-  const cleaned = shop
-    .trim()
-    .replace(/^https?:\/\//i, '')
-    .replace(/\/$/, '')
-    .replace(/\.myshopify\.com$/i, '');
-
-  if (!cleaned) {
-    return '';
-  }
-
-  return `${cleaned}.myshopify.com`.toLowerCase();
-}
+import {
+  getShopInstallationAccess,
+  normalizeShopDomain,
+} from '@/lib/shopify-installation';
 
 export async function GET(request) {
   try {
@@ -46,9 +32,17 @@ export async function GET(request) {
       );
     }
 
+    const access = await getShopInstallationAccess(shopDomain);
+
     return NextResponse.json({
       success: true,
       shop: shopDomain,
+      approved: access.approved,
+      approvalStatus: access.approvalStatus,
+      requiresApproval: access.requiresApproval,
+      installedAt: access.installedAt,
+      approvedAt: access.approvedAt,
+      brand: access.brand,
     });
   } catch (error) {
     console.error('Error checking Shopify shop session:', error);

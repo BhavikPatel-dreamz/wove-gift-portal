@@ -1,12 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { calculateNextDeliveryDate } from "../../../../lib/utils";
+import { getShopInstallationAccess } from "../../../../lib/shopify-installation";
 
 // POST: Create a scheduled report
 export async function POST(request) {
   try {
     const body = await request.json();
     const { shop, frequency, deliveryDay, deliveryMonth, deliveryYear, emailRecipients, reportTypes, brandId } = body;
+    let approvedShop = shop || null;
+
+    if (shop) {
+      const access = await getShopInstallationAccess(shop);
+
+      if (access.requiresApproval) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Store approval is still pending.",
+            requiresApproval: true,
+          },
+          { status: 403 },
+        );
+      }
+
+      approvedShop = access.shop;
+    }
 
     // Validate required fields
     if (!frequency || !emailRecipients || !reportTypes || reportTypes.length === 0) {
@@ -58,7 +77,7 @@ export async function POST(request) {
 
     const scheduleRecord = await prisma.scheduledReport.create({
       data: {
-        shop,
+        shop: approvedShop,
         brandId: brandId === 'all' ? null : brandId,
         frequency,
         deliveryDay,
@@ -92,7 +111,7 @@ export async function POST(request) {
 }
 
 // GET: Retrieve all scheduled reports
-export async function GET(request) {
+export async function GET() {
   try {
     const scheduledReports = await prisma.scheduledReport.findMany({
       where: {

@@ -9,6 +9,7 @@ import { z } from "zod";
 import { v2 as cloudinary } from "cloudinary";
 import { uploadFile, deleteFile } from "../utils/cloudinary";
 import { sendEmail } from "../email";
+import { getShopInstallationAccess } from "../shopify-installation";
 
 const SALT_ROUNDS = 12;
 const TRANSACTION_TIMEOUT = 10000; // 10 seconds
@@ -3343,6 +3344,7 @@ export async function getSettlementDetails(settlementId) {
       brandId: firstSettlement.brandId,
       brandName: brand.brandName,
       brandLogo: brand.logo,
+      shopDomain: brand.domain,
 
       // Period Info
       periodStart,
@@ -3924,8 +3926,27 @@ export async function getBrandSettlementHistory(brandId, params = {}, shop = nul
 
     // Handle shop parameter - find brand by domain
     if (shop) {
+      const access = await getShopInstallationAccess(shop);
+
+      if (access.requiresApproval) {
+        return {
+          success: false,
+          message: "Store approval is still pending.",
+          requiresApproval: true,
+          status: 403,
+          data: [],
+          pagination: createEmptyPagination(pageNum, limitNum),
+          summary: createEmptySummary(),
+          filters: {
+            appliedYear: filterYear,
+            appliedMonth: filterMonth,
+            appliedStatus: status,
+          },
+        };
+      }
+
       const brand = await prisma.brand.findUnique({
-        where: { domain: shop },
+        where: { domain: access.shop },
         select: { id: true },
       });
       

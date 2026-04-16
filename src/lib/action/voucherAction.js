@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "../db";
+import { getShopInstallationAccess } from "../shopify-installation";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -113,8 +114,18 @@ export async function getVouchers(params = {}) {
     const baseWhere = {};
 
     if (shop) {
+      const access = await getShopInstallationAccess(shop);
+
+      if (access.requiresApproval) {
+        return createEmptyResponse(
+          page,
+          pageSize,
+          "Store approval is still pending.",
+        );
+      }
+
       const brand = await prisma.brand.findUnique({
-        where: { domain: shop },
+        where: { domain: access.shop },
         select: { id: true },
       });
       if (!brand) return createEmptyResponse(page, pageSize);

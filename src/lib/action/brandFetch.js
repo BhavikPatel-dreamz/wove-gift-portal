@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from '../db';
+import { getShopInstallationAccess } from '../shopify-installation';
 
 export async function getBrandsForReports({
   activeOnly = false,
@@ -15,7 +16,19 @@ export async function getBrandsForReports({
     }
 
     if (shop && shop !== "undefined") {
-      whereClause.domain = shop;
+      const access = await getShopInstallationAccess(shop);
+
+      if (access.requiresApproval) {
+        return {
+          success: false,
+          message: "Store approval is still pending.",
+          data: [],
+          count: 0,
+          requiresApproval: true,
+        };
+      }
+
+      whereClause.domain = access.shop;
     }
 
     const brands = await prisma.brand.findMany({

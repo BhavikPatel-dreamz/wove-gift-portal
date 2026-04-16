@@ -4,6 +4,7 @@ import { PrismaSessionStorage } from '@/lib/session-storage';
 import {
   fetchShopInfo,
 } from '@/lib/action/shopify';
+import { upsertShopInstallation } from '@/lib/shopify-installation';
 
 const sessionStorage = new PrismaSessionStorage();
 
@@ -113,21 +114,8 @@ export async function GET(request) {
       // Store the session data using existing session storage utility
       await sessionStorage.storeSession(session);
       
-      // Also store in AppInstallation table for tracking
-      await prisma.appInstallation.upsert({
-        where: { shop: session.shop },
-        update: {
-          accessToken: session.accessToken,
-          scopes: session.scope,
-          isActive: true,
-        },
-        create: {
-          shop: session.shop,
-          accessToken: session.accessToken,
-          scopes: session.scope,
-          isActive: true,
-        },
-      });
+      // Also store in AppInstallation table for tracking and approval workflow
+      await upsertShopInstallation(session);
 
       if (!brand) {
         brand = await findBrandForShop(session.shop);

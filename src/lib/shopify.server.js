@@ -6,7 +6,7 @@ import {
   
 } from "@shopify/shopify-api";
 import { PrismaSessionStorage } from "./session-storage.js";
-import { prisma } from "./db.js";
+import { upsertShopInstallation } from "./shopify-installation.js";
 
 // Validate required environment variables
 const requiredEnvVars = {
@@ -186,20 +186,7 @@ export async function completeAuth(code, shop) {
     await sessionStorage.storeSession(session);
 
     // Also store in AppInstallation table
-    await prisma.appInstallation.upsert({
-      where: { shop: shopDomain },
-      update: {
-        accessToken: session.accessToken,
-        scopes: session.scope,
-        isActive: true,
-      },
-      create: {
-        shop: shopDomain,
-        accessToken: session.accessToken,
-        scopes: session.scope,
-        isActive: true,
-      },
-    });
+    await upsertShopInstallation(session);
 
     return session;
   } catch (error) {

@@ -7,6 +7,18 @@ import { useSearchParams, usePathname } from "next/navigation";
 import AppLayout from "./component/AppLayout";
 
 const SKIP_APP_BRIDGE_PATHS = ["/shopify/install", "/shopify/auth-required"];
+const SKIP_APP_BRIDGE_EXACT_PATHS = ["/shopify"];
+
+function ShopifyShellLoading({ label = "Loading Shopify App..." }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
+        <p className="text-gray-600">{label}</p>
+      </div>
+    </div>
+  );
+}
 
 // ✅ FIX 3: Loading screen shown until App Bridge signals it's ready
 function AppBridgeReadinessGate({ children }) {
@@ -41,14 +53,7 @@ function AppBridgeReadinessGate({ children }) {
   }, []);
 
   if (!isReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 text-sm">Loading...</p>
-        </div>
-      </div>
-    );
+    return <ShopifyShellLoading label="Loading..." />;
   }
 
   return <>{children}</>;
@@ -57,22 +62,89 @@ function AppBridgeReadinessGate({ children }) {
 function ShopifyLayoutContent({ children }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const shop = searchParams.get("shop");
+  const [accessState, setAccessState] = useState({
+    loading: Boolean(shop),
+    approved: true,
+  });
 
-  const skipAppBridge = SKIP_APP_BRIDGE_PATHS.some((path) =>
-    pathname.startsWith(path)
-  );
+  const skipAppBridge =
+    SKIP_APP_BRIDGE_EXACT_PATHS.includes(pathname) ||
+    SKIP_APP_BRIDGE_PATHS.some((path) => pathname.startsWith(path));
+
+  useEffect(() => {
+    let ignore = false;
+
+    if (skipAppBridge || !shop) {
+      setAccessState({ loading: false, approved: true });
+      return () => {
+        ignore = true;
+      };
+    }
+
+    setAccessState((current) => ({
+      ...current,
+      loading: true,
+    }));
+
+    const controller = new AbortController();
+
+    fetch(`/api/shopify/shop?shop=${encodeURIComponent(shop)}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch Shopify access state");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        if (ignore) {
+          return;
+        }
+
+        setAccessState({
+          loading: false,
+          approved: !data?.requiresApproval,
+        });
+      })
+      .catch((error) => {
+        if (ignore || error.name === "AbortError") {
+          return;
+        }
+
+        setAccessState({
+          loading: false,
+          approved: true,
+        });
+      });
+
+    return () => {
+      ignore = true;
+      controller.abort();
+    };
+  }, [shop, skipAppBridge, pathname]);
 
   if (skipAppBridge) {
     return <>{children}</>;
+  }
+
+  if (shop && accessState.loading) {
+    return <ShopifyShellLoading />;
   }
 
   return (
     <AppBridgeProvider>
       {/* ✅ Gate prevents dashboard flash during App Bridge init */}
       <AppBridgeReadinessGate>
-        <AppLayout>
-          <div className="shopify-app-wrapper">{children}</div>
-        </AppLayout>
+        {accessState.approved ? (
+          <AppLayout>
+            <div className="shopify-app-wrapper">{children}</div>
+          </AppLayout>
+        ) : (
+          <>{children}</>
+        )}
       </AppBridgeReadinessGate>
     </AppBridgeProvider>
   );
@@ -81,14 +153,7 @@ function ShopifyLayoutContent({ children }) {
 export default function ShopifyClientLayout({ children }) {
   return (
     <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600">Loading Shopify App...</p>
-          </div>
-        </div>
-      }
+      fallback={<ShopifyShellLoading />}
     >
       <ShopifyLayoutContent>{children}</ShopifyLayoutContent>
     </Suspense>

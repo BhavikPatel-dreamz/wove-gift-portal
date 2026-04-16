@@ -5,16 +5,27 @@ import {
   ensureShopifyInstallData,
   normalizeShopDomain,
 } from "../shopify/installBootstrap";
+import { getShopInstallationAccess } from "../shopify-installation";
 
 export async function getDashboardData(options = {}) {
   try {
-    console.log("options",options)
     const { period = "all", startDate, endDate, shop, idToken } = options;
     const dateRange = getDateRange(period, startDate, endDate);
 
     let brandId = null;
     if (shop) {
       const shopDomain = normalizeShopDomain(shop);
+      const access = await getShopInstallationAccess(shopDomain);
+
+      if (access.requiresApproval) {
+        return {
+          success: false,
+          error: "Store approval is still pending.",
+          requiresApproval: true,
+          shop: shopDomain,
+        };
+      }
+
       const installState = await ensureShopifyInstallData({
         shop: shopDomain,
         idToken,

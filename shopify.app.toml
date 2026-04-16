@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "c9f2dae08ce0d37db022b21b202c7e9d"
+client_id = "b7db541cd38261758364ed7cb641373a"
 name = "test-new-app"
 application_url = "https://wove-gift-portal.vercel.app/shopify/dashboard"
 embedded = true
@@ -18,6 +18,10 @@ uri = "https://wove-gift-portal.vercel.app/api/webhooks/giftcard-redeem"
 [[webhooks.subscriptions]]
 topics = [ "app/uninstalled" ]
 uri = "https://wove-gift-portal.vercel.app/api/shopify/webhooks/uninstall"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+uri = "https://wove-gift-portal.vercel.app/api/shopify/webhooks/compliance"
 
 [access.admin]
 direct_api_mode = "offline"

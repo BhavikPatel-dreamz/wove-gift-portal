@@ -2,6 +2,7 @@ import BrandManager from './BrandManager';
 import { Suspense } from 'react';
 import { Loader } from 'lucide-react';
 import { getBrandPartner } from '../../../lib/action/brandPartner';
+import { getShopInstallationReviewData } from '../../../lib/action/shopifyInstallationAction';
 import CustomDropdown from '../../../components/ui/CustomDropdown';
 
 function LoadingFallback() {
@@ -31,6 +32,7 @@ async function BrandsPartnerContent({ searchParams }) {
   };
 
   const result = await getBrandPartner(queryParams);
+  const reviewData = await getShopInstallationReviewData();
 
   return (
     <BrandManager
@@ -38,6 +40,7 @@ async function BrandsPartnerContent({ searchParams }) {
       initialPagination={result.pagination}
       initialStatistics={result.statistics}
       initialCategoryStats={result.categoryStats || []}
+      initialReviewData={reviewData}
       searchParams={params || {}}
     />
   );

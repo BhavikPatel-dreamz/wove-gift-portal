@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -677,6 +678,12 @@ model AppInstallation {
   scopes      String
   installedAt DateTime @default(now())
   isActive    Boolean  @default(true)
+  approvalStatus AppInstallationApprovalStatus @default(PENDING)
+  approvedAt  DateTime?
+  updatedAt   DateTime @updatedAt
+
+  @@index([approvalStatus])
+  @@index([isActive, approvalStatus])
 }
 
 model GiftCard {
@@ -812,6 +819,11 @@ enum SyncStatus {
   partial
   syncing
   pending
+}
+
+enum AppInstallationApprovalStatus {
+  PENDING
+  APPROVED
 }
 
 enum PayoutMethodStatus {

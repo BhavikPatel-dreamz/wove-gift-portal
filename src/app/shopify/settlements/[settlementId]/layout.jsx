@@ -1,9 +1,11 @@
 import React from "react";
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import SettlementDashboard from "../../../../components/settlements/SettlementDashboard";
 import SettlementTabs from "../../../../components/settlements/SettlementTabs";
 import SettlementActions from "../../../../components/settlements/SettlementActions"
 import { getSettlementDetails } from "../../../../lib/action/brandPartner";
+import ApprovalPendingState from "@/components/shopify/ApprovalPendingState";
+import { getShopPageAccess } from "@/lib/shopify-page-access";
 
 const getMonthYear = (date) => {
     if (!date) return "N/A";
@@ -49,6 +51,21 @@ const SettlementLayout = async ({ children, params }) => {
     }
 
     const settlement = res.data;
+    const accessState = await getShopPageAccess(settlement.shopDomain);
+
+    if (!accessState.hasValidSession) {
+        redirect(`/shopify/auth-required?shop=${settlement.shopDomain}`);
+    }
+
+    if (accessState.access?.requiresApproval) {
+        return (
+            <ApprovalPendingState
+                shop={accessState.shop}
+                brandName={settlement.brandName}
+                installedAt={accessState.access.installedAt}
+            />
+        );
+    }
 
     return (
         <div className="relative flex min-h-screen w-full flex-col bg-[#f7f8fa]">

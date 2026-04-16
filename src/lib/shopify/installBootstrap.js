@@ -1,24 +1,12 @@
 import { prisma } from "../db.js";
 import { sessionStorage } from "../shopify.server.js";
 import { fetchShopInfo } from "../action/shopify.js";
+import {
+  normalizeShopDomain,
+  upsertShopInstallation,
+} from "../shopify-installation.js";
 
-export function normalizeShopDomain(shop) {
-  if (!shop) {
-    return "";
-  }
-
-  const cleaned = shop
-    .trim()
-    .replace(/^https?:\/\//i, "")
-    .replace(/\/$/, "")
-    .replace(/\.myshopify\.com$/i, "");
-
-  if (!cleaned) {
-    return "";
-  }
-
-  return `${cleaned}.myshopify.com`.toLowerCase();
-}
+export { normalizeShopDomain } from "../shopify-installation.js";
 
 async function findBrandForShop(shopDomain) {
   if (!shopDomain) {
@@ -37,27 +25,6 @@ async function findBrandForShop(shopDomain) {
       ],
     },
     select: { id: true },
-  });
-}
-
-async function upsertAppInstallation(session) {
-  if (!session?.shop || !session?.accessToken) {
-    return;
-  }
-
-  await prisma.appInstallation.upsert({
-    where: { shop: session.shop },
-    update: {
-      accessToken: session.accessToken,
-      scopes: session.scope || "",
-      isActive: true,
-    },
-    create: {
-      shop: session.shop,
-      accessToken: session.accessToken,
-      scopes: session.scope || "",
-      isActive: true,
-    },
   });
 }
 
@@ -158,7 +125,7 @@ export async function ensureShopifyInstallData({
     }
 
     if (session?.accessToken) {
-      await upsertAppInstallation(session);
+      await upsertShopInstallation(session);
     }
 
     const shouldFetchBrand = forceRefresh || !brand;

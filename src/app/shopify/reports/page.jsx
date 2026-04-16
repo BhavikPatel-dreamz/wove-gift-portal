@@ -1,18 +1,29 @@
-'use client';
+import { redirect } from "next/navigation";
+import ApprovalPendingState from "@/components/shopify/ApprovalPendingState";
+import { getShopPageAccess } from "@/lib/shopify-page-access";
+import ReportsPageClient from "./ReportsPageClient";
 
-import { useSearchParams } from 'next/navigation';
-import React from 'react'
-import ReportsPage from '../../../components/report/ReportsPage';
+export default async function ShopifyReportsPage({ searchParams }) {
+  const resolvedSearchParams = await searchParams;
+  const accessState = await getShopPageAccess(resolvedSearchParams?.shop);
 
-const page = () => {
-  const searchParams = useSearchParams();
-  const shop = searchParams.get('shop');
+  if (!accessState.hasShop) {
+    redirect("/shopify/install");
+  }
 
-  return (
-    <div>
-      <ReportsPage shop={shop} notAllowSchedule={true} />
-    </div>
-  )
+  if (!accessState.hasValidSession) {
+    redirect(`/shopify/auth-required?shop=${accessState.shop}`);
+  }
+
+  if (accessState.access?.requiresApproval) {
+    return (
+      <ApprovalPendingState
+        shop={accessState.shop}
+        brandName={accessState.access.brand?.brandName}
+        installedAt={accessState.access.installedAt}
+      />
+    );
+  }
+
+  return <ReportsPageClient />;
 }
-
-export default page

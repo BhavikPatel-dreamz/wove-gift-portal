@@ -114,7 +114,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     return query ? `${baseUrl}?${query}` : baseUrl;
   };
 
-  
+
   // --------------------------------
   // MODE HANDLING
   // --------------------------------
@@ -224,22 +224,20 @@ const Sidebar = ({ isOpen, onClose }) => {
                     Shopify Mode Navigation
                    ------------------------- */}
                 {isShopifyMode ? (
-                  <button
-                    onClick={() => {
-                      navigate(item.url ?? item.href);
-                      onClose();
-                    }}
+                  <Link
+                    href={item.url ?? item.href}
+                    onClick={onClose}
                     className={`
-                      w-full flex items-center px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors cursor-pointer
-                      ${isActiveItem(item.href)
+      w-full flex items-center px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors cursor-pointer
+      ${isActiveItem(item.href)
                         ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }
-                    `}
+    `}
                   >
                     <item.icon className="w-5 h-5 mr-3" />
                     {item.name}
-                  </button>
+                  </Link>
                 ) : (
                   /* -------------------------
                       Normal Navigation
