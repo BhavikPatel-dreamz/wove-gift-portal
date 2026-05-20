@@ -47,10 +47,6 @@ const DELIVERY_METHODS = [
     bgColor: 'bg-[#F8FAFF]'
   }
 ];
-
-const WHATSAPP_PLACEHOLDER_NUMBER = "1234567890";
-const WHATSAPP_PLACEHOLDER_RECIPIENT_NAME = "WhatsApp Recipient";
-
 const PHONE_FIELDS = new Set([
   "yourWhatsAppNumber",
   "recipientWhatsAppNumber",
@@ -270,7 +266,7 @@ const DeliveryMethodStep = () => {
       yourName:
         normalizeNameInput(
           deliveryDetails?.yourName || formData.yourName || sessionFullName,
-        ) || "Gift Sender",
+        ) || "",
       yourCountryCode: normalizeCountryCode(
         deliveryDetails?.yourCountryCode || formData.yourCountryCode || DEFAULT_COUNTRY_CODE,
       ),
@@ -281,17 +277,28 @@ const DeliveryMethodStep = () => {
       recipientName:
         normalizeNameInput(
           deliveryDetails?.recipientName || formData.recipientName,
-        ) || WHATSAPP_PLACEHOLDER_RECIPIENT_NAME,
+        ) || "",
       recipientCountryCode: normalizeCountryCode(
         deliveryDetails?.recipientCountryCode ||
           formData.recipientCountryCode ||
           DEFAULT_COUNTRY_CODE,
       ),
-      recipientWhatsAppNumber: WHATSAPP_PLACEHOLDER_NUMBER,
+      recipientWhatsAppNumber: normalizePhoneInput(
+        deliveryDetails?.recipientWhatsAppNumber ||
+          formData.recipientWhatsAppNumber ||
+          "",
+        deliveryDetails?.recipientCountryCode ||
+          formData.recipientCountryCode ||
+          DEFAULT_COUNTRY_CODE,
+      ),
       yourFullName:
         normalizeNameInput(
-          deliveryDetails?.yourFullName || formData.yourFullName || sessionFullName,
-        ) || "Gift Sender",
+          deliveryDetails?.yourFullName ||
+            deliveryDetails?.yourName ||
+            formData.yourFullName ||
+            formData.yourName ||
+            sessionFullName,
+        ) || "",
       yourEmailAddress:
         normalizeEmailInput(
           deliveryDetails?.yourEmailAddress ||
@@ -300,7 +307,11 @@ const DeliveryMethodStep = () => {
             "",
         ) || "",
       recipientFullName: normalizeNameInput(
-        deliveryDetails?.recipientFullName || formData.recipientFullName || "",
+        deliveryDetails?.recipientFullName ||
+          deliveryDetails?.recipientName ||
+          formData.recipientFullName ||
+          formData.recipientName ||
+          "",
       ),
       recipientEmailAddress: normalizeEmailInput(
         deliveryDetails?.recipientEmailAddress ||
@@ -332,9 +343,7 @@ const DeliveryMethodStep = () => {
     if (method === "whatsapp") {
       const nextFormData = buildAutoWhatsAppDetails();
       setFormData(nextFormData);
-      dispatch(setDeliveryDetails(nextFormData));
-      setShowModal(false);
-      dispatch(goNext());
+      setShowModal(true);
       return;
     }
 
@@ -506,9 +515,23 @@ const DeliveryMethodStep = () => {
 
   const handleContinue = useCallback(() => {
     let isValid = false;
+    let nextDeliveryDetails = formData;
 
     if (selectedMethod === 'whatsapp') {
       isValid = validateWhatsAppForm();
+      if (isValid) {
+        nextDeliveryDetails = {
+          ...formData,
+          yourName: normalizeNameInput(formData.yourName),
+          recipientName: normalizeNameInput(formData.recipientName),
+          yourFullName:
+            normalizeNameInput(formData.yourName || formData.yourFullName) || "",
+          recipientFullName:
+            normalizeNameInput(
+              formData.recipientName || formData.recipientFullName
+            ) || "",
+        };
+      }
     } else if (selectedMethod === 'email') {
       isValid = validateEmailForm();
     } else if (selectedMethod === 'print') {
@@ -516,11 +539,18 @@ const DeliveryMethodStep = () => {
     }
 
     if (isValid) {
-      dispatch(setDeliveryDetails(formData));
+      setFormData(nextDeliveryDetails);
+      dispatch(setDeliveryDetails(nextDeliveryDetails));
       setShowModal(false);
       dispatch(goNext());
     }
-  }, [selectedMethod, validateWhatsAppForm, validateEmailForm, dispatch, formData]);
+  }, [
+    selectedMethod,
+    validateWhatsAppForm,
+    validateEmailForm,
+    dispatch,
+    formData,
+  ]);
 
   const handleCloseModal = useCallback(() => {
     setShowModal(false);
