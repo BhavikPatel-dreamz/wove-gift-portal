@@ -50,6 +50,12 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
+You can also run Prisma directly with:
+
+```bash
+npx prisma db seed
+```
+
 Optional DB UI:
 
 ```bash
@@ -105,7 +111,9 @@ pm2 save
 
 ## 9. Setup Troubleshooting
 
+- If you accidentally run `npx run prisma db seed`, use `pnpm db:seed` or `npx prisma db seed` instead.
 - If `pnpm db:seed` says seed is not configured, verify `prisma.config.js` has `migrations.seed`.
+- If seeding fails with `EAI_AGAIN` or another hostname error, run `pnpm db:test` and verify the host in `DATABASE_URL` is reachable from the machine.
 - If Prisma commands fail, verify `DATABASE_URL` points to a reachable PostgreSQL instance.
 - If auth login fails in local, verify `NEXTAUTH_URL` and `NEXTAUTH_SECRET`.
 - If build fails after dependency changes, run `pnpm install` again and retry `pnpm build`.

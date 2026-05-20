@@ -10,7 +10,7 @@ async function seedUsers(passwordHash) {
       lastName: "User",
       email: "admin@yopmail.com",
       password: passwordHash,
-      role: "SUPER_ADMIN",
+      role: "ADMIN",
       phone: "7878787878",
       isActive: true,
       isVerified: true,
