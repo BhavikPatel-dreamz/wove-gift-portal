@@ -5,19 +5,8 @@ import SettlementDashboard from "../../../../components/settlements/SettlementDa
 import { getSettlementDetails } from "../../../../lib/action/brandPartner";
 import SettlementTabs from "../../../../components/settlements/SettlementTabs";
 import SettlementActions from "../../../../components/settlements/SettlementActions";
+import { formatSettlementPeriodLabel } from "@/lib/settlement/formatSettlementDisplay";
 import { ArrowBigLeft } from "lucide-react";
-
-const getMonthYear = (date) => {
-    if (!date) return "N/A";
-    try {
-        return new Date(date).toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-        });
-    } catch (error) {
-        return "Invalid Date";
-    }
-};
 
 const StatusBadge = ({ status }) => {
     const statusConfig = {
@@ -47,6 +36,10 @@ const SettlementLayout = async ({ children, params }) => {
     }
 
     const settlement = res.data;
+    const periodLabel = formatSettlementPeriodLabel(
+        settlement.periodStart,
+        settlement.frequency,
+    ) || "Settlement";
 
     // Debug log on server side
     console.log("Settlement Layout Data:", {
@@ -95,7 +88,7 @@ const SettlementLayout = async ({ children, params }) => {
 
                                 <div className="flex flex-col gap-1">
                                     <h1 className="text-[22px] font-semibold text-[#1A1A1A] font-poppins">
-                                        {settlement?.brandName} {getMonthYear(settlement.periodStart)} Settlement
+                                        {settlement?.brandName} {periodLabel} Settlement
                                     </h1>
                                     <p className="text-[14px] font-medium text-[#64748B] font-inter">
                                         Review the complete financial breakdown for this period.

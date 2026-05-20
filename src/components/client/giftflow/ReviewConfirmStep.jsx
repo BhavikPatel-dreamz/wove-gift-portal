@@ -149,8 +149,8 @@ const ReviewConfirmStep = () => {
       setError("Please provide the recipient's full name and email for email delivery.");
       return false;
     }
-    if (deliveryMethod === 'whatsapp' && (!deliveryDetails?.recipientWhatsAppNumber)) {
-      setError("Please provide the recipient's WhatsApp number for WhatsApp delivery.");
+    if (deliveryMethod === 'whatsapp' && (!deliveryDetails?.recipientName)) {
+      setError("Please provide the recipient's name for WhatsApp sharing.");
       return false;
     }
     setError(''); // Clear error if validation passes
@@ -241,7 +241,9 @@ const ReviewConfirmStep = () => {
     if (deliveryMethod === "whatsapp") {
       const countryCode = deliveryDetails?.recipientCountryCode || "";
       const number = String(deliveryDetails?.recipientWhatsAppNumber || "").trim();
-      return number ? `${countryCode}${number}` : "";
+      return number
+        ? `${countryCode}${number}`
+        : "You’ll share this manually on WhatsApp after payment.";
     }
 
     return "";
@@ -288,7 +290,7 @@ const ReviewConfirmStep = () => {
             </svg>
           </span>
 
-          <span className="text-base font-semibold">
+          <span className="text-sm sm:text-base font-semibold">
             Previous
           </span>
         </button>
@@ -297,10 +299,10 @@ const ReviewConfirmStep = () => {
 
         {/* Header */}
         <div className="text-center mb-8 mt-2">
-          <h1 className="text-[40px] leading-11.25 font-bold text-[#1A1A1A] text-center font-['Poppins'] mb-3">
+          <h1 className="text-3xl sm:text-[40px] leading-tight sm:leading-11.25 font-bold text-[#1A1A1A] text-center font-['Poppins'] mb-3">
             Review Your Beautiful Gift
           </h1>
-          <p className="text-[#4A4A4A] text-center font-['Inter'] text-base md:text-lg font-medium leading-6">
+          <p className="text-[#4A4A4A] text-center font-['Inter'] text-sm sm:text-base md:text-lg font-medium leading-5 sm:leading-6">
             Confirm all details before proceeding to payment
           </p>
         </div>
@@ -311,14 +313,14 @@ const ReviewConfirmStep = () => {
             <SecurityIcon />
           </div>
           <div>
-            <h3 className="text-[15px] leading-5 font-semibold text-[#1A1A1A] font-['Poppins']">Secure Preview Mode</h3>
-            <p className="text-sm font-normal leading-4.5 text-[#4A4A4A] font-['Inter']">
+            <h3 className="text-sm sm:text-[15px] leading-5 font-semibold text-[#1A1A1A] font-['Poppins']">Secure Preview Mode</h3>
+            <p className="text-xs sm:text-sm font-normal leading-4.5 text-[#4A4A4A] font-['Inter']">
               Gift code protected until payment completion
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[313px_1fr] gap-8 text-black">
+        <div className="grid grid-cols-1 lg:grid-cols-[313px_1fr] gap-8 px-2 sm:px-0 text-black">
           {/* Left Column - Gift Card */}
           <div className="">
             {/* Gift Card Visual */}
@@ -360,7 +362,7 @@ const ReviewConfirmStep = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 17 17" fill="none">
                   <path d="M13.7891 3.94818V7.61517C13.7891 10.0991 12.7734 11.9047 11.5537 13.1415C10.3919 14.3197 9.06786 14.9571 8.30762 15.1533C7.54728 14.9569 6.22305 14.3194 5.06152 13.1415C3.84194 11.9047 2.82715 10.0989 2.82715 7.61517V3.94818L8.30762 1.51263L13.7891 3.94818Z" stroke="#1A1A1A" strokeWidth="1.5" />
                 </svg>
-                <h4 className="text-[#1A1A1A] text-[14px] font-semibold leading-4.5 font-poppins">Secure Gift Code</h4>
+                <h4 className="text-[#1A1A1A] text-[13px] sm:text-[14px] font-semibold leading-4.5 font-poppins">Secure Gift Code</h4>
               </div>
 
               <div className="bg-white rounded-[10px] border border-[rgba(26,26,26,0.15)] shadow-[0_10px_10px_0_rgba(0,0,0,0.08)] p-2 mb-4">
@@ -375,7 +377,7 @@ const ReviewConfirmStep = () => {
                 </svg>
               </div>
 
-              <span className="text-[#1A1A1A] text-[12px] font-medium leading-4 font-poppins">
+              <span className="text-[#1A1A1A] text-[11px] sm:text-[12px] font-medium leading-4 font-poppins">
                 Code Revealed after payment completion
               </span>
 
@@ -386,10 +388,10 @@ const ReviewConfirmStep = () => {
           <div className="space-y-6">
             {/* Brand and Amount Card */}
 
-            <div className="bg-white flex flex-col gap-3 rounded-2xl py-4 p-4 border border-gray-200">
+            <div className="w-full max-w-[19rem] sm:max-w-none mx-auto bg-white flex flex-col gap-3 rounded-2xl py-4 p-4 border border-gray-200">
               <div>
                 <div className="flex items-start gap-2">
-                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">
+                  <div className="text-[#1A1A1A] font-poppins text-[14px] sm:text-[16px] font-semibold leading-5 sm:leading-5.5">
                     Delivery Method
                   </div>
 
@@ -407,35 +409,39 @@ const ReviewConfirmStep = () => {
                     </button>
                   </div>
                 </div>
-                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">
+                <div className="text-[#4A4A4A] font-inter text-[13px] sm:text-[14px] font-normal leading-5 sm:leading-6">
                   {deliveryMethod}
                 </div>
               </div>
               <div>
                 <div className="flex items-start gap-2">
-                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">{deliveryMethod !== "email" ? "Recipient WhatsApp Number" : "Recipient Email Address"}</div>
-                  <div>
-                    <button onClick={() => redirectToDeliveryMethod()}>
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M2.5 14.55V17.0833C2.5 17.3166 2.68333 17.5 2.91667 17.5H5.45C5.55833 17.5 5.66667 17.4583 5.74167 17.375L14.8417 8.28329L11.7167 5.15829L2.625 14.25C2.54167 14.3333 2.5 14.4333 2.5 14.55ZM17.2583 5.86663C17.3356 5.78953 17.3969 5.69796 17.4387 5.59715C17.4805 5.49634 17.502 5.38827 17.502 5.27913C17.502 5.16999 17.4805 5.06192 17.4387 4.96111C17.3969 4.8603 17.3356 4.76872 17.2583 4.69163L15.3083 2.74163C15.2312 2.66438 15.1397 2.60309 15.0389 2.56127C14.938 2.51945 14.83 2.49792 14.7208 2.49792C14.6117 2.49792 14.5036 2.51945 14.4028 2.56127C14.302 2.60309 14.2104 2.66438 14.1333 2.74163L12.6083 4.26663L15.7333 7.39163L17.2583 5.86663Z" fill="url(#paint0_linear_3104_3730)" />
-                        <defs>
-                          <linearGradient id="paint0_linear_3104_3730" x1="2.5" y1="8.01754" x2="16.7802" y2="14.3932" gradientUnits="userSpaceOnUse">
-                            <stop stopColor="#ED457D" />
-                            <stop offset="1" stopColor="#FA8F42" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                    </button>
+                  <div className="text-[#1A1A1A] font-poppins text-[14px] sm:text-[16px] font-semibold leading-5 sm:leading-5.5">
+                    {deliveryMethod === "email" && "Recipient Email Address"}
                   </div>
+                  {deliveryMethod === "email" && (
+                    <div>
+                      <button onClick={() => redirectToDeliveryMethod()}>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M2.5 14.55V17.0833C2.5 17.3166 2.68333 17.5 2.91667 17.5H5.45C5.55833 17.5 5.66667 17.4583 5.74167 17.375L14.8417 8.28329L11.7167 5.15829L2.625 14.25C2.54167 14.3333 2.5 14.4333 2.5 14.55ZM17.2583 5.86663C17.3356 5.78953 17.3969 5.69796 17.4387 5.59715C17.4805 5.49634 17.502 5.38827 17.502 5.27913C17.502 5.16999 17.4805 5.06192 17.4387 4.96111C17.3969 4.8603 17.3356 4.76872 17.2583 4.69163L15.3083 2.74163C15.2312 2.66438 15.1397 2.60309 15.0389 2.56127C14.938 2.51945 14.83 2.49792 14.7208 2.49792C14.6117 2.49792 14.5036 2.51945 14.4028 2.56127C14.302 2.60309 14.2104 2.66438 14.1333 2.74163L12.6083 4.26663L15.7333 7.39163L17.2583 5.86663Z" fill="url(#paint0_linear_3104_3730)" />
+                          <defs>
+                            <linearGradient id="paint0_linear_3104_3730" x1="2.5" y1="8.01754" x2="16.7802" y2="14.3932" gradientUnits="userSpaceOnUse">
+                              <stop stopColor="#ED457D" />
+                              <stop offset="1" stopColor="#FA8F42" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {deliveryMethod !== "print" && (
-                  <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">{formatRecipientContact()}</div>
+                {(deliveryMethod !== "print" && deliveryMethod !== "whatsapp") && (
+                  <div className="text-[#4A4A4A] font-inter text-[13px] sm:text-[14px] font-normal leading-5 sm:leading-6">{formatRecipientContact()}</div>
                 )}
               </div>
 
               <div>
                 <div className="flex items-start gap-2">
-                  <div className="text-[#1A1A1A] font-poppins text-[16px] font-semibold leading-5.5">
+                  <div className="text-[#1A1A1A] font-poppins text-[14px] sm:text-[16px] font-semibold leading-5 sm:leading-5.5">
                     Delivery Timing
                   </div>
                   <div>
@@ -452,13 +458,13 @@ const ReviewConfirmStep = () => {
                     </button>
                   </div>
                 </div>
-                <div className="text-[#4A4A4A] font-inter text-[14px] font-normal leading-6">
+                <div className="text-[#4A4A4A] font-inter text-[13px] sm:text-[14px] font-normal leading-5 sm:leading-6">
                   {formatTimingSummary(selectedTiming)}
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl py-4 p-4  border border-gray-200">
+            <div className="w-full max-w-[19rem] sm:max-w-none mx-auto bg-white rounded-2xl py-4 p-4 border border-gray-200">
               <div className="flex items-start gap-2">
                 <div>
                   {selectedBrand?.logo ? (
@@ -478,10 +484,10 @@ const ReviewConfirmStep = () => {
                   )}
                   <button
                     onClick={handleChangeCard}
-                    className="mt-4 flex gap-1 items-center max-w-fit  text-pink-500 hover:text-pink-600 text-sm font-medium px-2 py-2 rounded-full transition-colors bg-[#F4F4F4]"
+                    className="mt-4 flex gap-1 items-center max-w-fit  text-pink-500 hover:text-pink-600 text-xs sm:text-sm font-medium px-2 py-2 rounded-full transition-colors bg-[#F4F4F4]"
                   >
                     <HeartColorIcon />
-                    <span className="text-[#1A1A1A] text-[16px] font-semibold leading-5.5 font-poppins text-center">
+                    <span className="text-[#1A1A1A] text-[14px] sm:text-[16px] font-semibold leading-5 sm:leading-5.5 font-poppins text-center">
                       {formatAmount(selectedAmount)}
                     </span>
                     <EditIcon />
@@ -489,10 +495,10 @@ const ReviewConfirmStep = () => {
                 </div>
 
                 <div className="flex-1">
-                  <h3 className="text-[#1A1A1A] text-[18px] font-semibold leading-5.5 font-poppins">
+                  <h3 className="text-[#1A1A1A] text-[16px] sm:text-[18px] font-semibold leading-5 sm:leading-5.5 font-poppins">
                     {selectedBrand?.brandName || selectedBrand?.name || 'Selected Brand'}
                   </h3>
-                  <p className="text-[#4A4A4A] text-[14px] font-normal leading-6 font-inter mt-1">
+                  <p className="text-[#4A4A4A] text-[13px] sm:text-[14px] font-normal leading-5 sm:leading-6 font-inter mt-1">
                     {selectedBrand?.description || selectedBrand?.tagline || 'Gift card'}
                   </p>
 
@@ -503,10 +509,10 @@ const ReviewConfirmStep = () => {
             </div>
 
             {/* Personal Message */}
-            <div className="bg-white rounded-2xl py-4 p-4  border border-gray-200">
+            <div className="w-full max-w-[19rem] sm:max-w-none mx-auto bg-white rounded-2xl py-4 p-4 border border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <h3 className="text-[#1A1A1A] text-[16px] font-semibold leading-5.5 font-poppins">
+                  <h3 className="text-[#1A1A1A] text-[14px] sm:text-[16px] font-semibold leading-5 sm:leading-5.5 font-poppins">
                     Personal Message</h3>
                   <Heart className="w-5 h-5 text-red-500 ml-2 fill-red-500" />
                 </div>
@@ -514,7 +520,7 @@ const ReviewConfirmStep = () => {
               </div>
 
               <div className="bg-[#F6F6F6] rounded-[10px] p-4 max-h-40 overflow-y-auto">
-                <p className="text-[#4A4A4A] text-[14px] font-medium leading-6 italic font-inter">
+                <p className="text-[#4A4A4A] text-[13px] sm:text-[14px] font-medium leading-5 sm:leading-6 italic font-inter">
                   "{personalMessage || 'No message added'}"
                 </p>
                 <div className="flex justify-end">
@@ -533,7 +539,7 @@ const ReviewConfirmStep = () => {
                           </linearGradient>
                         </defs>
                       </svg>
-                      <span className="ml-1 text-[#1A1A1A] text-[14px] font-semibold font-inter text-center">Edit</span>
+                      <span className="ml-1 text-[#1A1A1A] text-[13px] sm:text-[14px] font-semibold font-inter text-center">Edit</span>
                     </button>
                   </div>
                 </div>
@@ -579,7 +585,7 @@ const ReviewConfirmStep = () => {
                       </svg>
                     )}
                   </div>
-                  <span className="text-gray-700 font-inter text-sm font-medium leading-relaxed flex-1">
+                  <span className="text-gray-700 font-inter text-xs sm:text-sm font-medium leading-relaxed flex-1">
                     I have reviewed and confirmed all recipient and gift details are correct.
                   </span>
                 </label>
@@ -594,7 +600,7 @@ const ReviewConfirmStep = () => {
                   disabled={!isConfirmed}
                   className={`
     group w-full  h-14
-    text-white rounded-full font-semibold text-base sm:text-lg
+    text-white rounded-full font-semibold text-sm sm:text-base md:text-lg
     transition-all duration-300 
     flex items-center justify-center gap-2
     whitespace-nowrap
@@ -636,7 +642,7 @@ const ReviewConfirmStep = () => {
                     className={`
         group w-full h-14 
         bg-white text-pink-500 border-2 border-pink-500 
-        rounded-full font-semibold text-lg 
+        rounded-full font-semibold text-sm sm:text-base md:text-lg 
         transition-all duration-300 
         flex items-center justify-center gap-2
         ${isConfirmed && !isSavingCart
@@ -663,7 +669,7 @@ const ReviewConfirmStep = () => {
                       disabled={!isConfirmed || isSavingCart}
                       className={`
                         w-full h-14 flex items-center justify-center gap-3 px-5 rounded-full 
-                        bg-white text-pink-500 font-bold transition-all duration-200
+                        bg-white text-pink-500 text-sm sm:text-base font-bold transition-all duration-200
                         ${isSavingCart ? 'opacity-70 cursor-not-allowed' : ''}
                       `}
                     >

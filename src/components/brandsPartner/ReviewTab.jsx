@@ -68,7 +68,7 @@ const ReviewTab = ({ formData, validationErrors }) => {
           <DetailItem label="Category" value={formData.categoryName} />
           <DetailItem label="Website" value={formData.website} />
 
-          <div>
+          {/* <div>
             <h4 className="font-inter text-[14px] font-medium text-[#64748B]">
               Primary Color
             </h4>
@@ -81,11 +81,11 @@ const ReviewTab = ({ formData, validationErrors }) => {
                 {formData.color || 'Not set'}
               </span>
             </div>
-          </div>
+          </div> */}
 
-          <div className="sm:col-span-2">
+          {/* <div className="sm:col-span-2"> */}
             <DetailItem label="Description" value={formData.description} />
-          </div>
+          {/* </div> */}
 
           <div>
             <h4 className="font-inter text-[14px] font-medium text-[#64748B]">
@@ -182,6 +182,9 @@ const ReviewTab = ({ formData, validationErrors }) => {
           />
           {formData.settlementFrequency === 'monthly' && (
             <DetailItem label="Day of Month" value={formData.dayOfMonth} />
+          )}
+          {formData.settlementFrequency === 'yearly' && (
+            <DetailItem label="Schedule" value="Once per year" />
           )}
           {formData.settlementFrequency === 'weekly' && (
             <DetailItem label="Day of Week" value={formData.dayOfWeek} />

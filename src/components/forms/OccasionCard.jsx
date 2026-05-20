@@ -1,4 +1,4 @@
-import { Edit, Trash2, Eye, Power } from "lucide-react";
+import { Edit, Trash2, Eye, Power, GripVertical, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 const OccasionCard = ({
@@ -6,6 +6,12 @@ const OccasionCard = ({
   onEdit,
   onDelete,
   onToggleActive,
+  onMovePriority,
+  canDragReorder = false,
+  onDragStart,
+  onDragEnd,
+  totalItems = 0,
+  savingPriority = false,
   disabled = false,
 }) => {
   const statusActive = occasion.isActive || occasion.active;
@@ -16,6 +22,8 @@ const OccasionCard = ({
   const handleEdit = () => !disabled && onEdit?.(occasion);
   const handleDelete = () => !disabled && onDelete?.(occasion.id);
   const handleToggleActive = () => !disabled && onToggleActive?.(occasion.id);
+  const handleMovePriority = (targetOrder) =>
+    !disabled && onMovePriority?.(occasion.id, targetOrder);
 
   return (
     <div
@@ -59,23 +67,44 @@ const OccasionCard = ({
         <h3
           className="font-semibold text-[18px] text-[#1A1A1A] leading-6 mb-1 truncate group-hover:text-blue-600 transition-colors"
           style={{ fontFamily: 'Poppins' }}
-          title={occasion.name}
+          title={occasion.name || ""}
         >
           {occasion.name}
         </h3>
         <p
           className="text-[#4A4A4A] text-[14px] leading-5 font-normal mb-4 line-clamp-2"
-          title={occasion.description}
+          title={occasion.description || "No description available"}
         >
           {occasion.description || "No description available"}
         </p>
-
-        <p
-          className="text-xs text-[#364152] font-semibold leading-5 mb-3"
-        >
-          Type: {occasion.type || "N/A"}
-        </p>
-
+        {onMovePriority && (
+          <div className="mb-4 rounded-xl border border-[#E5E7EB] bg-linear-to-r from-slate-50 to-white px-3 py-3 shadow-xs">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">
+                  Display Order
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={occasion.displayOrder || 1}
+                  onChange={(e) => handleMovePriority(Number(e.target.value))}
+                  disabled={savingPriority || disabled}
+                  className="min-w-[7rem] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+                >
+                  {Array.from({ length: totalItems }, (_, index) => {
+                    const position = index + 1;
+                    return (
+                      <option key={position} value={position}>
+                        Position {position}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Footer */}
         <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
           <span

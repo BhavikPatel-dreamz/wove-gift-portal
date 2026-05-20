@@ -1,7 +1,10 @@
 // app/api/webhooks/stripe/route.js
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { completeOrderAfterPayment } from '@/lib/action/orderAction';
+import {
+  completeOrderAfterPayment,
+  incrementPromoUsageForOrders,
+} from '@/lib/action/orderAction';
 import { prisma } from '../../../../lib/db';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -86,12 +89,16 @@ export async function POST(request) {
 
 // ✅ Handle successful payment (non-blocking)
 async function handlePaymentSuccess(paymentIntent) {
+  let orders = [];
+
   try {
     // ✅ Find ALL orders associated with this payment intent
-    const orders = await prisma.order.findMany({
+    orders = await prisma.order.findMany({
       where: { 
         paymentIntentId: paymentIntent.id,
-        paymentStatus: 'PENDING'
+        paymentStatus: {
+          in: ['PENDING', 'PROCESSING'],
+        },
       },
     });
 
@@ -131,11 +138,22 @@ async function handlePaymentSuccess(paymentIntent) {
 
     const successCount = results.filter(r => r.success).length;
     const failedCount = results.filter(r => !r.success).length;
+    const successfulOrderIds = results
+      .filter((result) => result.success)
+      .map((result) => result.orderId);
 
     console.log(`📊 Payment processing summary:`);
     console.log(`   ✅ Successful: ${successCount}`);
     console.log(`   ❌ Failed: ${failedCount}`);
     console.log(`   📦 Total: ${orders.length}`);
+
+    if (successCount > 0) {
+      try {
+        await incrementPromoUsageForOrders(successfulOrderIds);
+      } catch (promoError) {
+        console.error('⚠️ Failed to update promo usage count after Stripe payment:', promoError.message);
+      }
+    }
 
     // ✅ If any failed, log them for manual review
     if (failedCount > 0) {
@@ -148,16 +166,21 @@ async function handlePaymentSuccess(paymentIntent) {
     
     // ✅ Fallback: Try to mark all orders as completed even if there's an error
     try {
-      await prisma.order.updateMany({
+      const fallbackResult = await prisma.order.updateMany({
         where: { 
           paymentIntentId: paymentIntent.id,
-          paymentStatus: 'PENDING'
+          paymentStatus: {
+            in: ['PENDING', 'PROCESSING'],
+          },
         },
         data: {
           paymentStatus: 'COMPLETED',
           paidAt: new Date(),
         },
       });
+      if (fallbackResult.count > 0) {
+        await incrementPromoUsageForOrders(orders.map((order) => order.id));
+      }
       console.log(`✅ Marked all orders as paid (fallback) for payment: ${paymentIntent.id}`);
     } catch (fallbackError) {
       console.error('❌ Critical: Could not mark orders as completed:', fallbackError);

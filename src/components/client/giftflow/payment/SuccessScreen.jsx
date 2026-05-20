@@ -2,6 +2,8 @@ import React from "react";
 import { Mail, MessageSquare, Printer } from 'lucide-react';
 import PrintVoucherButton from "../../checkout/PrintVoucherButton";
 import Link from "next/link";
+import WhatsAppShareButton from "../WhatsAppShareButton";
+import { buildGiftCardShareImageUrls } from "@/lib/whatsappShare";
 
 const SuccessScreen = ({
   order,
@@ -12,8 +14,69 @@ const SuccessScreen = ({
   onNext,
   deliveryDetails
 }) => {
-
+  const allOrders = Array.isArray(order?.allOrders) && order.allOrders.length > 0
+    ? order.allOrders
+    : [order];
+  const hasMultipleOrders = allOrders.length > 1;
   const isPrintDelivery = order?.deliveryMethod === 'print';
+
+  const formatCurrencyAmount = (amount, currency = order?.currency || "USD") => {
+    const numericAmount = Number(amount || 0);
+
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 2,
+      }).format(numericAmount);
+    } catch {
+      return `${currency} ${numericAmount.toFixed(2)}`;
+    }
+  };
+
+  const whatsappShareGifts = allOrders
+    .filter((currentOrder) => currentOrder?.deliveryMethod === "whatsapp")
+    .flatMap((currentOrder) =>
+      (currentOrder?.voucherCodes || []).map((voucherCode) => {
+        const shareCode = voucherCode?.giftCard?.code || voucherCode?.code || "";
+        const shareImageAssets = buildGiftCardShareImageUrls(shareCode);
+
+        return {
+          recipientName:
+            currentOrder?.receiverDetail?.name ||
+            deliveryDetails?.name ||
+            "there",
+          giftName:
+            currentOrder?.brand?.brandName ||
+            selectedBrand?.brandName ||
+            "gift card",
+          brandName:
+            currentOrder?.brand?.brandName ||
+            selectedBrand?.brandName ||
+            "Brand",
+          brandWebsite:
+            currentOrder?.brand?.website ||
+            selectedBrand?.website ||
+            currentOrder?.brand?.domain ||
+            selectedBrand?.domain ||
+            "",
+          giftAmount: formatCurrencyAmount(
+            voucherCode?.originalValue ?? currentOrder?.amount,
+            currentOrder?.currency || order?.currency,
+          ),
+          giftCode: shareCode,
+          giftUrl: voucherCode?.tokenizedLink,
+          giftImageUrl:
+            shareImageAssets.imageUrl ||
+            currentOrder?.brand?.logo ||
+            selectedBrand?.logo ||
+            "",
+          giftImageViewUrl: shareImageAssets.imageViewUrl || "",
+          senderName: currentOrder?.senderName || order?.senderName || "Someone",
+          customMessage: currentOrder?.message || order?.message || "",
+        };
+      }),
+    );
 
   const getDeliveryMethodIcon = () => {
     switch (order?.deliveryMethod) {
@@ -33,7 +96,7 @@ const SuccessScreen = ({
       case 'email':
         return deliveryDetails?.email || order.receiverDetail?.email || 'the recipient';
       case 'whatsapp':
-        return deliveryDetails?.phone || order.receiverDetail?.phone || 'the recipient';
+        return order.receiverDetail?.name || 'your recipient';
       case 'print':
         return 'Download your printable gift card below';
       default:
@@ -491,12 +554,18 @@ const SuccessScreen = ({
                   className="ss-gif"
                 />
                 <h1 className="ss-title">
-                  {isPrintDelivery ? 'Order Complete!' : 'Gift Sent Successfully'}
+                  {isPrintDelivery
+                    ? 'Order Complete!'
+                    : order?.deliveryMethod === 'whatsapp'
+                      ? 'Gift Ready to Share'
+                      : 'Gift Sent Successfully'}
                 </h1>
                 <p className="ss-subtitle">
                   {isPrintDelivery
                     ? `Your ${selectedBrand?.brandName || order?.brand?.brandName} gift card is ready to print!`
-                    : `Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way to Friend!`
+                    : order?.deliveryMethod === 'whatsapp'
+                      ? `Your ${selectedBrand?.brandName || order?.brand?.brandName} gift card is ready. Share it on WhatsApp when you're ready.`
+                      : `Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way to Friend!`
                   }
                 </p>
                 <p className="ss-support-text">
@@ -510,7 +579,7 @@ const SuccessScreen = ({
             )}
 
             {/* ── Bulk / Multi-order Details Panel ── */}
-            {(isBulkMode || (order?.allOrders && order?.allOrders.length > 1)) && (
+            {(isBulkMode || hasMultipleOrders) && (
               <div className="ss-panel ss-panel--order">
                 <h2 className="ss-panel-title">Order Details</h2>
                 <div className="ss-divider" />
@@ -607,18 +676,47 @@ const SuccessScreen = ({
             )}
 
             {/* ── Non-Print Delivery Banner ── */}
-            {!isBulkMode && !isPrintDelivery && !order?.allOrders && (
+            {!isBulkMode && !isPrintDelivery && (
               <div className="ss-panel--delivery">
                 <div className="ss-delivery-row">
                   {getDeliveryMethodIcon()}
                   <div>
                     <p className="ss-delivery-title">Delivery Method</p>
                     <p className="ss-delivery-desc">
-                      Your gift card will be sent to{" "}
-                      <strong>{getDeliveryMethodText()}</strong>
+                      {order?.deliveryMethod === "whatsapp" ? (
+                        <>
+                          Your message is ready to share with{" "}
+                          <strong>{getDeliveryMethodText()}</strong> on WhatsApp.
+                        </>
+                      ) : (
+                        <>
+                          Your gift card will be sent to{" "}
+                          <strong>{getDeliveryMethodText()}</strong>
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {whatsappShareGifts.length > 0 && !isBulkMode && (
+              <div style={{ marginBottom: "1.5rem" }}>
+                <WhatsAppShareButton
+                  gifts={whatsappShareGifts}
+                  context="payment-success"
+                  autoOpenGuide
+                  analyticsMetadata={{
+                    orderId: order?.id,
+                    orderNumber: order?.orderNumber,
+                  }}
+                  defaultMessageData={{
+                    senderName: order?.senderName || "Someone",
+                    recipientName:
+                      order?.receiverDetail?.name || deliveryDetails?.name || "there",
+                    customMessage: order?.message || "",
+                  }}
+                />
               </div>
             )}
 

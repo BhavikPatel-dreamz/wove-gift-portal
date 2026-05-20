@@ -4,15 +4,12 @@ import TextArea from "./TextArea";
 import Toggle from "./Toggle";
 import Button from "./Button";
 import Modal from "../Modal";
-import EmojiPicker from "../occasions/EmojiPicker";
 import ImageUpload from "./ImageUpload";
 import { Loader } from "lucide-react";
 
 
 const EMPTY_FIELD_ERRORS = {
   name: "",
-  type: "",
-  emoji: "",
   description: "",
   image: "",
 };
@@ -30,9 +27,7 @@ const ALLOWED_IMAGE_TYPES = new Set([
 const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading }) => {
   const [formData, setFormData] = useState({
     name: "",
-    emoji: "",
     description: "",
-    type: "",
     isActive: true,
     image: null,
   });
@@ -43,18 +38,14 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
     if (occasion) {
       setFormData({
         name: occasion.name || "",
-        emoji: occasion.emoji || "",
         description: occasion.description || "",
-        type: occasion.type || "",
         isActive: occasion.isActive !== undefined ? occasion.isActive : true,
         image: occasion.image || null,
       });
     } else {
       setFormData({
         name: "",
-        emoji: "",
         description: "",
-        type: "",
         isActive: true,
         image: null,
       });
@@ -74,16 +65,6 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
     }
   };
 
-  const handleEmojiChange = (emoji) => {
-    setFormData((prev) => ({ ...prev, emoji }));
-    if (fieldErrors.emoji) {
-      setFieldErrors((prev) => ({ ...prev, emoji: "" }));
-    }
-    if (formError) {
-      setFormError("");
-    }
-  };
-
   const handleImageChange = (file) => {
     setFormData((prev) => ({ ...prev, image: file }));
     if (fieldErrors.image) {
@@ -97,7 +78,6 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
   const validateClient = () => {
     const errors = { ...EMPTY_FIELD_ERRORS };
     const trimmedName = formData.name.trim();
-    const trimmedType = formData.type.trim();
     const trimmedDescription = formData.description.trim();
     const hasImage = Boolean(
       (formData.image instanceof File && formData.image.size > 0) ||
@@ -108,12 +88,6 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
       errors.name = "Occasion name is required.";
     } else if (trimmedName.length > 100) {
       errors.name = "Occasion name must be less than 100 characters.";
-    }
-
-    if (!trimmedType) {
-      errors.type = "Occasion type is required.";
-    } else if (trimmedType.length > 100) {
-      errors.type = "Occasion type must be less than 100 characters.";
     }
 
     if (!trimmedDescription) {
@@ -179,12 +153,6 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
     if (!errors.name && /name/i.test(responseMessage) && /exist/i.test(responseMessage)) {
       errors.name = responseMessage;
     }
-    if (!errors.type && /\btype\b/i.test(responseMessage)) {
-      errors.type = responseMessage;
-    }
-    if (!errors.emoji && /\bemoji\b/i.test(responseMessage)) {
-      errors.emoji = responseMessage;
-    }
     if (!errors.description && /\bdescription\b/i.test(responseMessage)) {
       errors.description = responseMessage;
     }
@@ -217,9 +185,7 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
     const payload = {
       ...formData,
       name: formData.name.trim(),
-      type: formData.type.trim(),
       description: formData.description.trim(),
-      emoji: formData.emoji === "Select Emoji" ? "" : formData.emoji,
     };
 
     try {
@@ -281,7 +247,7 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
             {/* Form Grid - Two Columns */}
             <div className="grid grid-cols-2 gap-6 mb-6">
               {/* Occasion Name */}
-              <div>
+              <div className="col-span-2">
                 <Input
                   label="Occasion Name"
                   name="name"
@@ -292,30 +258,6 @@ const CreateOccasionModal = ({ isOpen, onClose, onSave, occasion, actionLoading 
                 />
                 {fieldErrors.name && <p className="mt-1 text-sm text-red-600">{fieldErrors.name}</p>}
               </div>
-
-              {/* Occasion Type */}
-              <div>
-                <Input
-                  label="Occasion Type"
-                  name="type"
-                  placeholder="Celebration,Holiday..."
-                  value={formData.type}
-                  onChange={handleInputChange}
-                  required
-                />
-                {fieldErrors.type && <p className="mt-1 text-sm text-red-600">{fieldErrors.type}</p>}
-              </div>
-            </div>
-
-            {/* Emoji - Full Width */}
-            <div className="mb-6">
-              <EmojiPicker
-                label="Emoji"
-                className=""
-                value={formData.emoji}
-                onChange={handleEmojiChange}
-                error={fieldErrors.emoji}
-              />
             </div>
 
             {/* Description - Full Width */}

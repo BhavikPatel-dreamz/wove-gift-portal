@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/db";
+import { roundSettlementAmount } from "@/lib/settlement/settlementUtils";
 
 export async function GET(request) {
   try {
@@ -34,6 +35,52 @@ export async function GET(request) {
             : "Internal server error",
       },
       { status: 500 }
+    );
+  }
+}
+
+export async function POST(request) {
+  try {
+    const rawBody = await request.text();
+    const payload = rawBody ? JSON.parse(rawBody) : {};
+
+    if (!payload?.eventName) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "eventName is required",
+        },
+        { status: 400 },
+      );
+    }
+
+    const forwardedFor =
+      request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip");
+    const ipAddress = forwardedFor?.split(",")?.[0]?.trim() || null;
+
+    await prisma.auditLog.create({
+      data: {
+        action: `ANALYTICS_${String(payload.eventName).toUpperCase()}`,
+        entity: "WhatsAppShare",
+        entityId:
+          payload.orderId || payload.orderNumber || payload.voucherCodeId || null,
+        userId: payload.userId || null,
+        userEmail: payload.userEmail || null,
+        ipAddress,
+        userAgent: request.headers.get("user-agent") || null,
+        changes: payload,
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Analytics event capture failed:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to capture analytics event",
+      },
+      { status: 500 },
     );
   }
 }
@@ -299,7 +346,7 @@ async function getSettlementData(brandId) {
   // Format settlements to match frontend expectations
   const settlements = pendingSettlements.map((settlement) => ({
     brand: settlement.brand.brandName,
-    amount: Math.round(settlement.netPayable),
+    amount: roundSettlementAmount(settlement.netPayable),
     status: settlement.status,
     currency: settlement.brand.currency || "USD",
     periodStart: settlement.periodStart,

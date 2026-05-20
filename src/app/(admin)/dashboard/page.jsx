@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '../../../lib/action/userAction/session'
 import Dashboard from '../../../components/Dashboard/Dashboard'
 import { getDashboardData } from '../../../lib/action/dashbordAction'
+import { isAdminRole } from '@/lib/roles'
 
 export default async function DashboardPage(props) {
   // Get session on server side
@@ -16,7 +17,7 @@ export default async function DashboardPage(props) {
   const { role, shopDomain, shopId } = user
 
   // Authorization check - only admins can access dashboard
-  if (role !== 'ADMIN') {
+  if (!isAdminRole(role)) {
     redirect('/unauthorized')
   }
 
@@ -29,7 +30,7 @@ export default async function DashboardPage(props) {
   const endDate = searchParams?.endDate || null
   
   // Determine shop filter based on role
-  const shop = role === 'ADMIN' ? (searchParams?.shop || shopDomain) : shopDomain
+  const shop = isAdminRole(role) ? (searchParams?.shop || shopDomain) : shopDomain
 
   // Fetch dashboard data with proper parameters
   const dashboardData = await getDashboardData({

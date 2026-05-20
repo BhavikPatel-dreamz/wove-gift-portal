@@ -4,8 +4,7 @@ import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { currencyList } from './currency';
 
-
-const CoreTab = ({ formData, updateFormData }) => {
+const CoreTab = ({ formData, updateFormData, isDescriptionLocked = false }) => {
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
   // const [imagePreview, setImagePreview] = useState(null);
@@ -253,12 +252,18 @@ const CoreTab = ({ formData, updateFormData }) => {
             Description *
           </label>
           <textarea
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
+            className={`w-full rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] font-inter border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
             placeholder="Enter brand description"
             value={formData.description || ''}
             onChange={(e) => updateFormData('description', e.target.value)}
+            // disabled={isDescriptionLocked}
             required
           />
+          {isDescriptionLocked && (
+            <p className="mt-2 font-inter text-[11px] font-medium text-[#7E7E7E]">
+              Description is locked after it has been added to an existing brand.
+            </p>
+          )}
         </div>
       </div>
 
@@ -361,7 +366,7 @@ const CoreTab = ({ formData, updateFormData }) => {
             </p>
           </div>
 
-          <div>
+          {/* <div>
             <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
               Primary Color
             </label>
@@ -384,7 +389,7 @@ const CoreTab = ({ formData, updateFormData }) => {
             <p className="font-inter text-xs font-normal leading-5 text-[#7E7E7E] mt-1">
               Used for brand theming and UI elements
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
 

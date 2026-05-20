@@ -22,6 +22,21 @@ const BankingTab = ({ formData, updateFormData }) => {
 
   // Generate day options (1-28 for monthly settlement)
   const dayOptions = Array.from({ length: 28 }, (_, i) => i + 1);
+  const settlementFrequency = formData.settlementFrequency || 'monthly';
+  const scheduleLabel = settlementFrequency === 'monthly'
+    ? `Day ${formData.dayOfMonth || 1} of month`
+    : settlementFrequency === 'yearly'
+      ? 'Once per year'
+      : settlementFrequency === 'weekly'
+        ? 'Every Monday'
+        : settlementFrequency === 'quarterly'
+          ? 'Every 3 months'
+          : 'Manual';
+  const nextSettlementLabel = settlementFrequency === 'monthly'
+    ? `on ${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(formData.dayOfMonth || 1).padStart(2, '0')}`
+    : settlementFrequency === 'yearly'
+      ? 'once per year'
+      : 'on the next scheduled date';
 
   return (
     <div className="space-y-8">
@@ -39,19 +54,17 @@ const BankingTab = ({ formData, updateFormData }) => {
             </label>
 
             <select
-              disabled
-              className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 
-      text-[#4A4A4A] bg-gray-100 cursor-not-allowed opacity-70 
-      focus:outline-none"
-              value={formData.settlementFrequency || 'monthly'}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={settlementFrequency}
               onChange={(e) => updateFormData('settlementFrequency', e.target.value)}
             >
               <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
             </select>
           </div>
 
 
-          {formData.settlementFrequency === 'monthly' && (
+          {settlementFrequency === 'monthly' && (
             <div>
               <label className="block font-inter text-[14px] font-semibold leading-none capitalize text-[#4A4A4A] mb-2">
                 Day of Month *
@@ -60,7 +73,7 @@ const BankingTab = ({ formData, updateFormData }) => {
                 className="w-full border border-gray-300 rounded-md px-3 py-2 font-inter text-xs font-semibold leading-5 text-[#4A4A4A] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={formData.dayOfMonth || 1}
                 onChange={(e) => updateFormData('dayOfMonth', parseInt(e.target.value))}
-                disabled={formData.settlementFrequency !== 'monthly'}
+                disabled={settlementFrequency !== 'monthly'}
               >
                 {dayOptions.map(day => (
                   <option key={day} value={day}>Day {day}</option>
@@ -245,30 +258,6 @@ const BankingTab = ({ formData, updateFormData }) => {
             </select>
           </div>
         </div>
-
-        <div className="mt-6 flex items-center space-x-4">
-          <button
-            type="button"
-            className="bg-[#175EFD] text-white px-4 py-2 text-xs rounded-md hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!formData.accountNumber || !formData.branchCode || !formData.bankName}
-          >
-            Verify Account
-          </button>
-
-          <div className="flex items-center space-x-2">
-            {formData.accountVerification ? (
-              <div className="flex items-center space-x-2 text-green-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs font-medium">Account Verified</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2 text-red-600">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span className="text-xs font-medium">Not Verified</span>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Settlement Summary */}
@@ -278,21 +267,14 @@ const BankingTab = ({ formData, updateFormData }) => {
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="font-inter text-[10px] font-medium uppercase text-[#AAA] leading-normal">Frequency</div>
             <div className="mt-1 font-inter text-[14px] font-semibold capitalize text-[#4A4A4A]">
-              {formData.settlementFrequency || 'Monthly'}
+              {settlementFrequency}
             </div>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="font-inter text-[10px] font-medium uppercase text-[#AAA] leading-normal">Schedule</div>
             <div className="mt-1 font-inter text-[14px] font-semibold capitalize text-[#4A4A4A]">
-              {formData.settlementFrequency === 'monthly'
-                ? `Day ${formData.dayOfMonth || 1} of month`
-                : formData.settlementFrequency === 'weekly'
-                  ? 'Every Monday'
-                  : formData.settlementFrequency === 'quarterly'
-                    ? 'Every 3 months'
-                    : 'Manual'
-              }
+              {scheduleLabel}
             </div>
           </div>
 
@@ -319,13 +301,8 @@ const BankingTab = ({ formData, updateFormData }) => {
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
           <h4 className="mb-2 font-inter text-[14px] font-semibold capitalize text-[#1F59EE]">Next Settlement</h4>
           <p className="font-inter text-[10px] font-semibold leading-normal text-[#1F59EE]">
-            Based on your current settings, the next settlement would be processed on{' '}
-            <span className="font-medium">
-              {formData.settlementFrequency === 'monthly'
-                ? `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(formData.dayOfMonth || 1).padStart(2, '0')}`
-                : 'Next scheduled date'
-              }
-            </span>
+            Based on your current settings, settlements will be processed{' '}
+            <span className="font-medium">{nextSettlementLabel}</span>.
           </p>
         </div>
       </div>

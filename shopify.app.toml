@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "b7db541cd38261758364ed7cb641373a"
-name = "test-new-app"
+client_id = "c9f2dae08ce0d37db022b21b202c7e9d"
+name = "Wove Gift"
 application_url = "https://wove-gift-portal.vercel.app/shopify/dashboard"
 embedded = true
 

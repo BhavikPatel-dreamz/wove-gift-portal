@@ -12,11 +12,11 @@
  */
 
 import cron from "node-cron";
-import { SendWhatsappMessages } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
 import { v2 as cloudinary } from "cloudinary";
 import { prisma } from "../db.js";
 import { currencyList } from "../../components/brandsPartner/currency.js";
+import { generateInvoiceAttachment } from "../invoice/generateInvoicePdf.js";
 
 const MAX_RETRIES = 3;
 const DEFAULT_EXPIRY_TEXT =
@@ -167,6 +167,8 @@ async function findOrdersReadyForNotification() {
       AND o."processingStatus" = 'VOUCHERS_CREATED'
       AND o."retryCount" < ${MAX_RETRIES}
       AND (
+        o."deliveryMethod" = 'whatsapp'
+        OR
         o."sendType" = 'sendImmediately'
         OR (
           o."sendType" = 'scheduleLater'
@@ -269,7 +271,7 @@ async function sendSingleOrderNotification(order) {
         recipientPhone:   order.receiverDetail.phone,
         recipientName:    order.receiverDetail.name,
         notificationType: order.deliveryMethod === "email" ? "EMAIL"
-                        : order.deliveryMethod === "whatsapp" ? "WHATSAPP" : "SMS",
+                        : order.deliveryMethod === "whatsapp" ? "WHATSAPP_SHARE" : "SMS",
         status:           "PENDING",
         voucherCodeId:    voucherCode.id,
         attemptCount:     0,
@@ -329,29 +331,17 @@ async function sendSingleOrderNotification(order) {
         });
 
       } else if (order.deliveryMethod === "whatsapp") {
-        const shopifyGiftCard = {
-          code:       voucherCode.giftCard?.code || voucherCode.code,
-          maskedCode: voucherCode.code,
-          balance:    { amount: voucherCode.originalValue },
+        result = {
+          success: true,
+          status: "SENT",
+          message:
+            "WhatsApp share prepared for manual sending by the purchaser.",
         };
-        const orderData = {
-          selectedBrand:    order.brand,
-          selectedAmount:   { value: order.amount, currency: currencySymbol },
-          selectedSubCategory,
-          deliveryDetails: {
-            recipientFullName:      order.receiverDetail.name,
-            recipientEmailAddress:  order.receiverDetail.email,
-            recipientWhatsAppNumber: order.receiverDetail.phone,
-          },
-          personalMessage:  order.message,
-          deliveryMethod:   order.deliveryMethod,
-        };
-        result = await SendWhatsappMessages(orderData, shopifyGiftCard);
         await prisma.notificationDetail.update({
           where: { id: notification.id },
           data: {
-            whatsappServiceStatus: result.success ? "DELIVERED" : "FAILED",
-            whatsappServiceId:     result.messageId,
+            whatsappServiceStatus: result.success ? "SHARE_READY" : "FAILED",
+            whatsappServiceId:     null,
             whatsappServiceError:  result.error || null,
           },
         });
@@ -363,7 +353,7 @@ async function sendSingleOrderNotification(order) {
       await prisma.notificationDetail.update({
         where: { id: notification.id },
         data: {
-          status:       result.success ? "DELIVERED" : "FAILED",
+          status:       result.status || (result.success ? "DELIVERED" : "FAILED"),
           sentAt:       new Date(),
           deliveredAt:  result.success ? new Date() : null,
           errorMessage: result.error || null,
@@ -745,6 +735,10 @@ async function sendOrderConfirmationEmail(order) {
       order,
       selectedSubCategory
     );
+    const invoiceAttachment = await generateInvoiceAttachment(
+      order,
+      selectedSubCategory
+    );
 
     const sendSmtpEmail = {
       sender: { email: senderEmail, name: senderName },
@@ -752,6 +746,12 @@ async function sendOrderConfirmationEmail(order) {
       subject: `Order Confirmation - ${order.orderNumber}`,
       templateId: TEMPLATE_ID_ORDER_CONFIRMATION,
       params: confirmationParams,
+      attachment: [
+        {
+          name: invoiceAttachment.filename,
+          content: Buffer.from(invoiceAttachment.content).toString("base64"),
+        },
+      ],
     };
 
     const response = await apiInstance.sendTransacEmail(sendSmtpEmail);

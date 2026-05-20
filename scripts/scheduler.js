@@ -14,7 +14,7 @@ cron.schedule('00 09 * * *', () => {
 
   const scriptPath = path.resolve(__dirname, './send-scheduled-reports.js');
 
-  exec(`node "${scriptPath}"`, (error, stdout, stderr) => {
+  exec(`pnpm exec tsx "${scriptPath}"`, (error, stdout, stderr) => {
     if (error) {
       console.error('Error executing script:', error);
       return;

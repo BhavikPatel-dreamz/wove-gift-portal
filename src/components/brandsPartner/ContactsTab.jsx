@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
+import IconTooltipButton from '../ui/IconTooltipButton';
 
 const ContactsTab = ({ formData, updateFormData, updateContact, addContact, removeContact }) => {
   const lastContactRef = useRef(null);
@@ -9,8 +10,8 @@ const ContactsTab = ({ formData, updateFormData, updateContact, addContact, remo
     if (formData.contacts.length > prevContactsLength.current) {
       // Use setTimeout to ensure the DOM has updated
       setTimeout(() => {
-        lastContactRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
+        lastContactRef.current?.scrollIntoView({
+          behavior: 'smooth',
           block: 'center' // Changed to 'center' for better visibility
         });
         // Optional: Flash effect to draw attention
@@ -41,6 +42,7 @@ const ContactsTab = ({ formData, updateFormData, updateContact, addContact, remo
           <h3 className="font-inter text-[16px] font-semibold leading-normal capitalize text-[#4A4A4A]">Brand Contacts</h3>
           <button
             onClick={handleAddContact}
+            title="Add contact for show contact details"
             className="bg-[#175EFD] text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 flex items-center space-x-2 transition-colors"
           >
             <Plus size={16} />
@@ -131,7 +133,7 @@ const ContactsTab = ({ formData, updateFormData, updateContact, addContact, remo
             value={formData.internalNotes}
             onChange={(e) => updateFormData('internalNotes', e.target.value)}
           />
-         <p className="mt-2 font-inter text-[12px] font-semibold capitalize leading-normal text-[#A5A5A5]">These notes are for internal use only and will not be shared with the brand partner.</p>
+          <p className="mt-2 font-inter text-[12px] font-semibold capitalize leading-normal text-[#A5A5A5]">These notes are for internal use only and will not be shared with the brand partner.</p>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { currencyList } from "../brandsPartner/currency";
+import { formatSettlementNumber } from "@/lib/settlement/formatSettlementDisplay";
 
 const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "$";
@@ -41,7 +42,7 @@ function StatCard({ title, amount, currency, color, icon }) {
       <div className="flex flex-col gap-1">
         <p className={`text-sm sm:text-base font-medium ${colors.text}`}>{title}</p>
         <p className={`text-base sm:text-lg font-semibold ${colors.text}`}>
-          {getCurrencySymbol(currency)}{amount?.toLocaleString() || "0"}
+          {getCurrencySymbol(currency)}{formatSettlementNumber(amount)}
         </p>
       </div>
       <div className={`flex h-10 w-10 shrink-0 mb-5 items-center justify-center rounded-lg ${colors.iconBg}`}>

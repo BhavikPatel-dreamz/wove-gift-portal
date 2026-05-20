@@ -396,9 +396,9 @@ export type NotificationDetailWhereInput = {
   smsServiceError?: Prisma.StringNullableFilter<"NotificationDetail"> | string | null
   createdAt?: Prisma.DateTimeFilter<"NotificationDetail"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"NotificationDetail"> | Date | string
+  bulkRecipient?: Prisma.XOR<Prisma.BulkRecipientNullableScalarRelationFilter, Prisma.BulkRecipientWhereInput> | null
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
   voucherCode?: Prisma.XOR<Prisma.VoucherCodeNullableScalarRelationFilter, Prisma.VoucherCodeWhereInput> | null
-  bulkRecipient?: Prisma.XOR<Prisma.BulkRecipientNullableScalarRelationFilter, Prisma.BulkRecipientWhereInput> | null
 }
 
 export type NotificationDetailOrderByWithRelationInput = {
@@ -429,9 +429,9 @@ export type NotificationDetailOrderByWithRelationInput = {
   smsServiceError?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  bulkRecipient?: Prisma.BulkRecipientOrderByWithRelationInput
   order?: Prisma.OrderOrderByWithRelationInput
   voucherCode?: Prisma.VoucherCodeOrderByWithRelationInput
-  bulkRecipient?: Prisma.BulkRecipientOrderByWithRelationInput
 }
 
 export type NotificationDetailWhereUniqueInput = Prisma.AtLeast<{
@@ -465,9 +465,9 @@ export type NotificationDetailWhereUniqueInput = Prisma.AtLeast<{
   smsServiceError?: Prisma.StringNullableFilter<"NotificationDetail"> | string | null
   createdAt?: Prisma.DateTimeFilter<"NotificationDetail"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"NotificationDetail"> | Date | string
+  bulkRecipient?: Prisma.XOR<Prisma.BulkRecipientNullableScalarRelationFilter, Prisma.BulkRecipientWhereInput> | null
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
   voucherCode?: Prisma.XOR<Prisma.VoucherCodeNullableScalarRelationFilter, Prisma.VoucherCodeWhereInput> | null
-  bulkRecipient?: Prisma.XOR<Prisma.BulkRecipientNullableScalarRelationFilter, Prisma.BulkRecipientWhereInput> | null
 }, "id">
 
 export type NotificationDetailOrderByWithAggregationInput = {
@@ -563,9 +563,9 @@ export type NotificationDetailCreateInput = {
   smsServiceError?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  bulkRecipient?: Prisma.BulkRecipientCreateNestedOneWithoutNotificationDetailsInput
   order: Prisma.OrderCreateNestedOneWithoutNotificationDetailsInput
   voucherCode?: Prisma.VoucherCodeCreateNestedOneWithoutNotificationDetailsInput
-  bulkRecipient?: Prisma.BulkRecipientCreateNestedOneWithoutNotificationDetailsInput
 }
 
 export type NotificationDetailUncheckedCreateInput = {
@@ -623,9 +623,9 @@ export type NotificationDetailUpdateInput = {
   smsServiceError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bulkRecipient?: Prisma.BulkRecipientUpdateOneWithoutNotificationDetailsNestedInput
   order?: Prisma.OrderUpdateOneRequiredWithoutNotificationDetailsNestedInput
   voucherCode?: Prisma.VoucherCodeUpdateOneWithoutNotificationDetailsNestedInput
-  bulkRecipient?: Prisma.BulkRecipientUpdateOneWithoutNotificationDetailsNestedInput
 }
 
 export type NotificationDetailUncheckedUpdateInput = {
@@ -1014,8 +1014,8 @@ export type NotificationDetailCreateWithoutVoucherCodeInput = {
   smsServiceError?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  order: Prisma.OrderCreateNestedOneWithoutNotificationDetailsInput
   bulkRecipient?: Prisma.BulkRecipientCreateNestedOneWithoutNotificationDetailsInput
+  order: Prisma.OrderCreateNestedOneWithoutNotificationDetailsInput
 }
 
 export type NotificationDetailUncheckedCreateWithoutVoucherCodeInput = {
@@ -1131,8 +1131,8 @@ export type NotificationDetailCreateWithoutOrderInput = {
   smsServiceError?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  voucherCode?: Prisma.VoucherCodeCreateNestedOneWithoutNotificationDetailsInput
   bulkRecipient?: Prisma.BulkRecipientCreateNestedOneWithoutNotificationDetailsInput
+  voucherCode?: Prisma.VoucherCodeCreateNestedOneWithoutNotificationDetailsInput
 }
 
 export type NotificationDetailUncheckedCreateWithoutOrderInput = {
@@ -1328,8 +1328,8 @@ export type NotificationDetailUpdateWithoutVoucherCodeInput = {
   smsServiceError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  order?: Prisma.OrderUpdateOneRequiredWithoutNotificationDetailsNestedInput
   bulkRecipient?: Prisma.BulkRecipientUpdateOneWithoutNotificationDetailsNestedInput
+  order?: Prisma.OrderUpdateOneRequiredWithoutNotificationDetailsNestedInput
 }
 
 export type NotificationDetailUncheckedUpdateWithoutVoucherCodeInput = {
@@ -1444,8 +1444,8 @@ export type NotificationDetailUpdateWithoutOrderInput = {
   smsServiceError?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  voucherCode?: Prisma.VoucherCodeUpdateOneWithoutNotificationDetailsNestedInput
   bulkRecipient?: Prisma.BulkRecipientUpdateOneWithoutNotificationDetailsNestedInput
+  voucherCode?: Prisma.VoucherCodeUpdateOneWithoutNotificationDetailsNestedInput
 }
 
 export type NotificationDetailUncheckedUpdateWithoutOrderInput = {
@@ -1652,9 +1652,9 @@ export type NotificationDetailSelect<ExtArgs extends runtime.Types.Extensions.In
   smsServiceError?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.NotificationDetail$voucherCodeArgs<ExtArgs>
-  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
 }, ExtArgs["result"]["notificationDetail"]>
 
 export type NotificationDetailSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1685,9 +1685,9 @@ export type NotificationDetailSelectCreateManyAndReturn<ExtArgs extends runtime.
   smsServiceError?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.NotificationDetail$voucherCodeArgs<ExtArgs>
-  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
 }, ExtArgs["result"]["notificationDetail"]>
 
 export type NotificationDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1718,9 +1718,9 @@ export type NotificationDetailSelectUpdateManyAndReturn<ExtArgs extends runtime.
   smsServiceError?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.NotificationDetail$voucherCodeArgs<ExtArgs>
-  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
 }, ExtArgs["result"]["notificationDetail"]>
 
 export type NotificationDetailSelectScalar = {
@@ -1755,27 +1755,27 @@ export type NotificationDetailSelectScalar = {
 
 export type NotificationDetailOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "recipientEmail" | "recipientPhone" | "recipientName" | "notificationType" | "status" | "attemptCount" | "maxRetries" | "sentAt" | "deliveredAt" | "failedAt" | "errorMessage" | "messageId" | "voucherCodeId" | "bulkRecipientId" | "emailServiceStatus" | "emailServiceId" | "emailServiceError" | "whatsappServiceStatus" | "whatsappServiceId" | "whatsappServiceError" | "smsServiceStatus" | "smsServiceId" | "smsServiceError" | "createdAt" | "updatedAt", ExtArgs["result"]["notificationDetail"]>
 export type NotificationDetailInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.NotificationDetail$voucherCodeArgs<ExtArgs>
-  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
 }
 export type NotificationDetailIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.NotificationDetail$voucherCodeArgs<ExtArgs>
-  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
 }
 export type NotificationDetailIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.NotificationDetail$voucherCodeArgs<ExtArgs>
-  bulkRecipient?: boolean | Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>
 }
 
 export type $NotificationDetailPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "NotificationDetail"
   objects: {
+    bulkRecipient: Prisma.$BulkRecipientPayload<ExtArgs> | null
     order: Prisma.$OrderPayload<ExtArgs>
     voucherCode: Prisma.$VoucherCodePayload<ExtArgs> | null
-    bulkRecipient: Prisma.$BulkRecipientPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2199,9 +2199,9 @@ readonly fields: NotificationDetailFieldRefs;
  */
 export interface Prisma__NotificationDetailClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  bulkRecipient<T extends Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>>): Prisma.Prisma__BulkRecipientClient<runtime.Types.Result.GetResult<Prisma.$BulkRecipientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   order<T extends Prisma.OrderDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.OrderDefaultArgs<ExtArgs>>): Prisma.Prisma__OrderClient<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   voucherCode<T extends Prisma.NotificationDetail$voucherCodeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.NotificationDetail$voucherCodeArgs<ExtArgs>>): Prisma.Prisma__VoucherCodeClient<runtime.Types.Result.GetResult<Prisma.$VoucherCodePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  bulkRecipient<T extends Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.NotificationDetail$bulkRecipientArgs<ExtArgs>>): Prisma.Prisma__BulkRecipientClient<runtime.Types.Result.GetResult<Prisma.$BulkRecipientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2654,25 +2654,6 @@ export type NotificationDetailDeleteManyArgs<ExtArgs extends runtime.Types.Exten
 }
 
 /**
- * NotificationDetail.voucherCode
- */
-export type NotificationDetail$voucherCodeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the VoucherCode
-   */
-  select?: Prisma.VoucherCodeSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the VoucherCode
-   */
-  omit?: Prisma.VoucherCodeOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.VoucherCodeInclude<ExtArgs> | null
-  where?: Prisma.VoucherCodeWhereInput
-}
-
-/**
  * NotificationDetail.bulkRecipient
  */
 export type NotificationDetail$bulkRecipientArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2689,6 +2670,25 @@ export type NotificationDetail$bulkRecipientArgs<ExtArgs extends runtime.Types.E
    */
   include?: Prisma.BulkRecipientInclude<ExtArgs> | null
   where?: Prisma.BulkRecipientWhereInput
+}
+
+/**
+ * NotificationDetail.voucherCode
+ */
+export type NotificationDetail$voucherCodeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the VoucherCode
+   */
+  select?: Prisma.VoucherCodeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the VoucherCode
+   */
+  omit?: Prisma.VoucherCodeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.VoucherCodeInclude<ExtArgs> | null
+  where?: Prisma.VoucherCodeWhereInput
 }
 
 /**

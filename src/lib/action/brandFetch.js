@@ -183,9 +183,9 @@ export const getBrands = async ({ isFeature = false } = {}) => {
         ...(isFeature && { isFeature: true }),
       },
     });
-    return brands;
+    return brands ?? [];
   } catch (error) {
     console.error("Error fetching brands:", error);
-    throw new Error("Could not fetch brands.");
+    return [];
   }
 };

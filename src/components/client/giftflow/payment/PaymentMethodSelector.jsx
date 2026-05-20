@@ -11,7 +11,7 @@ const PaymentMethodSelector = ({ selectedTab, onTabChange, isBulkMode }) => {
   const dispatch = useDispatch();
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+    <div className="w-full max-w-[19rem] sm:max-w-none mx-auto bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200">
       <div className="flex items-center gap-4 mb-4">
         <div
           className="w-11 h-11 flex items-center justify-center"

@@ -117,10 +117,7 @@ const BrandAnalyticsTable = ({
       if (result.success) {
         setProcessMessage({
           type: "success",
-          text: `Payment processed successfully! ${result.data.paymentReference
-            ? `Payment Reference: ${result.data.paymentReference}`
-            : ""
-            }`,
+          text: result.message || "Payment processed successfully.",
         });
       } else {
         throw new Error(result.message || "Failed to process payment");

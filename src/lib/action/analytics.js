@@ -1,6 +1,18 @@
 "use server"
 
 import { prisma } from '../db'
+import { sendEmail } from "../email";
+import {
+  buildSettlementNotificationEmail,
+  generateSettlementNotificationAttachments,
+  getSettlementNotificationRecipients,
+} from "../settlement/settlementNotifications.js";
+import {
+  calculateSettlementAmounts,
+  getSettlementBaseAmount,
+  getSettlementTransactionCount,
+  roundSettlementAmount,
+} from '../settlement/settlementUtils.js'
 
 export async function fetchAnalyticsData(params = {}) {
   try {
@@ -298,16 +310,13 @@ async function getSettlementData(dateRange, brandIdFilter = null) {
     const currency = settlement.brand?.currency || "USD";
 
     const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
-    const baseAmount =
-      settlementTrigger === "onRedemption"
-        ? settlement.redeemedAmount
-        : settlement.totalSoldAmount;
+    const baseAmount = getSettlementBaseAmount(settlement, settlementTrigger);
 
     // Commission calculation
     let calculatedCommission = 0;
     if (brandTerms && baseAmount > 0) {
       if (brandTerms.commissionType === "Percentage") {
-        calculatedCommission = Math.round(
+        calculatedCommission = roundSettlementAmount(
           (baseAmount * brandTerms.commissionValue) / 100
         );
       } else if (brandTerms.commissionType === "Fixed") {
@@ -315,7 +324,7 @@ async function getSettlementData(dateRange, brandIdFilter = null) {
           settlementTrigger === "onRedemption"
             ? settlement.totalRedeemed
             : settlement.totalSold;
-        calculatedCommission = Math.round(
+        calculatedCommission = roundSettlementAmount(
           brandTerms.commissionValue * itemCount
         );
       }
@@ -328,7 +337,7 @@ async function getSettlementData(dateRange, brandIdFilter = null) {
 
     // VAT calculation
     const vatRate = brandTerms?.vatRate || 0;
-    const calculatedVatAmount = Math.round(
+    const calculatedVatAmount = roundSettlementAmount(
       (commissionAmount * vatRate) / 100
     );
 
@@ -340,7 +349,7 @@ async function getSettlementData(dateRange, brandIdFilter = null) {
     // Breakage calculation
     let calculatedBreakageAmount = 0;
     if (brandTerms?.breakageShare && settlement.outstandingAmount > 0) {
-      calculatedBreakageAmount = Math.round(
+      calculatedBreakageAmount = roundSettlementAmount(
         (settlement.outstandingAmount * brandTerms.breakageShare) / 100
       );
     }
@@ -351,11 +360,10 @@ async function getSettlementData(dateRange, brandIdFilter = null) {
         : (settlement.breakageAmount ?? calculatedBreakageAmount);
 
     // Net payable calculation
-    let calculatedNetPayable = 0;
-    if (baseAmount > 0) {
-      calculatedNetPayable =
-        baseAmount - commissionAmount + vatAmount - breakageAmount;
-    }
+    const calculatedNetPayable =
+      baseAmount > 0
+        ? Math.max(0, baseAmount - commissionAmount - vatAmount - breakageAmount)
+        : 0;
 
     const netPayable =
       settlement.netPayable === 0 && baseAmount > 0
@@ -377,18 +385,18 @@ async function getSettlementData(dateRange, brandIdFilter = null) {
 
     return {
       brand: settlement.brand.brandName,
-      amount: Math.round(netPayable),
+      amount: roundSettlementAmount(netPayable),
       status: dynamicStatus,
       currency,
       periodStart: settlement.periodStart,
       periodEnd: settlement.periodEnd,
       settlementPeriod: settlement.settlementPeriod,
-      totalPaid: Math.round(totalPaid),
-      remainingAmount: Math.round(remainingAmount),
-      baseAmount: Math.round(baseAmount),
-      commissionAmount: Math.round(commissionAmount),
-      vatAmount: Math.round(vatAmount),
-      breakageAmount: Math.round(breakageAmount),
+      totalPaid: roundSettlementAmount(totalPaid),
+      remainingAmount: roundSettlementAmount(remainingAmount),
+      baseAmount: roundSettlementAmount(baseAmount),
+      commissionAmount: roundSettlementAmount(commissionAmount),
+      vatAmount: roundSettlementAmount(vatAmount),
+      breakageAmount: roundSettlementAmount(breakageAmount),
     };
   });
 
@@ -577,14 +585,14 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
           totalIssued = voucherCodes.length;
 
           const totalIssuedValueAgg = await prisma.order.aggregate({
-            _sum: { totalAmount: true },
+            _sum: { subtotal: true },
             where: { 
               brandId: brand.id, 
               paymentStatus: "COMPLETED",
               ...dateFilter 
             },
           });
-          totalIssuedValue = totalIssuedValueAgg._sum.totalAmount || 0;
+          totalIssuedValue = totalIssuedValueAgg._sum.subtotal || 0;
 
           const redeemedVouchers = voucherCodes.filter(
             (vc) =>
@@ -641,27 +649,31 @@ export async function fetchBrandAnalytics({ filterMonth = null, filterYear = nul
 
           if (baseAmount > 0) {
             if (commissionType === "Percentage") {
-              commissionAmount = Math.round((baseAmount * commissionValue) / 100);
+              commissionAmount = roundSettlementAmount((baseAmount * commissionValue) / 100);
             } else if (commissionType === "Fixed") {
               const itemCount = settlementTrigger === "onRedemption"
                 ? totalRedeemed
                 : totalIssued;
-              commissionAmount = Math.round(commissionValue * itemCount);
+              commissionAmount = roundSettlementAmount(commissionValue * itemCount);
             }
           }
 
-          vatAmount = Math.round((commissionAmount * vatRate) / 100);
+          vatAmount = roundSettlementAmount((commissionAmount * vatRate) / 100);
 
           breakageAmount = breakageShare && totalBreakageValue > 0
-            ? Math.round((totalBreakageValue * breakageShare) / 100)
+            ? roundSettlementAmount((totalBreakageValue * breakageShare) / 100)
             : 0;
 
-          netPayable = baseAmount - commissionAmount + vatAmount - breakageAmount;
+          netPayable = Math.max(
+            0,
+            baseAmount - commissionAmount - vatAmount - breakageAmount,
+          );
         }
 
-        const totalPaidAmount = settlements
-          .filter((s) => s.status === "Paid")
-          .reduce((sum, s) => sum + (s.totalPaid || 0), 0);
+        const totalPaidAmount = settlements.reduce(
+          (sum, s) => sum + (s.totalPaid || 0),
+          0,
+        );
 
         const pendingSettlement = Math.max(0, netPayable - totalPaidAmount);
 
@@ -807,7 +819,15 @@ export async function processSettlement(settlementId, partialAmount, notes) {
 
     const settlement = await prisma.settlements.findUnique({
       where: { id: settlementId },
-      include: { brand: true },
+      include: {
+        brand: {
+          include: {
+            brandBankings: true,
+            brandContacts: true,
+            brandTerms: true,
+          },
+        },
+      },
     });
 
     if (!settlement) {
@@ -818,22 +838,31 @@ export async function processSettlement(settlementId, partialAmount, notes) {
       return { success: false, message: "Settlement already fully paid" };
     }
 
-    const brandTerms = await prisma.brandTerms.findUnique({
-      where: { brandId: settlement.brandId },
-    });
+    const brandTerms = settlement.brand?.brandTerms
+      || await prisma.brandTerms.findUnique({
+        where: { brandId: settlement.brandId },
+      });
 
     const vatRate = brandTerms?.vatRate ?? 0;
     const commissionValue = brandTerms?.commissionValue ?? 0;
     const commissionType = brandTerms?.commissionType ?? "Percentage";
-
-    const commissionAmount =
-      commissionType === "Fixed"
-        ? commissionValue
-        : (settlement.totalSoldAmount * commissionValue) / 100;
-
-    const vatAmount = ((settlement.totalSoldAmount - commissionAmount) * vatRate) / 100;
-
-    const netPayable = settlement.totalSoldAmount - commissionAmount + vatAmount;
+    const settlementTrigger = brandTerms?.settlementTrigger ?? "onRedemption";
+    const baseAmount = getSettlementBaseAmount(settlement, settlementTrigger);
+    const itemCount = getSettlementTransactionCount(settlement, settlementTrigger);
+    const calculatedAmounts = calculateSettlementAmounts({
+      baseAmount,
+      commissionType,
+      commissionValue,
+      vatRate,
+      itemCount,
+      breakageAmount: settlement.breakageAmount ?? 0,
+    });
+    const commissionAmount = settlement.commissionAmount || calculatedAmounts.commissionAmount;
+    const vatAmount = settlement.vatAmount || calculatedAmounts.vatAmount;
+    const netPayable = settlement.netPayable || Math.max(
+      0,
+      baseAmount - commissionAmount - vatAmount - (settlement.breakageAmount || 0),
+    );
 
     const tolerance = 0.01;
     let paymentToApply = partialAmountNum;
@@ -863,6 +892,7 @@ export async function processSettlement(settlementId, partialAmount, notes) {
     };
 
     const updatedPaymentHistory = [...existingHistory, newPaymentRecord];
+    const paymentProcessedAt = new Date();
 
     if (isFullPayment) {
       const updatedSettlement = await prisma.settlements.update({
@@ -871,18 +901,46 @@ export async function processSettlement(settlementId, partialAmount, notes) {
           status: "Paid",
           totalPaid: netPayable,
           remainingAmount: 0,
-          paidAt: new Date(),
-          lastPaymentDate: new Date(),
+          paidAt: paymentProcessedAt,
+          lastPaymentDate: paymentProcessedAt,
           paymentCount: (settlement.paymentCount || 0) + 1,
           paymentReference: paymentReference,
           paymentHistory: updatedPaymentHistory,
         },
       });
+      const settlementWithPayment = {
+        ...settlement,
+        ...updatedSettlement,
+        brand: {
+          ...settlement.brand,
+          brandTerms,
+        },
+        totalPaid: netPayable,
+        remainingAmount: 0,
+        paidAt: paymentProcessedAt,
+        lastPaymentDate: paymentProcessedAt,
+        paymentReference,
+      };
+      const notificationResult = await sendSettlementCompletionNotification({
+        settlement: settlementWithPayment,
+        brandTerms,
+      });
+      const emailMessage = notificationResult.sent
+        ? ` Settlement documents emailed to ${notificationResult.recipients.join(", ")}.`
+        : notificationResult.reason
+          ? ` ${notificationResult.reason}`
+          : "";
+      const errorMessage = notificationResult.error
+        ? ` Email delivery failed: ${notificationResult.error}`
+        : "";
 
       return {
         success: true,
-        message: "Full payment processed successfully",
-        data: updatedSettlement,
+        message: `Full payment processed successfully.${emailMessage}${errorMessage}`.trim(),
+        data: {
+          ...updatedSettlement,
+          settlementNotification: notificationResult,
+        },
       };
     } else {
       const updatedTotalPaid = (settlement.totalPaid || 0) + paymentToApply;
@@ -911,6 +969,56 @@ export async function processSettlement(settlementId, partialAmount, notes) {
     return {
       success: false,
       message: "An error occurred while processing the settlement.",
+      error: error.message,
+    };
+  }
+}
+
+async function sendSettlementCompletionNotification({ settlement, brandTerms }) {
+  try {
+    const recipients = getSettlementNotificationRecipients(settlement?.brand);
+
+    if (recipients.length === 0) {
+      return {
+        sent: false,
+        reason:
+          "Settlement marked as paid, but no remittance or primary contact email is configured.",
+      };
+    }
+
+    const emailPayload = buildSettlementNotificationEmail({
+      settlement,
+      brandTerms,
+    });
+    const attachments = await generateSettlementNotificationAttachments({
+      settlement,
+      brandTerms,
+    });
+    const templateId = Number.parseInt(
+      process.env.BREVO_TEMPLATE_SETTLEMENT_NOTIFICATION,
+      10,
+    );
+
+    await sendEmail({
+      to: recipients.join(","),
+      subject: emailPayload.subject,
+      html: emailPayload.html,
+      text: emailPayload.text,
+      attachments,
+      templateId: Number.isFinite(templateId) ? templateId : undefined,
+      params: emailPayload.emailTemplateParams,
+    });
+
+    return {
+      sent: true,
+      recipients,
+      templateIdUsed: Number.isFinite(templateId),
+    };
+  } catch (error) {
+    console.error("Error sending settlement completion email:", error);
+
+    return {
+      sent: false,
       error: error.message,
     };
   }

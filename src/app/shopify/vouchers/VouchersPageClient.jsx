@@ -10,6 +10,7 @@ import VoucherDetails from "@/components/vouchers/VoucherDetails";
 import { useSession } from "@/contexts/SessionContext";
 import { useSearchParams } from "next/navigation";
 import { currencyList } from "../../../components/brandsPartner/currency";
+import { isAdminRole } from "@/lib/roles";
 
 export default function VouchersManagement() {
     const session = useSession();
@@ -267,7 +268,7 @@ export default function VouchersManagement() {
         </div>
     );
 
-    const isAdmin = session?.user?.role === 'ADMIN';
+    const isAdmin = isAdminRole(session?.user?.role);
 
     const getCurrencySymbol = (code) =>
         currencyList.find((c) => c.code === code)?.symbol || "";

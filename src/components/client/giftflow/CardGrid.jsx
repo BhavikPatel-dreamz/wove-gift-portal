@@ -14,20 +14,20 @@ const CardGrid = ({
   // 1️⃣ SHOW SKELETON FIRST - Only show when actually loading
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-3 sm:gap-4 md:gap-6 px-2 sm:p-4 md:p-6">
         {Array.from({ length: 12 }).map((_, index) => (
           <div
             key={`skeleton-${index}`}
-            className="bg-white rounded-2xl p-6 animate-pulse border border-gray-100"
+            className="w-full max-w-sm sm:max-w-none bg-white rounded-2xl p-4 sm:p-6 animate-pulse border border-gray-100"
           >
-            <div className="flex justify-center mb-6">
-              <div className="w-24 h-24 bg-gray-200 rounded-lg" />
+            <div className="flex justify-center mb-4 sm:mb-6">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-lg" />
             </div>
-            <div className="text-center space-y-3">
-              <div className="h-6 bg-gray-200 rounded-full w-20 mx-auto" />
-              <div className="h-5 bg-gray-200 rounded w-32 mx-auto" />
-              <div className="h-4 bg-gray-200 rounded w-full" />
-              <div className="h-10 bg-gray-200 rounded-full w-full mt-4" />
+            <div className="text-center space-y-2 sm:space-y-3">
+              <div className="h-5 sm:h-6 bg-gray-200 rounded-full w-16 sm:w-20 mx-auto" />
+              <div className="h-4 sm:h-5 bg-gray-200 rounded w-24 sm:w-32 mx-auto" />
+              <div className="h-3 sm:h-4 bg-gray-200 rounded w-full" />
+              <div className="h-8 sm:h-10 bg-gray-200 rounded-full w-full mt-3 sm:mt-4" />
             </div>
           </div>
         ))}
@@ -38,12 +38,12 @@ const CardGrid = ({
   // 2️⃣ SHOW EMPTY STATE ONLY AFTER LOADING IS DONE
   if (brands.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="text-6xl mb-4">🔍</div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+      <div className="text-center py-12 sm:py-16 px-4">
+        <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">🔍</div>
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2">
           No brands found
         </h3>
-        <p className="text-gray-600">
+        <p className="text-sm sm:text-base text-gray-600">
           Try adjusting your search or filters.
         </p>
       </div>
@@ -52,7 +52,7 @@ const CardGrid = ({
 
   // 3️⃣ SHOW DATA
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 md:p-10 mt-10">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-3 sm:gap-4 md:gap-6 px-2 sm:p-4 md:p-6 mt-2 sm:mt-4 md:mt-6 lg:mt-10">
       {brands.map((brand) => (
         <BrandCard
           key={brand.id}

@@ -1,11 +1,43 @@
 import React from "react";
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from "next/link";
+import WhatsAppShareButton from "../WhatsAppShareButton";
+import { buildGiftCardShareImageUrls } from "@/lib/whatsappShare";
 
-const ThankYouScreen = () => {
+const ThankYouScreen = ({ order = null }) => {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+
+  const allOrders = Array.isArray(order?.allOrders) && order.allOrders.length > 0
+    ? order.allOrders
+    : order
+      ? [order]
+      : [];
+
+  const whatsappShareGifts = allOrders
+    .filter((currentOrder) => currentOrder?.deliveryMethod === "whatsapp")
+    .flatMap((currentOrder) =>
+      (currentOrder?.voucherCodes || []).map((voucherCode) => {
+        const shareCode = voucherCode?.giftCard?.code || voucherCode?.code || "";
+        const shareImageAssets = buildGiftCardShareImageUrls(shareCode);
+
+        return {
+          recipientName: currentOrder?.receiverDetail?.name || "there",
+          giftName: currentOrder?.brand?.brandName || "gift card",
+          brandName: currentOrder?.brand?.brandName || "Brand",
+          brandWebsite:
+            currentOrder?.brand?.website ||
+            currentOrder?.brand?.domain ||
+            "",
+          giftAmount: `${currentOrder?.currency || "USD"} ${voucherCode?.originalValue ?? currentOrder?.amount ?? 0}`,
+          giftCode: shareCode,
+          giftUrl: voucherCode?.tokenizedLink,
+          giftImageUrl: shareImageAssets.imageUrl || currentOrder?.brand?.logo || "",
+          giftImageViewUrl: shareImageAssets.imageViewUrl || "",
+          senderName: currentOrder?.senderName || "Someone",
+          customMessage: currentOrder?.message || "",
+        };
+      }),
+    );
 
   const handleSendAnotherGift = () => {
     router.push("/")
@@ -20,6 +52,26 @@ const ThankYouScreen = () => {
         <p className="text-[#4A4A4A] font-medium text-[16px] mb-6">
           Create your account now to track your order and access exclusive rewards.
         </p>
+
+        {whatsappShareGifts.length > 0 && (
+          <div className="mb-6">
+            <WhatsAppShareButton
+              gifts={whatsappShareGifts}
+              context="order-confirmation"
+              autoOpenGuide
+              analyticsMetadata={{
+                orderId: order?.id,
+                orderNumber: order?.orderNumber,
+              }}
+              defaultMessageData={{
+                senderName: order?.senderName || "Someone",
+                recipientName: order?.receiverDetail?.name || "there",
+                customMessage: order?.message || "",
+              }}
+            />
+          </div>
+        )}
+
         <div className="w-full flex justify-center">
           <button
             onClick={handleSendAnotherGift}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { currencyList } from "./currency";
+import IconTooltipButton from "../ui/IconTooltipButton";
 
 const VouchersTab = ({ formData, updateFormData }) => {
   const [denominationValue, setDenominationValue] = useState("");
@@ -154,6 +155,9 @@ const VouchersTab = ({ formData, updateFormData }) => {
   };
 
   const preview = getPreviewData();
+  const labelWithInfoClassName = "flex items-center gap-1.5";
+  const infoTooltipClassName =
+    "inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 bg-white text-[10px] font-bold leading-none text-gray-500 hover:border-blue-400 hover:text-blue-600";
 
   return (
     <div className="w-full">
@@ -180,18 +184,36 @@ const VouchersTab = ({ formData, updateFormData }) => {
           </div>
           {/* Amount Range Section */}
           <div className="rounded-lg pt-3">
-            <p className="font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-1">
-              Amount Range
-            </p>
+            <div className={labelWithInfoClassName}>
+              <p className="font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-1">
+                Amount Range
+              </p>
+              <IconTooltipButton
+                type="button"
+                label="Use this when customers should be allowed to enter a custom voucher value instead of picking only fixed preset amounts."
+                className={infoTooltipClassName}
+              >
+                <span>i</span>
+              </IconTooltipButton>
+            </div>
             <p className="font-inter text-xs font-medium leading-5 text-[#A5A5A5] mb-4">
               Allow any amount within a range with optional expiry date
             </p>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
-                  Minimum Amount*
-                </label>
+                <div className={labelWithInfoClassName}>
+                  <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
+                    Minimum Amount*
+                  </label>
+                  <IconTooltipButton
+                    type="button"
+                    label="Smallest custom voucher amount a customer can enter on the storefront."
+                    className={infoTooltipClassName}
+                  >
+                    <span>i</span>
+                  </IconTooltipButton>
+                </div>
                 <input
                   type="number"
                   value={formData.minAmount || ""}
@@ -203,9 +225,18 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 />
               </div>
               <div>
-                <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
-                  Maximum Amount
-                </label>
+                <div className={labelWithInfoClassName}>
+                  <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
+                    Maximum Amount
+                  </label>
+                  <IconTooltipButton
+                    type="button"
+                    label="Largest custom voucher amount a customer should be allowed to enter."
+                    className={infoTooltipClassName}
+                  >
+                    <span>i</span>
+                  </IconTooltipButton>
+                </div>
                 <input
                   type="number"
                   value={formData.maxAmount || ""}
@@ -270,16 +301,34 @@ const VouchersTab = ({ formData, updateFormData }) => {
 
             {/* Add New Denomination Form */}
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <p className="font-inter text-base font-semibold capitalize text-[#4A4A4A] mb-4">
-                Add New Denomination
-              </p>
+              <div className={`${labelWithInfoClassName} mb-4`}>
+                <p className="font-inter text-base font-semibold capitalize text-[#4A4A4A]">
+                  Add New Denomination
+                </p>
+                <IconTooltipButton
+                  type="button"
+                  label="Create a fixed preset gift-card amount that customers can pick directly from the amount cards."
+                  className={infoTooltipClassName}
+                >
+                  <span>i</span>
+                </IconTooltipButton>
+              </div>
 
               {/* Row 1 */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                 <div>
-                  <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
-                    Currency
-                  </label>
+                  <div className={labelWithInfoClassName}>
+                    <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
+                      Currency
+                    </label>
+                    <IconTooltipButton
+                      type="button"
+                      label="Preset denominations use the brand's configured voucher currency."
+                      className={infoTooltipClassName}
+                    >
+                      <span>i</span>
+                    </IconTooltipButton>
+                  </div>
                   <select
                     value={formData?.currency || ""}
                     disabled
@@ -294,9 +343,18 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 </div>
 
                 <div>
-                  <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
-                    Amount*
-                  </label>
+                  <div className={labelWithInfoClassName}>
+                    <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
+                      Amount*
+                    </label>
+                    <IconTooltipButton
+                      type="button"
+                      label="The fixed voucher value customers will see and select as a preset denomination."
+                      className={infoTooltipClassName}
+                    >
+                      <span>i</span>
+                    </IconTooltipButton>
+                  </div>
                   <input
                     type="number"
                     placeholder="e.g., 50"
@@ -307,9 +365,18 @@ const VouchersTab = ({ formData, updateFormData }) => {
                 </div>
 
                 <div>
-                  <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
-                    Display Name
-                  </label>
+                  <div className={labelWithInfoClassName}>
+                    <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
+                      Display Name
+                    </label>
+                    <IconTooltipButton
+                      type="button"
+                      label="Optional customer-facing label for this preset amount. If left blank, the amount is used automatically."
+                      className={infoTooltipClassName}
+                    >
+                      <span>i</span>
+                    </IconTooltipButton>
+                  </div>
                   <input
                     type="text"
                     placeholder="e.g., $50 Gift Card"
@@ -323,9 +390,18 @@ const VouchersTab = ({ formData, updateFormData }) => {
               {/* Row 2 */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                 <div>
-                  <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
-                    Expiry Date*
-                  </label>
+                  <div className={labelWithInfoClassName}>
+                    <label className="block font-inter text-sm font-semibold text-[#4A4A4A] mb-1.5">
+                      Expiry Date*
+                    </label>
+                    <IconTooltipButton
+                      type="button"
+                      label="Optional expiry for this specific fixed denomination. Leave empty if this preset amount should not have its own expiry date."
+                      className={infoTooltipClassName}
+                    >
+                      <span>i</span>
+                    </IconTooltipButton>
+                  </div>
                   <input
                     type="date"
                     value={denominationExpiry}
@@ -346,12 +422,20 @@ const VouchersTab = ({ formData, updateFormData }) => {
                     <span className="text-sm font-medium text-gray-900">
                       Active
                     </span>
+                    <IconTooltipButton
+                      type="button"
+                      label="Only active denominations should be shown to customers as selectable preset amounts."
+                      className={infoTooltipClassName}
+                    >
+                      <span>i</span>
+                    </IconTooltipButton>
                   </label>
                 </div>
 
                 <div className="flex justify-end md:justify-end">
                   <button
                     onClick={addDenomination}
+                    title="New voucher show in the client side in denomination cards"
                     className="w-full max-w-fit bg-[#175EFD] hover:bg-blue-700 text-white px-2 py-3 rounded-md text-sm font-medium transition-colors"
                   >
                     + Add New Voucher

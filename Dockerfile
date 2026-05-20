@@ -44,7 +44,8 @@ RUN corepack enable && corepack prepare pnpm@10.26.2 --activate
 
 WORKDIR /app
 
-# Runtime native libs needed during build (canvas is used in server components)
+# Runtime native libs needed during build (canvas is used in server components).
+# openssl: lets Prisma detect libssl during prisma generate / build (avoids defaulting to openssl-1.1.x on slim images).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     libpango-1.0-0 \
@@ -52,6 +53,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo \
     libgif7 \
     librsvg2-2 \
+    openssl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -115,8 +118,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/generated ./generated
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+
+# Ensure Prisma client exists in the image (covers empty/missed COPY layers or cache quirks).
+# Must run before USER nextjs so prisma can write; then fix ownership for the app user.
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+RUN pnpm exec prisma generate && chown -R nextjs:nodejs /app/generated
 
 USER nextjs
 

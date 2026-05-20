@@ -2,6 +2,11 @@
 
 import { prisma } from "../db";
 import { sendEmail } from "../email";
+import { isAdminRole } from "../roles";
+import {
+  calculateSettlementAmounts,
+  getOrderSettlementAmount,
+} from "../settlement/settlementUtils.js";
 
 function generateSupportId() {
   const prefix = "WG-SUP";
@@ -70,7 +75,7 @@ export async function getSupportRequests(params = {}) {
 
     const whereClause = {};
 
-    if (user?.role !== 'ADMIN') {
+    if (!isAdminRole(user?.role)) {
       whereClause.userId = user?.id;
     }
 
@@ -591,26 +596,26 @@ export async function cancelOrder(orderNumber) {
 
         // Update each affected settlement
         for (const settlement of activeSettlements) {
-          const commissionAmount = calculateCommission(
-            order.totalAmount,
-            brandTerms.commissionType,
-            brandTerms.commissionValue
-          );
-
-          const vatAmount = brandTerms.vatRate 
-            ? Math.round(commissionAmount * (brandTerms.vatRate / 100))
-            : 0;
+          const orderSettlementAmount = getOrderSettlementAmount(order);
+          const { commissionAmount, vatAmount, netPayable } =
+            calculateSettlementAmounts({
+              baseAmount: orderSettlementAmount,
+              commissionType: brandTerms.commissionType,
+              commissionValue: brandTerms.commissionValue,
+              vatRate: brandTerms.vatRate,
+              itemCount: order.quantity,
+            });
 
           await tx.settlements.update({
             where: { id: settlement.id },
             data: {
               totalSold: { decrement: order.quantity },
-              totalSoldAmount: { decrement: order.totalAmount },
+              totalSoldAmount: { decrement: orderSettlementAmount },
               outstanding: { decrement: order.quantity },
-              outstandingAmount: { decrement: order.totalAmount },
+              outstandingAmount: { decrement: orderSettlementAmount },
               commissionAmount: { decrement: commissionAmount },
               vatAmount: vatAmount > 0 ? { decrement: vatAmount } : undefined,
-              remainingAmount: { decrement: (order.totalAmount - commissionAmount - vatAmount) },
+              remainingAmount: { decrement: netPayable },
               notes: settlement.notes 
                 ? `${settlement.notes}\n[${cancelledAt.toISOString()}] Order ${orderNumber} cancelled - Adjusted amounts`
                 : `[${cancelledAt.toISOString()}] Order ${orderNumber} cancelled - Adjusted amounts`,
@@ -698,14 +703,4 @@ async function disableShopifyGiftCard(shop, accessToken, shopifyGiftCardId) {
 
   const result = await response.json();
   return result.gift_card;
-}
-
-// Calculate commission amount based on brand terms
-function calculateCommission(amount, commissionType, commissionValue) {
-  if (commissionType === 'Percentage') {
-    return Math.round(amount * (commissionValue / 100));
-  } else if (commissionType === 'Fixed') {
-    return commissionValue;
-  }
-  return 0;
 }

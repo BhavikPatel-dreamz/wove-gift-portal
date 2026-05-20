@@ -10,6 +10,7 @@
 
 import cron from "node-cron";
 import { prisma } from "../db.js";
+import { calculateSettlementAmounts } from "../settlement/settlementUtils.js";
 
 const MAX_RETRIES = 3;
 const PROCESSING_TIMEOUT_MINUTES = 15;
@@ -748,7 +749,7 @@ async function updateOrCreateSettlement(selectedBrand, order) {
           },
           _sum: {
             quantity: true,
-            totalAmount: true,
+            subtotal: true,
           },
         }),
       ]);
@@ -756,30 +757,20 @@ async function updateOrCreateSettlement(selectedBrand, order) {
     const brandTerms = brandTermsFromDb || selectedBrand.brandTerms || null;
     const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
     const totalSold = orderTotals._sum.quantity || 0;
-    const totalSoldAmount = orderTotals._sum.totalAmount || 0;
+    const totalSoldAmount = orderTotals._sum.subtotal || 0;
 
     const redeemedCount = existingSettlement?.totalRedeemed || 0;
     const redeemedAmount = existingSettlement?.redeemedAmount || 0;
     const outstanding = Math.max(0, totalSold - redeemedCount);
     const outstandingAmount = Math.max(0, totalSoldAmount - redeemedAmount);
-
-    let commissionAmount = 0;
-
-    if (brandTerms?.commissionType === "Percentage") {
-      commissionAmount = Number(
-        ((totalSoldAmount * (brandTerms.commissionValue || 0)) / 100).toFixed(
-          2,
-        ),
-      );
-    } else if (brandTerms?.commissionType === "Fixed") {
-      commissionAmount = Number(
-        ((brandTerms.commissionValue || 0) * totalSold).toFixed(2),
-      );
-    }
-
-    const vatRate = brandTerms?.vatRate || 0;
-    const vatAmount = Number(((commissionAmount * vatRate) / 100).toFixed(2));
-    const netPayable = totalSoldAmount - commissionAmount;
+    const { commissionAmount, vatAmount, netPayable } =
+      calculateSettlementAmounts({
+        baseAmount: totalSoldAmount,
+        commissionType: brandTerms?.commissionType,
+        commissionValue: brandTerms?.commissionValue,
+        vatRate: brandTerms?.vatRate,
+        itemCount: totalSold,
+      });
 
     if (settlementTrigger === "onPurchase") {
       // onPurchase: always recompute and set final values from table totals + term percentages.

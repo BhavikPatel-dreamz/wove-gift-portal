@@ -2,6 +2,7 @@
 
 import { prisma } from "../db";
 import { getShopInstallationAccess } from "../shopify-installation";
+import { isAdminRole } from "../roles";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -136,7 +137,7 @@ export async function getVouchers(params = {}) {
       baseWhere.brandId = brandId;
     }
 
-    if (userRole !== "ADMIN" && userId && !shop) {
+    if (!isAdminRole(userRole) && userId && !shop) {
       baseWhere.userId = userId;
     }
 

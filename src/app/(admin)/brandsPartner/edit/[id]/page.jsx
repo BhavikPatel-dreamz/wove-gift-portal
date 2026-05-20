@@ -101,7 +101,7 @@ const BrandEdit = () => {
     swiftCode: '',
     country: 'South Africa',
     accountVerification: false,
-    imagePreview:"",
+    imagePreview: "",
 
     // Contacts
     contacts: [
@@ -121,6 +121,7 @@ const BrandEdit = () => {
   });
 
   const [originalData, setOriginalData] = useState({});
+  const isDescriptionLocked = Boolean(originalData?.description?.trim());
 
   const tabs = [
     { id: 'core', label: 'Core', completed: false },
@@ -221,11 +222,11 @@ const BrandEdit = () => {
           vatRate: brand.brandTerms?.vatRate || 0,
           internalNotes: brand.brandTerms?.internalNotes || '',
 
-// Vouchers - FIXED: Properly handle isExpiry boolean
+          // Vouchers - FIXED: Properly handle isExpiry boolean
           denominationType: 'both',
           denominations: brand.vouchers?.[0]?.denominations || [],
           maxAmount: brand.vouchers?.[0]?.maxAmount || 0,
-minAmount: brand.vouchers?.[0]?.minAmount || 0,
+          minAmount: brand.vouchers?.[0]?.minAmount || 0,
           // FIX: Use Boolean() to ensure proper boolean conversion
           isExpiry: Boolean(brand.vouchers?.[0]?.isExpiry),
           expiryValue: brand.vouchers?.[0]?.expiryValue || '365',
@@ -567,7 +568,7 @@ minAmount: brand.vouchers?.[0]?.minAmount || 0,
   const renderTabContent = () => {
     switch (activeTab) {
       case 'core':
-        return <CoreTab formData={formData} updateFormData={updateFormData} />;
+        return <CoreTab formData={formData} updateFormData={updateFormData} isDescriptionLocked={isDescriptionLocked} />;
       case 'terms':
         return <TermsTab formData={formData} updateFormData={updateFormData} />;
       case 'vouchers':
@@ -593,7 +594,7 @@ minAmount: brand.vouchers?.[0]?.minAmount || 0,
       case 'review':
         return <ReviewTab formData={formData} validationErrors={validationErrors} />;
       default:
-        return <CoreTab formData={formData} updateFormData={updateFormData} />;
+        return <CoreTab formData={formData} updateFormData={updateFormData} isDescriptionLocked={isDescriptionLocked} />;
     }
   };
 
@@ -672,6 +673,7 @@ minAmount: brand.vouchers?.[0]?.minAmount || 0,
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full sm:w-auto">
             <button
               onClick={handleCancel}
+              title="Cancel will remove all unsaved changes"
               disabled={saving}
               className="flex items-center space-x-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
@@ -681,6 +683,7 @@ minAmount: brand.vouchers?.[0]?.minAmount || 0,
             <button
               onClick={handleSave}
               disabled={saving || !hasChanges}
+              title="Save all changes"
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               <Save size={16} />

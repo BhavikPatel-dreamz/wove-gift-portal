@@ -23,7 +23,7 @@ const GiftCardSelector = () => {
   const maxAmount = isBulkMode ? 25000 : 5000;
 
   const [customAmount, setCustomAmount] = useState(
-    selectedAmount && denominationType !== 'fixed' ? selectedAmount.value : minAmount
+    selectedAmount && denominationType !== 'fixed' ? selectedAmount.value : 0
   );
   const [localSelectedAmount, setLocalSelectedAmount] = useState(
     selectedAmount || null
@@ -93,13 +93,11 @@ const GiftCardSelector = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white bg-[linear-gradient(126deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)] py-30 px-4">
+    <div className="min-h-screen bg-white bg-[linear-gradient(126deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)] px-4 py-20 sm:py-24 md:py-30">
       <div className="max-w-7xl mx-auto sm:px-6">
 
         {/* Back Button and Bulk Mode Indicator */}
-        <div className="relative flex flex-col items-start gap-4 mb-6
-                md:flex-row md:items-center md:justify-between md:gap-0">
-
+        <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
           {/* Previous Button */}
           <button
             className="
@@ -107,6 +105,7 @@ const GiftCardSelector = () => {
               px-5 py-3 rounded-full font-semibold text-base
               text-[#4A4A4A] bg-transparent border border-transparent
               transition-all duration-300 overflow-hidden group cursor-pointer
+              mb-4 md:mb-0
             "
             onClick={() => dispatch(goBack())}
           >
@@ -125,47 +124,48 @@ const GiftCardSelector = () => {
           {/* Bulk Gifting Indicator */}
           {isBulkMode && (
             <div className="flex items-center gap-3 justify-center w-full md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2">
-              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="hidden md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
               <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">Bulk Gifting</span>
                 </div>
               </div>
-              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="hidden md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
-          <div className="md:block w-35" />
+          <div className="hidden md:block w-35" />
         </div>
 
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-10 md:mb-12 px-4">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 md:mb-5 mt-1 sm:mt-2">
+        <div className="text-center mb-8 md:mb-12 px-1 sm:px-4">
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-5 mt-1">
             {isBulkMode ? 'Choose Gift Amount (Max 25,000)' : 'Choose Gift Amount (Max 5,000)'}
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 max-w-xl mx-auto">
+          <p className="text-sm md:text-base text-gray-600 max-w-xl mx-auto">
             Select the perfect amount for your {selectedBrand?.brandName || 'Kecks'} gift card
           </p>
         </div>
 
-        {/* Amount Cards */}
-        {denominationType !== 'amount' && presetAmounts.length > 0 && (
-          <div className="flex justify-center gap-4 flex-wrap">
-            {presetAmounts.map((amount) => (
-              <div
-                key={amount.id}
-                className="relative rounded-xl group cursor-pointer inline-flex p-[2px]"
-                onClick={() => handleAmountClick(amount)}
-              >
-                <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                <button
-                  className={`relative cursor-pointer bg-white rounded-[10px] border-2 p-8 w-45 transition-all duration-200 hover:shadow-md ${
-                    localSelectedAmount?.id === amount.id ? 'border-purple-400 shadow-lg scale-105' : 'border-gray-200'
-                  }`}
+        {/* Amount Cards - Using CSS Grid for responsive layout */}
+        <div className="w-full flex justify-center">
+          {denominationType !== 'amount' && presetAmounts.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 justify-items-stretch mb-8 w-full max-w-3xl mx-auto px-2 sm:px-4">
+              {presetAmounts.map((amount) => (
+                <div
+                  key={amount.id}
+                  className="relative rounded-xl group cursor-pointer w-full max-w-none sm:max-w-[180px] p-[2px]"
+                  onClick={() => handleAmountClick(amount)}
                 >
-                  <div className="flex justify-center mb-5">
-                    <div className="text-5xl">
-                      <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  <button
+                    className={`relative cursor-pointer bg-white rounded-[10px] border-2 p-3 sm:p-4 md:p-6 w-full transition-all duration-200 hover:shadow-md ${localSelectedAmount?.id === amount.id
+                      ? 'border-purple-400 shadow-lg scale-105'
+                      : 'border-gray-200'
+                      }`}
+                  >
+                    <div className="flex justify-center mb-2 sm:mb-3 md:mb-4">
+                      <svg width="40" height="40" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-[70px] lg:h-[70px] mx-auto">
                         <g clipPath="url(#clip0_1065_2944)">
                           <path d="M41.9999 46.348V83.9445L26.1932 76.6982L24.0922 75.7365L15.9154 71.9891L15.4581 71.7787L2.02734 65.6198V27.9708L15.9154 34.3547L26.1932 39.0813L41.9999 46.348Z" fill="#ED457D" />
                           <path d="M81.9726 27.9708V65.6198L70.1407 71.0596L67.1604 72.4305L61.5066 75.0291L56.8826 77.1571L42 84V46.348L56.8826 39.5052L67.1604 34.7815L81.9726 27.9708Z" fill="#FF81AB" />
@@ -192,87 +192,106 @@ const GiftCardSelector = () => {
                         </defs>
                       </svg>
                     </div>
-                  </div>
-                  <div className="border-t border-dashed border-gray-300 mb-5" />
-                  <div className="text-center">
-                    <div className="text-lg font-semibold text-gray-800">
-                      {getCurrencySymbol(amount.currency)}{amount.value}
+                    <div className="border-t border-dashed border-gray-300 mb-2 sm:mb-3 md:mb-4" />
+                    <div className="text-center">
+                      <div className="text-sm sm:text-base md:text-lg font-semibold text-gray-800">
+                        {getCurrencySymbol(amount.currency)}{amount.value}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-        {/* Custom Amount Input — fixed for 768px+ */}
+        {/* Custom Amount Input */}
+        {/* Custom Amount Input */}
         {denominationType !== 'fixed' && (
-          <div className="max-w-4xl mx-auto mt-8 px-4 sm:px-0">
+          <div className="max-w-4xl mx-auto mt-8 px-4 md:px-0">
             <div className="rounded-2xl p-[2px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42] shadow-sm">
-              <div className="bg-white rounded-[14px] p-5 sm:p-6">
-
-                {/*
-                  ✅ KEY FIX:
-                  - Mobile (<640px):     full column stack
-                  - Tablet (640–767px):  row: label left, input+button right
-                  - md+ (768px+):        row: label left, input+button right — properly spaced
-                  Changed from `lg:flex-row` → `sm:flex-row` so the row layout kicks in at 640px
-                  and remains solid through md/lg/xl breakpoints.
-                */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
-
+                <div className="bg-white rounded-[14px] p-4 sm:p-5 md:p-6">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
                   {/* Left: Label */}
                   <div className="shrink-0">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 sm:mb-1">
-                      Set Custom Amount
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-500">
-                      Choose your own amount (max {formatAmount(maxAmount)})
+                    <div className="flex items-center gap-2 mb-0.5 md:mb-1">
+                      <h3 className="text-base md:text-lg font-semibold text-gray-900">
+                        Set Custom Amount
+                      </h3>
+                      {/* Max badge — always visible at a glance */}
+                      <span className="inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gradient-to-r from-[#ED457D]/10 to-[#FA8F42]/10 text-[#ED457D] border border-[#ED457D]/20">
+                        Max: {formatAmount(maxAmount)}
+                      </span>
+                    </div>
+                    <p className="text-xs md:text-sm text-gray-500">
+                      Enter an amount between {formatAmount(minAmount)} and {formatAmount(maxAmount)}
                     </p>
                   </div>
 
                   {/* Right: Input + Button */}
-                  <div className="flex flex-wrap flex-col xs:flex-row sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-
-                    {/* Currency Input */}
-                    <div className="relative flex-1 sm:flex-none sm:w-50 md:w-50">
-                      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-base font-medium select-none">
-                        {getCurrencySymbol(currency)}
+                  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 md:gap-4 w-full md:w-auto">
+                    {/* Currency Input + inline validation */}
+                    <div className="flex flex-col gap-1 flex-1 md:flex-none md:w-50">
+                      <div className="relative">
+                        <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-base font-medium select-none">
+                          {getCurrencySymbol(currency)}
+                        </div>
+                        <input
+                          type="number"
+                          value={customAmount === 0 || customAmount ? customAmount : 0}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            // When the field is fully cleared (e.g. via backspace), default to 0
+                            setCustomAmount(raw === "" ? 0 : Number(raw));
+                          }}
+                          min={minAmount}
+                          max={maxAmount}
+                          className={`
+                    w-full pl-8 pr-4 py-2.5
+                    rounded-3xl border
+                    text-base font-medium bg-white text-gray-900
+                    placeholder-gray-400
+                    transition-all duration-200
+                    focus:outline-none
+                    ${customAmount < minAmount || customAmount > maxAmount
+                              ? 'border-red-400 ring-2 ring-red-200 focus:ring-2 focus:ring-red-300 focus:border-red-400'
+                              : 'border-[#1A1A1A33] focus:ring-2 focus:ring-[#ED457D]/20 focus:border-[#ED457D]/50'
+                            }
+                  `}
+                          placeholder="Enter amount"
+                        />
                       </div>
-                      <input
-                        type="number"
-                        value={customAmount}
-                        onChange={(e) => setCustomAmount(Number(e.target.value))}
-                        min={minAmount}
-                        max={maxAmount}
-                        className="
-                          w-full pl-8 pr-4 py-2.5
-                          rounded-3xl border border-[#1A1A1A33]
-                          text-base font-medium bg-white text-gray-900
-                          placeholder-gray-400
-                          transition-all duration-200
-                          focus:outline-none focus:ring-2 focus:ring-[#ED457D]/20 focus:border-[#ED457D]/50
-                        "
-                        placeholder="Enter amount"
-                      />
+                      {/* Inline validation message */}
+                      {(customAmount < minAmount || customAmount > maxAmount) && (
+                        <p className="text-xs text-red-500 font-medium pl-2 flex items-center gap-1">
+                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                            <path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8C1.5 11.59 4.41 14.5 8 14.5C11.59 14.5 14.5 11.59 14.5 8C14.5 4.41 11.59 1.5 8 1.5ZM8.75 11H7.25V9.5H8.75V11ZM8.75 8H7.25V5H8.75V8Z" fill="#ef4444" />
+                          </svg>
+                          {customAmount < minAmount
+                            ? `Minimum amount is ${formatAmount(minAmount)}`
+                            : `Maximum amount is ${formatAmount(maxAmount)}`
+                          }
+                        </p>
+                      )}
                     </div>
 
                     {/* Select Button */}
                     <button
                       onClick={handleCustomAmountSelect}
                       className="
-                        group cursor-pointer
-                        shrink-0
-                        bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
-                        text-white font-semibold text-sm md:text-base
-                        px-6 py-2.5
-                        rounded-full
-                        transition-all duration-300
-                        shadow-sm hover:shadow-md hover:opacity-90
-                        flex items-center justify-center gap-2
-                        whitespace-nowrap
-                        w-full sm:w-auto md:w-auto
-                      "
+                group cursor-pointer
+                shrink-0
+                bg-gradient-to-r from-[#ED457D] to-[#FA8F42]
+                text-white font-semibold text-sm md:text-base
+                px-6 py-2.5
+                rounded-full
+                transition-all duration-300
+                shadow-sm hover:shadow-md hover:opacity-90
+                flex items-center justify-center gap-2
+                text-center
+                w-full md:w-auto
+                self-start md:self-center
+              "
                     >
                       Select
                       <span className="transition-transform duration-300 group-hover:translate-x-1">
@@ -281,15 +300,12 @@ const GiftCardSelector = () => {
                         </svg>
                       </span>
                     </button>
-
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

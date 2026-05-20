@@ -808,7 +808,7 @@ const BulkReviewStep = () => {
         <>
             <div>
                 <Toaster position="top-right" />
-                <div className="min-h-screen bg-gray-50 px-4 py-30 md:px-8 md:py-30">
+                <div className="min-h-screen bg-gray-50 px-4 py-20 sm:py-24 md:px-8 md:py-30">
                     <div className="max-w-7xl mx-auto sm:px-6">
                         {/* Back Button and Bulk Mode Indicator */}
                         <div className="relative flex flex-col items-start gap-4 mb-6
@@ -879,7 +879,7 @@ const BulkReviewStep = () => {
                         md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
                       "
                                 >
-                                    <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+                                    <div className="hidden md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
                                     <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                                         <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
@@ -889,11 +889,11 @@ const BulkReviewStep = () => {
                                         </div>
                                     </div>
 
-                                    <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+                                    <div className="hidden md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
                                 </div>
                             )}
 
-                            <div className="md:block w-35" />
+                            <div className="hidden md:block w-35" />
                         </div>
 
                         {/* Header */}
@@ -1022,7 +1022,7 @@ const BulkReviewStep = () => {
                                         )}
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2 sm:px-0">
                                         <div>
                                             <input
                                                 type="tel"

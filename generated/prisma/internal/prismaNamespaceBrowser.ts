@@ -83,7 +83,8 @@ export const ModelName = {
   GiftCard: 'GiftCard',
   SupportRequest: 'SupportRequest',
   SupportMessage: 'SupportMessage',
-  BulkRecipient: 'BulkRecipient'
+  BulkRecipient: 'BulkRecipient',
+  PromoCode: 'PromoCode'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -121,12 +122,12 @@ export const UserScalarFieldEnum = {
   lastName: 'lastName',
   password: 'password',
   avatar: 'avatar',
-  isGuest: 'isGuest',
   role: 'role',
   isActive: 'isActive',
   isVerified: 'isVerified',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  isGuest: 'isGuest'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -473,20 +474,20 @@ export const OrderScalarFieldEnum = {
   redemptionStatus: 'redemptionStatus',
   redeemedAt: 'redeemedAt',
   isActive: 'isActive',
-  isPaid: 'isPaid',
-  voucherEntries: 'voucherEntries',
-  vouchersCreated: 'vouchersCreated',
-  allVouchersGenerated: 'allVouchersGenerated',
-  notificationsSent: 'notificationsSent',
-  processingStatus: 'processingStatus',
-  processingStartedAt: 'processingStartedAt',
-  processingCompletedAt: 'processingCompletedAt',
-  lastProcessedAt: 'lastProcessedAt',
-  processingErrors: 'processingErrors',
-  retryCount: 'retryCount',
-  maxRetries: 'maxRetries',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  allVouchersGenerated: 'allVouchersGenerated',
+  isPaid: 'isPaid',
+  lastProcessedAt: 'lastProcessedAt',
+  maxRetries: 'maxRetries',
+  notificationsSent: 'notificationsSent',
+  processingCompletedAt: 'processingCompletedAt',
+  processingErrors: 'processingErrors',
+  processingStartedAt: 'processingStartedAt',
+  processingStatus: 'processingStatus',
+  retryCount: 'retryCount',
+  voucherEntries: 'voucherEntries',
+  vouchersCreated: 'vouchersCreated'
 } as const
 
 export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
@@ -629,12 +630,12 @@ export type SettlementsScalarFieldEnum = (typeof SettlementsScalarFieldEnum)[key
 export const WishlistScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  key: 'key',
-  sourceType: 'sourceType',
   brandId: 'brandId',
   voucherId: 'voucherId',
-  payload: 'payload',
   createdAt: 'createdAt',
+  key: 'key',
+  payload: 'payload',
+  sourceType: 'sourceType',
   updatedAt: 'updatedAt'
 } as const
 
@@ -741,6 +742,7 @@ export type GiftCardScalarFieldEnum = (typeof GiftCardScalarFieldEnum)[keyof typ
 export const SupportRequestScalarFieldEnum = {
   id: 'id',
   supportId: 'supportId',
+  userId: 'userId',
   name: 'name',
   email: 'email',
   phone: 'phone',
@@ -749,8 +751,7 @@ export const SupportRequestScalarFieldEnum = {
   message: 'message',
   status: 'status',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  userId: 'userId'
+  updatedAt: 'updatedAt'
 } as const
 
 export type SupportRequestScalarFieldEnum = (typeof SupportRequestScalarFieldEnum)[keyof typeof SupportRequestScalarFieldEnum]
@@ -774,7 +775,6 @@ export type SupportMessageScalarFieldEnum = (typeof SupportMessageScalarFieldEnu
 export const BulkRecipientScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
-  voucherCodeId: 'voucherCodeId',
   recipientName: 'recipientName',
   recipientEmail: 'recipientEmail',
   recipientPhone: 'recipientPhone',
@@ -786,10 +786,32 @@ export const BulkRecipientScalarFieldEnum = {
   emailError: 'emailError',
   rowNumber: 'rowNumber',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  voucherCodeId: 'voucherCodeId'
 } as const
 
 export type BulkRecipientScalarFieldEnum = (typeof BulkRecipientScalarFieldEnum)[keyof typeof BulkRecipientScalarFieldEnum]
+
+
+export const PromoCodeScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  description: 'description',
+  type: 'type',
+  discountValue: 'discountValue',
+  currency: 'currency',
+  minOrderAmount: 'minOrderAmount',
+  usageLimit: 'usageLimit',
+  usageCount: 'usageCount',
+  isActive: 'isActive',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
+  createdById: 'createdById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PromoCodeScalarFieldEnum = (typeof PromoCodeScalarFieldEnum)[keyof typeof PromoCodeScalarFieldEnum]
 
 
 export const SortOrder = {

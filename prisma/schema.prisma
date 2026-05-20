@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -19,61 +18,62 @@ model Session {
 }
 
 model User {
-  id             String           @id @default(cuid())
-  email          String           @unique
-  phone          String?
-  firstName      String
-  lastName       String
-  password       String
-  avatar         String?
-  isGuest        Boolean          @default(false)
-  role           UserRole         @default(CUSTOMER)
-  isActive       Boolean          @default(false)
-  isVerified     Boolean          @default(false)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  accounts       Account[]
-  auditLogs      AuditLog[]
-  cartItems      CartItem[]
-  orders         Order[]
-  supportRequest SupportRequest[]
-  wishlists      Wishlist[]
-  sessions       Session[]
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  phone               String?
+  firstName           String
+  lastName            String
+  password            String
+  avatar              String?
+  role                UserRole             @default(CUSTOMER)
+  isActive            Boolean              @default(false)
+  isVerified          Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  isGuest             Boolean              @default(false)
+  auditLogs           AuditLog[]
+  orders              Order[]
+  supportRequest      SupportRequest[]
+  wishlists           Wishlist[]
+  accounts            Account[]
+  cartItems           CartItem[]
   passwordResetTokens PasswordResetToken[]
+  promoCodesCreated   PromoCode[]
+  sessions            Session[]
 
   @@map("users")
 }
 
 model CartItem {
-  id        String        @id @default(cuid())
+  id        String       @id @default(cuid())
   userId    String
   type      CartItemType
   payload   Json
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type])
   @@map("cart_items")
 }
 
 model Account {
-  id                        String  @id @default(cuid())
-  userId                    String
-  type                      String
-  provider                  String
-  providerAccountId         String
-  refresh_token             String? @db.Text
-  access_token              String? @db.Text
-  expires_at                Int?
-  token_type                String?
-  scope                     String?
-  id_token                  String? @db.Text
-  session_state             String?
-  oauth_token_secret        String?
-  oauth_token               String?
-  refresh_token_expires_in  Int?
-  user                      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  oauth_token_secret       String?
+  oauth_token              String?
+  refresh_token_expires_in Int?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -81,13 +81,13 @@ model Account {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("password_reset_tokens")
@@ -141,11 +141,11 @@ model BrandTerms {
   settlementTrigger SettlementStatus @default(onRedemption)
   commissionType    CommissionStatus @default(Percentage)
   commissionValue   Float            @default(0)
-  maxDiscount       Int?             @default(0)
-  minOrderValue     Int?             @default(0)
+  maxDiscount       Float?           @default(0)
+  minOrderValue     Float?           @default(0)
   currency          String           @default("ZAR")
   breakagePolicy    String?
-  breakageShare     Int?             @default(0)
+  breakageShare     Float?           @default(0)
   contractStart     DateTime?
   contractEnd       DateTime?
   goLiveDate        DateTime?
@@ -213,7 +213,7 @@ model IntegrationSyncLog {
 model Denomination {
   id          String    @id @default(cuid())
   voucherId   String
-  value       Int
+  value       Float
   currency    String    @default("ZAR")
   displayName String?
   isExpiry    Boolean
@@ -232,9 +232,9 @@ model Vouchers {
   id                   String             @id @default(cuid())
   denominationType     DenominationStatus @default(fixed)
   denominationCurrency String             @default("ZAR")
-  denominationValue    Int?
-  maxAmount            Int?
-  minAmount            Int?
+  denominationValue    Float?
+  maxAmount            Float?
+  minAmount            Float?
   expiresAt            DateTime?
   expiryValue          String?
   graceDays            Int?               @default(0)
@@ -258,30 +258,30 @@ model Vouchers {
 }
 
 model VoucherCode {
-  id                      String              @id @default(cuid())
-  code                    String              @unique
+  id                      String               @id @default(cuid())
+  code                    String               @unique
   orderId                 String
   voucherId               String
-  shopifyGiftCardId       String?             @unique
+  shopifyGiftCardId       String?              @unique
   shopifyShop             String?
   shopifySyncError        String?
   shopifySyncedAt         DateTime?
-  isRedeemed              Boolean             @default(false)
+  isRedeemed              Boolean              @default(false)
   redeemedAt              DateTime?
-  originalValue           Int
-  remainingValue          Int
+  originalValue           Float
+  remainingValue          Float
   expiresAt               DateTime?
   pin                     String?
   qrCode                  String?
   tokenizedLink           String?
   linkExpiresAt           DateTime?
   lastSyncedRedeemedValue String?
-  createdAt               DateTime            @default(now())
-  updatedAt               DateTime            @updatedAt
+  createdAt               DateTime             @default(now())
+  updatedAt               DateTime             @updatedAt
   bulkRecipient           BulkRecipient?
-  order                   Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  giftCard                GiftCard?           @relation(fields: [shopifyGiftCardId], references: [id])
-  voucher                 Vouchers            @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  order                   Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  giftCard                GiftCard?            @relation(fields: [shopifyGiftCardId], references: [id])
+  voucher                 Vouchers             @relation(fields: [voucherId], references: [id], onDelete: Cascade)
   redemptions             VoucherRedemption[]
   deliveryLogs            DeliveryLog[]
   notificationDetails     NotificationDetail[]
@@ -293,8 +293,8 @@ model VoucherCode {
 model VoucherRedemption {
   id             String      @id @default(cuid())
   voucherCodeId  String
-  amountRedeemed Int
-  balanceAfter   Int
+  amountRedeemed Float
+  balanceAfter   Float
   redeemedAt     DateTime    @default(now())
   transactionId  String?
   storeUrl       String?
@@ -358,63 +358,61 @@ model ReceiverDetail {
 }
 
 model Order {
-  id               String               @id @default(cuid())
-  orderNumber      String               @unique
-  brandId          String
-  occasionId       String
-  subCategoryId    String?
-  customCardId     String?
-  isCustom         Boolean?
-  userId           String
-  bulkOrderNumber  String?
-  receiverDetailId String
-  amount           Int
-  quantity         Int                  @default(1)
-  subtotal         Int
-  discount         Int                  @default(0)
-  totalAmount      Int
-  currency         String               @default("ZAR")
-  message          String?
-  customImageUrl   String?
-  customVideoUrl   String?
-  senderName       String?
-  senderEmail      String?
-  deliveryMethod   DeliveryMethodStatus @default(whatsapp)
-  sendType         SendStatus           @default(sendImmediately)
-  scheduledFor     DateTime?
-  paymentMethod    String?
-  paymentStatus    PaymentStatus        @default(PENDING)
-  paymentIntentId  String?
-  paidAt           DateTime?
-  redemptionStatus RedemptionStatus     @default(Issued)
-  redeemedAt       DateTime?
-  isActive         Boolean              @default(true)
-  
-  // ✅ NEW FIELDS FOR QUEUE PROCESSING
-  isPaid                  Boolean              @default(false)
-  voucherEntries          Int                  @default(0)
-  vouchersCreated         Int                  @default(0)
-  allVouchersGenerated    Boolean              @default(false)
-  notificationsSent       Boolean              @default(false)
-  processingStatus        OrderProcessingStatus @default(PENDING)
-  processingStartedAt     DateTime?
-  processingCompletedAt   DateTime?
-  lastProcessedAt         DateTime?
-  processingErrors        Json?
-  retryCount              Int                  @default(0)
-  maxRetries              Int                  @default(3)
-  
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  
-  bulkRecipients   BulkRecipient[]
-  brand            Brand                @relation(fields: [brandId], references: [id])
-  occasion         Occasion             @relation(fields: [occasionId], references: [id])
-  receiverDetail   ReceiverDetail       @relation(fields: [receiverDetailId], references: [id])
-  user             User                 @relation(fields: [userId], references: [id])
-  voucherCodes     VoucherCode[]
-  deliveryLogs     DeliveryLog[]
-  notificationDetails NotificationDetail[]
+  id                    String                @id @default(cuid())
+  orderNumber           String                @unique
+  brandId               String
+  occasionId            String
+  subCategoryId         String?
+  customCardId          String?
+  isCustom              Boolean?
+  userId                String
+  bulkOrderNumber       String?
+  receiverDetailId      String
+  amount                Float
+  quantity              Int                   @default(1)
+  serviceFee   Float    @default(0)
+  subtotal              Float
+  discount              Float                 @default(0)
+  totalAmount           Float
+  currency              String                @default("ZAR")
+  message               String?
+  customImageUrl        String?
+  promoCodeId           String?
+  customVideoUrl        String?
+  senderName            String?
+  senderEmail           String?
+  deliveryMethod        DeliveryMethodStatus  @default(whatsapp)
+  sendType              SendStatus            @default(sendImmediately)
+  scheduledFor          DateTime?
+  paymentMethod         String?
+  paymentStatus         PaymentStatus         @default(PENDING)
+  paymentIntentId       String?
+  paidAt                DateTime?
+  redemptionStatus      RedemptionStatus      @default(Issued)
+  redeemedAt            DateTime?
+  isActive              Boolean               @default(true)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  allVouchersGenerated  Boolean               @default(false)
+  isPaid                Boolean               @default(false)
+  lastProcessedAt       DateTime?
+  maxRetries            Int                   @default(3)
+  notificationsSent     Boolean               @default(false)
+  processingCompletedAt DateTime?
+  processingErrors      Json?
+  processingStartedAt   DateTime?
+  processingStatus      OrderProcessingStatus @default(PENDING)
+  retryCount            Int                   @default(0)
+  voucherEntries        Int                   @default(0)
+  vouchersCreated       Int                   @default(0)
+  bulkRecipients        BulkRecipient[]
+  brand                 Brand                 @relation(fields: [brandId], references: [id])
+  occasion              Occasion              @relation(fields: [occasionId], references: [id])
+  receiverDetail        ReceiverDetail        @relation(fields: [receiverDetailId], references: [id])
+  user                  User                  @relation(fields: [userId], references: [id])
+  voucherCodes          VoucherCode[]
+  deliveryLogs          DeliveryLog[]
+  notificationDetails   NotificationDetail[]
 
   @@index([userId])
   @@index([brandId])
@@ -427,44 +425,38 @@ model Order {
   @@index([lastProcessedAt])
 }
 
-
 model NotificationDetail {
-  id                String              @id @default(cuid())
-  orderId           String
-  recipientEmail    String?
-  recipientPhone    String?
-  recipientName     String?
-  notificationType  NotificationType    @default(EMAIL)
-  status            NotificationStatus  @default(PENDING)
-  attemptCount      Int                 @default(0)
-  maxRetries        Int                 @default(3)
-  sentAt            DateTime?
-  deliveredAt       DateTime?
-  failedAt          DateTime?
-  errorMessage      String?
-  messageId         String?
-  voucherCodeId     String?
-  bulkRecipientId   String?
-  
-  emailServiceStatus   String?
-  emailServiceId       String?
-  emailServiceError    String?
-  
+  id                    String             @id @default(cuid())
+  orderId               String
+  recipientEmail        String?
+  recipientPhone        String?
+  recipientName         String?
+  notificationType      NotificationType   @default(EMAIL)
+  status                NotificationStatus @default(PENDING)
+  attemptCount          Int                @default(0)
+  maxRetries            Int                @default(3)
+  sentAt                DateTime?
+  deliveredAt           DateTime?
+  failedAt              DateTime?
+  errorMessage          String?
+  messageId             String?
+  voucherCodeId         String?
+  bulkRecipientId       String?
+  emailServiceStatus    String?
+  emailServiceId        String?
+  emailServiceError     String?
   whatsappServiceStatus String?
   whatsappServiceId     String?
   whatsappServiceError  String?
-  
-  smsServiceStatus     String?
-  smsServiceId         String?
-  smsServiceError      String?
-  
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  
-  order             Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  voucherCode       VoucherCode?        @relation(fields: [voucherCodeId], references: [id])
-  bulkRecipient     BulkRecipient?      @relation(fields: [bulkRecipientId], references: [id])
-  
+  smsServiceStatus      String?
+  smsServiceId          String?
+  smsServiceError       String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  bulkRecipient         BulkRecipient?     @relation(fields: [bulkRecipientId], references: [id])
+  order                 Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  voucherCode           VoucherCode?       @relation(fields: [voucherCodeId], references: [id])
+
   @@index([orderId])
   @@index([status])
   @@index([notificationType])
@@ -473,7 +465,6 @@ model NotificationDetail {
   @@index([bulkRecipientId])
   @@map("notification_details")
 }
-
 
 model DeliveryLog {
   id                       String               @id @default(cuid())
@@ -565,17 +556,17 @@ model Settlements {
   periodStart       DateTime
   periodEnd         DateTime
   totalSold         Int
-  totalSoldAmount   Int
+  totalSoldAmount   Float
   totalRedeemed     Int
-  redeemedAmount    Int
+  redeemedAmount    Float
   outstanding       Int
-  outstandingAmount Int
-  commissionAmount  Int
-  breakageAmount    Int?
-  vatAmount         Int?
-  netPayable        Int
-  totalPaid         Int?                    @default(0)
-  remainingAmount   Int?                    @default(0)
+  outstandingAmount Float
+  commissionAmount  Float
+  breakageAmount    Float?
+  vatAmount         Float?
+  netPayable        Float
+  totalPaid         Float?                  @default(0)
+  remainingAmount   Float?                  @default(0)
   status            SettlementPaymentStatus @default(Pending)
   paidAt            DateTime?
   lastPaymentDate   DateTime?
@@ -594,12 +585,12 @@ model Settlements {
 model Wishlist {
   id         String   @id @default(cuid())
   userId     String
-  key        String
-  sourceType String?
   brandId    String?
   voucherId  String?
-  payload    Json
   createdAt  DateTime @default(now())
+  key        String
+  payload    Json
+  sourceType String?
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -672,15 +663,15 @@ model ShopifySession {
 }
 
 model AppInstallation {
-  id          String   @id @default(cuid())
-  shop        String   @unique
-  accessToken String
-  scopes      String
-  installedAt DateTime @default(now())
-  isActive    Boolean  @default(true)
+  id             String                        @id @default(cuid())
+  shop           String                        @unique
+  accessToken    String
+  scopes         String
+  installedAt    DateTime                      @default(now())
+  isActive       Boolean                       @default(true)
   approvalStatus AppInstallationApprovalStatus @default(PENDING)
-  approvedAt  DateTime?
-  updatedAt   DateTime @updatedAt
+  approvedAt     DateTime?
+  updatedAt      DateTime                      @updatedAt
 
   @@index([approvalStatus])
   @@index([isActive, approvalStatus])
@@ -712,6 +703,7 @@ model GiftCard {
 model SupportRequest {
   id          String           @id @default(cuid())
   supportId   String           @unique
+  userId      String
   name        String
   email       String
   phone       String?
@@ -721,7 +713,6 @@ model SupportRequest {
   status      SupportStatus    @default(PENDING)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
-  userId      String
   messages    SupportMessage[]
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -746,23 +737,23 @@ model SupportMessage {
 }
 
 model BulkRecipient {
-  id               String       @id @default(cuid())
-  orderId          String
-  voucherCodeId    String?      @unique
-  recipientName    String
-  recipientEmail   String
-  recipientPhone   String?
-  personalMessage  String?
-  emailSent        Boolean      @default(false)
-  emailSentAt      DateTime?
-  emailDelivered   Boolean      @default(false)
-  emailDeliveredAt DateTime?
-  emailError       String?
-  rowNumber        Int
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  voucherCode      VoucherCode? @relation(fields: [voucherCodeId], references: [id])
+  id                  String               @id @default(cuid())
+  orderId             String
+  recipientName       String
+  recipientEmail      String
+  recipientPhone      String?
+  personalMessage     String?
+  emailSent           Boolean              @default(false)
+  emailSentAt         DateTime?
+  emailDelivered      Boolean              @default(false)
+  emailDeliveredAt    DateTime?
+  emailError          String?
+  rowNumber           Int
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  voucherCodeId       String?              @unique
+  order               Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  voucherCode         VoucherCode?         @relation(fields: [voucherCodeId], references: [id])
   notificationDetails NotificationDetail[]
 
   @@index([orderId])
@@ -771,12 +762,43 @@ model BulkRecipient {
   @@index([voucherCodeId])
 }
 
+model PromoCode {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  description    String?
+  type           PromoCodeType
+  discountValue  Float
+  currency       String        @default("ZAR")
+  minOrderAmount Float?
+  usageLimit     Int?
+  usageCount     Int           @default(0)
+  isActive       Boolean       @default(true)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  createdById    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  createdBy      User?         @relation(fields: [createdById], references: [id])
+
+  @@index([isActive])
+  @@index([type])
+  @@index([createdById])
+  @@map("promo_codes")
+}
+
 enum UserRole {
   CUSTOMER
   ADMIN
   BRAND_MANAGER
   SUPPORT
   FINANCE
+  SUPER_ADMIN
+}
+
+enum PromoCodeType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_GIFT
 }
 
 enum CartItemType {
@@ -839,6 +861,7 @@ enum SettlementFrequencyStatus {
   weekly
   monthly
   quarterly
+  yearly
 }
 
 enum DeliveryMethodStatus {
@@ -929,17 +952,16 @@ enum WhatsAppServiceStatus {
   FAILED
 }
 
-
 enum OrderProcessingStatus {
   PENDING
   PAYMENT_CONFIRMED
   VOUCHERS_CREATING
   VOUCHERS_CREATED
   NOTIFICATIONS_SENDING
-  PROCESSING
   COMPLETED
   FAILED
   RETRYING
+  PROCESSING
 }
 
 enum NotificationType {

@@ -32,14 +32,14 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
         startEditFlow(4);
     }
 
-  const getCurrencySymbol = (code) =>
-    currencyList.find((c) => c.code === code)?.symbol || "R";
+    const getCurrencySymbol = (code) =>
+        currencyList.find((c) => c.code === code)?.symbol || "R";
 
 
     return (
         <div className="text-black">
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-2 pb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-0 sm:px-2 pb-6 sm:pb-8">
                 <div>
                     <div className="text-left pt-8 pb-4 px-2">
                         <h2 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">Email Details</h2>
@@ -62,7 +62,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                 </div>
                             </div>
 
-                            <div className="space-y-4 m-6">
+                            <div className="space-y-4 m-4 sm:m-6">
                                 <div>
                                     <input
                                         type="text"
@@ -92,11 +92,11 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
 
                                 <div>
                                     <label className="text-xs font-semibold text-gray-600 block mb-2">Your Phone Number (Optional)</label>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col sm:flex-row gap-2">
                                         <select
                                             value={formData.yourPhoneCountryCode}
                                             onChange={(e) => handleInputChange('yourPhoneCountryCode', e.target.value)}
-                                            className="w-[170px] p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all bg-white text-sm"
+                                            className="w-full sm:w-[170px] p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all bg-white text-sm"
                                             aria-label="Your phone country code"
                                         >
                                             {COUNTRY_CODES.map(({ code, country }) => (
@@ -136,7 +136,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                 </div>
                             </div>
 
-                            <div className="space-y-4 m-6">
+                            <div className="space-y-4 m-4 sm:m-6">
                                 <div>
                                     <input
                                         type="text"
@@ -171,7 +171,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                 {/* Right Side - Email Preview */}
                 <div className="">
                     {/* Decorative Circle Background */}
-                    <div className="absolute w-105 h-105 bg-linear-to-br from-blue-100 to-blue-200 rounded-full opacity-60 -z-10"></div>
+                    <div className="absolute left-1/2 top-8 h-64 w-64 -translate-x-1/2 rounded-full bg-linear-to-br from-blue-100 to-blue-200 opacity-50 blur-2xl -z-10 sm:h-80 sm:w-80 lg:left-auto lg:translate-x-0"></div>
 
                     <div className="relative z-10 w-full">
                         {/* Email Preview Card */}
@@ -186,7 +186,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                 <div className="flex items-center gap-2">
                                     <span className="text-lg">🎁</span>
                                     <p className="text-sm font-semibold text-gray-900 truncate">
-                                       {`${selectedSubCategory?.name} - You've received a gift from ${formData?.yourFullName}`}
+                                        {`${selectedSubCategory?.name} - You've received a gift from ${formData?.yourFullName}`}
                                     </p>
                                 </div>
                             </div>
@@ -219,7 +219,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                     </div>
 
                                     {/* Greeting */}
-                                    <div className="bg-white px-4 sm:px-10 pb-[4.5rem]">
+                                    <div className="bg-white px-4 sm:px-10 pb-10 sm:pb-[4.5rem]">
                                         <div className="text-left p-4">
                                             <p className="text-xs text-gray-700 mb-1">
                                                 Hi {formData.recipientFullName || "Jane"},
@@ -321,7 +321,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                                     </button>
                                                     <p className="text-xs text-gray-700">Amount</p>
                                                     <p className="text-sm font-semibold text-[#DC3415]">
-                                                      {getCurrencySymbol(selectedAmount.currency)}
+                                                        {getCurrencySymbol(selectedAmount.currency)}
                                                         {selectedAmount?.value}
                                                     </p>
                                                 </div>

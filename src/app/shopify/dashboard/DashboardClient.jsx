@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Gift, DollarSign, CreditCard, Clock, TrendingUp, Users, Award, Package, Calendar, X } from 'lucide-react';
 import { getDashboardData } from '../../../lib/action/dashbordAction';
+import { formatSettlementNumber } from '@/lib/settlement/formatSettlementDisplay';
 
 // Skeleton Components
 const SkeletonMetricCard = ({ color = "blue" }) => {
@@ -83,12 +84,8 @@ const LoadingSkeleton = () => (
         </div>
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center space-x-1 p-1 rounded-lg">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-9 w-24 bg-gray-200 rounded-md animate-pulse"></div>
-              ))}
-            </div>
-            <div className="h-9 w-36 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="h-10 w-56 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="h-10 w-28 bg-gray-200 rounded-lg animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -130,6 +127,12 @@ const Dashboard = () => {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+
+  const openCustomDatePicker = () => {
+    setCustomStartDate(startDate || '');
+    setCustomEndDate(endDate || '');
+    setShowCustomDatePicker(true);
+  };
 
   // Fetch data whenever filters change
   useEffect(() => {
@@ -188,51 +191,65 @@ const Dashboard = () => {
 
   const PeriodFilter = () => {
     const isCustom = period === 'custom' && startDate && endDate;
+    const selectedPeriod = showCustomDatePicker ? 'custom' : period;
 
     const periods = [
       { value: 'day', label: 'Today' },
       { value: 'week', label: 'This Week' },
       { value: 'month', label: 'This Month' },
       { value: 'year', label: 'This Year' },
+      { value: 'custom', label: 'Custom Date Range' },
     ];
+
+    const handleSelectChange = (event) => {
+      const nextPeriod = event.target.value;
+
+      if (nextPeriod === 'custom') {
+        openCustomDatePicker();
+        return;
+      }
+
+      handlePeriodChange(nextPeriod);
+    };
 
     return (
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center space-x-1 p-1 rounded-lg">
-            {periods.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => handlePeriodChange(p.value)}
-                className={`
-                  px-3 py-1.5 rounded-md transition-colors
-                  font-inter text-[14px] font-semibold leading-[18px]
-                  ${period === p.value && !isCustom
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-[#4A577F]/70 hover:bg-gray-200'
-                  }
-                `}
-              >
-                {p.label}
-              </button>
-            ))}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[220px]">
+            <select
+              value={selectedPeriod}
+              onChange={handleSelectChange}
+              className="w-full appearance-none rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-10 font-inter text-[14px] font-semibold leading-5 text-[#4A577F] shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              {periods.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4A577F]/70" />
+            <svg
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4A577F]/70"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z"
+                clipRule="evenodd"
+              />
+            </svg>
           </div>
 
-          <button
-            onClick={() => setShowCustomDatePicker(!showCustomDatePicker)}
-            className={`
-              flex items-center gap-2
-              px-3 py-1.5 rounded-lg transition-colors
-              font-inter text-[14px] font-semibold leading-[18px]
-              ${isCustom
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-[#4A577F]/70 hover:bg-gray-200'
-              }
-            `}
-          >
-            <Calendar className="w-4 h-4" />
-            Custom Range
-          </button>
+          {isCustom && (
+            <button
+              onClick={openCustomDatePicker}
+              className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 font-inter text-[14px] font-semibold leading-5 text-blue-700 transition-colors hover:bg-blue-100"
+            >
+              Edit Range
+            </button>
+          )}
         </div>
 
         {isCustom && (
@@ -455,7 +472,7 @@ const Dashboard = () => {
           />
           <MetricCard
             title="Pending Settlements"
-            value={dashboardData?.metrics?.settlements?.pending?.amount?.toLocaleString() || '0'}
+            value={formatSettlementNumber(dashboardData?.metrics?.settlements?.pending?.amount)}
             subtitle={`${dashboardData?.metrics?.settlements?.pending?.count || 0} settlements pending`}
             trend={dashboardData?.metrics?.settlements?.pending?.changeRate}
             trendLabel={pendingComparisonText}

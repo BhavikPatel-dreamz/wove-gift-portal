@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 // import { Elements } from "@stripe/react-stripe-js";
 // import { loadStripe } from "@stripe/stripe-js";
 import toast, { Toaster } from 'react-hot-toast';
@@ -9,6 +9,9 @@ import { AlertCircle, Package, ShoppingBag, CheckCircle2, Clock, Mail, Phone, Ma
 import Header from '../../../components/client/home/Header';
 import { useSession } from '@/contexts/SessionContext';
 import AuthForm from '@/components/AuthForm';
+import CheckoutIdentityChoiceModal from './CheckoutIdentityChoiceModal';
+import { validatePromoCodeForCheckout } from '../../../lib/action/promoCodeAction';
+import { calculateCheckoutTotals } from '../../../lib/promo/promoPricing';
 // import StripeCardPayment from "../giftflow/payment/StripeCardPayment";
 import PaymentMethodSelector from "../giftflow/payment/PaymentMethodSelector";
 import ThankYouScreen from "../giftflow/payment/ThankYouScreen";
@@ -17,6 +20,7 @@ import { currencyList } from '../../brandsPartner/currency';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearCart, clearBulkCart, clearCartAsync } from '@/redux/cartSlice';
 import { resetFlow } from '../../../redux/giftFlowSlice';
+import { BadgePercent, X } from 'lucide-react';
 
 // ✅ STRIPE CODE COMMENTED OUT
 // if (process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY === undefined) {
@@ -50,11 +54,18 @@ const CheckoutPage = () => {
   const [processingStatus, setProcessingStatus] = useState(null);
   const [sharedPaymentIntentId, setSharedPaymentIntentId] = useState(null);
   const [checkoutUserId, setCheckoutUserId] = useState(session?.user?.id || null);
+  const [showIdentityChoiceModal, setShowIdentityChoiceModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [guestCheckout, setGuestCheckout] = useState(null);
   const [guestFormData, setGuestFormData] = useState({ fullName: "", email: "" });
   const [guestFormError, setGuestFormError] = useState("");
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoError, setPromoError] = useState("");
+  const [promoSuccessMessage, setPromoSuccessMessage] = useState("");
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
 
   // Track individual order processing
   const [orderStatuses, setOrderStatuses] = useState({});
@@ -126,35 +137,67 @@ const CheckoutPage = () => {
     return regularSubtotal + bulkSubtotal;
   };
 
-  const calculateCombinedServiceFee = () => {
-    const subtotal = calculateCombinedSubtotal();
-    return Math.round(subtotal * 0.05);
-  };
+  const combinedSubtotal = useMemo(
+    () => calculateCombinedSubtotal(),
+    [cartItems, bulkItems],
+  );
 
-  const calculateCombinedTotal = () => {
-    return calculateCombinedSubtotal() + calculateCombinedServiceFee();
-  };
+  const checkoutCurrency = useMemo(() => getCurrency(), [cartItems, bulkItems]);
+
+  const checkoutPricing = useMemo(
+    () => calculateCheckoutTotals(combinedSubtotal, appliedPromo),
+    [appliedPromo, combinedSubtotal],
+  );
 
   useEffect(() => {
     if (!session?.user?.id) return;
     setCheckoutUserId(session.user.id);
     setGuestCheckout(null);
+    setShowIdentityChoiceModal(false);
     setShowAuthModal(false);
     setShowGuestModal(false);
     setGuestFormError("");
   }, [session?.user?.id]);
 
+  useEffect(() => {
+    if (
+      appliedPromo &&
+      (appliedPromo.subtotal !== combinedSubtotal ||
+        appliedPromo.currency !== checkoutCurrency)
+    ) {
+      setAppliedPromo(null);
+      setPromoSuccessMessage("");
+      setPromoError("");
+    }
+  }, [appliedPromo, combinedSubtotal, checkoutCurrency]);
+
   const closeIdentityModals = () => {
+    setShowIdentityChoiceModal(false);
     setShowAuthModal(false);
     setShowGuestModal(false);
+    setGuestFormError("");
+  };
+
+  const openIdentityChoiceModal = () => {
+    setAuthMode('login');
+    setShowAuthModal(false);
+    setShowGuestModal(false);
+    setShowIdentityChoiceModal(true);
+    setGuestFormError("");
+  };
+
+  const openAuthModal = (nextMode = 'login') => {
+    setAuthMode(nextMode);
+    setShowIdentityChoiceModal(false);
+    setShowGuestModal(false);
+    setShowAuthModal(true);
     setGuestFormError("");
   };
 
   const openGuestModal = () => {
     if (requiresLoginForBulkCheckout) {
       toast.error("Bulk orders require login before payment.");
-      setShowAuthModal(true);
-      setShowGuestModal(false);
+      openAuthModal('login');
       return;
     }
 
@@ -174,6 +217,7 @@ const CheckoutPage = () => {
         "",
     });
     setGuestFormError("");
+    setShowIdentityChoiceModal(false);
     setShowAuthModal(false);
     setShowGuestModal(true);
   };
@@ -223,6 +267,52 @@ const CheckoutPage = () => {
     await handleInitiatePayment({ guestCheckoutOverride: guestData });
   };
 
+  const handleApplyPromo = async () => {
+    const code = promoCodeInput.trim();
+    if (!code) {
+      setPromoError("Please enter a promo code.");
+      setPromoSuccessMessage("");
+      return;
+    }
+
+    setIsApplyingPromo(true);
+    setPromoError("");
+    setPromoSuccessMessage("");
+
+    try {
+      const result = await validatePromoCodeForCheckout({
+        code,
+        subtotal: combinedSubtotal,
+        currency: checkoutCurrency,
+      });
+
+      if (!result?.success) {
+        setAppliedPromo(null);
+        setPromoError(result?.error || "Failed to apply promo code.");
+        return;
+      }
+
+      setAppliedPromo(result.data);
+      setPromoCodeInput(result.data.code);
+      setPromoSuccessMessage(result.data.message || "Promo code applied successfully.");
+      setPromoError("");
+      toast.success(result.data.message || "Promo code applied.");
+    } catch (error) {
+      setAppliedPromo(null);
+      setPromoSuccessMessage("");
+      setPromoError(error?.message || "Failed to apply promo code.");
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoCodeInput("");
+    setPromoError("");
+    setPromoSuccessMessage("");
+  };
+
   // Create separate pending orders for ALL cart items
   const handleInitiatePayment = async ({
     userIdOverride,
@@ -235,13 +325,12 @@ const CheckoutPage = () => {
 
     if (requiresLoginForBulkCheckout && !resolvedUserId) {
       toast.error("Please login first to process bulk orders.");
-      setShowGuestModal(false);
-      setShowAuthModal(true);
+      openIdentityChoiceModal();
       return null;
     }
 
     if (!resolvedUserId && !resolvedGuestCheckout?.email) {
-      setShowAuthModal(true);
+      openIdentityChoiceModal();
       return null;
     }
 
@@ -309,6 +398,7 @@ const CheckoutPage = () => {
       const result = await createPendingOrder({
         isMultiCart: true,
         cartOrders: allCartOrders,
+        appliedPromoCode: appliedPromo?.code || null,
         userId: resolvedUserId,
         guestCheckout: resolvedGuestCheckout,
       });
@@ -318,6 +408,18 @@ const CheckoutPage = () => {
       }
 
       setPendingOrderIds(result.data.orderIds);
+      if (result?.data?.skipGateway && result?.data?.successUrl) {
+        toast.success("Promo applied. Completing your free checkout...", { id: toastId });
+        setPaymentSubmitted(true);
+        setTimeout(() => {
+          window.location.assign(result.data.successUrl);
+        }, 100);
+        return {
+          orderIds: result.data.orderIds,
+          successUrl: result.data.successUrl,
+        };
+      }
+
       const redirectUrl = result?.data?.payfastUrl;
       if (!redirectUrl) {
         setError("Payment link was not received.");
@@ -351,15 +453,13 @@ const CheckoutPage = () => {
     const resolvedUserId = checkoutUserId || session?.user?.id || null;
 
     if (requiresLoginForBulkCheckout && !resolvedUserId) {
-      toast.error("Please login first to process bulk orders.");
-      setShowGuestModal(false);
-      setShowAuthModal(true);
+      openIdentityChoiceModal();
       return;
     }
 
     const hasIdentity = resolvedUserId || guestCheckout?.email;
     if (!hasIdentity) {
-      setShowAuthModal(true);
+      openIdentityChoiceModal();
       return;
     }
 
@@ -806,26 +906,99 @@ const CheckoutPage = () => {
                   </div>
                 ))}
               </div>
+
+              <div className="mt-5 border-t border-[#1A1A1A1A] pt-5">
+                <div className="flex items-center rounded-[18px] border border-[#D8D8D8] bg-white px-4 py-3">
+                  <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF2F4] text-[#F25A5A]">
+                    <BadgePercent className="h-5 w-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={promoCodeInput}
+                    onChange={(event) => setPromoCodeInput(event.target.value)}
+                    placeholder="Promocode"
+                    className="min-w-0 flex-1 border-0 bg-transparent text-base text-[#1A1A1A] outline-none placeholder:text-[#8B8B8B]"
+                    disabled={isApplyingPromo}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyPromo}
+                    disabled={isApplyingPromo || !promoCodeInput.trim()}
+                    className="ml-3 text-[15px] font-semibold text-[#F25A5A] transition hover:text-[#E04474] disabled:cursor-not-allowed disabled:text-[#F7A4B9]"
+                  >
+                    {isApplyingPromo ? 'Applying...' : 'Apply'}
+                  </button>
+                </div>
+
+                {appliedPromo && (
+                  <div className="mt-3 flex items-center justify-between rounded-2xl border border-[#F9C8D7] bg-[#FFF7FA] px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-[#1A1A1A]">
+                        {appliedPromo.code} applied
+                      </p>
+                      <p className="text-sm text-[#ED457D]">
+                        You saved {getCurrencySymbol(checkoutCurrency)}{checkoutPricing.discountAmount}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemovePromo}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[#F2CCD8] bg-white text-[#8B8B8B] transition hover:text-[#1A1A1A]"
+                      aria-label="Remove promo code"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                {promoError ? (
+                  <p className="mt-3 text-sm text-red-500">{promoError}</p>
+                ) : promoSuccessMessage ? (
+                  <p className="mt-3 text-sm text-green-600">{promoSuccessMessage}</p>
+                ) : null}
+              </div>
             </div>
 
             {/* Payment Summary */}
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Payment Details</h3>
 
-              <div className="space-y-3">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
-                  <span>{getCurrencySymbol(getCurrency())} {calculateCombinedSubtotal().toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Service Fee (5%)</span>
-                  <span>{getCurrencySymbol(getCurrency())} {calculateCombinedServiceFee()}</span>
-                </div>
-                <div className="h-px bg-gray-200" />
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Subtotal</span>
+                    <span>{getCurrencySymbol(checkoutCurrency)} {checkoutPricing.subtotal.toFixed(2)}</span>
+                  </div>
+                {appliedPromo && (
+                  <div className="flex justify-between text-[#ED457D]">
+                    <span>Promo ({appliedPromo.code})</span>
+                    <span>-{getCurrencySymbol(checkoutCurrency)} {checkoutPricing.discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                  <div className="flex justify-between text-gray-600">
+                    <span>Service Fee excl. VAT 4.35%</span>
+                    <span>
+                      {getCurrencySymbol(checkoutCurrency)} {checkoutPricing.serviceFeeExVat.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>VAT on Service Fee 15%</span>
+                    <span>
+                      {getCurrencySymbol(checkoutCurrency)} {checkoutPricing.serviceFeeVat.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Total Service Fee 5% incl. VAT</span>
+                    <span>
+                      {checkoutPricing.serviceFee === 0
+                      ? 'Free'
+                      : `${getCurrencySymbol(checkoutCurrency)} ${checkoutPricing.serviceFee.toFixed(2)}`}
+                    </span>
+                  </div>
+                  <div className="h-px bg-gray-200" />
+                  <div className="flex justify-between text-lg font-bold">
+                  <span>Total to Pay</span>
                   <span className="text-pink-600">
-                    {getCurrencySymbol(getCurrency())} {calculateCombinedTotal().toFixed(2)}
+                    {getCurrencySymbol(checkoutCurrency)} {checkoutPricing.totalAmount.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -847,15 +1020,26 @@ const CheckoutPage = () => {
         )}
       </div>
 
+      {showIdentityChoiceModal && (
+        <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
+          <CheckoutIdentityChoiceModal
+            onClose={closeIdentityModals}
+            onContinueAsGuest={openGuestModal}
+            onSignIn={() => openAuthModal('login')}
+            onSignUp={() => openAuthModal('signup')}
+            showGuestOption={!requiresLoginForBulkCheckout}
+            guestUnavailableText="Bulk orders require account login before payment."
+          />
+        </div>
+      )}
+
       {showAuthModal && (
         <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
           <AuthForm
-            type="login"
+            type={authMode}
             mode="modal"
             onClose={closeIdentityModals}
             onAuthSuccess={handleAuthSuccess}
-            showGuestOption={!requiresLoginForBulkCheckout}
-            onPayAsGuest={!requiresLoginForBulkCheckout ? openGuestModal : undefined}
             initialEmail={
               guestCheckout?.email ||
               cartItems[0]?.deliveryDetails?.yourEmailAddress ||
@@ -950,11 +1134,11 @@ const CheckoutPage = () => {
                 type="button"
                 onClick={() => {
                   setShowGuestModal(false);
-                  setShowAuthModal(true);
+                  openAuthModal('login');
                 }}
                 className="w-full py-3.5 border-2 border-pink-500 text-pink-500 rounded-full font-semibold hover:bg-pink-50 transition"
               >
-                Back to Login
+                Sign in to account
               </button>
             </form>
           </div>

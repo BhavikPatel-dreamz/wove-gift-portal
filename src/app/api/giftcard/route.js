@@ -7,6 +7,101 @@ import { prisma } from "../../../lib/db";
 const SHOPIFY_API_VERSION = "2025-07";
 const DEFAULT_EXPIRY_YEARS = 3;
 
+function normalizeShopDomain(shop = "") {
+  return String(shop)
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/\/$/, "")
+    .toLowerCase();
+}
+
+function maskToken(token) {
+  if (!token) return null;
+  if (token.length <= 12) return `${token.slice(0, 3)}...${token.slice(-2)}`;
+  return `${token.slice(0, 6)}...${token.slice(-4)}`;
+}
+
+function summarizeScopes(scopes) {
+  const scopeList = String(scopes || "")
+    .split(",")
+    .map((scope) => scope.trim())
+    .filter(Boolean);
+
+  return {
+    raw: scopes || "",
+    list: scopeList,
+    hasWriteGiftCards: scopeList.includes("write_gift_cards"),
+    hasReadGiftCards: scopeList.includes("read_gift_cards"),
+  };
+}
+
+async function probeShopifyAccessToken({ shop, accessToken, source }) {
+  if (!shop || !accessToken) {
+    return {
+      source,
+      ok: false,
+      status: null,
+      error: "Missing shop or access token",
+    };
+  }
+
+  try {
+    const response = await fetch(
+      `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/shop.json`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": accessToken,
+        },
+      },
+    );
+
+    const bodyText = await response.text();
+    let parsedBody = null;
+
+    try {
+      parsedBody = bodyText ? JSON.parse(bodyText) : null;
+    } catch {
+      parsedBody = bodyText;
+    }
+
+    return {
+      source,
+      ok: response.ok,
+      status: response.status,
+      shopName: parsedBody?.shop?.name || null,
+      error:
+        parsedBody?.errors ||
+        parsedBody?.error ||
+        (response.ok ? null : bodyText || response.statusText),
+    };
+  } catch (error) {
+    return {
+      source,
+      ok: false,
+      status: null,
+      error: error.message,
+    };
+  }
+}
+
+async function parseJsonResponse(response) {
+  const bodyText = await response.text();
+
+  if (!bodyText) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(bodyText);
+  } catch {
+    return {
+      raw: bodyText,
+    };
+  }
+}
+
 export async function POST(req) {
   const startTime = Date.now();
   let logContext = {
@@ -17,7 +112,8 @@ export async function POST(req) {
   try {
     // ============ STEP 0: Parse Request Parameters ============
     const url = new URL(req.url);
-    const shop = url.searchParams.get("shop");
+    const rawShop = url.searchParams.get("shop");
+    const shop = normalizeShopDomain(rawShop);
     const denominationType = url.searchParams.get("denominationType");
     const input = await req.json();
     const purchaseDateRaw = input?.purchaseDate || null;
@@ -69,23 +165,160 @@ export async function POST(req) {
       step: "fetch_session",
     });
 
-    const session = await prisma.appInstallation.findUnique({
-      where: { shop },
+    const [installationSession, shopifySession] = await Promise.all([
+      prisma.appInstallation.findUnique({
+        where: { shop },
+        select: {
+          shop: true,
+          accessToken: true,
+          scopes: true,
+          isActive: true,
+          approvalStatus: true,
+          installedAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.shopifySession.findUnique({
+        where: { shop },
+        select: {
+          shop: true,
+          accessToken: true,
+          scope: true,
+          isOnline: true,
+          expiresAt: true,
+          updatedAt: true,
+        },
+      }),
+    ]);
+
+    const authDiagnostics = {
+      installation: installationSession
+        ? {
+            found: true,
+            token: maskToken(installationSession.accessToken),
+            tokenLength: installationSession.accessToken?.length || 0,
+            scopes: summarizeScopes(installationSession.scopes),
+            isActive: installationSession.isActive,
+            approvalStatus: installationSession.approvalStatus,
+            updatedAt: installationSession.updatedAt,
+          }
+        : { found: false },
+      shopifySession: shopifySession
+        ? {
+            found: true,
+            token: maskToken(shopifySession.accessToken),
+            tokenLength: shopifySession.accessToken?.length || 0,
+            scopes: summarizeScopes(shopifySession.scope),
+            isOnline: shopifySession.isOnline,
+            expiresAt: shopifySession.expiresAt,
+            updatedAt: shopifySession.updatedAt,
+          }
+        : { found: false },
+      sameToken:
+        Boolean(installationSession?.accessToken) &&
+        Boolean(shopifySession?.accessToken) &&
+        installationSession.accessToken === shopifySession.accessToken,
+    };
+
+    console.log("📊 [STEP 1] Token source diagnostics", {
+      ...logContext,
+      authDiagnostics,
     });
 
-    if (!session?.accessToken) {
+    const tokenCandidates = [
+      {
+        source: "shopifySession",
+        accessToken: shopifySession?.accessToken || null,
+        scopes: shopifySession?.scope || "",
+      },
+      {
+        source: "appInstallation",
+        accessToken: installationSession?.accessToken || null,
+        scopes: installationSession?.scopes || "",
+      },
+    ].filter(
+      (candidate, index, list) =>
+        candidate.accessToken &&
+        list.findIndex(
+          (other) => other.accessToken === candidate.accessToken,
+        ) === index,
+    );
+
+    if (!tokenCandidates.length) {
       console.error("❌ [FAIL] No access token found", {
         ...logContext,
-        sessionFound: !!session,
-        hasAccessToken: !!session?.accessToken,
+        authDiagnostics,
       });
       return NextResponse.json(
-        { error: "Shop not installed or access token missing" },
+        {
+          error: "Shop not installed or access token missing",
+          debug: { authDiagnostics },
+        },
         { status: 401 }
       );
     }
 
-    console.log("✅ [STEP 1] Access token retrieved successfully");
+    const tokenProbeResults = [];
+    let selectedToken = null;
+
+    for (const candidate of tokenCandidates) {
+      const probeResult = await probeShopifyAccessToken({
+        shop,
+        accessToken: candidate.accessToken,
+        source: candidate.source,
+      });
+      tokenProbeResults.push({
+        ...probeResult,
+        scopes: summarizeScopes(candidate.scopes),
+      });
+
+      if (probeResult.ok && !selectedToken) {
+        selectedToken = candidate;
+      }
+    }
+
+    console.log("📡 [STEP 1] Shopify token probe results", {
+      ...logContext,
+      tokenProbeResults,
+    });
+
+    if (!selectedToken) {
+      console.error("❌ [FAIL] No valid Shopify token available", {
+        ...logContext,
+        authDiagnostics,
+        tokenProbeResults,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No valid Shopify admin token available for this shop",
+          debug: {
+            authDiagnostics,
+            tokenProbeResults,
+          },
+        },
+        { status: 401 },
+      );
+    }
+
+    const selectedAccessToken = selectedToken.accessToken;
+    const selectedTokenSource = selectedToken.source;
+    const selectedScopeSummary = summarizeScopes(selectedToken.scopes);
+
+    console.log("✅ [STEP 1] Access token selected successfully", {
+      ...logContext,
+      selectedTokenSource,
+      selectedScopeSummary,
+    });
+
+    if (!selectedScopeSummary.hasWriteGiftCards) {
+      console.warn("⚠️ [STEP 1] Selected token may be missing write_gift_cards scope", {
+        ...logContext,
+        selectedTokenSource,
+        selectedScopeSummary,
+        note: "Reinstall the Shopify app if this token was issued before gift card write scope was granted",
+      });
+    }
 
     // ============ STEP 2: Find Brand and Voucher ============
     console.log("📋 [STEP 2] Fetching brand and vouchers", {
@@ -340,7 +573,7 @@ export async function POST(req) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Shopify-Access-Token": session.accessToken,
+            "X-Shopify-Access-Token": selectedAccessToken,
           },
           body: JSON.stringify({
             query: `
@@ -374,7 +607,7 @@ export async function POST(req) {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "X-Shopify-Access-Token": session.accessToken,
+              "X-Shopify-Access-Token": selectedAccessToken,
             },
             body: JSON.stringify({
               query: `
@@ -421,7 +654,7 @@ export async function POST(req) {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "X-Shopify-Access-Token": session.accessToken,
+                "X-Shopify-Access-Token": selectedAccessToken,
               },
               body: JSON.stringify({
                 query: `
@@ -468,6 +701,8 @@ export async function POST(req) {
     console.log("📋 [STEP 5] Creating gift card in Shopify WITHOUT customer association", {
       ...logContext,
       step: "create_gift_card",
+      selectedTokenSource,
+      selectedScopeSummary,
       note: "No customer_id will be included to prevent email notifications",
     });
 
@@ -500,35 +735,53 @@ export async function POST(req) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Shopify-Access-Token": session.accessToken,
+          "X-Shopify-Access-Token": selectedAccessToken,
         },
         body: JSON.stringify(restApiPayload),
       }
     );
 
-    const createData = await createGiftCardResponse.json();
+    const createData = await parseJsonResponse(createGiftCardResponse);
 
     console.log("📊 [STEP 5] Shopify gift card creation response", {
       success: !!createData.gift_card,
       status: createGiftCardResponse.status,
       giftCardId: createData.gift_card?.id,
       errors: createData.errors,
+      selectedTokenSource,
     });
 
     if (!createData.gift_card) {
+      const debugPayload = {
+        selectedTokenSource,
+        selectedScopeSummary,
+        authDiagnostics,
+        tokenProbeResults,
+        shopifyResponseStatus: createGiftCardResponse.status,
+        shopifyResponse: createData,
+        probableCause:
+          createGiftCardResponse.status === 401
+            ? "Shopify rejected the stored admin token. The app likely has a stale or wrong access token for this shop."
+            : !selectedScopeSummary.hasWriteGiftCards
+              ? "The selected token appears to be missing write_gift_cards scope. Reinstall the app to refresh scopes."
+              : "Shopify rejected the gift card create request. Check the response payload for the exact cause.",
+      };
+
       console.error("❌ [FAIL] Failed to create gift card in Shopify", {
         ...logContext,
         responseStatus: createGiftCardResponse.status,
         errors: createData.errors || createData,
         payload: restApiPayload,
+        debug: debugPayload,
       });
       return NextResponse.json(
         {
           success: false,
           error: "Failed to create gift card in Shopify",
           details: createData.errors || createData,
+          debug: debugPayload,
         },
-        { status: 400 }
+        { status: createGiftCardResponse.status || 400 }
       );
     }
 

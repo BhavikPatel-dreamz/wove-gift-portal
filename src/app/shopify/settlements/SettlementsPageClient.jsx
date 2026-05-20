@@ -9,6 +9,10 @@ import { currencyList } from "../../../components/brandsPartner/currency";
 import { getBrandSettlementHistory } from "../../../lib/action/brandPartner";
 import { useShopifyNavigation } from '@/hooks/useShopifyNavigation';
 import { strict } from "assert";
+import {
+    formatSettlementCurrency,
+    formatSettlementNumber,
+} from "@/lib/settlement/formatSettlementDisplay";
 
 const BrandSettlementHistoryClient = () => {
     const [initialData, setInitialData] = useState([]);
@@ -175,12 +179,7 @@ const BrandSettlementHistoryClient = () => {
     const formatCurrency = useCallback(
         (amount) => {
             const currency = brandInfo?.currency || "USD";
-            return new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: currency,
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-            }).format(amount || 0);
+            return formatSettlementCurrency(amount, currency);
         },
         [brandInfo?.currency]
     );
@@ -399,7 +398,7 @@ const BrandSettlementHistoryClient = () => {
                         <div>
                             <div className="font-semibold text-[#1A1A1A]">
                                 {getCurrencySymbol(row.currency)}
-                                {baseAmount.toLocaleString()}
+                                {formatSettlementNumber(baseAmount)}
                             </div>
                             <div className="text-xs text-gray-500">
                                 {row.totalSold || 0} Units • {trigger === "onRedemption" ? "Redeemed" : "Sold"}
@@ -418,7 +417,7 @@ const BrandSettlementHistoryClient = () => {
                         <div>
                             <div className="font-semibold text-[#1A1A1A]">
                                 {getCurrencySymbol(row.currency)}
-                                {redeemedAmount.toLocaleString()}
+                                {formatSettlementNumber(redeemedAmount)}
                             </div>
                         </div>
                     );
@@ -434,7 +433,7 @@ const BrandSettlementHistoryClient = () => {
                         <div className="space-y-0.5">
                             <div className="text-[#1A1A1A] font-semibold">
                                 {getCurrencySymbol(row.currency)}
-                                {netPayable.toLocaleString()}
+                                {formatSettlementNumber(netPayable)}
                             </div>
                             {/* {commissionAmount >= 1 && commissionType && (
                                 <div className="text-xs text-red-600">
@@ -458,7 +457,7 @@ const BrandSettlementHistoryClient = () => {
                         <div className="space-y-0.5">
                             <div className="text-[#1A1A1A] font-semibold">
                                 {getCurrencySymbol(info.row.original.currency)}
-                                {commissionValue.toLocaleString()}
+                                {formatSettlementNumber(commissionValue)}
                             </div>
                         </div>
                     );
@@ -473,7 +472,7 @@ const BrandSettlementHistoryClient = () => {
                         <div className="space-y-0.5">
                             <div className="text-[#1A1A1A] font-semibold">
                                 {getCurrencySymbol(row.currency)}
-                                {vatAmount.toLocaleString()}
+                                {formatSettlementNumber(vatAmount)}
                             </div>
                         </div>
                     );
@@ -493,12 +492,12 @@ const BrandSettlementHistoryClient = () => {
                         <div>
                             <div className={`font-semibold ${isFullyPaid ? 'text-green-600' : hasOutstanding ? 'text-orange-600' : 'text-gray-900'}`}>
                                 {getCurrencySymbol(row.currency)}
-                                {amount.toLocaleString()}
+                                {formatSettlementNumber(amount)}
                             </div>
                             {totalPaid > 0 && (
                                 <div className="text-xs text-[#64748B]">
                                     Paid: {getCurrencySymbol(row.currency)}
-                                    {totalPaid.toLocaleString()}
+                                    {formatSettlementNumber(totalPaid)}
                                 </div>
                             )}
                         </div>

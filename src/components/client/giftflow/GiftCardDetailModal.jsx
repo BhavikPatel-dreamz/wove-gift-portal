@@ -1,5 +1,7 @@
 import React from 'react';
 import { X, Gift, Calendar, Copy, Download, ChevronDown, ExternalLink, RefreshCw } from 'lucide-react';
+import WhatsAppShareButton from './WhatsAppShareButton';
+import { buildGiftCardShareImageUrls } from '@/lib/whatsappShare';
 
 const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
   if (!card) return null;
@@ -51,6 +53,14 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
   const lastRedemption = card.redemptions && card.redemptions.length > 0
     ? card.redemptions[0].redeemedAt
     : null;
+  const canShareOnWhatsApp =
+    card.deliveryMethod === "whatsapp" &&
+    card.isSent &&
+    !card.isPendingVoucher &&
+    Boolean(card.fullCode || card.code) &&
+    Boolean(card.tokenizedLink);
+  const shareCode = card.fullCode || card.code || "";
+  const shareImageAssets = buildGiftCardShareImageUrls(shareCode);
 
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-999 p-4">
@@ -153,6 +163,42 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
                   </div>
                 </div>
               </div>
+
+              {canShareOnWhatsApp && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">WhatsApp Sharing</h3>
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <WhatsAppShareButton
+                      gifts={[
+                        {
+                          recipientName: card.receiverName || "there",
+                          giftName: card.brandName || "gift card",
+                          brandName: card.brandName || "Brand",
+                          brandWebsite:
+                            card.brandWebsite ||
+                            card.brandDomain ||
+                            "",
+                          giftAmount: `${card.currencySymbol || "R"}${Number(card.totalAmount || 0).toFixed(2)}`,
+                          giftCode: shareCode,
+                          giftUrl: card.tokenizedLink,
+                          giftImageUrl: shareImageAssets.imageUrl || card.brandLogo || "",
+                          giftImageViewUrl: shareImageAssets.imageViewUrl || "",
+                          senderName: card.senderName || "Someone",
+                          customMessage: card.personalMessage || "",
+                        },
+                      ]}
+                      context="gift-details"
+                      analyticsMetadata={{
+                        orderId: card.orderId,
+                        orderNumber: card.orderNumber,
+                        voucherCodeId: card.id,
+                      }}
+                      fullWidth
+                      className="rounded-lg"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Right Column */}

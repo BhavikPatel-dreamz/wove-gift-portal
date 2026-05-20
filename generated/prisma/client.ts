@@ -204,3 +204,8 @@ export type SupportMessage = Prisma.SupportMessageModel
  * 
  */
 export type BulkRecipient = Prisma.BulkRecipientModel
+/**
+ * Model PromoCode
+ * 
+ */
+export type PromoCode = Prisma.PromoCodeModel

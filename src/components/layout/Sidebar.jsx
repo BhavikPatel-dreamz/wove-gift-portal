@@ -13,6 +13,7 @@ import { useSession } from '@/contexts/SessionContext'
 import { useSelector } from 'react-redux';
 import { setHasChanges } from '../../redux/giftFlowSlice';
 import { useDispatch } from 'react-redux';
+import { isAdminRole } from '@/lib/roles';
 
 const DashboardIcon = ({ className }) => (
   <svg className={className} width="20" height="20" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -110,11 +111,16 @@ const Sidebar = ({ isOpen, onClose }) => {
     name: 'Reports', icon: ReportsIcon,
     href: '/reports'
   },
+  {
+    name: 'Promo Codes', icon: Gift,
+    href: '/controls'
+  },
   { name: 'Support Requests', icon: SupportIcon, href: '/supportRequests' },
 ];
 
   // Filter menu items based on user role
-  const menuItems = session?.user?.role === 'ADMIN'
+  const role = session?.user?.role;
+  const menuItems = isAdminRole(role)
     ? allMenuItems
     : allMenuItems.filter(item =>
       item.href === '/dashboard' || item.href === '/vouchers'

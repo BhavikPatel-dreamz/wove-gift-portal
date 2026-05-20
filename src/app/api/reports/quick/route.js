@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import {
+  calculateSettlementAmounts,
+  getOrderSettlementAmount,
+} from "@/lib/settlement/settlementUtils";
 
 export async function GET(request) {
   try {
@@ -107,6 +111,8 @@ async function generateDailySettlement() {
   orders.forEach((order) => {
     const brandId = order.brand.id;
     const brandName = order.brand.brandName;
+    const settlementTrigger =
+      order.brand.brandTerms?.settlementTrigger || "onRedemption";
     const commissionType = order.brand.brandTerms?.commissionType || "Percentage";
     const commissionValue = order.brand.brandTerms?.commissionValue || 0;
     const vatRate = order.brand.brandTerms?.vatRate || 0;
@@ -126,14 +132,7 @@ async function generateDailySettlement() {
       };
     }
 
-    let commission = 0;
-    if (commissionType === "Percentage") {
-      commission = (order.totalAmount * commissionValue) / 100;
-    } else {
-      commission = commissionValue;
-    }
-
-    const vat = (commission * vatRate) / 100;
+    const soldAmount = getOrderSettlementAmount(order);
 
     const redeemedVouchers = order.voucherCodes.filter(
       (vc) => vc.isRedeemed || vc._count.redemptions > 0 || vc.remainingValue === 0
@@ -142,17 +141,29 @@ async function generateDailySettlement() {
       (sum, vc) => sum + (vc.originalValue - vc.remainingValue),
       0
     );
+    const baseAmount =
+      settlementTrigger === "onRedemption" ? redeemedAmount : soldAmount;
+    const itemCount =
+      settlementTrigger === "onRedemption" ? redeemedVouchers.length : order.quantity;
+    const { commissionAmount: commission, vatAmount: vat, netPayable } =
+      calculateSettlementAmounts({
+        baseAmount,
+        commissionType,
+        commissionValue,
+        vatRate,
+        itemCount,
+      });
 
     settlementsByBrand[brandId].totalOrders += 1;
-    settlementsByBrand[brandId].totalSoldAmount += order.totalAmount;
+    settlementsByBrand[brandId].totalSoldAmount += soldAmount;
     settlementsByBrand[brandId].totalRedeemed += redeemedVouchers.length;
     settlementsByBrand[brandId].redeemedAmount += redeemedAmount;
     settlementsByBrand[brandId].commissionAmount += commission;
     settlementsByBrand[brandId].vatAmount += vat;
-    settlementsByBrand[brandId].netPayable += order.totalAmount - commission - vat;
+    settlementsByBrand[brandId].netPayable += netPayable;
     settlementsByBrand[brandId].orders.push({
       orderNumber: order.orderNumber,
-      amount: order.totalAmount,
+      amount: soldAmount,
       quantity: order.quantity,
       commission,
       vat,
@@ -163,7 +174,7 @@ async function generateDailySettlement() {
     reportDate: today.toISOString().split("T")[0],
     summary: {
       totalOrders: orders.length,
-      totalRevenue: orders.reduce((sum, o) => sum + o.totalAmount, 0),
+      totalRevenue: orders.reduce((sum, o) => sum + getOrderSettlementAmount(o), 0),
       totalBrands: Object.keys(settlementsByBrand).length,
     },
     settlements: Object.values(settlementsByBrand),

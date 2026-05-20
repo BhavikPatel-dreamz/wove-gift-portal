@@ -109,14 +109,21 @@ const BulkOrderSetup = () => {
   console.log(selectedBrand, selectedAmount);
 
   // Get available denominations from selected brand
-  const denominations = selectedBrand?.vouchers?.[0]?.denominations || [];
+  const denominations = (selectedBrand?.vouchers?.[0]?.denominations || []).filter(
+    (denom) => denom?.value != null
+  );
   const voucherData = selectedBrand?.vouchers?.[0];
   const minAmount = voucherData?.minAmount || 50;
   const maxAmount = 25000; // Bulk order max amount per voucher
+  const selectedAmountValue = selectedAmount?.value ?? null;
+  const selectedAmountCurrency =
+    selectedAmount?.currency ||
+    selectedBrand?.vouchers?.[0]?.denominationCurrency ||
+    'R';
 
   // Calculate total spend
-  const totalSpend = selectedAmount && quantity
-    ? (selectedAmount.value * parseInt(quantity || 0)).toFixed(2)
+  const totalSpend = selectedAmountValue !== null && quantity
+    ? (selectedAmountValue * parseInt(quantity || 0)).toFixed(2)
     : '0.00';
 
   const handleBackToBrands = () => {
@@ -139,7 +146,7 @@ const BulkOrderSetup = () => {
       console.log("numValue", numValue)
 
       // Check maximum limit - Updated to 25000
-      if (numValue * selectedAmount.value > 25000) {
+      if (selectedAmountValue !== null && numValue * selectedAmountValue > 25000) {
         setError('Maximum R25,000 vouchers per order');
         dispatch(setQuantity(value)); // Keep the entered value to show error
       } else {
@@ -168,8 +175,10 @@ const BulkOrderSetup = () => {
   };
 
   useEffect(() => {
-    if (selectedAmount && selectedAmount.value) {
-      const matchingDenomination = denominations.find(d => d.value === selectedAmount.value);
+    if (selectedAmountValue !== null) {
+      const matchingDenomination = denominations.find(
+        (d) => d?.value === selectedAmountValue
+      );
       if (matchingDenomination) {
         dispatch(setSelectedAmount(matchingDenomination));
         setShowCustomInput(false);
@@ -178,25 +187,25 @@ const BulkOrderSetup = () => {
         dispatch(setSelectedAmount(selectedAmount));
         setShowCustomInput(true);
       }
-    } else if (selectedAmount && selectedAmount.value === null) {
+    } else if (selectedAmount) {
       setShowCustomInput(true);
     }
-  }, [selectedAmount, denominations, dispatch]);
+  }, [selectedAmount, selectedAmountValue, denominations, dispatch]);
 
 
   const handleAddToBulkOrder = () => {
     // Validation
-    if (!selectedAmount || !selectedAmount.value) {
+    if (selectedAmountValue === null) {
       setError('Please select a denomination or enter a custom amount');
       return;
     }
 
-    if (showCustomInput && selectedAmount.value < minAmount) {
+    if (showCustomInput && selectedAmountValue < minAmount) {
       setError(`Minimum custom amount is ${minAmount}`);
       return;
     }
 
-    if (showCustomInput && selectedAmount.value > maxAmount) {
+    if (showCustomInput && selectedAmountValue > maxAmount) {
       setError(`Maximum custom amount is ${maxAmount}`);
       return;
     }
@@ -215,8 +224,8 @@ const BulkOrderSetup = () => {
     const bulkOrderItem = {
       selectedBrand,
       selectedAmount: {
-        value: selectedAmount.value,
-        currency: selectedAmount.currency || 'R'
+        value: selectedAmountValue,
+        currency: selectedAmountCurrency
       },
       quantity: parseInt(quantity),
       totalSpend: parseFloat(totalSpend),
@@ -274,7 +283,7 @@ const BulkOrderSetup = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
+    <div className="min-h-screen bg-gray-50 px-4 py-20 sm:py-24 md:px-8 md:py-30">
       <div className="max-w-7xl mx-auto  sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
@@ -347,7 +356,7 @@ const BulkOrderSetup = () => {
         md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
-              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="hidden md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
               <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
@@ -357,26 +366,26 @@ const BulkOrderSetup = () => {
                 </div>
               </div>
 
-              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="hidden md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
           {/* Desktop spacer only */}
-          <div className="md:block w-35" />
+          <div className="hidden md:block w-35" />
         </div>
 
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-[40px] md:text-4xl font-bold text-[#1A1A1A] mb-2 fontPoppins">
+        <div className="text-center mb-10 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl md:text-4xl font-bold text-[#1A1A1A] mb-2 fontPoppins">
             Set up your bulk order
           </h1>
-          <p className="text-[#4A4A4A] text-base font-medium">
+          <p className="text-[#4A4A4A] text-sm sm:text-base font-medium">
             We'll generate unique codes for each voucher, ready for you to send out.
           </p>
         </div>
 
         {/* Main Content Grid */}
-        <div className="max-w-4xl m-auto w-full grid grid-cols-1 md:grid-cols-[275px_1fr] gap-6">
+        <div className="max-w-4xl m-auto w-full grid grid-cols-1 md:grid-cols-[275px_1fr] gap-6 px-2 sm:px-0">
           {/* Left Column - Selected Brand */}
           <div className="w-full flex justify-center">
             <div className="flex flex-col items-center text-center justify-center
@@ -448,8 +457,8 @@ const BulkOrderSetup = () => {
                   className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] bg-white cursor-pointer flex justify-between items-center"
                 >
                   <span className="font-semibold leading-4 text-black">
-                    {selectedAmount?.value
-                      ? `${getCurrencySymbol(selectedAmount.currency)} ${formatNumber(selectedAmount.value)}`
+                    {selectedAmountValue !== null
+                      ? `${getCurrencySymbol(selectedAmountCurrency)} ${formatNumber(selectedAmountValue)}`
                       : "Select Denomination"}
                   </span>
 
@@ -462,7 +471,7 @@ const BulkOrderSetup = () => {
                 {open && (
                   <div className="absolute left-0 right-0 mt-2 bg-white rounded-[15px] shadow-md border border-[#1A1A1A33] z-50 overflow-hidden">
                     {denominations.map((denom, i) => {
-                      const isSelected = selectedAmount?.value === denom.value;
+                      const isSelected = selectedAmountValue === denom.value;
                       return (
                         <div
                           key={i}
@@ -503,7 +512,7 @@ const BulkOrderSetup = () => {
                 </label>
                 <input
                   type="text"
-                  value={selectedAmount?.value || ''}
+                  value={selectedAmountValue ?? ''}
                   onChange={handleCustomAmountChange}
                   placeholder={`e.g., ${minAmount}`}
                   className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
@@ -522,7 +531,7 @@ const BulkOrderSetup = () => {
 
               <input
                 type="text"
-                value={quantity || ''} // Change this line - use empty string as fallback
+                value={quantity || 0} // Change this line - use empty string as fallback
                 onChange={handleQuantityChange}
                 placeholder="e.g., 50 Vouchers"
                 className="w-full px-4 py-3 border border-[#1A1A1A33] rounded-[15px] focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent text-gray-700 bg-white"
@@ -548,15 +557,15 @@ const BulkOrderSetup = () => {
                 </span>
 
                 {quantity && selectedAmount && (
-                  <span className="font-['Inter'] text-sm sm:text-base font-medium leading-tight text-[#8C8C8C] mt-1 sm:mt-2">
-                    {quantity} × {getCurrencySymbol(selectedAmount.currency) || 'R'}
-                    {selectedAmount.value}
+                <span className="font-['Inter'] text-sm sm:text-base font-medium leading-tight text-[#8C8C8C] mt-1 sm:mt-2">
+                    {quantity} × {getCurrencySymbol(selectedAmountCurrency) || 'R'}
+                    {selectedAmountValue ?? 0}
                   </span>
                 )}
               </div>
 
               <p className="font-['Inter'] text-lg sm:text-xl font-bold bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent text-right sm:text-left">
-                {getCurrencySymbol(selectedAmount?.currency) || 'R'}
+                {getCurrencySymbol(selectedAmountCurrency) || 'R'}
                 {totalSpend}
               </p>
             </div>
@@ -565,7 +574,7 @@ const BulkOrderSetup = () => {
             <button
               onClick={handleAddToBulkOrder}
               disabled={
-                (!selectedAmount || !quantity || parseInt(quantity) === 0) ||
+                (selectedAmountValue === null || !quantity || parseInt(quantity) === 0) ||
                 parseInt(totalSpend) > 25000
               }
               className={`
@@ -575,7 +584,7 @@ const BulkOrderSetup = () => {
     font-semibold text-lg 
     transition-all duration-300 
     flex items-center justify-center gap-2
-    ${(!selectedAmount || !quantity || parseInt(quantity) === 0) ||
+    ${(selectedAmountValue === null || !quantity || parseInt(quantity) === 0) ||
                   parseInt(totalSpend) > 25000
                   ? 'bg-gray-300 cursor-not-allowed opacity-50 shadow-none'
                   : 'hover:from-pink-600 hover:to-orange-600 hover:shadow-xl shadow-lg cursor-pointer'

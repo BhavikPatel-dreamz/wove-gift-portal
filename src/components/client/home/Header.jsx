@@ -18,6 +18,7 @@ import {
   removeFromWishlist,
   toggleWishlistAsync,
 } from '../../../redux/wishlistSlice';
+import { isAdminRole } from '@/lib/roles';
 
 
 // Desktop navigation links (without the three items)
@@ -233,15 +234,15 @@ const Header = () => {
               <div className="hidden lg:flex items-center space-x-2">
                 {session ? (
                   <>
-                    {(session.user.role === 'ADMIN') ? (
+                    {isAdminRole(session.user.role) ? (
                       <Link href="/dashboard">
                         <button className="btn-outline flex items-center gap-1 lg:gap-2 text-xs lg:text-sm px-3 lg:px-4 py-2">
                           <User size={14} className="lg:w-4 lg:h-4" />
                           <span className="hidden xl:inline">
-                            {session.user.role === 'ADMIN' ? 'Admin' : 'Dashboard'}
+                            Admin
                           </span>
                           <span className="xl:hidden">
-                            {session.user.role === 'ADMIN' ? 'Admin' : 'Dash'}
+                            Admin
                           </span>
                         </button>
                       </Link>
@@ -286,7 +287,7 @@ const Header = () => {
                             {session.user.firstName + " " + session.user.lastName}
                           </span>
                           <span className="xl:hidden">
-                            {session.user.role === "ADMIN" ? "Admin" : "Dash"}
+                            {isAdminRole(session.user.role) ? "Admin" : "Dash"}
                           </span>
                         </button>
 

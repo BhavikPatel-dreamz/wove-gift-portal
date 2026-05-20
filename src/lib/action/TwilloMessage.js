@@ -217,79 +217,18 @@ function buildWhatsAppTextMessage(data, giftCard) {
 export const SendWhatsappMessages = async (data, giftCard) => {
   const LOG_PREFIX = "[WHATSAPP_SERVICE]";
 
-  try {
-    console.info(`${LOG_PREFIX} Incoming request`, {
-      hasData: !!data,
-      hasGiftCard: !!giftCard,
-      shop: data?.shop,
-      category: data?.selectedSubCategory?.name,
-    });
+  console.info(`${LOG_PREFIX} Automated WhatsApp delivery disabled`, {
+    hasData: !!data,
+    hasGiftCard: !!giftCard,
+  });
 
-    /* ----------------------------- Step 1: Validate input ----------------------------- */
-    const { whatsappNumber } = validateWhatsAppInput(data);
-
-    console.info(`${LOG_PREFIX} Validation successful`, {
-      to: maskPhone(whatsappNumber),
-    });
-
-    /* --------------------------- Step 2: Initialize WATI ---------------------------- */
-    const watiConfig = initializeWatiConfig();
-    const templateConfig = resolveWatiTemplateConfig();
-
-    let watiResponse;
-
-    if (templateConfig.templateName) {
-      console.info(`${LOG_PREFIX} Sending WhatsApp via WATI template`, {
-        templateName: templateConfig.templateName,
-      });
-
-      const parameters = buildWatiTemplateParameters(
-        data,
-        giftCard,
-        templateConfig.paramNames
-      );
-
-      watiResponse = await sendWatiTemplateMessage({
-        watiConfig,
-        whatsappNumber,
-        templateName: templateConfig.templateName,
-        broadcastName: templateConfig.broadcastName,
-        channelNumber: templateConfig.channelNumber,
-        parameters,
-      });
-    } else {
-      console.info(`${LOG_PREFIX} Sending WhatsApp via WATI session message`);
-
-      const messageText = buildWhatsAppTextMessage(data, giftCard);
-
-      watiResponse = await sendWatiSessionMessage({
-        watiConfig,
-        whatsappNumber,
-        messageText,
-        channelPhoneNumber: templateConfig.channelNumber,
-      });
-    }
-
-    console.info(`${LOG_PREFIX} Message sent successfully`, {
-      messageId: watiResponse.messageId,
-      to: maskPhone(whatsappNumber),
-    });
-
-    return {
-      success: true,
-      messageId: watiResponse.messageId || null,
-      data: watiResponse.data,
-    };
-  } catch (error) {
-    console.error(`${LOG_PREFIX} Message failed`, {
-      name: error?.name,
-      message: error?.message,
-      status: error?.statusCode || error?.status,
-      details: error?.details,
-    });
-
-    return normalizeWhatsAppError(error);
-  }
+  return {
+    success: true,
+    status: "SENT",
+    serviceStatus: "share_ready",
+    manualShare: true,
+    message: "WhatsApp share must be initiated by the purchaser.",
+  };
 };
 
 const maskPhone = (phone = "") => {

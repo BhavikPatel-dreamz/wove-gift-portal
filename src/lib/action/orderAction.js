@@ -9,12 +9,22 @@ import {
   generateSignature,
   buildPayFastUrlDirect,
 } from "../payfast/payfastUtils.js";
-import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage.js";
+import { SendGiftCardEmail } from "./TwilloMessage.js";
 import * as brevo from "@getbrevo/brevo";
 import { v2 as cloudinary } from "cloudinary";
 import { randomUUID } from "crypto";
 import { hashPassword } from "./userAction/password.js";
 import { makeSouthAfricaDate } from "../timezone.js";
+import {
+  getNextBulkOrderNumber,
+  getNextOrderNumber,
+} from "../orderNumbers.js";
+import { distributeCheckoutTotals, normalizeMoney } from "../promo/promoPricing.js";
+import {
+  normalizePromoCode,
+  validatePromoCodeForCheckoutInput,
+} from "../promo/promoValidation.js";
+import { getOrderSettlementAmount } from "../settlement/settlementUtils.js";
 
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
@@ -48,12 +58,6 @@ class ExternalServiceError extends Error {
 }
 
 // ==================== HELPER FUNCTIONS ====================
-function generateOrderNumber() {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000);
-  return `ORD-${timestamp}-${random}`;
-}
-
 function getClaimUrl(selectedBrand) {
   const claimUrl =
     selectedBrand?.website ||
@@ -283,14 +287,6 @@ function validateOrderData(orderData) {
       );
     }
 
-    if (
-      orderData.deliveryMethod === "whatsapp" &&
-      !deliveryDetails?.recipientWhatsAppNumber
-    ) {
-      throw new ValidationError(
-        "Recipient WhatsApp number is required for WhatsApp delivery",
-      );
-    }
   }
 
   return true;
@@ -314,7 +310,10 @@ async function createReceiverDetail(orderData) {
       data: {
         name: deliveryDetails.recipientFullName || deliveryDetails?.recipientName,
         email: deliveryMethod === "email" ? deliveryDetails.recipientEmailAddress : null,
-        phone: deliveryMethod === "whatsapp" ? deliveryDetails.recipientWhatsAppNumber : null,
+        phone:
+          deliveryMethod === "whatsapp"
+            ? deliveryDetails.recipientWhatsAppNumber || null
+            : null,
       },
     });
   }
@@ -373,6 +372,82 @@ function generateExportDescription(orderData, orderNumber) {
   }
 }
 
+function getOrderQuantity(singleOrderData) {
+  const isBulkOrder = singleOrderData.isBulkOrder === true;
+
+  if (isBulkOrder && singleOrderData.csvRecipients?.length > 0) {
+    return singleOrderData.csvRecipients.length;
+  }
+
+  return singleOrderData.quantity || 1;
+}
+
+function getOrderSubtotalFromInput(singleOrderData) {
+  const quantity = getOrderQuantity(singleOrderData);
+  const amount = normalizeMoney(singleOrderData?.selectedAmount?.value);
+
+  return amount * quantity;
+}
+
+function getCheckoutPromoCodeInput(orderData) {
+  return normalizePromoCode(
+    orderData?.appliedPromoCode || orderData?.promoCode || orderData?.promo?.code,
+  );
+}
+
+async function incrementPromoUsage(promoCodeId) {
+  if (!promoCodeId) return;
+
+  await prisma.promoCode.update({
+    where: { id: promoCodeId },
+    data: {
+      usageCount: {
+        increment: 1,
+      },
+    },
+  });
+}
+
+export async function incrementPromoUsageForOrders(orderIds = []) {
+  const normalizedOrderIds = [...new Set(
+    orderIds
+      .filter(Boolean)
+      .map((orderId) => String(orderId)),
+  )];
+
+  if (normalizedOrderIds.length === 0) {
+    return {
+      success: true,
+      applied: false,
+    };
+  }
+
+  const promoOrder = await prisma.order.findFirst({
+    where: {
+      id: { in: normalizedOrderIds },
+      promoCodeId: { not: null },
+    },
+    select: {
+      promoCodeId: true,
+    },
+  });
+
+  if (!promoOrder?.promoCodeId) {
+    return {
+      success: true,
+      applied: false,
+    };
+  }
+
+  await incrementPromoUsage(promoOrder.promoCodeId);
+
+  return {
+    success: true,
+    applied: true,
+    promoCodeId: promoOrder.promoCodeId,
+  };
+}
+
 // ==================== STEP 1: CREATE PENDING ORDER + PAYMENT INTENT ====================
 export const createPendingOrder = async (orderData) => {
   try {
@@ -392,25 +467,58 @@ export const createPendingOrder = async (orderData) => {
     const cartOrders = incomingCartOrders.map((singleOrderData) =>
       applyGuestCheckoutToOrder(singleOrderData, guestCheckout),
     );
-    
+    const orderSubtotals = cartOrders.map((singleOrderData) => {
+      validateOrderData(singleOrderData);
+      return getOrderSubtotalFromInput(singleOrderData);
+    });
+    const checkoutSubtotal = orderSubtotals.reduce(
+      (sum, subtotal) => sum + subtotal,
+      0,
+    );
+    const checkoutCurrency =
+      cartOrders[0]?.selectedAmount?.currency || orderData?.selectedAmount?.currency || "ZAR";
+    const promoCodeInput = getCheckoutPromoCodeInput(orderData);
+    let validatedPromo = null;
+
+    if (promoCodeInput) {
+      validatedPromo = await validatePromoCodeForCheckoutInput({
+        code: promoCodeInput,
+        subtotal: checkoutSubtotal,
+        currency: checkoutCurrency,
+      });
+
+      if (!validatedPromo.success) {
+        throw new ValidationError(validatedPromo.error);
+      }
+    }
+
+    const distributedTotals = distributeCheckoutTotals(
+      orderSubtotals,
+      validatedPromo?.promo || null,
+    );
+    const paymentSource = isMultiCart ? "cart" : "direct";
+    const sharedPaymentIntent = isMultiCart
+      ? `PF_MULTI_${Date.now()}`
+      : `PF_DIRECT_${Date.now()}`;
+    const shouldSkipGateway =
+      validatedPromo?.promo?.type === "FREE_GIFT" &&
+      distributedTotals.totalAmount === 0;
     const createdOrders = [];
     let totalPaymentAmount = 0;
 
     // ✅ CREATE ALL ORDERS FIRST (NO VOUCHER GENERATION)
-    for (const singleOrderData of cartOrders) {
-      validateOrderData(singleOrderData);
+    for (const [index, singleOrderData] of cartOrders.entries()) {
       const isBulkOrder = singleOrderData.isBulkOrder === true;
       const receiver = await createReceiverDetail(singleOrderData);
+      const orderTotals = distributedTotals.lineItems[index];
 
       // Calculate quantity
-      const quantity = isBulkOrder && singleOrderData.csvRecipients?.length > 0
-        ? singleOrderData.csvRecipients.length
-        : singleOrderData.quantity || 1;
-
-      const amount = Number(singleOrderData.selectedAmount.value);
-      const subtotal = amount * quantity;
-      const discount = singleOrderData.discountAmount || 0;
-      const totalAmount = subtotal - discount;
+      const quantity = getOrderQuantity(singleOrderData);
+      const amount = normalizeMoney(singleOrderData.selectedAmount.value);
+      const subtotal = orderTotals.subtotal;
+      const discount = orderTotals.discountAmount;
+      const serviceFee = orderTotals.serviceFee;
+      const totalAmount = orderTotals.totalAmount;
 
       totalPaymentAmount += totalAmount;
 
@@ -419,10 +527,14 @@ export const createPendingOrder = async (orderData) => {
                        singleOrderData.selectedSubCategory.category === "CUSTOM";
 
       const scheduledFor = calculateScheduledTime(singleOrderData.selectedTiming);
+      const orderNumber = await getNextOrderNumber();
+      const bulkOrderNumber = isBulkOrder
+        ? await getNextBulkOrderNumber()
+        : null;
 
       // Base order data
       const orderBase = {
-        orderNumber: generateOrderNumber(),
+        orderNumber,
         brandId: singleOrderData.selectedBrand.id,
         occasionId: singleOrderData.selectedOccasion,
         isCustom,
@@ -434,9 +546,12 @@ export const createPendingOrder = async (orderData) => {
         quantity,
         subtotal,
         discount,
+        serviceFee,
         totalAmount,
         currency: singleOrderData.selectedAmount.currency || "ZAR",
-        paymentMethod: "payfast",
+        paymentMethod: shouldSkipGateway ? "promo-free" : "payfast",
+        paymentIntentId: sharedPaymentIntent,
+        promoCodeId: validatedPromo?.promo?.id || null,
         customImageUrl: singleOrderData.customImageUrl || null,
         customVideoUrl: singleOrderData.customVideoUrl || null,
         paymentStatus: "PENDING",
@@ -460,7 +575,7 @@ export const createPendingOrder = async (orderData) => {
         order = await prisma.order.create({
           data: {
             ...orderBase,
-            bulkOrderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+            bulkOrderNumber,
             deliveryMethod: singleOrderData.deliveryOption || "email",
             message: singleOrderData.personalMessage || "",
             senderName: singleOrderData.companyInfo.companyName,
@@ -504,8 +619,29 @@ export const createPendingOrder = async (orderData) => {
       createdOrders.push(order);
     }
 
+    if (shouldSkipGateway || totalPaymentAmount <= 0) {
+      for (const order of createdOrders) {
+        await markOrderAsPaid(order.id, {
+          paymentIntentId: sharedPaymentIntent,
+          paymentMethod: "promo-free",
+        });
+      }
+
+      await incrementPromoUsage(validatedPromo?.promo?.id);
+
+      return {
+        success: true,
+        data: {
+          orderId: createdOrders[0].id,
+          orderIds: createdOrders.map((order) => order.id),
+          orderNumber: createdOrders[0].orderNumber,
+          skipGateway: true,
+          paymentIntentId: sharedPaymentIntent,
+          successUrl: `/payment/success?orderId=${createdOrders[0].id}&source=${paymentSource}`,
+        },
+      };
+    }
     // ✅ GENERATE PAYFAST PAYMENT URL
-    const paymentSource = isMultiCart ? "cart" : "direct";
     const payfastConfig = getPayFastConfig(createdOrders[0].id, paymentSource);
     
     const primaryOrder = cartOrders[0] || {};
@@ -551,15 +687,6 @@ export const createPendingOrder = async (orderData) => {
       payfastConfig.isSandbox
     );
 
-    // ✅ STORE PAYMENT INTENT IN ALL ORDERS
-    const sharedPaymentIntent = `PF_MULTI_${Date.now()}`;
-    for (const order of createdOrders) {
-      await prisma.order.update({
-        where: { id: order.id },
-        data: { paymentIntentId: sharedPaymentIntent },
-      });
-    }
-
     console.log(`✅ Created ${createdOrders.length} orders with payment intent`);
     console.log(`💰 Total PayFast amount: ${totalPaymentAmount}`);
 
@@ -603,6 +730,7 @@ export const markOrderAsPaid = async (orderId, paymentDetails) => {
       data: {
         paymentStatus: "COMPLETED",
         paymentIntentId: paymentDetails.paymentIntentId,
+        paymentMethod: paymentDetails.paymentMethod || "payfast",
         paidAt: new Date(),
         isPaid: true,
         processingStatus,
@@ -767,7 +895,9 @@ async function initializeDeliveryQueue(order, quantity, isBulkOrder) {
         order.deliveryMethod === "email"
           ? order.receiverDetail.email
           : order.deliveryMethod === "whatsapp"
-            ? order.receiverDetail.phone
+            ? order.receiverDetail.phone ||
+              order.receiverDetail.name ||
+              `WhatsApp Share - ${order.orderNumber}`
             : "Print delivery";
 
       deliveryLogs.push({
@@ -784,7 +914,7 @@ async function initializeDeliveryQueue(order, quantity, isBulkOrder) {
         emailServiceStatus: order.deliveryMethod === "email" ? "queued" : null,
         smsServiceStatus: order.deliveryMethod === "sms" ? "queued" : null,
         whatsappServiceStatus:
-          order.deliveryMethod === "whatsapp" ? "queued" : null,
+          order.deliveryMethod === "whatsapp" ? "share_pending" : null,
         attemptCount: 0,
         maxRetries: 3,
         createdAt: new Date(),
@@ -1042,7 +1172,23 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
 
     // ==================== STEP 4: SEND DELIVERY MESSAGE ====================
     // Email sending happens AFTER settlement, so settlement is not dependent on email success
-    if (
+    if (order.deliveryMethod === "whatsapp") {
+      await prisma.deliveryLog.update({
+        where: { id: deliveryLog.id },
+        data: {
+          status: "SENT",
+          sentAt: new Date(),
+          whatsappServiceStatus: "share_ready",
+          whatsappServiceError: null,
+          attemptCount: 1,
+          processingTimeMs: Date.now() - stepStartTime,
+        },
+      });
+
+      console.log(
+        `✅ WhatsApp share prepared in ${Date.now() - stepStartTime}ms`,
+      );
+    } else if (
       order.sendType === "sendImmediately" &&
       order.deliveryMethod !== "print"
     ) {
@@ -1059,7 +1205,9 @@ async function processSingleOrderQueue(order, orderData, voucherConfig) {
       await prisma.deliveryLog.update({
         where: { id: deliveryLog.id },
         data: {
-          status: deliveryResult.success ? "DELIVERED" : "FAILED",
+          status:
+            deliveryResult.status ||
+            (deliveryResult.success ? "DELIVERED" : "FAILED"),
           sentAt: new Date(),
           deliveredAt: deliveryResult.success ? new Date() : null,
           errorMessage: deliveryResult.success ? null : deliveryResult.message,
@@ -1642,7 +1790,13 @@ async function createShopifyGiftCard(
 async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
   try {
     if (deliveryMethod === "whatsapp") {
-      return await SendWhatsappMessages(orderData, giftCard);
+      return {
+        success: true,
+        status: "SENT",
+        serviceStatus: "share_ready",
+        manualShare: true,
+        message: "WhatsApp share must be initiated by the purchaser.",
+      };
     } else if (deliveryMethod === "email") {
       return await SendGiftCardEmail(orderData, giftCard);
     } else if (deliveryMethod === "print") {
@@ -2557,19 +2711,22 @@ async function updateOrCreateSettlement(selectedBrand, order) {
     });
 
     if (existingSettlement) {
+      const settlementAmount = getOrderSettlementAmount(order);
+
       await prisma.settlements.update({
         where: { id: existingSettlement.id },
         data: {
           totalSold: existingSettlement.totalSold + order.quantity,
-          totalSoldAmount:
-            existingSettlement.totalSoldAmount + order.totalAmount,
+          totalSoldAmount: existingSettlement.totalSoldAmount + settlementAmount,
           outstanding: existingSettlement.outstanding + order.quantity,
           outstandingAmount:
-            existingSettlement.outstandingAmount + order.totalAmount,
+            existingSettlement.outstandingAmount + settlementAmount,
           updatedAt: new Date(),
         },
       });
     } else {
+      const settlementAmount = getOrderSettlementAmount(order);
+
       await prisma.settlements.create({
         data: {
           brandId: selectedBrand.id,
@@ -2577,11 +2734,11 @@ async function updateOrCreateSettlement(selectedBrand, order) {
           periodStart,
           periodEnd,
           totalSold: order.quantity,
-          totalSoldAmount: order.totalAmount,
+          totalSoldAmount: settlementAmount,
           totalRedeemed: 0,
           redeemedAmount: 0,
           outstanding: order.quantity,
-          outstandingAmount: order.totalAmount,
+          outstandingAmount: settlementAmount,
           commissionAmount: 0,
           breakageAmount: 0,
           vatAmount: 0,
@@ -2682,6 +2839,7 @@ export async function getOrderStatus(orderId) {
         expiresAt: vc.expiresAt,
         pin: vc.pin,
         qrCode: vc.qrCode,
+        tokenizedLink: vc.tokenizedLink,
         voucher: vc.voucher,
       })),
       deliveryStatus: {
@@ -3100,16 +3258,6 @@ export async function modifyRecipientAndResend(data) {
         };
       }
 
-      if (
-        (deliveryMethod === "whatsapp" || deliveryMethod === "multiple") &&
-        !recipient.phone
-      ) {
-        return {
-          success: false,
-          message: "Phone number is required for WhatsApp delivery",
-          status: 400,
-        };
-      }
     }
 
     // Get order with all details FIRST to reduce transaction time
@@ -3659,7 +3807,9 @@ export async function modifyRecipientAndResend(data) {
       await prisma.deliveryLog.update({
         where: { id: txResult.deliveryLog.id },
         data: {
-          status: deliveryResult.success ? "SENT" : "FAILED",
+          status:
+            deliveryResult.status ||
+            (deliveryResult.success ? "SENT" : "FAILED"),
           sentAt: deliveryResult.success ? new Date() : null,
           deliveredAt: deliveryResult.success ? new Date() : null,
           errorMessage: deliveryResult.success ? null : deliveryResult.message,

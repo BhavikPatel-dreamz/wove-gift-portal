@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
+import { calculateSettlementAmounts } from "@/lib/settlement/settlementUtils";
 
 export async function POST(req) {
   try {
@@ -221,22 +222,17 @@ export async function POST(req) {
               } else {
                 // ✅ onRedemption brands: Commission/VAT/netPayable are calculated NOW
                 // based on the actual amount redeemed.
-               let commissionOnRedeemed = 0;
-               
-              if (brandTerms?.commissionType === "Percentage") {
-                commissionOnRedeemed = Number(
-                  ((actualAmountRedeemed * brandTerms.commissionValue) / 100).toFixed(2)
-                );
-              } else if (brandTerms?.commissionType === "Fixed") {
-                // Fixed commission is per voucher — only charge on full redemption
-                commissionOnRedeemed = isFullyRedeemed
-                  ? Number(brandTerms.commissionValue.toFixed(2))
-                  : 0;
-              }
-
-                const vatRate = brandTerms?.vatRate || 0;
-              const vatOnRedeemed = Number(((commissionOnRedeemed * vatRate) / 100).toFixed(2));
-                const netPayableOnRedeemed = actualAmountRedeemed - commissionOnRedeemed;
+                const {
+                  commissionAmount: commissionOnRedeemed,
+                  vatAmount: vatOnRedeemed,
+                  netPayable: netPayableOnRedeemed,
+                } = calculateSettlementAmounts({
+                  baseAmount: actualAmountRedeemed,
+                  commissionType: brandTerms?.commissionType,
+                  commissionValue: brandTerms?.commissionValue,
+                  vatRate: brandTerms?.vatRate,
+                  itemCount: isFullyRedeemed ? 1 : 0,
+                });
 
                 await tx.settlements.update({
                   where: { id: settlement.id },

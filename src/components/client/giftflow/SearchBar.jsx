@@ -78,23 +78,23 @@ const SearchBar = ({
     <div className="relative w-full">
       {/* Gradient Header */}
       <div
-        className="text-center px-4 py-30 sm:py-30"
+        className="text-center px-4 py-20 sm:py-24 md:py-30"
         style={{
-          borderRadius: "0 0 40px 40px",
+          borderRadius: "0 0 28px 28px",
           background: "linear-gradient(126deg, #FBDCE3 31.7%, #FDE6DB 87.04%)",
         }}
       >
         {isBulkMode && (
           <div className="w-full flex items-center justify-center mb-4">
-            <div className="max-w-53.5 w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+            <div className="hidden md:block max-w-53.5 w-full h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
             <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
-              <div className="px-4 py-1.5 bg-white rounded-full">
-                <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+              <div className="px-3 py-1.5 sm:px-4 bg-white rounded-full">
+                <span className="text-gray-700 font-semibold text-xs sm:text-sm whitespace-nowrap">
                   Bulk Gifting
                 </span>
               </div>
             </div>
-            <div className="max-w-53.5 w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+            <div className="hidden md:block max-w-53.5 w-full h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
           </div>
         )}
 
@@ -111,7 +111,7 @@ const SearchBar = ({
       </div>
 
       {/* Search Input + Dropdown */}
-      <div className="relative z-30 mx-auto -mt-10 w-[90%] max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-2 sm:absolute sm:left-1/2 sm:mt-0 sm:w-full sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-4">
+      <div className="relative z-30 mx-auto -mt-8 w-[92%] max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-1 sm:absolute sm:left-1/2 sm:mt-0 sm:w-full sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-4">
         {/* Search Input */}
         <div
           className="flex items-center w-full rounded-full p-0.5"

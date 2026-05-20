@@ -10,7 +10,6 @@ const PrintForm = () => {
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "R";
 
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 px-4 sm:px-6 lg:px-12 py-6">
 
@@ -94,7 +93,7 @@ const PrintForm = () => {
 
             {/* Amount */}
             <div className="text-center py-3">
-              <div className="inline-flex items-center gap-2 bg-linear-to-r from-purple-50 to-pink-50 px-5 py-3 rounded-2xl">
+              <div className="w-full bg-linear-to-r from-purple-50 to-pink-50 rounded-2xl py-5 flex items-center justify-center gap-2">
                 <span className="text-base sm:text-lg text-gray-600">
                   {getCurrencySymbol(selectedAmount?.currency)}
                 </span>
@@ -121,22 +120,78 @@ const PrintForm = () => {
               <p className="text-xs font-semibold text-gray-600 uppercase mb-2">
                 Voucher Code
               </p>
-              <div className="font-mono text-base sm:text-lg font-bold tracking-wider">
+              <div className="text-gray-900 font-mono text-base sm:text-lg font-bold tracking-wider">
                 XXXX-XXXX-XXXX
               </div>
             </div>
           </div>
 
+          {/* Redemption Instructions */}
+          <div className="bg-[#FFFBEF] rounded-2xl p-5 mx-5 sm:mx-6 mb-5">
+            <h4 className="text-sm font-bold text-gray-900 mb-3">
+              How to use your gift card:
+            </h4>
+
+            <ol className="space-y-2 text-xs sm:text-sm text-gray-700 list-decimal pl-4">
+              <li>Visit the brand website below</li>
+              <li>Enter your voucher code at checkout</li>
+              <li>
+                Enjoy your {selectedBrand?.brandName || "gift card"} experience!
+              </li>
+            </ol>
+
+            <div className="flex items-start gap-1 mt-4 pt-3 border-t border-[#E7DDC7]">
+              <p className="text-sm font-bold text-gray-900 whitespace-nowrap">
+                Brand Website:
+              </p>
+
+              <a
+                href={
+                  selectedBrand?.website?.startsWith("http")
+                    ? selectedBrand.website
+                    : `https://${selectedBrand?.website}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-bold text-gray-900  break-all hover:text-black transition-colors flex-1 min-w-0"
+              >
+                {selectedBrand?.website}
+              </a>
+            </div>
+          </div>
+
           {/* Footer */}
-          <div className="bg-gray-50 px-6 py-3 text-center">
-            <p className="text-xs text-gray-500">
-              {selectedBrand?.vouchers?.[0]?.expiresAt
+          <div className="bg-gray-50 px-6 py-5 text-center border-t border-gray-200">
+            <p className="text-[11px] text-gray-500 mb-3">
+              {selectedAmount?.expiresAt
                 ? `Valid until ${new Date(
-                  selectedBrand.vouchers[0].expiresAt
-                ).toLocaleDateString('en-ZA')}`
-                : selectedBrand?.vouchers?.[0]?.expiryValue
-                  ? `Valid for ${selectedBrand.vouchers[0].expiryValue} days`
-                  : "No expiration date"}
+                  selectedAmount.expiresAt
+                ).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}`
+                : "No expiration date"}
+            </p>
+
+            <p className="text-[11px] text-gray-500 mb-2">
+              This gift card was sent to you via WoveGifts, powered by MyPerks.
+            </p>
+
+            {selectedBrand?.contact && (
+              <p className="text-[11px] text-gray-500 mb-2">
+                Need help? Contact us at {selectedBrand.contact}
+              </p>
+            )}
+
+            <div className="flex items-center justify-center gap-2 text-[10px] text-gray-500 flex-wrap">
+              <span>Terms & Conditions</span>
+              <span>|</span>
+              <span>Privacy Policy</span>
+            </div>
+
+            <p className="text-[10px] text-gray-400">
+              © 2026 WoveGifts (a MyPerks company)
             </p>
           </div>
         </div>

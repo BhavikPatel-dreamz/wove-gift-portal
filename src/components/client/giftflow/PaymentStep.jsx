@@ -6,6 +6,9 @@ import { goBack, setCurrentStep } from "../../../redux/giftFlowSlice";
 import { createPendingOrder } from "../../../lib/action/orderAction";
 import { useSession } from "@/contexts/SessionContext";
 import AuthForm from "@/components/AuthForm";
+import CheckoutIdentityChoiceModal from "../checkout/CheckoutIdentityChoiceModal";
+import { validatePromoCodeForCheckout } from "../../../lib/action/promoCodeAction";
+import { calculateCheckoutTotals } from "../../../lib/promo/promoPricing";
 
 // Import components
 import PaymentMethodSelector from "./payment/PaymentMethodSelector";
@@ -56,11 +59,18 @@ const PaymentStep = () => {
   const [showThankYou, setShowThankYou] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState(null);
   const [checkoutUserId, setCheckoutUserId] = useState(session?.user?.id || null);
+  const [showIdentityChoiceModal, setShowIdentityChoiceModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [guestCheckout, setGuestCheckout] = useState(null);
   const [guestFormData, setGuestFormData] = useState({ fullName: "", email: "" });
   const [guestFormError, setGuestFormError] = useState("");
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoError, setPromoError] = useState("");
+  const [promoSuccessMessage, setPromoSuccessMessage] = useState("");
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
 
   // Redux selectors
   const {
@@ -149,31 +159,61 @@ const PaymentStep = () => {
     return `R${amount || 0}`;
   };
 
-  const calculateServiceFee = () => {
+  const subtotal = useMemo(() => {
     const baseAmount = selectedAmount?.value || 0;
-    const totalAmount = isBulkMode ? baseAmount * quantity : baseAmount;
-    return Math.round(totalAmount * 0.05);
-  };
+    return isBulkMode ? baseAmount * quantity : baseAmount;
+  }, [isBulkMode, quantity, selectedAmount?.value]);
 
-  const calculateTotal = () => {
-    const baseAmount = selectedAmount?.value || 0;
-    const totalAmount = isBulkMode ? baseAmount * quantity : baseAmount;
-    const serviceFee = calculateServiceFee();
-    return Number(totalAmount) + Number(serviceFee);
-  };
+  const checkoutPricing = useMemo(
+    () => calculateCheckoutTotals(subtotal, appliedPromo),
+    [appliedPromo, subtotal],
+  );
+
+  const calculateTotal = () => checkoutPricing.totalAmount;
 
   useEffect(() => {
     if (!session?.user?.id) return;
     setCheckoutUserId(session.user.id);
     setGuestCheckout(null);
+    setShowIdentityChoiceModal(false);
     setShowAuthModal(false);
     setShowGuestModal(false);
     setGuestFormError("");
   }, [session?.user?.id]);
 
+  useEffect(() => {
+    const currentCurrency = selectedAmount?.currency || "ZAR";
+
+    if (
+      appliedPromo &&
+      (appliedPromo.subtotal !== subtotal || appliedPromo.currency !== currentCurrency)
+    ) {
+      setAppliedPromo(null);
+      setPromoSuccessMessage("");
+      setPromoError("");
+    }
+  }, [appliedPromo, selectedAmount?.currency, subtotal]);
+
   const closeIdentityModals = () => {
+    setShowIdentityChoiceModal(false);
     setShowAuthModal(false);
     setShowGuestModal(false);
+    setGuestFormError("");
+  };
+
+  const openIdentityChoiceModal = () => {
+    setAuthMode('login');
+    setShowAuthModal(false);
+    setShowGuestModal(false);
+    setShowIdentityChoiceModal(true);
+    setGuestFormError("");
+  };
+
+  const openAuthModal = (nextMode = 'login') => {
+    setAuthMode(nextMode);
+    setShowIdentityChoiceModal(false);
+    setShowGuestModal(false);
+    setShowAuthModal(true);
     setGuestFormError("");
   };
 
@@ -183,6 +223,7 @@ const PaymentStep = () => {
       email: guestCheckout?.email || deliveryDetails?.yourEmailAddress || "",
     });
     setGuestFormError("");
+    setShowIdentityChoiceModal(false);
     setShowAuthModal(false);
     setShowGuestModal(true);
   };
@@ -224,6 +265,52 @@ const PaymentStep = () => {
     await handleInitiatePayment({ guestCheckoutOverride: guestData });
   };
 
+  const handleApplyPromo = async () => {
+    const code = promoCodeInput.trim();
+    if (!code) {
+      setPromoError("Please enter a promo code.");
+      setPromoSuccessMessage("");
+      return;
+    }
+
+    setIsApplyingPromo(true);
+    setPromoError("");
+    setPromoSuccessMessage("");
+
+    try {
+      const result = await validatePromoCodeForCheckout({
+        code,
+        subtotal,
+        currency: selectedAmount?.currency || "ZAR",
+      });
+
+      if (!result?.success) {
+        setAppliedPromo(null);
+        setPromoError(result?.error || "Failed to apply promo code.");
+        return;
+      }
+
+      setAppliedPromo(result.data);
+      setPromoCodeInput(result.data.code);
+      setPromoSuccessMessage(result.data.message || "Promo code applied successfully.");
+      setPromoError("");
+      toast.success(result.data.message || "Promo code applied.");
+    } catch (error) {
+      setAppliedPromo(null);
+      setPromoSuccessMessage("");
+      setPromoError(error?.message || "Failed to apply promo code.");
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoCodeInput("");
+    setPromoError("");
+    setPromoSuccessMessage("");
+  };
+
   // Initiate payment with direct redirect
   const handleInitiatePayment = async ({
     userIdOverride,
@@ -241,7 +328,7 @@ const PaymentStep = () => {
       : (guestCheckoutOverride || guestCheckout);
 
     if (!resolvedUserId && !resolvedGuestCheckout?.email) {
-      setShowAuthModal(true);
+      openIdentityChoiceModal();
       return null;
     }
 
@@ -276,6 +363,7 @@ const PaymentStep = () => {
         selectedOccasion: currentBulkOrder?.selectedOccasion || selectedOccasion,
         selectedSubCategory: currentBulkOrder?.selectedSubCategory || selectedSubCategory,
         totalAmount: calculateTotal(),
+        appliedPromoCode: appliedPromo?.code || null,
         isBulkOrder: true,
         totalSpend: currentBulkOrder.totalSpend,
         deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
@@ -293,6 +381,7 @@ const PaymentStep = () => {
         selectedSubCategory,
         selectedTiming,
         totalAmount: calculateTotal(),
+        appliedPromoCode: appliedPromo?.code || null,
         isBulkOrder: false,
         userId: resolvedUserId,
         guestCheckout: resolvedGuestCheckout,
@@ -302,6 +391,17 @@ const PaymentStep = () => {
 
       if (result?.success) {
         setPendingOrderId(result.data.orderId);
+
+        if (result?.data?.skipGateway && result?.data?.successUrl) {
+          toast.success("Promo applied. Completing your free checkout...", { id: toastId });
+          setPaymentSubmitted(true);
+          setTimeout(() => {
+            window.location.assign(result.data.successUrl);
+          }, 100);
+          return {
+            orderId: result.data.orderId,
+          };
+        }
 
         const redirectUrl = result?.data?.payfastUrl;
         if (!redirectUrl) {
@@ -356,7 +456,7 @@ const PaymentStep = () => {
   const handlePaymentButtonClick = async () => {
     const hasIdentity = checkoutUserId || session?.user?.id || guestCheckout?.email;
     if (!hasIdentity) {
-      setShowAuthModal(true);
+      openIdentityChoiceModal();
       return;
     }
 
@@ -386,10 +486,10 @@ const PaymentStep = () => {
 
   // Main payment form
   return (
-    <div className="min-h-screen bg-gray-50 py-30 md:px-8 md:py-30">
+    <div className="min-h-screen bg-gray-50 px-4 py-20 sm:py-24 md:px-8 md:py-30">
       <Toaster />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
           <button
@@ -399,7 +499,11 @@ const PaymentStep = () => {
              transition-all duration-300 overflow-hidden 
              group cursor-pointer"
             onClick={() => {
-              isBulkMode ? dispatch(setCurrentStep(7)) : dispatch(goBack())
+              if (isBulkMode) {
+                dispatch(setCurrentStep(7));
+                return;
+              }
+              dispatch(goBack());
             }}
           >
             {/* Gradient Border */}
@@ -453,17 +557,17 @@ const PaymentStep = () => {
 
           {isBulkMode && (
             <div className="flex items-center gap-3 justify-center w-full md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2">
-              <div className="md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="hidden md:block w-30 h-px bg-gradient-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
               <div className="rounded-full p-px bg-gradient-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
                   <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">Bulk Gifting</span>
                 </div>
               </div>
-              <div className="md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="hidden md:block w-30 h-px bg-gradient-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
-          <div className="md:block w-[140px]" />
+          <div className="hidden md:block w-[140px]" />
         </div>
 
         {/* Header */}
@@ -479,7 +583,7 @@ const PaymentStep = () => {
         </div>
 
         {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 px-2 sm:px-0">
           {/* Left Column */}
           <div className="space-y-5 sm:space-y-6">
 
@@ -502,7 +606,7 @@ const PaymentStep = () => {
               font-semibold text-sm md:text-base
               transition-all duration-300
               flex items-center justify-center gap-2
-              whitespace-nowrap
+              text-center
               ${
                 (isProcessing || !isPaymentConfirmed)
                   ? 'bg-gray-400 shadow-none cursor-not-allowed'
@@ -607,6 +711,14 @@ const PaymentStep = () => {
               isBulkMode,
               quantity,
               companyInfo,
+              promoCodeInput,
+              appliedPromo,
+              promoError,
+              promoSuccessMessage,
+              isApplyingPromo,
+              onPromoCodeChange: setPromoCodeInput,
+              onApplyPromo: handleApplyPromo,
+              onRemovePromo: handleRemovePromo,
             }} />
 
             {isBulkMode ? (
@@ -614,15 +726,24 @@ const PaymentStep = () => {
                 currentBulkOrder={currentBulkOrder}
                 quantity={quantity}
                 selectedAmount={selectedAmount}
-                calculateServiceFee={calculateServiceFee}
-                calculateTotal={calculateTotal}
+                subtotal={checkoutPricing.subtotal}
+                serviceFee={checkoutPricing.serviceFee}
+                serviceFeeExVat={checkoutPricing.serviceFeeExVat}
+                serviceFeeVat={checkoutPricing.serviceFeeVat}
+                total={checkoutPricing.totalAmount}
+                discountAmount={checkoutPricing.discountAmount}
+                appliedPromo={appliedPromo}
               />
             ) : (
               <PaymentSummary
                 selectedAmount={selectedAmount}
-                formatAmount={formatAmount}
-                calculateServiceFee={calculateServiceFee}
-                calculateTotal={calculateTotal}
+                subtotal={checkoutPricing.subtotal}
+                serviceFee={checkoutPricing.serviceFee}
+                serviceFeeExVat={checkoutPricing.serviceFeeExVat}
+                serviceFeeVat={checkoutPricing.serviceFeeVat}
+                total={checkoutPricing.totalAmount}
+                discountAmount={checkoutPricing.discountAmount}
+                appliedPromo={appliedPromo}
                 isBulkMode={isBulkMode}
                 quantity={quantity}
               />
@@ -644,15 +765,24 @@ const PaymentStep = () => {
         )}
       </div>
 
+      {showIdentityChoiceModal && (
+        <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
+          <CheckoutIdentityChoiceModal
+            onClose={closeIdentityModals}
+            onContinueAsGuest={openGuestModal}
+            onSignIn={() => openAuthModal('login')}
+            onSignUp={() => openAuthModal('signup')}
+          />
+        </div>
+      )}
+
       {showAuthModal && (
         <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
           <AuthForm
-            type="login"
+            type={authMode}
             mode="modal"
             onClose={closeIdentityModals}
             onAuthSuccess={handleAuthSuccess}
-            showGuestOption
-            onPayAsGuest={openGuestModal}
             initialEmail={guestCheckout?.email || deliveryDetails?.yourEmailAddress || ""}
             initialName={guestCheckout?.fullName || deliveryDetails?.yourFullName || ""}
           />
@@ -719,7 +849,7 @@ const PaymentStep = () => {
   shadow-md hover:shadow-xl hover:scale-105
   focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2
   transition-all duration-300
-  flex items-center justify-center gap-2 whitespace-nowrap"
+  flex items-center justify-center gap-2 text-center"
 >
                 Continue to Payment
 
@@ -742,11 +872,11 @@ const PaymentStep = () => {
                 type="button"
                 onClick={() => {
                   setShowGuestModal(false);
-                  setShowAuthModal(true);
+                  openAuthModal('login');
                 }}
                 className="w-full py-3.5 border-2 border-pink-500 text-pink-500 rounded-full font-semibold hover:bg-pink-50 transition"
               >
-                Back to Login
+                Sign in to account
               </button>
             </form>
           </div>

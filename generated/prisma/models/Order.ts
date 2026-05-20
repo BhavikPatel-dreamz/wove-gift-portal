@@ -32,10 +32,10 @@ export type OrderAvgAggregateOutputType = {
   subtotal: number | null
   discount: number | null
   totalAmount: number | null
+  maxRetries: number | null
+  retryCount: number | null
   voucherEntries: number | null
   vouchersCreated: number | null
-  retryCount: number | null
-  maxRetries: number | null
 }
 
 export type OrderSumAggregateOutputType = {
@@ -44,10 +44,10 @@ export type OrderSumAggregateOutputType = {
   subtotal: number | null
   discount: number | null
   totalAmount: number | null
+  maxRetries: number | null
+  retryCount: number | null
   voucherEntries: number | null
   vouchersCreated: number | null
-  retryCount: number | null
-  maxRetries: number | null
 }
 
 export type OrderMinAggregateOutputType = {
@@ -82,19 +82,19 @@ export type OrderMinAggregateOutputType = {
   redemptionStatus: $Enums.RedemptionStatus | null
   redeemedAt: Date | null
   isActive: boolean | null
-  isPaid: boolean | null
-  voucherEntries: number | null
-  vouchersCreated: number | null
-  allVouchersGenerated: boolean | null
-  notificationsSent: boolean | null
-  processingStatus: $Enums.OrderProcessingStatus | null
-  processingStartedAt: Date | null
-  processingCompletedAt: Date | null
-  lastProcessedAt: Date | null
-  retryCount: number | null
-  maxRetries: number | null
   createdAt: Date | null
   updatedAt: Date | null
+  allVouchersGenerated: boolean | null
+  isPaid: boolean | null
+  lastProcessedAt: Date | null
+  maxRetries: number | null
+  notificationsSent: boolean | null
+  processingCompletedAt: Date | null
+  processingStartedAt: Date | null
+  processingStatus: $Enums.OrderProcessingStatus | null
+  retryCount: number | null
+  voucherEntries: number | null
+  vouchersCreated: number | null
 }
 
 export type OrderMaxAggregateOutputType = {
@@ -129,19 +129,19 @@ export type OrderMaxAggregateOutputType = {
   redemptionStatus: $Enums.RedemptionStatus | null
   redeemedAt: Date | null
   isActive: boolean | null
-  isPaid: boolean | null
-  voucherEntries: number | null
-  vouchersCreated: number | null
-  allVouchersGenerated: boolean | null
-  notificationsSent: boolean | null
-  processingStatus: $Enums.OrderProcessingStatus | null
-  processingStartedAt: Date | null
-  processingCompletedAt: Date | null
-  lastProcessedAt: Date | null
-  retryCount: number | null
-  maxRetries: number | null
   createdAt: Date | null
   updatedAt: Date | null
+  allVouchersGenerated: boolean | null
+  isPaid: boolean | null
+  lastProcessedAt: Date | null
+  maxRetries: number | null
+  notificationsSent: boolean | null
+  processingCompletedAt: Date | null
+  processingStartedAt: Date | null
+  processingStatus: $Enums.OrderProcessingStatus | null
+  retryCount: number | null
+  voucherEntries: number | null
+  vouchersCreated: number | null
 }
 
 export type OrderCountAggregateOutputType = {
@@ -176,20 +176,20 @@ export type OrderCountAggregateOutputType = {
   redemptionStatus: number
   redeemedAt: number
   isActive: number
-  isPaid: number
-  voucherEntries: number
-  vouchersCreated: number
-  allVouchersGenerated: number
-  notificationsSent: number
-  processingStatus: number
-  processingStartedAt: number
-  processingCompletedAt: number
-  lastProcessedAt: number
-  processingErrors: number
-  retryCount: number
-  maxRetries: number
   createdAt: number
   updatedAt: number
+  allVouchersGenerated: number
+  isPaid: number
+  lastProcessedAt: number
+  maxRetries: number
+  notificationsSent: number
+  processingCompletedAt: number
+  processingErrors: number
+  processingStartedAt: number
+  processingStatus: number
+  retryCount: number
+  voucherEntries: number
+  vouchersCreated: number
   _all: number
 }
 
@@ -200,10 +200,10 @@ export type OrderAvgAggregateInputType = {
   subtotal?: true
   discount?: true
   totalAmount?: true
+  maxRetries?: true
+  retryCount?: true
   voucherEntries?: true
   vouchersCreated?: true
-  retryCount?: true
-  maxRetries?: true
 }
 
 export type OrderSumAggregateInputType = {
@@ -212,10 +212,10 @@ export type OrderSumAggregateInputType = {
   subtotal?: true
   discount?: true
   totalAmount?: true
+  maxRetries?: true
+  retryCount?: true
   voucherEntries?: true
   vouchersCreated?: true
-  retryCount?: true
-  maxRetries?: true
 }
 
 export type OrderMinAggregateInputType = {
@@ -250,19 +250,19 @@ export type OrderMinAggregateInputType = {
   redemptionStatus?: true
   redeemedAt?: true
   isActive?: true
-  isPaid?: true
-  voucherEntries?: true
-  vouchersCreated?: true
-  allVouchersGenerated?: true
-  notificationsSent?: true
-  processingStatus?: true
-  processingStartedAt?: true
-  processingCompletedAt?: true
-  lastProcessedAt?: true
-  retryCount?: true
-  maxRetries?: true
   createdAt?: true
   updatedAt?: true
+  allVouchersGenerated?: true
+  isPaid?: true
+  lastProcessedAt?: true
+  maxRetries?: true
+  notificationsSent?: true
+  processingCompletedAt?: true
+  processingStartedAt?: true
+  processingStatus?: true
+  retryCount?: true
+  voucherEntries?: true
+  vouchersCreated?: true
 }
 
 export type OrderMaxAggregateInputType = {
@@ -297,19 +297,19 @@ export type OrderMaxAggregateInputType = {
   redemptionStatus?: true
   redeemedAt?: true
   isActive?: true
-  isPaid?: true
-  voucherEntries?: true
-  vouchersCreated?: true
-  allVouchersGenerated?: true
-  notificationsSent?: true
-  processingStatus?: true
-  processingStartedAt?: true
-  processingCompletedAt?: true
-  lastProcessedAt?: true
-  retryCount?: true
-  maxRetries?: true
   createdAt?: true
   updatedAt?: true
+  allVouchersGenerated?: true
+  isPaid?: true
+  lastProcessedAt?: true
+  maxRetries?: true
+  notificationsSent?: true
+  processingCompletedAt?: true
+  processingStartedAt?: true
+  processingStatus?: true
+  retryCount?: true
+  voucherEntries?: true
+  vouchersCreated?: true
 }
 
 export type OrderCountAggregateInputType = {
@@ -344,20 +344,20 @@ export type OrderCountAggregateInputType = {
   redemptionStatus?: true
   redeemedAt?: true
   isActive?: true
-  isPaid?: true
-  voucherEntries?: true
-  vouchersCreated?: true
-  allVouchersGenerated?: true
-  notificationsSent?: true
-  processingStatus?: true
-  processingStartedAt?: true
-  processingCompletedAt?: true
-  lastProcessedAt?: true
-  processingErrors?: true
-  retryCount?: true
-  maxRetries?: true
   createdAt?: true
   updatedAt?: true
+  allVouchersGenerated?: true
+  isPaid?: true
+  lastProcessedAt?: true
+  maxRetries?: true
+  notificationsSent?: true
+  processingCompletedAt?: true
+  processingErrors?: true
+  processingStartedAt?: true
+  processingStatus?: true
+  retryCount?: true
+  voucherEntries?: true
+  vouchersCreated?: true
   _all?: true
 }
 
@@ -479,20 +479,20 @@ export type OrderGroupByOutputType = {
   redemptionStatus: $Enums.RedemptionStatus
   redeemedAt: Date | null
   isActive: boolean
-  isPaid: boolean
-  voucherEntries: number
-  vouchersCreated: number
-  allVouchersGenerated: boolean
-  notificationsSent: boolean
-  processingStatus: $Enums.OrderProcessingStatus
-  processingStartedAt: Date | null
-  processingCompletedAt: Date | null
-  lastProcessedAt: Date | null
-  processingErrors: runtime.JsonValue | null
-  retryCount: number
-  maxRetries: number
   createdAt: Date
   updatedAt: Date
+  allVouchersGenerated: boolean
+  isPaid: boolean
+  lastProcessedAt: Date | null
+  maxRetries: number
+  notificationsSent: boolean
+  processingCompletedAt: Date | null
+  processingErrors: runtime.JsonValue | null
+  processingStartedAt: Date | null
+  processingStatus: $Enums.OrderProcessingStatus
+  retryCount: number
+  voucherEntries: number
+  vouchersCreated: number
   _count: OrderCountAggregateOutputType | null
   _avg: OrderAvgAggregateOutputType | null
   _sum: OrderSumAggregateOutputType | null
@@ -550,20 +550,20 @@ export type OrderWhereInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFilter<"Order"> | $Enums.RedemptionStatus
   redeemedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   isActive?: Prisma.BoolFilter<"Order"> | boolean
-  isPaid?: Prisma.BoolFilter<"Order"> | boolean
-  voucherEntries?: Prisma.IntFilter<"Order"> | number
-  vouchersCreated?: Prisma.IntFilter<"Order"> | number
-  allVouchersGenerated?: Prisma.BoolFilter<"Order"> | boolean
-  notificationsSent?: Prisma.BoolFilter<"Order"> | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFilter<"Order"> | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
-  processingCompletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
-  lastProcessedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
-  processingErrors?: Prisma.JsonNullableFilter<"Order">
-  retryCount?: Prisma.IntFilter<"Order"> | number
-  maxRetries?: Prisma.IntFilter<"Order"> | number
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
+  allVouchersGenerated?: Prisma.BoolFilter<"Order"> | boolean
+  isPaid?: Prisma.BoolFilter<"Order"> | boolean
+  lastProcessedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  maxRetries?: Prisma.IntFilter<"Order"> | number
+  notificationsSent?: Prisma.BoolFilter<"Order"> | boolean
+  processingCompletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  processingErrors?: Prisma.JsonNullableFilter<"Order">
+  processingStartedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFilter<"Order"> | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFilter<"Order"> | number
+  voucherEntries?: Prisma.IntFilter<"Order"> | number
+  vouchersCreated?: Prisma.IntFilter<"Order"> | number
   bulkRecipients?: Prisma.BulkRecipientListRelationFilter
   brand?: Prisma.XOR<Prisma.BrandScalarRelationFilter, Prisma.BrandWhereInput>
   occasion?: Prisma.XOR<Prisma.OccasionScalarRelationFilter, Prisma.OccasionWhereInput>
@@ -606,20 +606,20 @@ export type OrderOrderByWithRelationInput = {
   redemptionStatus?: Prisma.SortOrder
   redeemedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  isPaid?: Prisma.SortOrder
-  voucherEntries?: Prisma.SortOrder
-  vouchersCreated?: Prisma.SortOrder
-  allVouchersGenerated?: Prisma.SortOrder
-  notificationsSent?: Prisma.SortOrder
-  processingStatus?: Prisma.SortOrder
-  processingStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  processingCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  lastProcessedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  processingErrors?: Prisma.SortOrderInput | Prisma.SortOrder
-  retryCount?: Prisma.SortOrder
-  maxRetries?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  allVouchersGenerated?: Prisma.SortOrder
+  isPaid?: Prisma.SortOrder
+  lastProcessedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  maxRetries?: Prisma.SortOrder
+  notificationsSent?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  processingErrors?: Prisma.SortOrderInput | Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  retryCount?: Prisma.SortOrder
+  voucherEntries?: Prisma.SortOrder
+  vouchersCreated?: Prisma.SortOrder
   bulkRecipients?: Prisma.BulkRecipientOrderByRelationAggregateInput
   brand?: Prisma.BrandOrderByWithRelationInput
   occasion?: Prisma.OccasionOrderByWithRelationInput
@@ -665,20 +665,20 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   redemptionStatus?: Prisma.EnumRedemptionStatusFilter<"Order"> | $Enums.RedemptionStatus
   redeemedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   isActive?: Prisma.BoolFilter<"Order"> | boolean
-  isPaid?: Prisma.BoolFilter<"Order"> | boolean
-  voucherEntries?: Prisma.IntFilter<"Order"> | number
-  vouchersCreated?: Prisma.IntFilter<"Order"> | number
-  allVouchersGenerated?: Prisma.BoolFilter<"Order"> | boolean
-  notificationsSent?: Prisma.BoolFilter<"Order"> | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFilter<"Order"> | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
-  processingCompletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
-  lastProcessedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
-  processingErrors?: Prisma.JsonNullableFilter<"Order">
-  retryCount?: Prisma.IntFilter<"Order"> | number
-  maxRetries?: Prisma.IntFilter<"Order"> | number
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
+  allVouchersGenerated?: Prisma.BoolFilter<"Order"> | boolean
+  isPaid?: Prisma.BoolFilter<"Order"> | boolean
+  lastProcessedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  maxRetries?: Prisma.IntFilter<"Order"> | number
+  notificationsSent?: Prisma.BoolFilter<"Order"> | boolean
+  processingCompletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  processingErrors?: Prisma.JsonNullableFilter<"Order">
+  processingStartedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFilter<"Order"> | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFilter<"Order"> | number
+  voucherEntries?: Prisma.IntFilter<"Order"> | number
+  vouchersCreated?: Prisma.IntFilter<"Order"> | number
   bulkRecipients?: Prisma.BulkRecipientListRelationFilter
   brand?: Prisma.XOR<Prisma.BrandScalarRelationFilter, Prisma.BrandWhereInput>
   occasion?: Prisma.XOR<Prisma.OccasionScalarRelationFilter, Prisma.OccasionWhereInput>
@@ -721,20 +721,20 @@ export type OrderOrderByWithAggregationInput = {
   redemptionStatus?: Prisma.SortOrder
   redeemedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  isPaid?: Prisma.SortOrder
-  voucherEntries?: Prisma.SortOrder
-  vouchersCreated?: Prisma.SortOrder
-  allVouchersGenerated?: Prisma.SortOrder
-  notificationsSent?: Prisma.SortOrder
-  processingStatus?: Prisma.SortOrder
-  processingStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  processingCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  lastProcessedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  processingErrors?: Prisma.SortOrderInput | Prisma.SortOrder
-  retryCount?: Prisma.SortOrder
-  maxRetries?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  allVouchersGenerated?: Prisma.SortOrder
+  isPaid?: Prisma.SortOrder
+  lastProcessedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  maxRetries?: Prisma.SortOrder
+  notificationsSent?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  processingErrors?: Prisma.SortOrderInput | Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  retryCount?: Prisma.SortOrder
+  voucherEntries?: Prisma.SortOrder
+  vouchersCreated?: Prisma.SortOrder
   _count?: Prisma.OrderCountOrderByAggregateInput
   _avg?: Prisma.OrderAvgOrderByAggregateInput
   _max?: Prisma.OrderMaxOrderByAggregateInput
@@ -777,20 +777,20 @@ export type OrderScalarWhereWithAggregatesInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusWithAggregatesFilter<"Order"> | $Enums.RedemptionStatus
   redeemedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
   isActive?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
-  isPaid?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
-  voucherEntries?: Prisma.IntWithAggregatesFilter<"Order"> | number
-  vouchersCreated?: Prisma.IntWithAggregatesFilter<"Order"> | number
-  allVouchersGenerated?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
-  notificationsSent?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusWithAggregatesFilter<"Order"> | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
-  processingCompletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
-  lastProcessedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
-  processingErrors?: Prisma.JsonNullableWithAggregatesFilter<"Order">
-  retryCount?: Prisma.IntWithAggregatesFilter<"Order"> | number
-  maxRetries?: Prisma.IntWithAggregatesFilter<"Order"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Order"> | Date | string
+  allVouchersGenerated?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
+  isPaid?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
+  lastProcessedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+  maxRetries?: Prisma.IntWithAggregatesFilter<"Order"> | number
+  notificationsSent?: Prisma.BoolWithAggregatesFilter<"Order"> | boolean
+  processingCompletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+  processingErrors?: Prisma.JsonNullableWithAggregatesFilter<"Order">
+  processingStartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusWithAggregatesFilter<"Order"> | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntWithAggregatesFilter<"Order"> | number
+  voucherEntries?: Prisma.IntWithAggregatesFilter<"Order"> | number
+  vouchersCreated?: Prisma.IntWithAggregatesFilter<"Order"> | number
 }
 
 export type OrderCreateInput = {
@@ -821,20 +821,20 @@ export type OrderCreateInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientCreateNestedManyWithoutOrderInput
   brand: Prisma.BrandCreateNestedOneWithoutOrdersInput
   occasion: Prisma.OccasionCreateNestedOneWithoutOrdersInput
@@ -877,20 +877,20 @@ export type OrderUncheckedCreateInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientUncheckedCreateNestedManyWithoutOrderInput
   voucherCodes?: Prisma.VoucherCodeUncheckedCreateNestedManyWithoutOrderInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedCreateNestedManyWithoutOrderInput
@@ -925,20 +925,20 @@ export type OrderUpdateInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUpdateManyWithoutOrderNestedInput
   brand?: Prisma.BrandUpdateOneRequiredWithoutOrdersNestedInput
   occasion?: Prisma.OccasionUpdateOneRequiredWithoutOrdersNestedInput
@@ -981,20 +981,20 @@ export type OrderUncheckedUpdateInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUncheckedUpdateManyWithoutOrderNestedInput
   voucherCodes?: Prisma.VoucherCodeUncheckedUpdateManyWithoutOrderNestedInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedUpdateManyWithoutOrderNestedInput
@@ -1033,20 +1033,20 @@ export type OrderCreateManyInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
 }
 
 export type OrderUpdateManyMutationInput = {
@@ -1077,20 +1077,20 @@ export type OrderUpdateManyMutationInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type OrderUncheckedUpdateManyInput = {
@@ -1125,20 +1125,20 @@ export type OrderUncheckedUpdateManyInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type OrderListRelationFilter = {
@@ -1188,20 +1188,20 @@ export type OrderCountOrderByAggregateInput = {
   redemptionStatus?: Prisma.SortOrder
   redeemedAt?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  isPaid?: Prisma.SortOrder
-  voucherEntries?: Prisma.SortOrder
-  vouchersCreated?: Prisma.SortOrder
-  allVouchersGenerated?: Prisma.SortOrder
-  notificationsSent?: Prisma.SortOrder
-  processingStatus?: Prisma.SortOrder
-  processingStartedAt?: Prisma.SortOrder
-  processingCompletedAt?: Prisma.SortOrder
-  lastProcessedAt?: Prisma.SortOrder
-  processingErrors?: Prisma.SortOrder
-  retryCount?: Prisma.SortOrder
-  maxRetries?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  allVouchersGenerated?: Prisma.SortOrder
+  isPaid?: Prisma.SortOrder
+  lastProcessedAt?: Prisma.SortOrder
+  maxRetries?: Prisma.SortOrder
+  notificationsSent?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrder
+  processingErrors?: Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  retryCount?: Prisma.SortOrder
+  voucherEntries?: Prisma.SortOrder
+  vouchersCreated?: Prisma.SortOrder
 }
 
 export type OrderAvgOrderByAggregateInput = {
@@ -1210,10 +1210,10 @@ export type OrderAvgOrderByAggregateInput = {
   subtotal?: Prisma.SortOrder
   discount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
+  maxRetries?: Prisma.SortOrder
+  retryCount?: Prisma.SortOrder
   voucherEntries?: Prisma.SortOrder
   vouchersCreated?: Prisma.SortOrder
-  retryCount?: Prisma.SortOrder
-  maxRetries?: Prisma.SortOrder
 }
 
 export type OrderMaxOrderByAggregateInput = {
@@ -1248,19 +1248,19 @@ export type OrderMaxOrderByAggregateInput = {
   redemptionStatus?: Prisma.SortOrder
   redeemedAt?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  isPaid?: Prisma.SortOrder
-  voucherEntries?: Prisma.SortOrder
-  vouchersCreated?: Prisma.SortOrder
-  allVouchersGenerated?: Prisma.SortOrder
-  notificationsSent?: Prisma.SortOrder
-  processingStatus?: Prisma.SortOrder
-  processingStartedAt?: Prisma.SortOrder
-  processingCompletedAt?: Prisma.SortOrder
-  lastProcessedAt?: Prisma.SortOrder
-  retryCount?: Prisma.SortOrder
-  maxRetries?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  allVouchersGenerated?: Prisma.SortOrder
+  isPaid?: Prisma.SortOrder
+  lastProcessedAt?: Prisma.SortOrder
+  maxRetries?: Prisma.SortOrder
+  notificationsSent?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  retryCount?: Prisma.SortOrder
+  voucherEntries?: Prisma.SortOrder
+  vouchersCreated?: Prisma.SortOrder
 }
 
 export type OrderMinOrderByAggregateInput = {
@@ -1295,19 +1295,19 @@ export type OrderMinOrderByAggregateInput = {
   redemptionStatus?: Prisma.SortOrder
   redeemedAt?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
-  isPaid?: Prisma.SortOrder
-  voucherEntries?: Prisma.SortOrder
-  vouchersCreated?: Prisma.SortOrder
-  allVouchersGenerated?: Prisma.SortOrder
-  notificationsSent?: Prisma.SortOrder
-  processingStatus?: Prisma.SortOrder
-  processingStartedAt?: Prisma.SortOrder
-  processingCompletedAt?: Prisma.SortOrder
-  lastProcessedAt?: Prisma.SortOrder
-  retryCount?: Prisma.SortOrder
-  maxRetries?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  allVouchersGenerated?: Prisma.SortOrder
+  isPaid?: Prisma.SortOrder
+  lastProcessedAt?: Prisma.SortOrder
+  maxRetries?: Prisma.SortOrder
+  notificationsSent?: Prisma.SortOrder
+  processingCompletedAt?: Prisma.SortOrder
+  processingStartedAt?: Prisma.SortOrder
+  processingStatus?: Prisma.SortOrder
+  retryCount?: Prisma.SortOrder
+  voucherEntries?: Prisma.SortOrder
+  vouchersCreated?: Prisma.SortOrder
 }
 
 export type OrderSumOrderByAggregateInput = {
@@ -1316,10 +1316,10 @@ export type OrderSumOrderByAggregateInput = {
   subtotal?: Prisma.SortOrder
   discount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
+  maxRetries?: Prisma.SortOrder
+  retryCount?: Prisma.SortOrder
   voucherEntries?: Prisma.SortOrder
   vouchersCreated?: Prisma.SortOrder
-  retryCount?: Prisma.SortOrder
-  maxRetries?: Prisma.SortOrder
 }
 
 export type OrderCreateNestedManyWithoutUserInput = {
@@ -1598,20 +1598,20 @@ export type OrderCreateWithoutUserInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientCreateNestedManyWithoutOrderInput
   brand: Prisma.BrandCreateNestedOneWithoutOrdersInput
   occasion: Prisma.OccasionCreateNestedOneWithoutOrdersInput
@@ -1652,20 +1652,20 @@ export type OrderUncheckedCreateWithoutUserInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientUncheckedCreateNestedManyWithoutOrderInput
   voucherCodes?: Prisma.VoucherCodeUncheckedCreateNestedManyWithoutOrderInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedCreateNestedManyWithoutOrderInput
@@ -1733,20 +1733,20 @@ export type OrderScalarWhereInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFilter<"Order"> | $Enums.RedemptionStatus
   redeemedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
   isActive?: Prisma.BoolFilter<"Order"> | boolean
-  isPaid?: Prisma.BoolFilter<"Order"> | boolean
-  voucherEntries?: Prisma.IntFilter<"Order"> | number
-  vouchersCreated?: Prisma.IntFilter<"Order"> | number
-  allVouchersGenerated?: Prisma.BoolFilter<"Order"> | boolean
-  notificationsSent?: Prisma.BoolFilter<"Order"> | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFilter<"Order"> | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
-  processingCompletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
-  lastProcessedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
-  processingErrors?: Prisma.JsonNullableFilter<"Order">
-  retryCount?: Prisma.IntFilter<"Order"> | number
-  maxRetries?: Prisma.IntFilter<"Order"> | number
   createdAt?: Prisma.DateTimeFilter<"Order"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Order"> | Date | string
+  allVouchersGenerated?: Prisma.BoolFilter<"Order"> | boolean
+  isPaid?: Prisma.BoolFilter<"Order"> | boolean
+  lastProcessedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  maxRetries?: Prisma.IntFilter<"Order"> | number
+  notificationsSent?: Prisma.BoolFilter<"Order"> | boolean
+  processingCompletedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  processingErrors?: Prisma.JsonNullableFilter<"Order">
+  processingStartedAt?: Prisma.DateTimeNullableFilter<"Order"> | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFilter<"Order"> | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFilter<"Order"> | number
+  voucherEntries?: Prisma.IntFilter<"Order"> | number
+  vouchersCreated?: Prisma.IntFilter<"Order"> | number
 }
 
 export type OrderCreateWithoutBrandInput = {
@@ -1777,20 +1777,20 @@ export type OrderCreateWithoutBrandInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientCreateNestedManyWithoutOrderInput
   occasion: Prisma.OccasionCreateNestedOneWithoutOrdersInput
   receiverDetail: Prisma.ReceiverDetailCreateNestedOneWithoutOrdersInput
@@ -1831,20 +1831,20 @@ export type OrderUncheckedCreateWithoutBrandInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientUncheckedCreateNestedManyWithoutOrderInput
   voucherCodes?: Prisma.VoucherCodeUncheckedCreateNestedManyWithoutOrderInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedCreateNestedManyWithoutOrderInput
@@ -1905,20 +1905,20 @@ export type OrderCreateWithoutVoucherCodesInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientCreateNestedManyWithoutOrderInput
   brand: Prisma.BrandCreateNestedOneWithoutOrdersInput
   occasion: Prisma.OccasionCreateNestedOneWithoutOrdersInput
@@ -1960,20 +1960,20 @@ export type OrderUncheckedCreateWithoutVoucherCodesInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientUncheckedCreateNestedManyWithoutOrderInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedCreateNestedManyWithoutOrderInput
   notificationDetails?: Prisma.NotificationDetailUncheckedCreateNestedManyWithoutOrderInput
@@ -2023,20 +2023,20 @@ export type OrderUpdateWithoutVoucherCodesInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUpdateManyWithoutOrderNestedInput
   brand?: Prisma.BrandUpdateOneRequiredWithoutOrdersNestedInput
   occasion?: Prisma.OccasionUpdateOneRequiredWithoutOrdersNestedInput
@@ -2078,20 +2078,20 @@ export type OrderUncheckedUpdateWithoutVoucherCodesInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUncheckedUpdateManyWithoutOrderNestedInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedUpdateManyWithoutOrderNestedInput
   notificationDetails?: Prisma.NotificationDetailUncheckedUpdateManyWithoutOrderNestedInput
@@ -2125,20 +2125,20 @@ export type OrderCreateWithoutOccasionInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientCreateNestedManyWithoutOrderInput
   brand: Prisma.BrandCreateNestedOneWithoutOrdersInput
   receiverDetail: Prisma.ReceiverDetailCreateNestedOneWithoutOrdersInput
@@ -2179,20 +2179,20 @@ export type OrderUncheckedCreateWithoutOccasionInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientUncheckedCreateNestedManyWithoutOrderInput
   voucherCodes?: Prisma.VoucherCodeUncheckedCreateNestedManyWithoutOrderInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedCreateNestedManyWithoutOrderInput
@@ -2253,20 +2253,20 @@ export type OrderCreateWithoutReceiverDetailInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientCreateNestedManyWithoutOrderInput
   brand: Prisma.BrandCreateNestedOneWithoutOrdersInput
   occasion: Prisma.OccasionCreateNestedOneWithoutOrdersInput
@@ -2307,20 +2307,20 @@ export type OrderUncheckedCreateWithoutReceiverDetailInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientUncheckedCreateNestedManyWithoutOrderInput
   voucherCodes?: Prisma.VoucherCodeUncheckedCreateNestedManyWithoutOrderInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedCreateNestedManyWithoutOrderInput
@@ -2381,20 +2381,20 @@ export type OrderCreateWithoutNotificationDetailsInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientCreateNestedManyWithoutOrderInput
   brand: Prisma.BrandCreateNestedOneWithoutOrdersInput
   occasion: Prisma.OccasionCreateNestedOneWithoutOrdersInput
@@ -2436,20 +2436,20 @@ export type OrderUncheckedCreateWithoutNotificationDetailsInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientUncheckedCreateNestedManyWithoutOrderInput
   voucherCodes?: Prisma.VoucherCodeUncheckedCreateNestedManyWithoutOrderInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedCreateNestedManyWithoutOrderInput
@@ -2499,20 +2499,20 @@ export type OrderUpdateWithoutNotificationDetailsInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUpdateManyWithoutOrderNestedInput
   brand?: Prisma.BrandUpdateOneRequiredWithoutOrdersNestedInput
   occasion?: Prisma.OccasionUpdateOneRequiredWithoutOrdersNestedInput
@@ -2554,20 +2554,20 @@ export type OrderUncheckedUpdateWithoutNotificationDetailsInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUncheckedUpdateManyWithoutOrderNestedInput
   voucherCodes?: Prisma.VoucherCodeUncheckedUpdateManyWithoutOrderNestedInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedUpdateManyWithoutOrderNestedInput
@@ -2601,20 +2601,20 @@ export type OrderCreateWithoutDeliveryLogsInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientCreateNestedManyWithoutOrderInput
   brand: Prisma.BrandCreateNestedOneWithoutOrdersInput
   occasion: Prisma.OccasionCreateNestedOneWithoutOrdersInput
@@ -2656,20 +2656,20 @@ export type OrderUncheckedCreateWithoutDeliveryLogsInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   bulkRecipients?: Prisma.BulkRecipientUncheckedCreateNestedManyWithoutOrderInput
   voucherCodes?: Prisma.VoucherCodeUncheckedCreateNestedManyWithoutOrderInput
   notificationDetails?: Prisma.NotificationDetailUncheckedCreateNestedManyWithoutOrderInput
@@ -2719,20 +2719,20 @@ export type OrderUpdateWithoutDeliveryLogsInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUpdateManyWithoutOrderNestedInput
   brand?: Prisma.BrandUpdateOneRequiredWithoutOrdersNestedInput
   occasion?: Prisma.OccasionUpdateOneRequiredWithoutOrdersNestedInput
@@ -2774,20 +2774,20 @@ export type OrderUncheckedUpdateWithoutDeliveryLogsInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUncheckedUpdateManyWithoutOrderNestedInput
   voucherCodes?: Prisma.VoucherCodeUncheckedUpdateManyWithoutOrderNestedInput
   notificationDetails?: Prisma.NotificationDetailUncheckedUpdateManyWithoutOrderNestedInput
@@ -2821,20 +2821,20 @@ export type OrderCreateWithoutBulkRecipientsInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   brand: Prisma.BrandCreateNestedOneWithoutOrdersInput
   occasion: Prisma.OccasionCreateNestedOneWithoutOrdersInput
   receiverDetail: Prisma.ReceiverDetailCreateNestedOneWithoutOrdersInput
@@ -2876,20 +2876,20 @@ export type OrderUncheckedCreateWithoutBulkRecipientsInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
   voucherCodes?: Prisma.VoucherCodeUncheckedCreateNestedManyWithoutOrderInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedCreateNestedManyWithoutOrderInput
   notificationDetails?: Prisma.NotificationDetailUncheckedCreateNestedManyWithoutOrderInput
@@ -2939,20 +2939,20 @@ export type OrderUpdateWithoutBulkRecipientsInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   brand?: Prisma.BrandUpdateOneRequiredWithoutOrdersNestedInput
   occasion?: Prisma.OccasionUpdateOneRequiredWithoutOrdersNestedInput
   receiverDetail?: Prisma.ReceiverDetailUpdateOneRequiredWithoutOrdersNestedInput
@@ -2994,20 +2994,20 @@ export type OrderUncheckedUpdateWithoutBulkRecipientsInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   voucherCodes?: Prisma.VoucherCodeUncheckedUpdateManyWithoutOrderNestedInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedUpdateManyWithoutOrderNestedInput
   notificationDetails?: Prisma.NotificationDetailUncheckedUpdateManyWithoutOrderNestedInput
@@ -3044,20 +3044,20 @@ export type OrderCreateManyUserInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
 }
 
 export type OrderUpdateWithoutUserInput = {
@@ -3088,20 +3088,20 @@ export type OrderUpdateWithoutUserInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUpdateManyWithoutOrderNestedInput
   brand?: Prisma.BrandUpdateOneRequiredWithoutOrdersNestedInput
   occasion?: Prisma.OccasionUpdateOneRequiredWithoutOrdersNestedInput
@@ -3142,20 +3142,20 @@ export type OrderUncheckedUpdateWithoutUserInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUncheckedUpdateManyWithoutOrderNestedInput
   voucherCodes?: Prisma.VoucherCodeUncheckedUpdateManyWithoutOrderNestedInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedUpdateManyWithoutOrderNestedInput
@@ -3193,20 +3193,20 @@ export type OrderUncheckedUpdateManyWithoutUserInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type OrderCreateManyBrandInput = {
@@ -3240,20 +3240,20 @@ export type OrderCreateManyBrandInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
 }
 
 export type OrderUpdateWithoutBrandInput = {
@@ -3284,20 +3284,20 @@ export type OrderUpdateWithoutBrandInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUpdateManyWithoutOrderNestedInput
   occasion?: Prisma.OccasionUpdateOneRequiredWithoutOrdersNestedInput
   receiverDetail?: Prisma.ReceiverDetailUpdateOneRequiredWithoutOrdersNestedInput
@@ -3338,20 +3338,20 @@ export type OrderUncheckedUpdateWithoutBrandInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUncheckedUpdateManyWithoutOrderNestedInput
   voucherCodes?: Prisma.VoucherCodeUncheckedUpdateManyWithoutOrderNestedInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedUpdateManyWithoutOrderNestedInput
@@ -3389,20 +3389,20 @@ export type OrderUncheckedUpdateManyWithoutBrandInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type OrderCreateManyOccasionInput = {
@@ -3436,20 +3436,20 @@ export type OrderCreateManyOccasionInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
 }
 
 export type OrderUpdateWithoutOccasionInput = {
@@ -3480,20 +3480,20 @@ export type OrderUpdateWithoutOccasionInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUpdateManyWithoutOrderNestedInput
   brand?: Prisma.BrandUpdateOneRequiredWithoutOrdersNestedInput
   receiverDetail?: Prisma.ReceiverDetailUpdateOneRequiredWithoutOrdersNestedInput
@@ -3534,20 +3534,20 @@ export type OrderUncheckedUpdateWithoutOccasionInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUncheckedUpdateManyWithoutOrderNestedInput
   voucherCodes?: Prisma.VoucherCodeUncheckedUpdateManyWithoutOrderNestedInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedUpdateManyWithoutOrderNestedInput
@@ -3585,20 +3585,20 @@ export type OrderUncheckedUpdateManyWithoutOccasionInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type OrderCreateManyReceiverDetailInput = {
@@ -3632,20 +3632,20 @@ export type OrderCreateManyReceiverDetailInput = {
   redemptionStatus?: $Enums.RedemptionStatus
   redeemedAt?: Date | string | null
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: number
-  vouchersCreated?: number
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: $Enums.OrderProcessingStatus
-  processingStartedAt?: Date | string | null
-  processingCompletedAt?: Date | string | null
-  lastProcessedAt?: Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: number
-  maxRetries?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: Date | string | null
+  maxRetries?: number
+  notificationsSent?: boolean
+  processingCompletedAt?: Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Date | string | null
+  processingStatus?: $Enums.OrderProcessingStatus
+  retryCount?: number
+  voucherEntries?: number
+  vouchersCreated?: number
 }
 
 export type OrderUpdateWithoutReceiverDetailInput = {
@@ -3676,20 +3676,20 @@ export type OrderUpdateWithoutReceiverDetailInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUpdateManyWithoutOrderNestedInput
   brand?: Prisma.BrandUpdateOneRequiredWithoutOrdersNestedInput
   occasion?: Prisma.OccasionUpdateOneRequiredWithoutOrdersNestedInput
@@ -3730,20 +3730,20 @@ export type OrderUncheckedUpdateWithoutReceiverDetailInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
   bulkRecipients?: Prisma.BulkRecipientUncheckedUpdateManyWithoutOrderNestedInput
   voucherCodes?: Prisma.VoucherCodeUncheckedUpdateManyWithoutOrderNestedInput
   deliveryLogs?: Prisma.DeliveryLogUncheckedUpdateManyWithoutOrderNestedInput
@@ -3781,20 +3781,20 @@ export type OrderUncheckedUpdateManyWithoutReceiverDetailInput = {
   redemptionStatus?: Prisma.EnumRedemptionStatusFieldUpdateOperationsInput | $Enums.RedemptionStatus
   redeemedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
-  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
-  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
-  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
-  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allVouchersGenerated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isPaid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastProcessedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  maxRetries?: Prisma.IntFieldUpdateOperationsInput | number
+  notificationsSent?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  processingCompletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingErrors?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  processingStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  processingStatus?: Prisma.EnumOrderProcessingStatusFieldUpdateOperationsInput | $Enums.OrderProcessingStatus
+  retryCount?: Prisma.IntFieldUpdateOperationsInput | number
+  voucherEntries?: Prisma.IntFieldUpdateOperationsInput | number
+  vouchersCreated?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 
@@ -3887,20 +3887,20 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   redemptionStatus?: boolean
   redeemedAt?: boolean
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: boolean
-  vouchersCreated?: boolean
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: boolean
-  processingStartedAt?: boolean
-  processingCompletedAt?: boolean
-  lastProcessedAt?: boolean
-  processingErrors?: boolean
-  retryCount?: boolean
-  maxRetries?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: boolean
+  maxRetries?: boolean
+  notificationsSent?: boolean
+  processingCompletedAt?: boolean
+  processingErrors?: boolean
+  processingStartedAt?: boolean
+  processingStatus?: boolean
+  retryCount?: boolean
+  voucherEntries?: boolean
+  vouchersCreated?: boolean
   bulkRecipients?: boolean | Prisma.Order$bulkRecipientsArgs<ExtArgs>
   brand?: boolean | Prisma.BrandDefaultArgs<ExtArgs>
   occasion?: boolean | Prisma.OccasionDefaultArgs<ExtArgs>
@@ -3944,20 +3944,20 @@ export type OrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   redemptionStatus?: boolean
   redeemedAt?: boolean
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: boolean
-  vouchersCreated?: boolean
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: boolean
-  processingStartedAt?: boolean
-  processingCompletedAt?: boolean
-  lastProcessedAt?: boolean
-  processingErrors?: boolean
-  retryCount?: boolean
-  maxRetries?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: boolean
+  maxRetries?: boolean
+  notificationsSent?: boolean
+  processingCompletedAt?: boolean
+  processingErrors?: boolean
+  processingStartedAt?: boolean
+  processingStatus?: boolean
+  retryCount?: boolean
+  voucherEntries?: boolean
+  vouchersCreated?: boolean
   brand?: boolean | Prisma.BrandDefaultArgs<ExtArgs>
   occasion?: boolean | Prisma.OccasionDefaultArgs<ExtArgs>
   receiverDetail?: boolean | Prisma.ReceiverDetailDefaultArgs<ExtArgs>
@@ -3996,20 +3996,20 @@ export type OrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   redemptionStatus?: boolean
   redeemedAt?: boolean
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: boolean
-  vouchersCreated?: boolean
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: boolean
-  processingStartedAt?: boolean
-  processingCompletedAt?: boolean
-  lastProcessedAt?: boolean
-  processingErrors?: boolean
-  retryCount?: boolean
-  maxRetries?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: boolean
+  maxRetries?: boolean
+  notificationsSent?: boolean
+  processingCompletedAt?: boolean
+  processingErrors?: boolean
+  processingStartedAt?: boolean
+  processingStatus?: boolean
+  retryCount?: boolean
+  voucherEntries?: boolean
+  vouchersCreated?: boolean
   brand?: boolean | Prisma.BrandDefaultArgs<ExtArgs>
   occasion?: boolean | Prisma.OccasionDefaultArgs<ExtArgs>
   receiverDetail?: boolean | Prisma.ReceiverDetailDefaultArgs<ExtArgs>
@@ -4048,23 +4048,23 @@ export type OrderSelectScalar = {
   redemptionStatus?: boolean
   redeemedAt?: boolean
   isActive?: boolean
-  isPaid?: boolean
-  voucherEntries?: boolean
-  vouchersCreated?: boolean
-  allVouchersGenerated?: boolean
-  notificationsSent?: boolean
-  processingStatus?: boolean
-  processingStartedAt?: boolean
-  processingCompletedAt?: boolean
-  lastProcessedAt?: boolean
-  processingErrors?: boolean
-  retryCount?: boolean
-  maxRetries?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  allVouchersGenerated?: boolean
+  isPaid?: boolean
+  lastProcessedAt?: boolean
+  maxRetries?: boolean
+  notificationsSent?: boolean
+  processingCompletedAt?: boolean
+  processingErrors?: boolean
+  processingStartedAt?: boolean
+  processingStatus?: boolean
+  retryCount?: boolean
+  voucherEntries?: boolean
+  vouchersCreated?: boolean
 }
 
-export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderNumber" | "brandId" | "occasionId" | "subCategoryId" | "customCardId" | "isCustom" | "userId" | "bulkOrderNumber" | "receiverDetailId" | "amount" | "quantity" | "subtotal" | "discount" | "totalAmount" | "currency" | "message" | "customImageUrl" | "customVideoUrl" | "senderName" | "senderEmail" | "deliveryMethod" | "sendType" | "scheduledFor" | "paymentMethod" | "paymentStatus" | "paymentIntentId" | "paidAt" | "redemptionStatus" | "redeemedAt" | "isActive" | "isPaid" | "voucherEntries" | "vouchersCreated" | "allVouchersGenerated" | "notificationsSent" | "processingStatus" | "processingStartedAt" | "processingCompletedAt" | "lastProcessedAt" | "processingErrors" | "retryCount" | "maxRetries" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
+export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderNumber" | "brandId" | "occasionId" | "subCategoryId" | "customCardId" | "isCustom" | "userId" | "bulkOrderNumber" | "receiverDetailId" | "amount" | "quantity" | "subtotal" | "discount" | "totalAmount" | "currency" | "message" | "customImageUrl" | "customVideoUrl" | "senderName" | "senderEmail" | "deliveryMethod" | "sendType" | "scheduledFor" | "paymentMethod" | "paymentStatus" | "paymentIntentId" | "paidAt" | "redemptionStatus" | "redeemedAt" | "isActive" | "createdAt" | "updatedAt" | "allVouchersGenerated" | "isPaid" | "lastProcessedAt" | "maxRetries" | "notificationsSent" | "processingCompletedAt" | "processingErrors" | "processingStartedAt" | "processingStatus" | "retryCount" | "voucherEntries" | "vouchersCreated", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   bulkRecipients?: boolean | Prisma.Order$bulkRecipientsArgs<ExtArgs>
   brand?: boolean | Prisma.BrandDefaultArgs<ExtArgs>
@@ -4133,20 +4133,20 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     redemptionStatus: $Enums.RedemptionStatus
     redeemedAt: Date | null
     isActive: boolean
-    isPaid: boolean
-    voucherEntries: number
-    vouchersCreated: number
-    allVouchersGenerated: boolean
-    notificationsSent: boolean
-    processingStatus: $Enums.OrderProcessingStatus
-    processingStartedAt: Date | null
-    processingCompletedAt: Date | null
-    lastProcessedAt: Date | null
-    processingErrors: runtime.JsonValue | null
-    retryCount: number
-    maxRetries: number
     createdAt: Date
     updatedAt: Date
+    allVouchersGenerated: boolean
+    isPaid: boolean
+    lastProcessedAt: Date | null
+    maxRetries: number
+    notificationsSent: boolean
+    processingCompletedAt: Date | null
+    processingErrors: runtime.JsonValue | null
+    processingStartedAt: Date | null
+    processingStatus: $Enums.OrderProcessingStatus
+    retryCount: number
+    voucherEntries: number
+    vouchersCreated: number
   }, ExtArgs["result"]["order"]>
   composites: {}
 }
@@ -4609,20 +4609,20 @@ export interface OrderFieldRefs {
   readonly redemptionStatus: Prisma.FieldRef<"Order", 'RedemptionStatus'>
   readonly redeemedAt: Prisma.FieldRef<"Order", 'DateTime'>
   readonly isActive: Prisma.FieldRef<"Order", 'Boolean'>
-  readonly isPaid: Prisma.FieldRef<"Order", 'Boolean'>
-  readonly voucherEntries: Prisma.FieldRef<"Order", 'Int'>
-  readonly vouchersCreated: Prisma.FieldRef<"Order", 'Int'>
-  readonly allVouchersGenerated: Prisma.FieldRef<"Order", 'Boolean'>
-  readonly notificationsSent: Prisma.FieldRef<"Order", 'Boolean'>
-  readonly processingStatus: Prisma.FieldRef<"Order", 'OrderProcessingStatus'>
-  readonly processingStartedAt: Prisma.FieldRef<"Order", 'DateTime'>
-  readonly processingCompletedAt: Prisma.FieldRef<"Order", 'DateTime'>
-  readonly lastProcessedAt: Prisma.FieldRef<"Order", 'DateTime'>
-  readonly processingErrors: Prisma.FieldRef<"Order", 'Json'>
-  readonly retryCount: Prisma.FieldRef<"Order", 'Int'>
-  readonly maxRetries: Prisma.FieldRef<"Order", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Order", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Order", 'DateTime'>
+  readonly allVouchersGenerated: Prisma.FieldRef<"Order", 'Boolean'>
+  readonly isPaid: Prisma.FieldRef<"Order", 'Boolean'>
+  readonly lastProcessedAt: Prisma.FieldRef<"Order", 'DateTime'>
+  readonly maxRetries: Prisma.FieldRef<"Order", 'Int'>
+  readonly notificationsSent: Prisma.FieldRef<"Order", 'Boolean'>
+  readonly processingCompletedAt: Prisma.FieldRef<"Order", 'DateTime'>
+  readonly processingErrors: Prisma.FieldRef<"Order", 'Json'>
+  readonly processingStartedAt: Prisma.FieldRef<"Order", 'DateTime'>
+  readonly processingStatus: Prisma.FieldRef<"Order", 'OrderProcessingStatus'>
+  readonly retryCount: Prisma.FieldRef<"Order", 'Int'>
+  readonly voucherEntries: Prisma.FieldRef<"Order", 'Int'>
+  readonly vouchersCreated: Prisma.FieldRef<"Order", 'Int'>
 }
     
 

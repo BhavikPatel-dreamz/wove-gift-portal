@@ -47,7 +47,7 @@ const BrandCard = ({
 
   return (
     <div
-      className="relative w-full rounded-2xl group cursor-pointer p-[2px]"
+      className="relative w-full max-w-[18rem] sm:max-w-none mx-auto rounded-2xl group cursor-pointer p-[2px]"
       onClick={handleCardClick}
     >
       {/* Gradient border — hidden by default, shown on hover */}
@@ -58,7 +58,7 @@ const BrandCard = ({
         stays visually even on all sides across displays.
       */}
       <div
-        className="bg-white rounded-[14px] p-6 hover:shadow-lg transition-all duration-300 relative"
+        className="bg-white rounded-[14px] p-4 sm:p-6 hover:shadow-lg transition-all duration-300 relative"
         style={{
           boxShadow: isSelected
             ? 'inset 0 0 0 1.5px #3b82f6'
@@ -67,21 +67,21 @@ const BrandCard = ({
       >
         {/* Featured Badge */}
         {isFeatured && (
-          <div className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-[#FFF4E5] px-3 py-1 text-[#F59E0B]">
-            <Star size={13} className="fill-current" />
-            <span className="text-[14px] leading-4 font-semibold">Featured</span>
+          <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-10 inline-flex items-center gap-1 rounded-full bg-[#FFF4E5] px-2 sm:px-3 py-0.5 sm:py-1 text-[#F59E0B]">
+            <Star size={11} className="fill-current sm:size-3" />
+            <span className="text-[11px] sm:text-[14px] leading-4 font-semibold">Featured</span>
           </div>
         )}
 
         {/* Favorite Button */}
         <button
           onClick={handleFavoriteClick}
-          className="absolute top-4 right-4 p-1.5 hover:bg-gray-50 transition-all duration-200 z-10 border border-gray-200 rounded-full"
+          className="absolute top-3 sm:top-4 right-3 sm:right-4 p-1.5 hover:bg-gray-50 transition-all duration-200 z-10 border border-gray-200 rounded-full"
           aria-label={isFavorited ? `Remove ${brand.brandName} from favorites` : `Add ${brand.brandName} to favorites`}
         >
           <Heart
-            size={18}
-            className={`transition-all duration-200 ${isFavorited
+            size={16}
+            className={`transition-all duration-200 sm:size-[18px] ${isFavorited
               ? "text-red-500 fill-current"
               : "text-gray-400 hover:text-red-500"
               }`}
@@ -89,8 +89,8 @@ const BrandCard = ({
         </button>
 
         {/* Brand Logo */}
-        <div className="flex justify-center mb-6 mt-2">
-          <div className="w-24 h-24 flex items-center justify-center">
+        <div className="flex justify-center mb-4 sm:mb-6 mt-1 sm:mt-2">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
             {brand.logo ? (
               <img
                 src={brand.logo}
@@ -99,7 +99,7 @@ const BrandCard = ({
                 loading="lazy"
               />
             ) : (
-              <div className="text-4xl font-bold text-gray-300">
+              <div className="text-3xl sm:text-4xl font-bold text-gray-300">
                 {brand.brandName?.[0]}
               </div>
             )}
@@ -107,10 +107,10 @@ const BrandCard = ({
         </div>
 
         {/* Brand Info */}
-        <div className="text-center space-y-3">
+        <div className="text-center space-y-2 sm:space-y-3">
           <div className="flex justify-center">
             <span
-              className="text-[14px] px-3 py-1 rounded-full font-bold"
+              className="text-[11px] sm:text-[14px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold"
               style={{
                 color: text,
                 backgroundColor: bg,
@@ -120,12 +120,12 @@ const BrandCard = ({
             </span>
           </div>
 
-          <h3 className="font-semibold text-[#1A1A1A] text-[22px]">
+          <h3 className="font-semibold text-[#1A1A1A] text-[18px] sm:text-[22px]">
             {brand.brandName}
           </h3>
 
           <p
-            className="text-[#4A4A4A] text-[16px] font-normal leading-relaxed line-clamp-2 mb-2"
+            className="text-[#4A4A4A] text-[13px] sm:text-[16px] font-normal leading-relaxed line-clamp-2 mb-1 sm:mb-2"
             title={brand.description || ""}
           >
             {brand.description}
@@ -139,7 +139,7 @@ const BrandCard = ({
             }}
             className="
     relative w-full inline-flex items-center justify-center gap-2
-    px-5 py-3 rounded-full font-semibold text-base
+    px-4 sm:px-5 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base
     border border-transparent
     transition-all duration-300 overflow-hidden group cursor-pointer
   "
@@ -163,13 +163,14 @@ const BrandCard = ({
             ></span>
 
             {/* Button content */}
-            <div className="relative z-10 flex items-center gap-2 transition-all duration-300">
+            <div className="relative z-10 flex items-center gap-1.5 sm:gap-2 transition-all duration-300">
               {/* Gradient text → white on hover */}
               <span
                 className="
         bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent
         group-hover:bg-none group-hover:text-white
         transition-all duration-300
+        text-sm sm:text-base
       "
               >
                 Choose Brand
@@ -177,12 +178,12 @@ const BrandCard = ({
 
              <span className="transition-all duration-300 ease-out group-hover:translate-x-1 group-hover:scale-110">
                 <svg
-                  width="8"
+                  width="7"
                   height="9"
                   viewBox="0 0 8 9"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
-                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white sm:w-2 sm:h-auto"
                 >
                   <path
                     d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"

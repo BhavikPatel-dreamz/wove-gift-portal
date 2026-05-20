@@ -16,7 +16,10 @@ const OccasionSchema = z.object({
     .min(1, "Name is required")
     .max(100, "Name must be less than 100 characters")
     .trim(),
-  emoji: z.string().optional(),
+  emoji: z
+    .string()
+    .optional()
+    .transform((val) => val?.trim() || ""),
   description: z
     .string()
     .max(500, "Description must be less than 500 characters")
@@ -24,9 +27,9 @@ const OccasionSchema = z.object({
     .transform((val) => val?.trim() || ""),
   type: z
     .string()
-    .min(1, "Type is required")
     .max(100, "Type must be less than 100 characters")
-    .trim(),
+    .default("")
+    .transform((val) => val?.trim() || ""),
   isActive: z.boolean().default(false),
   image: z.string().optional(),
 });
@@ -48,13 +51,13 @@ const OccasionCategorySchema = z.object({
     .trim(),
   emoji: z
     .string()
-    .min(1, "Emoji is required")
-    .max(10, "Emoji must be less than 10 characters"),
+    .optional()
+    .transform((val) => val?.trim() || ""),
   category: z
     .string()
-    .min(1, "Category is required")
     .max(100, "Category must be less than 100 characters")
-    .trim(),
+    .default("")
+    .transform((val) => val?.trim() || ""),
   isActive: z.boolean().default(false),
   occasionId: z.string().min(1, "Occasion ID is required").trim(),
   image: z.string().optional(),
@@ -64,13 +67,32 @@ const UpdateOccasionCategorySchema = OccasionCategorySchema.partial().extend({
   id: z.string().min(1, "Category ID is required").trim(),
 });
 
+const ReorderOccasionCategorySchema = z.object({
+  occasionId: z.string().min(1, "Occasion ID is required").trim(),
+  categoryId: z.string().min(1, "Category ID is required").trim(),
+  displayOrder: z.coerce
+    .number()
+    .int("Display order must be a whole number")
+    .min(1, "Display order must be at least 1"),
+});
+
+const ReorderOccasionSchema = z.object({
+  occasionId: z.string().min(1, "Occasion ID is required").trim(),
+  displayOrder: z.coerce
+    .number()
+    .int("Display order must be a whole number")
+    .min(1, "Display order must be at least 1"),
+});
+
 const GetOccasionsSchema = z.object({
   id: z.string().optional(),
   search: z.string().optional(),
   isActive: z.boolean().optional(),
   page: z.number().int().min(1).default(1),
   limit: z.number().int().min(1).max(100).default(12),
-  sortBy: z.enum(["name", "createdAt", "updatedAt"]).default("createdAt"),
+  sortBy: z
+    .enum(["name", "createdAt", "updatedAt", "displayOrder"])
+    .default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
@@ -152,7 +174,7 @@ export async function addOccasion(formData) {
   try {
     const parsedData = parseFormData(formData, {
       name: (val) => val?.toString().trim() || "",
-      emoji: (val) => val?.toString() || "🎉",
+      emoji: (val) => val?.toString() || "",
       description: (val) => val?.toString().trim() || "",
       type: (val) => val?.toString().trim() || "",
       isActive: (val) => val === "true" || val === "on",
@@ -181,6 +203,8 @@ export async function addOccasion(formData) {
     const imageFile = formData.get("image");
     const imagePath = await handleImageUpload(imageFile, "occasions", name);
 
+    const existingCount = await prisma.occasion.count();
+
     const newOccasion = await prisma.occasion.create({
       data: {
         name,
@@ -189,6 +213,7 @@ export async function addOccasion(formData) {
         type,
         isActive,
         image: imagePath,
+        displayOrder: existingCount + 1,
       },
     });
 
@@ -341,6 +366,27 @@ export async function deleteOccasion(id) {
       await tx.occasion.delete({
         where: { id: validId },
       });
+
+      const remainingOccasions = await tx.occasion.findMany({
+        select: { id: true },
+        orderBy: [
+          { displayOrder: "asc" },
+          { createdAt: "asc" },
+          { id: "asc" },
+        ],
+      });
+
+      await Promise.all(
+        remainingOccasions.map((occasion, index) =>
+          tx.occasion.update({
+            where: { id: occasion.id },
+            data: {
+              displayOrder: index + 1,
+              updatedAt: new Date(),
+            },
+          }),
+        ),
+      );
     });
 
     return createStandardResponse(true, "Occasion deleted successfully", 200);
@@ -360,7 +406,7 @@ export async function getOccasions(params = {}) {
     const page = Math.max(1, parseInt(params.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(params.limit) || 12));
     const search = params.search?.trim() || "";
-    const sortBy = ["name", "createdAt", "updatedAt"].includes(params.sortBy)
+    const sortBy = ["name", "createdAt", "updatedAt", "displayOrder"].includes(params.sortBy)
       ? params.sortBy
       : "createdAt";
     const sortOrder = params.sortOrder === "asc" ? "asc" : "desc";
@@ -406,7 +452,10 @@ export async function getOccasions(params = {}) {
     const [occasions, totalItems] = await Promise.all([
       prisma.occasion.findMany({
         where,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy:
+          sortBy === "displayOrder"
+            ? [{ displayOrder: sortOrder }, { createdAt: "asc" }]
+            : { [sortBy]: sortOrder },
         skip,
         take: limit,
       }),
@@ -466,6 +515,80 @@ export async function getOccasions(params = {}) {
       false,
       "Failed to fetch occasions. Please try again.",
       500,
+    );
+  }
+}
+
+export async function reorderOccasion(input) {
+  try {
+    const validationResult = ReorderOccasionSchema.safeParse(input);
+    const validationError = handleValidationError(validationResult);
+    if (validationError) return validationError;
+
+    const { occasionId, displayOrder } = validationResult.data;
+
+    const reorderedOccasion = await prisma.$transaction(async (tx) => {
+      const occasions = await tx.occasion.findMany({
+        select: { id: true },
+        orderBy: [
+          { displayOrder: "asc" },
+          { createdAt: "asc" },
+          { id: "asc" },
+        ],
+      });
+
+      if (!occasions.length) {
+        throw new Error("Occasion not found");
+      }
+
+      const currentIndex = occasions.findIndex(
+        (occasion) => occasion.id === occasionId,
+      );
+
+      if (currentIndex === -1) {
+        throw new Error("Occasion not found");
+      }
+
+      const orderedIds = occasions.map((occasion) => occasion.id);
+      const [movedId] = orderedIds.splice(currentIndex, 1);
+      const targetIndex = Math.min(
+        Math.max(displayOrder - 1, 0),
+        orderedIds.length,
+      );
+
+      orderedIds.splice(targetIndex, 0, movedId);
+
+      await Promise.all(
+        orderedIds.map((id, index) =>
+          tx.occasion.update({
+            where: { id },
+            data: {
+              displayOrder: index + 1,
+              updatedAt: new Date(),
+            },
+          }),
+        ),
+      );
+
+      return tx.occasion.findUnique({
+        where: { id: occasionId },
+      });
+    });
+
+    return createStandardResponse(
+      true,
+      "Occasion order updated successfully",
+      200,
+      reorderedOccasion,
+    );
+  } catch (error) {
+    console.error("reorderOccasion error:", error);
+    return createStandardResponse(
+      false,
+      error?.message === "Occasion not found"
+        ? "Occasion not found"
+        : "Failed to update occasion order. Please try again.",
+      error?.message === "Occasion not found" ? 404 : 500,
     );
   }
 }
@@ -560,6 +683,10 @@ export async function addOccasionCategory(formData) {
       return createStandardResponse(false, "Occasion not found", 404);
     }
 
+    const existingCount = await prisma.occasionCategory.count({
+      where: { occasionId },
+    });
+
     // Handle image upload
     const imageFile = formData.get("image");
     const imagePath = await handleImageUpload(
@@ -574,6 +701,7 @@ export async function addOccasionCategory(formData) {
         description,
         emoji,
         category,
+        displayOrder: existingCount + 1,
         image: imagePath,
         isActive,
         occasionId,
@@ -604,8 +732,8 @@ export async function updateOccasionCategory(formData) {
       id: (val) => val?.toString().trim() || "",
       name: (val) => val?.toString().trim(),
       description: (val) => val?.toString().trim(),
-      emoji: (val) => val?.toString(),
-      category: (val) => val?.toString().trim(),
+      emoji: (val) => val?.toString() || "",
+      category: (val) => val?.toString().trim() || "",
       isActive: (val) =>
         val === "true" || val === "on"
           ? true
@@ -711,6 +839,81 @@ export async function updateOccasionCategory(formData) {
   }
 }
 
+export async function reorderOccasionCategory(input) {
+  try {
+    const validationResult = ReorderOccasionCategorySchema.safeParse(input);
+    const validationError = handleValidationError(validationResult);
+    if (validationError) return validationError;
+
+    const { occasionId, categoryId, displayOrder } = validationResult.data;
+
+    const reorderedCategory = await prisma.$transaction(async (tx) => {
+      const categories = await tx.occasionCategory.findMany({
+        where: { occasionId },
+        select: { id: true },
+        orderBy: [
+          { displayOrder: "asc" },
+          { createdAt: "asc" },
+          { id: "asc" },
+        ],
+      });
+
+      if (!categories.length) {
+        throw new Error("Occasion category not found");
+      }
+
+      const currentIndex = categories.findIndex(
+        (category) => category.id === categoryId,
+      );
+
+      if (currentIndex === -1) {
+        throw new Error("Occasion category not found");
+      }
+
+      const orderedIds = categories.map((category) => category.id);
+      const [movedId] = orderedIds.splice(currentIndex, 1);
+      const targetIndex = Math.min(
+        Math.max(displayOrder - 1, 0),
+        orderedIds.length,
+      );
+
+      orderedIds.splice(targetIndex, 0, movedId);
+
+      await Promise.all(
+        orderedIds.map((id, index) =>
+          tx.occasionCategory.update({
+            where: { id },
+            data: {
+              displayOrder: index + 1,
+              updatedAt: new Date(),
+            },
+          }),
+        ),
+      );
+
+      return tx.occasionCategory.findUnique({
+        where: { id: categoryId },
+      });
+    });
+
+    return createStandardResponse(
+      true,
+      "Occasion category order updated successfully",
+      200,
+      reorderedCategory,
+    );
+  } catch (error) {
+    console.error("reorderOccasionCategory error:", error);
+    return createStandardResponse(
+      false,
+      error?.message === "Occasion category not found"
+        ? "Occasion category not found"
+        : "Failed to update card order. Please try again.",
+      error?.message === "Occasion category not found" ? 404 : 500,
+    );
+  }
+}
+
 export async function deleteOccasionCategory(id) {
   try {
     const validationResult = IdSchema.safeParse(id);
@@ -804,18 +1007,17 @@ export async function getOccasionCategories(params = {}) {
     }
 
     // Remove the problematic include for now
+    const orderBy =
+      sortBy === "displayOrder"
+        ? [{ displayOrder: sortOrder }, { createdAt: "asc" }]
+        : { [sortBy]: sortOrder };
+
     const [categories, totalItems] = await Promise.all([
       prisma.occasionCategory.findMany({
         where,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy,
         skip,
         take: limit,
-        // Remove the include section that's causing the error
-        // include: {
-        //     occasion: {
-        //         select: { name: true, emoji: true }
-        //     }
-        // }
       }),
       prisma.occasionCategory.count({ where }),
     ]);

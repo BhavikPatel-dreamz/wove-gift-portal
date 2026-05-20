@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/db";
+import {
+  calculateSettlementAmounts,
+  getSettlementBaseAmount,
+  getSettlementTransactionCount,
+  roundSettlementAmount,
+} from "@/lib/settlement/settlementUtils";
 
 export async function GET(request) {
   try {
@@ -78,23 +84,18 @@ export async function GET(request) {
 
                   
 
-        // 🔹 Aggregate settlements to compute paid vs sold
-        const settlementsAgg = await prisma.settlements.groupBy({
-          by: ["status"],
+        // 🔹 Aggregate settlements to compute pending amount from net payable
+        const settlementsAgg = await prisma.settlements.aggregate({
           where: { brandId: brand.id, ...dateFilter },
-          _sum: { totalSoldAmount: true, netPayable: true },
+          _sum: { totalSoldAmount: true, netPayable: true, totalPaid: true },
         });
 
-        const totalSoldAmount = settlementsAgg.reduce(
-          (sum, s) => sum + (s._sum.totalSoldAmount || 0),
-          0
-        );
-        const totalPaidAmount = settlementsAgg
-          .filter((s) => s.status === "Paid")
-          .reduce((sum, s) => sum + (s._sum.netPayable || 0), 0);
+        const totalSoldAmount = settlementsAgg._sum.totalSoldAmount || 0;
+        const totalNetPayable = settlementsAgg._sum.netPayable || 0;
+        const totalPaidAmount = settlementsAgg._sum.totalPaid || 0;
 
         // 🔹 Pending settlement dynamically
-        const pendingSettlement = totalSoldAmount - totalPaidAmount;
+        const pendingSettlement = Math.max(0, totalNetPayable - totalPaidAmount);
 
         // 🔹 Latest settlement for details
         const latestSettlement = await prisma.settlements.findFirst({
@@ -236,18 +237,17 @@ export async function POST(request) {
     const vatRate = brandTerms?.vatRate ?? 0;
     const commissionValue = brandTerms?.commissionValue ?? 0;
     const commissionType = brandTerms?.commissionType ?? "Percentage";
-
-    // 🔹 Commission calculation
-    const commissionAmount =
-      commissionType === "Fixed"
-        ? commissionValue
-        : (settlement.totalSoldAmount * commissionValue) / 100;
-
-    // 🔹 VAT calculation
-    const vatAmount = ((settlement.totalSoldAmount - commissionAmount) * vatRate) / 100;
-
-    // 🔹 Net payable (includes VAT)
-    const netPayable = settlement.totalSoldAmount - commissionAmount + vatAmount;
+    const settlementTrigger = brandTerms?.settlementTrigger ?? "onRedemption";
+    const baseAmount = getSettlementBaseAmount(settlement, settlementTrigger);
+    const itemCount = getSettlementTransactionCount(settlement, settlementTrigger);
+    const { commissionAmount, vatAmount, netPayable } = calculateSettlementAmounts({
+      baseAmount,
+      commissionType,
+      commissionValue,
+      vatRate,
+      itemCount,
+      breakageAmount: settlement.breakageAmount ?? 0,
+    });
 
     // 🔹 Handle rounding & overpayment
     const tolerance = 0.01;
@@ -273,9 +273,9 @@ export async function POST(request) {
           status: "Paid",
           paidAt: new Date(),
           paymentReference,
-          commissionAmount: Math.round(commissionAmount),
-          vatAmount: Math.round(vatAmount),
-          netPayable: Math.round(netPayable),
+          commissionAmount: roundSettlementAmount(commissionAmount),
+          vatAmount: roundSettlementAmount(vatAmount),
+          netPayable: roundSettlementAmount(netPayable),
           remainingAmount: 0,
           notes:
             notes ||
@@ -305,9 +305,9 @@ export async function POST(request) {
           paidAt: new Date(),
           netPayable: paymentToApply,
           paymentReference,
-          commissionAmount: Math.round(commissionAmount),
-          vatAmount: Math.round(vatAmount),
-          remainingAmount: Math.round(remainingAmount),
+          commissionAmount: roundSettlementAmount(commissionAmount),
+          vatAmount: roundSettlementAmount(vatAmount),
+          remainingAmount: roundSettlementAmount(remainingAmount),
           notes:
             notes ||
             `Partial payment of ${paymentToApply} processed. Remaining: ${remainingAmount.toFixed(
@@ -330,8 +330,8 @@ export async function POST(request) {
           commissionAmount: 0,
           breakageAmount: 0,
           vatAmount: 0,
-          netPayable: Math.round(remainingAmount),
-          remainingAmount: Math.round(remainingAmount),
+          netPayable: roundSettlementAmount(remainingAmount),
+          remainingAmount: roundSettlementAmount(remainingAmount),
           status: "Pending",
           notes: `Remaining balance from settlement ${settlementId}. Original: ${netPayable}, Paid: ${paymentToApply}, Remaining: ${remainingAmount}`,
         },

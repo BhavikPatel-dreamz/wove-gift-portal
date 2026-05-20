@@ -8,6 +8,7 @@
     "build": "prisma generate && next build --turbopack",
     "start": "next start -p 3000",
     "lint": "eslint",
+    "db:test": "node scripts/test-database-connection.js",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
@@ -22,7 +23,7 @@
     "gift-cards:stats": "node scripts/gift-card-manager.js --action=stats",
     "sync:shopify": "node src/scripts/sync-shopify-data.js",
     "postinstall": "pnpm prisma generate",
-    "cron:start": "node scripts/scheduler.js"
+    "cron:start": "pnpm exec tsx scripts/scheduler.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -69,6 +70,7 @@
     "react-redux": "^9.2.0",
     "recharts": "^3.2.1",
     "stripe": "^19.1.0",
+    "tsx": "^4.21.0",
     "twilio": "^5.10.2",
     "xlsx": "^0.18.5",
     "zod": "^4.1.8"

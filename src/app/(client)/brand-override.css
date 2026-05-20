@@ -280,7 +280,7 @@ h6,
 .hero-effect {
   width: 100%;
   max-width: 1044px;
-  background: url('../../../public/uploads/dashboard/dashboarbgVector.svg');
+  background: url('/uploads/dashboard/dashboarbgVector.svg');
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;

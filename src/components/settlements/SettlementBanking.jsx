@@ -46,6 +46,11 @@ const SettlementBanking = ({ banking, error }) => {
       {isVerified ? 'Verified' : 'Not Verified'}
     </p>
   ), []);
+  const settlementSchedule = banking?.settlementFrequency === "monthly"
+    ? `Day ${banking?.dayOfMonth || 1} of month`
+    : banking?.settlementFrequency === "yearly"
+      ? "Once per year"
+      : banking?.dayOfMonth || "N/A";
 
   if (error) {
     return (
@@ -126,7 +131,7 @@ const SettlementBanking = ({ banking, error }) => {
           />
           <BankField 
             label="Payout Method" 
-            value={banking.payoutMethod === 'EFT' ? 'ETF' : banking.payoutMethod} 
+            value={banking.payoutMethod === 'EFT' ? 'EFT' : banking.payoutMethod} 
           />
         </div>
       </div>
@@ -141,8 +146,8 @@ const SettlementBanking = ({ banking, error }) => {
             value={banking.settlementFrequency} 
           />
           <BankField 
-            label="Settlement Date" 
-            value={banking.dayOfMonth} 
+            label="Settlement Schedule" 
+            value={settlementSchedule} 
           />
           
           <div>

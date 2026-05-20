@@ -14,7 +14,13 @@ import { getOccasions } from '@/lib/action/occasionAction';
 
 // Create async component for occasions
 async function OccasionsContent() {
-  const occasions = await getOccasions({ isActive: true, limit: 100, page: 1,sortOrder:"desc" });
+  const occasions = await getOccasions({
+    isActive: true,
+    limit: 100,
+    page: 1,
+    sortBy: "displayOrder",
+    sortOrder: "asc",
+  });
   
   return (
     <OccasionsSection 

@@ -116,7 +116,7 @@ const PersonalMessageStep = () => {
   const isMessageEmpty = !message.trim() || message.trim().length === 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4  py-30 md:px-8 md:py-30">
+    <div className="min-h-screen bg-gray-50 px-4 py-20 sm:py-24 md:px-8 md:py-30">
       <div className="max-w-7xl mx-auto sm:px-6">
 
         {/* Back Button and Bulk Mode Indicator */}
@@ -190,7 +190,7 @@ const PersonalMessageStep = () => {
         md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
       "
             >
-              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="hidden md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
               <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
                 <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
@@ -200,12 +200,12 @@ const PersonalMessageStep = () => {
                 </div>
               </div>
 
-              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="hidden md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
           {/* Desktop spacer only */}
-          <div className="md:block w-35" />
+          <div className="hidden md:block w-35" />
         </div>
 
         {/* Header */}
@@ -242,7 +242,7 @@ const PersonalMessageStep = () => {
               </div>
             </div>
 
-            <div className="px-3 py-2 rounded-[50px] bg-[rgba(250,143,66,0.1)] border border-pink-200 text-sm font-semibold leading-4.5 
+            <div className="w-full sm:w-auto px-3 py-2 rounded-[24px] bg-[rgba(250,143,66,0.1)] border border-pink-200 text-sm font-semibold leading-4.5 
                 text-[#4A4A4A] font-['Inter']">
               ❤️ Tip: Be genuine and speak from the heart
             </div>
@@ -284,7 +284,7 @@ const PersonalMessageStep = () => {
             {showEmojiPicker && (
               <div
                 ref={pickerRef}
-                className="absolute right-0 bottom-14 z-30 rounded-xl overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.18)] bg-white"
+                className="absolute left-1/2 right-auto bottom-14 z-30 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0 rounded-xl overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.18)] bg-white"
                 style={{ width: "min(320px, calc(100vw - 2rem))" }}
               >
                 <EmojiPicker
@@ -315,13 +315,13 @@ const PersonalMessageStep = () => {
         <button
   onClick={handleContinue}
   // disabled={isMessageEmpty}
-  className={`group w-full sm:w-auto max-w-fit mx-auto
+  className={`group w-full sm:w-auto sm:max-w-fit mx-auto
   flex items-center justify-center gap-2
   px-6 md:px-10 py-3 md:py-4
   rounded-full font-semibold text-sm md:text-base
   transition-all duration-300
   shadow-md bg-gradient-to-r from-pink-500 to-orange-400 hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500 hover:shadow-xl hover:scale-105
-  text-white whitespace-nowrap`}
+  text-white text-center`}
 >
             Schedule Delivery Date
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createColumnHelper } from "@tanstack/react-table";
 import {
   Clock,
@@ -20,6 +20,7 @@ import { currencyList } from "@/components/brandsPartner/currency";
 import ProcessSettlementModal from "./ProcessSettlementModal";
 import { RefreshCw } from "lucide-react";
 import { syncShopifyDataMonthly } from "../../scripts/giftcard";
+import { formatSettlementNumber } from "@/lib/settlement/formatSettlementDisplay";
 
 export default function SettlementsClient({
   initialData,
@@ -32,12 +33,17 @@ export default function SettlementsClient({
   const [syncing, setSyncing] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   console.log("initialData", initialData)
 
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "$";
+  const getSettlementTypeLabel = (value) => {
+    if (value === "yearly") return "Yearly Settlement";
+    return "Monthly Settlement";
+  };
 
   const monthOptions = useMemo(() => {
     const options = [];
@@ -61,6 +67,31 @@ export default function SettlementsClient({
       return { value: year.toString(), label: year.toString() };
     });
   }, []);
+
+  const frequencyOptions = useMemo(
+    () => [
+      { value: "monthly", label: "Monthly" },
+      { value: "yearly", label: "Yearly" },
+    ],
+    [],
+  );
+
+  const currentFrequency =
+    searchParams.get("frequency")
+    || initialFilterInfo?.appliedFrequency
+    || "";
+  const currentStatus =
+    searchParams.get("status")
+    || initialFilterInfo?.appliedStatus
+    || "";
+  const currentFilterMonth =
+    searchParams.get("filterMonth")
+    || initialFilterInfo?.appliedMonth
+    || "";
+  const currentFilterYear =
+    searchParams.get("filterYear")
+    || initialFilterInfo?.appliedYear
+    || "";
 
   const handlePageChange = (page) => {
     const params = new URLSearchParams(window.location.search);
@@ -186,7 +217,9 @@ export default function SettlementsClient({
             <div className="font-semibold text-[#1A1A1A]">{info.getValue()}</div>
             {info.row.original.brandBankings?.settlementFrequency && (
               <div className="text-xs text-[#64748B] capitalize">
-                {info.row.original.brandBankings.settlementFrequency}
+                {getSettlementTypeLabel(
+                  info.row.original.brandBankings.settlementFrequency,
+                )}
               </div>
             )}
           </div>
@@ -212,7 +245,7 @@ export default function SettlementsClient({
           <div>
             <div className="text-[#1A1A1A] font-semibold">
               {getCurrencySymbol(row.currency)}
-              {baseAmount.toLocaleString()}
+              {formatSettlementNumber(baseAmount)}
             </div>
             <div className="text-xs text-gray-500">
               {row.totalSold || 0} Units •{" "}
@@ -235,7 +268,7 @@ export default function SettlementsClient({
           <div className="space-y-0.5">
             <div className="text-[#1A1A1A] font-semibold">
               {getCurrencySymbol(row.currency)}
-              {netPayable.toLocaleString()}
+              {formatSettlementNumber(netPayable)}
             </div>
             {/* {commissionAmount >= 1 && commissionType && (
                                 <div className="text-xs text-red-600">
@@ -261,7 +294,7 @@ export default function SettlementsClient({
           <div className="space-y-0.5">
             <div className="text-[#1A1A1A] font-semibold">
               {getCurrencySymbol(info.row.original.currency)}
-              {commissionValue.toLocaleString()}
+              {formatSettlementNumber(commissionValue)}
             </div>
           </div>
         );
@@ -276,7 +309,7 @@ export default function SettlementsClient({
           <div className="space-y-0.5">
             <div className="text-[#1A1A1A] font-semibold">
               {getCurrencySymbol(row.currency)}
-              {vatAmount.toLocaleString()}
+              {formatSettlementNumber(vatAmount)}
             </div>
           </div>
         );
@@ -298,12 +331,12 @@ export default function SettlementsClient({
           <div>
             <div className={`font-semibold ${isFullyPaid ? 'text-green-600' : hasOutstanding ? 'text-orange-600' : 'text-gray-900'}`}>
               {getCurrencySymbol(row.currency)}
-              {amount.toLocaleString()}
+              {formatSettlementNumber(amount)}
             </div>
             {totalPaid > 0 && (
               <div className="text-xs text-[#64748B]">
                 Paid: {getCurrencySymbol(row.currency)}
-                {totalPaid.toLocaleString()}
+                {formatSettlementNumber(totalPaid)}
               </div>
             )}
           </div>
@@ -400,19 +433,28 @@ export default function SettlementsClient({
           searchPlaceholder="Brand or settlement ID..."
           filters={[
             {
+              name: "frequency",
+              placeholder: "Settlement Type: All",
+              options: frequencyOptions,
+              value: currentFrequency,
+            },
+            {
               name: "filterMonth",
               placeholder: "Last Month (Default)",
               options: monthOptions,
+              value: currentFilterMonth,
             },
             {
               name: "filterYear",
               placeholder: "Select Year",
               options: yearOptions,
+              value: currentFilterYear,
             },
             {
               name: "status",
               placeholder: "Status: All",
               options: statusFilterOptions,
+              value: currentStatus,
             },
           ]}
         // actions={[

@@ -37,7 +37,6 @@ export type BulkRecipientSumAggregateOutputType = {
 export type BulkRecipientMinAggregateOutputType = {
   id: string | null
   orderId: string | null
-  voucherCodeId: string | null
   recipientName: string | null
   recipientEmail: string | null
   recipientPhone: string | null
@@ -50,12 +49,12 @@ export type BulkRecipientMinAggregateOutputType = {
   rowNumber: number | null
   createdAt: Date | null
   updatedAt: Date | null
+  voucherCodeId: string | null
 }
 
 export type BulkRecipientMaxAggregateOutputType = {
   id: string | null
   orderId: string | null
-  voucherCodeId: string | null
   recipientName: string | null
   recipientEmail: string | null
   recipientPhone: string | null
@@ -68,12 +67,12 @@ export type BulkRecipientMaxAggregateOutputType = {
   rowNumber: number | null
   createdAt: Date | null
   updatedAt: Date | null
+  voucherCodeId: string | null
 }
 
 export type BulkRecipientCountAggregateOutputType = {
   id: number
   orderId: number
-  voucherCodeId: number
   recipientName: number
   recipientEmail: number
   recipientPhone: number
@@ -86,6 +85,7 @@ export type BulkRecipientCountAggregateOutputType = {
   rowNumber: number
   createdAt: number
   updatedAt: number
+  voucherCodeId: number
   _all: number
 }
 
@@ -101,7 +101,6 @@ export type BulkRecipientSumAggregateInputType = {
 export type BulkRecipientMinAggregateInputType = {
   id?: true
   orderId?: true
-  voucherCodeId?: true
   recipientName?: true
   recipientEmail?: true
   recipientPhone?: true
@@ -114,12 +113,12 @@ export type BulkRecipientMinAggregateInputType = {
   rowNumber?: true
   createdAt?: true
   updatedAt?: true
+  voucherCodeId?: true
 }
 
 export type BulkRecipientMaxAggregateInputType = {
   id?: true
   orderId?: true
-  voucherCodeId?: true
   recipientName?: true
   recipientEmail?: true
   recipientPhone?: true
@@ -132,12 +131,12 @@ export type BulkRecipientMaxAggregateInputType = {
   rowNumber?: true
   createdAt?: true
   updatedAt?: true
+  voucherCodeId?: true
 }
 
 export type BulkRecipientCountAggregateInputType = {
   id?: true
   orderId?: true
-  voucherCodeId?: true
   recipientName?: true
   recipientEmail?: true
   recipientPhone?: true
@@ -150,6 +149,7 @@ export type BulkRecipientCountAggregateInputType = {
   rowNumber?: true
   createdAt?: true
   updatedAt?: true
+  voucherCodeId?: true
   _all?: true
 }
 
@@ -242,7 +242,6 @@ export type BulkRecipientGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
 export type BulkRecipientGroupByOutputType = {
   id: string
   orderId: string
-  voucherCodeId: string | null
   recipientName: string
   recipientEmail: string
   recipientPhone: string | null
@@ -255,6 +254,7 @@ export type BulkRecipientGroupByOutputType = {
   rowNumber: number
   createdAt: Date
   updatedAt: Date
+  voucherCodeId: string | null
   _count: BulkRecipientCountAggregateOutputType | null
   _avg: BulkRecipientAvgAggregateOutputType | null
   _sum: BulkRecipientSumAggregateOutputType | null
@@ -283,7 +283,6 @@ export type BulkRecipientWhereInput = {
   NOT?: Prisma.BulkRecipientWhereInput | Prisma.BulkRecipientWhereInput[]
   id?: Prisma.StringFilter<"BulkRecipient"> | string
   orderId?: Prisma.StringFilter<"BulkRecipient"> | string
-  voucherCodeId?: Prisma.StringNullableFilter<"BulkRecipient"> | string | null
   recipientName?: Prisma.StringFilter<"BulkRecipient"> | string
   recipientEmail?: Prisma.StringFilter<"BulkRecipient"> | string
   recipientPhone?: Prisma.StringNullableFilter<"BulkRecipient"> | string | null
@@ -296,6 +295,7 @@ export type BulkRecipientWhereInput = {
   rowNumber?: Prisma.IntFilter<"BulkRecipient"> | number
   createdAt?: Prisma.DateTimeFilter<"BulkRecipient"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BulkRecipient"> | Date | string
+  voucherCodeId?: Prisma.StringNullableFilter<"BulkRecipient"> | string | null
   order?: Prisma.XOR<Prisma.OrderScalarRelationFilter, Prisma.OrderWhereInput>
   voucherCode?: Prisma.XOR<Prisma.VoucherCodeNullableScalarRelationFilter, Prisma.VoucherCodeWhereInput> | null
   notificationDetails?: Prisma.NotificationDetailListRelationFilter
@@ -304,7 +304,6 @@ export type BulkRecipientWhereInput = {
 export type BulkRecipientOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
-  voucherCodeId?: Prisma.SortOrderInput | Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   recipientEmail?: Prisma.SortOrder
   recipientPhone?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -317,6 +316,7 @@ export type BulkRecipientOrderByWithRelationInput = {
   rowNumber?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  voucherCodeId?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.OrderOrderByWithRelationInput
   voucherCode?: Prisma.VoucherCodeOrderByWithRelationInput
   notificationDetails?: Prisma.NotificationDetailOrderByRelationAggregateInput
@@ -349,7 +349,6 @@ export type BulkRecipientWhereUniqueInput = Prisma.AtLeast<{
 export type BulkRecipientOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
-  voucherCodeId?: Prisma.SortOrderInput | Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   recipientEmail?: Prisma.SortOrder
   recipientPhone?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -362,6 +361,7 @@ export type BulkRecipientOrderByWithAggregationInput = {
   rowNumber?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  voucherCodeId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.BulkRecipientCountOrderByAggregateInput
   _avg?: Prisma.BulkRecipientAvgOrderByAggregateInput
   _max?: Prisma.BulkRecipientMaxOrderByAggregateInput
@@ -375,7 +375,6 @@ export type BulkRecipientScalarWhereWithAggregatesInput = {
   NOT?: Prisma.BulkRecipientScalarWhereWithAggregatesInput | Prisma.BulkRecipientScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"BulkRecipient"> | string
   orderId?: Prisma.StringWithAggregatesFilter<"BulkRecipient"> | string
-  voucherCodeId?: Prisma.StringNullableWithAggregatesFilter<"BulkRecipient"> | string | null
   recipientName?: Prisma.StringWithAggregatesFilter<"BulkRecipient"> | string
   recipientEmail?: Prisma.StringWithAggregatesFilter<"BulkRecipient"> | string
   recipientPhone?: Prisma.StringNullableWithAggregatesFilter<"BulkRecipient"> | string | null
@@ -388,6 +387,7 @@ export type BulkRecipientScalarWhereWithAggregatesInput = {
   rowNumber?: Prisma.IntWithAggregatesFilter<"BulkRecipient"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"BulkRecipient"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"BulkRecipient"> | Date | string
+  voucherCodeId?: Prisma.StringNullableWithAggregatesFilter<"BulkRecipient"> | string | null
 }
 
 export type BulkRecipientCreateInput = {
@@ -412,7 +412,6 @@ export type BulkRecipientCreateInput = {
 export type BulkRecipientUncheckedCreateInput = {
   id?: string
   orderId: string
-  voucherCodeId?: string | null
   recipientName: string
   recipientEmail: string
   recipientPhone?: string | null
@@ -425,6 +424,7 @@ export type BulkRecipientUncheckedCreateInput = {
   rowNumber: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  voucherCodeId?: string | null
   notificationDetails?: Prisma.NotificationDetailUncheckedCreateNestedManyWithoutBulkRecipientInput
 }
 
@@ -450,7 +450,6 @@ export type BulkRecipientUpdateInput = {
 export type BulkRecipientUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientEmail?: Prisma.StringFieldUpdateOperationsInput | string
   recipientPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -463,13 +462,13 @@ export type BulkRecipientUncheckedUpdateInput = {
   rowNumber?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationDetails?: Prisma.NotificationDetailUncheckedUpdateManyWithoutBulkRecipientNestedInput
 }
 
 export type BulkRecipientCreateManyInput = {
   id?: string
   orderId: string
-  voucherCodeId?: string | null
   recipientName: string
   recipientEmail: string
   recipientPhone?: string | null
@@ -482,6 +481,7 @@ export type BulkRecipientCreateManyInput = {
   rowNumber: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  voucherCodeId?: string | null
 }
 
 export type BulkRecipientUpdateManyMutationInput = {
@@ -503,7 +503,6 @@ export type BulkRecipientUpdateManyMutationInput = {
 export type BulkRecipientUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientEmail?: Prisma.StringFieldUpdateOperationsInput | string
   recipientPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -516,6 +515,7 @@ export type BulkRecipientUncheckedUpdateManyInput = {
   rowNumber?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type BulkRecipientNullableScalarRelationFilter = {
@@ -536,7 +536,6 @@ export type BulkRecipientOrderByRelationAggregateInput = {
 export type BulkRecipientCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
-  voucherCodeId?: Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   recipientEmail?: Prisma.SortOrder
   recipientPhone?: Prisma.SortOrder
@@ -549,6 +548,7 @@ export type BulkRecipientCountOrderByAggregateInput = {
   rowNumber?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  voucherCodeId?: Prisma.SortOrder
 }
 
 export type BulkRecipientAvgOrderByAggregateInput = {
@@ -558,7 +558,6 @@ export type BulkRecipientAvgOrderByAggregateInput = {
 export type BulkRecipientMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
-  voucherCodeId?: Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   recipientEmail?: Prisma.SortOrder
   recipientPhone?: Prisma.SortOrder
@@ -571,12 +570,12 @@ export type BulkRecipientMaxOrderByAggregateInput = {
   rowNumber?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  voucherCodeId?: Prisma.SortOrder
 }
 
 export type BulkRecipientMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   orderId?: Prisma.SortOrder
-  voucherCodeId?: Prisma.SortOrder
   recipientName?: Prisma.SortOrder
   recipientEmail?: Prisma.SortOrder
   recipientPhone?: Prisma.SortOrder
@@ -589,6 +588,7 @@ export type BulkRecipientMinOrderByAggregateInput = {
   rowNumber?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  voucherCodeId?: Prisma.SortOrder
 }
 
 export type BulkRecipientSumOrderByAggregateInput = {
@@ -793,7 +793,6 @@ export type BulkRecipientCreateWithoutOrderInput = {
 
 export type BulkRecipientUncheckedCreateWithoutOrderInput = {
   id?: string
-  voucherCodeId?: string | null
   recipientName: string
   recipientEmail: string
   recipientPhone?: string | null
@@ -806,6 +805,7 @@ export type BulkRecipientUncheckedCreateWithoutOrderInput = {
   rowNumber: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  voucherCodeId?: string | null
   notificationDetails?: Prisma.NotificationDetailUncheckedCreateNestedManyWithoutBulkRecipientInput
 }
 
@@ -841,7 +841,6 @@ export type BulkRecipientScalarWhereInput = {
   NOT?: Prisma.BulkRecipientScalarWhereInput | Prisma.BulkRecipientScalarWhereInput[]
   id?: Prisma.StringFilter<"BulkRecipient"> | string
   orderId?: Prisma.StringFilter<"BulkRecipient"> | string
-  voucherCodeId?: Prisma.StringNullableFilter<"BulkRecipient"> | string | null
   recipientName?: Prisma.StringFilter<"BulkRecipient"> | string
   recipientEmail?: Prisma.StringFilter<"BulkRecipient"> | string
   recipientPhone?: Prisma.StringNullableFilter<"BulkRecipient"> | string | null
@@ -854,6 +853,7 @@ export type BulkRecipientScalarWhereInput = {
   rowNumber?: Prisma.IntFilter<"BulkRecipient"> | number
   createdAt?: Prisma.DateTimeFilter<"BulkRecipient"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"BulkRecipient"> | Date | string
+  voucherCodeId?: Prisma.StringNullableFilter<"BulkRecipient"> | string | null
 }
 
 export type BulkRecipientCreateWithoutNotificationDetailsInput = {
@@ -877,7 +877,6 @@ export type BulkRecipientCreateWithoutNotificationDetailsInput = {
 export type BulkRecipientUncheckedCreateWithoutNotificationDetailsInput = {
   id?: string
   orderId: string
-  voucherCodeId?: string | null
   recipientName: string
   recipientEmail: string
   recipientPhone?: string | null
@@ -890,6 +889,7 @@ export type BulkRecipientUncheckedCreateWithoutNotificationDetailsInput = {
   rowNumber: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  voucherCodeId?: string | null
 }
 
 export type BulkRecipientCreateOrConnectWithoutNotificationDetailsInput = {
@@ -929,7 +929,6 @@ export type BulkRecipientUpdateWithoutNotificationDetailsInput = {
 export type BulkRecipientUncheckedUpdateWithoutNotificationDetailsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   orderId?: Prisma.StringFieldUpdateOperationsInput | string
-  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientEmail?: Prisma.StringFieldUpdateOperationsInput | string
   recipientPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -942,11 +941,11 @@ export type BulkRecipientUncheckedUpdateWithoutNotificationDetailsInput = {
   rowNumber?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type BulkRecipientCreateManyOrderInput = {
   id?: string
-  voucherCodeId?: string | null
   recipientName: string
   recipientEmail: string
   recipientPhone?: string | null
@@ -959,6 +958,7 @@ export type BulkRecipientCreateManyOrderInput = {
   rowNumber: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  voucherCodeId?: string | null
 }
 
 export type BulkRecipientUpdateWithoutOrderInput = {
@@ -981,7 +981,6 @@ export type BulkRecipientUpdateWithoutOrderInput = {
 
 export type BulkRecipientUncheckedUpdateWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientEmail?: Prisma.StringFieldUpdateOperationsInput | string
   recipientPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -994,12 +993,12 @@ export type BulkRecipientUncheckedUpdateWithoutOrderInput = {
   rowNumber?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notificationDetails?: Prisma.NotificationDetailUncheckedUpdateManyWithoutBulkRecipientNestedInput
 }
 
 export type BulkRecipientUncheckedUpdateManyWithoutOrderInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recipientName?: Prisma.StringFieldUpdateOperationsInput | string
   recipientEmail?: Prisma.StringFieldUpdateOperationsInput | string
   recipientPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1012,6 +1011,7 @@ export type BulkRecipientUncheckedUpdateManyWithoutOrderInput = {
   rowNumber?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  voucherCodeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -1048,7 +1048,6 @@ export type BulkRecipientCountOutputTypeCountNotificationDetailsArgs<ExtArgs ext
 export type BulkRecipientSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   orderId?: boolean
-  voucherCodeId?: boolean
   recipientName?: boolean
   recipientEmail?: boolean
   recipientPhone?: boolean
@@ -1061,6 +1060,7 @@ export type BulkRecipientSelect<ExtArgs extends runtime.Types.Extensions.Interna
   rowNumber?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  voucherCodeId?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.BulkRecipient$voucherCodeArgs<ExtArgs>
   notificationDetails?: boolean | Prisma.BulkRecipient$notificationDetailsArgs<ExtArgs>
@@ -1070,7 +1070,6 @@ export type BulkRecipientSelect<ExtArgs extends runtime.Types.Extensions.Interna
 export type BulkRecipientSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   orderId?: boolean
-  voucherCodeId?: boolean
   recipientName?: boolean
   recipientEmail?: boolean
   recipientPhone?: boolean
@@ -1083,6 +1082,7 @@ export type BulkRecipientSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   rowNumber?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  voucherCodeId?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.BulkRecipient$voucherCodeArgs<ExtArgs>
 }, ExtArgs["result"]["bulkRecipient"]>
@@ -1090,7 +1090,6 @@ export type BulkRecipientSelectCreateManyAndReturn<ExtArgs extends runtime.Types
 export type BulkRecipientSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   orderId?: boolean
-  voucherCodeId?: boolean
   recipientName?: boolean
   recipientEmail?: boolean
   recipientPhone?: boolean
@@ -1103,6 +1102,7 @@ export type BulkRecipientSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   rowNumber?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  voucherCodeId?: boolean
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.BulkRecipient$voucherCodeArgs<ExtArgs>
 }, ExtArgs["result"]["bulkRecipient"]>
@@ -1110,7 +1110,6 @@ export type BulkRecipientSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
 export type BulkRecipientSelectScalar = {
   id?: boolean
   orderId?: boolean
-  voucherCodeId?: boolean
   recipientName?: boolean
   recipientEmail?: boolean
   recipientPhone?: boolean
@@ -1123,9 +1122,10 @@ export type BulkRecipientSelectScalar = {
   rowNumber?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  voucherCodeId?: boolean
 }
 
-export type BulkRecipientOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "voucherCodeId" | "recipientName" | "recipientEmail" | "recipientPhone" | "personalMessage" | "emailSent" | "emailSentAt" | "emailDelivered" | "emailDeliveredAt" | "emailError" | "rowNumber" | "createdAt" | "updatedAt", ExtArgs["result"]["bulkRecipient"]>
+export type BulkRecipientOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "recipientName" | "recipientEmail" | "recipientPhone" | "personalMessage" | "emailSent" | "emailSentAt" | "emailDelivered" | "emailDeliveredAt" | "emailError" | "rowNumber" | "createdAt" | "updatedAt" | "voucherCodeId", ExtArgs["result"]["bulkRecipient"]>
 export type BulkRecipientInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.OrderDefaultArgs<ExtArgs>
   voucherCode?: boolean | Prisma.BulkRecipient$voucherCodeArgs<ExtArgs>
@@ -1151,7 +1151,6 @@ export type $BulkRecipientPayload<ExtArgs extends runtime.Types.Extensions.Inter
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     orderId: string
-    voucherCodeId: string | null
     recipientName: string
     recipientEmail: string
     recipientPhone: string | null
@@ -1164,6 +1163,7 @@ export type $BulkRecipientPayload<ExtArgs extends runtime.Types.Extensions.Inter
     rowNumber: number
     createdAt: Date
     updatedAt: Date
+    voucherCodeId: string | null
   }, ExtArgs["result"]["bulkRecipient"]>
   composites: {}
 }
@@ -1592,7 +1592,6 @@ export interface Prisma__BulkRecipientClient<T, Null = never, ExtArgs extends ru
 export interface BulkRecipientFieldRefs {
   readonly id: Prisma.FieldRef<"BulkRecipient", 'String'>
   readonly orderId: Prisma.FieldRef<"BulkRecipient", 'String'>
-  readonly voucherCodeId: Prisma.FieldRef<"BulkRecipient", 'String'>
   readonly recipientName: Prisma.FieldRef<"BulkRecipient", 'String'>
   readonly recipientEmail: Prisma.FieldRef<"BulkRecipient", 'String'>
   readonly recipientPhone: Prisma.FieldRef<"BulkRecipient", 'String'>
@@ -1605,6 +1604,7 @@ export interface BulkRecipientFieldRefs {
   readonly rowNumber: Prisma.FieldRef<"BulkRecipient", 'Int'>
   readonly createdAt: Prisma.FieldRef<"BulkRecipient", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"BulkRecipient", 'DateTime'>
+  readonly voucherCodeId: Prisma.FieldRef<"BulkRecipient", 'String'>
 }
     
 

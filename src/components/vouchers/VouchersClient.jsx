@@ -10,6 +10,7 @@ import Modal from "@/components/Modal";
 import VoucherDetails from "@/components/vouchers/VoucherDetails";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { currencyList } from "../brandsPartner/currency";
+import { isAdminRole } from "@/lib/roles";
 
 export default function VouchersClient({ initialVouchers, initialPagination, user, initialBrands = [] }) {
   const router = useRouter();
@@ -273,7 +274,7 @@ export default function VouchersClient({ initialVouchers, initialPagination, use
     </div>
   );
 
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = isAdminRole(user?.role);
 
   const customColumns = [
     columnHelper.accessor((row) => row.brandName || "", {

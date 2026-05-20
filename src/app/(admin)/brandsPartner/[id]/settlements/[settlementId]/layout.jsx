@@ -4,18 +4,7 @@ import SettlementActions from "../../../../../../components/settlements/Settleme
 import SettlementDashboard from "../../../../../../components/settlements/SettlementDashboard";
 import SettlementTabs from "../../../../../../components/settlements/SettlementTabs";
 import { getSettlementDetails } from "../../../../../../lib/action/brandPartner";
-
-const getMonthYear = (date) => {
-    if (!date) return "N/A";
-    try {
-        return new Date(date).toLocaleDateString("en-US", {
-            month: "long",
-            year: "numeric",
-        });
-    } catch (error) {
-        return "Invalid Date";
-    }
-};
+import { formatSettlementPeriodLabel } from "@/lib/settlement/formatSettlementDisplay";
 
 const StatusBadge = ({ status }) => {
     const statusConfig = {
@@ -49,6 +38,10 @@ const SettlementLayout = async ({ children, params }) => {
     }
 
     const settlement = res.data;
+    const periodLabel = formatSettlementPeriodLabel(
+        settlement.periodStart,
+        settlement.frequency,
+    ) || "Settlement";
 
     return (
         <div className="relative flex min-h-screen w-full flex-col bg-[#f7f8fa]">
@@ -65,7 +58,7 @@ const SettlementLayout = async ({ children, params }) => {
 
                             <div className="flex flex-col gap-1">
                                 <h1 className="text-[22px] font-semibold text-[#1A1A1A] leading-[20px] font-poppins">
-                                    {settlement?.brandName + " " + getMonthYear(settlement.periodStart)} Settlement
+                                    {settlement?.brandName} {periodLabel} Settlement
                                 </h1>
                                 <p className="text-[14px] font-medium text-[#64748B] leading-[18px] font-inter">
                                     Review the complete financial breakdown for this period.

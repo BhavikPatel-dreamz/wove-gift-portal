@@ -6,7 +6,30 @@ import Card from "../forms/Card";
 import Toggle from "../forms/Toggle";
 import { ArrowLeft, Edit3, Plus, MoreVertical, Trash2, Copy, Loader2, Search, Filter, SortDesc, ChevronLeft, ChevronRight, Loader } from "lucide-react";
 import CreateNewCard from "./CreateNewCard";
-import { getOccasionCategories, updateOccasionCategory, deleteOccasionCategory, getOccasionCategoryById } from "../../lib/action/occasionAction";
+import { getOccasionCategories, updateOccasionCategory, deleteOccasionCategory, getOccasionCategoryById, reorderOccasionCategory } from "../../lib/action/occasionAction";
+
+function reorderCardsLocally(cards, cardId, targetOrder) {
+  const orderedCards = [...cards].sort(
+    (a, b) => a.displayOrder - b.displayOrder,
+  );
+  const currentIndex = orderedCards.findIndex((card) => card.id === cardId);
+
+  if (currentIndex === -1) {
+    return cards;
+  }
+
+  const boundedIndex = Math.min(
+    Math.max(targetOrder - 1, 0),
+    orderedCards.length - 1,
+  );
+  const [movedCard] = orderedCards.splice(currentIndex, 1);
+  orderedCards.splice(boundedIndex, 0, movedCard);
+
+  return orderedCards.map((card, index) => ({
+    ...card,
+    displayOrder: index + 1,
+  }));
+}
 
 const CardDesigns = ({
   occasion: initialOccasion,
@@ -24,7 +47,7 @@ const CardDesigns = ({
   const currentPage = Number(searchParams.get('cardPage')) || 1;
   const searchTermFromUrl = searchParams.get('cardSearch') || '';
   const filterStatus = searchParams.get('cardFilter') || 'all';
-  const sortBy = searchParams.get('cardSortBy') || 'newest';
+  const sortBy = searchParams.get('cardSortBy') || 'displayOrder';
   const itemsPerPage = Number(searchParams.get('cardLimit')) || 12;
 
   const [occasion] = useState(initialOccasion); // Remove setOccasion as it's not used
@@ -44,6 +67,7 @@ const CardDesigns = ({
   const [cardToEdit, setCardToEdit] = useState(null);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCards, setTotalCards] = useState(0);
+  const [savingPriorityFor, setSavingPriorityFor] = useState(null);
   const dropdownRef = useRef(null);
 
   // Pagination info
@@ -125,8 +149,14 @@ const CardDesigns = ({
         page: currentPage,
         limit: itemsPerPage,
         search: searchTermFromUrl || undefined,
-        sortBy: sortBy === 'name' ? 'name' : 'createdAt',
-        sortOrder: sortBy === 'oldest' ? 'asc' : 'desc',
+        sortBy:
+          sortBy === 'name'
+            ? 'name'
+            : sortBy === 'displayOrder'
+              ? 'displayOrder'
+              : 'createdAt',
+        sortOrder:
+          sortBy === 'oldest' || sortBy === 'displayOrder' ? 'asc' : 'desc',
       });
 
       if (result.success) {
@@ -137,6 +167,7 @@ const CardDesigns = ({
           preview: category.emoji,
           imageUrl: category.image,
           category: category.category,
+          displayOrder: category.displayOrder || 0,
           active: category.isActive,
           createdAt: category.createdAt,
           updatedAt: category.updatedAt
@@ -376,6 +407,46 @@ const CardDesigns = ({
     router.push(`${pathname}?${params.toString()}`);
   };
 
+  const handleMovePriority = useCallback(async (cardId, targetOrder) => {
+    const currentCard = cards.find((card) => card.id === cardId);
+    if (!currentCard) {
+      return;
+    }
+
+    if (targetOrder < 1 || targetOrder > cards.length) {
+      return;
+    }
+    if (targetOrder === currentCard.displayOrder) {
+      return;
+    }
+
+    try {
+      setSavingPriorityFor(cardId);
+      setError(null);
+      const previousCards = cards;
+      const reorderedCards = reorderCardsLocally(cards, cardId, targetOrder);
+
+      setCards(reorderedCards);
+
+      const result = await reorderOccasionCategory({
+        occasionId: occasion.id,
+        categoryId: cardId,
+        displayOrder: targetOrder,
+      });
+
+      if (!result.success) {
+        setCards(previousCards);
+        setError(result.message || 'Failed to update card order');
+      }
+    } catch (err) {
+      console.error('Error updating card order:', err);
+      setCards(cards);
+      setError('Failed to update card order');
+    } finally {
+      setSavingPriorityFor(null);
+    }
+  }, [cards, occasion.id]);
+
   // Show create/edit views
   if (isCreatingCard) {
     return (
@@ -410,13 +481,6 @@ const CardDesigns = ({
               </Button>
 
               <div className="flex items-center space-x-3">
-                {occasion.emoji && occasion.emoji !== "Select Emoji" && (
-                  <div className="shrink-0">
-                    <div className="w-10 h-10 rounded-xl bg-linear-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-xl border border-indigo-100">
-                      {occasion.emoji}
-                    </div>
-                  </div>
-                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h1 className="text-[20px] sm:text-[22px] font-semibold text-[#1A1A1A] truncate max-w-55 sm:max-w-none">{occasion.name}</h1>
@@ -487,6 +551,7 @@ const CardDesigns = ({
                     onChange={(e) => handleSortChange(e.target.value)}
                     className="appearance-none pl-8 pr-7 py-2 border border-gray-300 rounded-md text-[#4A4A4A] bg-white transition-colors duration-200 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                   >
+                    <option value="displayOrder">Display Order</option>
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
                     <option value="name">Name A-Z</option>
@@ -518,6 +583,9 @@ const CardDesigns = ({
               </h2>
               <p className="text-[#64748B] text-xs sm:text-sm font-medium">
                 Manage your card design collection
+              </p>
+              <p className="text-[#94A3B8] text-[11px] sm:text-xs font-medium mt-1">
+                Pick any position from the dropdown to control the client-side display order.
               </p>
             </div>
 
@@ -667,8 +735,8 @@ const CardDesigns = ({
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="flex items-center justify-center h-full text-5xl">
-                          {card.preview}
+                        <div className="flex items-center justify-center h-full text-5xl font-semibold text-indigo-200">
+                          {(card.title || '?').charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div className="absolute top-2 right-2">
@@ -679,8 +747,8 @@ const CardDesigns = ({
                     </div>
 
                     {/* Hover Actions */}
-                    <div className="absolute inset-0  bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center space-x-2">
+                    <div className="pointer-events-none absolute inset-0 bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <div className="pointer-events-auto flex items-center space-x-2">
                         <Button
                           size="sm"
                           variant="ghost"
@@ -704,7 +772,12 @@ const CardDesigns = ({
                     <div className="p-4 border-t border-gray-100">
                       <div className="mb-4">
                         <div className="flex items-start justify-between">
-                          <h4 className="font-semibold text-[18px] text-[#1A1A1A] truncate flex-1 mr-2">{card.title}</h4>
+                          <h4
+                            className="font-semibold text-[18px] text-[#1A1A1A] truncate flex-1 mr-2"
+                            title={card.title || ""}
+                          >
+                            {card.title}
+                          </h4>
                           <Toggle
                             checked={card.active}
                             onChange={() => handleToggleCardActive(card.id, card.active)}
@@ -712,10 +785,43 @@ const CardDesigns = ({
                             className="shrink-0"
                           />
                         </div>
-                        <p className="text-sm text-[#4A4A4A] truncate mb-3">{card.description}</p>
+                        <p
+                          className="text-sm text-[#4A4A4A] truncate mb-3"
+                          title={card.description || ""}
+                        >
+                          {card.description}
+                        </p>
                       </div>
 
-                      <p className="text-xs text-[#4A4A4A] font-normal truncate">Category: {card.category}</p>
+                      <div className="mb-4 rounded-xl border border-[#E5E7EB] bg-linear-to-r from-slate-50 to-white px-3 py-3 shadow-xs">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#64748B]">
+                              Display Order
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={card.displayOrder}
+                              onChange={(e) =>
+                                handleMovePriority(card.id, Number(e.target.value))
+                              }
+                              disabled={savingPriorityFor === card.id}
+                              className="min-w-[7rem] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-100"
+                            >
+                              {Array.from({ length: cards.length }, (_, index) => {
+                                const position = index + 1;
+                                return (
+                                  <option key={position} value={position}>
+                                    Position {position}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Metadata */}
                       <div className="flex items-center justify-between text-xs text-[#4A4A4A]">
                         <span>

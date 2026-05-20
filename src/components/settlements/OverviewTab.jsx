@@ -1,5 +1,6 @@
 import React from "react";
 import { currencyList } from "../brandsPartner/currency";
+import { formatSettlementNumber } from "@/lib/settlement/formatSettlementDisplay";
 
 const OverviewTab = ({ settlement }) => {
     const getCurrencySymbol = (code) =>
@@ -27,8 +28,7 @@ const OverviewTab = ({ settlement }) => {
     };
 
     const formatCurrency = (amount) => {
-        if (amount === null || amount === undefined) return "0";
-        return amount.toLocaleString();
+        return formatSettlementNumber(amount);
     };
 
     console.log(settlement, "paymentd");

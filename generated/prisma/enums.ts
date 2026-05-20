@@ -14,10 +14,20 @@ export const UserRole = {
   ADMIN: 'ADMIN',
   BRAND_MANAGER: 'BRAND_MANAGER',
   SUPPORT: 'SUPPORT',
-  FINANCE: 'FINANCE'
+  FINANCE: 'FINANCE',
+  SUPER_ADMIN: 'SUPER_ADMIN'
 } as const
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]
+
+
+export const PromoCodeType = {
+  PERCENTAGE: 'PERCENTAGE',
+  FIXED_AMOUNT: 'FIXED_AMOUNT',
+  FREE_GIFT: 'FREE_GIFT'
+} as const
+
+export type PromoCodeType = (typeof PromoCodeType)[keyof typeof PromoCodeType]
 
 
 export const CartItemType = {
@@ -242,10 +252,10 @@ export const OrderProcessingStatus = {
   VOUCHERS_CREATING: 'VOUCHERS_CREATING',
   VOUCHERS_CREATED: 'VOUCHERS_CREATED',
   NOTIFICATIONS_SENDING: 'NOTIFICATIONS_SENDING',
-  PROCESSING: 'PROCESSING',
   COMPLETED: 'COMPLETED',
   FAILED: 'FAILED',
-  RETRYING: 'RETRYING'
+  RETRYING: 'RETRYING',
+  PROCESSING: 'PROCESSING'
 } as const
 
 export type OrderProcessingStatus = (typeof OrderProcessingStatus)[keyof typeof OrderProcessingStatus]

@@ -1,4 +1,5 @@
 import React from "react";
+import { BadgePercent, X } from "lucide-react";
 import { Trash2 } from 'lucide-react';
 import GiftSmallIcon from "../../../../icons/GiftSmallIcon";
 import WhatsupIcon from "../../../../icons/WhatsupIcon";
@@ -18,6 +19,14 @@ const GiftDetailsCard = ({
   isBulkMode,
   quantity,
   companyInfo,
+  promoCodeInput = "",
+  appliedPromo = null,
+  promoError = "",
+  promoSuccessMessage = "",
+  isApplyingPromo = false,
+  onPromoCodeChange = null,
+  onApplyPromo = null,
+  onRemovePromo = null,
 
   // Cart mode props
   cartItems = null,
@@ -26,6 +35,63 @@ const GiftDetailsCard = ({
 }) => {
   const getDeliveryIcon = (method) => {
     return (method === 'email' || isBulkMode) ? MailIcons : method === 'whatsapp' ? WhatsupIcon : PrinterIcon;
+  };
+
+  const renderPromoSection = () => {
+    if (!onPromoCodeChange || !onApplyPromo) return null;
+
+    return (
+      <div className="mt-5 border-t border-[#1A1A1A1A] pt-5">
+        <div className="flex items-center rounded-[18px] border border-[#D8D8D8] bg-white px-4 py-3">
+          <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF2F4] text-[#F25A5A]">
+            <BadgePercent className="h-5 w-5" />
+          </div>
+          <input
+            type="text"
+            value={promoCodeInput}
+            onChange={(event) => onPromoCodeChange(event.target.value)}
+            placeholder="Promocode"
+            className="min-w-0 flex-1 border-0 bg-transparent text-base text-[#1A1A1A] outline-none placeholder:text-[#8B8B8B]"
+            disabled={isApplyingPromo}
+          />
+          <button
+            type="button"
+            onClick={onApplyPromo}
+            disabled={isApplyingPromo || !promoCodeInput.trim()}
+            className="ml-3 text-[15px] font-semibold text-[#F25A5A] transition hover:text-[#E04474] disabled:cursor-not-allowed disabled:text-[#F7A4B9]"
+          >
+            {isApplyingPromo ? "Applying..." : "Apply"}
+          </button>
+        </div>
+
+        {appliedPromo && (
+          <div className="mt-3 flex items-center justify-between rounded-2xl border border-[#F9C8D7] bg-[#FFF7FA] px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-[#1A1A1A]">
+                {appliedPromo.code} applied
+              </p>
+              <p className="text-sm text-[#ED457D]">
+                You saved {formatAmount(appliedPromo.discountAmount)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onRemovePromo}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-[#F2CCD8] bg-white text-[#8B8B8B] transition hover:text-[#1A1A1A]"
+              aria-label="Remove promo code"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {promoError ? (
+          <p className="mt-3 text-sm text-red-500">{promoError}</p>
+        ) : promoSuccessMessage ? (
+          <p className="mt-3 text-sm text-green-600">{promoSuccessMessage}</p>
+        ) : null}
+      </div>
+    );
   };
 
 
@@ -37,7 +103,7 @@ const GiftDetailsCard = ({
     if (method === 'email') {
       return `to ${details?.recipientEmailAddress || 'Friend'}`;
     } else if (method === 'whatsapp') {
-      return 'to Friend';
+      return 'shared manually after payment';
     } else if (isBulkMode) {
       return "";
     } else {
@@ -136,7 +202,8 @@ const GiftDetailsCard = ({
           {message && (
             <div className="p-4 mb-4 rounded-[10px] border border-dashed border-[#A4A4A4] bg-[#F6F6F6]">
               <p className="text-sm font-medium italic leading-6 text-[#4A4A4A] font-['Inter']">
-                "{message}"</p>
+                &quot;{message}&quot;
+              </p>
             </div>
           )}
         </div>
@@ -161,7 +228,7 @@ const GiftDetailsCard = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200">
+    <div className="w-full max-w-[19rem] sm:max-w-none mx-auto bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200">
       {/* Header */}
       <div className="flex items-start sm:items-center gap-3 sm:gap-4 pb-4 mb-4 border-b border-[#1A1A1A1A]">
         {/* Icon */}
@@ -220,9 +287,14 @@ const GiftDetailsCard = ({
               )}
             </div>
           ))}
+
+          {renderPromoSection()}
         </div>
       ) : (
-        renderSingleItem()
+        <>
+          {renderSingleItem()}
+          {renderPromoSection()}
+        </>
       )}
     </div>
 

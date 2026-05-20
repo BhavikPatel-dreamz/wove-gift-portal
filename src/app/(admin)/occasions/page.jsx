@@ -4,11 +4,36 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Plus, Loader, Search, ChevronRight, ChevronLeft, SortAsc, SortDesc } from "lucide-react";
 import CardDesigns from "@/components/occasions/CardDesigns";
 import Button from "@/components/forms/Button";
-import { getOccasions, addOccasion, updateOccasion, deleteOccasion } from "../../../lib/action/occasionAction";
+import { getOccasions, addOccasion, updateOccasion, deleteOccasion, reorderOccasion } from "../../../lib/action/occasionAction";
 import { toast } from "react-hot-toast";
 import CreateOccasionModal from "@/components/forms/CreateOccasionModal";
 import OccasionCard from "@/components/forms/OccasionCard";
 import CustomDropdown from "../../../components/ui/CustomDropdown";
+
+function reorderOccasionsLocally(occasions, occasionId, targetOrder, startingOrder = 1) {
+  const orderedOccasions = [...occasions].sort(
+    (a, b) => a.displayOrder - b.displayOrder,
+  );
+  const currentIndex = orderedOccasions.findIndex(
+    (occasion) => occasion.id === occasionId,
+  );
+
+  if (currentIndex === -1) {
+    return occasions;
+  }
+
+  const boundedIndex = Math.min(
+    Math.max(targetOrder - startingOrder, 0),
+    orderedOccasions.length - 1,
+  );
+  const [movedOccasion] = orderedOccasions.splice(currentIndex, 1);
+  orderedOccasions.splice(boundedIndex, 0, movedOccasion);
+
+  return orderedOccasions.map((occasion, index) => ({
+    ...occasion,
+    displayOrder: startingOrder + index,
+  }));
+}
 
 const OccasionsManager = () => {
   const router = useRouter();
@@ -19,8 +44,8 @@ const OccasionsManager = () => {
   const currentPage = Number(searchParams.get('page')) || 1;
   const itemsPerPage = Number(searchParams.get('limit')) || 12;
   const debouncedSearch = searchParams.get('search') || '';
-  const sortBy = searchParams.get('sortBy') || 'createdAt';
-  const sortOrder = searchParams.get('sortOrder') || 'desc';
+  const sortBy = searchParams.get('sortBy') || 'displayOrder';
+  const sortOrder = searchParams.get('sortOrder') || 'asc';
 
   const [occasions, setOccasions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +62,9 @@ const OccasionsManager = () => {
   // Pagination states
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [savingPriorityFor, setSavingPriorityFor] = useState(null);
+  const [draggedOccasionId, setDraggedOccasionId] = useState(null);
+  const [dragOverOccasionId, setDragOverOccasionId] = useState(null);
 
   // Debounce search term and update URL
   useEffect(() => {
@@ -108,6 +136,9 @@ const OccasionsManager = () => {
   const handleSortByChange = (value) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('sortBy', value);
+    if (value === "displayOrder") {
+      params.set('sortOrder', 'asc');
+    }
     params.set('page', '1');
     router.push(`${pathname}?${params.toString()}`);
   };
@@ -327,6 +358,119 @@ const OccasionsManager = () => {
   const hasNextPage = currentPage < totalPages;
   const startIndex = (currentPage - 1) * itemsPerPage + 1;
   const endIndex = Math.min(currentPage * itemsPerPage, totalItems);
+  const canDragReorder =
+    sortBy === "displayOrder" &&
+    sortOrder === "asc" &&
+    !debouncedSearch &&
+    occasions.length > 1;
+
+  const handleMovePriority = useCallback(async (occasionId, targetOrder, options = {}) => {
+    const currentOccasion = occasions.find((occasion) => occasion.id === occasionId);
+    if (!currentOccasion) {
+      return;
+    }
+
+    if (targetOrder < 1 || targetOrder > totalItems) {
+      return;
+    }
+
+    if (targetOrder === currentOccasion.displayOrder) {
+      return;
+    }
+
+    const shouldOptimisticallyReorder =
+      options.optimistic === true &&
+      targetOrder >= startIndex &&
+      targetOrder <= endIndex;
+    const previousOccasions = occasions;
+
+    try {
+      setSavingPriorityFor(occasionId);
+
+      if (shouldOptimisticallyReorder) {
+        const reorderedOccasions = reorderOccasionsLocally(
+          occasions,
+          occasionId,
+          targetOrder,
+          startIndex,
+        );
+        setOccasions(reorderedOccasions);
+      }
+
+      const result = await reorderOccasion({
+        occasionId,
+        displayOrder: targetOrder,
+      });
+
+      if (!result.success) {
+        if (shouldOptimisticallyReorder) {
+          setOccasions(previousOccasions);
+        }
+        toast.error(result.message || "Failed to update occasion order");
+        return;
+      }
+
+      if (!shouldOptimisticallyReorder) {
+        await fetchOccasions();
+      }
+    } catch (error) {
+      console.error("Error updating occasion order:", error);
+      if (shouldOptimisticallyReorder) {
+        setOccasions(previousOccasions);
+      }
+      toast.error("Failed to update occasion order");
+    } finally {
+      setSavingPriorityFor(null);
+    }
+  }, [endIndex, fetchOccasions, occasions, startIndex, totalItems]);
+
+  const handleDragStart = useCallback((occasionId) => {
+    if (!canDragReorder || savingPriorityFor) {
+      return;
+    }
+
+    setDraggedOccasionId(occasionId);
+    setDragOverOccasionId(occasionId);
+  }, [canDragReorder, savingPriorityFor]);
+
+  const handleDragOverOccasion = useCallback((event, occasionId) => {
+    if (!canDragReorder || !draggedOccasionId) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (dragOverOccasionId !== occasionId) {
+      setDragOverOccasionId(occasionId);
+    }
+  }, [canDragReorder, draggedOccasionId, dragOverOccasionId]);
+
+  const resetDragState = useCallback(() => {
+    setDraggedOccasionId(null);
+    setDragOverOccasionId(null);
+  }, []);
+
+  const handleDropOccasion = useCallback(async (occasionId) => {
+    if (!canDragReorder || !draggedOccasionId) {
+      return;
+    }
+
+    const orderedOccasions = [...occasions].sort(
+      (a, b) => a.displayOrder - b.displayOrder,
+    );
+    const targetIndex = orderedOccasions.findIndex(
+      (occasion) => occasion.id === occasionId,
+    );
+
+    resetDragState();
+
+    if (targetIndex === -1 || occasionId === draggedOccasionId) {
+      return;
+    }
+
+    const targetOrder = startIndex + targetIndex;
+    await handleMovePriority(draggedOccasionId, targetOrder, { optimistic: true });
+  }, [canDragReorder, draggedOccasionId, handleMovePriority, occasions, resetDragState, startIndex]);
 
   if (loading && occasions.length === 0) {
     return (
@@ -351,9 +495,6 @@ const OccasionsManager = () => {
       />
     );
   }
-
-  console.log("occasions", occasions);
-
 
   return (
     <div className="min-h-screen bg-gray-50 p-1 md:p-6 text-black">
@@ -421,6 +562,7 @@ const OccasionsManager = () => {
                 value={sortBy}
                 onChange={(e) => handleSortByChange(e)}
                 options={[
+                  { value: "displayOrder", label: "Display Order" },
                   { value: "createdAt", label: "Created Date" },
                   { value: "name", label: "Name" },
                   { value: "updatedAt", label: "Updated Date" },
@@ -470,6 +612,10 @@ const OccasionsManager = () => {
           </div>
         </div>
 
+        <p className="text-[#94A3B8] text-[11px] sm:text-xs font-medium mb-4">
+          Drag occasions to reorder this page when viewing the full display-order list, or pick any absolute position to control front-end ranking.
+        </p>
+
 
 
         {/* Occasions Grid */}
@@ -486,14 +632,36 @@ const OccasionsManager = () => {
           {occasions.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
               {occasions.map((occasion) => (
-                <OccasionCard
+                <div
                   key={occasion.id}
-                  occasion={occasion}
-                  onEdit={() => handleEditOccasion(occasion)}
-                  onDelete={() => handleDeleteOccasion(occasion.id)}
-                  onToggleActive={() => handleToggleActiveOccasion(occasion.id)}
-                  disabled={actionLoading}
-                />
+                  onDragOver={(event) => handleDragOverOccasion(event, occasion.id)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    handleDropOccasion(occasion.id);
+                  }}
+                  className={dragOverOccasionId === occasion.id && draggedOccasionId !== occasion.id ? "rounded-2xl ring-2 ring-indigo-300 ring-offset-2" : ""}
+                >
+                  <OccasionCard
+                    occasion={occasion}
+                    onEdit={() => handleEditOccasion(occasion)}
+                    onDelete={() => handleDeleteOccasion(occasion.id)}
+                    onToggleActive={() => handleToggleActiveOccasion(occasion.id)}
+                    onMovePriority={(targetOccasionId, targetOrder) =>
+                      handleMovePriority(targetOccasionId, targetOrder, {
+                        optimistic:
+                          canDragReorder &&
+                          targetOrder >= startIndex &&
+                          targetOrder <= endIndex,
+                      })
+                    }
+                    canDragReorder={canDragReorder}
+                    onDragStart={handleDragStart}
+                    onDragEnd={resetDragState}
+                    totalItems={totalItems}
+                    savingPriority={savingPriorityFor === occasion.id}
+                    disabled={actionLoading}
+                  />
+                </div>
               ))}
             </div>
           ) : !loading && (

@@ -23,6 +23,7 @@ import { after, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { processVouchersQueue } from "../../../../lib/action/cronProcessor";
 import { processNotificationsQueue } from "../../../../lib/action/Notificationprocessorcron";
+import { incrementPromoUsageForOrders } from "@/lib/action/orderAction";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -119,6 +120,17 @@ export async function POST(request) {
     console.log("\n" + "=".repeat(80));
     console.log("🌐 [PAYFAST WEBHOOK] Received ITN notification");
     console.log("=".repeat(80));
+    console.log("🧭 [PAYFAST WEBHOOK] Request metadata:", {
+      method: request.method,
+      url: request.url,
+      contentType: request.headers.get("content-type"),
+      userAgent: request.headers.get("user-agent"),
+      origin: request.headers.get("origin"),
+      referer: request.headers.get("referer"),
+      forwardedFor:
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip"),
+    });
 
     // Parse form data from PayFast
     const formData = await request.formData();
@@ -148,7 +160,12 @@ export async function POST(request) {
     // Check order ID
     const primaryOrderId = postData.custom_str1;
     if (!primaryOrderId) {
-      console.error("❌ No order ID in ITN data");
+      console.error("❌ No order ID in ITN data", {
+        pf_payment_id: postData.pf_payment_id,
+        custom_str1: postData.custom_str1,
+        custom_str2: postData.custom_str2,
+        payment_status: postData.payment_status,
+      });
       return NextResponse.json(
         { success: false, error: "Missing order ID in webhook" },
         { status: 400 }
@@ -219,7 +236,11 @@ export async function POST(request) {
     // ==================== CHECK FOR DUPLICATES ====================
 
     if (ordersToUpdate.length === 0) {
-      console.log("⚠️ No pending orders found - webhook may be duplicate");
+      console.log("⚠️ No pending orders found - webhook may be duplicate", {
+        primaryOrderId,
+        allOrderNumbers,
+        paymentId: postData.pf_payment_id,
+      });
       return NextResponse.json(
         {
           success: true,
@@ -324,6 +345,9 @@ export async function POST(request) {
 
     const successCount = updateResults.filter((r) => r.success).length;
     const failureCount = updateResults.filter((r) => !r.success).length;
+    const successfulOrderIds = updateResults
+      .filter((result) => result.success)
+      .map((result) => result.orderId);
 
     const processingTime = Date.now() - startTime;
 
@@ -334,6 +358,15 @@ export async function POST(request) {
     let backgroundSequenceId = null;
 
     if (successCount > 0) {
+      try {
+        await incrementPromoUsageForOrders(successfulOrderIds);
+      } catch (promoError) {
+        console.error(
+          "⚠️ Failed to update promo usage count after PayFast payment:",
+          promoError.message,
+        );
+      }
+
       const paidOrderNumbers = updateResults
         .filter((r) => r.success)
         .map((r) => r.orderNumber);
@@ -372,6 +405,13 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error("❌ [PAYFAST WEBHOOK] Fatal error:", error);
+    console.error("❌ [PAYFAST WEBHOOK] Failure context:", {
+      method: request.method,
+      url: request.url,
+      durationMs: Date.now() - startTime,
+      contentType: request.headers.get("content-type"),
+      userAgent: request.headers.get("user-agent"),
+    });
 
     return NextResponse.json(
       {
@@ -391,6 +431,8 @@ export async function POST(request) {
  */
 export async function GET() {
   try {
+    console.log("🧪 [PAYFAST WEBHOOK] Health check GET hit");
+
     const orderStats = await prisma.order.groupBy({
       by: ["processingStatus"],
       _count: true,

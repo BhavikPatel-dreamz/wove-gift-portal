@@ -416,7 +416,8 @@ export const ModelName = {
   GiftCard: 'GiftCard',
   SupportRequest: 'SupportRequest',
   SupportMessage: 'SupportMessage',
-  BulkRecipient: 'BulkRecipient'
+  BulkRecipient: 'BulkRecipient',
+  PromoCode: 'PromoCode'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -432,7 +433,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "session" | "user" | "cartItem" | "account" | "passwordResetToken" | "brand" | "brandContacts" | "brandTerms" | "brandBanking" | "integration" | "integrationSyncLog" | "denomination" | "vouchers" | "voucherCode" | "voucherRedemption" | "occasion" | "occasionCategory" | "customCard" | "receiverDetail" | "order" | "notificationDetail" | "deliveryLog" | "settlements" | "wishlist" | "auditLog" | "scheduledReport" | "newsletterSubscription" | "shopifySession" | "appInstallation" | "giftCard" | "supportRequest" | "supportMessage" | "bulkRecipient"
+    modelProps: "session" | "user" | "cartItem" | "account" | "passwordResetToken" | "brand" | "brandContacts" | "brandTerms" | "brandBanking" | "integration" | "integrationSyncLog" | "denomination" | "vouchers" | "voucherCode" | "voucherRedemption" | "occasion" | "occasionCategory" | "customCard" | "receiverDetail" | "order" | "notificationDetail" | "deliveryLog" | "settlements" | "wishlist" | "auditLog" | "scheduledReport" | "newsletterSubscription" | "shopifySession" | "appInstallation" | "giftCard" | "supportRequest" | "supportMessage" | "bulkRecipient" | "promoCode"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2878,6 +2879,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    PromoCode: {
+      payload: Prisma.$PromoCodePayload<ExtArgs>
+      fields: Prisma.PromoCodeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PromoCodeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PromoCodeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload>
+        }
+        findFirst: {
+          args: Prisma.PromoCodeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PromoCodeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload>
+        }
+        findMany: {
+          args: Prisma.PromoCodeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload>[]
+        }
+        create: {
+          args: Prisma.PromoCodeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload>
+        }
+        createMany: {
+          args: Prisma.PromoCodeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PromoCodeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload>[]
+        }
+        delete: {
+          args: Prisma.PromoCodeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload>
+        }
+        update: {
+          args: Prisma.PromoCodeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload>
+        }
+        deleteMany: {
+          args: Prisma.PromoCodeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PromoCodeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PromoCodeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload>[]
+        }
+        upsert: {
+          args: Prisma.PromoCodeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PromoCodePayload>
+        }
+        aggregate: {
+          args: Prisma.PromoCodeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePromoCode>
+        }
+        groupBy: {
+          args: Prisma.PromoCodeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PromoCodeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PromoCodeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PromoCodeCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2936,12 +3011,12 @@ export const UserScalarFieldEnum = {
   lastName: 'lastName',
   password: 'password',
   avatar: 'avatar',
-  isGuest: 'isGuest',
   role: 'role',
   isActive: 'isActive',
   isVerified: 'isVerified',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  isGuest: 'isGuest'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -3288,20 +3363,20 @@ export const OrderScalarFieldEnum = {
   redemptionStatus: 'redemptionStatus',
   redeemedAt: 'redeemedAt',
   isActive: 'isActive',
-  isPaid: 'isPaid',
-  voucherEntries: 'voucherEntries',
-  vouchersCreated: 'vouchersCreated',
-  allVouchersGenerated: 'allVouchersGenerated',
-  notificationsSent: 'notificationsSent',
-  processingStatus: 'processingStatus',
-  processingStartedAt: 'processingStartedAt',
-  processingCompletedAt: 'processingCompletedAt',
-  lastProcessedAt: 'lastProcessedAt',
-  processingErrors: 'processingErrors',
-  retryCount: 'retryCount',
-  maxRetries: 'maxRetries',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  allVouchersGenerated: 'allVouchersGenerated',
+  isPaid: 'isPaid',
+  lastProcessedAt: 'lastProcessedAt',
+  maxRetries: 'maxRetries',
+  notificationsSent: 'notificationsSent',
+  processingCompletedAt: 'processingCompletedAt',
+  processingErrors: 'processingErrors',
+  processingStartedAt: 'processingStartedAt',
+  processingStatus: 'processingStatus',
+  retryCount: 'retryCount',
+  voucherEntries: 'voucherEntries',
+  vouchersCreated: 'vouchersCreated'
 } as const
 
 export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
@@ -3444,12 +3519,12 @@ export type SettlementsScalarFieldEnum = (typeof SettlementsScalarFieldEnum)[key
 export const WishlistScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  key: 'key',
-  sourceType: 'sourceType',
   brandId: 'brandId',
   voucherId: 'voucherId',
-  payload: 'payload',
   createdAt: 'createdAt',
+  key: 'key',
+  payload: 'payload',
+  sourceType: 'sourceType',
   updatedAt: 'updatedAt'
 } as const
 
@@ -3556,6 +3631,7 @@ export type GiftCardScalarFieldEnum = (typeof GiftCardScalarFieldEnum)[keyof typ
 export const SupportRequestScalarFieldEnum = {
   id: 'id',
   supportId: 'supportId',
+  userId: 'userId',
   name: 'name',
   email: 'email',
   phone: 'phone',
@@ -3564,8 +3640,7 @@ export const SupportRequestScalarFieldEnum = {
   message: 'message',
   status: 'status',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  userId: 'userId'
+  updatedAt: 'updatedAt'
 } as const
 
 export type SupportRequestScalarFieldEnum = (typeof SupportRequestScalarFieldEnum)[keyof typeof SupportRequestScalarFieldEnum]
@@ -3589,7 +3664,6 @@ export type SupportMessageScalarFieldEnum = (typeof SupportMessageScalarFieldEnu
 export const BulkRecipientScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
-  voucherCodeId: 'voucherCodeId',
   recipientName: 'recipientName',
   recipientEmail: 'recipientEmail',
   recipientPhone: 'recipientPhone',
@@ -3601,10 +3675,32 @@ export const BulkRecipientScalarFieldEnum = {
   emailError: 'emailError',
   rowNumber: 'rowNumber',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  voucherCodeId: 'voucherCodeId'
 } as const
 
 export type BulkRecipientScalarFieldEnum = (typeof BulkRecipientScalarFieldEnum)[keyof typeof BulkRecipientScalarFieldEnum]
+
+
+export const PromoCodeScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  description: 'description',
+  type: 'type',
+  discountValue: 'discountValue',
+  currency: 'currency',
+  minOrderAmount: 'minOrderAmount',
+  usageLimit: 'usageLimit',
+  usageCount: 'usageCount',
+  isActive: 'isActive',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
+  createdById: 'createdById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PromoCodeScalarFieldEnum = (typeof PromoCodeScalarFieldEnum)[keyof typeof PromoCodeScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3690,13 +3786,6 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-/**
  * Reference to a field of type 'UserRole'
  */
 export type EnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRole'>
@@ -3707,6 +3796,13 @@ export type EnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
  * Reference to a field of type 'UserRole[]'
  */
 export type ListEnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRole[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -4031,6 +4127,20 @@ export type EnumSenderTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prism
 export type ListEnumSenderTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SenderType[]'>
     
 
+
+/**
+ * Reference to a field of type 'PromoCodeType'
+ */
+export type EnumPromoCodeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PromoCodeType'>
+    
+
+
+/**
+ * Reference to a field of type 'PromoCodeType[]'
+ */
+export type ListEnumPromoCodeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PromoCodeType[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -4159,6 +4269,7 @@ export type GlobalOmitConfig = {
   supportRequest?: Prisma.SupportRequestOmit
   supportMessage?: Prisma.SupportMessageOmit
   bulkRecipient?: Prisma.BulkRecipientOmit
+  promoCode?: Prisma.PromoCodeOmit
 }
 
 /* Types for Logging */

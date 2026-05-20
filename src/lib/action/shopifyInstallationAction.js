@@ -7,11 +7,12 @@ import {
   SHOP_INSTALLATION_APPROVAL_STATUS,
 } from "../shopify-installation";
 import { validateSession } from "./userAction/session";
+import { isAdminRole } from "../roles";
 
 async function requireAdminSession() {
   const session = await validateSession();
 
-  if (!session?.user || session.user.role !== "ADMIN") {
+  if (!session?.user || !isAdminRole(session.user.role)) {
     throw new Error("Unauthorized");
   }
 

@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { currencyList } from "../../components/brandsPartner/currency";
 import { prisma } from "../db";
 import { getSession } from "./userAction/session";
+import { isAdminRole } from "../roles";
 
 // Helper function to get currency symbol
 function getCurrencySymbol(currency) {
@@ -147,7 +148,7 @@ export async function getGiftCards(filters) {
     const includePendingOrders = status !== "expired";
 
     // If user is not admin, filter based on sent/received
-    if (session.user.role !== "ADMIN") {
+    if (!isAdminRole(session.user.role)) {
       if (status === "sent") {
         whereClause.order = {
           userId: session.user.id,
@@ -344,6 +345,8 @@ export async function getGiftCards(filters) {
                 select: {
                   brandName: true,
                   domain: true,
+                  website: true,
+                  logo: true,
                 },
               },
             },
@@ -401,6 +404,8 @@ export async function getGiftCards(filters) {
                 select: {
                   brandName: true,
                   domain: true,
+                  website: true,
+                  logo: true,
                 },
               },
             },
@@ -547,6 +552,15 @@ export async function getGiftCards(filters) {
         expiresAtRaw: vc.expiresAt,
         brandName: vc.order.brand.brandName,
         brandDomain: vc.order.brand.domain || null,
+        brandWebsite: vc.order.brand.website || vc.order.brand.domain || null,
+        brandLogo: vc.order.brand.logo || null,
+        senderName:
+          vc.order.senderName ||
+          `${vc.order.user.firstName || ""} ${vc.order.user.lastName || ""}`.trim() ||
+          "Gift Sender",
+        personalMessage:
+          vc.bulkRecipient?.personalMessage || vc.order.message || "",
+        tokenizedLink: vc.tokenizedLink || null,
         isSent: isSent,
         isReceived: isReceived,
         isBulk: !!vc.order.bulkOrderNumber,
@@ -605,6 +619,14 @@ export async function getGiftCards(filters) {
         expiresAtRaw: null,
         brandName: order.brand?.brandName || "N/A",
         brandDomain: order.brand?.domain || null,
+        brandWebsite: order.brand?.website || order.brand?.domain || null,
+        brandLogo: order.brand?.logo || null,
+        senderName:
+          order.senderName ||
+          `${order.user?.firstName || ""} ${order.user?.lastName || ""}`.trim() ||
+          "Gift Sender",
+        personalMessage: order.message || "",
+        tokenizedLink: null,
         isSent,
         isReceived,
         isBulk: !!order.bulkOrderNumber,
@@ -692,7 +714,7 @@ export async function getGiftCardStats() {
       OR: [sentCondition, ...receivedVoucherConditions],
     };
 
-    if (session.user.role === "ADMIN") {
+    if (isAdminRole(session.user.role)) {
       // Admin sees all
       const [total, active, claimed, unclaimed, expired] = await Promise.all([
         prisma.voucherCode.count(),

@@ -7,6 +7,7 @@ import { getGiftCards } from '../../../lib/action/customerDashbordAction';
 import { useSearchParams } from 'next/navigation';
 import GiftCardDetailModal from './GiftCardDetailModal';
 import { useSession } from '@/contexts/SessionContext';
+import { isAdminRole } from '@/lib/roles';
 
 const getStartOfLocalDayISO = (dateValue) => {
   if (!dateValue) return null;
@@ -705,7 +706,7 @@ function MyGift() {
             Vouchers & Gift Cards
           </h1>
           <p className="text-sm sm:text-base text-[#4A4A4A]">
-            {userRole === 'ADMIN'
+            {isAdminRole(userRole)
               ? 'Track and manage all user-purchased vouchers and gift cards.'
               : `View and manage your ${
                   activeTab === 'sent'

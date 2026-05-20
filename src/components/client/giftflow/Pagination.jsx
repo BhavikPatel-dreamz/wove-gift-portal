@@ -39,10 +39,10 @@ const Pagination = ({ currentPage, totalPages }) => {
     const isLastPage = currentPage === totalPages;
 
     return (
-        <div className="flex justify-center items-center gap-2 py-8">
+        <div className="flex justify-center items-center gap-1.5 sm:gap-2 py-6 sm:py-8 overflow-x-auto px-1">
             <Link
                 href={isFirstPage ? '#' : createPageURL(currentPage - 1)}
-                className={`px-3 py-2 rounded-lg border border-gray-200 ${isFirstPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'} transition-colors`}
+                className={`px-2.5 sm:px-3 py-2 rounded-lg border border-gray-200 shrink-0 ${isFirstPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'} transition-colors`}
                 aria-disabled={isFirstPage}
                 tabIndex={isFirstPage ? -1 : undefined}
             >
@@ -51,12 +51,12 @@ const Pagination = ({ currentPage, totalPages }) => {
 
             {getPageNumbers().map((page, index) =>
                 page === '...' ? (
-                    <span key={`ellipsis-${index}`} className="px-3 py-2">...</span>
+                    <span key={`ellipsis-${index}`} className="px-2.5 sm:px-3 py-2 shrink-0">...</span>
                 ) : (
                     <Link
                         key={page}
                         href={createPageURL(page)}
-                        className={`px-4 py-2 rounded-lg border transition-colors ${
+                        className={`px-3 sm:px-4 py-2 rounded-lg border transition-colors text-sm sm:text-base shrink-0 ${
                             currentPage === page
                                 ? 'bg-blue-600 text-white border-blue-600'
                                 : 'border-gray-200 hover:bg-gray-50'
@@ -69,7 +69,7 @@ const Pagination = ({ currentPage, totalPages }) => {
 
             <Link
                 href={isLastPage ? '#' : createPageURL(currentPage + 1)}
-                className={`px-3 py-2 rounded-lg border border-gray-200 ${isLastPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'} transition-colors`}
+                className={`px-2.5 sm:px-3 py-2 rounded-lg border border-gray-200 shrink-0 ${isLastPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'} transition-colors`}
                 aria-disabled={isLastPage}
                 tabIndex={isLastPage ? -1 : undefined}
             >

@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Save, Image as ImageIcon, Eye, Sparkles, ChevronLeft } from 'lucide-react';
 import Input from '../forms/Input';
 import ImageUpload from '../forms/ImageUpload';
-import EmojiPicker from './EmojiPicker';
 import Toggle from '../forms/Toggle';
 import Button from '../forms/Button';
-import Card from '../forms/Card';
 import { addOccasionCategory, updateOccasionCategory } from '../../lib/action/occasionAction';
 import toast from 'react-hot-toast';
 import Modal from '../Modal';
@@ -14,16 +12,12 @@ import { Loader } from 'lucide-react';
 const EMPTY_FIELD_ERRORS = {
   cardName: '',
   internalDescription: '',
-  category: '',
-  previewEmoji: '',
   image: '',
 };
 
 const BACKEND_FIELD_TO_UI_FIELD = {
   name: 'cardName',
   description: 'internalDescription',
-  category: 'category',
-  emoji: 'previewEmoji',
   image: 'image',
 };
 
@@ -54,9 +48,7 @@ export default function CreateNewCard({
   const [formData, setFormData] = useState({
     cardName: '',
     internalDescription: '',
-    category: '',
     isActive: true,
-    previewEmoji: '🎁',
     imageUrl: null,
     imageFile: null,
   });
@@ -68,9 +60,7 @@ export default function CreateNewCard({
       const newFormData = {
         cardName: initialCardData.title || '',
         internalDescription: initialCardData.description || '',
-        category: initialCardData.category || '',
         isActive: initialCardData.active ?? true,
-        previewEmoji: initialCardData.preview || '🎁',
         imageUrl: initialCardData.imageUrl || null,
         imageFile: null,
       };
@@ -80,9 +70,7 @@ export default function CreateNewCard({
       setFormData({
         cardName: '',
         internalDescription: '',
-        category: '',
         isActive: true,
-        previewEmoji: '🎁',
         imageUrl: null,
         imageFile: null,
       });
@@ -107,7 +95,6 @@ export default function CreateNewCard({
     const errors = { ...EMPTY_FIELD_ERRORS };
     const trimmedName = formData.cardName.trim();
     const trimmedDescription = formData.internalDescription.trim();
-    const trimmedCategory = formData.category.trim();
     const hasImage = Boolean(
       formData.imageFile ||
       (typeof formData.imageUrl === 'string' && formData.imageUrl.trim())
@@ -123,16 +110,6 @@ export default function CreateNewCard({
       errors.internalDescription = 'Internal description is required.';
     } else if (trimmedDescription.length > 500) {
       errors.internalDescription = 'Internal description must be less than 500 characters.';
-    }
-
-    if (!trimmedCategory) {
-      errors.category = 'Category is required.';
-    } else if (trimmedCategory.length > 100) {
-      errors.category = 'Category must be less than 100 characters.';
-    }
-
-    if (!formData.previewEmoji?.trim()) {
-      errors.previewEmoji = 'Please select an emoji.';
     }
 
     if (!hasImage) {
@@ -222,8 +199,6 @@ export default function CreateNewCard({
 
     data.append('name', formData.cardName.trim());
     data.append('description', formData.internalDescription.trim());
-    data.append('category', formData.category.trim());
-    data.append('emoji', formData.previewEmoji);
     data.append('isActive', formData.isActive);
     data.append('occasionId', occasion.id);
 
@@ -274,8 +249,6 @@ export default function CreateNewCard({
     const uiField = {
       cardName: 'cardName',
       internalDescription: 'internalDescription',
-      category: 'category',
-      previewEmoji: 'previewEmoji',
     }[field];
 
     if (uiField) {
@@ -351,17 +324,6 @@ export default function CreateNewCard({
               </div>
 
               <div>
-                <Input
-                  label="Category"
-                  placeholder="e.g., Funny, Romantic"
-                  value={formData.category}
-                  onChange={(e) => updateFormData('category', e.target.value)}
-                  required
-                />
-                {fieldErrors.category && <p className="mt-1 text-sm text-red-600">{fieldErrors.category}</p>}
-              </div>
-
-              <div>
                 <ImageUpload
                   label="Card Design Image"
                   onFileChange={handleFileSelect}
@@ -369,16 +331,6 @@ export default function CreateNewCard({
                   placeHolder="Upload Card Design Image"
                 />
                 {fieldErrors.image && <p className="mt-2 text-sm text-red-600">{fieldErrors.image}</p>}
-              </div>
-
-              <div>
-                <EmojiPicker
-                  label="Preview Emoji"
-                  value={formData.previewEmoji}
-                  onChange={(emoji) => updateFormData('previewEmoji', emoji)}
-                  required
-                  error={fieldErrors.previewEmoji}
-                />
               </div>
 
               <Toggle
@@ -561,7 +513,7 @@ export default function CreateNewCard({
               <p className="mb-4 text-sm font-medium text-red-600">{formError}</p>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 gap-6 mb-6">
               <div>
                 <Input
                   label="Card Name"
@@ -572,26 +524,6 @@ export default function CreateNewCard({
                 />
                 {fieldErrors.cardName && <p className="mt-1 text-sm text-red-600">{fieldErrors.cardName}</p>}
               </div>
-              <div>
-                <Input
-                  label="Category"
-                  placeholder="e.g., Funny, Romantic"
-                  value={formData.category}
-                  onChange={(e) => updateFormData('category', e.target.value)}
-                  required
-                />
-                {fieldErrors.category && <p className="mt-1 text-sm text-red-600">{fieldErrors.category}</p>}
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <EmojiPicker
-                label="Preview Emoji"
-                value={formData.previewEmoji}
-                onChange={(emoji) => updateFormData('previewEmoji', emoji)}
-                required
-                error={fieldErrors.previewEmoji}
-              />
             </div>
 
             <div className="mb-6">

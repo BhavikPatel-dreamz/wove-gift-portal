@@ -1,8 +1,13 @@
 "use server";
 
 import { prisma } from "../db";
+import {
+  getNextBulkOrderNumber,
+  getNextOrderNumber,
+} from "../orderNumbers.js";
 import { getSession } from "./userAction/session";
-import { SendGiftCardEmail, SendWhatsappMessages } from "./TwilloMessage";
+import { SendGiftCardEmail } from "./TwilloMessage";
+import { getOrderSettlementAmount } from "../settlement/settlementUtils.js";
 
 const DEFAULT_EXPIRY_YEARS = 3;
 
@@ -35,18 +40,6 @@ this.originalError = originalError;
 }
 
 // ==================== HELPER FUNCTIONS ====================
-function generateOrderNumber() {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000);
-  return `ORD-${timestamp}-${random}`;
-}
-
-function generateBulkOrderNumber() {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 10000);
-  return `BULK-${timestamp}-${random}`;
-}
-
 function generateTokenizedLink(voucherCodeId) {
   const token = Buffer.from(
     `${voucherCodeId}-${Date.now()}-${Math.random()}`
@@ -93,15 +86,6 @@ function validateOrderData(orderData) {
     throw new ValidationError("Recipient email is required for email delivery");
   }
 
-  if (
-    orderData.deliveryMethod === "whatsapp" &&
-    !deliveryDetails?.recipientWhatsAppNumber
-  ) {
-    throw new ValidationError(
-      "Recipient WhatsApp number is required for WhatsApp delivery"
-    );
-  }
-
   return true;
 }
 
@@ -132,7 +116,10 @@ async function createReceiverDetail(deliveryDetails, deliveryMethod) {
       data: {
         name: deliveryDetails.recipientFullName || deliveryDetails?.recipientName || "Recipient",
         email: deliveryMethod === "email" ? deliveryDetails.recipientEmailAddress : null,
-        phone: deliveryMethod === "whatsapp" ? deliveryDetails.recipientWhatsAppNumber : null,
+        phone:
+          deliveryMethod === "whatsapp"
+            ? deliveryDetails.recipientWhatsAppNumber || null
+            : null,
       },
     });
   } catch (error) {
@@ -148,6 +135,7 @@ async function createOrderRecord(
   bulkOrderNumber
 ) {
   try {
+    const orderNumber = await getNextOrderNumber();
     const amount = orderData.selectedAmount.value;
     const { quantity = 1 } = orderData;
     const subtotal = amount * quantity;
@@ -178,7 +166,7 @@ async function createOrderRecord(
 
     return await prisma.order.create({
       data: {
-        orderNumber: generateOrderNumber(),
+        orderNumber,
         bulkOrderNumber: bulkOrderNumber || null,
         brandId: selectedBrand.id,
         occasionId: occasionId,
@@ -407,17 +395,21 @@ async function updateOrCreateSettlement(selectedBrand, order) {
     });
 
     if (existingSettlement) {
+      const settlementAmount = getOrderSettlementAmount(order);
+
       await prisma.settlements.update({
         where: { id: existingSettlement.id },
         data: {
           totalSold: existingSettlement.totalSold + order.quantity,
-          totalSoldAmount: existingSettlement.totalSoldAmount + order.totalAmount,
+          totalSoldAmount: existingSettlement.totalSoldAmount + settlementAmount,
           outstanding: existingSettlement.outstanding + order.quantity,
-          outstandingAmount: existingSettlement.outstandingAmount + order.totalAmount,
+          outstandingAmount: existingSettlement.outstandingAmount + settlementAmount,
           updatedAt: new Date(),
         },
       });
     } else {
+      const settlementAmount = getOrderSettlementAmount(order);
+
       await prisma.settlements.create({
         data: {
           brandId: selectedBrand.id,
@@ -425,11 +417,11 @@ async function updateOrCreateSettlement(selectedBrand, order) {
           periodStart,
           periodEnd,
           totalSold: order.quantity,
-          totalSoldAmount: order.totalAmount,
+          totalSoldAmount: settlementAmount,
           totalRedeemed: 0,
           redeemedAmount: 0,
           outstanding: order.quantity,
-          outstandingAmount: order.totalAmount,
+          outstandingAmount: settlementAmount,
           commissionAmount: 0,
           breakageAmount: 0,
           vatAmount: 0,
@@ -451,7 +443,11 @@ async function sendDeliveryMessage(orderData, giftCard, deliveryMethod) {
     }
 
     if (deliveryMethod === "whatsapp") {
-      return await SendWhatsappMessages(orderData, giftCard);
+      return {
+        success: true,
+        status: "SENT",
+        message: "WhatsApp share must be initiated by the purchaser.",
+      };
     } else if (deliveryMethod === "email") {
       return await SendGiftCardEmail(orderData, giftCard);
     }
@@ -472,10 +468,18 @@ async function createDeliveryLog(order, voucherCode, orderData) {
     if (orderData.deliveryMethod === "email") {
       recipient = orderData.deliveryDetails.recipientEmailAddress;
     } else if (orderData.deliveryMethod === "whatsapp") {
-      recipient = orderData.deliveryDetails.recipientWhatsAppNumber;
+      recipient =
+        orderData.deliveryDetails.recipientWhatsAppNumber ||
+        orderData.deliveryDetails.recipientName ||
+        "WhatsApp Share";
     }
 
-    const status = orderData.deliveryMethod === "print" ? "DELIVERED" : (order.scheduledFor ? "PENDING" : "PENDING");
+    const status =
+      orderData.deliveryMethod === "print"
+        ? "DELIVERED"
+        : orderData.deliveryMethod === "whatsapp"
+          ? "SENT"
+          : "PENDING";
 
     return await prisma.deliveryLog.create({
       data: {
@@ -484,7 +488,13 @@ async function createDeliveryLog(order, voucherCode, orderData) {
         method: orderData.deliveryMethod || "whatsapp",
         recipient,
         status,
-        attemptCount: orderData.deliveryMethod === "print" ? 1 : 0,
+        attemptCount:
+          orderData.deliveryMethod === "print" ||
+          orderData.deliveryMethod === "whatsapp"
+            ? 1
+            : 0,
+        sentAt:
+          orderData.deliveryMethod === "whatsapp" ? new Date() : null,
         deliveredAt: orderData.deliveryMethod === "print" ? new Date() : null,
       },
     });
@@ -633,7 +643,7 @@ export const createOrder = async (orderData) => {
 
 // ==================== BULK ORDER CREATION ====================
 export const createBulkOrder = async (cartItems, paymentData) => {
-  const bulkOrderNumber = generateBulkOrderNumber();
+  const bulkOrderNumber = await getNextBulkOrderNumber();
   const successfulOrders = [];
   const failedOrders = [];
   let totalAmount = 0;

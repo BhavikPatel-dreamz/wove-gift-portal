@@ -10,7 +10,7 @@ import { getBrandsForClient } from "@/lib/action/brandFetch";
 import OccasionSelector from "./OccasionSelector";
 import SubCategorySelector from "./SubCategorySelector";
 import { useDispatch, useSelector } from "react-redux";
-import { goNext, setError, setLoading, setPremiumBrands, setSelectedBrand } from "../../../redux/giftFlowSlice";
+import { goNext, setError, setLoading, setPremiumBrands, setSelectedBrand, setSearchTerm, setSelectedCategory, toggleFavorite } from "../../../redux/giftFlowSlice";
 import ProgressIndicator from "./ProgressIndicator";
 
 const BrandSelector = () => {
@@ -26,6 +26,11 @@ const BrandSelector = () => {
   } = useSelector((state) => state.giftFlowReducer);
 
   console.log("selectedBrand", premiumBrands,selectedBrand);
+
+  const handleBack = () => {
+    // Add your back navigation logic here
+    // For example: dispatch(goBack()) or router.back()
+  };
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -70,10 +75,10 @@ const BrandSelector = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-orange-500 mx-auto"></div>
-          <h2 className="text-2xl font-semibold text-gray-700 mt-4">Loading Brands...</h2>
+          <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-dashed rounded-full animate-spin border-orange-500 mx-auto"></div>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-700 mt-3 sm:mt-4">Loading Brands...</h2>
         </div>
       </div>
     );
@@ -81,16 +86,16 @@ const BrandSelector = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold text-red-600">Error: {error}</h2>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center p-6 sm:p-8 bg-white rounded-lg shadow-md">
+          <h2 className="text-xl sm:text-2xl font-bold text-red-600">Error: {error}</h2>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <ProgressIndicator />
 
       <BrandHeader
@@ -107,7 +112,7 @@ const BrandSelector = () => {
         onCategoryChange={(category) => dispatch(setSelectedCategory(category))}
       />
 
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto">
         <SectionHeader
           icon={<span>💎</span>}
           title="Premium Collection"
@@ -121,6 +126,7 @@ const BrandSelector = () => {
           onBrandClick={handleBrandClick}
           premiumBrands={premiumBrands.map(b => b.id)}
           selectedBrand={selectedBrand}
+          isLoading={loading}
         />
       </div>
     </div>

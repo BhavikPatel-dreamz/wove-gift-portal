@@ -17,6 +17,7 @@ import {
   Info,
 } from "lucide-react";
 import { currencyList } from "../brandsPartner/currency";
+import { formatSettlementNumber } from "@/lib/settlement/formatSettlementDisplay";
 
 
 
@@ -98,28 +99,28 @@ const SettlementDetailsModal = ({ isOpen, onClose, brandId, onFetchTabData }) =>
   const stats = [
     {
       label: "Total Sold",
-      value: `${getCurrencySymbol(brand.currency)}${settlement.totalSoldAmount?.toLocaleString() || 0}`,
+      value: `${getCurrencySymbol(brand.currency)}${formatSettlementNumber(settlement.totalSoldAmount)}`,
       subtext: `${settlement.totalSold} vouchers`,
       icon: TrendingUp,
       color: "bg-blue-50 text-blue-600",
     },
     {
       label: "Total Redeemed",
-      value: `${getCurrencySymbol(brand.currency)}${settlement.redeemedAmount?.toLocaleString() || 0}`,
+      value: `${getCurrencySymbol(brand.currency)}${formatSettlementNumber(settlement.redeemedAmount)}`,
       subtext: `${settlement.totalRedeemed} vouchers (${settlement.redemptionRate}%)`,
       icon: CheckCircle,
       color: "bg-green-50 text-green-600",
     },
     {
       label: "Outstanding",
-      value: `${getCurrencySymbol(brand.currency)}${settlement.outstandingAmount?.toLocaleString() || 0}`,
+      value: `${getCurrencySymbol(brand.currency)}${formatSettlementNumber(settlement.outstandingAmount)}`,
       subtext: `${settlement.outstanding} vouchers pending`,
       icon: Clock,
       color: "bg-amber-50 text-amber-600",
     },
     {
       label: "Net Payable",
-      value: `${getCurrencySymbol(brand.currency)}${settlement.netPayable?.toLocaleString() || 0}`,
+      value: `${getCurrencySymbol(brand.currency)}${formatSettlementNumber(settlement.netPayable)}`,
       subtext: settlement.settlementTriggerDisplay || "Settlement Amount",
       icon: DollarSign,
       color: "bg-purple-50 text-purple-600",
@@ -410,20 +411,20 @@ const OverviewTab = ({ settlement, brand, summary, getCurrencySymbol }) => {
           <div className="bg-blue-50 rounded p-3">
             <p className="text-xs text-blue-600">{baseAmountLabel}</p>
             <p className="text-lg font-semibold text-blue-700">
-              {getCurrencySymbol(brand.currency)}{baseAmountValue?.toLocaleString() || 0}
+              {getCurrencySymbol(brand.currency)}{formatSettlementNumber(baseAmountValue)}
             </p>
           </div>
           <div className="bg-red-50 rounded p-3">
             <p className="text-xs text-red-600">Commission</p>
             <p className="text-lg font-semibold text-red-700">
-              -{getCurrencySymbol(brand.currency)}{settlement.commissionAmount?.toLocaleString() || 0}
+              -{getCurrencySymbol(brand.currency)}{formatSettlementNumber(settlement.commissionAmount)}
             </p>
           </div>
           {settlement.breakageAmount > 0 && (
             <div className="bg-orange-50 rounded p-3">
               <p className="text-xs text-orange-600">Breakage</p>
               <p className="text-lg font-semibold text-orange-700">
-                {getCurrencySymbol(brand.currency)}{settlement.breakageAmount?.toLocaleString() || 0}
+                {getCurrencySymbol(brand.currency)}{formatSettlementNumber(settlement.breakageAmount)}
               </p>
             </div>
           )}
@@ -431,7 +432,7 @@ const OverviewTab = ({ settlement, brand, summary, getCurrencySymbol }) => {
             <div className="bg-green-50 rounded p-3">
               <p className="text-xs text-green-600">VAT</p>
               <p className="text-lg font-semibold text-green-700">
-                {getCurrencySymbol(brand.currency)}{settlement.vatAmount?.toLocaleString() || 0}
+                {getCurrencySymbol(brand.currency)}{formatSettlementNumber(settlement.vatAmount)}
               </p>
             </div>
           )}
@@ -507,12 +508,12 @@ const VouchersTab = ({ data, brand, getCurrencySymbol }) => {
             <div className="bg-blue-50 rounded p-3">
               <p className="text-xs text-blue-600">Total Issued</p>
               <p className="text-2xl font-bold text-blue-700">{voucher.totalIssued}</p>
-              <p className="text-xs text-blue-600 mt-1">{getCurrencySymbol(brand.currency)}{voucher.totalSoldAmount?.toLocaleString()}</p>
+              <p className="text-xs text-blue-600 mt-1">{getCurrencySymbol(brand.currency)}{formatSettlementNumber(voucher.totalSoldAmount)}</p>
             </div>
             <div className="bg-green-50 rounded p-3">
               <p className="text-xs text-green-600">Redeemed</p>
               <p className="text-2xl font-bold text-green-700">{voucher.totalRedeemed}</p>
-              <p className="text-xs text-green-600 mt-1">{getCurrencySymbol(brand.currency)}{voucher.totalRedeemedAmount?.toLocaleString()}</p>
+              <p className="text-xs text-green-600 mt-1">{getCurrencySymbol(brand.currency)}{formatSettlementNumber(voucher.totalRedeemedAmount)}</p>
             </div>
             <div className="bg-amber-50 rounded p-3">
               <p className="text-xs text-amber-600">Unredeemed</p>
@@ -547,7 +548,7 @@ const VouchersTab = ({ data, brand, getCurrencySymbol }) => {
                         <td className="px-4 py-2 text-blue-600 font-semibold">{denom.issued}</td>
                         <td className="px-4 py-2 text-green-600 font-semibold">{denom.redeemed}</td>
                         <td className="px-4 py-2 text-green-700 font-semibold">
-                          {getCurrencySymbol(brand.currency)}{denom.redeemedAmount?.toLocaleString()}
+                          {getCurrencySymbol(brand.currency)}{formatSettlementNumber(denom.redeemedAmount)}
                         </td>
                         <td className="px-4 py-2">
                           <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-semibold">

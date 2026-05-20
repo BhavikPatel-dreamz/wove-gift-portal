@@ -37,8 +37,19 @@ function SuccessContent() {
   useEffect(() => {
     const orderId = searchParams.get('orderId');
     const source = searchParams.get('source');
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '/payment/success';
+
+    console.log('[payment/success] Page mounted', {
+      currentUrl,
+      orderId,
+      source,
+    });
     
     if (!orderId) {
+      console.error('[payment/success] Missing orderId query param', {
+        currentUrl,
+        source,
+      });
       setError('No order ID provided');
       setLoading(false);
       return;
@@ -50,12 +61,19 @@ function SuccessContent() {
 
   const fetchOrderAndRelated = async (orderId, source) => {
     try {
-      console.log('🔍 Fetching order:', orderId);
+      console.log('[payment/success] Fetching primary order', {
+        orderId,
+        source,
+      });
 
       // ✅ Get the primary order
       const primaryOrderResponse = await getOrderStatus(orderId);
 
-      console.log("primaryOrderResponse",primaryOrderResponse)
+      console.log('[payment/success] getOrderStatus response', {
+        success: primaryOrderResponse?.success,
+        error: primaryOrderResponse?.error,
+        hasOrder: Boolean(primaryOrderResponse?.order),
+      });
       
       if (!primaryOrderResponse.success) {
         throw new Error(primaryOrderResponse.error || 'Failed to fetch order');
@@ -66,7 +84,7 @@ function SuccessContent() {
       // ✅ Find all orders with the same payment intent (multi-cart orders)
       const relatedOrders = await fetchRelatedOrders(primaryOrder.paymentIntentId);
 
-      console.log('✅ Found orders:', {
+      console.log('[payment/success] Found orders', {
         primary: primaryOrder.orderNumber,
         total: relatedOrders.length,
         orders: relatedOrders.map(o => o.orderNumber)
@@ -90,7 +108,12 @@ function SuccessContent() {
 
       setLoading(false);
     } catch (err) {
-      console.error('❌ Error fetching order:', err);
+      console.error('[payment/success] Error fetching order', {
+        orderId,
+        source,
+        message: err?.message,
+        stack: err?.stack,
+      });
       setError(err.message || 'Failed to load order details');
       setLoading(false);
     }
@@ -99,10 +122,20 @@ function SuccessContent() {
   // ✅ Helper function to fetch all orders with same payment intent
   const fetchRelatedOrders = async (paymentIntentId) => {
     try {
+      console.log('[payment/success] Fetching related orders', {
+        paymentIntentId,
+      });
+
       const response = await fetch('/api/orders/by-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paymentIntentId })
+      });
+
+      console.log('[payment/success] Related orders API response', {
+        paymentIntentId,
+        status: response.status,
+        ok: response.ok,
       });
 
       if (!response.ok) {
@@ -112,7 +145,11 @@ function SuccessContent() {
       const data = await response.json();
       return data.orders || [];
     } catch (error) {
-      console.error('Error fetching related orders:', error);
+      console.error('[payment/success] Error fetching related orders', {
+        paymentIntentId,
+        message: error?.message,
+        stack: error?.stack,
+      });
       // Fallback: return just the primary order
       return [];
     }
@@ -155,7 +192,7 @@ function SuccessContent() {
   if (showThankYou) {
     return (
       <div>
-        <ThankYouScreen />
+        <ThankYouScreen order={order} />
       </div>
     );
   }

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 import { getSettlementVouchersList } from "../../lib/action/brandPartner";
 import { currencyList } from "../brandsPartner/currency";
+import { formatSettlementNumber } from "@/lib/settlement/formatSettlementDisplay";
 import VoucherFilters from "./VoucherFilters";
 import Pagination from "../client/giftflow/Pagination";
 
@@ -205,14 +206,14 @@ const VouchersTab = ({
                                             </td>
 
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                                                {currSymbol}{totalValue.toLocaleString()}
+                                                {currSymbol}{formatSettlementNumber(totalValue)}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="text-sm font-medium text-green-600">
-                                                    {currSymbol}{redeemedAmount.toLocaleString()}
+                                                    {currSymbol}{formatSettlementNumber(redeemedAmount)}
                                                 </div>
                                                 <div className="text-xs text-gray-500">
-                                                    Outstanding: {currSymbol}{(totalValue - redeemedAmount).toLocaleString()}
+                                                    Outstanding: {currSymbol}{formatSettlementNumber(totalValue - redeemedAmount)}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
@@ -293,13 +294,13 @@ const VouchersTab = ({
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">Total Value</p>
                                         <p className="text-sm font-semibold text-gray-900">
-                                            {currSymbol}{totalValue.toLocaleString()}
+                                            {currSymbol}{formatSettlementNumber(totalValue)}
                                         </p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 mb-1">Redeemed</p>
                                         <p className="text-sm font-semibold text-green-600">
-                                            {currSymbol}{redeemedAmount.toLocaleString()}
+                                            {currSymbol}{formatSettlementNumber(redeemedAmount)}
                                         </p>
                                     </div>
                                 </div>
@@ -308,7 +309,7 @@ const VouchersTab = ({
                                 <div className="border-t border-gray-100 pt-3">
                                     <p className="text-xs text-gray-500 mb-1">Outstanding</p>
                                     <p className="text-sm font-semibold text-orange-600">
-                                        {currSymbol}{(totalValue - redeemedAmount).toLocaleString()}
+                                        {currSymbol}{formatSettlementNumber(totalValue - redeemedAmount)}
                                     </p>
                                 </div>
                             </div>

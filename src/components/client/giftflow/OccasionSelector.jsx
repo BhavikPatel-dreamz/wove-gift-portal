@@ -24,7 +24,13 @@ export default function OccasionSelector() {
   const fetchOccasions = async (page) => {
     try {
       dispatch(setLoading(true));
-      const response = await getOccasions({ isActive: true, limit: 8, page, sortOrder: "desc" });
+      const response = await getOccasions({
+        isActive: true,
+        limit: 8,
+        page,
+        sortBy: "displayOrder",
+        sortOrder: "asc",
+      });
       if (response.success) {
         dispatch(setOccasions({
           data: response.data,
@@ -63,11 +69,11 @@ export default function OccasionSelector() {
 
   if (loading && currentOccasionPage === 1) {
     return (
-      <div className="min-h-screen  py-30 flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen py-8 md:py-30 flex items-center justify-center bg-gray-50 px-3 md:px-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-3 border-dashed rounded-full animate-spin border-pink-500 mx-auto"></div>
-          <h2 className="text-xl font-medium text-gray-900 mt-4">Loading Occasions...</h2>
-          <p className="text-gray-600 text-sm">Finding the perfect moments for you!</p>
+          <div className="w-10 h-10 md:w-12 md:h-12 border-3 border-dashed rounded-full animate-spin border-pink-500 mx-auto"></div>
+          <h2 className="text-lg md:text-xl font-medium text-gray-900 mt-3 md:mt-4">Loading Occasions...</h2>
+          <p className="text-gray-600 text-xs md:text-sm">Finding the perfect moments for you!</p>
         </div>
       </div>
     );
@@ -75,13 +81,13 @@ export default function OccasionSelector() {
 
   if (error) {
     return (
-      <div className="min-h-screen  py-30  flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-gray-200">
-          <h2 className="text-xl font-semibold text-red-600">Oops! Something went wrong.</h2>
-          <p className="text-gray-600 mt-2 text-sm">{error}</p>
+      <div className="min-h-screen py-8 md:py-30 flex items-center justify-center bg-gray-50 px-3 md:px-4">
+        <div className="text-center p-6 md:p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+          <h2 className="text-lg md:text-xl font-semibold text-red-600">Oops! Something went wrong.</h2>
+          <p className="text-gray-600 mt-2 text-xs md:text-sm">{error}</p>
           <button
             onClick={() => fetchOccasions(1)}
-            className="mt-4 bg-linear-to-r from-pink-500 to-orange-400 text-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm hover:from-pink-600 hover:to-orange-500"
+            className="mt-4 bg-linear-to-r from-pink-500 to-orange-400 text-white px-5 md:px-6 py-2 md:py-2.5 rounded-lg font-medium transition-colors text-xs md:text-sm hover:from-pink-600 hover:to-orange-500"
           >
             Try Again
           </button>
@@ -91,19 +97,19 @@ export default function OccasionSelector() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50  py-30">
-      <div className="max-w-7xl mx-auto px-6">
+    <div className="min-h-screen bg-gray-50 py-20 sm:py-24 md:py-30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
         <div className="relative flex flex-col items-start gap-4 mb-6
                 md:flex-row md:items-center md:justify-between md:gap-0">
-
           {/* Previous Button */}
           <button
             className="
               relative inline-flex items-center justify-center gap-2
-              px-5 py-3 rounded-full font-semibold text-base
+              px-4 md:px-5 py-2.5 md:py-3 rounded-full font-semibold text-sm md:text-base
               text-[#4A4A4A] bg-white border border-transparent
               transition-all duration-300 overflow-hidden group cursor-pointer
+              mb-3 md:mb-0
             "
             onClick={() => isBulkMode ? dispatch(setCurrentStep(1)) : dispatch(goBack())}
           >
@@ -126,12 +132,12 @@ export default function OccasionSelector() {
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
               <span className="transition-transform duration-300 group-hover:-translate-x-1">
                 <svg
-                  width="8"
+                  width="7"
                   height="9"
                   viewBox="0 0 8 9"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
-                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white md:w-2 md:h-auto"
                 >
                   <path
                     d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
@@ -158,61 +164,55 @@ export default function OccasionSelector() {
 
           {/* Bulk Gifting Indicator */}
           {isBulkMode && (
-            <div
-              className="
-        flex items-center gap-3 justify-center w-full
-        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
-      "
-            >
-              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
-
+            <div className="flex items-center gap-2 md:gap-3 justify-center w-full md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-1.5 md:p-2">
+              <div className="hidden md:block w-16 md:w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
               <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
-                <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
-                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                <div className="px-3 md:px-4 my-0.4 py-1 md:py-1.75 bg-white rounded-full">
+                  <span className="text-gray-700 font-semibold text-xs md:text-sm whitespace-nowrap">
                     Bulk Gifting
                   </span>
                 </div>
               </div>
 
-              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="hidden md:block w-16 md:w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
           {/* Desktop spacer only */}
-          <div className="md:block w-35" />
+          <div className="hidden md:block w-35" />
         </div>
 
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 mt-2">
+        <div className="text-center mb-8 md:mb-12 px-2 md:px-4">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 md:mb-3 mt-1 md:mt-2">
             What's the Occasion?
           </h1>
-          <p className="text-gray-600 text-base max-w-2xl mx-auto">
+          <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto px-2">
             Choose the perfect moment to celebrate and we'll help you create something beautiful
           </p>
         </div>
 
-        {/* Occasions Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {/* Occasions Grid - Responsive grid layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-4 md:gap-6 px-2 sm:px-0 mb-8 md:mb-12">
           {occasions.map((occasion, index) => {
             return (
               <div
                 key={`${occasion.id}-${index}`}
-                className={`occasion-selector-card bg-[#D9D9D933] rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group 
-        flex flex-col h-full
-        ${selectedOccasion === occasion.id
+                className={`occasion-selector-card w-full max-w-[18rem] sm:max-w-none bg-[#D9D9D933] rounded-2xl md:rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group 
+                  flex flex-col h-full
+                  ${selectedOccasion === occasion.id
                     ? 'border-2 border-blue-500'
                     : 'border-2 border-transparent'
                   }`}
                 onClick={() => handleOccasionSelect(occasion)}
               >
                 {/* Image Container */}
-                <div className="w-full px-4 pt-4">
-                  <div className="w-full h-56 overflow-hidden rounded-2xl bg-gray-200">
+                <div className="w-full px-3 md:px-4 pt-3 md:pt-4">
+                  <div className="w-full h-40 sm:h-48 md:h-52 lg:h-56 overflow-hidden rounded-xl md:rounded-2xl bg-gray-200">
                     <img
                       src={occasion.image}
                       alt={occasion.name}
-                      className="occasion-selector-image w-full h-full object-cover"
+                      className="occasion-selector-image w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       onError={(e) => {
                         e.target.src =
                           "https://via.placeholder.com/400x300?text=" +
@@ -223,43 +223,44 @@ export default function OccasionSelector() {
                 </div>
 
                 {/* Card Content */}
-                <div className="px-6 pt-5 pb-6 text-center flex flex-col flex-1">
+                <div className="px-4 md:px-6 pt-4 md:pt-5 pb-4 md:pb-6 text-center flex flex-col flex-1">
                   {/* Title */}
-                  <h3 className="font-bold text-xl text-gray-900 mb-2">
+                  <h3 className="font-bold text-lg md:text-xl text-gray-900 mb-1 md:mb-2">
                     {occasion.name}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-gray-600 text-sm mb-6 leading-relaxed line-clamp-2">
+                  <p className="text-gray-600 text-xs md:text-sm mb-4 md:mb-6 leading-relaxed line-clamp-2 px-1">
                     {occasion.description}
                   </p>
 
                   {/* CTA Button */}
                   <button
-  className="group mt-auto w-full sm:w-auto max-w-fit
-  bg-gradient-to-r from-pink-500 to-orange-400
-  hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500
-  text-white font-semibold text-sm md:text-base
-  px-6 py-3 md:px-8 md:py-4
-  rounded-full
-  transition-all duration-300
-  shadow-md hover:shadow-xl hover:scale-105
-  flex items-center justify-center gap-2
-  cursor-pointer whitespace-nowrap mx-auto"
-  onClick={(e) => {
-    e.stopPropagation();
-    handleOccasionSelect(occasion);
-  }}
->
+                    className="group mt-auto w-full sm:w-auto max-w-fit
+                    bg-gradient-to-r from-pink-500 to-orange-400
+                    hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500
+                    text-white font-semibold text-xs sm:text-sm md:text-base
+                    px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3
+                    rounded-full
+                    transition-all duration-300
+                    shadow-md hover:shadow-xl hover:scale-105
+                    flex items-center justify-center gap-1.5 md:gap-2
+                    cursor-pointer text-center mx-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOccasionSelect(occasion);
+                    }}
+                  >
                     Choose this Occasion
 
-                    <span className="mt-1 transition-transform duration-300 group-hover:translate-x-1">
+                    <span className="mt-0.5 transition-transform duration-300 group-hover:translate-x-1">
                       <svg
-                        width="8"
+                        width="7"
                         height="9"
                         viewBox="0 0 8 9"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
+                        className="md:w-2 md:h-auto"
                       >
                         <path
                           d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
@@ -279,14 +280,14 @@ export default function OccasionSelector() {
         <div className="text-center">
           {loading && currentOccasionPage > 1 && (
             <div className="inline-flex items-center text-gray-600">
-              <div className="w-4 h-4 border-2 border-dashed rounded-full animate-spin border-pink-500 mr-2"></div>
-              <span className="text-sm">Loading more...</span>
+              <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-dashed rounded-full animate-spin border-pink-500 mr-1.5 md:mr-2"></div>
+              <span className="text-xs md:text-sm">Loading more...</span>
             </div>
           )}
           {!loading && occasionsPagination?.hasNextPage && (
             <button
               onClick={handleLoadMore}
-              className="bg-white text-gray-700 px-8 py-3 rounded-lg font-medium border border-gray-300 hover:bg-gray-50 hover:border-pink-300 transition-all duration-200 text-sm"
+              className="bg-white text-gray-700 px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-medium border border-gray-300 hover:bg-gray-50 hover:border-pink-300 transition-all duration-200 text-xs md:text-sm"
             >
               Show More Occasions
             </button>

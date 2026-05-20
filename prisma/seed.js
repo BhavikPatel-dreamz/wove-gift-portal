@@ -1,5 +1,5 @@
-import bcrypt from "bcryptjs";
-import { prisma } from "../src/lib/db.js";
+ import bcrypt from "bcryptjs";
+ import { prisma } from "../src/lib/db.js";
 
 const DEFAULT_PASSWORD = "test@123";
 
@@ -10,7 +10,7 @@ async function seedUsers(passwordHash) {
       lastName: "User",
       email: "admin@yopmail.com",
       password: passwordHash,
-      role: "ADMIN",
+      role: "SUPER_ADMIN",
       phone: "7878787878",
       isActive: true,
       isVerified: true,
@@ -435,10 +435,11 @@ async function main() {
 
   await seedUsers(userPassword);
   await seedOccasionCatalog();
-  // await seedBrandCatalog();
+  await seedBrandCatalog();
 }
 
 main()
+//   .then(() => {
   .then(() => {
     console.log("Seed completed successfully.");
   })

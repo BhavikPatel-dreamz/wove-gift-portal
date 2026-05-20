@@ -15,6 +15,28 @@ const SHOPIFY_CONTEXT_HEADERS = {
   brandId: 'x-shopify-brand-id',
 };
 
+function logTrackedRequest(request, stage, extra = {}) {
+  const url = request.nextUrl;
+  const trackedPaths = ['/api/webhooks/payfast', '/payment/success'];
+
+  if (!trackedPaths.some((path) => url.pathname.startsWith(path))) {
+    return;
+  }
+
+  console.log('[proxy][tracked-request]', {
+    stage,
+    method: request.method,
+    pathname: url.pathname,
+    search: url.search,
+    host: request.headers.get('host'),
+    origin: request.headers.get('origin'),
+    referer: request.headers.get('referer'),
+    userAgent: request.headers.get('user-agent'),
+    hasAuthToken: Boolean(request.cookies.get('auth-token')?.value),
+    ...extra,
+  });
+}
+
 function withShopifyContext(request, context) {
   const headers = new Headers(request.headers);
 
@@ -100,8 +122,11 @@ async function authorizeShopifyRequest(request, context) {
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
 
+  logTrackedRequest(request, 'incoming');
+
   // Public routes - no authentication required
   const publicRoutes = [
+    '/api/health',
     '/api/shopify/auth',
     '/api/shopify/auth/callback',
     '/api/webhooks',
@@ -123,6 +148,12 @@ export async function proxy(request) {
   // Check if current path matches any public route
   if (publicRoutes.some(route => pathname.startsWith(route)) ||
       publicApiRoutes.some(route => pathname.startsWith(route))) {
+    logTrackedRequest(request, 'public-route-allowed', {
+      matchedPublicRoute:
+        publicRoutes.find((route) => pathname.startsWith(route)) ||
+        publicApiRoutes.find((route) => pathname.startsWith(route)) ||
+        null,
+    });
     return NextResponse.next();
   }
 
@@ -211,11 +242,10 @@ export async function proxy(request) {
 
   // Require token for other API routes
   if (pathname.startsWith('/api/')) {
-    const token = request.cookies.get('auth-token')?.value
-
-    console.log("token",token)
+    const token = request.cookies.get('auth-token')?.value;
 
     if (!token) {
+      logTrackedRequest(request, 'api-blocked-missing-auth-token');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -223,6 +253,7 @@ export async function proxy(request) {
     }
   }
 
+  logTrackedRequest(request, 'passed-through');
   return NextResponse.next()
 }
 

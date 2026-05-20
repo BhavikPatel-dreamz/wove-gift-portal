@@ -13,7 +13,15 @@ function initializeBrevoClient() {
   return apiInstance;
 }
 
-export async function sendEmail({ to, subject, html, text, attachments = [] }) {
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+  attachments = [],
+  templateId,
+  params,
+}) {
   const apiInstance = initializeBrevoClient();
   const senderEmail = process.env.NEXT_BREVO_SENDER_EMAIL;
   const senderName = process.env.NEXT_BREVO_SENDER_NAME || "Wove";
@@ -22,7 +30,9 @@ export async function sendEmail({ to, subject, html, text, attachments = [] }) {
     throw new Error("Missing Brevo sender email: NEXT_BREVO_SENDER_EMAIL");
   }
 
-  const recipients = to.split(",").map(email => ({ email: email.trim() }));
+  const recipients = Array.isArray(to)
+    ? to
+    : to.split(",").map((email) => ({ email: email.trim() }));
 
   const brevoAttachments = attachments.map(file => ({
     name: file.filename,
@@ -36,8 +46,10 @@ export async function sendEmail({ to, subject, html, text, attachments = [] }) {
     },
     to: recipients,
     subject,
-    htmlContent: html,
-    textContent: text,
+    htmlContent: templateId ? undefined : html,
+    textContent: templateId ? undefined : text,
+    templateId: templateId ? Number(templateId) : undefined,
+    params: templateId ? params : undefined,
     attachment: brevoAttachments.length ? brevoAttachments : undefined,
   };
 

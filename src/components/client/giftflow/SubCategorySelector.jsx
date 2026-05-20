@@ -1256,7 +1256,14 @@ export default function SubCategorySelector() {
     if (!selectedOccasion) return;
     try {
       dispatch(setLoading(true));
-      const response = await getOccasionCategories({ occasionId: selectedOccasion, limit: 11, page,isActive:true });
+      const response = await getOccasionCategories({
+        occasionId: selectedOccasion,
+        limit: 11,
+        page,
+        isActive: true,
+        sortBy: "displayOrder",
+        sortOrder: "asc",
+      });
 
       if (response.success) {
         dispatch(setSubCategories({
@@ -1310,11 +1317,11 @@ export default function SubCategorySelector() {
 
   if (loading && currentSubCategoryPage === 1) {
     return (
-      <div className="min-h-screen py-30 flex items-center justify-center bg-[#FBF9F4]">
+      <div className="min-h-screen py-8 md:py-30 flex items-center justify-center bg-[#FBF9F4] px-3 md:px-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-3 border-dashed rounded-full animate-spin border-pink-500 mx-auto"></div>
-          <h2 className="text-xl font-medium text-gray-900 mt-4">Loading Designs...</h2>
-          <p className="text-gray-600 text-sm">Getting things ready for you!</p>
+          <div className="w-10 h-10 md:w-12 md:h-12 border-3 border-dashed rounded-full animate-spin border-pink-500 mx-auto"></div>
+          <h2 className="text-lg md:text-xl font-medium text-gray-900 mt-3 md:mt-4">Loading Designs...</h2>
+          <p className="text-gray-600 text-xs md:text-sm">Getting things ready for you!</p>
         </div>
       </div>
     );
@@ -1322,11 +1329,11 @@ export default function SubCategorySelector() {
 
   if (error) {
     return (
-      <div className="min-h-screen py-30 flex items-center justify-center bg-[#FBF9F4]">
-        <div className="text-center p-8 bg-white rounded-xl shadow-lg border border-gray-200">
-          <h2 className="text-xl font-semibold text-red-600">Oops! Something went wrong.</h2>
-          <p className="text-gray-600 mt-2 text-sm">{error}</p>
-          <button onClick={() => fetchSubCategories(1)} className="mt-4 bg-linear-to-r from-pink-500 to-orange-400 text-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm hover:from-pink-600 hover:to-orange-500">
+      <div className="min-h-screen py-8 md:py-30 flex items-center justify-center bg-[#FBF9F4] px-3 md:px-4">
+        <div className="text-center p-6 md:p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+          <h2 className="text-lg md:text-xl font-semibold text-red-600">Oops! Something went wrong.</h2>
+          <p className="text-gray-600 mt-2 text-xs md:text-sm">{error}</p>
+          <button onClick={() => fetchSubCategories(1)} className="mt-4 bg-linear-to-r from-pink-500 to-orange-400 text-white px-5 md:px-6 py-2 md:py-2.5 rounded-lg font-medium transition-colors text-xs md:text-sm hover:from-pink-600 hover:to-orange-500">
             Try Again
           </button>
         </div>
@@ -1338,16 +1345,16 @@ export default function SubCategorySelector() {
     <div className="min-h-screen bg-[#FFF] py-30 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Back Button and Bulk Mode Indicator */}
-        <div className="relative flex flex-col items-start gap-4 mb-6
-                md:flex-row md:items-center md:justify-between md:gap-0">
+        <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
 
           {/* Previous Button */}
           <button
             className="
               relative inline-flex items-center justify-center gap-2
-              px-5 py-3 rounded-full font-semibold text-base
+              px-4 md:px-5 py-2.5 md:py-3 rounded-full font-semibold text-sm md:text-base
               text-[#4A4A4A] bg-white border border-transparent
               transition-all duration-300 overflow-hidden group cursor-pointer
+              mb-3 md:mb-0
             "
             onClick={() => dispatch(goBack())}
           >
@@ -1370,12 +1377,12 @@ export default function SubCategorySelector() {
             <div className="relative z-10 flex items-center gap-2 transition-all duration-300 group-hover:text-white">
               <span className="transition-transform duration-300 group-hover:-translate-x-1">
                 <svg
-                  width="8"
+                  width="7"
                   height="9"
                   viewBox="0 0 8 9"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
-                  className="transition-all duration-300 group-hover:[&>path]:fill-white"
+                  className="transition-all duration-300 group-hover:[&>path]:fill-white md:w-2 md:h-auto"
                 >
                   <path
                     d="M0.75 2.80128C-0.25 3.37863 -0.25 4.822 0.75 5.39935L5.25 7.99743C6.25 8.57478 7.5 7.85309 7.5 6.69839V1.50224C7.5 0.347537 6.25 -0.374151 5.25 0.2032L0.75 2.80128Z"
@@ -1404,55 +1411,55 @@ export default function SubCategorySelector() {
           {isBulkMode && (
             <div
               className="
-        flex items-center gap-3 justify-center w-full
-        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-2
+        flex items-center gap-2 md:gap-3 justify-center w-full
+        md:absolute md:left-1/2 md:-translate-x-1/2 md:w-auto p-1.5 md:p-2
       "
             >
-              <div className="md:block w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
+              <div className="hidden md:block w-16 md:w-30 h-px bg-linear-to-r from-transparent via-[#FA8F42] to-[#ED457D]" />
 
               <div className="rounded-full p-px bg-linear-to-r from-[#ED457D] to-[#FA8F42]">
-                <div className="px-4 my-0.4 py-1.75 bg-white rounded-full">
-                  <span className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                <div className="px-3 md:px-4 my-0.4 py-1 md:py-1.75 bg-white rounded-full">
+                  <span className="text-gray-700 font-semibold text-xs md:text-sm whitespace-nowrap">
                     Bulk Gifting
                   </span>
                 </div>
               </div>
 
-              <div className="md:block w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
+              <div className="hidden md:block w-16 md:w-30 h-px bg-linear-to-l from-transparent via-[#ED457D] to-[#FA8F42]" />
             </div>
           )}
 
           {/* Desktop spacer only */}
-          <div className="md:block w-35" />
+          <div className="hidden md:block w-35" />
         </div>
 
 
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-10 md:mb-12 px-4">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
+        <div className="text-center mb-6 sm:mb-8 md:mb-12 px-2 sm:px-4">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
             Pick a {selectedOccasionName} Design They&apos;ll Love
           </h1>
 
-          <p className="text-sm sm:text-base text-gray-600 max-w-md sm:max-w-xl md:max-w-2xl mx-auto">
+          <p className="text-xs sm:text-sm md:text-base text-gray-600 max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-2">
             Select from our curated collection of beautiful, emotionally engaging {selectedOccasionName} cards
           </p>
         </div>
 
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-3 sm:gap-4 md:gap-6 px-2 sm:px-0 mb-8 md:mb-12">
           {/* Custom Card Option */}
-          <div onClick={() => setIsCustomizing(true)} className="group cursor-pointer">
-            <div className="h-full rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl bg-linear-to-b from-[#FFF5F5] to-white p-2 border-2 border-dashed border-[#FFB4B4] hover:border-pink-400">
-              <div className="flex flex-col items-center justify-center p-8 min-h-100">
-                <div className="w-14 h-14 rounded-2xl border-2 border-[#FF69B4] flex items-center justify-center mb-6 bg-white group-hover:scale-110 transition-transform">
-                  <Upload className="w-6 h-6 text-[#FF69B4]" strokeWidth={2.5} />
+          <div onClick={() => setIsCustomizing(true)} className="group cursor-pointer w-full max-w-[18rem] sm:max-w-none">
+            <div className="h-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl bg-linear-to-b from-[#FFF5F5] to-white p-2 border-2 border-dashed border-[#FFB4B4] hover:border-pink-400">
+              <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 min-h-[280px] sm:min-h-[320px] md:min-h-[360px]">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-2xl border-2 border-[#FF69B4] flex items-center justify-center mb-4 sm:mb-5 md:mb-6 bg-white group-hover:scale-110 transition-transform">
+                  <Upload className="w-5 h-5 sm:w-6 sm:h-6 text-[#FF69B4]" strokeWidth={2.5} />
                 </div>
-                <h3 className="font-bold text-base text-gray-900 mb-3 text-center">Upload your Own Design</h3>
-                <p className="text-gray-600 text-sm text-center mb-6">Use your own design or photo</p>
-                <div className="w-full border-t border-gray-200 mb-6"></div>
-                <p className="text-gray-900 text-sm font-semibold text-center mb-1">JPG or PNG</p>
-                <p className="text-gray-500 text-xs text-center">Max 5MB Vertical layout preferred</p>
+                <h3 className="font-bold text-sm sm:text-base text-gray-900 mb-2 sm:mb-3 text-center">Upload your Own Design</h3>
+                <p className="text-gray-600 text-xs sm:text-sm text-center mb-4 sm:mb-6">Use your own design or photo</p>
+                <div className="w-full border-t border-gray-200 mb-4 sm:mb-6"></div>
+                <p className="text-gray-900 text-xs sm:text-sm font-semibold text-center mb-1">JPG or PNG</p>
+                <p className="text-gray-500 text-[10px] sm:text-xs text-center">Max 5MB Vertical layout preferred</p>
               </div>
             </div>
           </div>
@@ -1462,18 +1469,18 @@ export default function SubCategorySelector() {
             <div
               key={`${subCategory.id}-${index}`}
               onClick={() => handleSubCategorySelect(subCategory)}
-              className="group cursor-pointer h-full"
+              className="group cursor-pointer h-full w-full max-w-[18rem] sm:max-w-none"
             >
               <div
-                className={`h-full bg-white rounded-2xl p-2 overflow-hidden transition-all duration-300 hover:shadow-xl 
+                className={`h-full bg-white rounded-xl sm:rounded-2xl p-1.5 sm:p-2 overflow-hidden transition-all duration-300 hover:shadow-xl 
       border flex flex-col
       ${selectedSubCategory?.id === subCategory.id
                     ? "border-2 border-blue-500"
-                    : "border-gray-200 hover:border-pink-200"
+                    : "border border-gray-200 hover:border-pink-200"
                   }`}
               >
                 {/* Image */}
-                <div className="w-full h-64 overflow-hidden rounded-2xl bg-gray-100">
+                <div className="w-full h-40 sm:h-48 md:h-52 lg:h-64 overflow-hidden rounded-xl sm:rounded-2xl bg-gray-100">
                   {subCategory.image ? (
                     <img
                       src={subCategory.image}
@@ -1482,7 +1489,7 @@ export default function SubCategorySelector() {
                     />
                   ) : (
                     <div className="w-full h-full bg-linear-to-br from-pink-100 to-orange-100 flex items-center justify-center">
-                      <span className="text-6xl opacity-80">
+                      <span className="text-4xl sm:text-5xl md:text-6xl opacity-80">
                         {subCategory.emoji || "🎁"}
                       </span>
                     </div>
@@ -1490,12 +1497,12 @@ export default function SubCategorySelector() {
                 </div>
 
                 {/* Content */}
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="font-bold text-lg text-gray-900 mb-2 ">
+                <div className="p-3 sm:p-4 md:p-5 flex flex-col flex-1">
+                  <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 sm:mb-2">
                     {subCategory.name}
                   </h3>
 
-                  <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-2">
                     {subCategory.description}
                   </p>
 
@@ -1504,22 +1511,23 @@ export default function SubCategorySelector() {
   className="group mt-auto w-full sm:w-auto max-w-fit
   bg-gradient-to-r from-pink-500 to-orange-400
   hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500
-  text-white font-semibold text-sm md:text-base
-  px-6 py-3 md:px-8 md:py-4
+  text-white font-semibold text-xs sm:text-sm md:text-base
+  px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3
   rounded-full
   transition-all duration-300
   shadow-md hover:shadow-lg hover:scale-105
-  flex items-center justify-center gap-2
+  flex items-center justify-center gap-1.5 md:gap-2
   cursor-pointer whitespace-nowrap mx-auto"
 >
                     Choose this Design
-                    <span className="mt-1 transition-transform duration-300 group-hover:translate-x-1">
+                    <span className="mt-0.5 transition-transform duration-300 group-hover:translate-x-1">
                       <svg
-                        width="8"
+                        width="7"
                         height="9"
                         viewBox="0 0 8 9"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
+                        className="md:w-2 md:h-auto"
                       >
                         <path
                           d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z"
@@ -1538,7 +1546,7 @@ export default function SubCategorySelector() {
         {/* Load More */}
         {!loading && subCategoriesPagination?.hasNextPage && (
           <div className="text-center">
-            <button onClick={handleLoadMore} className="bg-white text-gray-700 px-8 py-3 rounded-lg font-medium border border-gray-300 hover:bg-gray-50 hover:border-pink-300 transition-all duration-200 text-sm">
+            <button onClick={handleLoadMore} className="bg-white text-gray-700 px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-medium border border-gray-300 hover:bg-gray-50 hover:border-pink-300 transition-all duration-200 text-xs md:text-sm">
               Show More Categories
             </button>
           </div>
@@ -1546,8 +1554,8 @@ export default function SubCategorySelector() {
         {loading && currentSubCategoryPage > 1 && (
           <div className="text-center">
             <div className="inline-flex items-center text-gray-600">
-              <div className="w-4 h-4 border-2 border-dashed rounded-full animate-spin border-pink-500 mr-2"></div>
-              <span className="text-sm">Loading more...</span>
+              <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-dashed rounded-full animate-spin border-pink-500 mr-1.5 md:mr-2"></div>
+              <span className="text-xs md:text-sm">Loading more...</span>
             </div>
           </div>
         )}

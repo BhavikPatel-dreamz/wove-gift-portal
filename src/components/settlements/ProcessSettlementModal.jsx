@@ -1,13 +1,15 @@
 "use client"
-import { DollarSign } from "lucide-react";
 import { X } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { CheckCircle } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useState } from "react";
-import { currencyList } from "@/components/brandsPartner/currency";
 import { processSettlement } from "@/lib/action/analytics";
+import {
+  formatSettlementCurrency,
+  getSettlementCurrencySymbol,
+} from "@/lib/settlement/formatSettlementDisplay";
 
 const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
   const [processing, setProcessing] = useState(false);
@@ -24,8 +26,6 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
       setPaymentNotes('');
     }
   }, [settlement]);
-
-  console.log('Settlement:', settlement);
 
   if (!isOpen) return null;
 
@@ -56,10 +56,7 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
       if (result.success) {
         setProcessMessage({
           type: "success",
-          text: `Payment processed successfully! ${result.data.paymentReference
-            ? `Payment Reference: ${result.data.paymentReference}`
-            : ""
-            }`,
+          text: result.message || "Payment processed successfully.",
         });
         setTimeout(() => {
           onSuccess();
@@ -85,9 +82,22 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
   };
 
   const formatCurrency = (amount, currency = 'USD') => {
-    const symbol = currencyList.find(c => c.code === currency)?.symbol || '$';
-    return `${symbol}${amount?.toLocaleString()}`;
+    return formatSettlementCurrency(amount, currency);
   };
+
+  const toAmount = (value) => {
+    const amount = Number(value);
+    return Number.isFinite(amount) ? amount : 0;
+  };
+
+  const settlementBreakdown = settlement
+    ? {
+      totalSales: toAmount(settlement.totalSoldAmount ?? settlement.baseAmount),
+      commissionAmount: toAmount(settlement.commissionAmount),
+      vatOnCommission: toAmount(settlement.vatAmount),
+      netPaymentToBrand: toAmount(settlement.netPayable ?? settlement.remainingAmount),
+    }
+    : null;
 
   const calculateRemaining = () => {
     if (!settlement || !paymentAmount) return 0;
@@ -191,6 +201,46 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
                 </div>
               </div>
 
+              {settlementBreakdown && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-6">
+                  <div className="mb-3">
+                    <h4 className="text-sm font-semibold text-gray-900">
+                      Settlement Breakdown
+                    </h4>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Please review this confirmation before processing the settlement.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Total Sales</span>
+                      <span className="font-semibold text-gray-900">
+                        {formatCurrency(settlementBreakdown.totalSales, settlement.currency)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Commission Amount</span>
+                      <span className="font-semibold text-red-600">
+                        {formatCurrency(settlementBreakdown.commissionAmount, settlement.currency)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">VAT on Commission</span>
+                      <span className="font-semibold text-emerald-600">
+                        {formatCurrency(settlementBreakdown.vatOnCommission, settlement.currency)}
+                      </span>
+                    </div>
+                    <div className="border-t border-blue-200 pt-3 flex items-center justify-between">
+                      <span className="font-semibold text-gray-900">Net Payment to Brand</span>
+                      <span className="text-base font-bold text-blue-700">
+                        {formatCurrency(settlementBreakdown.netPaymentToBrand, settlement.currency)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Payment Type Selection */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -213,7 +263,7 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
                       className={`block ${!isPartialPayment ? 'text-blue-600' : 'text-gray-400'}`}
                     >
                       <rect width="30" height="30" rx="6" fill="currentColor" fillOpacity="0.1" />
-                      <g clip-path="url(#clip0_4204_1064)">
+                      <g clipPath="url(#clip0_4204_1064)">
                         <path d="M16.9972 13.592C16.9972 14.8544 16.602 15.1584 15.1416 15.1584H13.5752V11.9492H15.14C16.602 11.9492 16.9972 12.3448 16.9972 13.592Z" fill="currentColor" />
                         <path d="M5.5 15.5C5.5 21.0228 9.9772 25.5 15.5 25.5C21.0228 25.5 25.5 21.0228 25.5 15.5C25.5 9.9772 21.0228 5.5 15.5 5.5C9.9772 5.5 5.5 9.9772 5.5 15.5ZM20.0088 21.5H17.636C17.2864 21.5 17.1796 21.3936 17.0276 21.1652L14.5476 17.2564H13.5752V21.2564C13.5752 21.4544 13.5296 21.5 13.3472 21.5H10.9896C10.8072 21.5 10.7616 21.4544 10.7616 21.2564V9.8964C10.7616 9.7444 10.8072 9.6988 10.9896 9.6836C12.48 9.5636 14.0012 9.5012 15.446 9.5012C18.7312 9.5012 19.8564 10.5048 19.8564 13.5012C19.8564 15.7368 19.2636 16.7104 17.6056 17.0752L20.1912 21.1952C20.3128 21.3644 20.2368 21.5 20.0088 21.5Z" fill="currentColor" />
                       </g>
@@ -242,7 +292,7 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
                       className={`block ${isPartialPayment ? 'text-blue-600' : 'text-gray-400'}`}
                     >
                       <rect width="30" height="30" rx="6" fill="currentColor" fillOpacity="0.1" />
-                      <g clip-path="url(#clip0_4204_1077)">
+                      <g clipPath="url(#clip0_4204_1077)">
                         <path d="M19.2276 10.716C19.2276 11.3998 19.0135 11.5645 18.2225 11.5645H17.374V9.82617H18.2216C19.0135 9.82617 19.2276 10.0405 19.2276 10.716Z" fill="currentColor" />
                         <path d="M13 11.7497C13 14.7412 15.4251 17.1663 18.4167 17.1663C21.4082 17.1663 23.8333 14.7412 23.8333 11.7497C23.8333 8.75816 21.4082 6.33301 18.4167 6.33301C15.4251 6.33301 13 8.75816 13 11.7497ZM20.8589 14.9997H19.5737C19.3843 14.9997 19.3264 14.942 19.2441 14.8183L17.9008 12.7011H17.3741V14.8677C17.3741 14.975 17.3494 14.9997 17.2506 14.9997H15.9735C15.8747 14.9997 15.85 14.975 15.85 14.8677V8.71439C15.85 8.63206 15.8747 8.60736 15.9735 8.59912C16.7808 8.53412 17.6048 8.50032 18.3874 8.50032C20.1669 8.50032 20.7764 9.04394 20.7764 10.667C20.7764 11.8779 20.4553 12.4053 19.5572 12.6029L20.9577 14.8346C21.0236 14.9262 20.9824 14.9997 20.8589 14.9997Z" fill="currentColor" />
                       </g>
@@ -266,7 +316,7 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
-                    {currencyList.find(c => c.code === settlement.currency)?.symbol || '$'}
+                    {getSettlementCurrencySymbol(settlement.currency)}
                   </span>
                   <input
                     type="number"
@@ -353,7 +403,7 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
                   Processing...
                 </>
               ) : (
-                'Process Payment'
+                'Confirm & Process Payment'
               )}
             </button>
           </div>
