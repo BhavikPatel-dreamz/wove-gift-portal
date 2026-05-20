@@ -2,7 +2,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = global;
-const connectionString = process.env.DATABASE_URL;
+const connectionString = "postgresql://neondb_owner:npg_gnEjQ6aqoGM2@ep-royal-mouse-ad4cnrnx-pooler.c-2.us-east-1.aws.neon.tech/WOVE-UPDATES?sslmode=require&channel_binding=require";
 
 const isProd = process.env.NODE_ENV === "production";
 if (isProd) {

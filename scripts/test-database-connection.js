@@ -58,7 +58,7 @@ function isPendingMigrationState(result) {
 }
 
 async function main() {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = "postgresql://neondb_owner:npg_gnEjQ6aqoGM2@ep-royal-mouse-ad4cnrnx-pooler.c-2.us-east-1.aws.neon.tech/WOVE-UPDATES?sslmode=require&channel_binding=require";
 
   if (!connectionString) {
     console.error("DATABASE_URL is missing. Add it to .env before running this test.");
