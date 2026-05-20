@@ -58,7 +58,6 @@ const ThankYouScreen = ({ order = null }) => {
             <WhatsAppShareButton
               gifts={whatsappShareGifts}
               context="order-confirmation"
-              autoOpenGuide
               analyticsMetadata={{
                 orderId: order?.id,
                 orderNumber: order?.orderNumber,
