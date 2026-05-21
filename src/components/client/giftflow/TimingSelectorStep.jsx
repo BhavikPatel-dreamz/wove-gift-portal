@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { goBack, goNext, setSelectedTiming } from "../../../redux/giftFlowSlice";
-import { ArrowLeft, Calendar, Clock, Check, X, SendIcon } from "lucide-react";
-import ProgressIndicator from "./ProgressIndicator";
-import CustomDropdown from "../../ui/CustomDropdown";
+import { X } from "lucide-react";
 
 const TimingSelectorStep = () => {
   const dispatch = useDispatch();
-  const { selectedTiming } = useSelector((state) => state.giftFlowReducer);
+  const { selectedTiming, deliveryMethod } = useSelector((state) => state.giftFlowReducer);
+  const isEmailDelivery = deliveryMethod === "email";
 
   const [selectedOption, setSelectedOption] = useState(selectedTiming?.type || '');
   const [selectedDate, setSelectedDate] = useState('');
@@ -58,6 +57,17 @@ const TimingSelectorStep = () => {
     }
   }, [selectedTiming]);
 
+  useEffect(() => {
+    if (isEmailDelivery) return;
+
+    setShowScheduleModal(false);
+
+    if (selectedTiming?.type === "schedule") {
+      setSelectedOption("immediate");
+      dispatch(setSelectedTiming({ type: "immediate" }));
+    }
+  }, [dispatch, isEmailDelivery, selectedTiming?.type]);
+
   // Generate time slots with 5-minute intervals
   const generateTimeSlots = () => {
     const slots = [];
@@ -94,6 +104,8 @@ const TimingSelectorStep = () => {
   };
 
   const handleTimingSelect = (timing) => {
+    if (timing === 'schedule' && !isEmailDelivery) return;
+
     setSelectedOption(timing);
     if (timing === 'schedule') {
       setShowScheduleModal(true);
@@ -114,7 +126,7 @@ const TimingSelectorStep = () => {
   };
 
   const handleContinue = () => {
-    if (selectedOption === 'schedule') {
+    if (selectedOption === 'schedule' && isEmailDelivery) {
       dispatch(setSelectedTiming({
         type: 'schedule',
         date: selectedDate,
@@ -218,12 +230,14 @@ const TimingSelectorStep = () => {
             Send Now or Later?
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-gray-600 px-3">
-            Choose the perfect timing for your gift delivery
+            {isEmailDelivery
+              ? "Choose the perfect timing for your gift delivery"
+              : "This delivery method is sent immediately after payment confirmation"}
           </p>
         </div>
 
         {/* Options */}
-        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8 max-w-2xl mx-auto mb-12 sm:mb-16 px-3 sm:px-0">
+        <div className={`grid ${isEmailDelivery ? 'sm:grid-cols-2 max-w-2xl' : 'max-w-xl'} gap-4 sm:gap-6 md:gap-8 mx-auto mb-12 sm:mb-16 px-3 sm:px-0`}>
           {/* Send Immediately */}
           <div
             onClick={() => {
@@ -249,25 +263,26 @@ const TimingSelectorStep = () => {
             </p>
           </div>
 
-          {/* Schedule for Later */}
-          <div
-            onClick={() => handleTimingSelect('schedule')}
-            className={`relative p-5 sm:p-6 md:p-8 rounded-3xl border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${selectedOption === 'schedule'
-              ? 'border-purple-400 bg-purple-50 shadow-lg'
-              : 'border-[#1A1A1A33] rounded-[20px] bg-[#FAF6FF] hover:border-blue-500 border-2'
-              }`}
-          >
-            <div className="p-2.5 sm:p-3 md:p-3 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-5 md:mb-6">
-              <svg width="32" height="32" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-10 sm:h-10 md:w-12 md:h-12">
-                <path d="M4.64754 36.3999H37.7497C38.0466 36.3999 38.3335 36.2961 38.5611 36.1067C38.879 35.8405 46.1317 29.6013 46.5739 16.1333H11.0229C10.5824 28.3586 3.90299 34.1049 3.83358 34.1622C3.42664 34.5061 3.27692 35.0677 3.46 35.5675C3.64181 36.066 4.11562 36.3999 4.64754 36.3999ZM45.3496 8.53333H39.0163V7.26666C39.0163 6.55733 38.4589 6 37.7496 6C37.0403 6 36.4829 6.55733 36.4829 7.26666V8.53333H30.0652V7.26666C30.0652 6.55733 29.5078 6 28.7985 6C28.0892 6 27.5318 6.55733 27.5318 7.26666V8.53333H21.1985V7.26666C21.1985 6.55733 20.6412 6 19.9319 6C19.2225 6 18.6652 6.55733 18.6652 7.26666V8.53333H12.3319C11.6225 8.53333 11.0652 9.09066 11.0652 9.79999V13.6H46.6162V9.79999C46.6162 9.09066 46.0589 8.53333 45.3496 8.53333Z" fill="white" />
-                <path d="M40.1879 38.0489C39.5001 38.6216 38.6367 38.9333 37.7498 38.9333H11.0654V42.7333C11.0654 43.4335 11.632 44 12.3321 44H45.3498C46.0499 44 46.6165 43.4335 46.6165 42.7333V28.5344C44.1743 34.5258 40.7665 37.5646 40.1879 38.0489Z" fill="white" fillOpacity="0.5" />
-              </svg>
+          {isEmailDelivery && (
+            <div
+              onClick={() => handleTimingSelect('schedule')}
+              className={`relative p-5 sm:p-6 md:p-8 rounded-3xl border cursor-pointer transition-all duration-300 hover:shadow-lg text-center ${selectedOption === 'schedule'
+                ? 'border-purple-400 bg-purple-50 shadow-lg'
+                : 'border-[#1A1A1A33] rounded-[20px] bg-[#FAF6FF] hover:border-blue-500 border-2'
+                }`}
+            >
+              <div className="p-2.5 sm:p-3 md:p-3 w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-5 md:mb-6">
+                <svg width="32" height="32" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-10 sm:h-10 md:w-12 md:h-12">
+                  <path d="M4.64754 36.3999H37.7497C38.0466 36.3999 38.3335 36.2961 38.5611 36.1067C38.879 35.8405 46.1317 29.6013 46.5739 16.1333H11.0229C10.5824 28.3586 3.90299 34.1049 3.83358 34.1622C3.42664 34.5061 3.27692 35.0677 3.46 35.5675C3.64181 36.066 4.11562 36.3999 4.64754 36.3999ZM45.3496 8.53333H39.0163V7.26666C39.0163 6.55733 38.4589 6 37.7496 6C37.0403 6 36.4829 6.55733 36.4829 7.26666V8.53333H30.0652V7.26666C30.0652 6.55733 29.5078 6 28.7985 6C28.0892 6 27.5318 6.55733 27.5318 7.26666V8.53333H21.1985V7.26666C21.1985 6.55733 20.6412 6 19.9319 6C19.2225 6 18.6652 6.55733 18.6652 7.26666V8.53333H12.3319C11.6225 8.53333 11.0652 9.09066 11.0652 9.79999V13.6H46.6162V9.79999C46.6162 9.09066 46.0589 8.53333 45.3496 8.53333Z" fill="white" />
+                  <path d="M40.1879 38.0489C39.5001 38.6216 38.6367 38.9333 37.7498 38.9333H11.0654V42.7333C11.0654 43.4335 11.632 44 12.3321 44H45.3498C46.0499 44 46.6165 43.4335 46.6165 42.7333V28.5344C44.1743 34.5258 40.7665 37.5646 40.1879 38.0489Z" fill="white" fillOpacity="0.5" />
+                </svg>
+              </div>
+              <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Schedule for Later</h3>
+              <p className="text-xs sm:text-sm text-gray-600">
+                Perfect timing for birthdays, anniversaries, or special moments
+              </p>
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 sm:mb-3">Schedule for Later</h3>
-            <p className="text-xs sm:text-sm text-gray-600">
-              Perfect timing for birthdays, anniversaries, or special moments
-            </p>
-          </div>
+          )}
         </div>
 
         {/* Schedule Modal */}

@@ -19,6 +19,18 @@ const ThankYouScreen = ({ order = null }) => {
       (currentOrder?.voucherCodes || []).map((voucherCode) => {
         const shareCode = voucherCode?.giftCard?.code || voucherCode?.code || "";
         const shareImageAssets = buildGiftCardShareImageUrls(shareCode);
+        const occasionImage =
+          currentOrder?.selectedSubCategory?.image ||
+          order?.selectedSubCategory?.image ||
+          currentOrder?.subCategory?.image ||
+          order?.subCategory?.image ||
+          currentOrder?.customCard?.image ||
+          order?.customCard?.image ||
+          currentOrder?.occasionImage ||
+          order?.occasionImage ||
+          currentOrder?.occasion?.image ||
+          order?.occasion?.image ||
+          "";
 
         return {
           recipientName: currentOrder?.receiverDetail?.name || "there",
@@ -31,8 +43,9 @@ const ThankYouScreen = ({ order = null }) => {
           giftAmount: `${currentOrder?.currency || "USD"} ${voucherCode?.originalValue ?? currentOrder?.amount ?? 0}`,
           giftCode: shareCode,
           giftUrl: voucherCode?.tokenizedLink,
-          giftImageUrl: shareImageAssets.imageUrl || currentOrder?.brand?.logo || "",
-          giftImageViewUrl: shareImageAssets.imageViewUrl || "",
+          giftImageUrl:
+            occasionImage || shareImageAssets.imageUrl || currentOrder?.brand?.logo || "",
+          giftImageViewUrl: occasionImage || shareImageAssets.imageViewUrl || "",
           senderName: currentOrder?.senderName || "Someone",
           customMessage: currentOrder?.message || "",
         };
@@ -53,7 +66,7 @@ const ThankYouScreen = ({ order = null }) => {
           Create your account now to track your order and access exclusive rewards.
         </p>
 
-        {whatsappShareGifts.length > 0 && (
+        {/* {whatsappShareGifts.length > 0 && (
           <div className="mb-6">
             <WhatsAppShareButton
               gifts={whatsappShareGifts}
@@ -69,7 +82,7 @@ const ThankYouScreen = ({ order = null }) => {
               }}
             />
           </div>
-        )}
+        )} */}
 
         <div className="w-full flex justify-center">
           <button

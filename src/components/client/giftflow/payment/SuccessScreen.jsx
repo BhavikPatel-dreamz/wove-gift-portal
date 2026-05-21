@@ -40,6 +40,18 @@ const SuccessScreen = ({
       (currentOrder?.voucherCodes || []).map((voucherCode) => {
         const shareCode = voucherCode?.giftCard?.code || voucherCode?.code || "";
         const shareImageAssets = buildGiftCardShareImageUrls(shareCode);
+        const occasionImage =
+          currentOrder?.selectedSubCategory?.image ||
+          order?.selectedSubCategory?.image ||
+          currentOrder?.subCategory?.image ||
+          order?.subCategory?.image ||
+          currentOrder?.customCard?.image ||
+          order?.customCard?.image ||
+          currentOrder?.occasionImage ||
+          order?.occasionImage ||
+          currentOrder?.occasion?.image ||
+          order?.occasion?.image ||
+          "";
 
         return {
           recipientName:
@@ -67,11 +79,12 @@ const SuccessScreen = ({
           giftCode: shareCode,
           giftUrl: voucherCode?.tokenizedLink,
           giftImageUrl:
+            occasionImage ||
             shareImageAssets.imageUrl ||
             currentOrder?.brand?.logo ||
             selectedBrand?.logo ||
             "",
-          giftImageViewUrl: shareImageAssets.imageViewUrl || "",
+          giftImageViewUrl: occasionImage || shareImageAssets.imageViewUrl || "",
           senderName: currentOrder?.senderName || order?.senderName || "Someone",
           customMessage: currentOrder?.message || order?.message || "",
         };

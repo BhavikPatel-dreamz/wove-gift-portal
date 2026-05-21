@@ -7,6 +7,7 @@ const ImageUpload = ({
   className = '',
   onFileChange,
   currentImage,
+  disabled = false,
   acceptedFormats = 'SVG,PNG, JPG, GIF up to 2MB',
   helperText = 'Your image will be resized to 800x600px.',
   placeHolder = 'Upload Brand Logo',
@@ -27,19 +28,24 @@ const ImageUpload = ({
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
+      setFileName(file.name);
+      if (onFileChange) {
+        onFileChange(file);
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
-        setFileName(file.name);
-        if (onFileChange) {
-          onFileChange(file);
-        }
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleRemoveImage = () => {
+    if (disabled) {
+      return;
+    }
+
     setImagePreview(null);
     setFileName('');
     if (fileInputRef.current) {
@@ -51,7 +57,7 @@ const ImageUpload = ({
   };
 
   const triggerFileInput = () => {
-    if (fileInputRef.current) {
+    if (!disabled && fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
@@ -70,8 +76,9 @@ const ImageUpload = ({
           <button
             type="button"
             onClick={handleRemoveImage}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
             aria-label="Remove image"
+            disabled={disabled}
           >
             <X className="h-4 w-4" />
           </button>
@@ -79,7 +86,11 @@ const ImageUpload = ({
         </div>
       ) : (
         <div
-          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[#1F59EE] transition-colors cursor-pointer bg-gray-50 hover:bg-indigo-50"
+          className={`border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-colors bg-gray-50 ${
+            disabled
+              ? 'cursor-not-allowed opacity-70'
+              : 'cursor-pointer hover:border-[#1F59EE] hover:bg-indigo-50'
+          }`}
           onClick={triggerFileInput}
         >
           <div className="flex flex-col items-center text-gray-600">
@@ -96,6 +107,7 @@ const ImageUpload = ({
             onChange={handleFileChange}
             className="hidden"
             accept="image/svg+xml, image/png, image/jpeg, image/gif, image/webp"
+            disabled={disabled}
             {...props}
           />
         </div>

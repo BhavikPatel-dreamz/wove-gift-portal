@@ -30,6 +30,105 @@ const ALLOWED_IMAGE_TYPES = new Set([
   'image/gif',
   'image/webp',
 ]);
+const OPTIMIZABLE_IMAGE_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+]);
+const MAX_OPTIMIZED_WIDTH = 1200;
+const MAX_OPTIMIZED_HEIGHT = 900;
+const OPTIMIZED_IMAGE_QUALITY = 0.82;
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Failed to read image preview.'));
+    reader.readAsDataURL(file);
+  });
+
+const loadImageElement = (file) =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load image for optimization.'));
+    };
+
+    image.src = objectUrl;
+  });
+
+const getOptimizedImageDimensions = (width, height) => {
+  const scale = Math.min(
+    1,
+    MAX_OPTIMIZED_WIDTH / width,
+    MAX_OPTIMIZED_HEIGHT / height,
+  );
+
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+};
+
+const optimizeImageFile = async (file) => {
+  if (!(file instanceof File)) {
+    return { file: null, previewUrl: null };
+  }
+
+  if (!OPTIMIZABLE_IMAGE_TYPES.has(file.type)) {
+    return { file, previewUrl: await readFileAsDataUrl(file) };
+  }
+
+  const image = await loadImageElement(file);
+  const { width, height } = getOptimizedImageDimensions(
+    image.naturalWidth || image.width,
+    image.naturalHeight || image.height,
+  );
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return { file, previewUrl: await readFileAsDataUrl(file) };
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+
+  const optimizedBlob = await new Promise((resolve) => {
+    canvas.toBlob(resolve, 'image/webp', OPTIMIZED_IMAGE_QUALITY);
+  });
+
+  if (!optimizedBlob) {
+    return { file, previewUrl: await readFileAsDataUrl(file) };
+  }
+
+  const optimizedFile = new File(
+    [optimizedBlob],
+    file.name.replace(/\.[^.]+$/, '') + '.webp',
+    {
+      type: 'image/webp',
+      lastModified: Date.now(),
+    },
+  );
+
+  const finalFile = optimizedFile.size < file.size ? optimizedFile : file;
+
+  return {
+    file: finalFile,
+    previewUrl: await readFileAsDataUrl(finalFile),
+  };
+};
 
 export default function CreateNewCard({
   occasion,
@@ -41,6 +140,7 @@ export default function CreateNewCard({
 }) {
   const isEditing = Boolean(initialCardData);
   const [isSaving, setIsSaving] = useState(false);
+  const [isOptimizingImage, setIsOptimizingImage] = useState(false);
   const [fieldErrors, setFieldErrors] = useState(EMPTY_FIELD_ERRORS);
   const [formError, setFormError] = useState('');
 
@@ -180,7 +280,7 @@ export default function CreateNewCard({
   };
 
   const handleSaveCard = async () => {
-    if (isSaving) {
+    if (isSaving || isOptimizingImage) {
       return;
     }
 
@@ -230,18 +330,30 @@ export default function CreateNewCard({
     }
   };
 
-  const handleFileSelect = (file) => {
+  const handleFileSelect = async (file) => {
     clearFormError();
     clearFieldError('image');
 
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, imageUrl: reader.result, imageFile: file }));
-      };
-      reader.readAsDataURL(file);
-    } else {
+    if (!file) {
       setFormData(prev => ({ ...prev, imageUrl: null, imageFile: null }));
+      return;
+    }
+
+    setIsOptimizingImage(true);
+
+    try {
+      const { file: optimizedFile, previewUrl } = await optimizeImageFile(file);
+      setFormData((prev) => ({
+        ...prev,
+        imageUrl: previewUrl,
+        imageFile: optimizedFile,
+      }));
+    } catch (error) {
+      console.error('Error optimizing image:', error);
+      setFormError('We could not optimize that image. Please try another file.');
+      setFormData((prev) => ({ ...prev, imageUrl: null, imageFile: null }));
+    } finally {
+      setIsOptimizingImage(false);
     }
   };
 
@@ -259,7 +371,7 @@ export default function CreateNewCard({
   };
 
   const handleCloseRequest = () => {
-    if (lockClose || isSaving) {
+    if (lockClose || isSaving || isOptimizingImage) {
       return;
     }
 
@@ -329,7 +441,11 @@ export default function CreateNewCard({
                   onFileChange={handleFileSelect}
                   currentImage={formData.imageUrl instanceof File ? URL.createObjectURL(formData.imageUrl) : formData.imageUrl}
                   placeHolder="Upload Card Design Image"
+                  disabled={isSaving || isOptimizingImage}
                 />
+                {isOptimizingImage && (
+                  <p className="mt-2 text-sm text-[#1F59EE]">Optimizing image before upload...</p>
+                )}
                 {fieldErrors.image && <p className="mt-2 text-sm text-red-600">{fieldErrors.image}</p>}
               </div>
 
@@ -451,15 +567,19 @@ export default function CreateNewCard({
             onClick={handleSaveCard}
             size="lg"
             icon={Save}
-            disabled={isSaving}
-            loading={isSaving}
+            disabled={isSaving || isOptimizingImage}
+            loading={isSaving || isOptimizingImage}
           >
-            {isEditing ? 'Update Card Design' : 'Save Card Design'}
+            {isOptimizingImage
+              ? 'Optimizing Image...'
+              : isEditing
+                ? 'Update Card Design'
+                : 'Save Card Design'}
           </Button>
           <Button
             onClick={onBack}
             variant="outline"
-            disabled={isSaving}
+            disabled={isSaving || isOptimizingImage}
           >
             Cancel
           </Button>
@@ -492,18 +612,18 @@ export default function CreateNewCard({
                 <Button
                   variant="outline"
                   onClick={handleCloseRequest}
-                  disabled={isSaving || lockClose}
+                  disabled={isSaving || isOptimizingImage || lockClose}
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSaveCard}
                   icon={Save}
-                  disabled={isSaving}
+                  disabled={isSaving || isOptimizingImage}
                   className="w-42.5 bg-[#1F59EE] text-white flex items-center justify-center gap-2 rounded-md text-xs font-medium"
                 >
-                  {isSaving ? <Loader className="animate-spin" size={14} /> : <img src="/material-symbols_save.svg" alt="Save" className="h-5 w-5" />}
-                  <div>Save Card Design</div>
+                  {isSaving || isOptimizingImage ? <Loader className="animate-spin" size={14} /> : <img src="/material-symbols_save.svg" alt="Save" className="h-5 w-5" />}
+                  <div>{isOptimizingImage ? 'Optimizing Image...' : 'Save Card Design'}</div>
                 </Button>
               </div>
             </div>
@@ -544,7 +664,11 @@ export default function CreateNewCard({
                 onFileChange={handleFileSelect}
                 currentImage={formData.imageUrl}
                 placeHolder="Upload Card Design Image"
+                disabled={isSaving || isOptimizingImage}
               />
+              {isOptimizingImage && (
+                <p className="mt-2 text-sm text-[#1F59EE]">Optimizing image before upload...</p>
+              )}
               {fieldErrors.image && <p className="mt-2 text-sm text-red-600">{fieldErrors.image}</p>}
             </div>
 

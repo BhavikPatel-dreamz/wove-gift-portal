@@ -55,9 +55,9 @@ const StepRenderer = ({
     case 5:
       return <PersonalMessageStep />
     case 6:
-      return mode === 'bulk' ? <BulkOrderSetup /> : <TimingSelectorStep />
-    case 7:
       return mode === 'bulk' ? <BulkReviewStep /> : <DeliveryMethodStep />
+    case 7:
+      return mode === 'bulk' ? <BulkOrderSetup /> : <TimingSelectorStep />
     case 8:
       return <ReviewConfirmStep />
     case 9:

@@ -85,7 +85,8 @@ const ReviewConfirmStep = () => {
     editingIndex,
     isEditMode,
     selectedOccasion,
-    isConfirmed
+    isConfirmed,
+    currentStep,
   } = useSelector((state) => state.giftFlowReducer);
   const cartItems = useSelector((state) => state.cart.items);
 
@@ -159,6 +160,11 @@ const ReviewConfirmStep = () => {
 
 
   const handleBack = () => {
+    if (deliveryMethod !== "email" && currentStep >= 8) {
+      dispatch(setCurrentStep(6));
+      return;
+    }
+
     dispatch(goBack());
   };
 
@@ -230,7 +236,7 @@ const ReviewConfirmStep = () => {
   };
 
   const redirectToDeliveryMethod = () => {
-    startReviewEditFlow(7);
+    startReviewEditFlow(6);
   }
 
   const formatRecipientContact = () => {
@@ -254,7 +260,7 @@ const ReviewConfirmStep = () => {
     <div className="max-w-7xl m-auto min-h-screen bg-gray-50 px-4 py-30 md:px-4 md:py-30">
       <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
         <button
-          onClick={() => dispatch(goBack())}
+          onClick={handleBack}
           className="group flex items-center gap-2 px-5 py-3 
              rounded-full bg-white 
              text-gray-800 hover:text-white
@@ -444,19 +450,21 @@ const ReviewConfirmStep = () => {
                   <div className="text-[#1A1A1A] font-poppins text-[14px] sm:text-[16px] font-semibold leading-5 sm:leading-5.5">
                     Delivery Timing
                   </div>
-                  <div>
-                    <button onClick={() => startReviewEditFlow(6)}>
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M2.5 14.55V17.0833C2.5 17.3166 2.68333 17.5 2.91667 17.5H5.45C5.55833 17.5 5.66667 17.4583 5.74167 17.375L14.8417 8.28329L11.7167 5.15829L2.625 14.25C2.54167 14.3333 2.5 14.4333 2.5 14.55ZM17.2583 5.86663C17.3356 5.78953 17.3969 5.69796 17.4387 5.59715C17.4805 5.49634 17.502 5.38827 17.502 5.27913C17.502 5.16999 17.4805 5.06192 17.4387 4.96111C17.3969 4.8603 17.3356 4.76872 17.2583 4.69163L15.3083 2.74163C15.2312 2.66438 15.1397 2.60309 15.0389 2.56127C14.938 2.51945 14.83 2.49792 14.7208 2.49792C14.6117 2.49792 14.5036 2.51945 14.4028 2.56127C14.302 2.60309 14.2104 2.66438 14.1333 2.74163L12.6083 4.26663L15.7333 7.39163L17.2583 5.86663Z" fill="url(#paint0_linear_3104_3730)" />
-                        <defs>
-                          <linearGradient id="paint0_linear_3104_3730" x1="2.5" y1="8.01754" x2="16.7802" y2="14.3932" gradientUnits="userSpaceOnUse">
-                            <stop stopColor="#ED457D" />
-                            <stop offset="1" stopColor="#FA8F42" />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                    </button>
-                  </div>
+                  {deliveryMethod === "email" && (
+                    <div>
+                      <button onClick={() => startReviewEditFlow(7)}>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M2.5 14.55V17.0833C2.5 17.3166 2.68333 17.5 2.91667 17.5H5.45C5.55833 17.5 5.66667 17.4583 5.74167 17.375L14.8417 8.28329L11.7167 5.15829L2.625 14.25C2.54167 14.3333 2.5 14.4333 2.5 14.55ZM17.2583 5.86663C17.3356 5.78953 17.3969 5.69796 17.4387 5.59715C17.4805 5.49634 17.502 5.38827 17.502 5.27913C17.502 5.16999 17.4805 5.06192 17.4387 4.96111C17.3969 4.8603 17.3356 4.76872 17.2583 4.69163L15.3083 2.74163C15.2312 2.66438 15.1397 2.60309 15.0389 2.56127C14.938 2.51945 14.83 2.49792 14.7208 2.49792C14.6117 2.49792 14.5036 2.51945 14.4028 2.56127C14.302 2.60309 14.2104 2.66438 14.1333 2.74163L12.6083 4.26663L15.7333 7.39163L17.2583 5.86663Z" fill="url(#paint0_linear_3104_3730)" />
+                          <defs>
+                            <linearGradient id="paint0_linear_3104_3730" x1="2.5" y1="8.01754" x2="16.7802" y2="14.3932" gradientUnits="userSpaceOnUse">
+                              <stop stopColor="#ED457D" />
+                              <stop offset="1" stopColor="#FA8F42" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="text-[#4A4A4A] font-inter text-[13px] sm:text-[14px] font-normal leading-5 sm:leading-6">
                   {formatTimingSummary(selectedTiming)}

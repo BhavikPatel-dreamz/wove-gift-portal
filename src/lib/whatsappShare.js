@@ -1,12 +1,15 @@
 const DEFAULT_WHATSAPP_TEMPLATE = [
-  "Hello {{recipientName}},",
+  "{{giftImageHeaderSection}}Hi {{recipientName}},",
   "",
-  "A gift has been issued for you from {{issuerName}} via Wove Gifts.",
+  "{{messageBodySection}}Brand: {{giftDisplayName}}",
   "",
-  "Gift amount: {{giftAmount}}",
-  "Gift code: {{giftCode}}",
+  "Gift Card Code: {{giftCode}}",
   "",
-  "{{customMessageSection}}{{giftImageSection}}{{giftUrlSection}}{{brandWebsiteSection}}Thank you.",
+  "Use your gift card code here:",
+  "{{giftUrl}}",
+  "",
+  "Powered by WoveGifts",
+  "www.wovegifts.com",
 ].join("\n");
 
 const TABLET_REGEX =
@@ -46,16 +49,6 @@ function toAbsoluteUrl(value) {
   } catch {
     return trimmedValue;
   }
-}
-
-function normalizeUrlForComparison(value) {
-  const absoluteUrl = toAbsoluteUrl(value);
-
-  if (!absoluteUrl) {
-    return "";
-  }
-
-  return absoluteUrl.trim().replace(/\/+$/, "").toLowerCase();
 }
 
 function interpolateTemplate(template, variables) {
@@ -124,16 +117,23 @@ export function generateWhatsAppMessage({
 } = {}) {
   const resolvedTemplate = template || getConfiguredTemplate();
   const safeGiftUrl = toAbsoluteUrl(giftUrl);
-  const safeBrandWebsite = toAbsoluteUrl(brandWebsite);
   const safeGiftImageUrl = toAbsoluteUrl(giftImageUrl);
   const safeCustomMessage = String(customMessage || "").trim();
   const safeBrandName = String(brandName || "").trim();
+  const safeGiftName = String(giftName || "").trim();
+  const safeGiftAmount = String(giftAmount || "").trim();
   const safeSenderName = String(senderName || "").trim() || "Someone";
-  const issuerName = safeSenderName || safeBrandName || "Someone";
-  const showWebsiteSection =
-    safeBrandWebsite &&
-    normalizeUrlForComparison(safeBrandWebsite) !==
-      normalizeUrlForComparison(safeGiftUrl);
+  const safeBrandWebsite = toAbsoluteUrl(brandWebsite);
+  const normalizedBrandName = safeBrandName.toLowerCase();
+  const normalizedGiftName = safeGiftName.toLowerCase();
+  const giftDisplayName = safeBrandName && safeGiftAmount
+    ? `${safeBrandName} ${safeGiftAmount} Voucher`
+    : safeGiftName && safeGiftAmount
+      ? `${safeGiftName} ${safeGiftAmount}`
+      : safeGiftName && safeBrandName && normalizedGiftName !== normalizedBrandName
+        ? `${safeBrandName} ${safeGiftName}`
+        : safeGiftName || safeBrandName || "Gift Voucher";
+  const fallbackMessage = `${safeSenderName} sent you a gift from WoveGifts.`;
 
   return cleanupMessage(
     interpolateTemplate(resolvedTemplate, {
@@ -147,20 +147,24 @@ export function generateWhatsAppMessage({
       brandName: safeBrandName,
       brandWebsite: safeBrandWebsite,
       giftImageUrl: safeGiftImageUrl,
-      issuerName,
+      giftDisplayName,
       customMessageBlock: safeCustomMessage
         ? `Message: "${safeCustomMessage}"`
         : "",
       customMessageSection: safeCustomMessage
         ? `Message:\n${safeCustomMessage}\n\n`
         : "",
+      messageBodySection: safeCustomMessage
+        ? `${safeCustomMessage}\n\n`
+        : `${fallbackMessage}\n\n`,
+      giftImageHeaderSection: safeGiftImageUrl
+        ? `${safeGiftImageUrl}\n\n`
+        : "",
       giftImageSection: safeGiftImageUrl
         ? `Occasion card:\n${safeGiftImageUrl}\n\n`
         : "",
       giftUrlSection: safeGiftUrl ? `Redeem URL:\n${safeGiftUrl}\n\n` : "",
-      brandWebsiteSection: showWebsiteSection
-        ? `Website:\n${safeBrandWebsite}\n\n`
-        : "",
+      brandWebsiteSection: "",
     }),
   );
 }

@@ -508,6 +508,10 @@ function MyGift() {
       }
     };
 
+    const canReopenWhatsAppShare =
+      card.deliveryMethod === "whatsapp" &&
+      card.isSent &&
+      !card.isPendingVoucher;
 
 
     return (
@@ -610,6 +614,19 @@ function MyGift() {
           </div>
         )}
 
+        {canReopenWhatsAppShare && !card.isReceived && (
+          <div className="flex gap-2 sm:gap-3">
+            <button
+              onClick={handleViewDetailsClick}
+              className="flex-1 py-2 border border-gray-300 rounded-lg flex items-center justify-center gap-1 sm:gap-2 hover:bg-gray-50 transition-colors"
+            >
+              <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-[#4A5565]" />
+              <span className="text-xs sm:text-sm font-medium text-[#4A5565]">
+                View & Share
+              </span>
+            </button>
+          </div>
+        )}
 
         {card.isReceived && !card.isPendingVoucher && (
           <div>

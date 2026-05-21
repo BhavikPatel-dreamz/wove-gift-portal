@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { X } from "lucide-react";
-import { clearDeliveryFormEditReturn, goBack, goNext, setDeliveryMethod, setDeliveryDetails, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
+import { clearDeliveryFormEditReturn, goBack, goNext, setDeliveryMethod, setDeliveryDetails, setSelectedTiming, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
 import MailIcons from "../../../icons/MailIcon";
 import WhatsupIcon from '../../../icons/WhatsupIcon';
 import PrinterIcon from '../../../icons/PrinterIcon';
@@ -542,7 +542,14 @@ const DeliveryMethodStep = () => {
       setFormData(nextDeliveryDetails);
       dispatch(setDeliveryDetails(nextDeliveryDetails));
       setShowModal(false);
-      dispatch(goNext());
+
+      if (selectedMethod === "email") {
+        dispatch(goNext());
+        return;
+      }
+
+      dispatch(setSelectedTiming({ type: "immediate" }));
+      dispatch(goNext(2));
     }
   }, [
     selectedMethod,
@@ -782,7 +789,9 @@ const DeliveryMethodStep = () => {
   flex items-center justify-center gap-1.5 sm:gap-2 md:gap-3
   text-center"
                   >
-                    Continue to Payment
+                    {selectedMethod === "email"
+                      ? "Continue to Timing"
+                      : "Continue to Review"}
 
                     <span className="transition-transform duration-300 group-hover:translate-x-1">
                       <svg

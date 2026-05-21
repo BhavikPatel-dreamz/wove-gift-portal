@@ -53,47 +53,82 @@ export async function POST(request) {
     console.log(`✅ Found ${orders.length} orders with payment intent ${paymentIntentId}`);
 
     // ✅ Format orders with voucher codes
-    const formattedOrders = orders.map(order => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      bulkOrderNumber: order.bulkOrderNumber,
-      amount: order.amount,
-      totalAmount: order.totalAmount,
-      subtotal: order.subtotal,
-      currency: order.currency,
-      quantity: order.quantity,
-      paymentStatus: order.paymentStatus,
-      deliveryMethod: order.deliveryMethod,
-      sendType: order.sendType,
-      scheduledFor: order.scheduledFor,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      brand: order.brand,
-      occasion: order.occasion,
-      receiverDetail: order.receiverDetail,
-      message: order.message,
-      senderName: order.senderName,
-      senderEmail: order.senderEmail,
-      voucherCodes: order.voucherCodes.map(vc => ({
-        id: vc.id,
-        code: vc.code,
-        giftCard: vc.giftCard ? {
-          code: vc.giftCard.code,
-          balance: vc.giftCard.balance,
-          initialValue: vc.giftCard.initialValue,
-          expiresAt: vc.giftCard.expiresAt,
-        } : null,
-        originalValue: vc.originalValue,
-        remainingValue: vc.remainingValue,
-        expiresAt: vc.expiresAt,
-        pin: vc.pin,
-        qrCode: vc.qrCode,
-        tokenizedLink: vc.tokenizedLink,
-        voucher: vc.voucher,
-      })),
-      bulkRecipients: order.bulkRecipients,
-      deliveryLogs: order.deliveryLogs,
-    }));
+    const formattedOrders = await Promise.all(
+      orders.map(async (order) => {
+        let selectedSubCategory = null;
+
+        if (order.isCustom && order.customCardId) {
+          selectedSubCategory = await prisma.customCard.findUnique({
+            where: { id: order.customCardId },
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              emoji: true,
+              category: true,
+            },
+          });
+        } else if (!order.isCustom && order.subCategoryId) {
+          selectedSubCategory = await prisma.occasionCategory.findUnique({
+            where: { id: order.subCategoryId },
+            select: {
+              id: true,
+              name: true,
+              image: true,
+              emoji: true,
+              category: true,
+              occasionId: true,
+            },
+          });
+        }
+
+        return {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          bulkOrderNumber: order.bulkOrderNumber,
+          amount: order.amount,
+          totalAmount: order.totalAmount,
+          subtotal: order.subtotal,
+          currency: order.currency,
+          quantity: order.quantity,
+          paymentStatus: order.paymentStatus,
+          deliveryMethod: order.deliveryMethod,
+          sendType: order.sendType,
+          scheduledFor: order.scheduledFor,
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+          brand: order.brand,
+          occasion: order.occasion,
+          isCustom: order.isCustom,
+          subCategoryId: order.subCategoryId,
+          customCardId: order.customCardId,
+          selectedSubCategory,
+          receiverDetail: order.receiverDetail,
+          message: order.message,
+          senderName: order.senderName,
+          senderEmail: order.senderEmail,
+          voucherCodes: order.voucherCodes.map(vc => ({
+            id: vc.id,
+            code: vc.code,
+            giftCard: vc.giftCard ? {
+              code: vc.giftCard.code,
+              balance: vc.giftCard.balance,
+              initialValue: vc.giftCard.initialValue,
+              expiresAt: vc.giftCard.expiresAt,
+            } : null,
+            originalValue: vc.originalValue,
+            remainingValue: vc.remainingValue,
+            expiresAt: vc.expiresAt,
+            pin: vc.pin,
+            qrCode: vc.qrCode,
+            tokenizedLink: vc.tokenizedLink,
+            voucher: vc.voucher,
+          })),
+          bulkRecipients: order.bulkRecipients,
+          deliveryLogs: order.deliveryLogs,
+        };
+      }),
+    );
 
     return NextResponse.json({
       success: true,

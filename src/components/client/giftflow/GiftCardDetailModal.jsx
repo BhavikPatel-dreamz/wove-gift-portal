@@ -61,6 +61,13 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
     Boolean(card.tokenizedLink);
   const shareCode = card.fullCode || card.code || "";
   const shareImageAssets = buildGiftCardShareImageUrls(shareCode);
+  const occasionImage =
+    card.selectedSubCategory?.image ||
+    card.subCategory?.image ||
+    card.customCard?.image ||
+    card.occasionImage ||
+    card.occasion?.image ||
+    "";
 
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-999 p-4">
@@ -181,8 +188,10 @@ const GiftCardDetailModal = ({ card, onClose, onRedeem }) => {
                           giftAmount: `${card.currencySymbol || "R"}${Number(card.totalAmount || 0).toFixed(2)}`,
                           giftCode: shareCode,
                           giftUrl: card.tokenizedLink,
-                          giftImageUrl: shareImageAssets.imageUrl || card.brandLogo || "",
-                          giftImageViewUrl: shareImageAssets.imageViewUrl || "",
+                          giftImageUrl:
+                            occasionImage || shareImageAssets.imageUrl || card.brandLogo || "",
+                          giftImageViewUrl:
+                            occasionImage || shareImageAssets.imageViewUrl || "",
                           senderName: card.senderName || "Someone",
                           customMessage: card.personalMessage || "",
                         },

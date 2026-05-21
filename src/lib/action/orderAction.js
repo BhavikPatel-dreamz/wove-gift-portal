@@ -2792,6 +2792,32 @@ export async function getOrderStatus(orderId) {
     };
   }
 
+  let selectedSubCategory = null;
+  if (order.isCustom && order.customCardId) {
+    selectedSubCategory = await prisma.customCard.findUnique({
+      where: { id: order.customCardId },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        emoji: true,
+        category: true,
+      },
+    });
+  } else if (!order.isCustom && order.subCategoryId) {
+    selectedSubCategory = await prisma.occasionCategory.findUnique({
+      where: { id: order.subCategoryId },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        emoji: true,
+        category: true,
+        occasionId: true,
+      },
+    });
+  }
+
   const allDeliveryLogs = order.deliveryLogs;
   const pendingCount = allDeliveryLogs.filter(
     (log) => log.status === "PENDING",
@@ -2828,6 +2854,10 @@ export async function getOrderStatus(orderId) {
       createdAt: order.createdAt,
       brand: order.brand,
       occasion: order.occasion,
+      isCustom: order.isCustom,
+      subCategoryId: order.subCategoryId,
+      customCardId: order.customCardId,
+      selectedSubCategory,
       receiverDetail: order.receiverDetail,
       message: order.message,
       senderName: order.senderName,
