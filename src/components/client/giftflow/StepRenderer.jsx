@@ -2,14 +2,12 @@
 import { useSelector } from "react-redux"
 import { useSearchParams } from "next/navigation"
 import BrandSelectionStep from "./BrandSelectionStep"
-import FinalSelectionStep from "./FinalSelectionStep"
 import GiftCardSelector from "./GiftCardSelector"
 import OccasionSelector from "./OccasionSelector"
 import SubCategorySelector from "./SubCategorySelector"
 import PersonalMessageStep from "./PersonalMessageStep"
 import TimingSelectorStep from "./TimingSelectorStep"
 import DeliveryMethodStep from "./DeliveryMethodStep"
-import ReviewConfirmStep from "./ReviewConfirmStep"
 import PaymentStep from "./PaymentStep"
 import BulkOrderSetup from "./BulkOrderSetup"
 import BulkReviewStep from "./BulkReviewStep"
@@ -55,12 +53,10 @@ const StepRenderer = ({
     case 5:
       return <PersonalMessageStep />
     case 6:
-      return mode === 'bulk' ? <BulkReviewStep /> : <DeliveryMethodStep />
+      return mode === 'bulk' ? <BulkOrderSetup /> : <DeliveryMethodStep />
     case 7:
-      return mode === 'bulk' ? <BulkOrderSetup /> : <TimingSelectorStep />
+      return mode === 'bulk' ? <BulkReviewStep /> : <TimingSelectorStep />
     case 8:
-      return <ReviewConfirmStep />
-    case 9:
       return <PaymentStep />
     default:
       return (

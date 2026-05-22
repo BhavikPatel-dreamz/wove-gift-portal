@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { goBack, goNext, setQuantity, setSelectedAmount } from '../../../redux/giftFlowSlice';
+import { clearDeliveryFormEditReturn, goBack, goNext, setCurrentStep, setQuantity, setSelectedAmount } from '../../../redux/giftFlowSlice';
 import { addToBulk, updateBulkItem } from '../../../redux/cartSlice';
 import { useCallback } from 'react';
 import { currencyList } from '../../brandsPartner/currency';
@@ -25,6 +25,7 @@ const BulkOrderSetup = () => {
     selectedOccasion,
     isConfirmed,
     quantity,
+    deliveryFormEditReturn,
   } = useSelector((state) => state.giftFlowReducer);
   const { bulkItems } = useSelector((state) => state.cart);
 
@@ -259,6 +260,15 @@ const BulkOrderSetup = () => {
       }));
     } else {
       dispatch(addToBulk(bulkOrderItem));
+    }
+
+    if (deliveryFormEditReturn?.enabled) {
+      const returnStep = deliveryFormEditReturn?.returnStep || 8;
+      dispatch(setCurrentStep(returnStep));
+      if (returnStep !== 7) {
+        dispatch(clearDeliveryFormEditReturn());
+      }
+      return;
     }
 
     // Reset and navigate

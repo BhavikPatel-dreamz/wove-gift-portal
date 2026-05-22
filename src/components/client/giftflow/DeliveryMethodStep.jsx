@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { X } from "lucide-react";
-import { clearDeliveryFormEditReturn, goBack, goNext, setDeliveryMethod, setDeliveryDetails, setSelectedTiming, updateDeliveryDetail } from "../../../redux/giftFlowSlice";
+import { clearDeliveryFormEditReturn, goBack, goNext, setDeliveryMethod, setDeliveryDetails, setSelectedTiming, updateDeliveryDetail, setCurrentStep } from "../../../redux/giftFlowSlice";
 import MailIcons from "../../../icons/MailIcon";
 import WhatsupIcon from '../../../icons/WhatsupIcon';
 import PrinterIcon from '../../../icons/PrinterIcon';
@@ -87,6 +87,7 @@ const DeliveryMethodStep = () => {
   const [selectedMethod, setSelectedMethod] = useState(deliveryMethod || null);
   const [showModal, setShowModal] = useState(false);
   const [errors, setErrors] = useState({});
+  const hasAutoOpenedEditMethodRef = useRef(false);
   const [formData, setFormData] = useState({
     yourName: '',
     yourCountryCode: DEFAULT_COUNTRY_CODE,
@@ -401,13 +402,18 @@ const DeliveryMethodStep = () => {
 
   // If user came from delivery preview edit flow, reopen the same method automatically.
   useEffect(() => {
-    if (!deliveryFormEditReturn?.enabled) return;
+    if (!deliveryFormEditReturn?.enabled) {
+      hasAutoOpenedEditMethodRef.current = false;
+      return;
+    }
+
+    if (hasAutoOpenedEditMethodRef.current) return;
 
     const methodToOpen =
       deliveryFormEditReturn.method || deliveryMethod || selectedMethod;
     if (!methodToOpen) return;
 
-    dispatch(clearDeliveryFormEditReturn());
+    hasAutoOpenedEditMethodRef.current = true;
     handleMethodChange(methodToOpen);
   }, [
     deliveryFormEditReturn,
@@ -543,6 +549,15 @@ const DeliveryMethodStep = () => {
       dispatch(setDeliveryDetails(nextDeliveryDetails));
       setShowModal(false);
 
+      if (deliveryFormEditReturn?.enabled) {
+        const returnStep = deliveryFormEditReturn?.returnStep || 7;
+        dispatch(setCurrentStep(returnStep));
+        if (returnStep !== 7) {
+          dispatch(clearDeliveryFormEditReturn());
+        }
+        return;
+      }
+
       if (selectedMethod === "email") {
         dispatch(goNext());
         return;
@@ -556,6 +571,7 @@ const DeliveryMethodStep = () => {
     validateWhatsAppForm,
     validateEmailForm,
     dispatch,
+    deliveryFormEditReturn,
     formData,
   ]);
 

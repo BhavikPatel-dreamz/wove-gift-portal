@@ -5,6 +5,7 @@ import SearchBar from './SearchBar'
 import CardGrid from './CardGrid'
 import { useDispatch, useSelector } from "react-redux"
 import {
+  clearDeliveryFormEditReturn,
   goNext,
   setCurrentStep,
   setSelectedBrand
@@ -23,7 +24,6 @@ const BrandSelectionStep = ({
   pagination,
   searchTerm,
   selectedCategory,
-  currentPage,
   sortBy,
   updateUrlParams,
   clearFilters
@@ -36,7 +36,7 @@ const BrandSelectionStep = ({
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingFavorite, setPendingFavorite] = useState(null);
 
-  const { selectedBrand } = useSelector((state) => state.giftFlowReducer)
+  const { selectedBrand, deliveryFormEditReturn } = useSelector((state) => state.giftFlowReducer)
   const wishlistItems = useSelector((state) => state.wishlist.items)
   const favorites = useMemo(
     () =>
@@ -105,12 +105,22 @@ const BrandSelectionStep = ({
 
   const handleBrandClick = useCallback((brand) => {
     dispatch(setSelectedBrand(brand))
+
+    if (deliveryFormEditReturn?.enabled) {
+      const returnStep = deliveryFormEditReturn?.returnStep || 7
+      dispatch(setCurrentStep(returnStep))
+      if (returnStep !== 7) {
+        dispatch(clearDeliveryFormEditReturn())
+      }
+      return
+    }
+
     if (isBulkMode) {
       dispatch(setCurrentStep(3))
     } else {
       dispatch(goNext())
     }
-  }, [dispatch])
+  }, [deliveryFormEditReturn, dispatch, isBulkMode])
 
   const handlePageChange = useCallback((page) => {
     updateUrlParams({ page: page > 1 ? page.toString() : null })
@@ -131,7 +141,7 @@ const BrandSelectionStep = ({
     })
   }, [updateUrlParams])
 
-  const handleSortChange = useCallback((sort) => {
+  const handleSortChange = useCallback(() => {
     updateUrlParams({
       sort: null,
       page: null // Reset to page 1
@@ -173,7 +183,7 @@ const BrandSelectionStep = ({
             <span className="text-sm text-gray-600">Active filters:</span>
             {searchTerm && (
               <span className="px-3 py-1 bg-wave-orange/10 text-wave-orange rounded-full text-sm">
-                Search: "{searchTerm}"
+                Search: &quot;{searchTerm}&quot;
               </span>
             )}
             {selectedCategory && (
