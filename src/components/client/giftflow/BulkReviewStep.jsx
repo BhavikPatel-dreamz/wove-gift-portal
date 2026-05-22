@@ -756,7 +756,7 @@ const BulkReviewStep = () => {
             toast.error('Please correct the highlighted fields');
             return;
         }
-        dispatch(goNext(2));
+        dispatch(goNext(1));
     };
 
     const handleBack = () => {
