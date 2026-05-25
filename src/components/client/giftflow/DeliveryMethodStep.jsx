@@ -317,7 +317,7 @@ const DeliveryMethodStep = () => {
       dispatch(setSelectedTiming({ type: "immediate" }));
 
       if (deliveryFormEditReturn?.enabled) {
-        const returnStep = deliveryFormEditReturn?.returnStep || 7;
+        const returnStep = deliveryFormEditReturn?.returnStep || 6;
         dispatch(setCurrentStep(returnStep));
         if (returnStep !== 7) {
           dispatch(clearDeliveryFormEditReturn());
@@ -521,7 +521,7 @@ const DeliveryMethodStep = () => {
       setShowModal(false);
 
       if (deliveryFormEditReturn?.enabled) {
-        const returnStep = deliveryFormEditReturn?.returnStep || 7;
+        const returnStep = deliveryFormEditReturn?.returnStep || 6;
         dispatch(setCurrentStep(returnStep));
         if (returnStep !== 7) {
           dispatch(clearDeliveryFormEditReturn());

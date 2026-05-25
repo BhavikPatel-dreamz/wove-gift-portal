@@ -26,7 +26,7 @@ const WhatsAppForm = ({
       setDeliveryFormEditReturn({
         enabled: true,
         method: deliveryMethod || "whatsapp",
-        returnStep: 7,
+        returnStep: 6,
       })
     );
     dispatch(setCurrentStep(step));
