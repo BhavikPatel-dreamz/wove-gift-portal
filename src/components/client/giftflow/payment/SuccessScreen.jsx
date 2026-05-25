@@ -90,6 +90,7 @@ const SuccessScreen = ({
         };
       }),
     );
+  const showWhatsAppActions = whatsappShareGifts.length > 0 && !isBulkMode;
 
   const getDeliveryMethodIcon = () => {
     switch (order?.deliveryMethod) {
@@ -519,7 +520,22 @@ const SuccessScreen = ({
           justify-content: center;
         }
 
+        .ss-action-row {
+          width: 100%;
+          display: flex;
+          align-items: stretch;
+          justify-content: center;
+          gap: 0.75rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .ss-action-item {
+          flex: 1 1 0;
+          max-width: 240px;
+        }
+
         .ss-cta-btn {
+          width: 100%;
           min-width: 7rem;
           cursor: pointer;
           border: none;
@@ -555,7 +571,7 @@ const SuccessScreen = ({
               <div>
                 <h1 className="ss-title">Your bulk order is complete!</h1>
                 <p className="ss-subtitle">
-                  We've emailed you a CSV file with all voucher codes to your email address.
+                  We&apos;ve emailed you a CSV file with all voucher codes to your email address.
                   You can share these codes directly with your team or clients.
                 </p>
               </div>
@@ -681,7 +697,7 @@ const SuccessScreen = ({
                     <div className="ss-divider--sm" />
                     <div className="ss-message-box">
                       <p className="ss-message-label">Personal Message</p>
-                      <p className="ss-message-text">"{order.message}"</p>
+                      <p className="ss-message-text">&quot;{order.message}&quot;</p>
                     </div>
                   </>
                 )}
@@ -713,23 +729,31 @@ const SuccessScreen = ({
               </div>
             )}
 
-            {whatsappShareGifts.length > 0 && !isBulkMode && (
-              <div style={{ marginBottom: "1.5rem" }}>
-                <WhatsAppShareButton
-                  gifts={whatsappShareGifts}
-                  context="payment-success"
-                  autoOpenGuide
-                  analyticsMetadata={{
-                    orderId: order?.id,
-                    orderNumber: order?.orderNumber,
-                  }}
-                  defaultMessageData={{
-                    senderName: order?.senderName || "Someone",
-                    recipientName:
-                      order?.receiverDetail?.name || deliveryDetails?.name || "there",
-                    customMessage: order?.message || "",
-                  }}
-                />
+            {showWhatsAppActions && (
+              <div className="ss-action-row">
+                <div className="ss-action-item">
+                  <WhatsAppShareButton
+                    gifts={whatsappShareGifts}
+                    context="payment-success"
+                    autoOpenGuide
+                    fullWidth
+                    analyticsMetadata={{
+                      orderId: order?.id,
+                      orderNumber: order?.orderNumber,
+                    }}
+                    defaultMessageData={{
+                      senderName: order?.senderName || "Someone",
+                      recipientName:
+                        order?.receiverDetail?.name || deliveryDetails?.name || "there",
+                      customMessage: order?.message || "",
+                    }}
+                  />
+                </div>
+                <div className="ss-action-item">
+                  <button onClick={onNext} className="ss-cta-btn">
+                    Next
+                  </button>
+                </div>
               </div>
             )}
 
@@ -745,11 +769,13 @@ const SuccessScreen = ({
             )}
 
             {/* ── CTA ── */}
-            <div className="ss-cta-wrap">
-              <button onClick={onNext} className="ss-cta-btn">
-                Next
-              </button>
-            </div>
+            {!showWhatsAppActions && (
+              <div className="ss-cta-wrap">
+                <button onClick={onNext} className="ss-cta-btn">
+                  Next
+                </button>
+              </div>
+            )}
 
           </div>
         </div>

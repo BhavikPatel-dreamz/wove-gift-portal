@@ -54,7 +54,7 @@ const WhatsAppForm = ({
           WhatsApp Details
         </h2>
         <p className="text-gray-600 text-sm">
-          We'll prepare a prefilled WhatsApp message for you to share manually after payment
+          We&apos;ll prepare a prefilled WhatsApp message for you to share manually after payment
           <br className="hidden sm:block" />
           <span className="sm:hidden"> </span>
           with your personal message and gift code.
@@ -211,7 +211,7 @@ const WhatsAppForm = ({
 
               <div>
                 <label className="text-xs font-semibold text-gray-600 block mb-2">
-                  Recipient's WhatsApp Number (Optional)
+                  Recipient&apos;s WhatsApp Number (Optional)
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <select

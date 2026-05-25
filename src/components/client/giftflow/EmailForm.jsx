@@ -227,7 +227,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                     <div style={{ background: 'linear-gradient(135deg,#F25C8A 0%,#F2845C 100%)', padding: '24px 28px', textAlign: 'center' }}>
                                         <p style={{ margin: '0 0 6px', fontSize: 24, lineHeight: 1 }}>🎁</p>
                                         <h1 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#ffffff', letterSpacing: '-0.2px', lineHeight: 1.3, fontFamily: "'DM Sans', Arial, sans-serif" }}>
-                                            You've received a Gift Card!
+                                            You&apos;ve received a Gift Card!
                                         </h1>
                                     </div>
 
@@ -253,7 +253,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                                     Message from {formData.yourFullName || 'Sender'}
                                                 </p>
                                                 <p style={{ margin: 0, fontSize: 12, color: '#333333', lineHeight: 1.6, fontFamily: "'DM Sans', Arial, sans-serif" }}>
-                                                    "{personalMessage}"
+                                                    &quot;{personalMessage}&quot;
                                                 </p>
                                             </div>
                                         )}
