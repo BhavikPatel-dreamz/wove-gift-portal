@@ -89,7 +89,6 @@ const ReviewConfirmStep = () => {
     currentStep,
   } = useSelector((state) => state.giftFlowReducer);
   const cartItems = useSelector((state) => state.cart.items);
-
   console.log(deliveryMethod, deliveryDetails, selectedTiming);
 
   const closeAuthModal = useCallback(() => {
@@ -148,10 +147,6 @@ const ReviewConfirmStep = () => {
     }
     if (deliveryMethod === 'email' && (!deliveryDetails?.recipientFullName || !deliveryDetails?.recipientEmailAddress)) {
       setError("Please provide the recipient's full name and email for email delivery.");
-      return false;
-    }
-    if (deliveryMethod === 'whatsapp' && (!deliveryDetails?.recipientName)) {
-      setError("Please provide the recipient's name for WhatsApp sharing.");
       return false;
     }
     setError(''); // Clear error if validation passes
@@ -529,7 +524,7 @@ const ReviewConfirmStep = () => {
 
               <div className="bg-[#F6F6F6] rounded-[10px] p-4 max-h-40 overflow-y-auto">
                 <p className="text-[#4A4A4A] text-[13px] sm:text-[14px] font-medium leading-5 sm:leading-6 italic font-inter">
-                  "{personalMessage || 'No message added'}"
+                  &ldquo;{personalMessage || 'No message added'}&rdquo;
                 </p>
                 <div className="flex justify-end">
                   <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">

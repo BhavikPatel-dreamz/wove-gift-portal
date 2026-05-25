@@ -6,7 +6,6 @@ import MailIcons from "../../../icons/MailIcon";
 import WhatsupIcon from '../../../icons/WhatsupIcon';
 import PrinterIcon from '../../../icons/PrinterIcon';
 import EmailForm from "./EmailForm";
-import WhatsAppForm from "./WhatsAppForm";
 import PrintForm from "./PrintForm";
 import { useSession } from "@/contexts/SessionContext";
 import {
@@ -88,6 +87,26 @@ const DeliveryMethodStep = () => {
   const [showModal, setShowModal] = useState(false);
   const [errors, setErrors] = useState({});
   const hasAutoOpenedEditMethodRef = useRef(false);
+  const sessionFullName = useMemo(
+    () =>
+      session?.user
+        ? normalizeNameInput(
+          `${session.user.firstName || ""} ${session.user.lastName || ""}`,
+        ).trim()
+        : "",
+    [session?.user],
+  );
+  const preferredSenderName = useMemo(
+    () =>
+      normalizeNameInput(
+        deliveryDetails?.yourFullName || deliveryDetails?.yourName || sessionFullName,
+      ).trim(),
+    [
+      deliveryDetails?.yourFullName,
+      deliveryDetails?.yourName,
+      sessionFullName,
+    ],
+  );
   const [formData, setFormData] = useState({
     yourName: '',
     yourCountryCode: DEFAULT_COUNTRY_CODE,
@@ -106,18 +125,13 @@ const DeliveryMethodStep = () => {
 
   // Initialize form data with session user data on mount
   useEffect(() => {
-    if (session?.user) {
-      const fullName = normalizeNameInput(
-        `${session.user.firstName || ''} ${session.user.lastName || ''}`
-      ).trim();
-      setFormData(prev => ({
-        ...prev,
-        yourName: fullName || prev.yourName,
-        yourFullName: fullName || prev.yourFullName,
-        yourEmailAddress: normalizeEmailInput(session.user.email) || prev.yourEmailAddress,
-      }));
-    }
-  }, [session?.user]);
+    setFormData(prev => ({
+      ...prev,
+      yourName: preferredSenderName || prev.yourName,
+      yourFullName: preferredSenderName || prev.yourFullName,
+      yourEmailAddress: normalizeEmailInput(session?.user?.email) || prev.yourEmailAddress,
+    }));
+  }, [preferredSenderName, session?.user?.email]);
 
   // Load existing delivery details when component mounts or delivery method changes
   useEffect(() => {
@@ -136,7 +150,9 @@ const DeliveryMethodStep = () => {
           deliveryDetails.recipientWhatsAppNumber || prev.recipientWhatsAppNumber,
           deliveryDetails.recipientCountryCode || prev.recipientCountryCode
         ),
-        yourFullName: normalizeNameInput(deliveryDetails.yourFullName || prev.yourFullName),
+        yourFullName: normalizeNameInput(
+          deliveryDetails.yourFullName || deliveryDetails.yourName || prev.yourFullName || preferredSenderName
+        ),
         yourEmailAddress: normalizeEmailInput(deliveryDetails.yourEmailAddress || prev.yourEmailAddress),
         recipientFullName: normalizeNameInput(deliveryDetails.recipientFullName || prev.recipientFullName),
         recipientEmailAddress: normalizeEmailInput(deliveryDetails.recipientEmailAddress || prev.recipientEmailAddress),
@@ -148,17 +164,14 @@ const DeliveryMethodStep = () => {
         printDetails: deliveryDetails.printDetails || prev.printDetails
       }));
     }
-  }, [deliveryMethod, deliveryDetails]);
+  }, [deliveryMethod, deliveryDetails, preferredSenderName]);
 
   // Check if method has been completed
   const isMethodCompleted = useMemo(() => {
     if (!deliveryMethod) return false;
 
     if (deliveryMethod === 'whatsapp') {
-      return !!(
-        deliveryDetails.yourName &&
-        deliveryDetails.recipientName
-      );
+      return true;
     }
 
     if (deliveryMethod === 'email') {
@@ -176,44 +189,6 @@ const DeliveryMethodStep = () => {
 
     return false;
   }, [deliveryMethod, deliveryDetails]);
-
-  // Validation functions
-  const validateWhatsAppForm = useCallback(() => {
-    const newErrors = {};
-
-    if (!formData.yourName?.trim()) {
-      newErrors.yourName = "Your name is required";
-    } else if (!isValidName(formData.yourName)) {
-      newErrors.yourName = "Please enter a valid name";
-    }
-
-    const yourWhatsAppError = validatePhoneWithCountryCode(
-      formData.yourWhatsAppNumber,
-      formData.yourCountryCode,
-      { required: false, label: "your WhatsApp number" }
-    );
-    if (yourWhatsAppError) {
-      newErrors.yourWhatsAppNumber = yourWhatsAppError;
-    }
-
-    if (!formData.recipientName?.trim()) {
-      newErrors.recipientName = "Recipient name is required";
-    } else if (!isValidName(formData.recipientName)) {
-      newErrors.recipientName = "Please enter a valid recipient name";
-    }
-
-    const recipientWhatsAppError = validatePhoneWithCountryCode(
-      formData.recipientWhatsAppNumber,
-      formData.recipientCountryCode,
-      { required: false, label: "recipient WhatsApp number" }
-    );
-    if (recipientWhatsAppError) {
-      newErrors.recipientWhatsAppNumber = recipientWhatsAppError;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [formData]);
 
   const validateEmailForm = useCallback(() => {
     const newErrors = {};
@@ -256,17 +231,11 @@ const DeliveryMethodStep = () => {
   }, [formData]);
 
   const buildAutoWhatsAppDetails = useCallback(() => {
-    const sessionFullName = session?.user
-      ? normalizeNameInput(
-          `${session.user.firstName || ""} ${session.user.lastName || ""}`,
-        ).trim()
-      : "";
-
     const nextFormData = {
       ...formData,
       yourName:
         normalizeNameInput(
-          deliveryDetails?.yourName || formData.yourName || sessionFullName,
+          deliveryDetails?.yourName || formData.yourName || preferredSenderName,
         ) || "",
       yourCountryCode: normalizeCountryCode(
         deliveryDetails?.yourCountryCode || formData.yourCountryCode || DEFAULT_COUNTRY_CODE,
@@ -298,7 +267,7 @@ const DeliveryMethodStep = () => {
             deliveryDetails?.yourName ||
             formData.yourFullName ||
             formData.yourName ||
-            sessionFullName,
+            preferredSenderName,
         ) || "",
       yourEmailAddress:
         normalizeEmailInput(
@@ -334,7 +303,7 @@ const DeliveryMethodStep = () => {
     };
 
     return nextFormData;
-  }, [deliveryDetails, formData, session]);
+  }, [deliveryDetails, formData, preferredSenderName, session?.user?.email]);
 
   const handleMethodChange = useCallback((method) => {
     setSelectedMethod(method);
@@ -344,7 +313,19 @@ const DeliveryMethodStep = () => {
     if (method === "whatsapp") {
       const nextFormData = buildAutoWhatsAppDetails();
       setFormData(nextFormData);
-      setShowModal(true);
+      dispatch(setDeliveryDetails(nextFormData));
+      dispatch(setSelectedTiming({ type: "immediate" }));
+
+      if (deliveryFormEditReturn?.enabled) {
+        const returnStep = deliveryFormEditReturn?.returnStep || 7;
+        dispatch(setCurrentStep(returnStep));
+        if (returnStep !== 7) {
+          dispatch(clearDeliveryFormEditReturn());
+        }
+        return;
+      }
+
+      dispatch(goNext(2));
       return;
     }
 
@@ -379,17 +360,14 @@ const DeliveryMethodStep = () => {
       }));
     } else {
       // New method selection - reset recipient fields but keep user fields from session
-      const fullName = session?.user
-        ? normalizeNameInput(`${session.user.firstName || ''} ${session.user.lastName || ''}`).trim()
-        : '';
       setFormData(prev => ({
-        yourName: fullName || prev.yourName,
+        yourName: preferredSenderName || prev.yourName,
         yourCountryCode: DEFAULT_COUNTRY_CODE,
         yourWhatsAppNumber: normalizePhoneInput(prev.yourWhatsAppNumber, prev.yourCountryCode),
         recipientName: '',
         recipientCountryCode: DEFAULT_COUNTRY_CODE,
         recipientWhatsAppNumber: '',
-        yourFullName: fullName || prev.yourFullName,
+        yourFullName: preferredSenderName || prev.yourFullName,
         yourEmailAddress: normalizeEmailInput(session?.user?.email) || prev.yourEmailAddress,
         recipientFullName: '',
         recipientEmailAddress: '',
@@ -398,7 +376,15 @@ const DeliveryMethodStep = () => {
         printDetails: {}
       }));
     }
-  }, [buildAutoWhatsAppDetails, deliveryDetails, deliveryMethod, dispatch, session]);
+  }, [
+    buildAutoWhatsAppDetails,
+    deliveryDetails,
+    deliveryFormEditReturn,
+    deliveryMethod,
+    dispatch,
+    preferredSenderName,
+    session?.user?.email,
+  ]);
 
   // If user came from delivery preview edit flow, reopen the same method automatically.
   useEffect(() => {
@@ -523,22 +509,7 @@ const DeliveryMethodStep = () => {
     let isValid = false;
     let nextDeliveryDetails = formData;
 
-    if (selectedMethod === 'whatsapp') {
-      isValid = validateWhatsAppForm();
-      if (isValid) {
-        nextDeliveryDetails = {
-          ...formData,
-          yourName: normalizeNameInput(formData.yourName),
-          recipientName: normalizeNameInput(formData.recipientName),
-          yourFullName:
-            normalizeNameInput(formData.yourName || formData.yourFullName) || "",
-          recipientFullName:
-            normalizeNameInput(
-              formData.recipientName || formData.recipientFullName
-            ) || "",
-        };
-      }
-    } else if (selectedMethod === 'email') {
+    if (selectedMethod === 'email') {
       isValid = validateEmailForm();
     } else if (selectedMethod === 'print') {
       isValid = true;
@@ -568,7 +539,6 @@ const DeliveryMethodStep = () => {
     }
   }, [
     selectedMethod,
-    validateWhatsAppForm,
     validateEmailForm,
     dispatch,
     deliveryFormEditReturn,
@@ -595,19 +565,6 @@ const DeliveryMethodStep = () => {
 
   const renderContent = useCallback(() => {
     switch (selectedMethod) {
-      case 'whatsapp':
-        return (
-          <WhatsAppForm
-            formData={formData}
-            handleInputChange={handleInputChange}
-            errors={errors}
-            renderInputError={renderInputError}
-            selectedSubCategory={selectedSubCategory}
-            selectedAmount={selectedAmount}
-            personalMessage={personalMessage}
-            selectedBrand={selectedBrand}
-          />
-        );
       case 'email':
         return (
           <EmailForm
@@ -696,7 +653,7 @@ const DeliveryMethodStep = () => {
                 handleMethodChange(method.id);
               }}
             >
-              Edit Details
+              {method.id === "whatsapp" ? "Choose Again" : "Edit Details"}
             </button>
           )}
         </div>

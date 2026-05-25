@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { isAdminRole } from '@/lib/roles'
 
@@ -12,7 +12,8 @@ export default function AuthForm({
   onClose,
   onAuthSuccess,
   initialEmail = '',
-  initialName = ''
+  initialName = '',
+  showSignupSuccessStep = false,
 }) {
   const getNameParts = (name = "") => {
     const parts = name.trim().split(/\s+/);
@@ -36,8 +37,10 @@ export default function AuthForm({
   const [currentType, setCurrentType] = useState(type)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [signupSuccessUser, setSignupSuccessUser] = useState(null)
   const router = useRouter()
   const isModal = mode === 'modal'
+  const signupContinuationRef = useRef(false)
 
   useEffect(() => {
     setCurrentType(type)
@@ -46,7 +49,7 @@ export default function AuthForm({
   useEffect(() => {
     if (!initialEmail) return
     setFormData((prev) => ({ ...prev, email: initialEmail, firstName: initialName }))
-  }, [initialEmail])
+  }, [initialEmail, initialName])
 
   const handleChange = (e) => {
     const { id, value } = e.target
@@ -56,6 +59,17 @@ export default function AuthForm({
   const switchType = (nextType) => {
     setCurrentType(nextType)
     setError([])
+    setSignupSuccessUser(null)
+    signupContinuationRef.current = false
+  }
+
+  const continueAfterSignupSuccess = async () => {
+    if (!signupSuccessUser || typeof onAuthSuccess !== 'function' || signupContinuationRef.current) {
+      return
+    }
+
+    signupContinuationRef.current = true
+    await onAuthSuccess(signupSuccessUser)
   }
 
   const handleSubmit = async () => {
@@ -102,6 +116,17 @@ export default function AuthForm({
 
       router.refresh()
 
+      if (
+        currentType === 'signup' &&
+        isModal &&
+        showSignupSuccessStep &&
+        typeof onAuthSuccess === 'function'
+      ) {
+        setSignupSuccessUser(data?.user || null)
+        signupContinuationRef.current = false
+        return
+      }
+
       if (isModal && typeof onAuthSuccess === 'function') {
         await onAuthSuccess(data?.user || null)
         return
@@ -130,6 +155,56 @@ export default function AuthForm({
   const getError = (field) => error?.find((e) => e.path?.[0] === field)?.message
 
   const getGeneralError = () => error?.find((e) => e.path?.[0] === 'form')?.message
+
+  if (signupSuccessUser && isModal && showSignupSuccessStep) {
+    return (
+      <div className="w-full z-[1200]">
+        <div className="mx-auto max-w-md w-full bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative">
+          {typeof onClose === 'function' ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-5 right-2 h-8 w-8 rounded-full border border-gray-300 bg-white text-gray-600 hover:text-gray-900 hover:border-gray-400 transition flex items-center justify-center"
+              aria-label="Close"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          ) : null}
+
+          <div className="text-center">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Account created</h2>
+            <p className="text-sm text-gray-600 leading-6">
+              Thank you for registering. Your Wove Gifts account has been created successfully.
+            </p>
+            <p className="mt-3 text-sm text-pink-600">
+              Continue to payment when you&apos;re ready.
+            </p>
+
+            <button
+              type="button"
+              onClick={continueAfterSignupSuccess}
+              className="group mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-pink-500 to-orange-500 py-3.5 text-white font-semibold shadow-lg transition-all hover:shadow-xl hover:from-pink-600 hover:to-orange-600"
+            >
+              Continue to payment
+              <span className="transition-transform duration-300 group-hover:translate-x-1">
+                <svg width="8" height="9" viewBox="0 0 8 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6.75 2.80128C7.75 3.37863 7.75 4.822 6.75 5.39935L2.25 7.99743C1.25 8.57478 0 7.85309 0 6.69839V1.50224C0 0.347537 1.25 -0.374151 2.25 0.2032L6.75 2.80128Z" fill="white" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={isModal ? 'w-full z-[1200]' : 'min-h-screen bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4'}>

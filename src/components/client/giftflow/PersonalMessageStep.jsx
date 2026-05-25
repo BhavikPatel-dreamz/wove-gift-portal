@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { clearDeliveryFormEditReturn, goBack, goNext, setCurrentStep, setPersonalMessage } from "../../../redux/giftFlowSlice";
+import {
+  clearDeliveryFormEditReturn,
+  goBack,
+  goNext,
+  setCurrentStep,
+  setPersonalMessage,
+} from "../../../redux/giftFlowSlice";
 import { Smile } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import EmojiPicker from "emoji-picker-react";
@@ -242,7 +248,7 @@ const PersonalMessageStep = () => {
               </div>
             </div>
 
-            <div className="w-full sm:w-auto px-3 py-2 rounded-[24px] bg-[rgba(250,143,66,0.1)] border border-pink-200 text-sm font-semibold leading-4.5 
+          <div className="w-full sm:w-auto px-3 py-2 rounded-[24px] bg-[rgba(250,143,66,0.1)] border border-pink-200 text-sm font-semibold leading-4.5 
                 text-[#4A4A4A] font-['Inter']">
               ❤️ Tip: Be genuine and speak from the heart
             </div>

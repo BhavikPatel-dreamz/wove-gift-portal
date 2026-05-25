@@ -274,7 +274,7 @@ function validateOrderData(orderData) {
     const recipientName =
       deliveryDetails?.recipientFullName || deliveryDetails?.recipientName;
 
-    if (!recipientName && orderData.deliveryMethod !== "print") {
+    if (!recipientName && orderData.deliveryMethod === "email") {
       throw new ValidationError("Recipient full name is required");
     }
 
@@ -308,7 +308,10 @@ async function createReceiverDetail(orderData) {
     const { deliveryDetails, deliveryMethod } = orderData;
     return await prisma.receiverDetail.create({
       data: {
-        name: deliveryDetails.recipientFullName || deliveryDetails?.recipientName,
+        name:
+          deliveryDetails.recipientFullName ||
+          deliveryDetails?.recipientName ||
+          "Recipient",
         email: deliveryMethod === "email" ? deliveryDetails.recipientEmailAddress : null,
         phone:
           deliveryMethod === "whatsapp"

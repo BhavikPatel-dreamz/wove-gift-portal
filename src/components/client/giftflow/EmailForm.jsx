@@ -222,7 +222,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                     <div className="bg-white px-4 sm:px-10 pb-10 sm:pb-[4.5rem]">
                                         <div className="text-left p-4">
                                             <p className="text-xs text-gray-700 mb-1">
-                                                Hi {formData.recipientFullName || "Jane"},
+                                                Hi {formData.recipientFullName || "Recipient"},
                                             </p>
                                             <p className="text-xs text-gray-700">
                                                 Congratulations, you've received a gift card from{" "}

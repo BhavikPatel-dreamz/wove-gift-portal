@@ -1,6 +1,9 @@
 "use client"
 import { useState } from 'react';
 import { Search, X } from 'lucide-react';
+import { copyMessageFallback, openWhatsAppShare } from '@/lib/whatsappShare';
+
+const FAQ_SUPPORT_WHATSAPP_NUMBER = '+686097256';
 
 const FAQComponent = () => {
   const [activeCategory, setActiveCategory] = useState('Getting Started');
@@ -235,6 +238,48 @@ const FAQComponent = () => {
     }
   };
 
+  const handleWhatsAppSupport = async () => {
+    const expandedFaq = Object.values(faqData)
+      .flat()
+      .find((faq) => buildFaqKey(activeCategory, faq.question) === expandedKey)
+      || Object.entries(faqData)
+        .flatMap(([category, faqs]) =>
+          faqs.map((faq) => ({
+            ...faq,
+            _category: category,
+          })),
+        )
+        .find((faq) => buildFaqKey(faq._category, faq.question) === expandedKey);
+
+    const supportMessage = [
+      'Hello Wove Gifts Support, I need help.',
+      '',
+      `FAQ category: ${activeCategory}`,
+      normalizedSearch ? `Search term: ${searchTerm.trim()}` : '',
+      expandedFaq?.question ? `Question: ${expandedFaq.question}` : '',
+      '',
+      'My issue:',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    try {
+      openWhatsAppShare({
+        message: supportMessage,
+        phoneNumber: FAQ_SUPPORT_WHATSAPP_NUMBER,
+        onBlocked: async () => {
+          await copyMessageFallback(supportMessage);
+        },
+        onFallback: async () => {
+          await copyMessageFallback(supportMessage);
+        },
+      });
+    } catch (error) {
+      await copyMessageFallback(supportMessage);
+      console.error('Failed to open WhatsApp support', error);
+    }
+  };
+
   const normalizedSearch = searchTerm.trim().toLowerCase();
 
   // Search globally across all categories when a term is provided.
@@ -443,7 +488,11 @@ const FAQComponent = () => {
                   Email Support
                 </button>
 
-                <button type="button" className="cursor-pointer bg-green-500 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-full font-semibold hover:shadow-lg transition-shadow duration-200 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleWhatsAppSupport}
+                  className="cursor-pointer bg-green-500 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-full font-semibold hover:shadow-lg transition-shadow duration-200 flex items-center justify-center gap-2"
+                >
                   <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <g clipPath="url(#clip0_1187_1600)">
                       <path fillRule="evenodd" clipRule="evenodd" d="M13.6264 12.2858C13.21 12.456 12.944 13.1078 12.6742 13.4408C12.5358 13.6114 12.3708 13.638 12.1581 13.5525C10.5954 12.9299 9.39739 11.8871 8.535 10.4489C8.38891 10.2259 8.41512 10.0497 8.59129 9.84261C8.85168 9.53581 9.1791 9.18733 9.24957 8.77397C9.40598 7.8596 8.21059 5.02323 6.63192 6.30843C2.08926 10.0102 14.2099 19.8281 16.3974 14.518C17.0162 13.0128 14.3164 12.0031 13.6264 12.2858ZM11.0001 20.0782C9.39352 20.0782 7.8127 19.6511 6.42868 18.8424C6.20653 18.7122 5.93797 18.6778 5.68961 18.7453L2.68223 19.5707L3.72981 17.2629C3.79987 17.1088 3.82795 16.9389 3.8112 16.7705C3.79445 16.6021 3.73346 16.4411 3.63442 16.3038C2.51379 14.7505 1.92125 12.9166 1.92125 10.9998C1.92125 5.99347 5.99383 1.92089 11.0001 1.92089C16.0064 1.92089 20.0786 5.99347 20.0786 10.9998C20.0786 16.0056 16.006 20.0782 11.0001 20.0782ZM11.0001 -0.000244141C4.93465 -0.000244141 0.000120525 4.93429 0.000120525 10.9998C0.000120525 13.1336 0.60598 15.1828 1.75711 16.9612L0.086058 20.6415C0.0105473 20.8077 -0.0160567 20.992 0.00935913 21.1729C0.034775 21.3537 0.111159 21.5235 0.229574 21.6625C0.319886 21.7682 0.432021 21.853 0.558268 21.9113C0.684514 21.9695 0.821875 21.9997 0.960902 21.9998C1.58051 21.9998 4.95914 20.938 5.81895 20.7021C7.40836 21.5525 9.19114 21.9998 11.0001 21.9998C17.0652 21.9998 22.0001 17.0648 22.0001 10.9998C22.0001 4.93429 17.0652 -0.000244141 11.0001 -0.000244141Z" fill="white" />

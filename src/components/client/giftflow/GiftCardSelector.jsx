@@ -148,13 +148,13 @@ const GiftCardSelector = () => {
         </div>
 
         {/* Amount Cards - Using CSS Grid for responsive layout */}
-        <div className="w-full flex justify-center">
+        <div className="w-full  flex justify-center">
           {denominationType !== 'amount' && presetAmounts.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 justify-items-stretch mb-8 w-full max-w-3xl mx-auto px-2 sm:px-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 justify-items-stretch mb-8 w-full max-w-2xl mx-auto px-2 sm:px-4">
               {presetAmounts.map((amount) => (
                 <div
                   key={amount.id}
-                  className="relative rounded-xl group cursor-pointer w-full max-w-none sm:max-w-[180px] p-[2px]"
+                  className="relative rounded-xl group cursor-pointer w-full max-w-none sm:max-w-[150px] p-[2px]"
                   onClick={() => handleAmountClick(amount)}
                 >
                   <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
@@ -205,7 +205,6 @@ const GiftCardSelector = () => {
           )}
         </div>
 
-        {/* Custom Amount Input */}
         {/* Custom Amount Input */}
         {denominationType !== 'fixed' && (
           <div className="max-w-4xl mx-auto mt-8 px-4 md:px-0">

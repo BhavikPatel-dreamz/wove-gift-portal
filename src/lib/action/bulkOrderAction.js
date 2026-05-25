@@ -75,7 +75,7 @@ function validateOrderData(orderData) {
   const { deliveryDetails } = orderData;
   const recipientName = deliveryDetails?.recipientFullName || deliveryDetails?.recipientName;
   
-  if (!recipientName && orderData.deliveryMethod !== "print") {
+  if (!recipientName && orderData.deliveryMethod === "email") {
     throw new ValidationError("Recipient full name is required");
   }
 

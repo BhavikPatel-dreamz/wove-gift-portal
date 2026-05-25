@@ -1,20 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "next/navigation";
-import { BadgePercent, Clock3, Gift, Heart, Mail, Pencil, Shield, Users, WalletCards, X } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BadgePercent, Clock3, Gift, Heart, Mail, Pencil, Shield, ShoppingCart, Users, WalletCards, X } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { goBack, setCurrentStep, setDeliveryFormEditReturn, setIsPaymentConfirmed } from "../../../redux/giftFlowSlice";
 import { createPendingOrder } from "../../../lib/action/orderAction";
+import { saveCartItemAsync } from "../../../redux/cartSlice";
 import { useSession } from "@/contexts/SessionContext";
 import AuthForm from "@/components/AuthForm";
 import CheckoutIdentityChoiceModal from "../checkout/CheckoutIdentityChoiceModal";
 import { validatePromoCodeForCheckout } from "../../../lib/action/promoCodeAction";
 import { calculateCheckoutTotals } from "../../../lib/promo/promoPricing";
 import { currencyList } from "../../brandsPartner/currency";
-import MailIcons from "../../../icons/MailIcon";
-import WhatsupIcon from "../../../icons/WhatsupIcon";
-import PrinterIcon from "../../../icons/PrinterIcon";
-
 const MONTHS = [
   "January",
   "February",
@@ -165,7 +162,7 @@ const renderDeliveryMedia = (method) => {
     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EEF5FF]">
       <div className="scale-[0.3]">
         <svg width="70" height="55" viewBox="0 0 42 33" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3.5 3L20.5 17L38 3" stroke="black" strokeWidth="3" strokeLinecap="round" stroke-linejoin="round" />
+          <path d="M3.5 3L20.5 17L38 3" stroke="black" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M1.5 23.3866V6.95669C1.5 3.94304 3.94304 1.5 6.95668 1.5H34.8623C37.6998 1.5 40 3.80023 40 6.6377V22.9645C40 25.2282 39.1007 27.3993 37.5 29C35.8993 30.6007 33.7282 31.5 31.4645 31.5H9.61341C7.31336 31.5 5.1214 30.5238 3.58276 28.8142C2.24192 27.3244 1.5 25.3909 1.5 23.3866Z" stroke="black" strokeWidth="3" />
         </svg>
       </div>
@@ -217,6 +214,7 @@ const DetailTile = ({
 
 const PaymentStep = () => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const session = useSession();
   const mode = searchParams.get("mode");
@@ -227,10 +225,13 @@ const PaymentStep = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [selectedPaymentTab, setSelectedPaymentTab] = useState("payfast");
-  const [checkoutUserId, setCheckoutUserId] = useState(session?.user?.id || null);
+  const [hasHydrated, setHasHydrated] = useState(false);
+  const [isSavingCart, setIsSavingCart] = useState(false);
+  const [checkoutUserId, setCheckoutUserId] = useState(null);
   const [showIdentityChoiceModal, setShowIdentityChoiceModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState("login");
+  const [authSuccessAction, setAuthSuccessAction] = useState("payment");
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [guestCheckout, setGuestCheckout] = useState(null);
   const [guestFormData, setGuestFormData] = useState({ fullName: "", email: "" });
@@ -260,7 +261,7 @@ const PaymentStep = () => {
     editingBulkOrderId,
   } = useSelector((state) => state.giftFlowReducer);
 
-  const { bulkItems } = useSelector((state) => state.cart);
+  const { items: cartItems, bulkItems } = useSelector((state) => state.cart);
 
   const currentBulkOrderIndex = useMemo(() => {
     if (!isBulkMode || !bulkItems.length) return -1;
@@ -307,6 +308,21 @@ const PaymentStep = () => {
   ]);
 
   const currentBulkOrder = currentBulkOrderIndex >= 0 ? bulkItems[currentBulkOrderIndex] : null;
+  const currentRegularCartItem = useMemo(() => {
+    if (isBulkMode || !isEditMode || editFlowType === "bulk") {
+      return null;
+    }
+
+    if (
+      editingIndex !== null &&
+      editingIndex !== undefined &&
+      cartItems[editingIndex]
+    ) {
+      return cartItems[editingIndex];
+    }
+
+    return null;
+  }, [cartItems, editFlowType, editingIndex, isBulkMode, isEditMode]);
   const draftBulkBrand = isBulkMode ? (selectedBrand || currentBulkOrder?.selectedBrand || null) : selectedBrand;
   const draftBulkAmount = isBulkMode ? (giftFlowAmount || currentBulkOrder?.selectedAmount || null) : giftFlowAmount;
   const draftBulkQuantity = isBulkMode
@@ -375,18 +391,27 @@ const PaymentStep = () => {
     )
     : getDeliveryHelperText(displayDeliveryMethod, deliveryDetails);
   const showTimingTile = !isBulkMode && displayDeliveryMethod === "email";
+  const isBulkCartEdit = isBulkMode && typeof currentBulkOrder?.cartItemId === "string";
+  const isRegularCartEdit = !isBulkMode && typeof currentRegularCartItem?.cartItemId === "string";
 
   const calculateTotal = () => checkoutPricing.totalAmount;
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    setHasHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+
+    if (!session?.user?.id) {
+      setCheckoutUserId(null);
+      return;
+    }
+
     setCheckoutUserId(session.user.id);
     setGuestCheckout(null);
-    setShowIdentityChoiceModal(false);
-    setShowAuthModal(false);
-    setShowGuestModal(false);
     setGuestFormError("");
-  }, [session?.user?.id]);
+  }, [hasHydrated, session?.user?.id]);
 
   useEffect(() => {
     if (
@@ -407,6 +432,7 @@ const PaymentStep = () => {
   };
 
   const openIdentityChoiceModal = () => {
+    setAuthSuccessAction("payment");
     setAuthMode("login");
     setShowAuthModal(false);
     setShowGuestModal(false);
@@ -414,7 +440,8 @@ const PaymentStep = () => {
     setGuestFormError("");
   };
 
-  const openAuthModal = (nextMode = "login") => {
+  const openAuthModal = (nextMode = "login", nextAction = "payment") => {
+    setAuthSuccessAction(nextAction);
     setAuthMode(nextMode);
     setShowIdentityChoiceModal(false);
     setShowGuestModal(false);
@@ -423,6 +450,7 @@ const PaymentStep = () => {
   };
 
   const openGuestModal = () => {
+    setAuthSuccessAction("payment");
     setGuestFormData({
       fullName: guestCheckout?.fullName || deliveryDetails?.yourFullName || "",
       email: guestCheckout?.email || deliveryDetails?.yourEmailAddress || "",
@@ -442,6 +470,71 @@ const PaymentStep = () => {
     dispatch(setCurrentStep(step));
   };
 
+  const saveCartItemForUser = async (userId, item) => {
+    const cartItemId = isBulkMode
+      ? (typeof currentBulkOrder?.cartItemId === "string" ? currentBulkOrder.cartItemId : null)
+      : (typeof currentRegularCartItem?.cartItemId === "string" ? currentRegularCartItem.cartItemId : null);
+
+    await dispatch(saveCartItemAsync({
+      userId,
+      type: isBulkMode ? "bulk" : "regular",
+      item,
+      cartItemId,
+    })).unwrap();
+  };
+
+  const buildCartItemPayload = () => {
+    if (isBulkMode) {
+      return {
+        ...currentBulkOrder,
+        selectedBrand: effectiveBulkBrand,
+        selectedAmount,
+        personalMessage: displayMessage,
+        quantity,
+        companyInfo,
+        deliveryOption: bulkDeliveryOption,
+        deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
+        selectedOccasion: selectedOccasion || currentBulkOrder?.selectedOccasion,
+        selectedSubCategory: displaySubCategory,
+        selectedTiming: displayTiming,
+        totalAmount: calculateTotal(),
+        isBulkOrder: true,
+        csvRecipients,
+      };
+    }
+
+    return {
+      selectedBrand,
+      selectedAmount,
+      personalMessage,
+      deliveryMethod,
+      deliveryDetails,
+      selectedOccasion,
+      selectedSubCategory,
+      selectedTiming,
+    };
+  };
+
+  const validateCartItem = () => {
+    if (!selectedAmount || !displayBrand) {
+      setError("Please complete your gift details before adding to cart.");
+      return false;
+    }
+
+    if (isBulkMode && !currentBulkOrder) {
+      setError("No bulk order was found to save.");
+      return false;
+    }
+
+    if (!isBulkMode && !deliveryMethod) {
+      setError("Please select a delivery method before adding to cart.");
+      return false;
+    }
+
+    setError(null);
+    return true;
+  };
+
   const handleAuthSuccess = async (user) => {
     const authenticatedId = user?.id || null;
     if (!authenticatedId) {
@@ -452,6 +545,11 @@ const PaymentStep = () => {
     setCheckoutUserId(authenticatedId);
     setGuestCheckout(null);
     closeIdentityModals();
+    if (authSuccessAction === "cart") {
+      await handleAddToCart({ userIdOverride: authenticatedId });
+      return;
+    }
+
     await handleInitiatePayment({
       userIdOverride: authenticatedId,
       guestCheckoutOverride: null,
@@ -649,6 +747,42 @@ const PaymentStep = () => {
     await handleInitiatePayment();
   };
 
+  const handleAddToCart = async ({ userIdOverride } = {}) => {
+    if (!validateCartItem() || isSavingCart) {
+      return;
+    }
+
+    const resolvedUserId = userIdOverride || session?.user?.id || null;
+
+    if (!resolvedUserId) {
+      openAuthModal("login", "cart");
+      return;
+    }
+
+    setIsSavingCart(true);
+    setError(null);
+
+    try {
+      const cartItem = buildCartItemPayload();
+      await saveCartItemForUser(resolvedUserId, cartItem);
+      toast.success(
+        isBulkMode
+          ? (isBulkCartEdit ? "Bulk order updated in cart!" : "Bulk order added to cart!")
+          : (isRegularCartEdit ? "Gift updated in cart!" : "Gift added to cart!"),
+      );
+      router.push("/cart");
+    } catch (cartError) {
+      const message =
+        typeof cartError === "string"
+          ? cartError
+          : cartError?.message || "Failed to add item to cart.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsSavingCart(false);
+    }
+  };
+
   const handleOccasionEdit = () => {
     startReviewEditFlow(4);
   };
@@ -739,7 +873,7 @@ const PaymentStep = () => {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#F8F8FC_0%,#FDF2F5_100%)] px-4 py-20 sm:py-24 md:px-8 md:py-30">
-      <Toaster />
+      {hasHydrated ? <Toaster /> : null}
 
       <div className="mx-auto max-w-6xl">
         <div className="relative mb-6 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between md:gap-0">
@@ -844,49 +978,43 @@ const PaymentStep = () => {
                   Payment summary
                 </p>
                 <div className="space-y-3 text-sm text-[#5F5F69]">
-                  {isBulkMode ? (
-                    <div className="flex items-center justify-between gap-4">
-                      <span>Quantity</span>
-                      <span className="font-medium text-[#1A1A1A]">
-                        {quantity} voucher{quantity > 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  ) : null}
-
                   <div className="flex items-center justify-between gap-4">
                     <span>Gift card value</span>
                     <span className="font-medium text-[#1A1A1A]">{subtotalLabel}</span>
                   </div>
 
                   {appliedPromo ? (
-                    <div className="flex items-center justify-between gap-4 text-[#ED457D]">
-                      <span>Promo ({appliedPromo.code})</span>
-                      <span className="font-medium">
+                    <div className="rounded-xl bg-[#FFF7FA] px-3 py-2 text-xs text-[#ED457D]">
+                      Promo {appliedPromo.code} applied:
+                      {" "}
+                      <span className="font-semibold">
                         -{formatCurrencyValue(checkoutPricing.discountAmount, currentCurrency)}
                       </span>
                     </div>
                   ) : null}
 
                   <div className="flex items-center justify-between gap-4">
-                    <span>Service Fee excl. VAT 4.35%</span>
-                    <span className="font-medium text-[#1A1A1A]">
-                      {formatCurrencyValue(checkoutPricing.serviceFeeExVat, currentCurrency)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <span>VAT on Service Fee 15%</span>
-                    <span className="font-medium text-[#1A1A1A]">
-                      {formatCurrencyValue(checkoutPricing.serviceFeeVat, currentCurrency)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-4">
-                    <span>Total Service Fee 5% incl. VAT</span>
+                    <span>Service Fee (5% incl. VAT)</span>
                     <span className="font-medium text-[#1A1A1A]">
                       {checkoutPricing.serviceFee === 0 ? "Free" : serviceFeeLabel}
                     </span>
                   </div>
+
+                  {/* <details className="rounded-xl bg-white px-3 py-2">
+                    <summary className="cursor-pointer text-xs font-medium text-[#7E7E8A]">
+                      Fee breakdown
+                    </summary>
+                    <div className="mt-2 space-y-2 text-xs text-[#7E7E8A]">
+                      <div className="flex items-center justify-between gap-4">
+                        <span>Service Fee excl. VAT 4.35%</span>
+                        <span>{formatCurrencyValue(checkoutPricing.serviceFeeExVat, currentCurrency)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span>VAT on Service Fee 15%</span>
+                        <span>{formatCurrencyValue(checkoutPricing.serviceFeeVat, currentCurrency)}</span>
+                      </div>
+                    </div>
+                  </details> */}
                 </div>
 
                 <div className="mt-4 border-t border-[#ECECF2] pt-4">
@@ -922,6 +1050,31 @@ const PaymentStep = () => {
                         />
                       </svg>
                     </span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleAddToCart()}
+                disabled={isSavingCart || isProcessing}
+                className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border px-6 py-4 text-sm font-semibold transition-all duration-300 sm:text-base ${
+                  (isSavingCart || isProcessing)
+                    ? "cursor-not-allowed border-[#E5E7EB] bg-[#F3F4F6] text-[#9CA3AF]"
+                    : "cursor-pointer border-[#FFD4E0] bg-white text-[#ED457D] hover:border-[#ED457D] hover:bg-[#FFF7FA]"
+                }`}
+              >
+                {isSavingCart ? (
+                  <>
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Saving to cart...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="h-5 w-5" />
+                    {isBulkMode
+                      ? (isBulkCartEdit ? "Update Cart Order" : "Add Bulk Order to Cart")
+                      : (isRegularCartEdit ? "Update Cart" : "Add to Cart")}
                   </>
                 )}
               </button>
@@ -1123,6 +1276,9 @@ const PaymentStep = () => {
               </span>
               <div>
                 <p className="font-semibold text-red-800">Payment Error</p>
+                <p className="mt-0.5 text-xs font-medium uppercase tracking-[0.16em] text-red-500">
+                  Action failed
+                </p>
                 <p className="mt-0.5 text-sm text-red-700">{error}</p>
               </div>
             </div>
@@ -1135,8 +1291,8 @@ const PaymentStep = () => {
           <CheckoutIdentityChoiceModal
             onClose={closeIdentityModals}
             onContinueAsGuest={openGuestModal}
-            onSignIn={() => openAuthModal("login")}
-            onSignUp={() => openAuthModal("signup")}
+            onSignIn={() => openAuthModal("login", "payment")}
+            onSignUp={() => openAuthModal("signup", "payment")}
           />
         </div>
       ) : null}
@@ -1150,6 +1306,7 @@ const PaymentStep = () => {
             onAuthSuccess={handleAuthSuccess}
             initialEmail={guestCheckout?.email || deliveryDetails?.yourEmailAddress || ""}
             initialName={guestCheckout?.fullName || deliveryDetails?.yourFullName || ""}
+            showSignupSuccessStep
           />
         </div>
       ) : null}
@@ -1222,7 +1379,7 @@ const PaymentStep = () => {
                 type="button"
                 onClick={() => {
                   setShowGuestModal(false);
-                  openAuthModal("login");
+                  openAuthModal("login", "payment");
                 }}
                 className="w-full rounded-full border-2 border-pink-500 py-3.5 font-semibold text-pink-500 transition hover:bg-pink-50"
               >

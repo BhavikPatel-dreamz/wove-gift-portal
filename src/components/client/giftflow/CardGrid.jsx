@@ -18,16 +18,17 @@ const CardGrid = ({
         {Array.from({ length: 12 }).map((_, index) => (
           <div
             key={`skeleton-${index}`}
-            className="w-full max-w-sm sm:max-w-none bg-white rounded-2xl p-4 sm:p-6 animate-pulse border border-gray-100"
+            className="w-full max-w-sm sm:max-w-none rounded-2xl border border-gray-100 bg-white p-3 sm:p-4 animate-pulse"
           >
-            <div className="flex justify-center mb-4 sm:mb-6">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-lg" />
+            <div className="mb-4 mt-8 sm:mb-5 sm:mt-9">
+              <div className="min-h-[9.5rem] sm:min-h-[10.5rem] rounded-[22px] border border-gray-100 bg-gray-100" />
             </div>
-            <div className="text-center space-y-2 sm:space-y-3">
-              <div className="h-5 sm:h-6 bg-gray-200 rounded-full w-16 sm:w-20 mx-auto" />
-              <div className="h-4 sm:h-5 bg-gray-200 rounded w-24 sm:w-32 mx-auto" />
-              <div className="h-3 sm:h-4 bg-gray-200 rounded w-full" />
-              <div className="h-8 sm:h-10 bg-gray-200 rounded-full w-full mt-3 sm:mt-4" />
+            <div className="text-center">
+              <div className="mb-2 h-6 rounded-full bg-gray-200 w-24 mx-auto" />
+              <div className="mb-2 h-4 rounded bg-gray-200 w-28 mx-auto" />
+              <div className="mb-4 h-3 rounded bg-gray-200 w-full" />
+              <div className="mb-5 h-3 rounded bg-gray-200 w-4/5 mx-auto" />
+              <div className="h-10 rounded-full bg-gray-200 w-full mt-auto" />
             </div>
           </div>
         ))}

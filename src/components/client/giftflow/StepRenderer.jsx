@@ -1,4 +1,5 @@
 "use client"
+import { useEffect } from "react"
 import { useSelector } from "react-redux"
 import { useSearchParams } from "next/navigation"
 import BrandSelectionStep from "./BrandSelectionStep"
@@ -27,6 +28,10 @@ const StepRenderer = ({
   const { currentStep } = useSelector((state) => state.giftFlowReducer)
   const searchParams = useSearchParams()
   const mode = searchParams.get('mode')
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" })
+  }, [currentStep, mode])
 
   switch (currentStep) {
     case 1:

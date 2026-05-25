@@ -1,7 +1,5 @@
 const DEFAULT_WHATSAPP_TEMPLATE = [
-  "{{giftImageHeaderSection}}Hi {{recipientName}},",
-  "",
-  "{{messageBodySection}}Brand: {{giftDisplayName}}",
+  "{{giftImageHeaderSection}}{{messageBodySection}}Brand: {{giftDisplayName}}",
   "",
   "Gift Card Code: {{giftCode}}",
   "",
@@ -65,6 +63,13 @@ function cleanupMessage(message) {
     .trim();
 }
 
+function removeRecipientGreeting(template) {
+  return String(template || "")
+    .replace(/^Hi\s*\{\{\s*recipientName\s*\}\},?\s*\n*/i, "")
+    .replace(/^Hello\s*\{\{\s*recipientName\s*\}\},?\s*\n*/i, "")
+    .replaceAll("{{recipientName}}", "");
+}
+
 export function detectDeviceType(userAgent) {
   const source =
     typeof userAgent === "string"
@@ -109,13 +114,14 @@ export function generateWhatsAppMessage({
   giftUrl = "",
   senderName = "Someone",
   customMessage = "",
-  recipientName = "there",
   giftName = "gift",
   brandName = "",
   brandWebsite = "",
   giftImageUrl = "",
 } = {}) {
-  const resolvedTemplate = template || getConfiguredTemplate();
+  const resolvedTemplate = removeRecipientGreeting(
+    template || getConfiguredTemplate(),
+  );
   const safeGiftUrl = toAbsoluteUrl(giftUrl);
   const safeGiftImageUrl = toAbsoluteUrl(giftImageUrl);
   const safeCustomMessage = String(customMessage || "").trim();
@@ -142,7 +148,7 @@ export function generateWhatsAppMessage({
       giftUrl: safeGiftUrl,
       senderName: safeSenderName,
       customMessage: safeCustomMessage,
-      recipientName,
+      recipientName: "",
       giftName,
       brandName: safeBrandName,
       brandWebsite: safeBrandWebsite,
@@ -173,14 +179,12 @@ export function generateWhatsAppMultiGiftMessage({
   gifts = [],
   senderName = "Someone",
   customMessage = "",
-  recipientName = "there",
   template,
 } = {}) {
   if (!Array.isArray(gifts) || gifts.length === 0) {
     return generateWhatsAppMessage({
       senderName,
       customMessage,
-      recipientName,
     });
   }
 
@@ -189,11 +193,11 @@ export function generateWhatsAppMultiGiftMessage({
       ...gifts[0],
       senderName: gifts[0].senderName || senderName,
       customMessage: gifts[0].customMessage || customMessage,
-      recipientName: gifts[0].recipientName || recipientName,
+      recipientName: "",
     });
   }
 
-  const intro = `Hi ${recipientName},\n\n${senderName} sent you ${gifts.length} gift${
+  const intro = `${senderName} sent you ${gifts.length} gift${
     gifts.length > 1 ? "s" : ""
   }.`;
 
@@ -206,7 +210,7 @@ export function generateWhatsAppMultiGiftMessage({
       ...gift,
       senderName: gift.senderName || senderName,
       customMessage: "",
-      recipientName: gift.recipientName || recipientName,
+      recipientName: "",
       template,
     });
 
@@ -216,13 +220,26 @@ export function generateWhatsAppMultiGiftMessage({
   return cleanupMessage(`${intro}${messageBlock}\n\n${lines.join("\n\n")}`);
 }
 
-export function getWhatsAppShareUrl(message, deviceType = detectDeviceType()) {
+function normalizeWhatsAppPhoneNumber(phoneNumber = "") {
+  return String(phoneNumber || "").replace(/\D/g, "");
+}
+
+export function getWhatsAppShareUrl(
+  message,
+  deviceType = detectDeviceType(),
+  phoneNumber = "",
+) {
   const encodedMessage = encodeURIComponent(message);
   const isMobileLike = deviceType === "mobile" || deviceType === "tablet";
+  const normalizedPhoneNumber = normalizeWhatsAppPhoneNumber(phoneNumber);
+  const phonePath = normalizedPhoneNumber ? `/${normalizedPhoneNumber}` : "";
+  const phoneQuery = normalizedPhoneNumber
+    ? `phone=${encodeURIComponent(normalizedPhoneNumber)}&`
+    : "";
 
   return isMobileLike
-    ? `whatsapp://send?text=${encodedMessage}`
-    : `https://wa.me/?text=${encodedMessage}`;
+    ? `whatsapp://send?${phoneQuery}text=${encodedMessage}`
+    : `https://wa.me${phonePath}?text=${encodedMessage}`;
 }
 
 export async function copyMessageFallback(message) {
@@ -258,6 +275,7 @@ export async function copyMessageFallback(message) {
 
 export function openWhatsAppShare({
   message,
+  phoneNumber = "",
   onOpened,
   onBlocked,
   onFallback,
@@ -268,7 +286,7 @@ export function openWhatsAppShare({
   }
 
   const deviceType = detectDeviceType();
-  const shareUrl = getWhatsAppShareUrl(message, deviceType);
+  const shareUrl = getWhatsAppShareUrl(message, deviceType, phoneNumber);
 
   if (deviceType === "desktop") {
     const popup = window.open(shareUrl, "_blank", "noopener,noreferrer");

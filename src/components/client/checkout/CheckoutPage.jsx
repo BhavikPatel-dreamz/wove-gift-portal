@@ -974,12 +974,13 @@ const CheckoutPage = () => {
                     <span>-{getCurrencySymbol(checkoutCurrency)} {checkoutPricing.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
-                  <div className="flex justify-between text-gray-600">
+
+                  {/* <div className="flex justify-between text-gray-600">
                     <span>Service Fee excl. VAT 4.35%</span>
                     <span>
                       {getCurrencySymbol(checkoutCurrency)} {checkoutPricing.serviceFeeExVat.toFixed(2)}
                     </span>
-                  </div>
+                  </div> */}
                   <div className="flex justify-between text-gray-600">
                     <span>VAT on Service Fee 15%</span>
                     <span>

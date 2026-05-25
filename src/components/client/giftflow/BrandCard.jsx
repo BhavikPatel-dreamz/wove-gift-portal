@@ -47,18 +47,11 @@ const BrandCard = ({
 
   return (
     <div
-      className="relative w-full max-w-[18rem] sm:max-w-none mx-auto rounded-2xl group cursor-pointer p-[2px]"
+      className="group mx-auto w-full max-w-[19rem] cursor-pointer rounded-2xl bg-transparent p-[2px] transition-all duration-300 hover:bg-linear-to-r hover:from-[#ED457D] hover:to-[#FA8F42] sm:max-w-none"
       onClick={handleCardClick}
     >
-      {/* Gradient border — hidden by default, shown on hover */}
-      <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
-      {/*
-        Use a full 2px ring (not fractional pixels) so gradient thickness
-        stays visually even on all sides across displays.
-      */}
       <div
-        className="bg-white rounded-[14px] p-4 sm:p-6 hover:shadow-lg transition-all duration-300 relative"
+        className="relative flex h-full min-h-[23rem] flex-col rounded-[14px] bg-white p-3 transition-all duration-300 group-hover:shadow-[0_20px_40px_rgba(17,24,39,0.10)] sm:p-4"
         style={{
           boxShadow: isSelected
             ? 'inset 0 0 0 1.5px #3b82f6'
@@ -89,13 +82,13 @@ const BrandCard = ({
         </button>
 
         {/* Brand Logo */}
-        <div className="flex justify-center mb-4 sm:mb-6 mt-1 sm:mt-2">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+        <div className="mb-2 mt-4 sm:mb-3 sm:mt-4">
+          {/* <div className="flex min-h-[9.5rem] sm:min-h-[10.5rem] items-center justify-center overflow-hidden rounded-[22px] border border-[#F1F1F4] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.96),_rgba(247,247,250,0.96)_52%,_rgba(241,242,247,0.96)_100%)] px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"> */}
             {brand.logo ? (
               <img
                 src={brand.logo}
                 alt={`${brand.brandName} logo`}
-                className="w-full h-full object-contain"
+                className="h-full max-h-[8.5rem] w-full object-contain sm:max-h-[9.5rem] [transform:scale(1.08)]"
                 loading="lazy"
               />
             ) : (
@@ -103,14 +96,14 @@ const BrandCard = ({
                 {brand.brandName?.[0]}
               </div>
             )}
-          </div>
+          {/* </div> */}
         </div>
 
         {/* Brand Info */}
-        <div className="text-center space-y-2 sm:space-y-3">
-          <div className="flex justify-center">
+        <div className="flex flex-1 flex-col text-center">
+          <div className="mb-2 flex justify-center">
             <span
-              className="text-[11px] sm:text-[14px] px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-bold"
+              className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] sm:text-[11px]"
               style={{
                 color: text,
                 backgroundColor: bg,
@@ -120,12 +113,12 @@ const BrandCard = ({
             </span>
           </div>
 
-          <h3 className="font-semibold text-[#1A1A1A] text-[18px] sm:text-[22px]">
+          <h3 className="mb-2 px-2 font-medium leading-tight text-[#1A1A1A] text-[13px] sm:text-[14px]">
             {brand.brandName}
           </h3>
 
           <p
-            className="text-[#4A4A4A] text-[13px] sm:text-[16px] font-normal leading-relaxed line-clamp-2 mb-1 sm:mb-2"
+            className="mb-4 line-clamp-2 px-1 text-[12px] font-normal leading-5 text-[#666674] sm:mb-5 sm:text-[13px]"
             title={brand.description || ""}
           >
             {brand.description}
@@ -138,8 +131,8 @@ const BrandCard = ({
               onClick?.(brand);
             }}
             className="
-    relative w-full inline-flex items-center justify-center gap-2
-    px-4 sm:px-5 py-2.5 sm:py-3 rounded-full font-semibold text-sm sm:text-base
+    relative mt-auto inline-flex w-full items-center justify-center gap-2
+    rounded-full border border-transparent px-4 py-2.5 font-semibold text-sm sm:px-5 sm:py-3 sm:text-base
     border border-transparent
     transition-all duration-300 overflow-hidden group cursor-pointer
   "
