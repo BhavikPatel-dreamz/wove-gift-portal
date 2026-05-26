@@ -15,7 +15,7 @@ const TABLET_REGEX =
 const MOBILE_REGEX =
   /android|iphone|ipod|blackberry|iemobile|opera mini|mobile/i;
 const WHATSAPP_PREVIEW_PAGE_PATH = "/whatsapp-gift-preview";
-const WHATSAPP_PREVIEW_URL_VERSION = "3";
+const WHATSAPP_PREVIEW_URL_VERSION = "4";
 const MAX_PREVIEW_IMAGE_URL_LENGTH = 900;
 const MAX_PREVIEW_TITLE_LENGTH = 90;
 const MAX_PREVIEW_DESCRIPTION_LENGTH = 180;

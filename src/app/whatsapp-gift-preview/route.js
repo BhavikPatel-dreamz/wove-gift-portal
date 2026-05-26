@@ -1,5 +1,7 @@
 const FALLBACK_IMAGE_URL =
   "https://res.cloudinary.com/doofigvtb/image/upload/c_pad,b_auto,h_630,w_1200,q_auto,f_jpg/v1779362828/occasion-occasion_categories/u6cutgt8fkfqwoneozpa.webp";
+const PREVIEW_TITLE = "Gift card preview";
+const PREVIEW_DESCRIPTION = "Open gift card preview";
 const OG_IMAGE_WIDTH = 1200;
 const OG_IMAGE_HEIGHT = 630;
 
@@ -165,6 +167,8 @@ export function GET(request) {
     FALLBACK_IMAGE_URL;
   const imageUrl = toWhatsAppSizedImageUrl(rawImageUrl);
   const pageUrl = getPublicPageUrl(request, baseUrl);
+  const safeTitle = escapeHtml(PREVIEW_TITLE);
+  const safeDescription = escapeHtml(PREVIEW_DESCRIPTION);
   const safeImageUrl = escapeHtml(imageUrl);
   const safePageUrl = escapeHtml(pageUrl);
 
@@ -173,21 +177,26 @@ export function GET(request) {
   <head>
 	    <meta charset="utf-8">
 	    <meta name="viewport" content="width=device-width, initial-scale=1">
-	    <title></title>
+	    <title>${safeTitle}</title>
+	    <meta name="description" content="${safeDescription}">
 	    <link rel="canonical" href="${safePageUrl}">
-    <meta property="og:type" content="website">
+	    <meta property="og:type" content="website">
+	    <meta property="og:title" content="${safeTitle}">
+	    <meta property="og:description" content="${safeDescription}">
 	    <meta property="og:url" content="${safePageUrl}">
-    <meta property="og:image" content="${safeImageUrl}">
-    <meta property="og:image:secure_url" content="${safeImageUrl}">
-    <meta property="og:image:type" content="image/jpeg">
-    <meta property="og:image:width" content="${OG_IMAGE_WIDTH}">
-    <meta property="og:image:height" content="${OG_IMAGE_HEIGHT}">
+	    <meta property="og:image" content="${safeImageUrl}">
+	    <meta property="og:image:secure_url" content="${safeImageUrl}">
+	    <meta property="og:image:type" content="image/jpeg">
+	    <meta property="og:image:width" content="${OG_IMAGE_WIDTH}">
+	    <meta property="og:image:height" content="${OG_IMAGE_HEIGHT}">
 	    <meta property="og:image:alt" content="Gift card preview">
 	    <meta name="twitter:card" content="summary_large_image">
+	    <meta name="twitter:title" content="${safeTitle}">
+	    <meta name="twitter:description" content="${safeDescription}">
 	    <meta name="twitter:image" content="${safeImageUrl}">
-    <meta name="theme-color" content="#f8f1eb">
-    <style>
-      * { box-sizing: border-box; }
+	    <meta name="theme-color" content="#f8f1eb">
+	    <style>
+	      * { box-sizing: border-box; }
 	      html,
 	      body {
 	        margin: 0;
