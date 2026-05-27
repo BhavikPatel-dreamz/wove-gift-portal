@@ -15,10 +15,8 @@ const TABLET_REGEX =
 const MOBILE_REGEX =
   /android|iphone|ipod|blackberry|iemobile|opera mini|mobile/i;
 const WHATSAPP_PREVIEW_PAGE_PATH = "/whatsapp-gift-preview";
-const WHATSAPP_PREVIEW_URL_VERSION = "4";
+const WHATSAPP_PREVIEW_URL_VERSION = "5";
 const MAX_PREVIEW_IMAGE_URL_LENGTH = 900;
-const MAX_PREVIEW_TITLE_LENGTH = 90;
-const MAX_PREVIEW_DESCRIPTION_LENGTH = 180;
 
 function getConfiguredTemplate() {
   const configuredTemplate = process.env.NEXT_PUBLIC_WHATSAPP_SHARE_TEMPLATE;
@@ -113,26 +111,18 @@ function encodeBase64Url(value) {
 
 export function buildWhatsAppPreviewPageUrl({
   imageUrl = "",
-  title = "Wove Gift Card",
-  description = "A beautifully presented Wove gift card, ready to preview and share on WhatsApp.",
 } = {}) {
   const baseUrl = getSharePreviewBaseUrl();
-  const payload = {
-    imageUrl: truncatePreviewValue(imageUrl, MAX_PREVIEW_IMAGE_URL_LENGTH),
-    title: truncatePreviewValue(title, MAX_PREVIEW_TITLE_LENGTH),
-    description: truncatePreviewValue(
-      description,
-      MAX_PREVIEW_DESCRIPTION_LENGTH,
-    ),
-  };
+  const encodedImageUrl = encodeBase64Url(
+    truncatePreviewValue(imageUrl, MAX_PREVIEW_IMAGE_URL_LENGTH),
+  );
 
   if (!baseUrl) {
-    const encodedPayload = encodeBase64Url(JSON.stringify(payload));
-    return `${WHATSAPP_PREVIEW_PAGE_PATH}?p=${encodedPayload}&v=${WHATSAPP_PREVIEW_URL_VERSION}`;
+    return `${WHATSAPP_PREVIEW_PAGE_PATH}?i=${encodedImageUrl}&v=${WHATSAPP_PREVIEW_URL_VERSION}`;
   }
 
   const previewUrl = new URL(WHATSAPP_PREVIEW_PAGE_PATH, baseUrl);
-  previewUrl.searchParams.set("p", encodeBase64Url(JSON.stringify(payload)));
+  previewUrl.searchParams.set("i", encodedImageUrl);
   previewUrl.searchParams.set("v", WHATSAPP_PREVIEW_URL_VERSION);
 
   return previewUrl.toString();
@@ -231,13 +221,10 @@ export function generateWhatsAppMessage({
         ? `${safeBrandName} ${safeGiftName}`
         : safeGiftName || safeBrandName || "Gift Voucher";
   const fallbackMessage = `${safeSenderName} sent you a gift from WoveGifts.`;
-  const previewDescription = safeCustomMessage || fallbackMessage;
   const computedSharePreviewUrl =
     safeSharePreviewUrl ||
     buildWhatsAppPreviewPageUrl({
       imageUrl: safeGiftImageUrl,
-      title: giftDisplayName,
-      description: previewDescription,
     });
 
   return cleanupMessage(
