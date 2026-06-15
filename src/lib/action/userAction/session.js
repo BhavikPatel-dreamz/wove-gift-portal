@@ -55,6 +55,8 @@ export async function createSession(userId) {
     lastName: dbSession.user.lastName,
     phone: dbSession.user.phone,
     role: dbSession.user.role,
+    isActive: dbSession.user.isActive,
+    isVerified: dbSession.user.isVerified,
     createdAt: dbSession.user.createdAt,
     updatedAt: dbSession.user.updatedAt,
   }
@@ -94,8 +96,8 @@ export async function validateSession() {
     include: { user: true },
   })
 
-  // If session doesn't exist or expired, destroy it
-  if (!dbSession || dbSession.expiresAt < new Date()) {
+  // If session doesn't exist, expired, or user is disabled, destroy it
+  if (!dbSession || dbSession.expiresAt < new Date() || !dbSession.user.isActive) {
     if (session.sessionId) {
       await prisma.session.delete({
         where: { id: session.sessionId },
@@ -103,6 +105,7 @@ export async function validateSession() {
         // Ignore errors if session doesn't exist
       })
     }
+    await session.destroy()
     return null
   }
 
@@ -117,6 +120,8 @@ export async function validateSession() {
       lastName: dbSession.user.lastName,
       phone: dbSession.user.phone,
       role: dbSession.user.role,
+      isActive: dbSession.user.isActive,
+      isVerified: dbSession.user.isVerified,
       createdAt: dbSession.user.createdAt,
       updatedAt: dbSession.user.updatedAt,
     },

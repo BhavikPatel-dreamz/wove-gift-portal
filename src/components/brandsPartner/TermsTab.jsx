@@ -1,5 +1,5 @@
 import React from 'react';
-import { currencyList } from './currency';
+import { DEFAULT_CURRENCY_CODE, currencyList } from './currency';
 import { useState } from 'react';
 
 const TermsTab = ({ formData, updateFormData }) => {
@@ -93,7 +93,7 @@ const TermsTab = ({ formData, updateFormData }) => {
                 onChange={(e) => updateFormData('commissionValue', parseFloat(e.target.value))}
               />
               <span className="bg-gray-50 border border-l-0 border-gray-300 rounded-r-md px-3 py-2 text-gray-500">
-                {formData.commissionType === 'Fixed Amount' ? formData.currency || 'USD' : '%'}
+                {formData.commissionType === 'Fixed Amount' ? formData.currency || DEFAULT_CURRENCY_CODE : '%'}
               </span>
             </div>
           </div>
@@ -103,7 +103,7 @@ const TermsTab = ({ formData, updateFormData }) => {
           <div>
             <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">Currency</label>
             <select
-              value={formData?.currency || ''}
+              value={formData?.currency || DEFAULT_CURRENCY_CODE}
               disabled
               className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 cursor-not-allowed font-inter text-xs font-medium leading-5 text-[#4A4A4A]"
             >

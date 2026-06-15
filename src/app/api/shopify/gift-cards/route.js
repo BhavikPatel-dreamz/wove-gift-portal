@@ -15,7 +15,10 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Shop parameter is required' }, { status: 400 });
     }
 
-    const session = await getValidShopifySession(shopDomain);
+    const session = await getValidShopifySession(shopDomain, {
+      request,
+      requireSessionToken: true,
+    });
 
     if (!session?.accessToken) {
       return NextResponse.json({ error: 'Shop not authenticated' }, { status: 401 });
@@ -62,29 +65,72 @@ export async function GET(request) {
 
 async function fetchShopifyGiftCards(shop, accessToken) {
   try {
-    const response = await fetch(`https://${shop}/admin/api/2023-10/gift_cards.json`, {
+    // Using GraphQL API (compliant with latest Shopify requirements as of April 1, 2025)
+    const query = `
+      query FetchGiftCards($first: Int!) {
+        giftCards(first: $first) {
+          edges {
+            node {
+              id
+              legacyResourceId
+              code
+              state
+              balance {
+                amount
+                currencyCode
+              }
+              createdAt
+              lastCharacteristics {
+                expiresOn
+              }
+            }
+          }
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+        }
+      }
+    `;
+
+    const response = await fetch(`https://${shop}/admin/api/2026-04/graphql.json`, {
+      method: 'POST',
       headers: {
         'X-Shopify-Access-Token': accessToken,
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        query,
+        variables: { first: 100 },
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(`Shopify API error: ${response.statusText}`);
+      throw new Error(`GraphQL API error: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    
-    return (data.gift_cards || []).map(card => ({
-      id: card.id,
-      code: card.code,
-      initialValue: parseFloat(card.initial_value),
-      balance: parseFloat(card.balance),
-      customerEmail: card.customer?.email || null,
-      status: card.disabled_at ? 'expired' : (parseFloat(card.balance) > 0 ? 'active' : 'used'),
-      createdAt: card.created_at,
-      source: 'shopify'
-    }));
+    const result = await response.json();
+
+    if (result.errors) {
+      throw new Error(`GraphQL error: ${JSON.stringify(result.errors)}`);
+    }
+
+    return (result.data?.giftCards?.edges || []).map(edge => {
+      const card = edge.node;
+      const balance = parseFloat(card.balance.amount || 0);
+      
+      return {
+        id: card.id,
+        legacyResourceId: card.legacyResourceId,
+        code: card.code,
+        initialValue: balance,
+        balance: balance,
+        status: card.state === 'DISABLED' ? 'expired' : (balance > 0 ? 'active' : 'used'),
+        createdAt: card.createdAt,
+        expiresOn: card.lastCharacteristics?.expiresOn,
+        source: 'shopify'
+      };
+    });
 
   } catch (error) {
     console.error('Error fetching Shopify gift cards:', error);

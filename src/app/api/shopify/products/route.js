@@ -22,7 +22,10 @@ export async function POST(request) {
       );
     }
 
-    const session = await getValidShopifySession(shopDomain);
+    const session = await getValidShopifySession(shopDomain, {
+      request,
+      requireSessionToken: true,
+    });
 
     if (!session?.accessToken) {
       return NextResponse.json(

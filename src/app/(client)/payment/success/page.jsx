@@ -12,6 +12,13 @@ import Header from '@/components/client/home/Header';
 import Footer from '@/components/client/home/Footer';
 import { useSession } from '@/contexts/SessionContext';
 
+const BULK_AUTH_RETURN_DRAFT_KEY = 'wove:bulk-auth-return-draft';
+
+const clearBulkAuthReturnDraft = () => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(BULK_AUTH_RETURN_DRAFT_KEY);
+};
+
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -98,6 +105,8 @@ function SuccessContent() {
         processingInBackground: false,
         processingStatus: 'COMPLETED'
       });
+
+      clearBulkAuthReturnDraft();
 
       // ✅ Only clear cart when payment originated from /checkout (cart flow)
       if (source === 'cart') {

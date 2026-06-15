@@ -31,14 +31,10 @@ export async function POST(request) {
     if (topic === "customers/data_request") {
       // Attempt to locate the customer in our DB and return exported data if present
       const email = payload?.customer?.email || payload?.email || payload?.data?.email;
-      if (email) {
-        const user = await prisma.user.findUnique({ where: { email } });
-        console.log("customers/data_request for", email, { found: Boolean(user) });
-        return NextResponse.json({ success: true, data: user || null });
-      }
-
-      console.log("customers/data_request received but no email provided", { shop: shopDomain });
-      return NextResponse.json({ success: true, data: null });
+      // Acknowledge the data request — Shopify reads the response status, not the body.
+      // Do not return user PII in the response body.
+      console.log("customers/data_request received", { shop: shopDomain, hasEmail: Boolean(email) });
+      return NextResponse.json({ success: true });
     }
 
     if (topic === "customers/redact") {

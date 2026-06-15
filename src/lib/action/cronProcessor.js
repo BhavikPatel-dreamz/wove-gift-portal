@@ -11,6 +11,7 @@
 import cron from "node-cron";
 import { prisma } from "../db.js";
 import { calculateSettlementAmounts } from "../settlement/settlementUtils.js";
+import { getInternalAuthHeaders } from "../internal-api-auth.js";
 
 const MAX_RETRIES = 3;
 const PROCESSING_TIMEOUT_MINUTES = 15;
@@ -994,7 +995,7 @@ async function createShopifyGiftCard(
 
   const response = await fetch(apiUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getInternalAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(giftCardData),
   });
 

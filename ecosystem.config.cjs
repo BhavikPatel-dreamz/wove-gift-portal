@@ -3,8 +3,8 @@ module.exports = {
     {
       name: "wove-gift-portal-app",
       cwd: __dirname,
-      script: "npm",
-      args: "start",
+      script: "pnpm",
+      args: "run start:web",
       exec_mode: "fork",
       instances: 1,
       autorestart: true,
@@ -22,7 +22,7 @@ module.exports = {
     {
       name: "wove-gift-portal-cron",
       cwd: __dirname,
-      script: "npm",
+      script: "pnpm",
       args: "run cron:start",
       exec_mode: "fork",
       instances: 1,

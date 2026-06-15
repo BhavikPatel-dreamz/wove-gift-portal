@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Gift } from 'lucide-react';
+import { getShopifySessionToken } from '@/components/shopify/AppBridgeProvider';
 
 export default function ShopifyAppRoot() {
   const router = useRouter();
@@ -19,19 +20,18 @@ export default function ShopifyAppRoot() {
       }
 
       try {
+        const token = await getShopifySessionToken();
         // Check if shop is authenticated
-        const response = await fetch(`/api/shopify/shop?shop=${shopParam}`);
+        const response = await fetch(`/api/shopify/shop?shop=${shopParam}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         
         if (response.ok) {
-          const preservedParams = new URLSearchParams();
+          const preservedParams = new URLSearchParams(urlParams.toString());
           preservedParams.set('shop', shopParam);
-
-          ['host', 'embedded', 'id_token', 'session', 'locale', 'brandId'].forEach((key) => {
-            const value = urlParams.get(key);
-            if (value) {
-              preservedParams.set(key, value);
-            }
-          });
+          preservedParams.set('embedded', preservedParams.get('embedded') || '1');
 
           // Shop is authenticated, redirect to dashboard
           router.replace(`/shopify/dashboard?${preservedParams.toString()}`);

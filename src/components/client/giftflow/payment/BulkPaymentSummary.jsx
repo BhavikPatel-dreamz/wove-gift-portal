@@ -6,9 +6,6 @@ const BulkPaymentSummary = ({
   quantity, 
   selectedAmount, 
   subtotal,
-  serviceFee,
-  serviceFeeExVat = 0,
-  serviceFeeVat = 0,
   total,
   discountAmount = 0,
   appliedPromo = null,
@@ -54,22 +51,6 @@ const BulkPaymentSummary = ({
         <div className="flex justify-between items-start gap-3">
           <span className="leading-5">Subtotal</span>
           <span className="font-semibold text-right">{formatCurrency(subtotal)}</span>
-        </div>
-        <div className="flex justify-between items-start gap-3">
-          <span className="leading-5">Service Fee excl. VAT 4.35%</span>
-          <span className="font-semibold text-right">{formatCurrency(serviceFeeExVat)}</span>
-        </div>
-        <div className="flex justify-between items-start gap-3">
-          <span className="leading-5">VAT on Service Fee 15%</span>
-          <span className="font-semibold text-right">{formatCurrency(serviceFeeVat)}</span>
-        </div>
-        <div className="flex justify-between items-start gap-3">
-          <span className="leading-5">Total Service Fee 5% incl. VAT</span>
-          {serviceFee === 0 ? (
-            <span className="font-semibold text-green-600 text-right">Free</span>
-          ) : (
-            <span className="font-semibold text-right">{formatCurrency(serviceFee)}</span>
-          )}
         </div>
       </div>
 

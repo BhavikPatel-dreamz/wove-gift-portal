@@ -1,13 +1,9 @@
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard,
-  Store,
-  Calendar,
-  FileText,
-  Settings,
   X,
-  Gift
+  Gift,
+  UserPlus
 } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext'
 import { useSelector } from 'react-redux';
@@ -114,6 +110,10 @@ const Sidebar = ({ isOpen, onClose }) => {
   {
     name: 'Promo Codes', icon: Gift,
     href: '/controls'
+  },
+  {
+    name: 'Admin Users', icon: UserPlus,
+    href: '/admin-users'
   },
   { name: 'Support Requests', icon: SupportIcon, href: '/supportRequests' },
 ];

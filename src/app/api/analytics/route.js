@@ -348,7 +348,7 @@ async function getSettlementData(brandId) {
     brand: settlement.brand.brandName,
     amount: roundSettlementAmount(settlement.netPayable),
     status: settlement.status,
-    currency: settlement.brand.currency || "USD",
+    currency: settlement.brand.currency || "ZAR",
     periodStart: settlement.periodStart,
     periodEnd: settlement.periodEnd,
     settlementPeriod: settlement.settlementPeriod,

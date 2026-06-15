@@ -1,172 +1,111 @@
-'use client'; // Add this if using app directory
+'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation'; // App Router
-// OR
-// import { useRouter } from 'next/compat/router'; // Pages Router compatibility
+import { Suspense, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
+
+function normalizeShopDomain(shop) {
+  const cleaned = String(shop || '')
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/.*$/, '')
+    .replace(/\.myshopify\.com$/i, '');
+
+  if (!/^[a-z0-9][a-z0-9-]*$/i.test(cleaned)) {
+    return '';
+  }
+
+  return `${cleaned}.myshopify.com`.toLowerCase();
+}
 
 function InstallContent() {
-  const [shop, setShop] = useState('');
-  const [installing, setInstalling] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams(); // App Router only
+  const searchParams = useSearchParams();
+  const shop = useMemo(
+    () => normalizeShopDomain(searchParams?.get('shop')),
+    [searchParams],
+  );
+  const error = '';
 
   useEffect(() => {
-    // App Router way
-    const shopParam = searchParams?.get('shop');
-    
-    // Pages Router way (if using pages directory)
-    // const shopParam = router.query?.shop;
-    
-    if (shopParam) {
-      setShop(shopParam);
-    }
-  }, [searchParams]); // or [router.query] for pages router
-
-  const handleInstall = async (e) => {
-    e.preventDefault();
     if (!shop) {
-      alert('Please enter your shop domain');
       return;
     }
 
-    setInstalling(true);
-    
-    const cleanShop = shop.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    const shopDomain = cleanShop.includes('.myshopify.com') 
-      ? cleanShop.replace('.myshopify.com', '') 
-      : `${cleanShop}.myshopify.com`;
+    const installParams = new URLSearchParams({
+      shop,
+      source: 'admin',
+    });
+    const host = searchParams?.get('host');
+    const embedded = searchParams?.get('embedded');
 
-    try {
-      window.location.href = `/api/shopify/auth?shop=${shopDomain}`;
-
-    } catch (error) {
-      console.error('Installation error:', error);
-      setInstalling(false);
-      alert('Installation failed. Please try again.');
+    if (host) {
+      installParams.set('host', host);
     }
-  };
 
-  return (
-    <div className="install-page">
-      <div className="install-container">
-        <div className="install-card">
-          <h1>Install Shopify App</h1>
-          <p>Connect your Shopify store to get started</p>
-          
-          <form onSubmit={handleInstall} className="install-form">
-            <div className="form-group">
-              <label>Shop Domain</label>
-              <input
-                type="text"
-                value={shop}
-                onChange={(e) => setShop(e.target.value)}
-                placeholder="your-store.myshopify.com"
-                required
-                className='text-black'
-                disabled={installing}
-              />
-              <small>Enter your shop's .myshopify.com domain</small>
-            </div>
-            
-            <button 
-              type="submit" 
-              className="install-btn"
-              disabled={installing}
-            >
-              {installing ? 'Installing...' : 'Install App'}
-            </button>
-          </form>
+    if (embedded) {
+      installParams.set('embedded', embedded);
+    }
+
+    window.location.replace(`/api/shopify/auth?${installParams.toString()}`);
+  }, [searchParams, shop]);
+
+  if (shop && !error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+          <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-blue-600" />
+          <h1 className="mb-2 text-2xl font-semibold text-gray-900">
+            Connecting your Shopify store
+          </h1>
+          <p className="text-sm text-gray-600">
+            Redirecting securely to Shopify authorization for {shop}.
+          </p>
         </div>
       </div>
+    );
+  }
 
-      <style jsx>{`
-        .install-page {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
-        
-        .install-container {
-          width: 100%;
-          max-width: 400px;
-        }
-        
-        .install-card {
-          background: white;
-          border-radius: 12px;
-          padding: 40px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-          text-align: center;
-        }
-        
-        h1 {
-          margin: 0 0 10px 0;
-          color: #333;
-        }
-        
-        p {
-          color: #666;
-          margin-bottom: 30px;
-        }
-        
-        .form-group {
-          margin-bottom: 20px;
-          text-align: left;
-        }
-        
-        label {
-          display: block;
-          margin-bottom: 5px;
-          font-weight: 500;
-          color: #333;
-        }
-        
-        input {
-          width: 100%;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 6px;
-          font-size: 16px;
-          box-sizing: border-box;
-        }
-        
-        small {
-          color: #666;
-          font-size: 14px;
-        }
-        
-        .install-btn {
-          width: 100%;
-          padding: 12px;
-          background: #5469d4;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          font-size: 16px;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-        
-        .install-btn:hover:not(:disabled) {
-          background: #4c63d2;
-        }
-        
-        .install-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-      `}</style>
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="max-w-lg w-full rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
+          <ShieldCheck className="h-7 w-7 text-blue-600" />
+        </div>
+        <h1 className="mb-3 text-2xl font-semibold text-gray-900">
+          Open Wove Gift from Shopify
+        </h1>
+        <p className="mb-6 text-sm leading-6 text-gray-600">
+          For security, installation starts from the Shopify App Store or your
+          Shopify Admin Apps page. This app no longer asks merchants to type a
+          store URL manually.
+        </p>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-left">
+          <div className="flex gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <p className="text-sm font-medium text-amber-900">
+                Missing Shopify context
+              </p>
+              <p className="mt-1 text-sm text-amber-800">
+                Please launch the app from Shopify Admin so Shopify can pass the
+                required shop and host parameters.
+              </p>
+            </div>
+          </div>
+        </div>
+        {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+      </div>
     </div>
   );
 }
 
 export default function InstallPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    }>
       <InstallContent />
     </Suspense>
   );

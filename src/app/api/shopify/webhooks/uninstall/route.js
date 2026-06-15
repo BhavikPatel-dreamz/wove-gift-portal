@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyWebhook } from "@/lib/shopify.server";
+import { normalizeShopDomain } from "@/lib/shopify-installation";
 
-function normalizeShopDomain(shop) {
-  if (!shop) {
-    return "";
-  }
-
-  const cleaned = shop
-    .trim()
-    .replace(/^https?:\/\//i, "")
-    .replace(/\/$/, "")
-    .replace(/\.myshopify\.com$/i, "");
-
-  if (!cleaned) {
-    return "";
-  }
-
-  return `${cleaned}.myshopify.com`.toLowerCase();
+function buildBrandShopWhere(shopDomain) {
+  return {
+    OR: [
+      { domain: shopDomain },
+      {
+        website: {
+          in: [shopDomain, `https://${shopDomain}`, `http://${shopDomain}`],
+        },
+      },
+    ],
+  };
 }
 
 export async function POST(request) {
@@ -41,31 +37,67 @@ export async function POST(request) {
       );
     }
 
-    const [sessionResult, installationResult, brandResult] = await Promise.all([
+    const [sessionResult, installationResult, brandResult] = await Promise.allSettled([
       prisma.shopifySession.deleteMany({
         where: { shop: shopDomain },
       }),
       prisma.appInstallation.deleteMany({
         where: { shop: shopDomain },
       }),
-      prisma.brand.deleteMany({
-        where: { domain: shopDomain },
+      prisma.brand.updateMany({
+        where: buildBrandShopWhere(shopDomain),
+        data: {
+          isActive: false,
+          updatedAt: new Date(),
+        },
       }),
     ]);
 
+    const sessionsDeleted =
+      sessionResult.status === "fulfilled" ? sessionResult.value.count : 0;
+    const installationsDeleted =
+      installationResult.status === "fulfilled" ? installationResult.value.count : 0;
+    const brandsUpdated =
+      brandResult.status === "fulfilled" ? brandResult.value.count : 0;
+
+    const errors = [
+      sessionResult.status === "rejected"
+        ? `shopifySession cleanup failed: ${String(sessionResult.reason)}`
+        : null,
+      installationResult.status === "rejected"
+        ? `appInstallation cleanup failed: ${String(installationResult.reason)}`
+        : null,
+      brandResult.status === "rejected"
+        ? `brand cleanup failed: ${String(brandResult.reason)}`
+        : null,
+    ].filter(Boolean);
+
     console.log("Shopify uninstall webhook processed", {
       shop: shopDomain,
-      sessionsDeleted: sessionResult.count,
-      installationsDeleted: installationResult.count,
+      sessionsDeleted,
+      installationsDeleted,
+      brandsUpdated,
+      hadCleanupErrors: errors.length > 0,
     });
+
+    if (errors.length > 0) {
+      console.error("Shopify uninstall cleanup warnings", {
+        shop: shopDomain,
+        errors,
+      });
+    }
 
     return NextResponse.json({
       success: true,
       shop: shopDomain,
       deleted: {
-        sessions: sessionResult.count,
-        installations: installationResult.count,
+        sessions: sessionsDeleted,
+        installations: installationsDeleted,
       },
+      disabled: {
+        brands: brandsUpdated,
+      },
+      warnings: errors,
     });
   } catch (error) {
     console.error("Error handling Shopify uninstall webhook:", error);
@@ -76,7 +108,7 @@ export async function POST(request) {
         error: "Failed to process uninstall webhook",
         details: error.message,
       },
-      { status: 500 },
+      { status: 200 },
     );
   }
 }

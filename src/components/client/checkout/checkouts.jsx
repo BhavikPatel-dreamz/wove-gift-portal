@@ -975,26 +975,6 @@ const CheckoutPage = () => {
                   </div>
                 )}
 
-                  {/* <div className="flex justify-between text-gray-600">
-                    <span>Service Fee excl. VAT 4.35%</span>
-                    <span>
-                      {getCurrencySymbol(checkoutCurrency)} {checkoutPricing.serviceFeeExVat.toFixed(2)}
-                    </span>
-                  </div> */}
-                  <div className="flex justify-between text-gray-600">
-                    <span>VAT on Service Fee 15%</span>
-                    <span>
-                      {getCurrencySymbol(checkoutCurrency)} {checkoutPricing.serviceFeeVat.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Total Service Fee 5% incl. VAT</span>
-                    <span>
-                      {checkoutPricing.serviceFee === 0
-                      ? 'Free'
-                      : `${getCurrencySymbol(checkoutCurrency)} ${checkoutPricing.serviceFee.toFixed(2)}`}
-                    </span>
-                  </div>
                   <div className="h-px bg-gray-200" />
                   <div className="flex justify-between text-lg font-bold">
                   <span>Total to Pay</span>

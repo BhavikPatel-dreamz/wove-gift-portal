@@ -2,6 +2,7 @@
 
 import { prisma } from "../db";
 import { getShopInstallationAccess } from "../shopify-installation";
+import { verifyShopifyServerActionSession } from "../shopify/server-action-auth";
 import { isAdminRole } from "../roles";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -115,7 +116,17 @@ export async function getVouchers(params = {}) {
     const baseWhere = {};
 
     if (shop) {
-      const access = await getShopInstallationAccess(shop);
+      const tokenValidation = await verifyShopifyServerActionSession(shop);
+
+      if (!tokenValidation.valid) {
+        return createEmptyResponse(
+          page,
+          pageSize,
+          "Invalid Shopify session token.",
+        );
+      }
+
+      const access = await getShopInstallationAccess(tokenValidation.shop);
 
       if (access.requiresApproval) {
         return createEmptyResponse(
@@ -322,6 +333,7 @@ export async function getBulkOrderDetails(params = {}) {
     pageSize = 10,
     search = "",
     status = "",
+    shop,
   } = params;
 
   if (!bulkOrderNumber && !orderNumber) {
@@ -342,6 +354,39 @@ export async function getBulkOrderDetails(params = {}) {
       where.orderNumber = orderNumber;
     } else if (bulkOrderNumber) {
       where.bulkOrderNumber = bulkOrderNumber;
+    }
+
+    if (shop) {
+      const tokenValidation = await verifyShopifyServerActionSession(shop);
+
+      if (!tokenValidation.valid) {
+        return createEmptyResponse(
+          page,
+          pageSize,
+          "Invalid Shopify session token.",
+        );
+      }
+
+      const access = await getShopInstallationAccess(tokenValidation.shop);
+
+      if (access.requiresApproval) {
+        return createEmptyResponse(
+          page,
+          pageSize,
+          "Store approval is still pending.",
+        );
+      }
+
+      const brand = await prisma.brand.findUnique({
+        where: { domain: access.shop },
+        select: { id: true },
+      });
+
+      if (!brand) {
+        return createEmptyResponse(page, pageSize);
+      }
+
+      where.brandId = brand.id;
     }
 
     const order = await prisma.order.findFirst({

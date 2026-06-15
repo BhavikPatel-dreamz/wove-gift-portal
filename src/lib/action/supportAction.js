@@ -669,38 +669,51 @@ export async function cancelOrder(orderNumber) {
   }
 }
 
-// Disable gift card in Shopify using REST API
+// Disable gift card in Shopify using GraphQL API (Compliant with latest Shopify requirements)
 async function disableShopifyGiftCard(shop, accessToken, shopifyGiftCardId) {
-  // Extract numeric ID from GID format
-  const numericId = shopifyGiftCardId.includes('gid://shopify/GiftCard/')
-    ? shopifyGiftCardId.split('/').pop()
-    : shopifyGiftCardId;
-
-  const response = await fetch(
-    `https://${shop}/admin/api/2024-10/gift_cards/${numericId}/disable.json`,
-    {
-      method: 'POST',
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-      },
+  const mutation = `
+    mutation DisableGiftCard($id: ID!) {
+      giftCardDisable(input: {id: $id}) {
+        giftCard {
+          id
+          state
+        }
+        userErrors {
+          field
+          message
+        }
+      }
     }
-  );
+  `;
+
+  const response = await fetch(`https://${shop}/admin/api/2026-04/graphql.json`, {
+    method: 'POST',
+    headers: {
+      'X-Shopify-Access-Token': accessToken,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      query: mutation,
+      variables: {
+        id: shopifyGiftCardId,
+      },
+    }),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    let errorMessage;
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      errorMessage = errorData.errors || errorData.error || errorText;
-    } catch {
-      errorMessage = errorText;
-    }
-    
-    throw new Error(`Shopify API error (${response.status}): ${JSON.stringify(errorMessage)}`);
+    throw new Error(`GraphQL API error (${response.status}): ${errorText}`);
   }
 
   const result = await response.json();
-  return result.gift_card;
+
+  if (result.errors) {
+    throw new Error(`GraphQL error: ${JSON.stringify(result.errors)}`);
+  }
+
+  if (result.data?.giftCardDisable?.userErrors?.length > 0) {
+    throw new Error(`Gift card disable failed: ${JSON.stringify(result.data.giftCardDisable.userErrors)}`);
+  }
+
+  return result.data?.giftCardDisable?.giftCard;
 }

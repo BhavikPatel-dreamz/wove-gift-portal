@@ -58,11 +58,11 @@ function AddGiftVoucherContent() {
     };
 
     return (
-        <main className="min-h-screen bg-[#FAFAFA] px-4 pb-16 pt-28 sm:px-6 sm:pt-32 lg:px-8">
-            <div className="mx-auto max-w-[920px]  mt-[4%]">
-                <div className="rounded-[28px]  px-6 sm:px-10">
+        <main className="min-h-screen bg-[#FAFAFA] px-4 pb-12 pt-20 sm:px-6 sm:pt-28 lg:px-8">
+            <div className="mx-auto max-w-[920px]">
+                <div className="rounded-[28px] px-0 sm:px-10">
                     {successState.visible ? (
-                        <div className="mx-auto flex max-w-[620px] mt-[20%] flex-col items-center text-center">
+                        <div className="mx-auto flex max-w-[620px] flex-col items-center text-center pt-8 sm:pt-16">
                             <h1 className="font-poppins font-bold text-[28px] leading-[34px] text-center text-[#1A1A1A]
                sm:text-[32px] sm:leading-[38px]
                md:text-[36px] md:leading-[42px]
@@ -75,7 +75,7 @@ function AddGiftVoucherContent() {
                                 {successState.message}
                             </p>
 
-                            <div className="mt-10 flex w-full flex-col items-center justify-center gap-4 sm:flex-row">
+                            <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center">
                                 <button
                                     type="button"
                                     onClick={() => router.push('/my-gift?tab=received')}
@@ -111,7 +111,7 @@ function AddGiftVoucherContent() {
 
                             <form
                                 onSubmit={handleSubmit}
-                                className="mt-10 rounded-[24px] border border-[#ECE7E5] bg-white px-5 py-6 shadow-[0_16px_38px_rgba(15,23,42,0.04)] sm:px-7 sm:py-8"
+                                className="mt-6 rounded-[24px] border border-[#ECE7E5] bg-white px-5 py-6 shadow-[0_16px_38px_rgba(15,23,42,0.04)] sm:mt-10 sm:px-7 sm:py-8"
                             >
                                 <label
                                     htmlFor="gift-voucher-code"

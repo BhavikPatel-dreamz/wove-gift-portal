@@ -14,6 +14,7 @@ export default function AuthForm({
   initialEmail = '',
   initialName = '',
   showSignupSuccessStep = false,
+  callbackUrl = '',
 }) {
   const getNameParts = (name = "") => {
     const parts = name.trim().split(/\s+/);
@@ -41,6 +42,32 @@ export default function AuthForm({
   const router = useRouter()
   const isModal = mode === 'modal'
   const signupContinuationRef = useRef(false)
+
+  const getSafeCallbackUrl = (value) => {
+    if (typeof value !== 'string' || !value.trim()) return ''
+
+    const trimmedValue = value.trim()
+    if (trimmedValue.startsWith('/') && !trimmedValue.startsWith('//')) {
+      return trimmedValue
+    }
+
+    if (typeof window === 'undefined') return ''
+
+    try {
+      const parsedUrl = new URL(trimmedValue, window.location.origin)
+      if (parsedUrl.origin !== window.location.origin) return ''
+      return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`
+    } catch {
+      return ''
+    }
+  }
+
+  const safeCallbackUrl = getSafeCallbackUrl(callbackUrl)
+  const buildAuthLink = (path) => (
+    safeCallbackUrl
+      ? `${path}?callbackUrl=${encodeURIComponent(safeCallbackUrl)}`
+      : path
+  )
 
   useEffect(() => {
     setCurrentType(type)
@@ -132,7 +159,9 @@ export default function AuthForm({
         return
       }
 
-      if (isAdminRole(data?.user?.role)) {
+      if (safeCallbackUrl) {
+        router.push(safeCallbackUrl)
+      } else if (isAdminRole(data?.user?.role)) {
         router.push('/dashboard')
       } else {
         router.push('/')
@@ -145,7 +174,12 @@ export default function AuthForm({
   }
 
   const handleSocialLogin = (provider) => {
-    signIn(provider, { callbackUrl: '/' })
+    const socialCallbackUrl = safeCallbackUrl || (
+      isModal && typeof window !== 'undefined'
+        ? window.location.href
+        : '/'
+    )
+    signIn(provider, { callbackUrl: socialCallbackUrl })
   }
 
   const onBack = () => {
@@ -385,7 +419,7 @@ export default function AuthForm({
               <p className="text-center text-sm text-gray-600 mt-6">
                 Don&apos;t have an account?{' '}
                 <Link
-                  href="/signup"
+                  href={buildAuthLink('/signup')}
                   className="text-pink-500 font-semibold hover:text-pink-600 transition"
                 >
                   Sign Up
@@ -570,7 +604,7 @@ export default function AuthForm({
               <p className="text-center text-sm text-gray-600 mt-6">
                 Already have an account?{' '}
                 <Link
-                  href="/login"
+                  href={buildAuthLink('/login')}
                   className="text-pink-500 font-semibold hover:text-pink-600 transition"
                 >
                   Sign In

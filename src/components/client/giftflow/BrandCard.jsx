@@ -47,11 +47,11 @@ const BrandCard = ({
 
   return (
     <div
-      className="group mx-auto w-full max-w-[19rem] cursor-pointer rounded-2xl bg-transparent p-[2px] transition-all duration-300 hover:bg-linear-to-r hover:from-[#ED457D] hover:to-[#FA8F42] sm:max-w-none"
+      className="group mx-auto w-full cursor-pointer rounded-2xl bg-transparent p-[2px] transition-all duration-300 hover:bg-linear-to-r hover:from-[#ED457D] hover:to-[#FA8F42]"
       onClick={handleCardClick}
     >
       <div
-        className="relative flex h-full min-h-[23rem] flex-col rounded-[14px] bg-white p-3 transition-all duration-300 group-hover:shadow-[0_20px_40px_rgba(17,24,39,0.10)] sm:p-4"
+        className="relative flex h-full min-h-[16.75rem] flex-col rounded-[14px] bg-white p-2.5 transition-all duration-300 group-hover:shadow-[0_20px_40px_rgba(17,24,39,0.10)] sm:min-h-[23rem] sm:p-4"
         style={{
           boxShadow: isSelected
             ? 'inset 0 0 0 1.5px #3b82f6'
@@ -60,20 +60,20 @@ const BrandCard = ({
       >
         {/* Featured Badge */}
         {isFeatured && (
-          <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-10 inline-flex items-center gap-1 rounded-full bg-[#FFF4E5] px-2 sm:px-3 py-0.5 sm:py-1 text-[#F59E0B]">
+          <div className="absolute top-2.5 sm:top-4 left-2.5 sm:left-4 z-10 inline-flex items-center gap-1 rounded-full bg-[#FFF4E5] px-2 sm:px-3 py-0.5 sm:py-1 text-[#F59E0B]">
             <Star size={11} className="fill-current sm:size-3" />
-            <span className="text-[11px] sm:text-[14px] leading-4 font-semibold">Featured</span>
+            <span className="text-[10px] leading-4 font-semibold sm:text-[14px]">Featured</span>
           </div>
         )}
 
         {/* Favorite Button */}
         <button
           onClick={handleFavoriteClick}
-          className="absolute top-3 sm:top-4 right-3 sm:right-4 p-1.5 hover:bg-gray-50 transition-all duration-200 z-10 border border-gray-200 rounded-full"
+          className="absolute top-2.5 sm:top-4 right-2.5 sm:right-4 p-1.5 hover:bg-gray-50 transition-all duration-200 z-10 border border-gray-200 rounded-full"
           aria-label={isFavorited ? `Remove ${brand.brandName} from favorites` : `Add ${brand.brandName} to favorites`}
         >
           <Heart
-            size={16}
+            size={14}
             className={`transition-all duration-200 sm:size-[18px] ${isFavorited
               ? "text-red-500 fill-current"
               : "text-gray-400 hover:text-red-500"
@@ -82,17 +82,17 @@ const BrandCard = ({
         </button>
 
         {/* Brand Logo */}
-        <div className="mb-2 mt-4 sm:mb-3 sm:mt-4">
+        <div className="-mx-2.5 mb-1.5 mt-7 flex h-[5.75rem] items-center justify-center overflow-hidden sm:-mx-4 sm:mb-3 sm:mt-4 sm:h-[9.75rem]">
           {/* <div className="flex min-h-[9.5rem] sm:min-h-[10.5rem] items-center justify-center overflow-hidden rounded-[22px] border border-[#F1F1F4] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.96),_rgba(247,247,250,0.96)_52%,_rgba(241,242,247,0.96)_100%)] px-3 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"> */}
             {brand.logo ? (
               <img
                 src={brand.logo}
                 alt={`${brand.brandName} logo`}
-                className="h-full max-h-[8.5rem] w-full object-contain sm:max-h-[9.5rem] [transform:scale(1.08)]"
+                className="h-full w-full object-cover m-1"
                 loading="lazy"
               />
             ) : (
-              <div className="text-3xl sm:text-4xl font-bold text-gray-300">
+              <div className="text-2xl sm:text-4xl font-bold text-gray-300">
                 {brand.brandName?.[0]}
               </div>
             )}
@@ -101,9 +101,9 @@ const BrandCard = ({
 
         {/* Brand Info */}
         <div className="flex flex-1 flex-col text-center">
-          <div className="mb-2 flex justify-center">
+          <div className="mb-1.5 sm:mb-2 flex justify-center">
             <span
-              className="rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] sm:text-[11px]"
+              className="max-w-full truncate rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] sm:px-2.5 sm:py-1 sm:text-[11px] sm:tracking-[0.14em]"
               style={{
                 color: text,
                 backgroundColor: bg,
@@ -113,12 +113,12 @@ const BrandCard = ({
             </span>
           </div>
 
-          <h3 className="mb-2 px-2 font-medium leading-tight text-[#1A1A1A] text-[13px] sm:text-[14px]">
+          <h3 className="mb-1 px-1 font-medium leading-tight text-[#1A1A1A] text-[12px] sm:mb-2 sm:px-2 sm:text-[14px]">
             {brand.brandName}
           </h3>
 
           <p
-            className="mb-4 line-clamp-2 px-1 text-[12px] font-normal leading-5 text-[#666674] sm:mb-5 sm:text-[13px]"
+            className="mb-2 line-clamp-1 min-h-[1rem] px-0.5 text-[11px] font-normal leading-4 text-[#666674] sm:mb-5 sm:px-1 sm:text-[13px] sm:leading-5"
             title={brand.description || ""}
           >
             {brand.description}
@@ -132,7 +132,7 @@ const BrandCard = ({
             }}
             className="
     relative mt-auto inline-flex w-full items-center justify-center gap-2
-    rounded-full border border-transparent px-4 py-2.5 font-semibold text-sm sm:px-5 sm:py-3 sm:text-base
+    rounded-full border border-transparent px-2 py-2 font-semibold text-xs sm:px-5 sm:py-3 sm:text-base
     border border-transparent
     transition-all duration-300 overflow-hidden group cursor-pointer
   "
@@ -163,7 +163,7 @@ const BrandCard = ({
         bg-linear-to-r from-[#ED457D] to-[#FA8F42] bg-clip-text text-transparent
         group-hover:bg-none group-hover:text-white
         transition-all duration-300
-        text-sm sm:text-base
+        text-xs sm:text-base
       "
               >
                 Choose Brand

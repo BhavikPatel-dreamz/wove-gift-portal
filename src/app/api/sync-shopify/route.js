@@ -3,9 +3,36 @@
 import { NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import path from 'path';
+import { verifyShopifySessionToken } from '@/lib/shopify.server';
+import { isValidInternalRequest } from '@/lib/internal-api-auth';
 
-export async function POST() {
+export async function POST(request) {
   try {
+    if (isValidInternalRequest(request)) {
+      // Internal server-side syncs are allowed.
+    } else if (request.headers.get('authorization')) {
+      const tokenValidation = await verifyShopifySessionToken(request);
+
+      if (!tokenValidation.valid) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Invalid Shopify session token.',
+            reason: tokenValidation.reason,
+          },
+          { status: tokenValidation.status },
+        );
+      }
+    } else {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Unauthorized.',
+        },
+        { status: 401 },
+      );
+    }
+
     const scriptPath = path.join(process.cwd(), 'src', 'scripts', 'sync-shopify-data.js');
     
     // Promisify exec

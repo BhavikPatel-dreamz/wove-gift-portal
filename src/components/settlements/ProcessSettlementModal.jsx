@@ -81,7 +81,7 @@ const ProcessSettlementModal = ({ isOpen, onClose, settlement, onSuccess }) => {
     }
   };
 
-  const formatCurrency = (amount, currency = 'USD') => {
+  const formatCurrency = (amount, currency = 'ZAR') => {
     return formatSettlementCurrency(amount, currency);
   };
 

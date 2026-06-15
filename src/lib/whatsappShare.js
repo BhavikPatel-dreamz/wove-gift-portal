@@ -1,10 +1,13 @@
 const DEFAULT_WHATSAPP_TEMPLATE = [
-  "{{sharePreviewHeaderSection}}{{messageBodySection}}Brand: {{giftDisplayName}}",
+  "{{sharePreviewHeaderSection}}{{recipientGreetingSection}}{{messageBodySection}}🏷️ *Brand:* {{brandName}}",
+  "💳 *Gift Card Value:* {{giftAmount}}",
+  "🔑 *Gift Card Code:* {{giftCode}}",
   "",
-  "Gift Card Code: {{giftCode}}",
+  "🎁 *Use your gift card here:*",
+  "{{giftRedeemLink}}",
   "",
-  "Use your gift card code here:",
-  "{{giftUrl}}",
+  "Regards",
+  "{{senderName}}",
   "",
   "Powered by WoveGifts",
   "www.wovegifts.com",
@@ -15,8 +18,12 @@ const TABLET_REGEX =
 const MOBILE_REGEX =
   /android|iphone|ipod|blackberry|iemobile|opera mini|mobile/i;
 const WHATSAPP_PREVIEW_PAGE_PATH = "/whatsapp-gift-preview";
-const WHATSAPP_PREVIEW_URL_VERSION = "5";
+const WHATSAPP_PREVIEW_URL_VERSION = "7";
 const MAX_PREVIEW_IMAGE_URL_LENGTH = 900;
+const MAX_PREVIEW_TITLE_LENGTH = 90;
+const MAX_PREVIEW_DESCRIPTION_LENGTH = 180;
+export const WHATSAPP_PREVIEW_IMAGE_WIDTH = 1200;
+export const WHATSAPP_PREVIEW_IMAGE_HEIGHT = 630;
 
 function getConfiguredTemplate() {
   const configuredTemplate = process.env.NEXT_PUBLIC_WHATSAPP_SHARE_TEMPLATE;
@@ -49,6 +56,44 @@ function toAbsoluteUrl(value) {
     return new URL(trimmedValue, window.location.origin).toString();
   } catch {
     return trimmedValue;
+  }
+}
+
+export function toWhatsAppLandscapeImageUrl(
+  imageUrl,
+  {
+    width = WHATSAPP_PREVIEW_IMAGE_WIDTH,
+    height = WHATSAPP_PREVIEW_IMAGE_HEIGHT,
+  } = {},
+) {
+  if (!imageUrl) return "";
+
+  try {
+    const url = new URL(String(imageUrl));
+    const cloudinaryUploadPath = "/image/upload/";
+    const uploadIndex = url.pathname.indexOf(cloudinaryUploadPath);
+
+    if (url.hostname !== "res.cloudinary.com" || uploadIndex === -1) {
+      return url.toString();
+    }
+
+    const prefix = url.pathname.slice(
+      0,
+      uploadIndex + cloudinaryUploadPath.length,
+    );
+    const suffix = url.pathname.slice(uploadIndex + cloudinaryUploadPath.length);
+    const pathParts = suffix.split("/");
+    const firstPathPart = pathParts[0] || "";
+    const hasTransformationSegment =
+      firstPathPart.includes(",") && !/^v\d+$/i.test(firstPathPart);
+    const sourcePath = hasTransformationSegment
+      ? pathParts.slice(1).join("/")
+      : suffix;
+
+    url.pathname = `${prefix}c_pad,b_auto,h_${height},w_${width},q_auto:eco,f_jpg/${sourcePath}`;
+    return url.toString();
+  } catch {
+    return String(imageUrl || "");
   }
 }
 
@@ -110,19 +155,47 @@ function encodeBase64Url(value) {
 }
 
 export function buildWhatsAppPreviewPageUrl({
+  giftCode = "",
   imageUrl = "",
+  title = "Wove Gift Card",
+  description = "A beautifully presented Wove gift card, ready to preview and share on WhatsApp.",
 } = {}) {
   const baseUrl = getSharePreviewBaseUrl();
-  const encodedImageUrl = encodeBase64Url(
-    truncatePreviewValue(imageUrl, MAX_PREVIEW_IMAGE_URL_LENGTH),
-  );
+  const safeGiftCode = String(giftCode || "").trim();
+
+  if (safeGiftCode) {
+    const previewUrl = baseUrl
+      ? new URL(WHATSAPP_PREVIEW_PAGE_PATH, baseUrl)
+      : new URL(WHATSAPP_PREVIEW_PAGE_PATH, "https://wove.local");
+
+    previewUrl.searchParams.set("c", safeGiftCode);
+    previewUrl.searchParams.set(
+      "v",
+      typeof Date !== "undefined"
+        ? Date.now().toString(36)
+        : WHATSAPP_PREVIEW_URL_VERSION,
+    );
+
+    const pathWithSearch = `${previewUrl.pathname}${previewUrl.search}`;
+    return baseUrl ? previewUrl.toString() : pathWithSearch;
+  }
+
+  const payload = {
+    imageUrl: truncatePreviewValue(imageUrl, MAX_PREVIEW_IMAGE_URL_LENGTH),
+    title: truncatePreviewValue(title, MAX_PREVIEW_TITLE_LENGTH),
+    description: truncatePreviewValue(
+      description,
+      MAX_PREVIEW_DESCRIPTION_LENGTH,
+    ),
+  };
 
   if (!baseUrl) {
-    return `${WHATSAPP_PREVIEW_PAGE_PATH}?i=${encodedImageUrl}&v=${WHATSAPP_PREVIEW_URL_VERSION}`;
+    const encodedPayload = encodeBase64Url(JSON.stringify(payload));
+    return `${WHATSAPP_PREVIEW_PAGE_PATH}?p=${encodedPayload}&v=${WHATSAPP_PREVIEW_URL_VERSION}`;
   }
 
   const previewUrl = new URL(WHATSAPP_PREVIEW_PAGE_PATH, baseUrl);
-  previewUrl.searchParams.set("i", encodedImageUrl);
+  previewUrl.searchParams.set("p", encodeBase64Url(JSON.stringify(payload)));
   previewUrl.searchParams.set("v", WHATSAPP_PREVIEW_URL_VERSION);
 
   return previewUrl.toString();
@@ -142,11 +215,15 @@ function cleanupMessage(message) {
     .trim();
 }
 
-function removeRecipientGreeting(template) {
-  return String(template || "")
-    .replace(/^Hi\s*\{\{\s*recipientName\s*\}\},?\s*\n*/i, "")
-    .replace(/^Hello\s*\{\{\s*recipientName\s*\}\},?\s*\n*/i, "")
-    .replaceAll("{{recipientName}}", "");
+function isGenericRecipientName(value) {
+  const normalizedName = String(value || "").trim().toLowerCase();
+
+  return (
+    !normalizedName ||
+    normalizedName === "recipient" ||
+    normalizedName === "there" ||
+    normalizedName === "your recipient"
+  );
 }
 
 export function detectDeviceType(userAgent) {
@@ -188,6 +265,7 @@ export function buildGiftCardShareImageUrls(giftCode = "") {
 
 export function generateWhatsAppMessage({
   template,
+  recipientName = "",
   giftAmount = "",
   giftCode = "",
   giftUrl = "",
@@ -199,17 +277,21 @@ export function generateWhatsAppMessage({
   giftImageUrl = "",
   sharePreviewUrl = "",
 } = {}) {
-  const resolvedTemplate = removeRecipientGreeting(
-    template || getConfiguredTemplate(),
-  );
+  const resolvedTemplate = template || getConfiguredTemplate();
   const safeGiftUrl = toAbsoluteUrl(giftUrl);
-  const safeGiftImageUrl = toAbsoluteUrl(giftImageUrl);
+  const safeGiftImageUrl = toWhatsAppLandscapeImageUrl(
+    toAbsoluteUrl(giftImageUrl),
+  );
   const safeSharePreviewUrl = toAbsoluteUrl(sharePreviewUrl);
   const safeCustomMessage = String(customMessage || "").trim();
   const safeBrandName = String(brandName || "").trim();
   const safeGiftName = String(giftName || "").trim();
   const safeGiftAmount = String(giftAmount || "").trim();
   const safeSenderName = String(senderName || "").trim() || "Someone";
+  const safeRecipientName = String(recipientName || "").trim();
+  const recipientGreetingSection = isGenericRecipientName(safeRecipientName)
+    ? ""
+    : `Hi ${safeRecipientName},\n\n`;
   const safeBrandWebsite = toAbsoluteUrl(brandWebsite);
   const normalizedBrandName = safeBrandName.toLowerCase();
   const normalizedGiftName = safeGiftName.toLowerCase();
@@ -221,11 +303,17 @@ export function generateWhatsAppMessage({
         ? `${safeBrandName} ${safeGiftName}`
         : safeGiftName || safeBrandName || "Gift Voucher";
   const fallbackMessage = `${safeSenderName} sent you a gift from WoveGifts.`;
+  const previewDescription = safeCustomMessage || fallbackMessage;
   const computedSharePreviewUrl =
     safeSharePreviewUrl ||
     buildWhatsAppPreviewPageUrl({
+      giftCode,
       imageUrl: safeGiftImageUrl,
+      title: giftDisplayName,
+      description: previewDescription,
     });
+  const giftRedeemLink =
+    safeBrandWebsite || safeGiftUrl || computedSharePreviewUrl || "";
 
   return cleanupMessage(
     interpolateTemplate(resolvedTemplate, {
@@ -234,12 +322,14 @@ export function generateWhatsAppMessage({
       giftUrl: safeGiftUrl,
       senderName: safeSenderName,
       customMessage: safeCustomMessage,
-      recipientName: "",
+      recipientName: safeRecipientName,
+      recipientGreetingSection,
       giftName,
       brandName: safeBrandName,
       brandWebsite: safeBrandWebsite,
       giftImageUrl: safeGiftImageUrl,
       sharePreviewUrl: computedSharePreviewUrl,
+      giftRedeemLink,
       giftDisplayName,
       customMessageBlock: safeCustomMessage
         ? `Message: "${safeCustomMessage}"`
@@ -269,6 +359,7 @@ export function generateWhatsAppMultiGiftMessage({
   gifts = [],
   senderName = "Someone",
   customMessage = "",
+  recipientName = "",
   template,
 } = {}) {
   if (!Array.isArray(gifts) || gifts.length === 0) {
@@ -283,7 +374,7 @@ export function generateWhatsAppMultiGiftMessage({
       ...gifts[0],
       senderName: gifts[0].senderName || senderName,
       customMessage: gifts[0].customMessage || customMessage,
-      recipientName: "",
+      recipientName: gifts[0].recipientName || recipientName,
     });
   }
 
@@ -300,7 +391,7 @@ export function generateWhatsAppMultiGiftMessage({
       ...gift,
       senderName: gift.senderName || senderName,
       customMessage: "",
-      recipientName: "",
+      recipientName: gift.recipientName || recipientName,
       template,
     });
 
@@ -319,17 +410,14 @@ export function getWhatsAppShareUrl(
   deviceType = detectDeviceType(),
   phoneNumber = "",
 ) {
+  void deviceType;
   const encodedMessage = encodeURIComponent(message);
-  const isMobileLike = deviceType === "mobile" || deviceType === "tablet";
   const normalizedPhoneNumber = normalizeWhatsAppPhoneNumber(phoneNumber);
-  const phonePath = normalizedPhoneNumber ? `/${normalizedPhoneNumber}` : "";
   const phoneQuery = normalizedPhoneNumber
     ? `phone=${encodeURIComponent(normalizedPhoneNumber)}&`
     : "";
 
-  return isMobileLike
-    ? `whatsapp://send?${phoneQuery}text=${encodedMessage}`
-    : `https://wa.me${phonePath}?text=${encodedMessage}`;
+  return `https://api.whatsapp.com/send?${phoneQuery}text=${encodedMessage}`;
 }
 
 export async function copyMessageFallback(message) {

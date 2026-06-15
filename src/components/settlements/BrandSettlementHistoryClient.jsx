@@ -61,7 +61,7 @@ const BrandSettlementHistoryClient = ({
 
     const formatCurrency = useCallback(
         (amount) => {
-            const currency = brandInfo?.currency || "USD";
+            const currency = brandInfo?.currency || "ZAR";
             return formatSettlementCurrency(amount, currency);
         },
         [brandInfo?.currency]

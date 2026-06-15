@@ -66,7 +66,7 @@ const FinalSelectionStep = () => {
                 <h3 className="font-semibold text-gray-800">Gift Amount</h3>
                 <p className="text-gray-600">
                   {selectedAmount ?
-                    `${selectedAmount.currency || 'USD'} ${selectedAmount.value}` :
+                    `${selectedAmount.currency || 'ZAR'} ${selectedAmount.value}` :
                     'Not selected'
                   }
                 </p>

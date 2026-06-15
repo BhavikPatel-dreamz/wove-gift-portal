@@ -1,0 +1,36 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "c9f2dae08ce0d37db022b21b202c7e9d"
+name = "Wove Gift"
+application_url = "https://dd-19.dynamicdreamz.com/shopify/dashboard"
+embedded = true
+
+[webhooks]
+api_version = "2025-07"
+
+  [[webhooks.subscriptions]]
+  uri = "https://dd-19.dynamicdreamz.com/api/shopify/webhooks/compliance"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "https://dd-19.dynamicdreamz.com/api/shopify/webhooks/uninstall"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/create" ]
+  uri = "https://dd-19.dynamicdreamz.com/api/webhooks/giftcard-redeem"
+
+[access.admin]
+direct_api_mode = "offline"
+embedded_app_direct_api_access = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,read_gift_card_transactions,read_gift_cards,read_orders,read_products,write_customers,write_gift_cards,write_orders,write_products"
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ "https://dd-19.dynamicdreamz.com/api/shopify/auth/callback" ]
+
+[pos]
+embedded = false

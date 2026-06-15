@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3000 --turbopack",
+    "prebuild": "pnpm run db:generate",
     "build": "prisma generate && next build --turbopack",
-    "start": "next start -p 3000",
+    "start": "pnpm run start:web",
+    "start:app": "next start -p 3000",
+    "start:web": "pnpm run db:generate && pnpm run db:migrate && pnpm run start:app",
     "lint": "eslint",
     "db:test": "node scripts/test-database-connection.js",
     "db:migrate": "prisma migrate deploy",
@@ -23,7 +26,8 @@
     "gift-cards:stats": "node scripts/gift-card-manager.js --action=stats",
     "sync:shopify": "node src/scripts/sync-shopify-data.js",
     "postinstall": "pnpm prisma generate",
-    "cron:start": "pnpm exec tsx scripts/scheduler.js"
+    "cron:app": "pnpm exec tsx scripts/scheduler.js",
+    "cron:start": "pnpm run db:migrate && pnpm run cron:app"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -38,9 +42,7 @@
     "@react-pdf/renderer": "^4.3.2",
     "@reduxjs/toolkit": "^2.9.0",
     "@sendgrid/mail": "^8.1.6",
-    "@shopify/app-bridge": "^3.7.11",
-    "@shopify/app-bridge-react": "^3.7.11",
-    "@shopify/shopify-api": "^12.0.0",
+    "@shopify/shopify-api": "^13.0.0",
     "@stripe/react-stripe-js": "^5.2.0",
     "@stripe/stripe-js": "^8.0.0",
     "@tanstack/react-table": "^8.21.3",

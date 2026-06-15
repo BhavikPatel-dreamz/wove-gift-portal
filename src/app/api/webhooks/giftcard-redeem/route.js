@@ -35,22 +35,61 @@ export async function POST(req) {
       );
     }
 
+    // Convert numeric order ID to gid format if needed
+    const gidOrderId = orderId.toString().startsWith('gid://') ? orderId : `gid://shopify/Order/${orderId}`;
+
+    // Using GraphQL API (compliant with latest Shopify requirements)
+    const transactionsQuery = `
+      query FetchOrderTransactions($id: ID!) {
+        order(id: $id) {
+          id
+          legacyResourceId
+          transactions(first: 100) {
+            edges {
+              node {
+                id
+                kind
+                status
+                gateway
+                amountSet {
+                  shopMoney {
+                    amount
+                    currencyCode
+                  }
+                }
+                createdAt
+              }
+            }
+          }
+        }
+      }
+    `;
+
     const transactionsRes = await fetch(
-      `https://${shopDomain}/admin/api/2025-10/orders/${orderId}/transactions.json`,
+      `https://${shopDomain}/admin/api/2026-04/graphql.json`,
       {
-        method: "GET",
+        method: "POST",
         headers: {
           "X-Shopify-Access-Token": accessToken,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          query: transactionsQuery,
+          variables: { id: gidOrderId },
+        }),
       }
     );
 
     const transactionsData = await transactionsRes.json();
-    const transactions = transactionsData.transactions || [];
+    
+    if (transactionsData.errors) {
+      throw new Error(`GraphQL error: ${JSON.stringify(transactionsData.errors)}`);
+    }
+
+    const transactions = (transactionsData.data?.order?.transactions?.edges || []).map(edge => edge.node);
 
     const giftCardTxns = transactions.filter(
-      (txn) => txn.gateway === "gift_card" && txn.status === "success"
+      (txn) => txn.gateway === "gift_card" && txn.status === "SUCCESS"
     );
 
     if (giftCardTxns.length === 0) {

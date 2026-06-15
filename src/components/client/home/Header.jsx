@@ -2,7 +2,6 @@
 
 import {
   User,
-  ShoppingBasket,
   Heart,
   Menu,
   X,
@@ -50,9 +49,6 @@ const Header = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  // ✅ Get both regular and bulk cart items
-  const cartItems = useSelector((state) => state.cart.items);
-  const bulkItems = useSelector((state) => state.cart.cartItems);
   const wishlistItems = useSelector((state) => state.wishlist.items);
 
   const [mounted, setMounted] = useState(false);
@@ -61,8 +57,6 @@ const Header = () => {
   const [openDropdown, setOpenDropdown] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
 
-  // ✅ Calculate combined cart count
-  const cartCount = cartItems.length + bulkItems.length;
   const wishlistCount = wishlistItems.length;
   const mobileNavLinks = session
     ? { ...mobilePublicNavLinks, ...mobileMemberNavLinks }
@@ -449,31 +443,6 @@ const Header = () => {
                   </div>
                 )}
               </div>
-
-              {/* Cart - Always visible with combined count */}
-              <Link
-                href="/cart"
-                className="relative flex items-center justify-center p-1 sm:p-1.5 lg:p-2 
-      rounded-full border border-[#ED457D]/50 bg-transparent
-      hover:bg-[#ED457D]/10 transition-all duration-200"
-                aria-label="Shopping cart"
-              >
-                <ShoppingBasket
-                  className="w-5 h-5 sm:w-6 sm:h-6"
-                  color="#ED457D"
-                />
-
-                {/* ✅ Show combined count badge */}
-                {mounted && cartCount > 0 && (
-                  <span
-                    className="absolute -top-1 -right-1 bg-[#ED457D] text-white 
-          w-4 h-4 sm:w-5 sm:h-5 text-[9px] sm:text-[11px] flex items-center justify-center 
-          rounded-full shadow-md font-medium"
-                  >
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
             </div>
           </div>
         </div>
@@ -490,7 +459,7 @@ const Header = () => {
             {/* Left Drawer */}
             <div
               className={`fixed inset-y-0 left-0 w-full sm:w-[320px] lg:w-[360px] bg-white z-50
-      transform transition-transform duration-300 ease-in-out shadow-xl overflow-y-auto`}
+      transform transition-transform duration-300 ease-in-out shadow-xl flex flex-col`}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
@@ -509,20 +478,21 @@ const Header = () => {
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-2 rounded-lg hover:bg-gray-100 transition"
+                  aria-label="Close menu"
                 >
                   <X size={22} className='text-black'/>
                 </button>
               </div>
 
               {/* Navigation Links */}
-              <div className="flex flex-col px-4 sm:px-6 mt-4 space-y-1">
+              <div className="flex flex-1 flex-col overflow-y-auto px-4 sm:px-6 mt-4 space-y-1 pb-4">
                 {Object.keys(mobileNavLinks).map((item) => (
                   <Link
                     key={item}
                     href={mobileNavLinks[item]}
                     onClick={() => handleNavClick(item)}
                     className={`py-3 text-[15px] sm:text-[16px] border-b border-gray-200 transition-colors
-            ${activeTab === item
+            ${pathname === mobileNavLinks[item]
                         ? "text-[#ED457D]"
                         : "text-gray-800 hover:text-[#ED457D]"
                       }`}
@@ -533,7 +503,7 @@ const Header = () => {
               </div>
 
               {/* Auth Buttons */}
-              <div className="px-4 sm:px-6 mt-6 space-y-3 pb-6">
+              <div className="sticky bottom-0 border-t border-gray-100 bg-white px-4 sm:px-6 mt-6 space-y-3 py-4 mobile-safe-bottom">
                 {!mounted ? (
                   <button className="w-full flex items-center justify-center gap-2 bg-[#ED457D] text-white py-3 rounded-full font-medium hover:bg-[#d63d6e] transition">
                     Login / Register

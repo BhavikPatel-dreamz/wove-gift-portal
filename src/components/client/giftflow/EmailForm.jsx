@@ -3,7 +3,6 @@ import { Mail } from 'lucide-react';
 import Image from 'next/image';
 import { setCurrentStep, setDeliveryFormEditReturn } from "../../../redux/giftFlowSlice";
 import { useDispatch, useSelector } from 'react-redux';
-import { COUNTRY_CODES } from "./deliveryValidation";
 import { currencyList } from '../../brandsPartner/currency';
 
 const EmailForm = ({ formData, handleInputChange, errors, renderInputError, selectedSubCategory, selectedAmount, personalMessage, selectedBrand }) => {
@@ -62,7 +61,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
     return (
         <div className="text-black">
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-0 sm:px-2 pb-6 sm:pb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 px-0 sm:px-2 pb-2">
                 <div>
                     <div className="text-left pt-8 pb-4 px-2">
                         <h2 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">Email Details</h2>
@@ -70,16 +69,17 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                     {/* Left Side - Form */}
                     <div className="space-y-6">
                         {/* Your Information Section */}
-                        <div className="rounded-2xl border border-gray-200">
-                            <div className="flex items-center mb-4  border-b border-gray-200 p-4">
-                                <div className="relative w-12 h-12 rounded-xl flex items-center justify-center mr-3 shrink-0">
-                                    <div className="absolute inset-0 bg-[#398FAE] opacity-20 rounded-xl"></div>
+                        <div className="overflow-hidden rounded-2xl border border-[#F8C8D6] bg-white shadow-sm">
+                            <div className="flex items-center mb-4 border-b border-[#F8C8D6] bg-gradient-to-r from-[#FFF2F6] to-white p-4">
+                                <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center mr-3 shrink-0 bg-white shadow-sm ring-1 ring-[#F8C8D6]">
+                                    <div className="absolute inset-0 bg-[#ED457D] opacity-10 rounded-2xl"></div>
                                     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M14.0003 4.66669C15.238 4.66669 16.425 5.15835 17.3002 6.03352C18.1753 6.90869 18.667 8.09568 18.667 9.33335C18.667 10.571 18.1753 11.758 17.3002 12.6332C16.425 13.5084 15.238 14 14.0003 14C12.7626 14 11.5757 13.5084 10.7005 12.6332C9.82532 11.758 9.33366 10.571 9.33366 9.33335C9.33366 8.09568 9.82532 6.90869 10.7005 6.03352C11.5757 5.15835 12.7626 4.66669 14.0003 4.66669ZM14.0003 16.3334C19.157 16.3334 23.3337 18.4217 23.3337 21V23.3334H4.66699V21C4.66699 18.4217 8.84366 16.3334 14.0003 16.3334Z" fill="#398FAE" />
+                                        <path d="M14.0003 4.66669C15.238 4.66669 16.425 5.15835 17.3002 6.03352C18.1753 6.90869 18.667 8.09568 18.667 9.33335C18.667 10.571 18.1753 11.758 17.3002 12.6332C16.425 13.5084 15.238 14 14.0003 14C12.7626 14 11.5757 13.5084 10.7005 12.6332C9.82532 11.758 9.33366 10.571 9.33366 9.33335C9.33366 8.09568 9.82532 6.90869 10.7005 6.03352C11.5757 5.15835 12.7626 4.66669 14.0003 4.66669ZM14.0003 16.3334C19.157 16.3334 23.3337 18.4217 23.3337 21V23.3334H4.66699V21C4.66699 18.4217 8.84366 16.3334 14.0003 16.3334Z" fill="#ED457D" />
                                     </svg>
                                 </div>
-                                <div className="flex items-center">
-                                    <h3 className="text-lg font-bold text-gray-900 ">Your Information</h3>
+                                <div>
+                                    <h3 className="text-lg font-bold text-[#ED457D]">Your Information</h3>
+                                    <p className="mt-0.5 text-xs font-medium text-[#7E7E8A]">Sender details</p>
                                 </div>
                             </div>
 
@@ -109,46 +109,19 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                                     {renderInputError('yourEmailAddress')}
                                 </div>
 
-                                <div>
-                                    <label className="text-xs font-semibold text-gray-600 block mb-2">Your Phone Number (Optional)</label>
-                                    <div className="flex flex-col sm:flex-row gap-2">
-                                        <select
-                                            value={formData.yourPhoneCountryCode}
-                                            onChange={(e) => handleInputChange('yourPhoneCountryCode', e.target.value)}
-                                            className="w-full sm:w-[170px] p-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all bg-white text-sm"
-                                            aria-label="Your phone country code"
-                                        >
-                                            {COUNTRY_CODES.map(({ code, country }) => (
-                                                <option key={`${code}-${country}`} value={code}>{code} {country}</option>
-                                            ))}
-                                        </select>
-                                        <div className="flex-1">
-                                            <input
-                                                type="tel"
-                                                value={formData.yourPhoneNumber}
-                                                onChange={(e) => handleInputChange('yourPhoneNumber', e.target.value)}
-                                                inputMode="numeric"
-                                                autoComplete="tel-national"
-                                                maxLength={15}
-                                                placeholder="Your Phone Number"
-                                                className={`w-full p-3.5 border rounded-xl focus:ring-2 focus:outline-none transition-all bg-white text-sm ${errors.yourPhoneNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-blue-400 focus:border-blue-400'}`}
-                                            />
-                                        </div>
-                                    </div>
-                                    {renderInputError('yourPhoneNumber')}
-                                </div>
                             </div>
                         </div>
 
                         {/* Recipient Details Section */}
-                        <div className="rounded-2xl border border-gray-200">
-                            <div className="flex items-center border-b border-gray-200 mb-4 p-4">
-                                <div className="relative w-12 h-12 rounded-xl flex items-center justify-center mr-3 shrink-0">
-                                    <div className="absolute inset-0 bg-[#398FAE] opacity-20 rounded-xl"></div>
-                                    <Mail className="relative w-6 h-6 text-[#398FAE]" />
+                        <div className="overflow-hidden rounded-2xl border border-[#FAD8C2] bg-white shadow-sm">
+                            <div className="flex items-center border-b border-[#FAD8C2] bg-gradient-to-r from-[#FFF5EF] to-white mb-4 p-4">
+                                <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center mr-3 shrink-0 bg-white shadow-sm ring-1 ring-[#FAD8C2]">
+                                    <div className="absolute inset-0 bg-[#F57A38] opacity-10 rounded-2xl"></div>
+                                    <Mail className="relative w-6 h-6 text-[#F57A38]" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-900">Recipient Details</h3>
+                                    <h3 className="text-lg font-bold text-[#F57A38]">Recipient Details</h3>
+                                    <p className="mt-0.5 text-xs font-medium text-[#7E7E8A]">Email delivery details</p>
                                 </div>
                             </div>
 
@@ -183,20 +156,20 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                 </div>
 
                 {/* ─── RIGHT SIDE — Email Preview ─── */}
-                <div className="">
+                <div className="min-h-0">
                     {/* Decorative Circle Background */}
                     <div className="absolute left-1/2 top-8 h-64 w-64 -translate-x-1/2 rounded-full bg-linear-to-br from-blue-100 to-blue-200 opacity-50 blur-2xl -z-10 sm:h-80 sm:w-80 lg:left-auto lg:translate-x-0"></div>
 
                     <div className="relative z-10 w-full">
-                        <div className="flex items-center justify-between text-left pt-8 pb-4 px-2">
+                        <div className="flex items-center justify-between text-left pt-8 pb-3 px-2">
                             <h2 className="text-[22px] font-semibold text-[#1A1A1A] mb-2 fontPoppins">Preview</h2>
                         </div>
 
                         {/* Email client shell card — same outer wrapper as original */}
-                        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200 w-full max-w-3xl mx-auto">
+                        <div className="flex max-h-[520px] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl lg:max-h-[64vh]">
 
                             {/* ── Email Subject line (original) ── */}
-                            <div className="px-4 py-3 border-b border-gray-200">
+                            <div className="shrink-0 px-4 py-2.5 border-b border-gray-200">
                                 <div className="flex items-center gap-2">
                                     <span className="text-lg">🎁</span>
                                     <p className="text-sm font-semibold text-gray-900 truncate">
@@ -206,7 +179,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                             </div>
 
                             {/* ── From / time row (original) ── */}
-                            <div className="px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div className="shrink-0 px-4 py-2.5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
                                     <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                                         <span className="text-xs font-bold text-gray-600">D</span>
@@ -220,7 +193,7 @@ const EmailForm = ({ formData, handleInputChange, errors, renderInputError, sele
                             </div>
 
                             {/* ── Email Body — now matches HTML email template ── */}
-                            <div style={{ padding: '16px 10px', fontFamily: "'DM Sans', Arial, sans-serif" }}>
+                            <div className="flex-1 overflow-y-auto" style={{ padding: '12px 10px', fontFamily: "'DM Sans', Arial, sans-serif" }}>
                                 <div style={{ background: '#ffffff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
 
                                     {/* Header */}

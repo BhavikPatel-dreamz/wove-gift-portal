@@ -8,8 +8,10 @@ import {
 import { getSession } from "./userAction/session";
 import { SendGiftCardEmail } from "./TwilloMessage";
 import { getOrderSettlementAmount } from "../settlement/settlementUtils.js";
+import { getInternalAuthHeaders } from "../internal-api-auth.js";
 
 const DEFAULT_EXPIRY_YEARS = 3;
+const DEFAULT_CURRENCY_CODE = "ZAR";
 
 
 
@@ -183,7 +185,7 @@ async function createOrderRecord(
         subtotal,
         discount,
         totalAmount,
-        currency: orderData.selectedAmount.currency || "USD",
+        currency: orderData.selectedAmount.currency || DEFAULT_CURRENCY_CODE,
         message: orderData.personalMessage || "",
         customImageUrl: orderData.customImageUrl || null,
         customVideoUrl: orderData.customVideoUrl || null,
@@ -247,7 +249,7 @@ async function createShopifyGiftCard(selectedBrand, orderData, purchaseDate = nu
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getInternalAuthHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(giftCardData),
     });
 

@@ -27,10 +27,14 @@ import {
   createBrandPartner,
   updateBrand,
   deleteBrandPartner,
+  getBrandCategories,
 } from "../../../lib/action/brandPartner";
 import { approveShopInstallationAction } from "../../../lib/action/shopifyInstallationAction";
 import CustomDropdown from "../../../components/ui/CustomDropdown";
-import { Categories } from "../../../lib/resourses";
+import {
+  Categories,
+  mergeCategories,
+} from "../../../lib/resourses";
 
 const BrandManager = ({
   initialBrands,
@@ -51,6 +55,7 @@ const BrandManager = ({
   const [reviewData, setReviewData] = useState(initialReviewData);
   const [actionLoading, setActionLoading] = useState(false);
   const [approvingShop, setApprovingShop] = useState(null);
+  const [dbCategories, setDbCategories] = useState(Categories);
 
   const [searchInput, setSearchInput] = useState(searchParams?.search || "");
   const [debounceTimer, setDebounceTimer] = useState(null);
@@ -76,6 +81,25 @@ const BrandManager = ({
     setSearchInput(searchParams?.search || "");
   }, [searchParams?.search]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCategories = async () => {
+      const result = await getBrandCategories();
+      if (!isMounted) return;
+
+      if (result?.success) {
+        setDbCategories(result.data || Categories);
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Build a lookup: brandId -> pending store info
   const pendingStoreByBrandId = React.useMemo(() => {
     const map = {};
@@ -86,6 +110,15 @@ const BrandManager = ({
     });
     return map;
   }, [reviewData]);
+
+  const categoryFilterOptions = React.useMemo(() => {
+    const categoriesFromStats = (categoryStats || []).map(
+      (category) => category.category || category.categoryName
+    );
+    const categoriesFromBrands = (brands || []).map((brand) => brand.categoryName);
+
+    return mergeCategories(dbCategories, categoriesFromStats, categoriesFromBrands);
+  }, [brands, categoryStats, dbCategories]);
 
   const buildUrlWithParams = (updates) => {
     const params = new URLSearchParams();
@@ -401,7 +434,10 @@ const BrandManager = ({
             <CustomDropdown
               value={filters.category}
               onChange={(value) => handleFilterChange("category", value)}
-              options={[{ value: "All Brands", label: "All Categories" }, ...Categories.map((c) => ({ value: c, label: c }))]}
+              options={[
+                { value: "All Brands", label: "All Categories" },
+                ...categoryFilterOptions.map((category) => ({ value: category, label: category })),
+              ]}
               placeholder="Select Category"
               className="min-w-[150px] text-sm"
             />
@@ -515,21 +551,19 @@ const BrandManager = ({
                     key={brand.id}
                     className="group bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col"
                   >
-                    <div className="relative overflow-hidden rounded-top-xl">
+                    <div className="relative overflow-hidden">
                       {/* Image / Brand Area */}
-                      <div
-                        className="h-40 w-full flex items-center justify-center
-               bg-gradient-to-br from-black via-[#0b0b0b] to-black
-               text-white font-extrabold text-4xl tracking-tight"
-                      >
+                      <div className="h-40 w-full bg-white flex items-center justify-center overflow-hidden">
                         {brand.logo ? (
                           <img
                             src={brand.logo}
                             alt={brand.brandName}
-                            className="max-h-16 object-contain"
+                            className="max-w-full max-h-full w-full h-full object-contain"
                           />
                         ) : (
-                          brand.brandName || "Brand"
+                          <div className="flex items-center justify-center w-full h-full bg-gray-100 text-gray-500 font-semibold text-xl">
+                            {brand.brandName || "Brand"}
+                          </div>
                         )}
                       </div>
 

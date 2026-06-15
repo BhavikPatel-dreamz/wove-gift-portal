@@ -13,13 +13,147 @@ import {
   getShopInstallationAccess,
   normalizeShopDomain,
 } from "../shopify-installation";
+import { verifyShopifyServerActionSession } from "../shopify/server-action-auth";
 import {
   getOrderSettlementAmount,
   roundSettlementAmount,
 } from "../settlement/settlementUtils.js";
+import {
+  Categories,
+  mergeCategories,
+  normalizeCategoryName,
+} from "../resourses";
 
 const SALT_ROUNDS = 12;
 const TRANSACTION_TIMEOUT = 10000; // 10 seconds
+const DEFAULT_CURRENCY_CODE = "ZAR";
+const CurrencySchema = z.preprocess(
+  () => DEFAULT_CURRENCY_CODE,
+  z.literal(DEFAULT_CURRENCY_CODE),
+);
+
+async function ensureBrandCategories(categoryNames = []) {
+  const names = mergeCategories(Categories, categoryNames);
+  if (!names.length) return names;
+
+  const existingCategories = await prisma.brandCategory.findMany({
+    select: { name: true },
+  });
+  const existingCategoryKeys = new Set(
+    existingCategories.map((category) => category.name.toLowerCase()),
+  );
+  const newCategoryNames = names.filter(
+    (name) => !existingCategoryKeys.has(name.toLowerCase()),
+  );
+
+  if (!newCategoryNames.length) return names;
+
+  await prisma.brandCategory.createMany({
+    data: newCategoryNames.map((name) => ({ name })),
+    skipDuplicates: true,
+  });
+
+  return names;
+}
+
+export async function getBrandCategories() {
+  try {
+    await ensureBrandCategories();
+
+    const [savedCategories, brandCategories] = await Promise.all([
+      prisma.brandCategory.findMany({
+        orderBy: { name: "asc" },
+        select: { name: true },
+      }),
+      prisma.brand.findMany({
+        distinct: ["categoryName"],
+        orderBy: { categoryName: "asc" },
+        select: { categoryName: true },
+      }),
+    ]);
+
+    const categoryNames = mergeCategories(
+      Categories,
+      savedCategories.map((category) => category.name),
+      brandCategories.map((brand) => brand.categoryName),
+    );
+
+    await ensureBrandCategories(categoryNames);
+
+    return {
+      success: true,
+      data: categoryNames,
+    };
+  } catch (error) {
+    console.error("Error fetching brand categories:", error);
+    return {
+      success: false,
+      message: "Failed to fetch brand categories",
+      data: Categories,
+      error: error.message,
+    };
+  }
+}
+
+export async function addBrandCategory(input) {
+  try {
+    const rawName = typeof input === "string" ? input : input?.name;
+    const name = normalizeCategoryName(rawName);
+
+    if (!name) {
+      return {
+        success: false,
+        message: "Category name is required",
+        status: 400,
+      };
+    }
+
+    if (name.length > 100) {
+      return {
+        success: false,
+        message: "Category must be less than 100 characters",
+        status: 400,
+      };
+    }
+
+    const existingCategory = await prisma.brandCategory.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: "insensitive",
+        },
+      },
+      select: { id: true, name: true },
+    });
+
+    if (existingCategory) {
+      return {
+        success: true,
+        data: existingCategory,
+        message: "Category already exists",
+      };
+    }
+
+    const category = await prisma.brandCategory.create({
+      data: { name },
+      select: { id: true, name: true },
+    });
+
+    return {
+      success: true,
+      data: category,
+      message: "Category added successfully",
+    };
+  } catch (error) {
+    console.error("Error adding brand category:", error);
+    return {
+      success: false,
+      message: "Failed to add category",
+      error: error.message,
+      status: 500,
+    };
+  }
+}
 
 // Hash sensitive data with caching to avoid rehashing
 const hashCache = new Map();
@@ -33,6 +167,31 @@ async function hashSensitiveData(data) {
   const hashed = await bcrypt.hash(data, SALT_ROUNDS);
   hashCache.set(data, hashed);
   return hashed;
+}
+
+function getShopifyInstallShopCandidates(...values) {
+  const shops = new Set();
+
+  values
+    .filter(Boolean)
+    .forEach((value) => {
+      const cleaned = String(value)
+        .trim()
+        .replace(/^https?:\/\//i, "")
+        .replace(/\/.*$/, "")
+        .replace(/\.myshopify\.com$/i, "");
+
+      if (!/^[a-z0-9][a-z0-9-]*$/i.test(cleaned)) {
+        return;
+      }
+
+      const shop = normalizeShopDomain(cleaned);
+      if (shop) {
+        shops.add(shop);
+      }
+    });
+
+  return [...shops];
 }
 
 // Updated Schemas
@@ -63,7 +222,7 @@ const IntegrationSchema = z.object({
 const DenominationSchema = z.object({
   id: z.union([z.number(), z.string()]).optional(),
   value: z.number().min(1, "Denomination value must be at least 1"),
-  currency: z.string().default("USD"),
+  currency: CurrencySchema,
   displayName: z.string().optional().nullable(),
   isActive: z.boolean().default(true),
   isExpiry: z.boolean().default(false),
@@ -93,7 +252,7 @@ const BrandPartnerSchema = z
     commissionValue: z.number().min(0, "Commission value must be positive"),
     maxDiscount: z.number().min(0).optional().nullable(),
     minOrderValue: z.number().min(0).optional().nullable(),
-    currency: z.string().default("USD"),
+    currency: CurrencySchema,
     breakagePolicy: z.string().optional(),
     breakageShare: z.number().min(0).max(100).optional().nullable(),
     contractStart: z.preprocess(
@@ -312,6 +471,8 @@ export async function createBrandPartner(formData) {
     }
 
     const validatedData = validationResult.data;
+    validatedData.categoryName = normalizeCategoryName(validatedData.categoryName);
+    await ensureBrandCategories([validatedData.categoryName]);
     let logoPath = "";
 
 
@@ -570,6 +731,8 @@ export async function updateBrandPartner(brandId, formData) {
     }
 
     const validatedData = validationResult.data;
+    validatedData.categoryName = normalizeCategoryName(validatedData.categoryName);
+    await ensureBrandCategories([validatedData.categoryName]);
 
     // Get existing brand data
     const existingBrand = await prisma.brand.findUnique({
@@ -1057,6 +1220,7 @@ export async function deleteBrandPartner(brandId) {
         id: true,
         logo: true,
         domain: true,
+        website: true,
       },
     });
 
@@ -1071,10 +1235,6 @@ export async function deleteBrandPartner(brandId) {
     // Use a transaction with increased timeout
     await prisma.$transaction(
       async (tx) => {
-        const installationShop = existingBrand.domain
-          ? normalizeShopDomain(existingBrand.domain)
-          : null;
-
         // Step 1: Get all related IDs in parallel
         const [vouchers, orders, integrations] = await Promise.all([
           tx.vouchers.findMany({
@@ -1087,13 +1247,18 @@ export async function deleteBrandPartner(brandId) {
           }),
           tx.integration.findMany({
             where: { brandId },
-            select: { id: true },
+            select: { id: true, storeUrl: true },
           }),
         ]);
 
         const voucherIds = vouchers.map((v) => v.id);
         const orderIds = orders.map((o) => o.id);
         const integrationIds = integrations.map((i) => i.id);
+        const installationShops = getShopifyInstallShopCandidates(
+          existingBrand.domain,
+          existingBrand.website,
+          ...integrations.map((integration) => integration.storeUrl),
+        );
 
         // Step 2: Get voucher code IDs if there are vouchers
         let voucherCodeIds = [];
@@ -1185,10 +1350,10 @@ export async function deleteBrandPartner(brandId) {
           tx.brandContacts.deleteMany({ where: { brandId } }),
           tx.brandTerms.deleteMany({ where: { brandId } }),
           tx.brandBanking.deleteMany({ where: { brandId } }),
-          ...(installationShop
+          ...(installationShops.length > 0
             ? [
                 tx.appInstallation.deleteMany({
-                  where: { shop: installationShop },
+                  where: { shop: { in: installationShops } },
                 }),
               ]
             : []),
@@ -1320,12 +1485,14 @@ export async function updateBrand(formData) {
       contact,
       tagline,
       color,
-      categoryName,
+      categoryName: normalizeCategoryName(categoryName),
       notes,
       isActive,
       isFeature,
       logo: logoPath,
     };
+
+    await ensureBrandCategories([updateData.categoryName]);
 
     // Update brandName and slug if provided
     if (brandName && brandName !== existingBrand.brandName) {
@@ -1681,7 +1848,7 @@ export async function getSettlements(params = {}) {
     const processSettlement = (settlement, index) => {
       const brandTerms = settlement.brand?.brandTerms;
       const brandBankings = settlement.brand?.brandBankings;
-      const currency = settlement.brand?.currency || "USD";
+      const currency = settlement.brand?.currency || DEFAULT_CURRENCY_CODE;
 
       // Get voucher data from map (O(1) lookup)
       const voucherData = vouchersBySettlement.get(index) || [];
@@ -3080,7 +3247,7 @@ export async function getSettlementDetails(settlementId) {
     const brand = firstSettlement.brand;
     const brandTerms = brand.brandTerms;
     const brandBankings = brand.brandBankings;
-    const currency = brand.currency || "USD";
+    const currency = brand.currency || DEFAULT_CURRENCY_CODE;
 
     // Get period range
     const periodStart = new Date(
@@ -3826,7 +3993,7 @@ export async function getSettlementVouchersList(settlementId, params = {}) {
         receiverPhone: order.receiverDetail?.phone || "N/A",
         brand: firstSettlement.brand.brandName,
         brandLogo: firstSettlement.brand.logo,
-        currency: order.currency || firstSettlement.brand.currency || "USD",
+        currency: order.currency || firstSettlement.brand.currency || DEFAULT_CURRENCY_CODE,
         frequency:
           firstSettlement.brand.brandBankings?.settlementFrequency || "monthly",
         period: `${new Date(order.createdAt).toLocaleDateString()}`,
@@ -3980,7 +4147,27 @@ export async function getBrandSettlementHistory(brandId, params = {}, shop = nul
 
     // Handle shop parameter - find brand by domain
     if (shop) {
-      const access = await getShopInstallationAccess(shop);
+      const tokenValidation = await verifyShopifyServerActionSession(shop);
+
+      if (!tokenValidation.valid) {
+        return {
+          success: false,
+          message: "Invalid Shopify session token.",
+          reason: tokenValidation.reason,
+          status: tokenValidation.status,
+          data: [],
+          pagination: createEmptyPagination(pageNum, limitNum),
+          summary: createEmptySummary(),
+          filters: {
+            appliedYear: filterYear,
+            appliedMonth: filterMonth,
+            appliedStatus: status,
+            appliedFrequency: frequency,
+          },
+        };
+      }
+
+      const access = await getShopInstallationAccess(tokenValidation.shop);
 
       if (access.requiresApproval) {
         return {
@@ -4245,7 +4432,7 @@ export async function getBrandSettlementHistory(brandId, params = {}, shop = nul
     // ==================== STEP 4: Process settlements with pre-fetched data ====================
     const brandTerms = brand.brandTerms;
     const brandBankings = brand.brandBankings;
-    const currency = brand.currency || "USD";
+    const currency = brand.currency || DEFAULT_CURRENCY_CODE;
     const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
 
     const processSettlement = (settlement, index) => {

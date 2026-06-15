@@ -1,0 +1,378 @@
+[
+  {
+    "name": "nextjs-auth-system",
+    "version": "0.1.0",
+    "path": "/media/drive/Bhavik/Projects/wove",
+    "private": true,
+    "dependencies": {
+      "@auth/prisma-adapter": {
+        "from": "@auth/prisma-adapter",
+        "version": "2.11.1",
+        "resolved": "https://registry.npmjs.org/@auth/prisma-adapter/-/prisma-adapter-2.11.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@auth+prisma-adapter@2.11.1_@prisma+client@7.3.0_prisma@7.3.0_@types+react@19.2.7_react_800096db1af0d641a695a03c47acc2c6/node_modules/@auth/prisma-adapter"
+      },
+      "@getbrevo/brevo": {
+        "from": "@getbrevo/brevo",
+        "version": "3.0.1",
+        "resolved": "https://registry.npmjs.org/@getbrevo/brevo/-/brevo-3.0.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@getbrevo+brevo@3.0.1/node_modules/@getbrevo/brevo"
+      },
+      "@paypal/paypal-server-sdk": {
+        "from": "@paypal/paypal-server-sdk",
+        "version": "1.1.0",
+        "resolved": "https://registry.npmjs.org/@paypal/paypal-server-sdk/-/paypal-server-sdk-1.1.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@paypal+paypal-server-sdk@1.1.0/node_modules/@paypal/paypal-server-sdk"
+      },
+      "@prisma/adapter-pg": {
+        "from": "@prisma/adapter-pg",
+        "version": "7.2.0",
+        "resolved": "https://registry.npmjs.org/@prisma/adapter-pg/-/adapter-pg-7.2.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@prisma+adapter-pg@7.2.0/node_modules/@prisma/adapter-pg"
+      },
+      "@prisma/client": {
+        "from": "@prisma/client",
+        "version": "7.3.0",
+        "resolved": "https://registry.npmjs.org/@prisma/client/-/client-7.3.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@prisma+client@7.3.0_prisma@7.3.0_@types+react@19.2.7_react-dom@19.1.0_react@19.1.0__re_d6f931c7f2d8f4cc009f58e3d42525c9/node_modules/@prisma/client"
+      },
+      "@prisma/extension-accelerate": {
+        "from": "@prisma/extension-accelerate",
+        "version": "3.0.1",
+        "resolved": "https://registry.npmjs.org/@prisma/extension-accelerate/-/extension-accelerate-3.0.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@prisma+extension-accelerate@3.0.1_@prisma+client@7.3.0_prisma@7.3.0_@types+react@19.2._08235e643cb10f45eb35c025caa14799/node_modules/@prisma/extension-accelerate"
+      },
+      "@react-pdf/renderer": {
+        "from": "@react-pdf/renderer",
+        "version": "4.3.2",
+        "resolved": "https://registry.npmjs.org/@react-pdf/renderer/-/renderer-4.3.2.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@react-pdf+renderer@4.3.2_react@19.1.0/node_modules/@react-pdf/renderer"
+      },
+      "@reduxjs/toolkit": {
+        "from": "@reduxjs/toolkit",
+        "version": "2.11.2",
+        "resolved": "https://registry.npmjs.org/@reduxjs/toolkit/-/toolkit-2.11.2.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@reduxjs+toolkit@2.11.2_react-redux@9.2.0_@types+react@19.2.7_react@19.1.0_redux@5.0.1__react@19.1.0/node_modules/@reduxjs/toolkit"
+      },
+      "@sendgrid/mail": {
+        "from": "@sendgrid/mail",
+        "version": "8.1.6",
+        "resolved": "https://registry.npmjs.org/@sendgrid/mail/-/mail-8.1.6.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@sendgrid+mail@8.1.6/node_modules/@sendgrid/mail"
+      },
+      "@shopify/app-bridge": {
+        "from": "@shopify/app-bridge",
+        "version": "3.7.11",
+        "resolved": "https://registry.npmjs.org/@shopify/app-bridge/-/app-bridge-3.7.11.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@shopify+app-bridge@3.7.11/node_modules/@shopify/app-bridge"
+      },
+      "@shopify/app-bridge-react": {
+        "from": "@shopify/app-bridge-react",
+        "version": "3.7.11",
+        "resolved": "https://registry.npmjs.org/@shopify/app-bridge-react/-/app-bridge-react-3.7.11.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@shopify+app-bridge-react@3.7.11_react@19.1.0/node_modules/@shopify/app-bridge-react"
+      },
+      "@shopify/shopify-api": {
+        "from": "@shopify/shopify-api",
+        "version": "12.2.0",
+        "resolved": "https://registry.npmjs.org/@shopify/shopify-api/-/shopify-api-12.2.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@shopify+shopify-api@12.2.0/node_modules/@shopify/shopify-api"
+      },
+      "@stripe/react-stripe-js": {
+        "from": "@stripe/react-stripe-js",
+        "version": "5.4.1",
+        "resolved": "https://registry.npmjs.org/@stripe/react-stripe-js/-/react-stripe-js-5.4.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@stripe+react-stripe-js@5.4.1_@stripe+stripe-js@8.6.0_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/@stripe/react-stripe-js"
+      },
+      "@stripe/stripe-js": {
+        "from": "@stripe/stripe-js",
+        "version": "8.6.0",
+        "resolved": "https://registry.npmjs.org/@stripe/stripe-js/-/stripe-js-8.6.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@stripe+stripe-js@8.6.0/node_modules/@stripe/stripe-js"
+      },
+      "@tanstack/react-table": {
+        "from": "@tanstack/react-table",
+        "version": "8.21.3",
+        "resolved": "https://registry.npmjs.org/@tanstack/react-table/-/react-table-8.21.3.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@tanstack+react-table@8.21.3_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/@tanstack/react-table"
+      },
+      "bcryptjs": {
+        "from": "bcryptjs",
+        "version": "3.0.3",
+        "resolved": "https://registry.npmjs.org/bcryptjs/-/bcryptjs-3.0.3.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/bcryptjs@3.0.3/node_modules/bcryptjs"
+      },
+      "canvas": {
+        "from": "canvas",
+        "version": "3.2.1",
+        "resolved": "https://registry.npmjs.org/canvas/-/canvas-3.2.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/canvas@3.2.1/node_modules/canvas"
+      },
+      "cloudinary": {
+        "from": "cloudinary",
+        "version": "2.9.0",
+        "resolved": "https://registry.npmjs.org/cloudinary/-/cloudinary-2.9.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/cloudinary@2.9.0/node_modules/cloudinary"
+      },
+      "commander": {
+        "from": "commander",
+        "version": "11.1.0",
+        "resolved": "https://registry.npmjs.org/commander/-/commander-11.1.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/commander@11.1.0/node_modules/commander"
+      },
+      "date-fns": {
+        "from": "date-fns",
+        "version": "4.1.0",
+        "resolved": "https://registry.npmjs.org/date-fns/-/date-fns-4.1.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/date-fns@4.1.0/node_modules/date-fns"
+      },
+      "emoji-picker-react": {
+        "from": "emoji-picker-react",
+        "version": "4.16.1",
+        "resolved": "https://registry.npmjs.org/emoji-picker-react/-/emoji-picker-react-4.16.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/emoji-picker-react@4.16.1_react@19.1.0/node_modules/emoji-picker-react"
+      },
+      "fs": {
+        "from": "fs",
+        "version": "0.0.1-security",
+        "resolved": "https://registry.npmjs.org/fs/-/fs-0.0.1-security.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/fs@0.0.1-security/node_modules/fs"
+      },
+      "html2canvas": {
+        "from": "html2canvas",
+        "version": "1.4.1",
+        "resolved": "https://registry.npmjs.org/html2canvas/-/html2canvas-1.4.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/html2canvas@1.4.1/node_modules/html2canvas"
+      },
+      "install": {
+        "from": "install",
+        "version": "0.13.0",
+        "resolved": "https://registry.npmjs.org/install/-/install-0.13.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/install@0.13.0/node_modules/install"
+      },
+      "iron-session": {
+        "from": "iron-session",
+        "version": "8.0.4",
+        "resolved": "https://registry.npmjs.org/iron-session/-/iron-session-8.0.4.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/iron-session@8.0.4/node_modules/iron-session"
+      },
+      "jsonwebtoken": {
+        "from": "jsonwebtoken",
+        "version": "9.0.3",
+        "resolved": "https://registry.npmjs.org/jsonwebtoken/-/jsonwebtoken-9.0.3.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/jsonwebtoken@9.0.3/node_modules/jsonwebtoken"
+      },
+      "jspdf": {
+        "from": "jspdf",
+        "version": "3.0.4",
+        "resolved": "https://registry.npmjs.org/jspdf/-/jspdf-3.0.4.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/jspdf@3.0.4/node_modules/jspdf"
+      },
+      "jspdf-autotable": {
+        "from": "jspdf-autotable",
+        "version": "5.0.2",
+        "resolved": "https://registry.npmjs.org/jspdf-autotable/-/jspdf-autotable-5.0.2.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/jspdf-autotable@5.0.2_jspdf@3.0.4/node_modules/jspdf-autotable"
+      },
+      "lucide-react": {
+        "from": "lucide-react",
+        "version": "0.544.0",
+        "resolved": "https://registry.npmjs.org/lucide-react/-/lucide-react-0.544.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/lucide-react@0.544.0_react@19.1.0/node_modules/lucide-react"
+      },
+      "next": {
+        "from": "next",
+        "version": "16.1.1",
+        "resolved": "https://registry.npmjs.org/next/-/next-16.1.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/next@16.1.1_@babel+core@7.28.5_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/next"
+      },
+      "next-auth": {
+        "from": "next-auth",
+        "version": "4.24.13",
+        "resolved": "https://registry.npmjs.org/next-auth/-/next-auth-4.24.13.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/next-auth@4.24.13_next@16.1.1_@babel+core@7.28.5_react-dom@19.1.0_react@19.1.0__react@1_081d4f43eb9fd723fc5a61fe5cc9e69e/node_modules/next-auth"
+      },
+      "node-cron": {
+        "from": "node-cron",
+        "version": "4.2.1",
+        "resolved": "https://registry.npmjs.org/node-cron/-/node-cron-4.2.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/node-cron@4.2.1/node_modules/node-cron"
+      },
+      "node-fetch": {
+        "from": "node-fetch",
+        "version": "3.3.2",
+        "resolved": "https://registry.npmjs.org/node-fetch/-/node-fetch-3.3.2.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch"
+      },
+      "qrcode": {
+        "from": "qrcode",
+        "version": "1.5.4",
+        "resolved": "https://registry.npmjs.org/qrcode/-/qrcode-1.5.4.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/qrcode@1.5.4/node_modules/qrcode"
+      },
+      "react": {
+        "from": "react",
+        "version": "19.1.0",
+        "resolved": "https://registry.npmjs.org/react/-/react-19.1.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/react@19.1.0/node_modules/react"
+      },
+      "react-datepicker": {
+        "from": "react-datepicker",
+        "version": "9.1.0",
+        "resolved": "https://registry.npmjs.org/react-datepicker/-/react-datepicker-9.1.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/react-datepicker@9.1.0_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/react-datepicker"
+      },
+      "react-dom": {
+        "from": "react-dom",
+        "version": "19.1.0",
+        "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.1.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/react-dom@19.1.0_react@19.1.0/node_modules/react-dom"
+      },
+      "react-hot-toast": {
+        "from": "react-hot-toast",
+        "version": "2.6.0",
+        "resolved": "https://registry.npmjs.org/react-hot-toast/-/react-hot-toast-2.6.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/react-hot-toast@2.6.0_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/react-hot-toast"
+      },
+      "react-redux": {
+        "from": "react-redux",
+        "version": "9.2.0",
+        "resolved": "https://registry.npmjs.org/react-redux/-/react-redux-9.2.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/react-redux@9.2.0_@types+react@19.2.7_react@19.1.0_redux@5.0.1/node_modules/react-redux"
+      },
+      "recharts": {
+        "from": "recharts",
+        "version": "3.6.0",
+        "resolved": "https://registry.npmjs.org/recharts/-/recharts-3.6.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/recharts@3.6.0_@types+react@19.2.7_react-dom@19.1.0_react@19.1.0__react-is@18.3.1_react@19.1.0_redux@5.0.1/node_modules/recharts"
+      },
+      "stripe": {
+        "from": "stripe",
+        "version": "19.3.1",
+        "resolved": "https://registry.npmjs.org/stripe/-/stripe-19.3.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/stripe@19.3.1_@types+node@20.19.27/node_modules/stripe"
+      },
+      "twilio": {
+        "from": "twilio",
+        "version": "5.11.1",
+        "resolved": "https://registry.npmjs.org/twilio/-/twilio-5.11.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/twilio@5.11.1/node_modules/twilio"
+      },
+      "xlsx": {
+        "from": "xlsx",
+        "version": "0.18.5",
+        "resolved": "https://registry.npmjs.org/xlsx/-/xlsx-0.18.5.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/xlsx@0.18.5/node_modules/xlsx"
+      },
+      "zod": {
+        "from": "zod",
+        "version": "4.2.1",
+        "resolved": "https://registry.npmjs.org/zod/-/zod-4.2.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/zod@4.2.1/node_modules/zod"
+      }
+    },
+    "devDependencies": {
+      "@eslint/eslintrc": {
+        "from": "@eslint/eslintrc",
+        "version": "3.3.3",
+        "resolved": "https://registry.npmjs.org/@eslint/eslintrc/-/eslintrc-3.3.3.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@eslint+eslintrc@3.3.3/node_modules/@eslint/eslintrc"
+      },
+      "@faker-js/faker": {
+        "from": "@faker-js/faker",
+        "version": "9.9.0",
+        "resolved": "https://registry.npmjs.org/@faker-js/faker/-/faker-9.9.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@faker-js+faker@9.9.0/node_modules/@faker-js/faker"
+      },
+      "@tailwindcss/postcss": {
+        "from": "@tailwindcss/postcss",
+        "version": "4.1.18",
+        "resolved": "https://registry.npmjs.org/@tailwindcss/postcss/-/postcss-4.1.18.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@tailwindcss+postcss@4.1.18/node_modules/@tailwindcss/postcss"
+      },
+      "@testing-library/jest-dom": {
+        "from": "@testing-library/jest-dom",
+        "version": "6.9.1",
+        "resolved": "https://registry.npmjs.org/@testing-library/jest-dom/-/jest-dom-6.9.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@testing-library+jest-dom@6.9.1/node_modules/@testing-library/jest-dom"
+      },
+      "@testing-library/react": {
+        "from": "@testing-library/react",
+        "version": "16.3.1",
+        "resolved": "https://registry.npmjs.org/@testing-library/react/-/react-16.3.1.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@testing-library+react@16.3.1_@testing-library+dom@10.4.1_@types+react-dom@19.2.3_@type_64a4f2e558df42a5a939dd884c67b088/node_modules/@testing-library/react"
+      },
+      "@types/bcryptjs": {
+        "from": "@types/bcryptjs",
+        "version": "2.4.6",
+        "resolved": "https://registry.npmjs.org/@types/bcryptjs/-/bcryptjs-2.4.6.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@types+bcryptjs@2.4.6/node_modules/@types/bcryptjs"
+      },
+      "@types/node": {
+        "from": "@types/node",
+        "version": "20.19.27",
+        "resolved": "https://registry.npmjs.org/@types/node/-/node-20.19.27.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@types+node@20.19.27/node_modules/@types/node"
+      },
+      "@types/react": {
+        "from": "@types/react",
+        "version": "19.2.7",
+        "resolved": "https://registry.npmjs.org/@types/react/-/react-19.2.7.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@types+react@19.2.7/node_modules/@types/react"
+      },
+      "@types/react-dom": {
+        "from": "@types/react-dom",
+        "version": "19.2.3",
+        "resolved": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.2.3.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/@types+react-dom@19.2.3_@types+react@19.2.7/node_modules/@types/react-dom"
+      },
+      "dotenv": {
+        "from": "dotenv",
+        "version": "17.2.3",
+        "resolved": "https://registry.npmjs.org/dotenv/-/dotenv-17.2.3.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/dotenv@17.2.3/node_modules/dotenv"
+      },
+      "eslint": {
+        "from": "eslint",
+        "version": "9.39.2",
+        "resolved": "https://registry.npmjs.org/eslint/-/eslint-9.39.2.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/eslint@9.39.2_jiti@2.6.1/node_modules/eslint"
+      },
+      "eslint-config-next": {
+        "from": "eslint-config-next",
+        "version": "15.5.3",
+        "resolved": "https://registry.npmjs.org/eslint-config-next/-/eslint-config-next-15.5.3.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/eslint-config-next@15.5.3_eslint@9.39.2_jiti@2.6.1__typescript@5.9.3/node_modules/eslint-config-next"
+      },
+      "jest": {
+        "from": "jest",
+        "version": "30.2.0",
+        "resolved": "https://registry.npmjs.org/jest/-/jest-30.2.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/jest@30.2.0_@types+node@20.19.27_ts-node@10.9.1_@types+node@20.19.27_typescript@5.9.3_/node_modules/jest"
+      },
+      "prisma": {
+        "from": "prisma",
+        "version": "7.3.0",
+        "resolved": "https://registry.npmjs.org/prisma/-/prisma-7.3.0.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/prisma@7.3.0_@types+react@19.2.7_react-dom@19.1.0_react@19.1.0__react@19.1.0_typescript@5.9.3/node_modules/prisma"
+      },
+      "tailwindcss": {
+        "from": "tailwindcss",
+        "version": "4.1.18",
+        "resolved": "https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.1.18.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/tailwindcss@4.1.18/node_modules/tailwindcss"
+      },
+      "typescript": {
+        "from": "typescript",
+        "version": "5.9.3",
+        "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/typescript@5.9.3/node_modules/typescript"
+      },
+      "vercel": {
+        "from": "vercel",
+        "version": "50.1.3",
+        "resolved": "https://registry.npmjs.org/vercel/-/vercel-50.1.3.tgz",
+        "path": "/media/drive/Bhavik/Projects/wove/node_modules/.pnpm/vercel@50.1.3_typescript@5.9.3/node_modules/vercel"
+      }
+    }
+  }
+]

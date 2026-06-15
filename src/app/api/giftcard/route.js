@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import fetch from "node-fetch";
 import { prisma } from "../../../lib/db";
+import { isValidInternalRequest } from "@/lib/internal-api-auth";
 
 const SHOPIFY_API_VERSION = "2025-07";
 const DEFAULT_EXPIRY_YEARS = 3;
@@ -110,6 +111,13 @@ export async function POST(req) {
   };
 
   try {
+    if (!isValidInternalRequest(req)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
     // ============ STEP 0: Parse Request Parameters ============
     const url = new URL(req.url);
     const rawShop = url.searchParams.get("shop");
@@ -893,6 +901,13 @@ export async function POST(req) {
 
 export async function GET(req) {
   try {
+    if (!isValidInternalRequest(req)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
     const url = new URL(req.url);
     const shop = url.searchParams.get("shop");
 

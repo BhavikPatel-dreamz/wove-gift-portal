@@ -122,9 +122,6 @@ function InvoicePDF({ invoice }) {
     currency,
     subtotal,
     discount,
-    serviceFeeExVat,
-    serviceFeeVat,
-    totalServiceFee,
     totalPaid,
     paymentMethod,
     company,
@@ -195,18 +192,6 @@ function InvoicePDF({ invoice }) {
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Discount</Text>
             <Text style={styles.totalValue}>-{money(discount)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Service Fee excl. VAT 4.35%</Text>
-            <Text style={styles.totalValue}>{money(serviceFeeExVat)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>VAT on Service Fee 15%</Text>
-            <Text style={styles.totalValue}>{money(serviceFeeVat)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Service Fee 5% incl. VAT</Text>
-            <Text style={styles.totalValue}>{money(totalServiceFee)}</Text>
           </View>
           <View style={styles.totalRowFinal}>
             <Text style={styles.totalLabel}>Amount Paid</Text>

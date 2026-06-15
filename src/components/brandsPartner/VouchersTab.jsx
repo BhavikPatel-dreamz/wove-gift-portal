@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { currencyList } from "./currency";
+import { DEFAULT_CURRENCY_CODE, currencyList } from "./currency";
 import IconTooltipButton from "../ui/IconTooltipButton";
 
 const VouchersTab = ({ formData, updateFormData }) => {
@@ -10,6 +10,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
   const [isActive, setIsActive] = useState(true);
   const [currencies] = useState(currencyList);
   const [logoPreview, setLogoPreview] = useState(null);
+  const selectedCurrency = formData?.currency || DEFAULT_CURRENCY_CODE;
   const normalizeLogoPreviewSrc = (value) => {
     if (typeof value !== "string") return null;
     const trimmedValue = value.trim();
@@ -68,8 +69,8 @@ const VouchersTab = ({ formData, updateFormData }) => {
     const newDenom = {
       id: Date.now(),
       value: parseFloat(denominationValue),
-      currency: formData?.currency,
-      displayName: displayName || `${formData?.currency} ${denominationValue}`,
+      currency: selectedCurrency,
+      displayName: displayName || `${selectedCurrency} ${denominationValue}`,
       isActive: isActive,
       isExpiry: !!denominationExpiry,
       expiresAt: denominationExpiry || null,
@@ -145,7 +146,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
         }
       }
     } else if (formData.minAmount || formData.maxAmount) {
-      amountDisplay = `${formData.currency || ''} ${formData.minAmount?.toFixed(2) || '0.00'} - ${formData.maxAmount?.toFixed(2) || '0.00'}`;
+      amountDisplay = `${selectedCurrency} ${formData.minAmount?.toFixed(2) || '0.00'} - ${formData.maxAmount?.toFixed(2) || '0.00'}`;
       if (formData.isExpiry && formData.expiresAt) {
         expiryText = `Expires: ${new Date(formData.expiresAt).toLocaleDateString()}`;
       }
@@ -330,7 +331,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
                     </IconTooltipButton>
                   </div>
                   <select
-                    value={formData?.currency || ""}
+                    value={selectedCurrency}
                     disabled
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white cursor-not-allowed text-gray-500"
                   >
@@ -444,7 +445,7 @@ const VouchersTab = ({ formData, updateFormData }) => {
               </div>
 
               <p className="font-inter text-xs font-medium leading-5 text-[#1F59EE] mt-3 wrap-break-word">
-                * Required fields. Display name defaults to '{formData?.currency || "USD"}' if left empty.
+                * Required fields. Display name defaults to '{selectedCurrency}' if left empty.
               </p>
             </div>
           </div>

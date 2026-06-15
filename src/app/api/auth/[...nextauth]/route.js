@@ -166,8 +166,15 @@ export const authOptions = {
       }
       return token
     },
-    async signIn() {
-      return true
+    async signIn({ user }) {
+      if (!user?.id) return true
+
+      const dbUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { isActive: true },
+      })
+
+      return dbUser?.isActive !== false
     }
   },
   events: {

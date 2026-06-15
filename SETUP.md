@@ -83,6 +83,12 @@ pnpm build
 pnpm start
 ```
 
+`pnpm start` now applies pending Prisma migrations automatically before starting the Next.js server. For the background scheduler, use:
+
+```bash
+pnpm run cron:start
+```
+
 ## 7. Run with PM2 (Server)
 
 Start processes:

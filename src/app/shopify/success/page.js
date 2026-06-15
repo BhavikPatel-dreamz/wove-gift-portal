@@ -19,7 +19,7 @@ function SuccessContent() {
     // Auto-redirect to dashboard after 3 seconds
     const timer = setTimeout(() => {
       if (shop) {
-        router.push(`/shopify?shop=${shop}`);
+        router.push(`/shopify/dashboard?shop=${shop}&embedded=1`);
       }
     }, 3000);
 
@@ -37,7 +37,7 @@ function SuccessContent() {
           <div className="redirect-info">
             <p>Redirecting to dashboard in 3 seconds...</p>
             <Link 
-              href={shop ? `/shopify?shop=${shop}` : '/shopify'}
+              href={shop ? `/shopify/dashboard?shop=${shop}&embedded=1` : '/shopify/install'}
               className="dashboard-btn"
             >
               Go to Dashboard Now

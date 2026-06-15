@@ -1342,10 +1342,10 @@ export default function SubCategorySelector() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF] py-30 px-4">
+    <div className="min-h-screen bg-[#FFF] px-4 pt-5 pb-10 sm:py-24 md:py-30">
       <div className="max-w-7xl mx-auto">
         {/* Back Button and Bulk Mode Indicator */}
-        <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
+        <div className="relative hidden flex-col items-start gap-4 mb-6 md:flex md:flex-row md:items-center md:justify-between md:gap-0">
 
           {/* Previous Button */}
           <button
@@ -1447,9 +1447,9 @@ export default function SubCategorySelector() {
 
 
         {/* Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-3 sm:gap-4 md:gap-6 px-2 sm:px-0 mb-8 md:mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-2.5 sm:gap-4 md:gap-6 px-2 sm:px-0 mb-8 md:mb-12">
           {/* Custom Card Option */}
-          <div onClick={() => setIsCustomizing(true)} className="group cursor-pointer w-full max-w-[18rem] sm:max-w-none">
+          {/* <div onClick={() => setIsCustomizing(true)} className="group cursor-pointer w-full max-w-[18rem] sm:max-w-none">
             <div className="h-full rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-xl bg-linear-to-b from-[#FFF5F5] to-white p-2 border-2 border-dashed border-[#FFB4B4] hover:border-pink-400">
               <div className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 min-h-[280px] sm:min-h-[320px] md:min-h-[360px]">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-2xl border-2 border-[#FF69B4] flex items-center justify-center mb-4 sm:mb-5 md:mb-6 bg-white group-hover:scale-110 transition-transform">
@@ -1461,15 +1461,15 @@ export default function SubCategorySelector() {
                 <p className="text-gray-900 text-xs sm:text-sm font-semibold text-center mb-1">JPG or PNG</p>
                 <p className="text-gray-500 text-[10px] sm:text-xs text-center">Max 5MB Vertical layout preferred</p>
               </div>
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
 
           {/* Category Cards */}
           {subCategories.map((subCategory, index) => (
             <div
               key={`${subCategory.id}-${index}`}
               onClick={() => handleSubCategorySelect(subCategory)}
-              className="group cursor-pointer h-full w-full max-w-[18rem] sm:max-w-none"
+              className="group cursor-pointer h-full w-full"
             >
               <div
                 className={`h-full bg-white rounded-xl sm:rounded-2xl p-1.5 sm:p-2 overflow-hidden transition-all duration-300 hover:shadow-xl 
@@ -1480,7 +1480,7 @@ export default function SubCategorySelector() {
                   }`}
               >
                 {/* Image */}
-                <div className="w-full h-40 sm:h-48 md:h-52 lg:h-64 overflow-hidden rounded-xl sm:rounded-2xl bg-gray-100">
+                <div className="w-full aspect-[4/3] overflow-hidden rounded-xl sm:rounded-2xl bg-gray-100">
                   {subCategory.image ? (
                     <img
                       src={subCategory.image}
@@ -1497,29 +1497,29 @@ export default function SubCategorySelector() {
                 </div>
 
                 {/* Content */}
-                <div className="p-3 sm:p-4 md:p-5 flex flex-col flex-1">
-                  <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 sm:mb-2">
+                <div className="p-2.5 sm:p-4 md:p-5 flex flex-col flex-1 text-center">
+                  <h3 className="font-bold text-sm sm:text-base md:text-lg text-gray-900 mb-1 leading-tight">
                     {subCategory.name}
                   </h3>
 
-                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-2">
+                  <p className="text-gray-600 text-[11px] sm:text-xs md:text-sm leading-4 md:leading-5 mb-3 sm:mb-4 line-clamp-1 min-h-4">
                     {subCategory.description}
                   </p>
 
                   {/* Button pinned to bottom */}
                   <button
-  className="group mt-auto w-full sm:w-auto max-w-fit
+  className="group mt-auto w-full
   bg-gradient-to-r from-pink-500 to-orange-400
   hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500
-  text-white font-semibold text-xs sm:text-sm md:text-base
-  px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3
+  text-white font-semibold text-[11px] sm:text-xs md:text-sm
+  px-2 sm:px-4 md:px-5 py-2 sm:py-2.5
   rounded-full
   transition-all duration-300
   shadow-md hover:shadow-lg hover:scale-105
-  flex items-center justify-center gap-1.5 md:gap-2
+  flex items-center justify-center gap-1.5
   cursor-pointer whitespace-nowrap mx-auto"
 >
-                    Choose this Design
+                    Choose Design
                     <span className="mt-0.5 transition-transform duration-300 group-hover:translate-x-1">
                       <svg
                         width="7"
@@ -1561,7 +1561,7 @@ export default function SubCategorySelector() {
         )}
       </div>
 
-      {isCustomizing && <AdvancedCardCreator onSave={handleCustomCardSave} onCancel={() => setIsCustomizing(false)} selectedOccasionName={selectedOccasionName} />}
+      {/* // {isCustomizing && <AdvancedCardCreator onSave={handleCustomCardSave} onCancel={() => setIsCustomizing(false)} selectedOccasionName={selectedOccasionName} />} */}
     </div>
   );
 }

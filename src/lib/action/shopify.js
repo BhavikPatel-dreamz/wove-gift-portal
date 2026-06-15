@@ -25,23 +25,57 @@ const getShopifyDomain = (shop) => {
 
 export const fetchShopInfo = async (accessToken, shopName) => {
   const shopDomain = getShopifyDomain(shopName);
-  const response = await fetch(`https://${shopDomain}/admin/api/2023-10/shop.json`, {
-    method: 'GET',
+  
+  // Using GraphQL API (compliant with latest Shopify requirements)
+  const query = `
+    query FetchShopInfo {
+      shop {
+        id
+        name
+        email
+        myshopifyDomain
+        primaryDomain {
+          url
+        }
+        currencyCode
+      }
+    }
+  `;
+
+  const response = await fetch(`https://${shopDomain}/admin/api/2026-04/graphql.json`, {
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Shopify-Access-Token': accessToken,
     },
+    body: JSON.stringify({ query }),
   });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch shop info: ${response.status}`);
   }
 
-  const shopData = await response.json();
-  const brand = await saveBrandFromShopify(shopData.shop);
+  const result = await response.json();
+
+  if (result.errors) {
+    throw new Error(`GraphQL error: ${JSON.stringify(result.errors)}`);
+  }
+
+  const shopData = result.data?.shop;
+  
+  // Transform GraphQL response to match expected format
+  const transformedShopData = {
+    name: shopData.name,
+    email: shopData.email,
+    myshopify_domain: shopData.myshopifyDomain,
+    domain: shopData.primaryDomain?.url?.replace(/^https?:\/\//, '').replace(/\/$/, ''),
+    currency: shopData.currencyCode,
+  };
+
+  const brand = await saveBrandFromShopify(transformedShopData);
   return {
     brand,
-    shop: shopData.shop,
+    shop: shopData,
   };
 };
 

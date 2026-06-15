@@ -661,19 +661,6 @@ export async function addOccasionCategory(formData) {
     const { name, description, emoji, category, isActive, occasionId } =
       validationResult.data;
 
-    // Check if category already exists
-    const existingCategory = await prisma.occasionCategory.findUnique({
-      where: { name },
-    });
-
-    if (existingCategory) {
-      return createStandardResponse(
-        false,
-        "Category with this name already exists!",
-        409,
-      );
-    }
-
     // Verify occasion exists
     const occasion = await prisma.occasion.findUnique({
       where: { id: occasionId },
@@ -762,24 +749,6 @@ export async function updateOccasionCategory(formData) {
 
     if (!existingCategory) {
       return createStandardResponse(false, "Occasion category not found", 404);
-    }
-
-    // Check for name conflicts
-    if (updatePayload.name && updatePayload.name !== existingCategory.name) {
-      const duplicateCategory = await prisma.occasionCategory.findFirst({
-        where: {
-          name: updatePayload.name,
-          id: { not: id },
-        },
-      });
-
-      if (duplicateCategory) {
-        return createStandardResponse(
-          false,
-          "A category with this name already exists.",
-          409,
-        );
-      }
     }
 
     // Verify occasion exists if occasionId is being updated

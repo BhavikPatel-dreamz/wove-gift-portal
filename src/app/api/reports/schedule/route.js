@@ -2,15 +2,56 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { calculateNextDeliveryDate } from "../../../../lib/utils";
 import { getShopInstallationAccess } from "../../../../lib/shopify-installation";
+import { verifyShopifySessionToken } from "../../../../lib/shopify.server";
+
+async function rejectInvalidShopifyToken(request) {
+  if (!request.headers.get("authorization")) {
+    return null;
+  }
+
+  const tokenValidation = await verifyShopifySessionToken(request);
+
+  if (tokenValidation.valid) {
+    return null;
+  }
+
+  return NextResponse.json(
+    {
+      success: false,
+      message: "Invalid Shopify session token",
+      reason: tokenValidation.reason,
+    },
+    { status: tokenValidation.status },
+  );
+}
 
 // POST: Create a scheduled report
 export async function POST(request) {
   try {
+    const tokenError = await rejectInvalidShopifyToken(request);
+
+    if (tokenError) {
+      return tokenError;
+    }
+
     const body = await request.json();
     const { shop, frequency, deliveryDay, deliveryMonth, deliveryYear, emailRecipients, reportTypes, brandId } = body;
     let approvedShop = shop || null;
 
     if (shop) {
+      const tokenValidation = await verifyShopifySessionToken(request, { shop });
+
+      if (!tokenValidation.valid) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Invalid Shopify session token",
+            reason: tokenValidation.reason,
+          },
+          { status: tokenValidation.status },
+        );
+      }
+
       const access = await getShopInstallationAccess(shop);
 
       if (access.requiresApproval) {
@@ -111,8 +152,14 @@ export async function POST(request) {
 }
 
 // GET: Retrieve all scheduled reports
-export async function GET() {
+export async function GET(request) {
   try {
+    const tokenError = await rejectInvalidShopifyToken(request);
+
+    if (tokenError) {
+      return tokenError;
+    }
+
     const scheduledReports = await prisma.scheduledReport.findMany({
       where: {
         status: {
@@ -155,6 +202,12 @@ export async function GET() {
 // DELETE: Cancel a scheduled report
 export async function DELETE(request) {
   try {
+    const tokenError = await rejectInvalidShopifyToken(request);
+
+    if (tokenError) {
+      return tokenError;
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -206,6 +259,12 @@ export async function DELETE(request) {
 // PUT: Update a scheduled report
 export async function PUT(request) {
   try {
+    const tokenError = await rejectInvalidShopifyToken(request);
+
+    if (tokenError) {
+      return tokenError;
+    }
+
     const body = await request.json();
     const { id, frequency, deliveryDay, deliveryMonth, deliveryYear, emailRecipients, reportTypes, status, brandId } = body;
 

@@ -1,20 +1,28 @@
 "use server";
 
 import { prisma } from "../db";
-import {
-  ensureShopifyInstallData,
-  normalizeShopDomain,
-} from "../shopify/installBootstrap";
+import { verifyShopifyServerActionSession } from "../shopify/server-action-auth";
 import { getShopInstallationAccess } from "../shopify-installation";
 
 export async function getDashboardData(options = {}) {
   try {
-    const { period = "all", startDate, endDate, shop, idToken } = options;
+    const { period = "all", startDate, endDate, shop } = options;
     const dateRange = getDateRange(period, startDate, endDate);
 
     let brandId = null;
     if (shop) {
-      const shopDomain = normalizeShopDomain(shop);
+      const tokenValidation = await verifyShopifyServerActionSession(shop);
+
+      if (!tokenValidation.valid) {
+        return {
+          success: false,
+          error: "Invalid Shopify session token.",
+          reason: tokenValidation.reason,
+          status: tokenValidation.status,
+        };
+      }
+
+      const shopDomain = tokenValidation.shop;
       const access = await getShopInstallationAccess(shopDomain);
 
       if (access.requiresApproval) {
@@ -26,12 +34,7 @@ export async function getDashboardData(options = {}) {
         };
       }
 
-      const installState = await ensureShopifyInstallData({
-        shop: shopDomain,
-        idToken,
-      });
-
-      const brand = installState?.brand || (await prisma.brand.findFirst({
+      const brand = access.brand || (await prisma.brand.findFirst({
         where: {
           OR: [
             { domain: shopDomain },

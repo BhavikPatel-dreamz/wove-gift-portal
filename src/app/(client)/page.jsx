@@ -9,6 +9,7 @@ import ActionsSection from '../../components/client/home/ActionsSection';
 import Features from '../../components/client/home/Features';
 import Footer from '../../components/client/home/Footer';
 import BulkGiftingBanner from "../../components/client/home/BulkGiftingBanner"
+import ClearBulkAuthDraft from '../../components/client/home/ClearBulkAuthDraft';
 import { getBrands } from '../../lib/action/brandFetch';
 import { getOccasions } from '@/lib/action/occasionAction';
 
@@ -31,6 +32,8 @@ async function OccasionsContent() {
   );
 }
 
+console.log("---------------testing shopify")
+
 export default async function Home() {
   const brands = await getBrands();
 
@@ -42,6 +45,7 @@ export default async function Home() {
   
   return (
     <div className="min-h-screen">
+      <ClearBulkAuthDraft />
       <Header/>
       <HeroSection/>
       <Features/>

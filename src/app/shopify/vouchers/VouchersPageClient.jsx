@@ -100,6 +100,7 @@ export default function VouchersManagement() {
                 pageSize: 10,
                 search: bulkFilters.search,
                 status: bulkFilters.status,
+                shop,
             });
 
             if (response.success) {

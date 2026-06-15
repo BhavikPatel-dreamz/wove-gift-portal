@@ -191,13 +191,8 @@ const CartPage = () => {
     return regularSubtotal + bulkSubtotal;
   };
 
-  const calculateCombinedServiceFee = () => {
-    const combinedSubtotal = calculateCombinedSubtotal();
-    return Math.round(combinedSubtotal * 0.05);
-  };
-
   const calculateCombinedTotal = () => {
-    return calculateCombinedSubtotal() + calculateCombinedServiceFee();
+    return calculateCombinedSubtotal();
   };
 
   // Get currency symbol from either cart (prioritize regular cart)
@@ -251,8 +246,8 @@ const CartPage = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-25 sm:py-12 md:py-16 lg:py-25">
-        <div className="flex items-center mb-6 sm:mb-8 md:mb-10">
+      <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-8 sm:py-12 md:py-16 lg:py-25 ${hasAnyItems ? 'pb-32 sm:pb-32 md:pb-32 lg:pb-25' : ''}`}>
+        <div className="flex items-center mb-4 sm:mb-8 md:mb-10">
           <Link href="/" className="group inline-flex items-center">
             <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400">
               <div className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full bg-white transition-all duration-200 group-hover:bg-linear-to-r group-hover:from-pink-500 group-hover:to-orange-400 group-hover:shadow-md">
@@ -277,7 +272,7 @@ const CartPage = () => {
           <h1 className="mb-2 font-['Poppins'] text-2xl sm:text-3xl md:text-[40px] leading-tight sm:leading-8.75 md:leading-11.25 font-bold text-[#1A1A1A]">
             Your Shopping Cart
           </h1>
-          <p className="mb-6 sm:mb-8 md:mb-10 font-['Inter'] text-sm sm:text-[15px] md:text-[16px] font-medium leading-5 sm:leading-5.5 md:leading-6 text-[#4A4A4A]">
+          <p className="mb-4 sm:mb-8 md:mb-10 font-['Inter'] text-sm sm:text-[15px] md:text-[16px] font-medium leading-5 sm:leading-5.5 md:leading-6 text-[#4A4A4A]">
             Review your items and proceed to a seamless checkout.
           </p>
         </div>
@@ -351,7 +346,7 @@ const CartPage = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8 md:gap-10 lg:gap-12">
             <div className="lg:col-span-2 space-y-4 sm:space-y-5 md:space-y-6">
               {/* Regular Cart Items */}
               {activeTab === 'regular' && cartItems.map((item, index) => {
@@ -510,12 +505,6 @@ const CartPage = () => {
                       {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedSubtotal().toFixed(2)}
                     </span>
                   </div>
-                  <div className="flex justify-between font-['Poppins'] font-medium text-sm sm:text-[15px] md:text-[16px] leading-4.5 sm:leading-4.75 md:leading-5 tracking-[0.25px] text-[#4A4A4A]">
-                    <span>Service Fee (5%)</span>
-                    <span className="font-semibold">
-                      {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedServiceFee()}
-                    </span>
-                  </div>
                 </div>
                 <div className="h-px my-4 sm:my-5 w-full bg-[rgba(26,26,26,0.10)]"></div>
                 <div className="flex justify-between font-['Poppins'] font-semibold text-base sm:text-[17px] md:text-[18px] leading-4.5 sm:leading-4.75 md:leading-5 tracking-[0.25px] text-[#1A1A1A]">
@@ -572,6 +561,27 @@ const CartPage = () => {
             onClose={closeAuthModal}
             onAuthSuccess={handleAuthSuccess}
           />
+        </div>
+      )}
+
+      {hasAnyItems && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 px-4 py-3 shadow-[0_-12px_32px_rgba(17,24,39,0.12)] backdrop-blur lg:hidden mobile-safe-bottom">
+          <div className="mx-auto flex max-w-7xl items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                Total
+              </p>
+              <p className="truncate text-base font-bold text-[#1A1A1A]">
+                {getCurrencySymbol(getCombinedCurrency())} {calculateCombinedTotal().toFixed(2)}
+              </p>
+            </div>
+            <Button
+              onClick={handleProceedToPayment}
+              className="min-h-12 shrink-0 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-3 text-sm font-semibold text-white shadow-md"
+            >
+              Proceed
+            </Button>
+          </div>
         </div>
       )}
     </div>

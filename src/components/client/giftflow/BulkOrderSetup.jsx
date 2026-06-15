@@ -7,6 +7,13 @@ import { addToBulk, updateBulkItem } from '../../../redux/cartSlice';
 import { useCallback } from 'react';
 import { currencyList } from '../../brandsPartner/currency';
 
+const BULK_AUTH_RETURN_DRAFT_KEY = 'wove:bulk-auth-return-draft';
+
+const writeBulkAuthReturnDraft = (draft) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(BULK_AUTH_RETURN_DRAFT_KEY, JSON.stringify(draft));
+};
+
 const BulkOrderSetup = () => {
   const dispatch = useDispatch();
   const router = useRouter();
@@ -245,22 +252,33 @@ const BulkOrderSetup = () => {
     const hasBulkEditContext = isEditMode && editFlowType === 'bulk';
 
     // In edit mode we must update an existing item; never create a new one.
+    let savedBulkOrderItem = bulkOrderItem;
+
     if (hasBulkEditContext) {
       if (editingBulkItemIndex < 0) {
         setError('Could not find selected bulk order to update. Please return to cart and try again.');
         return;
       }
 
+      savedBulkOrderItem = {
+        ...bulkItems[editingBulkItemIndex],
+        ...bulkOrderItem
+      };
+
       dispatch(updateBulkItem({
         index: editingBulkItemIndex,
-        item: {
-          ...bulkItems[editingBulkItemIndex],
-          ...bulkOrderItem
-        }
+        item: savedBulkOrderItem
       }));
     } else {
       dispatch(addToBulk(bulkOrderItem));
     }
+
+    writeBulkAuthReturnDraft({
+      bulkOrder: savedBulkOrderItem,
+      companyInfo: savedBulkOrderItem.companyInfo || null,
+      csvFileData: null,
+      isConfirmed
+    });
 
     if (deliveryFormEditReturn?.enabled) {
       const returnStep = deliveryFormEditReturn?.returnStep || 8;
@@ -293,11 +311,11 @@ const BulkOrderSetup = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-20 sm:py-24 md:px-8 md:py-30">
+    <div className="min-h-screen bg-gray-50 px-4 pt-5 pb-10 sm:py-24 md:px-8 md:py-30">
       <div className="max-w-7xl mx-auto  sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
-        <div className="relative flex flex-col items-start gap-4 mb-6
-                md:flex-row md:items-center md:justify-between md:gap-0">
+        <div className="relative hidden flex-col items-start gap-4 mb-6
+                md:flex md:flex-row md:items-center md:justify-between md:gap-0">
 
           {/* Previous Button */}
           <button
@@ -390,7 +408,7 @@ const BulkOrderSetup = () => {
             Set up your bulk order
           </h1>
           <p className="text-[#4A4A4A] text-sm sm:text-base font-medium">
-            We'll generate unique codes for each voucher, ready for you to send out.
+            We&apos;ll generate unique codes for each voucher, ready for you to send out.
           </p>
         </div>
 

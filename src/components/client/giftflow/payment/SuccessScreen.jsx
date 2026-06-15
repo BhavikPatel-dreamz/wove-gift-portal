@@ -14,13 +14,20 @@ const SuccessScreen = ({
   onNext,
   deliveryDetails
 }) => {
+  const normalizeDeliveryMethod = (method) =>
+    String(method || "").trim().toLowerCase();
+
   const allOrders = Array.isArray(order?.allOrders) && order.allOrders.length > 0
     ? order.allOrders
-    : [order];
+    : order
+      ? [order]
+      : [];
   const hasMultipleOrders = allOrders.length > 1;
-  const isPrintDelivery = order?.deliveryMethod === 'print';
+  const deliveryMethod = normalizeDeliveryMethod(order?.deliveryMethod);
+  const isWhatsAppDelivery = deliveryMethod === "whatsapp";
+  const isPrintDelivery = deliveryMethod === 'print';
 
-  const formatCurrencyAmount = (amount, currency = order?.currency || "USD") => {
+  const formatCurrencyAmount = (amount, currency = order?.currency || "ZAR") => {
     const numericAmount = Number(amount || 0);
 
     try {
@@ -35,7 +42,7 @@ const SuccessScreen = ({
   };
 
   const whatsappShareGifts = allOrders
-    .filter((currentOrder) => currentOrder?.deliveryMethod === "whatsapp")
+    .filter((currentOrder) => normalizeDeliveryMethod(currentOrder?.deliveryMethod) === "whatsapp")
     .flatMap((currentOrder) =>
       (currentOrder?.voucherCodes || []).map((voucherCode) => {
         const shareCode = voucherCode?.giftCard?.code || voucherCode?.code || "";
@@ -90,10 +97,11 @@ const SuccessScreen = ({
         };
       }),
     );
-  const showWhatsAppActions = whatsappShareGifts.length > 0 && !isBulkMode;
+  const showWhatsAppActions =
+    isWhatsAppDelivery && whatsappShareGifts.length > 0 && !isBulkMode;
 
   const getDeliveryMethodIcon = () => {
-    switch (order?.deliveryMethod) {
+    switch (deliveryMethod) {
       case 'email':
         return <Mail className="ss-delivery-icon ss-delivery-icon--email" />;
       case 'whatsapp':
@@ -106,11 +114,11 @@ const SuccessScreen = ({
   };
 
   const getDeliveryMethodText = () => {
-    switch (order?.deliveryMethod) {
+    switch (deliveryMethod) {
       case 'email':
-        return deliveryDetails?.email || order.receiverDetail?.email || 'the recipient';
+        return deliveryDetails?.email || order?.receiverDetail?.email || 'the recipient';
       case 'whatsapp':
-        return order.receiverDetail?.name || 'your recipient';
+        return order?.receiverDetail?.name || 'your recipient';
       case 'print':
         return 'Download your printable gift card below';
       default:
@@ -585,14 +593,14 @@ const SuccessScreen = ({
                 <h1 className="ss-title">
                   {isPrintDelivery
                     ? 'Order Complete!'
-                    : order?.deliveryMethod === 'whatsapp'
+                    : isWhatsAppDelivery
                       ? 'Gift Ready to Share'
                       : 'Gift Sent Successfully'}
                 </h1>
                 <p className="ss-subtitle">
                   {isPrintDelivery
                     ? `Your ${selectedBrand?.brandName || order?.brand?.brandName} gift card is ready to print!`
-                    : order?.deliveryMethod === 'whatsapp'
+                    : isWhatsAppDelivery
                       ? `Your ${selectedBrand?.brandName || order?.brand?.brandName} gift card is ready. Share it on WhatsApp when you're ready.`
                       : `Your beautiful ${selectedBrand?.brandName || order?.brand?.brandName} gift card is on its way to Friend!`
                   }
@@ -712,7 +720,7 @@ const SuccessScreen = ({
                   <div>
                     <p className="ss-delivery-title">Delivery Method</p>
                     <p className="ss-delivery-desc">
-                      {order?.deliveryMethod === "whatsapp" ? (
+                      {isWhatsAppDelivery ? (
                         <>
                           Your message is ready to share with{" "}
                           <strong>{getDeliveryMethodText()}</strong> on WhatsApp.

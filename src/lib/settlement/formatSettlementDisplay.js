@@ -10,11 +10,11 @@ export function formatSettlementNumber(value) {
   });
 }
 
-export function getSettlementCurrencySymbol(currency = "USD") {
-  return currencyList.find((item) => item.code === currency)?.symbol || "$";
+export function getSettlementCurrencySymbol(currency = "ZAR") {
+  return currencyList.find((item) => item.code === currency)?.symbol || "R";
 }
 
-export function formatSettlementCurrency(value, currency = "USD") {
+export function formatSettlementCurrency(value, currency = "ZAR") {
   const parsed = Number(value);
   const safeValue = Number.isFinite(parsed) ? parsed : 0;
   const sign = safeValue < 0 ? "-" : "";

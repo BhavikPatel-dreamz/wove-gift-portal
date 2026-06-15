@@ -2,6 +2,7 @@
 
 import { prisma } from '../db';
 import { getShopInstallationAccess } from '../shopify-installation';
+import { verifyShopifyServerActionSession } from "../shopify/server-action-auth";
 
 export async function getBrandsForReports({
   activeOnly = false,
@@ -16,7 +17,19 @@ export async function getBrandsForReports({
     }
 
     if (shop && shop !== "undefined") {
-      const access = await getShopInstallationAccess(shop);
+      const tokenValidation = await verifyShopifyServerActionSession(shop);
+
+      if (!tokenValidation.valid) {
+        return {
+          success: false,
+          message: "Invalid Shopify session token.",
+          reason: tokenValidation.reason,
+          data: [],
+          count: 0,
+        };
+      }
+
+      const access = await getShopInstallationAccess(tokenValidation.shop);
 
       if (access.requiresApproval) {
         return {

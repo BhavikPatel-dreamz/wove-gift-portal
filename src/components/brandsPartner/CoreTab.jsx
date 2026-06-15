@@ -1,14 +1,63 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Upload, X, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { currencyList } from './currency';
+import { DEFAULT_CURRENCY_CODE, currencyList } from './currency';
+import { addBrandCategory, getBrandCategories } from '@/lib/action/brandPartner';
+import {
+  Categories,
+  mergeCategories,
+  normalizeCategoryName,
+} from '@/lib/resourses';
+
+const ADD_CATEGORY_VALUE = '__add_category__';
 
 const CoreTab = ({ formData, updateFormData, isDescriptionLocked = false }) => {
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
   // const [imagePreview, setImagePreview] = useState(null);
   const [currencies] = useState(currencyList);
+  const [categories, setCategories] = useState(() => mergeCategories(Categories));
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const selectedCurrency = currencies.some((cur) => cur.code === formData?.currency)
+    ? formData.currency
+    : DEFAULT_CURRENCY_CODE;
+
+  useEffect(() => {
+    if (formData?.currency !== DEFAULT_CURRENCY_CODE) {
+      updateFormData('currency', DEFAULT_CURRENCY_CODE);
+    }
+  }, [formData?.currency]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCategories = async () => {
+      const result = await getBrandCategories();
+      if (!isMounted) return;
+
+      if (result?.success) {
+        setCategories(mergeCategories(result.data, formData?.categoryName));
+      } else {
+        setCategories((currentCategories) => mergeCategories(currentCategories, formData?.categoryName));
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (formData?.categoryName) {
+      setCategories((currentCategories) => mergeCategories(currentCategories, formData.categoryName));
+    }
+  }, [formData?.categoryName]);
+
   const normalizeLogoPreviewSrc = (value) => {
     if (typeof value !== 'string') return null;
     const trimmedValue = value.trim();
@@ -148,11 +197,52 @@ const CoreTab = ({ formData, updateFormData, isDescriptionLocked = false }) => {
   );
   const hasLogo = Boolean(formData.logo || logoPreviewSrc);
 
+  const handleCategoryChange = (value) => {
+    if (value === ADD_CATEGORY_VALUE) {
+      setIsAddingCategory(true);
+      setNewCategoryName('');
+      return;
+    }
+
+    updateFormData('categoryName', value);
+  };
+
+  const handleAddCategory = async () => {
+    const normalizedCategory = normalizeCategoryName(newCategoryName);
+
+    if (!normalizedCategory) {
+      toast.error('Please enter a category name');
+      return;
+    }
+
+    setIsSavingCategory(true);
+
+    try {
+      const result = await addBrandCategory(normalizedCategory);
+
+      if (!result?.success) {
+        toast.error(result?.message || 'Failed to add category');
+        return;
+      }
+
+      const categoryName = result.data?.name || normalizedCategory;
+      setCategories((currentCategories) => mergeCategories(currentCategories, categoryName));
+      updateFormData('categoryName', categoryName);
+      setNewCategoryName('');
+      setIsAddingCategory(false);
+      toast.success(result.message || 'Category added');
+    } catch {
+      toast.error('Failed to add category');
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Auto-generate From Website */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-inter text-sm font-semibold capitalize text-[#1F59EE] mb-2">Auto-generate From Website</h4>
+        <h4 className="font-inter text-sm font-semibold capitalize text-[#1F59EE] mb-2">Brand URL</h4>
         <div className="flex items-center space-x-3">
           <input
             type="url"
@@ -160,11 +250,12 @@ const CoreTab = ({ formData, updateFormData, isDescriptionLocked = false }) => {
             className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-xs font-semibold leading-5 text-[#4A4A4A]"
             value={formData.autoGenUrl || ''}
             onChange={(e) => updateFormData('autoGenUrl', e.target.value)}
+            disabled={true}
           />
         </div>
-        <p className="font-inter text-[10px] font-semibold capitalize text-[#1F59EE] mt-2">
+        {/* <p className="font-inter text-[10px] font-semibold capitalize text-[#1F59EE] mt-2">
           Fetch a brand website URL to automatically populate metadata, logo, and colors when possible.
-        </p>
+        </p> */}
       </div>
 
       {/* Basic Information */}
@@ -191,21 +282,59 @@ const CoreTab = ({ formData, updateFormData, isDescriptionLocked = false }) => {
             <select
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
               value={formData.categoryName || ''}
-              onChange={(e) => updateFormData('categoryName', e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               required
             >
               <option value="">Select category</option>
-              <option value="Fashion">Fashion</option>
-              <option value="Electronics">Electronics</option>
-              <option value="Food & Beverage">Food & Beverage</option>
-              <option value="Travel">Travel</option>
-              <option value="Health & Beauty">Health & Beauty</option>
-              <option value="Home & Garden">Home & Garden</option>
-              <option value="Sports & Outdoors">Sports & Outdoors</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Services">Services</option>
-              <option value="Other">Other</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+              <option value={ADD_CATEGORY_VALUE}>+ Add category</option>
             </select>
+            {isAddingCategory && (
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input
+                  type="text"
+                  className="min-w-0 flex-1 border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
+                  placeholder="Enter new category"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCategory();
+                    }
+                  }}
+                  disabled={isSavingCategory}
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddCategory}
+                    disabled={isSavingCategory}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-md bg-[#175EFD] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+                  >
+                    <Plus size={14} />
+                    {isSavingCategory ? 'Adding' : 'Add'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryName('');
+                    }}
+                    disabled={isSavingCategory}
+                    className="inline-flex items-center justify-center rounded-md border border-gray-300 px-3 py-2 text-xs font-semibold text-[#4A4A4A] transition-colors hover:bg-gray-50"
+                    aria-label="Cancel adding category"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label className="block font-inter text-sm font-semibold capitalize text-[#4A4A4A] mb-2">
@@ -235,7 +364,7 @@ const CoreTab = ({ formData, updateFormData, isDescriptionLocked = false }) => {
           <div>
             <label className="block text-xs font-medium mb-1 text-gray-700">Currency</label>
             <select
-              value={formData?.currency || ''}
+              value={selectedCurrency}
               onChange={(e) => updateFormData('currency', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-xs font-medium leading-5 text-[#4A4A4A] focus:ring-2 focus:ring-blue-500 focus:border-transparent font-inter"
             >

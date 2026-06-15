@@ -14,21 +14,20 @@ const CardGrid = ({
   // 1️⃣ SHOW SKELETON FIRST - Only show when actually loading
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-3 sm:gap-4 md:gap-6 px-2 sm:p-4 md:p-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-2 sm:gap-4 md:gap-6 px-2 sm:p-4 md:p-6">
         {Array.from({ length: 12 }).map((_, index) => (
           <div
             key={`skeleton-${index}`}
-            className="w-full max-w-sm sm:max-w-none rounded-2xl border border-gray-100 bg-white p-3 sm:p-4 animate-pulse"
+            className="w-full rounded-2xl border border-gray-100 bg-white p-2.5 sm:p-4 animate-pulse"
           >
-            <div className="mb-4 mt-8 sm:mb-5 sm:mt-9">
-              <div className="min-h-[9.5rem] sm:min-h-[10.5rem] rounded-[22px] border border-gray-100 bg-gray-100" />
+            <div className="mb-2 mt-7 sm:mb-5 sm:mt-9">
+              <div className="min-h-[5.5rem] sm:min-h-[10.5rem] rounded-[18px] sm:rounded-[22px] border border-gray-100 bg-gray-100" />
             </div>
             <div className="text-center">
-              <div className="mb-2 h-6 rounded-full bg-gray-200 w-24 mx-auto" />
-              <div className="mb-2 h-4 rounded bg-gray-200 w-28 mx-auto" />
-              <div className="mb-4 h-3 rounded bg-gray-200 w-full" />
-              <div className="mb-5 h-3 rounded bg-gray-200 w-4/5 mx-auto" />
-              <div className="h-10 rounded-full bg-gray-200 w-full mt-auto" />
+              <div className="mb-1.5 h-5 sm:h-6 rounded-full bg-gray-200 w-20 sm:w-24 mx-auto" />
+              <div className="mb-1.5 sm:mb-2 h-3.5 sm:h-4 rounded bg-gray-200 w-24 sm:w-28 mx-auto" />
+              <div className="mb-3 sm:mb-5 h-3 rounded bg-gray-200 w-full" />
+              <div className="h-8 sm:h-10 rounded-full bg-gray-200 w-full mt-auto" />
             </div>
           </div>
         ))}
@@ -53,7 +52,7 @@ const CardGrid = ({
 
   // 3️⃣ SHOW DATA
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-3 sm:gap-4 md:gap-6 px-2 sm:p-4 md:p-6 mt-2 sm:mt-4 md:mt-6 lg:mt-10">
+    <div className="grid grid-cols-2 mb-10 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 justify-items-center gap-2 sm:gap-4 md:gap-6 px-2 sm:p-4 md:p-6 mt-2 sm:mt-4 md:mt-6 lg:mt-10">
       {brands.map((brand) => (
         <BrandCard
           key={brand.id}

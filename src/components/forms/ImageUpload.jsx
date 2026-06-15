@@ -1,6 +1,36 @@
 import { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 
+const DEFAULT_ALLOWED_IMAGE_TYPES = new Set([
+  'image/svg+xml',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp',
+]);
+
+const getImageDimensions = (file) =>
+  new Promise((resolve, reject) => {
+    const imageUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(imageUrl);
+      resolve({
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+      });
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(imageUrl);
+      reject(new Error('Unable to read image dimensions.'));
+    };
+
+    image.src = imageUrl;
+  });
+
 const ImageUpload = ({
   label,
   required = false,
@@ -8,13 +38,19 @@ const ImageUpload = ({
   onFileChange,
   currentImage,
   disabled = false,
-  acceptedFormats = 'SVG,PNG, JPG, GIF up to 2MB',
-  helperText = 'Your image will be resized to 800x600px.',
+  acceptedFormats = 'SVG, PNG, JPG, GIF, WebP - Max 2MB',
+  helperText = 'Recommended size: 800 × 600 px',
   placeHolder = 'Upload Brand Logo',
+  maxSizeMB = 2,
+  recommendedWidth = 800,
+  recommendedHeight = 600,
+  allowedImageTypes = DEFAULT_ALLOWED_IMAGE_TYPES,
   ...props
 }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [uploadWarning, setUploadWarning] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -25,9 +61,55 @@ const ImageUpload = ({
     }
   }, [currentImage]);
 
-  const handleFileChange = (event) => {
+  const clearFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = null;
+    }
+  };
+
+  const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (file) {
+      setUploadError('');
+      setUploadWarning('');
+
+      if (!allowedImageTypes.has(file.type)) {
+        setImagePreview(null);
+        setFileName('');
+        setUploadError('Please upload a valid image file: SVG, PNG, JPG, GIF, or WebP.');
+        clearFileInput();
+        onFileChange?.(null);
+        return;
+      }
+
+      if (file.size > maxSizeMB * 1024 * 1024) {
+        setImagePreview(null);
+        setFileName('');
+        setUploadError(`Image size must be ${maxSizeMB}MB or less.`);
+        clearFileInput();
+        onFileChange?.(null);
+        return;
+      }
+
+      try {
+        const { width, height } = await getImageDimensions(file);
+        const recommendedRatio = recommendedWidth / recommendedHeight;
+        const actualRatio = width / height;
+        const ratioDifference = Math.abs(actualRatio - recommendedRatio);
+
+        if (
+          width < recommendedWidth ||
+          height < recommendedHeight ||
+          ratioDifference > 0.08
+        ) {
+          setUploadWarning(
+            `Uploaded image is ${width} × ${height}px. Recommended: ${recommendedWidth} × ${recommendedHeight}px (${recommendedWidth}:${recommendedHeight} ratio) to avoid cropping.`
+          );
+        }
+      } catch {
+        setUploadWarning('We could not verify image dimensions. Please use the recommended size to avoid cropping.');
+      }
+
       setFileName(file.name);
       if (onFileChange) {
         onFileChange(file);
@@ -51,6 +133,8 @@ const ImageUpload = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = null;
     }
+    setUploadError('');
+    setUploadWarning('');
     if (onFileChange) {
       onFileChange(null);
     }
@@ -98,8 +182,8 @@ const ImageUpload = ({
             <img src="/material-symbols_image-outline-rounded.svg" alt="Upload Icon" className="w-15 h-15 text-gray-400 mb-2" />
             <p className="font-semibold text-[#4A4A4A] mb-1">{placeHolder}</p>
             <p className="text-[12px] text-[#939393]">Drop an image here or click to upload</p>
-            {helperText && <p className="text-[10px] text-[#939393] mt-2">PNG,JPG,webP - Max 2MB - Automatically Optimized</p>}
-            <p className="text-[10px] text-red-500 mt-2">Recommended size: 800 × 600 px</p>
+            {acceptedFormats && <p className="text-[10px] text-[#939393] mt-2">{acceptedFormats}</p>}
+            {helperText && <p className="text-[10px] text-red-500 mt-2">{helperText}</p>}
           </div>
           <input
             type="file"
@@ -111,6 +195,18 @@ const ImageUpload = ({
             {...props}
           />
         </div>
+      )}
+
+      {uploadError && (
+        <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+          {uploadError}
+        </p>
+      )}
+
+      {uploadWarning && !uploadError && (
+        <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+          {uploadWarning}
+        </p>
       )}
     </div>
   );

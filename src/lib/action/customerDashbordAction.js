@@ -491,7 +491,7 @@ export async function getGiftCards(filters) {
       const isSent = vc.order.userId === session.user.id;
       const isReceived = isVoucherReceivedByUser(vc, session.user.email);
 
-      const currency = vc.order.currency || "USD";
+      const currency = vc.order.currency || "ZAR";
       const currencySymbol = getCurrencySymbol(currency);
 
       const fullCode = vc?.giftCard?.code || vc.code;
@@ -585,7 +585,7 @@ export async function getGiftCards(filters) {
       const isReceived =
         normalizeEmail(order.receiverDetail?.email) ===
         normalizeEmail(session.user.email);
-      const currency = order.currency || "USD";
+      const currency = order.currency || "ZAR";
       const currencySymbol = getCurrencySymbol(currency);
 
       return {

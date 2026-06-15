@@ -40,7 +40,7 @@ const ThankYouScreen = ({ order = null }) => {
             currentOrder?.brand?.website ||
             currentOrder?.brand?.domain ||
             "",
-          giftAmount: `${currentOrder?.currency || "USD"} ${voucherCode?.originalValue ?? currentOrder?.amount ?? 0}`,
+          giftAmount: `${currentOrder?.currency || "ZAR"} ${voucherCode?.originalValue ?? currentOrder?.amount ?? 0}`,
           giftCode: shareCode,
           giftUrl: voucherCode?.tokenizedLink,
           giftImageUrl:

@@ -4,24 +4,16 @@ import { PrismaSessionStorage } from '@/lib/session-storage';
 import {
   fetchShopInfo,
 } from '@/lib/action/shopify';
-import { upsertShopInstallation } from '@/lib/shopify-installation';
+import {
+  normalizeShopDomain,
+  upsertShopInstallation,
+} from '@/lib/shopify-installation';
+import {
+  verifyOAuthState,
+  verifyShopifyOAuthHmac,
+} from '@/lib/shopify/oauth';
 
 const sessionStorage = new PrismaSessionStorage();
-
-function decodeAuthState(state) {
-  if (!state) {
-    return {};
-  }
-
-  try {
-    const decoded = Buffer.from(state, 'base64url').toString('utf8');
-    const parsed = JSON.parse(decoded);
-
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return { shop: state };
-  }
-}
 
 async function findBrandForShop(shopDomain) {
   if (!shopDomain) {
@@ -53,7 +45,23 @@ export async function GET(request) {
     const shop = searchParams.get('shop');
     const host = searchParams.get('host');
     const state = searchParams.get('state');
-    const authState = decodeAuthState(state);
+    const authStateValidation = verifyOAuthState(state);
+
+    if (!verifyShopifyOAuthHmac(searchParams)) {
+      return NextResponse.json({ error: 'Invalid Shopify OAuth signature' }, { status: 401 });
+    }
+
+    if (!authStateValidation.valid) {
+      return NextResponse.json(
+        {
+          error: 'Invalid OAuth state',
+          reason: authStateValidation.reason,
+        },
+        { status: 401 },
+      );
+    }
+
+    const authState = authStateValidation.payload;
     const installSource = authState.source === 'admin' ? 'admin' : 'public';
     const requestedShop = shop || authState.shop;
     
@@ -62,7 +70,16 @@ export async function GET(request) {
     }
     
     // Ensure shop domain is properly formatted
-    const shopDomain = requestedShop.endsWith('.myshopify.com') ? requestedShop : `${requestedShop}.myshopify.com`;
+    const shopDomain = normalizeShopDomain(requestedShop);
+    const stateShopDomain = normalizeShopDomain(authState.shop);
+
+    if (!shopDomain) {
+      return NextResponse.json({ error: 'Invalid shop parameter' }, { status: 400 });
+    }
+
+    if (stateShopDomain && stateShopDomain !== shopDomain) {
+      return NextResponse.json({ error: 'OAuth shop mismatch' }, { status: 401 });
+    }
     
     try {
       // Exchange the authorization code for an access token
@@ -121,17 +138,28 @@ export async function GET(request) {
         brand = await findBrandForShop(session.shop);
       }
 
+      const redirectParams = new URLSearchParams({
+        shop: session.shop,
+      });
+
+      const redirectHost = host || authState.host;
+
+      if (redirectHost) {
+        redirectParams.set('host', redirectHost);
+      }
+
+      // Explicitly preserve embedded context for Shopify Admin App view.
+      redirectParams.set('embedded', '1');
+
+      if (brand?.id) {
+        redirectParams.set('brandId', brand.id);
+      }
+
       let redirectUrl;
-      if (installSource === 'admin' && brand) {
-        redirectUrl = `/brandsPartner/edit/${brand.id}`;
-      } else if (brand) {
-        // If brand exists, redirect to the Shopify dashboard with brand context
-        // Note: /brandsPartner/edit/ is an admin route that requires a separate login session.
-        // After Shopify OAuth we only have a Shopify session, so we stay within /shopify/ routes.
-        redirectUrl = `/shopify/dashboard?shop=${session.shop}${host ? `&host=${host}` : ''}&brandId=${brand.id}`;
+      if (installSource === 'admin' || brand) {
+        redirectUrl = `/shopify/dashboard?${redirectParams.toString()}`;
       } else {
-        // Otherwise, redirect to the Shopify dashboard
-        redirectUrl = `/shopify/dashboard?shop=${session.shop}${host ? `&host=${host}` : ''}`;
+        redirectUrl = `/shopify/dashboard?${redirectParams.toString()}`;
       }
 
       const finalRedirectUrl = new URL(redirectUrl, process.env.SHOPIFY_APP_URL || request.url);
@@ -144,9 +172,6 @@ export async function GET(request) {
     
   } catch (error) {
     console.error('Auth callback error:', error);
-    return NextResponse.json({ 
-      error: 'Authentication failed',
-      details: error.message 
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
   }
 }

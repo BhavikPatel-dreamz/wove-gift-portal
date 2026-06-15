@@ -4,7 +4,6 @@ import SettlementDashboard from "../../../../components/settlements/SettlementDa
 import SettlementTabs from "../../../../components/settlements/SettlementTabs";
 import SettlementActions from "../../../../components/settlements/SettlementActions"
 import { getSettlementDetails } from "../../../../lib/action/brandPartner";
-import ApprovalPendingState from "@/components/shopify/ApprovalPendingState";
 import { getShopPageAccess } from "@/lib/shopify-page-access";
 import { formatSettlementPeriodLabel } from "@/lib/settlement/formatSettlementDisplay";
 
@@ -51,13 +50,7 @@ const SettlementLayout = async ({ children, params }) => {
     }
 
     if (accessState.access?.requiresApproval) {
-        return (
-            <ApprovalPendingState
-                shop={accessState.shop}
-                brandName={settlement.brandName}
-                installedAt={accessState.access.installedAt}
-            />
-        );
+        redirect(`/shopify/approval-pending?shop=${encodeURIComponent(accessState.shop)}`);
     }
 
     return (

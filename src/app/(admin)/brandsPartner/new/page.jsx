@@ -12,6 +12,7 @@ import IntegrationsTab from '@/components/brandsPartner/IntegrationsTab';
 import BankingTab from '@/components/brandsPartner/BankingTab';
 import ContactsTab from '@/components/brandsPartner/ContactsTab';
 import ReviewTab from '@/components/brandsPartner/ReviewTab';
+import { DEFAULT_CURRENCY_CODE } from '@/components/brandsPartner/currency';
 import toast from 'react-hot-toast';
 import InstallPage from '../../../../components/shopify/InstallPage';
 
@@ -44,7 +45,7 @@ const AddBrandPartner = () => {
     commissionValue: 0,
     maxDiscount: 0,
     minOrderValue: 0,
-    currency: 'USD',
+    currency: DEFAULT_CURRENCY_CODE,
     brackingPolicy: 'Retain',
     brackingShare: 0,
     contractStart: new Date().toISOString().split('T')[0],

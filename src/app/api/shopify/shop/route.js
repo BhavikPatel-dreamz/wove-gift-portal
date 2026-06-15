@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
-import { hasValidSession } from '@/lib/shopify.server';
+import {
+  extractBearerToken,
+  hasValidSession,
+  verifyShopifySessionToken,
+} from '@/lib/shopify.server';
 import {
   getShopInstallationAccess,
   normalizeShopDomain,
 } from '@/lib/shopify-installation';
+import { ensureShopifyInstallData } from '@/lib/shopify/installBootstrap';
 
 export async function GET(request) {
   try {
@@ -18,25 +23,52 @@ export async function GET(request) {
     }
 
     const shopDomain = normalizeShopDomain(shop);
-    const validSession = await hasValidSession(shopDomain);
+    const tokenValidation = await verifyShopifySessionToken(request, {
+      shop: shopDomain,
+    });
 
-    if (!validSession) {
+    if (!tokenValidation.valid) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Shop not authenticated',
+          error: 'Invalid Shopify session token',
+          reason: tokenValidation.reason,
           requiresAuth: true,
           shop: shopDomain,
         },
-        { status: 401 }
+        { status: tokenValidation.status }
       );
     }
 
-    const access = await getShopInstallationAccess(shopDomain);
+    let validSession = await hasValidSession(shopDomain);
+
+    if (!validSession) {
+      const bootstrap = await ensureShopifyInstallData({
+        shop: tokenValidation.shop,
+        idToken: extractBearerToken(request),
+      });
+
+      validSession = await hasValidSession(tokenValidation.shop);
+
+      if (!validSession) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Shop not authenticated',
+            requiresAuth: true,
+            shop: tokenValidation.shop,
+            reason: bootstrap.error || 'missing_offline_access_token',
+          },
+          { status: 401 }
+        );
+      }
+    }
+
+    const access = await getShopInstallationAccess(tokenValidation.shop);
 
     return NextResponse.json({
       success: true,
-      shop: shopDomain,
+      shop: tokenValidation.shop,
       approved: access.approved,
       approvalStatus: access.approvalStatus,
       requiresApproval: access.requiresApproval,
@@ -50,7 +82,6 @@ export async function GET(request) {
       {
         success: false,
         error: 'Failed to verify Shopify session',
-        details: error.message,
       },
       { status: 500 }
     );

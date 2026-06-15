@@ -12,6 +12,17 @@ import { getBrandsForClient } from "../../../lib/action/brandFetch";
 
 const MIN_GIFT_STEP = 1;
 const MAX_GIFT_STEP = 9;
+const GIFT_STEP_LABELS = {
+  1: "Brand",
+  2: "Amount",
+  3: "Occasion",
+  4: "Style",
+  5: "Message",
+  6: "Delivery",
+  7: "Timing",
+  8: "Payment",
+  9: "Payment",
+};
 
 const normalizeStep = (stepValue) => {
   const parsedStep = Number.parseInt(stepValue ?? "", 10);
@@ -244,6 +255,8 @@ const PageContent = () => {
     });
   }, [searchParams, urlParams.mode, urlParams.editBulkId, urlParams.editBulkIndex, router, pathname]);
 
+  console.log("===========", "service checkpoint - PageContent rendered", "currentStep:", currentStep, "URL params:", urlParams);
+
   // Clear all filters
   const clearFilters = useCallback(() => {
     startTransition(() => {
@@ -268,6 +281,20 @@ const PageContent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
+      <div className="sticky top-14 z-40 border-y border-pink-100 bg-white/95 px-4 py-2 shadow-sm backdrop-blur md:hidden">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-1 flex items-center justify-between text-xs font-semibold text-gray-600">
+            <span>{GIFT_STEP_LABELS[currentStep] || "Gift flow"}</span>
+            <span>Step {currentStep} of {MAX_GIFT_STEP}</span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#ED457D] to-[#FA8F42] transition-all duration-300"
+              style={{ width: `${(currentStep / MAX_GIFT_STEP) * 100}%` }}
+            />
+          </div>
+        </div>
+      </div>
       <Suspense fallback={
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-gray-500">Loading...</div>

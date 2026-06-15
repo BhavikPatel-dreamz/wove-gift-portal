@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { Gift, Heart, ShieldCheck } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { clearDeliveryFormEditReturn, goBack, goNext, setCurrentStep, setSelectedAmount } from "../../../redux/giftFlowSlice";
 import { useSearchParams } from "next/navigation";
@@ -28,6 +28,8 @@ const GiftCardSelector = () => {
   const [localSelectedAmount, setLocalSelectedAmount] = useState(
     selectedAmount || null
   );
+
+  console.log("presetAmounts",presetAmounts)
 
   const getCurrencySymbol = (code) =>
     currencyList.find((c) => c.code === code)?.symbol || "R";
@@ -93,11 +95,11 @@ const GiftCardSelector = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white bg-[linear-gradient(126deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)] px-4 py-20 sm:py-24 md:py-30">
+    <div className="min-h-screen bg-white bg-[linear-gradient(126deg,rgba(251,220,227,0.4)_31.7%,rgba(253,230,219,0.4)_87.04%)] px-4 pt-5 pb-10 sm:py-24 md:py-30">
       <div className="max-w-7xl mx-auto sm:px-6">
 
         {/* Back Button and Bulk Mode Indicator */}
-        <div className="relative flex flex-col items-start gap-4 mb-6 md:flex-row md:items-center md:justify-between md:gap-0">
+        <div className="relative hidden flex-col items-start gap-4 mb-6 md:flex md:flex-row md:items-center md:justify-between md:gap-0">
           {/* Previous Button */}
           <button
             className="
@@ -139,7 +141,7 @@ const GiftCardSelector = () => {
 
         {/* Header */}
         <div className="text-center mb-8 md:mb-12 px-1 sm:px-4">
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-5 mt-1">
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-2 mt-1">
             {isBulkMode ? 'Choose Gift Amount (Max 25,000)' : 'Choose Gift Amount (Max 5,000)'}
           </h1>
           <p className="text-sm md:text-base text-gray-600 max-w-xl mx-auto">
@@ -150,53 +152,32 @@ const GiftCardSelector = () => {
         {/* Amount Cards - Using CSS Grid for responsive layout */}
         <div className="w-full  flex justify-center">
           {denominationType !== 'amount' && presetAmounts.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 justify-items-stretch mb-8 w-full max-w-2xl mx-auto px-2 sm:px-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3 justify-items-stretch mb-8 w-full max-w-3xl mx-auto px-2 sm:px-4">
               {presetAmounts.map((amount) => (
                 <div
                   key={amount.id}
-                  className="relative rounded-xl group cursor-pointer w-full max-w-none sm:max-w-[150px] p-[2px]"
+                  className="relative rounded-xl group cursor-pointer w-full p-[2px]"
                   onClick={() => handleAmountClick(amount)}
                 >
                   <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ED457D] to-[#FA8F42] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                   <button
-                    className={`relative cursor-pointer bg-white rounded-[10px] border-2 p-3 sm:p-4 md:p-6 w-full transition-all duration-200 hover:shadow-md ${localSelectedAmount?.id === amount.id
-                      ? 'border-purple-400 shadow-lg scale-105'
+                    className={`relative flex min-h-[4.75rem] w-full cursor-pointer flex-col items-center justify-center rounded-[10px] border-2 bg-white px-3 py-3 text-center transition-all duration-200 hover:shadow-md sm:min-h-[5.25rem] sm:px-4 sm:py-4 md:min-h-[5.5rem] ${localSelectedAmount?.id === amount.id
+                      ? 'border-[#ED457D] shadow-lg scale-[1.02]'
                       : 'border-gray-200'
                       }`}
                   >
-                    <div className="flex justify-center mb-2 sm:mb-3 md:mb-4">
-                      <svg width="40" height="40" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-[70px] lg:h-[70px] mx-auto">
-                        <g clipPath="url(#clip0_1065_2944)">
-                          <path d="M41.9999 46.348V83.9445L26.1932 76.6982L24.0922 75.7365L15.9154 71.9891L15.4581 71.7787L2.02734 65.6198V27.9708L15.9154 34.3547L26.1932 39.0813L41.9999 46.348Z" fill="#ED457D" />
-                          <path d="M81.9726 27.9708V65.6198L70.1407 71.0596L67.1604 72.4305L61.5066 75.0291L56.8826 77.1571L42 84V46.348L56.8826 39.5052L67.1604 34.7815L81.9726 27.9708Z" fill="#FF81AB" />
-                          <path d="M26.1928 39.0813V76.6982L24.0918 75.7365L15.915 71.9891V34.3547L26.1928 39.0813Z" fill="#FFF380" />
-                          <path d="M67.1601 34.7815V72.4305L61.5064 75.0291L56.8823 77.1571V39.5052L67.1601 34.7815Z" fill="#FFF380" />
-                          <path d="M84 19.3974V30.7564L69.0087 37.649L58.7277 42.3756L42 50.0662L24.3481 41.9518L14.0672 37.2252L0 30.7564V19.3974L14.0672 25.8632L24.3481 30.5898L42 38.7043L58.7277 31.0137L69.0087 26.29L84 19.3974Z" fill="#FF8A0E" />
-                          <path d="M84 19.3945L42 38.7043L0 19.3945L42 0L84 19.3945Z" fill="#FFB465" />
-                          <path d="M24.3483 30.5898V41.9517L14.0674 37.2252V25.8632L24.3483 30.5898Z" fill="#FFEA26" />
-                          <path d="M69.0085 26.29V37.649L58.7275 42.3756V31.0137L69.0085 26.29Z" fill="#FFEA26" />
-                          <path d="M14.0674 25.8633L41.6817 14.8199L51.8571 19.5172L24.3483 30.5899L14.0674 25.8633Z" fill="#FFF8B5" />
-                          <path d="M69.9165 25.8633L44.5128 13.7146L34.3374 18.412L59.6356 30.5898L69.9165 25.8633Z" fill="#FFF8B5" />
-                          <path d="M42 17.1087C42 17.1087 36.9282 21.6073 34.0278 31.7795L31.4472 28.2163L27.29 31.724C27.29 31.724 27.29 22.6625 37.2032 17.1087H42Z" fill="#B3610A" />
-                          <path d="M42.3193 17.1087C42.3193 17.1087 47.3911 21.6073 50.2915 31.7795L52.8721 28.2163L57.0293 31.724C57.0293 31.724 57.0293 22.6625 47.116 17.1087H42.3193Z" fill="#B3610A" />
-                          <path d="M40.4013 14.1856V17.401C30.8079 20.324 24.0925 19.1548 21.5343 15.9394C20.8659 15.1034 20.2679 14.0073 19.8714 12.8351C18.749 9.50578 19.2926 5.55672 24.7321 5.12411C32.087 4.5395 40.4013 14.1856 40.4013 14.1856Z" fill="#B3610A" />
-                          <path d="M40.401 17.3922V17.401C30.8076 20.324 24.0922 19.1548 21.534 15.9394C20.8656 15.1034 20.2676 14.0073 19.8711 12.8352C20.6578 11.6893 22.0872 10.8621 24.412 10.6779C29.586 10.2658 36.6628 14.7176 40.401 17.3922Z" fill="#7B4001" />
-                          <path d="M43.5991 14.1856V17.401C53.1925 20.324 59.9079 19.1548 62.4662 15.9394C63.1345 15.1034 63.7325 14.0073 64.129 12.8351C65.2515 9.50578 64.7078 5.55672 59.2684 5.12411C51.9134 4.5395 43.5991 14.1856 43.5991 14.1856Z" fill="#B3610A" />
-                          <path d="M43.5991 17.3922V17.401C53.1925 20.324 59.9079 19.1548 62.4662 15.9394C63.1345 15.1034 63.7325 14.0073 64.129 12.8352C63.3424 11.6893 61.913 10.8621 59.5882 10.6779C54.4141 10.2658 47.3374 14.7176 43.5991 17.3922Z" fill="#7B4001" />
-                          <path d="M40.0813 17.401C40.0813 17.401 38.8022 13.3087 42 13.3087C45.1978 13.3087 43.9186 17.401 43.9186 17.401C43.9186 17.401 42.3197 18.8625 40.0813 17.401Z" fill="#FF8A0E" />
-                        </g>
-                        <defs>
-                          <clipPath id="clip0_1065_2944">
-                            <rect width="84" height="84" fill="white" />
-                          </clipPath>
-                        </defs>
-                      </svg>
+                    {localSelectedAmount?.id === amount.id && (
+                      <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-r from-[#ED457D] to-[#FA8F42] text-white shadow-sm">
+                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                          <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                    )}
+                    <div className="text-lg font-bold leading-tight text-gray-900 sm:text-xl md:text-2xl">
+                      {getCurrencySymbol(amount.currency)} {Number(amount.value).toLocaleString('en-ZA')}
                     </div>
-                    <div className="border-t border-dashed border-gray-300 mb-2 sm:mb-3 md:mb-4" />
-                    <div className="text-center">
-                      <div className="text-sm sm:text-base md:text-lg font-semibold text-gray-800">
-                        {getCurrencySymbol(amount.currency)}{amount.value}
-                      </div>
+                    <div className="mt-1 text-[11px] font-medium leading-4 text-gray-500 sm:text-xs">
+                     {amount?.displayName}
                     </div>
                   </button>
                 </div>
@@ -207,7 +188,7 @@ const GiftCardSelector = () => {
 
         {/* Custom Amount Input */}
         {denominationType !== 'fixed' && (
-          <div className="max-w-4xl mx-auto mt-8 px-4 md:px-0">
+          <div className="max-w-3xl mx-auto mt-8 px-4 md:px-0">
             <div className="rounded-2xl p-[2px] bg-gradient-to-r from-[#ED457D] to-[#FA8F42] shadow-sm">
                 <div className="bg-white rounded-[14px] p-4 sm:p-5 md:p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
@@ -305,6 +286,21 @@ const GiftCardSelector = () => {
             </div>
           </div>
         )}
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 px-4 text-xs font-medium text-slate-500 sm:mt-10 sm:text-sm">
+          <div className="inline-flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-[#ED457D]" aria-hidden="true" />
+            <span>Secure checkout</span>
+          </div>
+          <div className="inline-flex items-center gap-2">
+            <Gift className="h-4 w-4 text-[#ED457D]" aria-hidden="true" />
+            <span>Instant delivery</span>
+          </div>
+          <div className="inline-flex items-center gap-2">
+            <Heart className="h-4 w-4 text-[#ED457D]" aria-hidden="true" />
+            <span>Perfect gift</span>
+          </div>
+        </div>
       </div>
     </div>
   );

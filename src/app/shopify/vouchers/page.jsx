@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import ApprovalPendingState from "@/components/shopify/ApprovalPendingState";
+import { redirectToApprovalPending } from "@/lib/shopify-approval-routing";
 import { getShopPageAccess } from "@/lib/shopify-page-access";
 import VouchersPageClient from "./VouchersPageClient";
 
@@ -16,13 +16,7 @@ export default async function ShopifyVouchersPage({ searchParams }) {
   }
 
   if (accessState.access?.requiresApproval) {
-    return (
-      <ApprovalPendingState
-        shop={accessState.shop}
-        brandName={accessState.access.brand?.brandName}
-        installedAt={accessState.access.installedAt}
-      />
-    );
+    redirectToApprovalPending(resolvedSearchParams, accessState.shop);
   }
 
   return <VouchersPageClient />;

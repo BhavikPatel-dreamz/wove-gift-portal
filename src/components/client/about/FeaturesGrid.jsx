@@ -45,7 +45,7 @@ const Features = () => {
             Instant & Delightful
           </h4>
           <p className="text-sm sm:text-base text-[#4A4A4A] max-w-xs font-light">
-            WhatsApp, email, or print—delivered in moments.
+            WhatsApp or email - delivered in moments.
           </p>
         </div>
 

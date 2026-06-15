@@ -110,7 +110,7 @@ function SettlementDashboard({ settlement }) {
             key={index}
             title={stat.title}
             amount={stat.amount}
-            currency={settlement.currency || "USD"}
+            currency={settlement.currency || "ZAR"}
             color={stat.color}
             icon={stat.icon}
           />

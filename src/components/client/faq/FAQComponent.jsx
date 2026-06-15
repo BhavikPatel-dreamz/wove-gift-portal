@@ -304,26 +304,26 @@ const FAQComponent = () => {
     }));
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FFFFFF' }}>
+    <div className="min-h-screen overflow-x-hidden bg-white">
       {/* Hero Section */}
       <div
-        className="p-6 sm:p-10 py-25 sm:py-30"
+        className="px-4 pb-16 pt-24 sm:px-6 sm:pb-20 sm:pt-28 md:px-10 md:pb-24 md:pt-32"
         style={{
           borderRadius: '0 0 30px 30px',
           background: 'linear-gradient(126.43deg, #FBDCE3 31.7%, #FDE6DB 87.04%)'
         }}
       >
-        <h1 className="text-center text-xl sm:text-[40px] md:text-[40px] font-bold text-[#1A1A1A] px-4">
+        <h1 className="mx-auto max-w-3xl px-2 text-center text-3xl font-bold leading-tight text-[#1A1A1A] sm:text-4xl md:text-[40px]">
           Frequently Asked Questions
         </h1>
-        <p className="mt-4 sm:mt-5 text-center text-sm sm:text-[16px] text-[#4A4A4A] max-w-xl mx-auto px-4">
+        <p className="mx-auto mt-4 max-w-2xl px-2 text-center text-sm leading-6 text-[#4A4A4A] sm:mt-5 sm:text-base">
           Find answers to common questions about Wove Gifts, from getting started to bulk orders and everything in between.
         </p>
       </div>
 
       {/* Search Bar */}
       {/* ── Search bar — overlaps the hero bottom edge, centered ── */}
-      <div className="flex justify-center px-4 -mt-6 sm:-mt-7 relative z-10">
+      <div className="relative z-10 -mt-6 flex justify-center px-4 sm:-mt-7 sm:px-6">
         <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl">
           {/* Search icon circle */}
           <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 bg-gray-100 rounded-full flex items-center justify-center z-10 pointer-events-none">
@@ -332,7 +332,8 @@ const FAQComponent = () => {
 
           <input
             type="text"
-            placeholder="Search FAQs (e.g., refund, WhatsApp, bulk CSV)"
+            placeholder="Search FAQs"
+            aria-label="Search FAQs"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 sm:pl-14 pr-12 sm:pr-14 py-3 sm:py-3.5 rounded-full text-sm sm:text-base focus:outline-none border-2 border-[#FFB4B4] bg-white text-gray-800 placeholder-gray-400"
@@ -351,17 +352,17 @@ const FAQComponent = () => {
         </div>
       </div>
 
-      <div className="min-h-screen bg-white">
+      <div className="bg-white">
         {/* Category Pills */}
-        <div className="px-4 mt-5">
-          <div className="max-w-5xl mx-auto py-8">
-            <div className="flex flex-wrap gap-2 justify-center">
+        <div className="mt-5 px-4 sm:px-6">
+          <div className="mx-auto max-w-6xl py-5 sm:py-8">
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0 sm:pb-0">
               {categories.map((category) => (
                 <button
                   type="button"
                   key={category.name}
                   onClick={() => setActiveCategory(category.name)}
-                  className={`px-6 py-2.5 cursor-pointer rounded-full font-medium transition-all duration-200 text-base ${activeCategory === category.name
+                  className={`shrink-0 cursor-pointer rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 sm:px-5 sm:py-2.5 sm:text-base ${activeCategory === category.name
                     ? 'bg-linear-to-r from-pink-500 to-orange-400 text-white shadow-md'
                     : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
                     }`}
@@ -374,8 +375,8 @@ const FAQComponent = () => {
         </div>
 
         {/* FAQ Section */}
-        <div className="max-w-3xl mx-auto px-4 pb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-center mb-6 sm:mb-8 text-gray-900 px-4">
+        <div className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
+          <h1 className="mb-5 px-2 text-center text-2xl font-semibold leading-tight text-gray-900 sm:mb-8 sm:text-3xl lg:text-4xl">
             {normalizedSearch
               ? `Search Results (${displayFaqs.length})`
               : activeCategory}
@@ -403,16 +404,16 @@ const FAQComponent = () => {
                       <button
                         type="button"
                         onClick={() => toggleExpand(faq._key)}
-                        className="w-full cursor-pointer p-4 sm:p-6 flex justify-between items-start gap-3"
+                        className="flex w-full cursor-pointer items-start justify-between gap-3 p-4 sm:p-6"
                       >
-                        <div className="text-left pr-2 sm:pr-4">
+                        <div className="min-w-0 pr-2 text-left sm:pr-4">
                           {normalizedSearch && (
                             <span className="inline-flex items-center mb-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#FFF3ED] text-[#E65A3A]">
                               {faq._category}
                             </span>
                           )}
 
-                          <span className="block font-semibold text-gray-900 text-base sm:text-lg">
+                          <span className="block text-base font-semibold leading-6 text-gray-900 sm:text-lg sm:leading-7">
                             {faq.question}
                           </span>
                         </div>
@@ -462,25 +463,25 @@ const FAQComponent = () => {
         </div>
 
         {/* Support Contact Section */}
-        <div className="max-w-5xl mx-auto px-4 pb-14 sm:pb-20">
+        <div className="mx-auto max-w-5xl px-4 pb-14 sm:px-6 sm:pb-20">
           <div className="max-w-4xl mx-auto rounded-2xl sm:rounded-3xl p-px bg-linear-to-r from-pink-500 to-orange-400">
             <div className="rounded-2xl sm:rounded-3xl bg-linear-to-br from-pink-50 to-orange-50 p-6 sm:p-10 lg:p-12 text-center">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
+              <h2 className="mb-3 text-2xl font-bold leading-tight text-gray-900 sm:mb-4 sm:text-3xl lg:text-4xl">
                 Didn't find what you need?
               </h2>
 
-              <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8 max-w-xl mx-auto px-2">
+              <p className="mx-auto mb-6 max-w-xl px-1 text-sm leading-6 text-gray-600 sm:mb-8 sm:px-2 sm:text-base">
                 Our support team is here to help. Reach out through your preferred channel or check your order history.
               </p>
 
-              <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+              <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
                 <button
                   type="button"
                   onClick={() => {
                     setSupportStatus({ type: '', message: '' });
                     setIsEmailSupportOpen(true);
                   }}
-                  className="cursor-pointer bg-linear-to-r from-pink-500 to-orange-400 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-full font-semibold hover:shadow-lg transition-shadow duration-200 flex items-center justify-center gap-2"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-linear-to-r from-pink-500 to-orange-400 px-6 py-3 font-semibold text-white transition-shadow duration-200 hover:shadow-lg sm:w-auto sm:px-8 sm:py-3.5"
                 >
                   <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21.666 4.33337H4.33268C3.14102 4.33337 2.16602 5.30837 2.16602 6.50004V19.5C2.16602 20.6917 3.14102 21.6667 4.33268 21.6667H21.666C22.8577 21.6667 23.8327 20.6917 23.8327 19.5V6.50004C23.8327 5.30837 22.8577 4.33337 21.666 4.33337ZM21.2327 8.93754L14.1477 13.3684C13.4435 13.8125 12.5552 13.8125 11.851 13.3684L4.76602 8.93754C4.65739 8.87656 4.56226 8.79417 4.4864 8.69537C4.41053 8.59656 4.3555 8.48338 4.32464 8.36269C4.29378 8.242 4.28773 8.1163 4.30685 7.99321C4.32598 7.87011 4.36988 7.75217 4.4359 7.64653C4.50193 7.54089 4.5887 7.44975 4.69097 7.37862C4.79324 7.30749 4.90888 7.25784 5.03089 7.2327C5.1529 7.20755 5.27874 7.20742 5.4008 7.23232C5.52286 7.25721 5.6386 7.30662 5.74102 7.37754L12.9993 11.9167L20.2577 7.37754C20.3601 7.30662 20.4758 7.25721 20.5979 7.23232C20.72 7.20742 20.8458 7.20755 20.9678 7.2327C21.0898 7.25784 21.2055 7.30749 21.3077 7.37862C21.41 7.44975 21.4968 7.54089 21.5628 7.64653C21.6288 7.75217 21.6727 7.87011 21.6918 7.99321C21.711 8.1163 21.7049 8.242 21.6741 8.36269C21.6432 8.48338 21.5882 8.59656 21.5123 8.69537C21.4364 8.79417 21.3413 8.87656 21.2327 8.93754Z" fill="white" />
@@ -491,7 +492,7 @@ const FAQComponent = () => {
                 <button
                   type="button"
                   onClick={handleWhatsAppSupport}
-                  className="cursor-pointer bg-green-500 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-full font-semibold hover:shadow-lg transition-shadow duration-200 flex items-center justify-center gap-2"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-green-500 px-6 py-3 font-semibold text-white transition-shadow duration-200 hover:shadow-lg sm:w-auto sm:px-8 sm:py-3.5"
                 >
                   <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <g clipPath="url(#clip0_1187_1600)">
@@ -513,8 +514,8 @@ const FAQComponent = () => {
       </div>
 
       {isEmailSupportOpen && (
-        <div className="fixed inset-0 z-999 bg-black/45 flex items-center justify-center p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-100 p-5 sm:p-6">
+        <div className="fixed inset-0 z-999 flex items-center justify-center bg-black/45 p-4">
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-gray-100 bg-white p-5 shadow-2xl sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-gray-900">Email Support</h3>
               <button

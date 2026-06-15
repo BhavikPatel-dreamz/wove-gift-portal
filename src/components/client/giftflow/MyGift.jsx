@@ -699,15 +699,16 @@ function MyGift() {
   const displayItems = groupGiftCards(giftCards);
 
   return (
-    <div className="min-h-screen py-8 sm:py-30 px-4">
+    <div className="min-h-screen px-4 pt-20 pb-10 sm:py-30">
       <div className="max-w-7xl mx-auto">
         {/* Tabs */}
-        <div className="flex flex-wrap md:flex-nowrap gap-2 sm:gap-3 md:gap-4 mb-8 bg-[#FEF8F7] p-2 mt-5 sm:mt-0 sm:p-3 rounded-lg">
+        <div className="sticky top-14 z-30 -mx-4 mb-5 overflow-x-auto border-y border-[#F5DFE4] bg-[#FEF8F7]/95 px-4 py-2 backdrop-blur sm:static sm:mx-0 sm:mb-8 sm:mt-0 sm:flex sm:flex-wrap sm:gap-3 sm:rounded-lg sm:border-0 sm:p-3 md:flex-nowrap md:gap-4">
+          <div className="flex min-w-max gap-2 sm:contents">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`flex-1 min-w-[calc(50%-4px)] md:min-w-0 h-10 sm:h-11 md:h-12.5 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg text-xs sm:text-sm md:text-base font-medium whitespace-nowrap transition-all ${activeTab === tab.id
+              className={`h-10 flex-none px-4 sm:flex-1 sm:min-w-[calc(50%-4px)] md:min-w-0 sm:h-11 md:h-12.5 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg text-xs sm:text-sm md:text-base font-medium whitespace-nowrap transition-all ${activeTab === tab.id
                 ? 'bg-linear-to-r from-pink-400 to-orange-400 text-[#FFFFFF] shadow-lg'
                 : 'bg-white border  border-[#1A1A1A1A] rounded-[10px] text-[#000000] hover:bg-gray-100'
                 }`}
@@ -715,10 +716,11 @@ function MyGift() {
               {tab.label}
             </button>
           ))}
+          </div>
         </div>
 
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-semibold text-[#1A1A1A] mb-2">
             Vouchers & Gift Cards
           </h1>
@@ -738,7 +740,7 @@ function MyGift() {
         </div>
 
         {/* Search and Actions */}
-        <div className="w-full flex flex-col md:flex-row items-stretch md:items-center gap-3 mb-8">
+        <div className="w-full flex flex-col md:flex-row items-stretch md:items-center gap-3 mb-5 sm:mb-8">
           <div className="relative w-full md:flex-1 h-10 border border-[#E5E7EB] rounded-lg flex items-center px-4">
             <Search className="w-5 h-5 text-[#9CA3AF] shrink-0" />
             <input
@@ -1029,7 +1031,7 @@ function MyGift() {
             </div>
 
             {/* Modal Content - List View */}
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+            <div className="relative flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
               {getFilteredBulkCards().length === 0 ? (
                 <div className="text-center py-12">
                   <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />

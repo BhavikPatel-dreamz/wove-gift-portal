@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-export default function ResetPasswordForm({ token }) {
+export default function ResetPasswordForm({ token, isAdminInviteSetup = false }) {
+  const router = useRouter()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -52,6 +54,13 @@ export default function ResetPasswordForm({ token }) {
         return
       }
 
+      if (data?.redirectTo) {
+        setMessage(data?.message || 'Password set successfully.')
+        router.replace(data.redirectTo)
+        router.refresh()
+        return
+      }
+
       setMessage(data?.message || 'Password updated successfully.')
       setPassword('')
       setConfirmPassword('')
@@ -67,10 +76,12 @@ export default function ResetPasswordForm({ token }) {
       <div className="mx-auto max-w-md w-full bg-[#FFF9FA] rounded-3xl shadow-2xl p-8 border border-gray-100 relative">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Set a new password
+            {isAdminInviteSetup ? 'Set Password' : 'Reset Password'}
           </h2>
           <p className="text-gray-600 text-sm">
-            Choose a strong password to secure your account.
+            {isAdminInviteSetup
+              ? 'Create your password to finish setting up backend access.'
+              : 'Choose a strong password to secure your account.'}
           </p>
         </div>
 
@@ -225,19 +236,23 @@ export default function ResetPasswordForm({ token }) {
                 : 'hover:bg-gradient-to-r hover:from-orange-500 hover:to-pink-500 hover:shadow-xl hover:scale-105 cursor-pointer'
             }`}
           >
-            {loading ? 'Updating...' : 'Update password'}
+            {loading
+              ? (isAdminInviteSetup ? 'Setting...' : 'Resetting...')
+              : (isAdminInviteSetup ? 'Set Password' : 'Reset Password')}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-600 mt-6">
-          Back to{' '}
-          <Link
-            href="/login"
-            className="text-pink-500 font-semibold hover:text-pink-600 transition"
-          >
-            Sign In
-          </Link>
-        </p>
+        {!isAdminInviteSetup ? (
+          <p className="text-center text-sm text-gray-600 mt-6">
+            Back to{' '}
+            <Link
+              href="/login"
+              className="text-pink-500 font-semibold hover:text-pink-600 transition"
+            >
+              Sign In
+            </Link>
+          </p>
+        ) : null}
       </div>
     </div>
   )

@@ -205,15 +205,6 @@ const DeliveryMethodStep = () => {
       newErrors.yourEmailAddress = "Please enter a valid email address";
     }
 
-    const yourPhoneError = validatePhoneWithCountryCode(
-      formData.yourPhoneNumber,
-      formData.yourPhoneCountryCode,
-      { required: false, label: "phone number" }
-    );
-    if (yourPhoneError) {
-      newErrors.yourPhoneNumber = yourPhoneError;
-    }
-
     if (!formData.recipientFullName?.trim()) {
       newErrors.recipientFullName = "Recipient name is required";
     } else if (!isValidName(formData.recipientFullName)) {
@@ -663,10 +654,10 @@ const DeliveryMethodStep = () => {
 
 
   return (
-    <div className="min-h-screen bg-white px-4 sm:px-6 md:px-8 py-20 sm:py-24 md:py-30">
+    <div className="min-h-screen bg-white px-4 pt-5 pb-10 sm:px-6 sm:py-24 md:px-8 md:py-30">
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
-        <div className="p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 inline-block mb-4 sm:mb-6">
+        <div className="hidden p-0.5 rounded-full bg-gradient-to-r from-pink-500 to-orange-400 md:inline-block mb-4 sm:mb-6">
           <button
             onClick={() => dispatch(goBack())}
             className="group cursor-pointer flex items-center gap-1.5 sm:gap-2 
@@ -734,7 +725,7 @@ const DeliveryMethodStep = () => {
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-999 p-2 sm:p-4 overflow-hidden">
-            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto relative">
+            <div className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[90vh] sm:rounded-3xl relative">
               {/* Close Button */}
               <button
                 onClick={handleCloseModal}
@@ -744,11 +735,11 @@ const DeliveryMethodStep = () => {
               </button>
 
               {/* Modal Content */}
-              <div className="p-3 sm:p-4 md:p-6">
+              <div className="overflow-y-auto p-3 sm:p-4 md:p-6">
                 {renderContent()}
 
                 {/* Continue Button */}
-                <div className="flex items-center justify-center mt-4 sm:mt-6 md:mt-8 pb-2 sm:pb-4">
+                <div className="sticky bottom-0 -mx-3 mt-1 flex items-center justify-center border-t border-gray-100 bg-white/95 px-3 py-3 backdrop-blur sm:-mx-4 sm:mt-2 sm:px-4 md:-mx-6 md:mt-3 md:px-6">
                   <button
                     onClick={handleContinue}
                     className="group cursor-pointer w-full sm:w-auto max-w-fit

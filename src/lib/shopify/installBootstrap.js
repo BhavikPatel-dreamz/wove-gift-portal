@@ -1,5 +1,8 @@
 import { prisma } from "../db.js";
-import { sessionStorage } from "../shopify.server.js";
+import {
+  decodeShopifySessionToken,
+  sessionStorage,
+} from "../shopify.server.js";
 import { fetchShopInfo } from "../action/shopify.js";
 import {
   normalizeShopDomain,
@@ -31,6 +34,14 @@ async function findBrandForShop(shopDomain) {
 async function exchangeIdTokenForSession(shopDomain, idToken) {
   if (!shopDomain || !idToken) {
     return null;
+  }
+
+  const tokenValidation = await decodeShopifySessionToken(idToken, {
+    shop: shopDomain,
+  });
+
+  if (!tokenValidation.valid) {
+    throw new Error(`Invalid Shopify session token: ${tokenValidation.reason}`);
   }
 
   const tokenResponse = await fetch(`https://${shopDomain}/admin/oauth/access_token`, {

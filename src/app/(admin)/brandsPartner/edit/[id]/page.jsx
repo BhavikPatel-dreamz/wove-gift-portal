@@ -15,6 +15,7 @@ import IntegrationsTab from '@/components/brandsPartner/IntegrationsTab';
 import BankingTab from '@/components/brandsPartner/BankingTab';
 import ContactsTab from '@/components/brandsPartner/ContactsTab';
 import ReviewTab from '@/components/brandsPartner/ReviewTab';
+import { DEFAULT_CURRENCY_CODE } from '@/components/brandsPartner/currency';
 import { useSelector } from 'react-redux';
 
 const BrandEdit = () => {
@@ -59,7 +60,7 @@ const BrandEdit = () => {
     commissionValue: 0,
     maxDiscount: 0,
     minOrderValue: 0,
-    currency: 'USD',
+    currency: DEFAULT_CURRENCY_CODE,
     breakagePolicy: 'Retain',
     breakageShare: 0,
     contractStart: new Date().toISOString().split('T')[0],
@@ -207,7 +208,7 @@ const BrandEdit = () => {
           commissionValue: brand.brandTerms?.commissionValue || 0,
           maxDiscount: brand.brandTerms?.maxDiscount || 0,
           minOrderValue: brand.brandTerms?.minOrderValue || 0,
-          currency: brand.currency || 'USD',
+          currency: DEFAULT_CURRENCY_CODE,
           breakagePolicy: brand.brandTerms?.breakagePolicy || 'Retain',
           breakageShare: brand.brandTerms?.breakageShare || 0,
           contractStart: brand.brandTerms?.contractStart ?

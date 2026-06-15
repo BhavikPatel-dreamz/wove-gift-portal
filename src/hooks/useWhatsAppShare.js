@@ -137,9 +137,9 @@ export function useWhatsAppShare({
     };
 
     setStatus("opening");
-    setFeedbackMessage("Opening WhatsApp and preparing your share guide...");
+    setFeedbackMessage("Opening WhatsApp with your formatted gift message...");
     setGuideState({
-      isOpen: true,
+      isOpen: false,
       message,
       deviceType,
       primaryGift: firstGift,

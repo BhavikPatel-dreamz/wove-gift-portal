@@ -243,7 +243,6 @@ const CheckoutPage = () => {
       ? 'Bulk checkout'
       : 'Gift checkout';
   const subtotalLabel = formatCurrencyValue(checkoutPricing.subtotal, checkoutCurrency);
-  const serviceFeeLabel = formatCurrencyValue(checkoutPricing.serviceFee, checkoutCurrency);
   const totalAmountLabel = formatCurrencyValue(checkoutPricing.totalAmount, checkoutCurrency);
   const paymentButtonLabel = checkoutPricing.totalAmount === 0
     ? 'Complete checkout'
@@ -919,7 +918,7 @@ const CheckoutPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#F8F8FC_0%,#FDF2F5_100%)] px-4 py-20 sm:py-24 md:px-8 md:py-30">
+    <div className={`min-h-screen bg-[linear-gradient(180deg,#F8F8FC_0%,#FDF2F5_100%)] px-4 pt-20 pb-8 sm:py-24 md:px-8 md:py-30 ${totalItemCount > 0 ? 'pb-44 sm:pb-44 md:pb-44 lg:pb-30' : ''}`}>
       <Header />
       <Toaster />
       <div className="mx-auto max-w-6xl">
@@ -939,8 +938,8 @@ const CheckoutPage = () => {
           <div className="hidden w-[140px] md:block" />
         </div>
 
-        <div className="mb-10 text-center sm:mb-12">
-          <h1 className="text-3xl font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-4xl">
+        <div className="mb-6 text-center sm:mb-12">
+          <h1 className="text-2xl font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-4xl">
             You&apos;re almost there!
           </h1>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-[#666674] sm:text-base">
@@ -1048,12 +1047,6 @@ const CheckoutPage = () => {
                   </div>
                 ) : null}
 
-                <div className="flex items-center justify-between gap-4">
-                  <span>Service Fee (5% incl. VAT)</span>
-                  <span className="font-medium text-[#1A1A1A]">
-                    {checkoutPricing.serviceFee === 0 ? 'Free' : serviceFeeLabel}
-                  </span>
-                </div>
               </div>
 
               <div className="mt-4 border-t border-[#ECECF2] pt-4">
@@ -1347,6 +1340,49 @@ const CheckoutPage = () => {
                 Sign in to account
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {totalItemCount > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 px-4 py-3 shadow-[0_-12px_32px_rgba(17,24,39,0.14)] backdrop-blur lg:hidden mobile-safe-bottom">
+          <div className="mx-auto max-w-6xl space-y-3">
+            <label className="flex items-start gap-2.5 rounded-2xl bg-[#FFF8EF] px-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={isPaymentConfirmed || false}
+                onChange={(event) =>
+                  dispatch(setIsPaymentConfirmed(event.target.checked))
+                }
+                className="mt-1 h-4 w-4 rounded border-[#F2C9D3] text-[#ED457D] focus:ring-[#ED457D]"
+              />
+              <span className="text-xs leading-5 text-[#4A4A4A]">
+                I confirm the checkout details are correct.
+              </span>
+            </label>
+
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                  Total
+                </p>
+                <p className="truncate text-base font-bold text-[#1A1A1A]">
+                  {totalAmountLabel}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handlePaymentButtonClick}
+                disabled={isProcessing || !isPaymentConfirmed}
+                className={`min-h-12 shrink-0 rounded-full px-5 py-3 text-sm font-semibold text-white transition ${
+                  (isProcessing || !isPaymentConfirmed)
+                    ? 'cursor-not-allowed bg-gray-400'
+                    : 'bg-gradient-to-r from-[#FA9B5B] to-[#ED457D] shadow-md'
+                }`}
+              >
+                {isProcessing ? 'Preparing...' : paymentButtonLabel}
+              </button>
+            </div>
           </div>
         </div>
       )}

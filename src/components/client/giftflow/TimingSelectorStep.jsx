@@ -176,10 +176,10 @@ const TimingSelectorStep = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white px-4 sm:px-6 md:px-8 py-20 sm:py-24 md:py-30">
+    <div className="min-h-screen bg-white px-4 pt-5 pb-10 sm:px-6 sm:py-24 md:px-8 md:py-30">
       <div className="max-w-7xl mx-auto">
         {/* Previous Button */}
-        <div className="p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block">
+        <div className="hidden p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 md:inline-block">
           <button
             onClick={() => dispatch(goBack())}
             className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-full 
@@ -225,7 +225,7 @@ const TimingSelectorStep = () => {
         </div>
 
         {/* Header */}
-        <div className="text-center mb-6 sm:mb-8 md:mb-12 pt-6 sm:pt-8 md:pt-10">
+        <div className="text-center mb-6 sm:mb-8 md:mb-12 pt-2 sm:pt-8 md:pt-10">
           <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-[40px] font-bold text-gray-900 mb-2 sm:mb-3">
             Send Now or Later?
           </h1>

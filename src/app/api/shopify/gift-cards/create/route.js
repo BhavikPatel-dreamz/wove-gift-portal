@@ -17,7 +17,10 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    const session = await getValidShopifySession(shopDomain);
+    const session = await getValidShopifySession(shopDomain, {
+      request,
+      requireSessionToken: true,
+    });
 
     if (!session?.accessToken) {
       return NextResponse.json({ 
@@ -84,7 +87,7 @@ async function createShopifyGiftCard(shop, accessToken, { initialValue, note, ex
     };
 
     // Create gift card using GraphQL
-    const createResponse = await fetch(`https://${shop}/admin/api/2024-10/graphql.json`, {
+    const createResponse = await fetch(`https://${shop}/admin/api/2026-04/graphql.json`, {
       method: 'POST',
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -125,7 +128,7 @@ async function createShopifyGiftCard(shop, accessToken, { initialValue, note, ex
     }
 
     // Fetch gift card masked code
-    const codeResponse = await fetch(`https://${shop}/admin/api/2024-10/graphql.json`, {
+    const codeResponse = await fetch(`https://${shop}/admin/api/2026-04/graphql.json`, {
       method: 'POST',
       headers: {
         'X-Shopify-Access-Token': accessToken,

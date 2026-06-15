@@ -1,4 +1,7 @@
-import { sessionStorage } from "../shopify.server";
+import {
+  sessionStorage,
+  verifyShopifySessionToken,
+} from "../shopify.server";
 
 export function normalizeShopDomain(shop) {
   if (!shop) {
@@ -18,14 +21,26 @@ export function normalizeShopDomain(shop) {
   return `${cleaned}.myshopify.com`.toLowerCase();
 }
 
-export async function getValidShopifySession(shop) {
-  const shopDomain = normalizeShopDomain(shop);
+export async function getValidShopifySession(shop, { request, requireSessionToken = false } = {}) {
+  let shopDomain = normalizeShopDomain(shop);
 
   if (!shopDomain) {
     return null;
   }
 
   try {
+    if (request) {
+      const tokenValidation = await verifyShopifySessionToken(request, { shop: shopDomain });
+
+      if (!tokenValidation.valid) {
+        if (requireSessionToken) {
+          return null;
+        }
+      } else {
+        shopDomain = tokenValidation.shop;
+      }
+    }
+
     const session = await sessionStorage.loadSession(shopDomain);
 
     if (!session?.accessToken) {

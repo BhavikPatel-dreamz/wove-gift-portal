@@ -98,6 +98,10 @@ export async function authenticateUser(data) {
     throw new Error("Invalid credentials");
   }
 
+  if (!user.isActive) {
+    throw new Error("This account is disabled");
+  }
+
   const isValidPassword = await verifyPassword(data.password, user.password);
 
   if (!isValidPassword) {

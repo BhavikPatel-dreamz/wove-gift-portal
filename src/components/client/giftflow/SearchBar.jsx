@@ -78,7 +78,7 @@ const SearchBar = ({
     <div className="relative w-full">
       {/* Gradient Header */}
       <div
-        className="text-center px-4 py-20 sm:py-24 md:py-30"
+        className="text-center px-4 pt-6 pb-14 sm:py-24 md:py-30"
         style={{
           borderRadius: "0 0 28px 28px",
           background: "linear-gradient(126deg, #FBDCE3 31.7%, #FDE6DB 87.04%)",
@@ -98,7 +98,7 @@ const SearchBar = ({
           </div>
         )}
 
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2 sm:mb-4 leading-tight">
           {isBulkMode
             ? "Choose the Perfect Brand to Gift"
             : "Pick Your Perfect Brand"}
@@ -111,7 +111,7 @@ const SearchBar = ({
       </div>
 
       {/* Search Input + Dropdown */}
-      <div className="relative z-30 mx-auto -mt-8 w-[92%] max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-1 sm:absolute sm:left-1/2 sm:mt-0 sm:w-full sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-4">
+      <div className="relative z-30 mx-auto -mt-7 w-[92%] max-w-3xl flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 px-1 sm:absolute sm:left-1/2 sm:mt-0 sm:w-full sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-4">
         {/* Search Input */}
         <div
           className="flex items-center w-full rounded-full p-0.5"

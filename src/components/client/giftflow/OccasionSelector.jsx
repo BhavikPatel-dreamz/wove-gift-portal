@@ -97,11 +97,11 @@ export default function OccasionSelector() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-20 sm:py-24 md:py-30">
+    <div className="min-h-screen bg-gray-50 pt-5 pb-10 sm:py-24 md:py-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Back Button and Bulk Mode Indicator */}
-        <div className="relative flex flex-col items-start gap-4 mb-6
-                md:flex-row md:items-center md:justify-between md:gap-0">
+        <div className="relative hidden flex-col items-start gap-4 mb-6
+                md:flex md:flex-row md:items-center md:justify-between md:gap-0">
           {/* Previous Button */}
           <button
             className="
@@ -193,12 +193,12 @@ export default function OccasionSelector() {
         </div>
 
         {/* Occasions Grid - Responsive grid layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-4 md:gap-6 px-2 sm:px-0 mb-8 md:mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-2.5 sm:gap-4 md:gap-6 px-2 sm:px-0 mb-8 md:mb-12">
           {occasions.map((occasion, index) => {
             return (
               <div
                 key={`${occasion.id}-${index}`}
-                className={`occasion-selector-card w-full max-w-[18rem] sm:max-w-none bg-[#D9D9D933] rounded-2xl md:rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group 
+                className={`occasion-selector-card w-full bg-[#D9D9D933] rounded-2xl md:rounded-3xl overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer group 
                   flex flex-col h-full
                   ${selectedOccasion === occasion.id
                     ? 'border-2 border-blue-500'
@@ -207,8 +207,8 @@ export default function OccasionSelector() {
                 onClick={() => handleOccasionSelect(occasion)}
               >
                 {/* Image Container */}
-                <div className="w-full px-3 md:px-4 pt-3 md:pt-4">
-                  <div className="w-full h-40 sm:h-48 md:h-52 lg:h-56 overflow-hidden rounded-xl md:rounded-2xl bg-gray-200">
+                <div className="w-full px-2.5 pt-2.5 sm:px-3 md:px-4 md:pt-4">
+                  <div className="w-full aspect-[4/3] overflow-hidden rounded-xl md:rounded-2xl bg-gray-200">
                     <img
                       src={occasion.image}
                       alt={occasion.name}
@@ -223,35 +223,35 @@ export default function OccasionSelector() {
                 </div>
 
                 {/* Card Content */}
-                <div className="px-4 md:px-6 pt-4 md:pt-5 pb-4 md:pb-6 text-center flex flex-col flex-1">
+                <div className="px-2.5 pb-3 pt-2.5 text-center flex flex-col flex-1 sm:px-4 sm:pb-4 sm:pt-3 md:px-5 md:pb-5 md:pt-4">
                   {/* Title */}
-                  <h3 className="font-bold text-lg md:text-xl text-gray-900 mb-1 md:mb-2">
+                  <h3 className="font-bold text-sm sm:text-base md:text-lg text-gray-900 mb-1 leading-tight">
                     {occasion.name}
                   </h3>
 
                   {/* Description */}
-                  <p className="text-gray-600 text-xs md:text-sm mb-4 md:mb-6 leading-relaxed line-clamp-2 px-1">
+                  <p className="text-gray-600 text-[11px] sm:text-xs md:text-sm mb-3 md:mb-4 leading-4 md:leading-5 line-clamp-1 px-0.5 min-h-4">
                     {occasion.description}
                   </p>
 
                   {/* CTA Button */}
                   <button
-                    className="group mt-auto w-full sm:w-auto max-w-fit
+                    className="group mt-auto w-full
                     bg-gradient-to-r from-pink-500 to-orange-400
                     hover:bg-gradient-to-r hover:from-orange-400 hover:to-pink-500
-                    text-white font-semibold text-xs sm:text-sm md:text-base
-                    px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3
+                    text-white font-semibold text-[11px] sm:text-xs md:text-sm
+                    px-2 sm:px-4 md:px-5 py-2 sm:py-2.5
                     rounded-full
                     transition-all duration-300
                     shadow-md hover:shadow-xl hover:scale-105
-                    flex items-center justify-center gap-1.5 md:gap-2
+                    flex items-center justify-center gap-1.5
                     cursor-pointer text-center mx-auto"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleOccasionSelect(occasion);
                     }}
                   >
-                    Choose this Occasion
+                    Choose Occasion
 
                     <span className="mt-0.5 transition-transform duration-300 group-hover:translate-x-1">
                       <svg

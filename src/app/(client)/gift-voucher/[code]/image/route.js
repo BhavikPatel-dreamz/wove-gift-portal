@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { toWhatsAppLandscapeImageUrl } from "@/lib/whatsappShare";
 
 export const runtime = "nodejs";
 
@@ -119,7 +120,9 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: "Image not found" }, { status: 404 });
   }
 
-  const imageUrl = resolveAbsoluteImageUrl(imagePath, request.url);
+  const imageUrl = toWhatsAppLandscapeImageUrl(
+    resolveAbsoluteImageUrl(imagePath, request.url),
+  );
   if (!imageUrl) {
     return NextResponse.json({ error: "Invalid image URL" }, { status: 404 });
   }

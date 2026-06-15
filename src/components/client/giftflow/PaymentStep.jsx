@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BadgePercent, Clock3, Gift, Heart, Mail, Pencil, Shield, ShoppingCart, Users, WalletCards, X } from "lucide-react";
+import { BadgePercent, Clock3, Gift, Heart, Mail, Pencil, Shield, Users, WalletCards, X } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { goBack, setCurrentStep, setDeliveryFormEditReturn, setIsPaymentConfirmed } from "../../../redux/giftFlowSlice";
 import { createPendingOrder } from "../../../lib/action/orderAction";
-import { saveCartItemAsync } from "../../../redux/cartSlice";
 import { useSession } from "@/contexts/SessionContext";
 import AuthForm from "@/components/AuthForm";
 import CheckoutIdentityChoiceModal from "../checkout/CheckoutIdentityChoiceModal";
@@ -226,12 +225,10 @@ const PaymentStep = () => {
   const [error, setError] = useState(null);
   const [selectedPaymentTab, setSelectedPaymentTab] = useState("payfast");
   const [hasHydrated, setHasHydrated] = useState(false);
-  const [isSavingCart, setIsSavingCart] = useState(false);
   const [checkoutUserId, setCheckoutUserId] = useState(null);
   const [showIdentityChoiceModal, setShowIdentityChoiceModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState("login");
-  const [authSuccessAction, setAuthSuccessAction] = useState("payment");
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [guestCheckout, setGuestCheckout] = useState(null);
   const [guestFormData, setGuestFormData] = useState({ fullName: "", email: "" });
@@ -261,7 +258,7 @@ const PaymentStep = () => {
     editingBulkOrderId,
   } = useSelector((state) => state.giftFlowReducer);
 
-  const { items: cartItems, bulkItems } = useSelector((state) => state.cart);
+  const { bulkItems } = useSelector((state) => state.cart);
 
   const currentBulkOrderIndex = useMemo(() => {
     if (!isBulkMode || !bulkItems.length) return -1;
@@ -308,21 +305,6 @@ const PaymentStep = () => {
   ]);
 
   const currentBulkOrder = currentBulkOrderIndex >= 0 ? bulkItems[currentBulkOrderIndex] : null;
-  const currentRegularCartItem = useMemo(() => {
-    if (isBulkMode || !isEditMode || editFlowType === "bulk") {
-      return null;
-    }
-
-    if (
-      editingIndex !== null &&
-      editingIndex !== undefined &&
-      cartItems[editingIndex]
-    ) {
-      return cartItems[editingIndex];
-    }
-
-    return null;
-  }, [cartItems, editFlowType, editingIndex, isBulkMode, isEditMode]);
   const draftBulkBrand = isBulkMode ? (selectedBrand || currentBulkOrder?.selectedBrand || null) : selectedBrand;
   const draftBulkAmount = isBulkMode ? (giftFlowAmount || currentBulkOrder?.selectedAmount || null) : giftFlowAmount;
   const draftBulkQuantity = isBulkMode
@@ -368,7 +350,6 @@ const PaymentStep = () => {
   );
 
   const totalAmountLabel = formatCurrencyValue(checkoutPricing.totalAmount, currentCurrency);
-  const serviceFeeLabel = formatCurrencyValue(checkoutPricing.serviceFee, currentCurrency);
   const subtotalLabel = formatCurrencyValue(checkoutPricing.subtotal, currentCurrency);
   const selectedAmountLabel = formatCurrencyValue(
     selectedAmount?.value || 0,
@@ -391,9 +372,6 @@ const PaymentStep = () => {
     )
     : getDeliveryHelperText(displayDeliveryMethod, deliveryDetails);
   const showTimingTile = !isBulkMode && displayDeliveryMethod === "email";
-  const isBulkCartEdit = isBulkMode && typeof currentBulkOrder?.cartItemId === "string";
-  const isRegularCartEdit = !isBulkMode && typeof currentRegularCartItem?.cartItemId === "string";
-
   const calculateTotal = () => checkoutPricing.totalAmount;
 
   useEffect(() => {
@@ -432,7 +410,6 @@ const PaymentStep = () => {
   };
 
   const openIdentityChoiceModal = () => {
-    setAuthSuccessAction("payment");
     setAuthMode("login");
     setShowAuthModal(false);
     setShowGuestModal(false);
@@ -440,8 +417,7 @@ const PaymentStep = () => {
     setGuestFormError("");
   };
 
-  const openAuthModal = (nextMode = "login", nextAction = "payment") => {
-    setAuthSuccessAction(nextAction);
+  const openAuthModal = (nextMode = "login") => {
     setAuthMode(nextMode);
     setShowIdentityChoiceModal(false);
     setShowGuestModal(false);
@@ -450,7 +426,6 @@ const PaymentStep = () => {
   };
 
   const openGuestModal = () => {
-    setAuthSuccessAction("payment");
     setGuestFormData({
       fullName: guestCheckout?.fullName || deliveryDetails?.yourFullName || "",
       email: guestCheckout?.email || deliveryDetails?.yourEmailAddress || "",
@@ -470,71 +445,6 @@ const PaymentStep = () => {
     dispatch(setCurrentStep(step));
   };
 
-  const saveCartItemForUser = async (userId, item) => {
-    const cartItemId = isBulkMode
-      ? (typeof currentBulkOrder?.cartItemId === "string" ? currentBulkOrder.cartItemId : null)
-      : (typeof currentRegularCartItem?.cartItemId === "string" ? currentRegularCartItem.cartItemId : null);
-
-    await dispatch(saveCartItemAsync({
-      userId,
-      type: isBulkMode ? "bulk" : "regular",
-      item,
-      cartItemId,
-    })).unwrap();
-  };
-
-  const buildCartItemPayload = () => {
-    if (isBulkMode) {
-      return {
-        ...currentBulkOrder,
-        selectedBrand: effectiveBulkBrand,
-        selectedAmount,
-        personalMessage: displayMessage,
-        quantity,
-        companyInfo,
-        deliveryOption: bulkDeliveryOption,
-        deliveryMethod: bulkDeliveryOption === "multiple" ? "multiple" : "email",
-        selectedOccasion: selectedOccasion || currentBulkOrder?.selectedOccasion,
-        selectedSubCategory: displaySubCategory,
-        selectedTiming: displayTiming,
-        totalAmount: calculateTotal(),
-        isBulkOrder: true,
-        csvRecipients,
-      };
-    }
-
-    return {
-      selectedBrand,
-      selectedAmount,
-      personalMessage,
-      deliveryMethod,
-      deliveryDetails,
-      selectedOccasion,
-      selectedSubCategory,
-      selectedTiming,
-    };
-  };
-
-  const validateCartItem = () => {
-    if (!selectedAmount || !displayBrand) {
-      setError("Please complete your gift details before adding to cart.");
-      return false;
-    }
-
-    if (isBulkMode && !currentBulkOrder) {
-      setError("No bulk order was found to save.");
-      return false;
-    }
-
-    if (!isBulkMode && !deliveryMethod) {
-      setError("Please select a delivery method before adding to cart.");
-      return false;
-    }
-
-    setError(null);
-    return true;
-  };
-
   const handleAuthSuccess = async (user) => {
     const authenticatedId = user?.id || null;
     if (!authenticatedId) {
@@ -545,10 +455,6 @@ const PaymentStep = () => {
     setCheckoutUserId(authenticatedId);
     setGuestCheckout(null);
     closeIdentityModals();
-    if (authSuccessAction === "cart") {
-      await handleAddToCart({ userIdOverride: authenticatedId });
-      return;
-    }
 
     await handleInitiatePayment({
       userIdOverride: authenticatedId,
@@ -747,42 +653,6 @@ const PaymentStep = () => {
     await handleInitiatePayment();
   };
 
-  const handleAddToCart = async ({ userIdOverride } = {}) => {
-    if (!validateCartItem() || isSavingCart) {
-      return;
-    }
-
-    const resolvedUserId = userIdOverride || session?.user?.id || null;
-
-    if (!resolvedUserId) {
-      openAuthModal("login", "cart");
-      return;
-    }
-
-    setIsSavingCart(true);
-    setError(null);
-
-    try {
-      const cartItem = buildCartItemPayload();
-      await saveCartItemForUser(resolvedUserId, cartItem);
-      toast.success(
-        isBulkMode
-          ? (isBulkCartEdit ? "Bulk order updated in cart!" : "Bulk order added to cart!")
-          : (isRegularCartEdit ? "Gift updated in cart!" : "Gift added to cart!"),
-      );
-      router.push("/cart");
-    } catch (cartError) {
-      const message =
-        typeof cartError === "string"
-          ? cartError
-          : cartError?.message || "Failed to add item to cart.";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setIsSavingCart(false);
-    }
-  };
-
   const handleOccasionEdit = () => {
     startReviewEditFlow(4);
   };
@@ -872,11 +742,11 @@ const PaymentStep = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#F8F8FC_0%,#FDF2F5_100%)] px-4 py-20 sm:py-24 md:px-8 md:py-30">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#F8F8FC_0%,#FDF2F5_100%)] px-4 pt-5 pb-44 sm:pt-24 sm:pb-44 md:px-8 md:pt-30 md:pb-44 lg:py-30">
       {hasHydrated ? <Toaster /> : null}
 
       <div className="mx-auto max-w-6xl">
-        <div className="relative mb-6 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between md:gap-0">
+        <div className="relative mb-6 hidden flex-col items-start gap-4 md:flex md:flex-row md:items-center md:justify-between md:gap-0">
           {backButton}
 
           {isBulkMode ? (
@@ -896,8 +766,8 @@ const PaymentStep = () => {
           <div className="hidden w-[140px] md:block" />
         </div>
 
-        <div className="mb-10 text-center sm:mb-12">
-          <h1 className="text-3xl font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-4xl">
+        <div className="mb-6 text-center sm:mb-12">
+          <h1 className="text-2xl font-bold tracking-[-0.03em] text-[#1A1A1A] sm:text-4xl">
             You&apos;re almost there!
           </h1>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-[#666674] sm:text-base">
@@ -951,7 +821,69 @@ const PaymentStep = () => {
                 </div>
               </button>
 
-              <label className="mb-5 flex cursor-pointer items-start gap-3 rounded-2xl bg-[#FFF8EF] px-4 py-3.5">
+              <div className="mb-5 rounded-2xl border border-[#EFEFF4] bg-white px-4 py-4 shadow-[0_8px_24px_rgba(17,24,39,0.04)]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF3F7] text-[#ED457D]">
+                    <BadgePercent className="h-4 w-4" />
+                  </div>
+
+                  <input
+                    type="text"
+                    value={promoCodeInput}
+                    onChange={(event) => {
+                      setPromoCodeInput(event.target.value);
+                      setPromoError("");
+                      setPromoSuccessMessage("");
+                    }}
+                    placeholder="Have a promo code?"
+                    className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[#1A1A1A] outline-none placeholder:text-[#9E9EAA]"
+                    disabled={isApplyingPromo}
+                  />
+
+                  {appliedPromo ? (
+                    <button
+                      type="button"
+                      onClick={handleRemovePromo}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[#F2CCD8] bg-white text-[#8B8B8B] transition hover:text-[#1A1A1A]"
+                      aria-label="Remove promo code"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleApplyPromo}
+                      disabled={isApplyingPromo || !promoCodeInput.trim()}
+                      className="text-sm font-semibold text-[#ED457D] transition hover:text-[#D6366E] disabled:cursor-not-allowed disabled:text-[#F7A4B9]"
+                    >
+                      {isApplyingPromo ? "Applying..." : "Apply"}
+                    </button>
+                  )}
+                </div>
+
+                {appliedPromo ? (
+                  <div className="mt-3 rounded-2xl border border-[#F9C8D7] bg-[#FFF7FA] px-4 py-3">
+                    <p className="text-sm font-semibold text-[#1A1A1A]">
+                      {appliedPromo.code} applied
+                    </p>
+                    <p className="text-sm text-[#ED457D]">
+                      You saved {formatCurrencyValue(appliedPromo.discountAmount, currentCurrency)}
+                    </p>
+                  </div>
+                ) : null}
+
+                {promoError ? (
+                  <p className="mt-3 text-sm text-red-500">{promoError}</p>
+                ) : promoSuccessMessage ? (
+                  <p className="mt-3 text-sm text-green-600">{promoSuccessMessage}</p>
+                ) : null}
+              </div>
+
+              <label className={`mb-5 flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3.5 transition ${
+                isPaymentConfirmed
+                  ? "border-green-200 bg-green-50"
+                  : "border-red-200 bg-red-50"
+              }`}>
                 <input
                   type="checkbox"
                   checked={isPaymentConfirmed || false}
@@ -961,15 +893,16 @@ const PaymentStep = () => {
                   className="sr-only"
                 />
                 <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition ${isPaymentConfirmed
-                  ? "border-transparent bg-gradient-to-r from-[#ED457D] to-[#FA8F42] text-white"
-                  : "border-[#F2C9D3] bg-white text-transparent"
+                  ? "border-green-600 bg-green-600 text-white"
+                  : "border-red-500 bg-white text-transparent"
                   }`}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
-                <span className="text-sm leading-6 text-[#4A4A4A]">
-                  I have reviewed all recipient and gift details and confirm them as correct. Once payment is completed, the voucher cannot be modified or cancelled.
+                <span className={isPaymentConfirmed ? "text-sm leading-6 text-green-800" : "text-sm leading-6 text-red-700"}>
+                  <span className="block font-semibold">Confirmation Checkbox</span>
+                  <span className="block">Details confirmed. Orders cannot be changed after payment.</span>
                 </span>
               </label>
 
@@ -993,28 +926,6 @@ const PaymentStep = () => {
                     </div>
                   ) : null}
 
-                  <div className="flex items-center justify-between gap-4">
-                    <span>Service Fee (5% incl. VAT)</span>
-                    <span className="font-medium text-[#1A1A1A]">
-                      {checkoutPricing.serviceFee === 0 ? "Free" : serviceFeeLabel}
-                    </span>
-                  </div>
-
-                  {/* <details className="rounded-xl bg-white px-3 py-2">
-                    <summary className="cursor-pointer text-xs font-medium text-[#7E7E8A]">
-                      Fee breakdown
-                    </summary>
-                    <div className="mt-2 space-y-2 text-xs text-[#7E7E8A]">
-                      <div className="flex items-center justify-between gap-4">
-                        <span>Service Fee excl. VAT 4.35%</span>
-                        <span>{formatCurrencyValue(checkoutPricing.serviceFeeExVat, currentCurrency)}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-4">
-                        <span>VAT on Service Fee 15%</span>
-                        <span>{formatCurrencyValue(checkoutPricing.serviceFeeVat, currentCurrency)}</span>
-                      </div>
-                    </div>
-                  </details> */}
                 </div>
 
                 <div className="mt-4 border-t border-[#ECECF2] pt-4">
@@ -1050,31 +961,6 @@ const PaymentStep = () => {
                         />
                       </svg>
                     </span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleAddToCart()}
-                disabled={isSavingCart || isProcessing}
-                className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border px-6 py-4 text-sm font-semibold transition-all duration-300 sm:text-base ${
-                  (isSavingCart || isProcessing)
-                    ? "cursor-not-allowed border-[#E5E7EB] bg-[#F3F4F6] text-[#9CA3AF]"
-                    : "cursor-pointer border-[#FFD4E0] bg-white text-[#ED457D] hover:border-[#ED457D] hover:bg-[#FFF7FA]"
-                }`}
-              >
-                {isSavingCart ? (
-                  <>
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Saving to cart...
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="h-5 w-5" />
-                    {isBulkMode
-                      ? (isBulkCartEdit ? "Update Cart Order" : "Add Bulk Order to Cart")
-                      : (isRegularCartEdit ? "Update Cart" : "Add to Cart")}
                   </>
                 )}
               </button>
@@ -1208,63 +1094,6 @@ const PaymentStep = () => {
                 </div>
               </div>
 
-              <div className="mt-3 rounded-2xl border border-[#EFEFF4] bg-white px-4 py-4 shadow-[0_8px_24px_rgba(17,24,39,0.04)]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF3F7] text-[#ED457D]">
-                    <BadgePercent className="h-4 w-4" />
-                  </div>
-
-                  <input
-                    type="text"
-                    value={promoCodeInput}
-                    onChange={(event) => {
-                      setPromoCodeInput(event.target.value);
-                      setPromoError("");
-                      setPromoSuccessMessage("");
-                    }}
-                    placeholder="Have a promocode?"
-                    className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[#1A1A1A] outline-none placeholder:text-[#9E9EAA]"
-                    disabled={isApplyingPromo}
-                  />
-
-                  {appliedPromo ? (
-                    <button
-                      type="button"
-                      onClick={handleRemovePromo}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[#F2CCD8] bg-white text-[#8B8B8B] transition hover:text-[#1A1A1A]"
-                      aria-label="Remove promo code"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleApplyPromo}
-                      disabled={isApplyingPromo || !promoCodeInput.trim()}
-                      className="text-sm font-semibold text-[#ED457D] transition hover:text-[#D6366E] disabled:cursor-not-allowed disabled:text-[#F7A4B9]"
-                    >
-                      {isApplyingPromo ? "Applying..." : "Apply"}
-                    </button>
-                  )}
-                </div>
-
-                {appliedPromo ? (
-                  <div className="mt-3 rounded-2xl border border-[#F9C8D7] bg-[#FFF7FA] px-4 py-3">
-                    <p className="text-sm font-semibold text-[#1A1A1A]">
-                      {appliedPromo.code} applied
-                    </p>
-                    <p className="text-sm text-[#ED457D]">
-                      You saved {formatCurrencyValue(appliedPromo.discountAmount, currentCurrency)}
-                    </p>
-                  </div>
-                ) : null}
-
-                {promoError ? (
-                  <p className="mt-3 text-sm text-red-500">{promoError}</p>
-                ) : promoSuccessMessage ? (
-                  <p className="mt-3 text-sm text-green-600">{promoSuccessMessage}</p>
-                ) : null}
-              </div>
             </div>
           </div>
 
@@ -1284,6 +1113,61 @@ const PaymentStep = () => {
             </div>
           </div>
         ) : null}
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 px-4 py-3 shadow-[0_-12px_32px_rgba(17,24,39,0.14)] backdrop-blur lg:hidden mobile-safe-bottom">
+        <div className="mx-auto max-w-6xl space-y-3">
+          <label className={`flex items-start gap-2.5 rounded-2xl border px-3 py-2.5 transition ${
+            isPaymentConfirmed
+              ? "border-green-200 bg-green-50"
+              : "border-red-200 bg-red-50"
+          }`}>
+            <input
+              type="checkbox"
+              checked={isPaymentConfirmed || false}
+              onChange={(event) =>
+                dispatch(setIsPaymentConfirmed(event.target.checked))
+              }
+              className="sr-only"
+            />
+            <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition ${
+              isPaymentConfirmed
+                ? "border-green-600 bg-green-600 text-white"
+                : "border-red-500 bg-white text-transparent"
+            }`}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            <span className={isPaymentConfirmed ? "text-xs leading-5 text-green-800" : "text-xs leading-5 text-red-700"}>
+              <span className="block font-semibold">Confirmation Checkbox</span>
+              <span className="block">Details confirmed. Orders cannot be changed after payment.</span>
+            </span>
+          </label>
+
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-500">
+                Total
+              </p>
+              <p className="truncate text-base font-bold text-[#1A1A1A]">
+                {totalAmountLabel}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handlePaymentButtonClick}
+              disabled={isProcessing || !isPaymentConfirmed}
+              className={`min-h-12 shrink-0 rounded-full px-4 py-3 text-sm font-semibold text-white transition ${
+                (isProcessing || !isPaymentConfirmed)
+                  ? "cursor-not-allowed bg-gray-400"
+                  : "bg-gradient-to-r from-[#FA9B5B] to-[#ED457D] shadow-md"
+              }`}
+            >
+              {isProcessing ? "Paying..." : "Pay"}
+            </button>
+          </div>
+        </div>
       </div>
 
       {showIdentityChoiceModal ? (

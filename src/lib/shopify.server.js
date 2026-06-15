@@ -6,7 +6,14 @@ import {
   
 } from "@shopify/shopify-api";
 import { PrismaSessionStorage } from "./session-storage.js";
-import { upsertShopInstallation } from "./shopify-installation.js";
+import {
+  normalizeShopDomain,
+  upsertShopInstallation,
+} from "./shopify-installation.js";
+import {
+  getShopifyScopes,
+  getShopifyScopeString,
+} from "./shopify/scopes.js";
 
 // Validate required environment variables
 const requiredEnvVars = {
@@ -33,23 +40,13 @@ const sessionStorage = new PrismaSessionStorage();
 const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_SECRET_KEY,
-  scopes: process.env.SCOPES?.split(",") || [
-    "read_products",
-    "write_products",
-    "read_orders",
-    "write_orders",
-    "read_gift_cards",
-    "write_gift_cards",
-    "read_customers",
-    "write_customers",
-    "read_gift_card_transactions",
-  ],
+  scopes: getShopifyScopes(),
   hostName: process.env.SHOPIFY_APP_URL.replace(/^https?:\/\//, "").replace(
     /\/$/,
     ""
   ),
   hostScheme: process.env.SHOPIFY_APP_URL.startsWith("https") ? "https" : "http",
-  apiVersion: ApiVersion.April24,
+  apiVersion: ApiVersion.April26,
   isEmbeddedApp: true,
   sessionStorage,
   logger: {
@@ -117,6 +114,138 @@ export async function hasValidSession(shop) {
   }
 }
 
+export function extractBearerToken(request) {
+  const authorization = request.headers.get("authorization") || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+
+  return match?.[1] || "";
+}
+
+function getShopFromSessionTokenPayload(payload) {
+  if (!payload?.dest) {
+    return "";
+  }
+
+  try {
+    const destination = new URL(payload.dest);
+    return normalizeShopDomain(destination.hostname);
+  } catch {
+    return normalizeShopDomain(String(payload.dest).replace(/^https?:\/\//i, ""));
+  }
+}
+
+function getExpectedShopifyAudience() {
+  return process.env.SHOPIFY_API_KEY || process.env.SHOPIFY_CLIENT_ID || "";
+}
+
+function getIssuerShop(payload) {
+  if (!payload?.iss) {
+    return "";
+  }
+
+  const issuerValue = String(payload.iss);
+
+  try {
+    const issuer = new URL(issuerValue);
+
+    if (!issuer.pathname.startsWith("/admin")) {
+      return "";
+    }
+
+    return normalizeShopDomain(issuer.hostname);
+  } catch {
+    const cleanedIssuer = issuerValue.replace(/^https?:\/\//i, "");
+    const [hostname, ...pathParts] = cleanedIssuer.split("/");
+
+    if (pathParts[0] !== "admin") {
+      return "";
+    }
+
+    return normalizeShopDomain(hostname);
+  }
+}
+
+function validateSessionTokenPayload(payload, { shop } = {}) {
+  const now = Math.floor(Date.now() / 1000);
+  const clockSkewSeconds = 5;
+  const tokenShop = getShopFromSessionTokenPayload(payload);
+  const issuerShop = getIssuerShop(payload);
+  const expectedShop = normalizeShopDomain(shop);
+  const expectedAudience = getExpectedShopifyAudience();
+
+  if (!Number.isFinite(Number(payload?.exp)) || Number(payload.exp) <= now - clockSkewSeconds) {
+    return { valid: false, status: 401, reason: "expired_session_token", shop: tokenShop };
+  }
+
+  if (!Number.isFinite(Number(payload?.nbf)) || Number(payload.nbf) > now + clockSkewSeconds) {
+    return { valid: false, status: 401, reason: "session_token_not_active", shop: tokenShop };
+  }
+
+  if (!expectedAudience || payload?.aud !== expectedAudience) {
+    return { valid: false, status: 403, reason: "session_token_audience_mismatch", shop: tokenShop };
+  }
+
+  if (!tokenShop) {
+    return { valid: false, status: 401, reason: "missing_token_destination", shop: "" };
+  }
+
+  if (!issuerShop || issuerShop !== tokenShop) {
+    return { valid: false, status: 401, reason: "session_token_issuer_mismatch", shop: tokenShop };
+  }
+
+  if (expectedShop && tokenShop !== expectedShop) {
+    return { valid: false, status: 403, reason: "session_token_shop_mismatch", shop: tokenShop };
+  }
+
+  return { valid: true, status: 200, reason: null, shop: tokenShop };
+}
+
+export async function decodeShopifySessionToken(token, { shop } = {}) {
+  if (!token) {
+    return {
+      valid: false,
+      status: 401,
+      reason: "missing_session_token",
+      shop: "",
+      payload: null,
+    };
+  }
+
+  try {
+    const payload = await shopify.session.decodeSessionToken(token);
+    const payloadValidation = validateSessionTokenPayload(payload, { shop });
+
+    if (!payloadValidation.valid) {
+      return {
+        ...payloadValidation,
+        valid: false,
+        payload,
+      };
+    }
+
+    return {
+      valid: true,
+      status: 200,
+      reason: null,
+      shop: payloadValidation.shop,
+      payload,
+    };
+  } catch (error) {
+    console.error("Shopify session token verification failed:", error);
+    return {
+      valid: false,
+      status: 401,
+      reason: "invalid_session_token",
+      shop: "",
+      payload: null,
+    };
+  }
+}
+
+export async function verifyShopifySessionToken(request, { shop } = {}) {
+  return decodeShopifySessionToken(extractBearerToken(request), { shop });
+}
+
 /**
  * Begin OAuth flow
  */
@@ -128,10 +257,7 @@ export async function beginAuth(shop, callbackPath = "/api/shopify/auth/callback
 
   const authQuery = new URLSearchParams({
     client_id: process.env.SHOPIFY_API_KEY,
-    scope: (
-      process.env.SCOPES ||
-      "read_products,write_products,read_orders,write_orders,read_gift_cards,write_gift_cards,read_customers,write_customers"
-    ),
+    scope: getShopifyScopeString(),
     redirect_uri: `${process.env.SHOPIFY_APP_URL}${callbackPath}`,
     state: shopDomain,
     grant_options: "per-user", // For online access mode
@@ -300,5 +426,5 @@ export async function verifyWebhook(request, body) {
 }
 
 export default shopify;
-export const apiVersion = ApiVersion.April24;
+export const apiVersion = ApiVersion.April26;
 export { sessionStorage };

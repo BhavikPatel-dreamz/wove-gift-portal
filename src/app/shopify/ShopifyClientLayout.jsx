@@ -2,12 +2,18 @@
 "use client";
 
 import { Suspense, useState, useEffect } from "react";
-import AppBridgeProvider from "@/components/shopify/AppBridgeProvider";
+import AppBridgeProvider, {
+  getShopifySessionToken,
+} from "@/components/shopify/AppBridgeProvider";
 import { useSearchParams, usePathname } from "next/navigation";
 import AppLayout from "./component/AppLayout";
 
-const SKIP_APP_BRIDGE_PATHS = ["/shopify/install", "/shopify/auth-required"];
+const SKIP_APP_BRIDGE_PATHS = [
+  "/shopify/install",
+  "/shopify/auth-required",
+];
 const SKIP_APP_BRIDGE_EXACT_PATHS = ["/shopify"];
+const BARE_APP_LAYOUT_PATHS = ["/shopify/approval-pending"];
 
 function ShopifyShellLoading({ label = "Loading Shopify App..." }) {
   return (
@@ -59,6 +65,35 @@ function AppBridgeReadinessGate({ children }) {
   return <>{children}</>;
 }
 
+function ShopifyRoutePropagator({ disabled = false }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (disabled || !pathname?.startsWith("/shopify/")) {
+      return;
+    }
+
+    if (
+      pathname.startsWith("/shopify/install") ||
+      pathname.startsWith("/shopify/auth-required")
+    ) {
+      return;
+    }
+
+    try {
+      const queryString = searchParams.toString();
+      const nextPath = queryString ? `${pathname}?${queryString}` : pathname;
+
+      window.history.replaceState(null, "", nextPath);
+    } catch (error) {
+      console.error("Unable to propagate Shopify app route:", error);
+    }
+  }, [disabled, pathname, searchParams]);
+
+  return null;
+}
+
 function ShopifyLayoutContent({ children }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -71,11 +106,14 @@ function ShopifyLayoutContent({ children }) {
   const skipAppBridge =
     SKIP_APP_BRIDGE_EXACT_PATHS.includes(pathname) ||
     SKIP_APP_BRIDGE_PATHS.some((path) => pathname.startsWith(path));
+  const skipAppLayout = BARE_APP_LAYOUT_PATHS.some((path) =>
+    pathname.startsWith(path)
+  );
 
   useEffect(() => {
     let ignore = false;
 
-    if (skipAppBridge || !shop) {
+    if (skipAppBridge || skipAppLayout || !shop) {
       setAccessState({ loading: false, approved: true });
       return () => {
         ignore = true;
@@ -89,9 +127,15 @@ function ShopifyLayoutContent({ children }) {
 
     const controller = new AbortController();
 
-    fetch(`/api/shopify/shop?shop=${encodeURIComponent(shop)}`, {
-      signal: controller.signal,
-    })
+    getShopifySessionToken()
+      .then((token) =>
+        fetch(`/api/shopify/shop?shop=${encodeURIComponent(shop)}`, {
+          signal: controller.signal,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      )
       .then(async (response) => {
         if (!response.ok) {
           throw new Error("Failed to fetch Shopify access state");
@@ -124,24 +168,34 @@ function ShopifyLayoutContent({ children }) {
       ignore = true;
       controller.abort();
     };
-  }, [shop, skipAppBridge, pathname]);
+  }, [shop, skipAppBridge, skipAppLayout, pathname]);
 
   if (skipAppBridge) {
     return <>{children}</>;
   }
 
   if (shop && accessState.loading) {
-    return <ShopifyShellLoading />;
+    return (
+      <>
+        <ShopifyRoutePropagator disabled={skipAppLayout} />
+        <ShopifyShellLoading />
+      </>
+    );
   }
 
   return (
     <AppBridgeProvider>
       {/* ✅ Gate prevents dashboard flash during App Bridge init */}
       <AppBridgeReadinessGate>
+        <ShopifyRoutePropagator disabled={skipAppLayout} />
         {accessState.approved ? (
-          <AppLayout>
-            <div className="shopify-app-wrapper">{children}</div>
-          </AppLayout>
+          skipAppLayout ? (
+            <>{children}</>
+          ) : (
+            <AppLayout>
+              <div className="shopify-app-wrapper">{children}</div>
+            </AppLayout>
+          )
         ) : (
           <>{children}</>
         )}

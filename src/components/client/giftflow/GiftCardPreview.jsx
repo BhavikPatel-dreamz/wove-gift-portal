@@ -57,7 +57,7 @@ export default function GiftCardPreview({
   formData = {},
   personalMessage = "",
   selectedSubCategory = null,
-  selectedAmount = { currency: "USD", value: 50 },
+  selectedAmount = { currency: "ZAR", value: 50 },
   selectedBrand = null,
   goToMessageStep = () => {},
   goToOccationCategoryStep = () => {},

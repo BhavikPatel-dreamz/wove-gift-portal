@@ -1,6 +1,7 @@
 import '@shopify/shopify-api/adapters/node';
 import {ApiVersion, shopifyApi} from '@shopify/shopify-api';
 import { PrismaSessionStorage } from './session-storage.js';
+import { getShopifyScopes } from './shopify/scopes.js';
 
 // Validate required environment variables
 const requiredEnvVars = {
@@ -28,16 +29,9 @@ const sessionStorage = new PrismaSessionStorage();
 const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_SECRET_KEY, // or SHOPIFY_API_SECRET if you rename env
-  scopes: [
-    'read_products',
-    'write_products',
-    'read_orders',
-    'write_orders',
-    'read_gift_cards',
-    'write_gift_cards',
-  ],
+  scopes: getShopifyScopes(),
   hostName: process.env.SHOPIFY_APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, ''), // strip protocol + trailing slash
-  apiVersion: ApiVersion.April24,
+  apiVersion: ApiVersion.April26,
   isEmbeddedApp: true,
   sessionStorage,
 });

@@ -29,3 +29,5 @@ pnpm dev
 ```
 
 Default app URL: `http://localhost:3000`
+
+Production deploys should use `pnpm start` for the web app and `pnpm run cron:start` for the scheduler. Both commands now run `prisma migrate deploy` automatically before booting.

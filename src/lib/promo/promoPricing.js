@@ -4,9 +4,9 @@ export const PROMO_CODE_TYPES = {
   FREE_GIFT: "FREE_GIFT",
 };
 
-export const SERVICE_FEE_TOTAL_RATE = 5;
-export const SERVICE_FEE_VAT_RATE = 15;
-export const SERVICE_FEE_EX_VAT_DISPLAY_RATE = 4.35;
+export const SERVICE_FEE_TOTAL_RATE = 0;
+export const SERVICE_FEE_VAT_RATE = 0;
+export const SERVICE_FEE_EX_VAT_DISPLAY_RATE = 0;
 
 export function roundMoney(value) {
   const parsed = Number(value);
@@ -20,14 +20,8 @@ export function normalizeMoney(value) {
   return roundMoney(Math.max(0, parsed));
 }
 
-export function calculateServiceFee(subtotal, promoType = null) {
-  const normalizedSubtotal = normalizeMoney(subtotal);
-
-  if (promoType === PROMO_CODE_TYPES.FREE_GIFT) {
-    return 0;
-  }
-
-  return roundMoney((normalizedSubtotal * SERVICE_FEE_TOTAL_RATE) / 100);
+export function calculateServiceFee() {
+  return 0;
 }
 
 export function getServiceFeeBreakdown(totalServiceFee) {

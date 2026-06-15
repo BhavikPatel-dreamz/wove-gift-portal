@@ -307,7 +307,7 @@ async function getSettlementData(dateRange, brandIdFilter = null) {
   // Process settlements with proper calculation logic
   const processedSettlements = settlements.map((settlement) => {
     const brandTerms = settlement.brand?.brandTerms;
-    const currency = settlement.brand?.currency || "USD";
+    const currency = settlement.brand?.currency || "ZAR";
 
     const settlementTrigger = brandTerms?.settlementTrigger || "onRedemption";
     const baseAmount = getSettlementBaseAmount(settlement, settlementTrigger);

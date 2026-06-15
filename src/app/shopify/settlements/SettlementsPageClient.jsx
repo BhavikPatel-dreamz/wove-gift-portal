@@ -8,7 +8,6 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { currencyList } from "../../../components/brandsPartner/currency";
 import { getBrandSettlementHistory } from "../../../lib/action/brandPartner";
 import { useShopifyNavigation } from '@/hooks/useShopifyNavigation';
-import { strict } from "assert";
 import {
     formatSettlementCurrency,
     formatSettlementNumber,
@@ -178,7 +177,7 @@ const BrandSettlementHistoryClient = () => {
 
     const formatCurrency = useCallback(
         (amount) => {
-            const currency = brandInfo?.currency || "USD";
+            const currency = brandInfo?.currency || "ZAR";
             return formatSettlementCurrency(amount, currency);
         },
         [brandInfo?.currency]

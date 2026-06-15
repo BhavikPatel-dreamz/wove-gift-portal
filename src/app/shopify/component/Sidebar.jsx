@@ -90,7 +90,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const { navigate } = useShopifyNavigation();
   const isShopifyRoute = pathname === '/shopify' || pathname.startsWith('/shopify/');
   const isShopifyMode = Boolean(shopParam || isShopifyRoute);
-  const preservedShopifyQueryKeys = ['shop', 'host', 'embedded', 'id_token', 'session', 'locale', 'brandId'];
+  const preservedShopifyQueryKeys = ['shop', 'host', 'embedded', 'locale', 'brandId'];
 
   const allMenuItems = [
     { name: 'Dashboard', icon: DashboardIcon, href: '/dashboard' },
@@ -226,7 +226,11 @@ const Sidebar = ({ isOpen, onClose }) => {
                 {isShopifyMode ? (
                   <Link
                     href={item.url ?? item.href}
-                    onClick={onClose}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      navigate(item.url ?? item.href);
+                      onClose();
+                    }}
                     className={`
       w-full flex items-center px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors cursor-pointer
       ${isActiveItem(item.href)

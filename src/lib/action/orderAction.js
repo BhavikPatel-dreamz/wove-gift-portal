@@ -5,8 +5,6 @@ import { prisma } from "../db.js";
 import {
   getPayFastConfig,
   buildPayFastData,
-  buildPayFastUrl,
-  generateSignature,
   buildPayFastUrlDirect,
 } from "../payfast/payfastUtils.js";
 import { SendGiftCardEmail } from "./TwilloMessage.js";
@@ -25,6 +23,7 @@ import {
   validatePromoCodeForCheckoutInput,
 } from "../promo/promoValidation.js";
 import { getOrderSettlementAmount } from "../settlement/settlementUtils.js";
+import { getInternalAuthHeaders } from "../internal-api-auth.js";
 
 const apiKey = process.env.NEXT_BREVO_API_KEY;
 let apiInstance = new brevo.TransactionalEmailsApi();
@@ -1758,7 +1757,7 @@ async function createShopifyGiftCard(
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getInternalAuthHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(giftCardData),
     });
 

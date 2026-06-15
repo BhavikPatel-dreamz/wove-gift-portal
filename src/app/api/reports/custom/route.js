@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/db";
 import { getShopInstallationAccess } from "../../../../lib/shopify-installation";
+import { verifyShopifySessionToken } from "../../../../lib/shopify.server";
 
 export async function POST(request) {
   try {
@@ -9,6 +10,19 @@ export async function POST(request) {
     let approvedShop = shop || null;
 
     if (shop) {
+      const tokenValidation = await verifyShopifySessionToken(request, { shop });
+
+      if (!tokenValidation.valid) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Invalid Shopify session token",
+            reason: tokenValidation.reason,
+          },
+          { status: tokenValidation.status },
+        );
+      }
+
       const access = await getShopInstallationAccess(shop);
 
       if (access.requiresApproval) {

@@ -2,26 +2,26 @@
 
 client_id = "c9f2dae08ce0d37db022b21b202c7e9d"
 name = "Wove Gift"
-application_url = "https://wove-gift-portal.vercel.app/shopify/dashboard"
+application_url = "https://wovegifts.com/shopify/dashboard"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
 
 [webhooks]
-api_version = "2025-07"
+api_version = "2026-04"
 
 [[webhooks.subscriptions]]
 topics = [ "orders/create" ]
-uri = "https://wove-gift-portal.vercel.app/api/webhooks/giftcard-redeem"
+uri = "https://wovegifts.com/api/webhooks/giftcard-redeem"
 
 [[webhooks.subscriptions]]
 topics = [ "app/uninstalled" ]
-uri = "https://wove-gift-portal.vercel.app/api/shopify/webhooks/uninstall"
+uri = "https://wovegifts.com/api/shopify/webhooks/uninstall"
 
 [[webhooks.subscriptions]]
 compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
-uri = "https://wove-gift-portal.vercel.app/api/shopify/webhooks/compliance"
+uri = "https://wovegifts.com/api/shopify/webhooks/compliance"
 
 [access.admin]
 direct_api_mode = "offline"
@@ -34,7 +34,7 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://wove-gift-portal.vercel.app/api/shopify/auth/callback"
+  "https://wovegifts.com/api/shopify/auth/callback"
 ]
 
 [pos]

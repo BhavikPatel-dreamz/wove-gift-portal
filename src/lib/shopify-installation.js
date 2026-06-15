@@ -5,18 +5,35 @@ export const SHOP_INSTALLATION_APPROVAL_STATUS = {
   APPROVED: "APPROVED",
 };
 
+// Temporary bypass: let Shopify merchants access the dashboard immediately.
+const SKIP_SHOPIFY_INSTALLATION_APPROVAL = true;
+
+function getAutoApprovalData() {
+  if (!SKIP_SHOPIFY_INSTALLATION_APPROVAL) {
+    return {
+      approvalStatus: SHOP_INSTALLATION_APPROVAL_STATUS.PENDING,
+      approvedAt: null,
+    };
+  }
+
+  return {
+    approvalStatus: SHOP_INSTALLATION_APPROVAL_STATUS.APPROVED,
+    approvedAt: new Date(),
+  };
+}
+
 export function normalizeShopDomain(shop) {
   if (!shop) {
     return "";
   }
 
-  const cleaned = shop
+  const cleaned = String(shop)
     .trim()
     .replace(/^https?:\/\//i, "")
-    .replace(/\/$/, "")
+    .replace(/\/.*$/, "")
     .replace(/\.myshopify\.com$/i, "");
 
-  if (!cleaned) {
+  if (!/^[a-z0-9][a-z0-9-]*$/i.test(cleaned)) {
     return "";
   }
 
@@ -24,23 +41,31 @@ export function normalizeShopDomain(shop) {
 }
 
 export async function upsertShopInstallation(session) {
-  if (!session?.shop || !session?.accessToken) {
+  const shop = normalizeShopDomain(session?.shop);
+
+  if (!shop || !session?.accessToken) {
     return null;
   }
 
   return prisma.appInstallation.upsert({
-    where: { shop: normalizeShopDomain(session.shop) },
+    where: { shop },
     update: {
       accessToken: session.accessToken,
       scopes: session.scope || "",
       isActive: true,
+      ...(SKIP_SHOPIFY_INSTALLATION_APPROVAL
+        ? {
+            approvalStatus: SHOP_INSTALLATION_APPROVAL_STATUS.APPROVED,
+            approvedAt: new Date(),
+          }
+        : {}),
     },
     create: {
-      shop: normalizeShopDomain(session.shop),
+      shop,
       accessToken: session.accessToken,
       scopes: session.scope || "",
       isActive: true,
-      approvalStatus: SHOP_INSTALLATION_APPROVAL_STATUS.PENDING,
+      ...getAutoApprovalData(),
     },
     select: {
       id: true,
@@ -110,7 +135,11 @@ export async function getShopInstallationAccess(shop) {
   const isActive = Boolean(installation?.isActive);
   const approved =
     isActive &&
-    installation?.approvalStatus === SHOP_INSTALLATION_APPROVAL_STATUS.APPROVED;
+    (SKIP_SHOPIFY_INSTALLATION_APPROVAL ||
+      installation?.approvalStatus === SHOP_INSTALLATION_APPROVAL_STATUS.APPROVED);
+  const approvalStatus = approved
+    ? SHOP_INSTALLATION_APPROVAL_STATUS.APPROVED
+    : installation?.approvalStatus ?? null;
 
   return {
     shop: shopDomain,
@@ -119,9 +148,9 @@ export async function getShopInstallationAccess(shop) {
     approved,
     requiresInstall: !found || !isActive,
     requiresApproval: found && isActive && !approved,
-    approvalStatus: installation?.approvalStatus ?? null,
+    approvalStatus,
     installedAt: installation?.installedAt ?? null,
-    approvedAt: installation?.approvedAt ?? null,
+    approvedAt: approved ? installation?.approvedAt ?? new Date() : null,
     brand,
   };
 }

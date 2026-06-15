@@ -3,12 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { goBack, goNext, setIsConfirmed, setCompanyInfo, setCsvFileData } from '../../../redux/giftFlowSlice';
-import { updateBulkCompanyInfo, updateBulkItem, saveCartItemAsync } from '../../../redux/cartSlice';
-import AuthForm from '@/components/AuthForm';
+import { addToBulk, updateBulkCompanyInfo, updateBulkItem } from '../../../redux/cartSlice';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
-import { ShoppingBasket } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext'
 
 const normalizeBulkDeliveryOption = (value, csvRecipients = []) => {
@@ -31,6 +29,36 @@ const normalizeBulkDeliveryOption = (value, csvRecipients = []) => {
     return 'email';
 };
 
+const BULK_AUTH_RETURN_DRAFT_KEY = 'wove:bulk-auth-return-draft';
+
+const getBulkAuthReturnStorage = () => {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage;
+};
+
+const readBulkAuthReturnDraft = () => {
+    const storage = getBulkAuthReturnStorage();
+    if (!storage) return null;
+
+    const storedDraft = storage.getItem(BULK_AUTH_RETURN_DRAFT_KEY);
+    if (!storedDraft) return null;
+
+    try {
+        return JSON.parse(storedDraft);
+    } catch (error) {
+        console.error('Failed to read bulk order draft after auth:', error);
+        storage.removeItem(BULK_AUTH_RETURN_DRAFT_KEY);
+        return null;
+    }
+};
+
+const writeBulkAuthReturnDraft = (draft) => {
+    const storage = getBulkAuthReturnStorage();
+    if (!storage) return;
+
+    storage.setItem(BULK_AUTH_RETURN_DRAFT_KEY, JSON.stringify(draft));
+};
+
 const BulkReviewStep = () => {
     const dispatch = useDispatch();
     const router = useRouter();
@@ -46,7 +74,7 @@ const BulkReviewStep = () => {
         editingIndex,
         editingBulkOrderId,
     } = useSelector((state) => state.giftFlowReducer);
-    const { bulkItems } = useSelector((state) => state.cart);
+    const { bulkItems, status: cartStatus } = useSelector((state) => state.cart);
 
 
     const searchParams = useSearchParams();
@@ -108,14 +136,14 @@ const BulkReviewStep = () => {
     // Local state only for form validation errors
     const [errors, setErrors] = useState({});
     const [isProcessingFile, setIsProcessingFile] = useState(false);
-    const [isSavingCart, setIsSavingCart] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false);
-    const [pendingBulkOrder, setPendingBulkOrder] = useState(null);
 
     // Initialize local state from Redux
     const [csvFile, setCsvFile] = useState(null);
     const [csvData, setCsvData] = useState(csvFileData?.csvData || []);
     const [csvError, setCsvError] = useState(csvFileData?.csvError || '');
+    const [hasAuthReturnDraft, setHasAuthReturnDraft] = useState(() => (
+        Boolean(readBulkAuthReturnDraft()?.bulkOrder)
+    ));
     const hydratedBulkOrderKeyRef = useRef(null);
 
     useEffect(() => {
@@ -176,56 +204,63 @@ const BulkReviewStep = () => {
         currentBulkOrder?.deliveryOption,
         currentBulkOrder?.csvRecipients
     );
-    const isBulkCartEdit = isEditMode &&
-        editFlowType === 'bulk' &&
-        (
-            editBulkIdFromUrl !== null ||
-            editBulkIndexFromUrl !== null ||
-            (editingBulkOrderId !== null && editingBulkOrderId !== undefined) ||
-            (editingIndex !== null && editingIndex !== undefined)
-        );
 
-    const closeAuthModal = useCallback(() => {
-        setShowAuthModal(false);
-        setPendingBulkOrder(null);
-    }, []);
+    useEffect(() => {
+        if (typeof window === 'undefined' || !currentBulkOrder || session?.user?.id) return;
 
-    const saveBulkOrderForUser = useCallback(async (userId, bulkOrder) => {
-        const cartItemId = typeof bulkOrder?.cartItemId === 'string'
-            ? bulkOrder.cartItemId
-            : null;
-        await dispatch(saveCartItemAsync({
-            userId,
-            type: 'bulk',
-            item: bulkOrder,
-            cartItemId,
-        })).unwrap();
-    }, [dispatch]);
+        writeBulkAuthReturnDraft({
+            bulkOrder: currentBulkOrder,
+            companyInfo,
+            csvFileData,
+            isConfirmed
+        });
+        setHasAuthReturnDraft(true);
+    }, [companyInfo, csvFileData, currentBulkOrder, isConfirmed, session?.user?.id]);
 
-    const handleAuthSuccess = useCallback(async (user) => {
-        const userId = user?.id;
-        if (!userId || !pendingBulkOrder) {
-            closeAuthModal();
+    useEffect(() => {
+        if (bulkItems.length > 0 || typeof window === 'undefined') return;
+
+        const parsedDraft = readBulkAuthReturnDraft();
+        if (!parsedDraft?.bulkOrder) {
+            setHasAuthReturnDraft(false);
             return;
         }
 
-        setIsSavingCart(true);
         try {
-            await saveBulkOrderForUser(userId, pendingBulkOrder);
-            toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
-            router.push('/cart');
-        } catch (error) {
-            const message = typeof error === 'string'
-                ? error
-                : error?.message || 'Failed to add bulk order to cart.';
-            toast.error(message);
-        } finally {
-            setIsSavingCart(false);
-            setPendingBulkOrder(null);
-            setShowAuthModal(false);
-        }
-    }, [pendingBulkOrder, saveBulkOrderForUser, router, isBulkCartEdit, closeAuthModal]);
+            const restoredCsvData = Array.isArray(parsedDraft.csvFileData?.csvData)
+                ? parsedDraft.csvFileData.csvData
+                : parsedDraft.bulkOrder.csvRecipients;
+            const restoredCompanyInfo = parsedDraft.companyInfo || parsedDraft.bulkOrder.companyInfo;
+            const restoredBulkOrder = {
+                ...parsedDraft.bulkOrder,
+                companyInfo: restoredCompanyInfo,
+                csvRecipients: Array.isArray(restoredCsvData) ? restoredCsvData : [],
+                deliveryOption: normalizeBulkDeliveryOption(
+                    parsedDraft.bulkOrder.deliveryOption,
+                    restoredCsvData
+                )
+            };
 
+            dispatch(addToBulk(restoredBulkOrder));
+
+            if (restoredCompanyInfo) {
+                dispatch(setCompanyInfo(restoredCompanyInfo));
+            }
+
+            if (parsedDraft.csvFileData) {
+                dispatch(setCsvFileData(parsedDraft.csvFileData));
+            }
+
+            if (typeof parsedDraft.isConfirmed === 'boolean') {
+                dispatch(setIsConfirmed(parsedDraft.isConfirmed));
+            }
+            setHasAuthReturnDraft(true);
+        } catch (error) {
+            console.error('Failed to restore bulk order draft after auth:', error);
+            getBulkAuthReturnStorage()?.removeItem(BULK_AUTH_RETURN_DRAFT_KEY);
+            setHasAuthReturnDraft(false);
+        }
+    }, [bulkItems.length, dispatch]);
     const syncCurrentBulkOrder = useCallback((updates) => {
         if (!currentBulkOrder) return;
         const nextDeliveryOption = normalizeBulkDeliveryOption(
@@ -355,7 +390,7 @@ const BulkReviewStep = () => {
         }
 
         if (field === 'contactNumber') {
-            if (!normalized) return 'Contact number is required';
+            if (!normalized) return '';
             if (!contactNumberRegex.test(normalized)) return 'Contact number contains invalid characters';
 
             const digitsOnly = normalized.replace(/\D/g, '');
@@ -493,7 +528,13 @@ const BulkReviewStep = () => {
 
                 const name = normalizedRow.name?.toString().trim();
                 const email = normalizedRow.email?.toString().trim().toLowerCase();
-                const phone = normalizedRow.phone?.toString().trim() || '';
+                const phone = (
+                    normalizedRow.phone ??
+                    normalizedRow.mobile ??
+                    normalizedRow['mobile number'] ??
+                    normalizedRow['phone number'] ??
+                    ''
+                ).toString().trim();
                 const message = normalizedRow.message?.toString().trim() || '';
 
                 if (!name) {
@@ -710,47 +751,6 @@ const BulkReviewStep = () => {
         }
     }, [companyInfo, dispatch, syncCurrentBulkOrder]);
 
-    // Add to Cart Handler
-    const handleAddToCart = async () => {
-        if (!validateForm()) {
-            toast.error('Please correct the highlighted fields');
-            return;
-        }
-
-        if (!currentBulkOrder) {
-            toast.error('No bulk order found');
-            return;
-        }
-        if (isSavingCart) {
-            return;
-        }
-        if (!session?.user?.id) {
-            setPendingBulkOrder(currentBulkOrder);
-            setShowAuthModal(true);
-            return;
-        }
-
-        // // ✅ Check if a bulk order already exists in cart
-        // if (bulkItems.length > 1) {
-        //     toast.error('Only 1 bulk order is allowed in cart. Please remove the existing bulk order first or proceed to checkout.');
-        //     return;
-        // }
-
-        setIsSavingCart(true);
-        try {
-            await saveBulkOrderForUser(session.user.id, currentBulkOrder);
-            toast.success(isBulkCartEdit ? 'Bulk order updated in cart!' : 'Bulk order added to cart!');
-            router.push('/cart');
-        } catch (error) {
-            const message = typeof error === 'string'
-                ? error
-                : error?.message || 'Failed to add bulk order to cart.';
-            toast.error(message);
-        } finally {
-            setIsSavingCart(false);
-        }
-    };
-
     const handleProceedToCheckout = () => {
         if (!validateForm()) {
             toast.error('Please correct the highlighted fields');
@@ -759,13 +759,35 @@ const BulkReviewStep = () => {
         dispatch(goNext(1));
     };
 
+    const handleLoginRedirect = () => {
+        if (typeof window !== 'undefined' && currentBulkOrder) {
+            writeBulkAuthReturnDraft({
+                bulkOrder: currentBulkOrder,
+                companyInfo,
+                csvFileData,
+                isConfirmed
+            });
+            setHasAuthReturnDraft(true);
+        }
+
+        const returnParams = new URLSearchParams(searchParams.toString());
+        returnParams.set('mode', 'bulk');
+        returnParams.set('step', '7');
+
+        const loginParams = new URLSearchParams({
+            callbackUrl: `/gift?${returnParams.toString()}`
+        });
+
+        router.push(`/login?${loginParams.toString()}`);
+    };
+
     const handleBack = () => {
         dispatch(goBack());
     };
 
     const downloadSampleCSV = useCallback(() => {
         const orderQuantity = currentBulkOrder?.quantity || 3;
-        const sampleData = [['name', 'email', 'phone', 'message']];
+        const sampleData = [['name', 'email', 'message']];
 
         // Generate sample rows based on order quantity (max 10 for sample)
         const sampleRowCount = Math.min(orderQuantity, 10);
@@ -773,7 +795,6 @@ const BulkReviewStep = () => {
             sampleData.push([
                 `Recipient ${i}`,
                 `recipient${i}@example.com`,
-                `+123456789${i}`,
                 `Gift message ${i}`
             ]);
         }
@@ -787,6 +808,16 @@ const BulkReviewStep = () => {
         a.click();
         window.URL.revokeObjectURL(url);
     }, [currentBulkOrder]);
+
+    if (!currentBulkOrder && (hasAuthReturnDraft || cartStatus === 'loading')) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-30">
+                <div className="text-center">
+                    <p className="text-gray-600 mb-4">Restoring your bulk order...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!currentBulkOrder) {
         return (
@@ -808,11 +839,11 @@ const BulkReviewStep = () => {
         <>
             <div>
                 <Toaster position="top-right" />
-                <div className="min-h-screen bg-gray-50 px-4 py-20 sm:py-24 md:px-8 md:py-30">
+                <div className="min-h-screen bg-gray-50 px-4 pt-5 pb-10 sm:py-24 md:px-8 md:py-30">
                     <div className="max-w-7xl mx-auto sm:px-6">
                         {/* Back Button and Bulk Mode Indicator */}
-                        <div className="relative flex flex-col items-start gap-4 mb-6
-                                md:flex-row md:items-center md:justify-between md:gap-0">
+                        <div className="relative hidden flex-col items-start gap-4 mb-6
+                                md:flex md:flex-row md:items-center md:justify-between md:gap-0">
 
                             {/* Previous Button */}
                             <button
@@ -902,7 +933,7 @@ const BulkReviewStep = () => {
                                 Review your bulk gifting order
                             </h1>
                             <p className="text-[#4A4A4A] font-medium text-base">
-                                Once confirmed, you'll receive all voucher codes via email in a CSV file within minutes
+                                Once confirmed, you&apos;ll receive all voucher codes via email in a CSV file within minutes
                             </p>
                         </div>
 
@@ -1026,7 +1057,7 @@ const BulkReviewStep = () => {
                                         <div>
                                             <input
                                                 type="tel"
-                                                placeholder="Your Contact No.*"
+                                                placeholder="Your Contact No. (optional)"
                                                 value={companyInfo.contactNumber || ''}
                                                 onChange={(e) => handleInputChange('contactNumber', e.target.value)}
                                                 onBlur={(e) => handleInputBlur('contactNumber', e.target.value)}
@@ -1121,7 +1152,7 @@ const BulkReviewStep = () => {
                                                 </div>
 
                                                 <p className="text-sm text-gray-600 mb-3">
-                                                    CSV or Excel file with columns: <strong>name</strong>, <strong>email</strong>, phone (optional), message (optional)
+                                                    CSV or Excel file with columns: <strong>name</strong>, <strong>email</strong>. Mobile/phone is not required for email delivery. Message is optional.
                                                 </p>
 
                                                 {/* Show uploaded file name if exists */}
@@ -1256,32 +1287,6 @@ const BulkReviewStep = () => {
                             {/* Proceed to Checkout Button */}
                             {session?.user?.email ? (
                                 <>
-                                    <div className={`p-0.5 rounded-full bg-linear-to-r from-pink-500 to-orange-400 inline-block w-full ${csvError === "" && isConfirmed
-                                        ? 'hover:bg-rose-50 hover:shadow-md cursor-pointer'
-                                        : 'opacity-50 cursor-not-allowed'
-                                        }
-                                              `}>
-                                        <button
-                                            disabled={csvError !== "" || !isConfirmed || isProcessingFile || isSavingCart}
-                                            onClick={handleAddToCart}
-                                            className={`
-    w-full h-14 flex items-center justify-center gap-3 px-5 rounded-full 
-    bg-white text-pink-500 font-bold transition-all duration-200
-    ${csvError === "" && isConfirmed && !isProcessingFile && !isSavingCart
-                                                    ? 'hover:shadow-xl cursor-pointer hover:opacity-95'
-                                                    : 'opacity-50 cursor-not-allowed'
-                                                }
-  `}
-                                        >
-                                            {isProcessingFile
-                                                ? 'Processing file...'
-                                                : (isSavingCart
-                                                    ? (isBulkCartEdit ? 'Updating...' : 'Saving...')
-                                                    : (isBulkCartEdit ? 'Update Cart Order' : 'Add to Cart'))}
-                                            <ShoppingBasket className="w-5 h-5" />
-                                        </button>
-
-                                    </div>
                                     <button
                                         disabled={csvError !== "" || !isConfirmed || isProcessingFile}
                                         onClick={handleProceedToCheckout}
@@ -1305,7 +1310,7 @@ const BulkReviewStep = () => {
                                     </p>
                                     <button
                                         type="button"
-                                        onClick={() => router.push("/login")}
+                                        onClick={handleLoginRedirect}
                                         className="text-pink-500 font-semibold hover:underline transition"
                                     >
                                         Login to your account →
@@ -1316,17 +1321,6 @@ const BulkReviewStep = () => {
                     </div>
                 </div>
             </div>
-
-            {showAuthModal && (
-                <div className="fixed inset-0 z-999 bg-black/60 p-4 flex items-center justify-center">
-                    <AuthForm
-                        type="login"
-                        mode="modal"
-                        onClose={closeAuthModal}
-                        onAuthSuccess={handleAuthSuccess}
-                    />
-                </div>
-            )}
         </>
     );
 };

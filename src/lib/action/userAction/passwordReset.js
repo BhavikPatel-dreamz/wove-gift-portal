@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { prisma } from "../../db";
 import { hashPassword } from "./password";
+import { isAdminRole } from "@/lib/roles";
 
 const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -11,6 +12,50 @@ function generateResetToken() {
 
 function hashResetToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+export async function getPasswordResetTokenContext(token) {
+  if (!token) {
+    return {
+      isValid: false,
+      isAdminInviteSetup: false,
+    };
+  }
+
+  const tokenHash = hashResetToken(token);
+  const resetRecord = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: {
+      user: {
+        select: {
+          id: true,
+          role: true,
+          isActive: true,
+          isVerified: true,
+        },
+      },
+    },
+  });
+
+  const isValid =
+    Boolean(resetRecord) &&
+    !resetRecord.usedAt &&
+    resetRecord.expiresAt >= new Date();
+
+  if (!isValid) {
+    return {
+      isValid: false,
+      isAdminInviteSetup: false,
+    };
+  }
+
+  return {
+    isValid: true,
+    isAdminInviteSetup:
+      isAdminRole(resetRecord.user.role) &&
+      resetRecord.user.isActive &&
+      !resetRecord.user.isVerified,
+  };
 }
 
 export async function createPasswordResetToken(email) {
@@ -63,6 +108,9 @@ export async function resetPasswordWithToken({ token, newPassword }) {
         select: {
           id: true,
           email: true,
+          role: true,
+          isActive: true,
+          isVerified: true,
         },
       },
     },
@@ -77,11 +125,18 @@ export async function resetPasswordWithToken({ token, newPassword }) {
   }
 
   const newHashedPassword = await hashPassword(newPassword);
+  const isAdminInviteSetup =
+    isAdminRole(resetRecord.user.role) &&
+    resetRecord.user.isActive &&
+    !resetRecord.user.isVerified;
 
   await prisma.$transaction([
     prisma.user.update({
       where: { id: resetRecord.userId },
-      data: { password: newHashedPassword },
+      data: {
+        password: newHashedPassword,
+        ...(isAdminInviteSetup ? { isVerified: true } : {}),
+      },
     }),
     prisma.passwordResetToken.update({
       where: { id: resetRecord.id },
@@ -101,5 +156,6 @@ export async function resetPasswordWithToken({ token, newPassword }) {
   return {
     userId: resetRecord.userId,
     email: resetRecord.user?.email,
+    isAdminInviteSetup,
   };
 }
