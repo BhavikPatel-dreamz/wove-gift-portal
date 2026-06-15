@@ -31,7 +31,7 @@ const shopify = shopifyApi({
   apiSecretKey: process.env.SHOPIFY_SECRET_KEY, // or SHOPIFY_API_SECRET if you rename env
   scopes: getShopifyScopes(),
   hostName: process.env.SHOPIFY_APP_URL.replace(/^https?:\/\//, '').replace(/\/$/, ''), // strip protocol + trailing slash
-  apiVersion: ApiVersion.April26,
+  apiVersion: ApiVersion.January26,
   isEmbeddedApp: true,
   sessionStorage,
 });

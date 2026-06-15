@@ -46,7 +46,7 @@ const shopify = shopifyApi({
     ""
   ),
   hostScheme: process.env.SHOPIFY_APP_URL.startsWith("https") ? "https" : "http",
-  apiVersion: ApiVersion.April26,
+  apiVersion: ApiVersion.January26,
   isEmbeddedApp: true,
   sessionStorage,
   logger: {
@@ -426,5 +426,5 @@ export async function verifyWebhook(request, body) {
 }
 
 export default shopify;
-export const apiVersion = ApiVersion.April26;
+export const apiVersion = ApiVersion.January26;
 export { sessionStorage };
